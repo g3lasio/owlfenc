@@ -11,10 +11,12 @@ import { z } from "zod";
 import puppeteer from "puppeteer";
 
 // Initialize OpenAI API
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-const GPT_MODEL = "gpt-4o";
+const GPT_MODEL = "gpt-4";
+if (!process.env.OPENAI_API_KEY) {
+  throw new Error("OPENAI_API_KEY no está configurado en las variables de entorno");
+}
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || 'dummy-key'
+  apiKey: process.env.OPENAI_API_KEY
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
