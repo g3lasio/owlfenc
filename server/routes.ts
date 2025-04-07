@@ -134,13 +134,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // User provided a height
         const height = parseInt(lowercaseMessage.match(/[468]/)[0], 10);
         
-        response = {
-          message: "Would you like to add any gates? If so, how many and what width (standard is 3ft for walkways and 10ft for driveways)?",
-          context: { 
-            ...context,
-            fenceHeight: height
-          }
-        };
+        // Only proceed to gates question if we have both fence type and length
+        if (context.fenceType && context.fenceLength) {
+          response = {
+            message: "Would you like to add any gates? If so, how many and what width (standard is 3ft for walkways and 10ft for driveways)?",
+            context: { 
+              ...context,
+              fenceHeight: height
+            }
+          };
+        } else {
+          // Ask for missing information
+          response = {
+            message: context.fenceType ? 
+              "What is the approximate length of the fence in feet?" :
+              "What type of fence would you like to install?",
+            context: {
+              ...context,
+              fenceHeight: height
+            }
+          };
+        }
       } else if (lowercaseMessage.includes("gate") || lowercaseMessage.includes("3ft") || lowercaseMessage.includes("10ft")) {
         // User provided gate information
         const walkGate = lowercaseMessage.includes("walk") || lowercaseMessage.includes("3ft");
