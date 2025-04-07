@@ -1,0 +1,105 @@
+@import url('https://fonts.googleapis.com/css2?family=Quantico:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+    
+    --card: 217 33% 17%;
+    --card-foreground: 210 40% 98%;
+    
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+    
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 173 84% 65%;
+    --secondary-foreground: 222 47% 11%;
+    
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 16% 65%;
+    
+    --accent: 217 33% 17%;
+    --accent-foreground: 210 40% 98%;
+    
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+    
+    --border: 217 33% 27%;
+    --input: 217 33% 17%;
+    --ring: 262 83% 58%;
+    
+    --sidebar-background: 217 33% 17%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 262 83% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 33% 27%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 33% 27%;
+    --sidebar-ring: 262 83% 58%;
+    
+    --radius: 0.5rem;
+  }
+  
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply font-inter antialiased bg-background text-foreground;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-quantico;
+  }
+}
+
+@layer components {
+  .chat-message {
+    @apply max-w-[85%] rounded-2xl mb-3 py-3 px-4 break-words;
+  }
+  
+  .user-message {
+    @apply bg-primary text-white rounded-tr-sm ml-auto;
+  }
+  
+  .bot-message {
+    @apply bg-card text-foreground rounded-tl-sm;
+  }
+  
+  .scrollbar-hide {
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .template-preview {
+    @apply font-inter p-8 bg-white text-slate-800 max-h-[400px] overflow-y-auto rounded-lg;
+  }
+  
+  .template-preview h1,
+  .template-preview h2 {
+    @apply font-quantico text-slate-900;
+  }
+  
+  .template-preview table {
+    @apply border-collapse w-full;
+  }
+  
+  .template-preview th,
+  .template-preview td {
+    @apply border border-slate-300 p-2;
+  }
+  
+  .template-preview th {
+    @apply bg-slate-100;
+  }
+}
