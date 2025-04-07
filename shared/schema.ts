@@ -117,7 +117,33 @@ export const insertChatLogSchema = createInsertSchema(chatLogs).pick({
   messages: true,
 });
 
+// Materials table
+export const materials = pgTable("materials", {
+  id: serial("id").primaryKey(),
+  category: text("category").notNull(), // Postes, Paneles, Hardware, etc.
+  name: text("name").notNull(),
+  description: text("description"),
+  unit: text("unit").notNull(), // pieza, pie, paquete, etc.
+  price: integer("price").notNull(), // precio en centavos
+  supplier: text("supplier").default("Home Depot"),
+  sku: text("sku"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertMaterialSchema = createInsertSchema(materials).pick({
+  category: true,
+  name: true,
+  description: true,
+  unit: true,
+  price: true,
+  supplier: true,
+  sku: true,
+});
+
 // Export types
+export type Material = typeof materials.$inferSelect;
+export type InsertMaterial = z.infer<typeof insertMaterialSchema>;
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 
