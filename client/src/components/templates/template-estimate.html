@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Estimado #{{estimateNumber}}</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Quantico&display=swap');
+
+    body {
+      background-color: #1f1f1f;
+      margin: 0;
+      padding: 0;
+      font-family: 'Quantico', sans-serif;
+      color: #e0e0e0;
+    }
+    .container {
+      width: 90%;
+      max-width: 800px;
+      margin: 40px auto;
+      background: #252525;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+    .header {
+      background: linear-gradient(135deg, #0d47a1, #1976d2);
+      padding: 20px;
+      text-align: center;
+    }
+    .header img {
+      max-height: 80px;
+      margin-bottom: 10px;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 28px;
+      color: #ffffff;
+    }
+    .header p {
+      margin: 5px 0;
+      font-size: 14px;
+      color: #cfd8dc;
+    }
+    .content {
+      padding: 20px 30px;
+    }
+    .section {
+      margin-bottom: 20px;
+    }
+    .section h2, .section h3, .section h4 {
+      border-bottom: 2px solid #444;
+      padding-bottom: 5px;
+      margin-bottom: 10px;
+    }
+    .section p {
+      line-height: 1.6;
+    }
+    .info-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 10px;
+    }
+    .info-table td {
+      padding: 8px;
+      vertical-align: top;
+    }
+    .info-table .label {
+      font-weight: bold;
+      color: #90caf9;
+      width: 150px;
+    }
+    table.items {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+    table.items th, table.items td {
+      padding: 10px;
+      border: 1px solid #444;
+      text-align: left;
+    }
+    table.items th {
+      background-color: #37474f;
+    }
+    table.items td.right {
+      text-align: right;
+    }
+    .totals-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    .totals-table td {
+      padding: 8px;
+    }
+    .totals-table .label {
+      text-align: right;
+      font-weight: bold;
+    }
+    .footer {
+      background-color: #212121;
+      padding: 15px;
+      text-align: center;
+      font-size: 12px;
+      color: #757575;
+    }
+    .footer p {
+      margin: 5px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Encabezado con Logo e Información del Contratista -->
+    <div class="header">
+      <img src="{{logoURL}}" alt="Logo de {{contractorName}}">
+      <h1>{{contractorName}}</h1>
+      <p>{{contractorAddress}} | Tel: {{contractorPhone}} | Email: {{contractorEmail}}</p>
+    </div>
+
+    <!-- Contenido Principal -->
+    <div class="content">
+      <!-- Detalles del Documento -->
+      <div class="section">
+        <h2>Estimado #{{estimateNumber}}</h2>
+        <table class="info-table">
+          <tr>
+            <td class="label">Fecha:</td>
+            <td>{{estimateDate}}</td>
+          </tr>
+          <tr>
+            <td class="label">Válido hasta:</td>
+            <td>{{validUntil}}</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Información del Cliente -->
+      <div class="section">
+        <h3>Información del Cliente</h3>
+        <table class="info-table">
+          <tr>
+            <td class="label">Bill To:</td>
+            <td>{{clientName}}</td>
+          </tr>
+          <tr>
+            <td class="label">Dirección Facturación:</td>
+            <td>{{clientAddressBilling}}</td>
+          </tr>
+          <tr>
+            <td class="label">Contacto:</td>
+            <td>Tel: {{clientPhone}} | Email: {{clientEmail}}</td>
+          </tr>
+          <tr>
+            <td class="label">Ship To:</td>
+            <td>{{clientAddressShipping}}</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Detalles del Proyecto -->
+      <div class="section">
+        <h3>Detalles del Proyecto</h3>
+        <table class="info-table">
+          <tr>
+            <td class="label">Ubicación:</td>
+            <td>{{projectAddress}}</td>
+          </tr>
+          <tr>
+            <td class="label">Descripción:</td>
+            <td>{{projectDescription}}</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Desglose de Servicios y Materiales -->
+      <div class="section">
+        <h3>Desglose de Servicios y Materiales</h3>
+        <table class="items">
+          <thead>
+            <tr>
+              <th>Descripción</th>
+              <th>Cantidad</th>
+              <th>Precio Unitario</th>
+              <th>Importe</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each items}}
+            <tr>
+              <td>{{this.description}}</td>
+              <td>{{this.quantity}}</td>
+              <td class="right">{{this.unitPrice}}</td>
+              <td class="right">{{this.amount}}</td>
+            </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Totales -->
+      <div class="section">
+        <table class="totals-table">
+          <tr>
+            <td class="label">Subtotal:</td>
+            <td class="right">{{subtotal}}</td>
+          </tr>
+          <tr>
+            <td class="label">Descuento:</td>
+            <td class="right">{{discount}}</td>
+          </tr>
+          <tr>
+            <td class="label">Total:</td>
+            <td class="right">{{total}}</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Notas -->
+      <div class="section">
+        <h3>Notas</h3>
+        <p>{{notes}}</p>
+      </div>
+
+      <!-- Términos y Condiciones -->
+      <div class="section">
+        <h3>Términos y Condiciones</h3>
+        <p>{{terms}}</p>
+        <p class="small">
+          * Este estimado está sujeto a aprobación. Tras la aprobación se generará un contrato formal y se requerirá un depósito del {{depositPercentage}}%.
+        </p>
+      </div>
+    </div>
+
+    <!-- Pie de Página -->
+    <div class="footer">
+      <p>{{contractorName}} - {{contractorAddress}} | Tel: {{contractorPhone}} | Email: {{contractorEmail}}</p>
+      <p>&copy; {{year}} Todos los derechos reservados.</p>
+    </div>
+  </div>
+</body>
+</html>

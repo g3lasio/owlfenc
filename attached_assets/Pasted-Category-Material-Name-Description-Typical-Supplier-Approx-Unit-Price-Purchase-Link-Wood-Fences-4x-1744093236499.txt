@@ -1,0 +1,54 @@
+Category,Material Name,Description,Typical Supplier,Approx. Unit Price,Purchase Link
+Wood Fences,4x4 Pressure-Treated Post,Support posts for wood fences (set in concrete),Home Depot,$15.00,https://www.homedepot.com/p/4-in-x-4-in-x-8-ft-2-Pressure-Treated-Timber-256276/100066791
+Wood Fences,2x4 Pressure-Treated Lumber,Used for horizontal rails and bracing,Home Depot/Lowe's,$10.00,https://www.lowes.com/pd/Severe-Weather-4-in-x-4-in-x-8-ft-2-Treated-Lumber/50121083
+Wood Fences,2x6 Pressure-Treated Lumber,Used for bottom rail or base support for pickets,Home Depot,$12.00,https://www.homedepot.com/p/2x6-Treated-Lumber-Example
+Wood Fences,Wood Pickets,Individual fence boards or pickets (e.g., redwood, cedar),Home Depot,$1.50 each,https://www.homedepot.com/p/Outdoor-Essentials-5-8-in-x-5-1-2-in-x-6-ft-Pressure-Treated-Pine-Dog-Ear-Fence-Picket-102560/202319053
+Wood Fences,Metal Hangers/Brackets,Hardware to attach rails to posts,Home Depot,$5.00 per set,https://www.homedepot.com/p/Fence-Rail-Hanger-Kit-Example
+Wood Fences,Concrete Mix,For setting posts securely in the ground,Home Depot,$4.00 per bag,https://www.homedepot.com/p/Quikrete-80-lb-Concrete-Mix-100066602
+Wood Fences,Exterior-Grade Fasteners,Galvanized screws/nails for assembling fence components,Home Depot,$8.00 per box,https://www.homedepot.com/p/Deck-Mate-#9-x-3-in-Star-Flat-Head-Wood-Deck-Screws-5-lbs-Pack-158861/204606229
+Wood Fences,Wood Stain/Sealant,Protective finish for longevity,Amazon,$25.00 per gallon,https://www.amazon.com/Exterior-Wood-Sealer/dp/B01N5QGP5K
+Wood Fences,Wood Gate Kit,Complete kit for a wood fence gate including hinges and latch,Home Depot,$150.00,https://www.homedepot.com/p/Wood-Fence-Gate-Kit-Example
+
+Picket Fences,1x4 Cedar Pickets,Decorative pickets for classic picket fences,Home Depot,$2.50 each,https://www.homedepot.com/p/Cedar-Picket-Example
+Picket Fences,4x4 Cedar Posts,Posts for supporting picket fences,Home Depot,$18.00 each,https://www.homedepot.com/p/Cedar-Fence-Post-Example
+Picket Fences,Horizontal Rails,2x4 or 2x3 lumber for attaching pickets,Home Depot,$10.00 each,https://www.homedepot.com/p/Horizontal-Rail-Example
+Picket Fences,Decorative Post Caps,Optional caps for aesthetic and protection,Amazon,$5.00 each,https://www.amazon.com/Decorative-Fence-Post-Cap-Example
+Picket Fences,Exterior-Grade Fasteners,Galvanized nails/screws for picket assembly,Home Depot,$8.00 per box,https://www.homedepot.com/p/Exterior-Fasteners-Example
+
+Wrought Iron/Metal Fences,2x2 Powder-Coated Steel Post,Metal posts for ornamental fences,Home Depot,$35.00 each,https://www.homedepot.com/p/US-Door-and-Fence-2-in-x-2-in-x-6-5-ft-Black-Metal-Fence-Post-with-Post-Cap-P278PUS/206019213
+Wrought Iron/Metal Fences,Pre-Fabricated Metal Fence Panel,Complete metal panels for fence installation,Lowe's,$150.00 each,https://www.lowes.com/pd/Ironcraft-Euro-4-ft-H-x-6-ft-W-Black-Steel-Yard-Fence-Panel/5014349327
+Wrought Iron/Metal Fences,Metal Fasteners & Brackets,Hardware for attaching panels to posts,Home Depot,$10.00 per set,https://www.homedepot.com/p/Metal-Fence-Bracket-Kit-Example
+Wrought Iron/Metal Fences,Decorative Finials/Post Caps,Ornamental finishing pieces for posts,Amazon,$12.00 each,https://www.amazon.com/Decorative-Fence-Finial-Example
+Wrought Iron/Metal Fences,Gate Hardware,Heavy-duty hinges and latch for metal gates,Lowe's,$50.00 per set,https://www.lowes.com/pd/Metal-Gate-Hardware-Kit-Example
+
+Split Rail Fences,3-Hole Split Rail Post,Traditional split rail posts for rustic fences,Home Depot,$20.00 each,https://www.homedepot.com/p/4-in-x-4-in-x-7-ft-Pressure-Treated-Pine-3-Hole-Split-Rail-Corner-Post-WVSR3311/202624314
+Split Rail Fences,Split Rail Timber Rail,Horizontal rails for split rail fences,Home Depot,$25.00 each,https://www.homedepot.com/p/3-in-x-4-in-x-11-ft-Pressure-Treated-Pine-Split-Fence-Rail-WVSR1012/202624389
+Split Rail Fences,Galvanized Staples,For optionally securing added wire mesh,Home Depot,$5.00 per pack,https://www.homedepot.com/p/Galvanized-Staples-Example
+Split Rail Fences,Optional Gate Hardware,Simple latch and hinge kit for a split rail gate,Amazon,$40.00 per set,https://www.amazon.com/Split-Rail-Gate-Hardware-Example
+
+Vinyl Fences,Vinyl Fence Post,White PVC post for vinyl fence systems,Home Depot,$40.00 each,https://www.homedepot.com/p/Veranda-5-in-x-5-in-x-8-ft-White-Vinyl-Fence-Post-73010700/202084745
+Vinyl Fences,Vinyl Panel Kit,Pre-assembled vinyl fence panels,Home Depot,$120.00 per panel,https://www.homedepot.com/p/Barrette-Outdoor-Living-Bryce-6-ft-H-x-8-ft-W-White-Vinyl-Fence-Panel-Unassembled-73014727/205870203
+Vinyl Fences,Vinyl Fasteners/Brackets,Accessories for securing vinyl panels,Lowes,$15.00 per kit,https://www.lowes.com/pd/Vinyl-Fence-Bracket-Kit-Example
+Vinyl Fences,Vinyl Post Caps,Finishing caps for vinyl posts,Amazon,$8.00 each,https://www.amazon.com/Vinyl-Post-Cap-Example
+Vinyl Fences,Vinyl Gate Kit,Complete kit for a vinyl fence gate including hardware,Home Depot,$130.00 per kit,https://www.homedepot.com/p/Vinyl-Gate-Kit-Example
+
+Composite Privacy Fences,Composite Post Sleeve,Composite cover for metal posts or as standalone posts,Trex,$60.00 each,https://www.homedepot.com/p/Trex-Seclusions-Composite-Fence-Post-Example
+Composite Privacy Fences,Composite Board/Picket,Composite pickets for a privacy fence,Home Depot,$30.00 each,https://www.homedepot.com/p/Trex-Seclusions-Composite-Fence-Panel-Example
+Composite Privacy Fences,Composite Rail/Bracket,Connector components for composite systems,Trex,$20.00 per set,https://www.homedepot.com/p/Trex-Seclusions-Rail-Bracket-Example
+Composite Privacy Fences,Stainless Fasteners,Recommended fasteners for composite materials,Amazon,$10.00 per pack,https://www.amazon.com/Composite-Fasteners-Example
+Composite Privacy Fences,Composite Gate Components,Additional parts for building a composite gate kit,Trex,$100.00 per kit,https://www.homedepot.com/p/Trex-Seclusions-Composite-Gate-Kit-Example
+
+Chain Link Fences,Galvanized Steel Corner Post,Heavy-duty post for chain link fence terminals,Home Depot,$35.00 each,https://www.homedepot.com/p/Everbilt-2-3-8-in-Dia-x-8-ft-16-Gauge-Galvanized-Steel-Chain-Link-Fence-Corner-Post-328944DPTSEB/312373068
+Chain Link Fences,Galvanized Top Rail,1-3/8 in. diameter top rail for chain link fences,Home Depot,$20.00 per 10ft,https://www.homedepot.com/p/YARDGARD-10-ft-17-Gauge-Galvanized-Steel-Top-Rail-328913DPT/202025619
+Chain Link Fences,Chain Link Fabric,Galvanized mesh fabric for chain link fence,Home Depot,$70.00 per roll,https://www.homedepot.com/p/YARDGARD-48-in-x-50-ft-12-5-Gauge-Galvanized-Steel-Metal-Chain-Link-Fence-Fabric-308704YGLD/333211074
+Chain Link Fences,Tension Bands,Used to secure fabric to terminal posts,Home Depot,$12.00 per pack,https://www.homedepot.com/p/YARDGARD-2-3-8-in-Chain-Link-Fence-Galvanized-Tension-Bands-8-Pack-328526C/202025619
+Chain Link Fences,Chain Link Gate Hardware Kit,Includes hinges and latch for a chain link gate,Amazon,$50.00 per kit,https://www.amazon.com/Chain-Link-Fence-Gate-Kit/dp/B07BCP1V3B
+
+Specialty Fences - Pool Safety,Aluminum Pool Fence Panel,4 ft. tall panel for pool safety fences,Lowe's,$150.00 each,https://www.lowes.com/pd/Black-Aluminum-Flat-Top-Pool-Fence-Panel/1000738742
+Specialty Fences - Pool Safety,Self-Closing Pool Gate Kit,Gate kit with self-closing spring hinges for pool fences,Amazon,$200.00 per kit,https://www.amazon.com/BOEN-Safety-Self-Closing-Magnetic-Aluminum/dp/B07CHZ3KQJ
+Specialty Fences - Livestock,Metal T-Post,Heavy-duty T-post for livestock fences,Home Depot,$25.00 each,https://www.homedepot.com/p/T-Post-6-ft/205024931
+Specialty Fences - Livestock,Woven Field Fence Roll,Roll of welded wire for farm or livestock fences,Tractor Supply,$150.00 per roll,https://www.tractorsupply.com/tsc/product/field-guardian-200-ft-horse-fence
+Specialty Fences - Livestock,Livestock Gate Hardware Kit,Hardware kit for farm gate installation,Tractor Supply,$75.00 per kit,https://www.tractorsupply.com/tsc/product/farm-gate-hardware-kit
+Specialty Fences - Other,Deer Netting,High-tensile UV-resistant netting for deer/garden fences,Home Depot,$100.00 per roll,https://www.homedepot.com/p/Deer-Netting-Example
+Specialty Fences - Other,Bamboo/Reed Fencing,Bamboo roll for decorative or privacy screens,Home Depot,$80.00 per roll,https://www.homedepot.com/p/Reed-Fencing-Example
+Specialty Fences - Other,Custom Ornamental Panels,Custom metal or composite panels for security/decorative fences,Various,$Varies,https://www.lowes.com/pd/Custom-Ornamental-Fence-Panel-Example
