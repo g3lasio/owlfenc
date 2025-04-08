@@ -88,10 +88,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const schema = z.object({
         message: z.string(),
-        context: z.record(z.any()).optional()
+        context: z.record(z.any()).optional(),
+        userId: z.number().optional()
       });
       
-      const { message, context = {} } = schema.parse(req.body);
+      const { message, context = {}, userId = 1 } = schema.parse(req.body);
+      
+      // Obtener información del usuario/contratista
+      const user = await storage.getUser(userId);
+      const userContext = {
+        contractorName: user?.company || '',
+        contractorPhone: user?.phone || '',
+        contractorEmail: user?.email || '',
+        contractorAddress: user?.address || '',
+        contractorLicense: user?.license || '',
+        ...context
+      };
       
       // This is a simplified version. In a real app, we would use OpenAI to process the message,
       // update the project details, and return the appropriate response.
@@ -105,10 +117,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Fake basic conversation flow based on common fence project details
       const lowercaseMessage = message.toLowerCase();
       
-      if (lowercaseMessage.includes("wood fence") || 
+      // Si no hay tipo de cerca seleccionado, preguntar primero
+      if (!userContext.fenceType && (
+          lowercaseMessage.includes("wood fence") || 
           lowercaseMessage.includes("vinyl fence") || 
-          lowercaseMessage.includes("chain link")) {
-        // User selected a fence type
+          lowercaseMessage.includes("chain link"))) {
+        // Usuario seleccionó tipo de cerca
         const fenceType = lowercaseMessage.includes("wood fence") ? "Wood Fence" : 
                           lowercaseMessage.includes("vinyl fence") ? "Vinyl Fence" : "Chain Link";
         
@@ -181,9 +195,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const clientName = message.split(',')[0].trim();
         
         response = {
-          message: "Thanks for providing all the details. I've prepared an estimate preview for you to review:",
+          message: `Perfect! I've prepared an estimate preview for you using ${userContext.contractorName}'s details. Please review it:`,
           context: { 
-            ...context,
+            ...userContext,
             clientName,
             address
           },
