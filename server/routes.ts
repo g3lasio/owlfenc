@@ -283,6 +283,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(updatedUser);
     } catch (error) {
       console.error('Error updating profile:', error);
+      console.log('Profile data attempted to save:', req.body);
       res.status(500).json({ message: 'Error al actualizar el perfil' });
     }
   });

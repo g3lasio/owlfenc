@@ -47,6 +47,7 @@ export async function generateContract(projectDetails: any): Promise<string> {
 
 export async function processChatMessage(message: string, context: any): Promise<any> {
   try {
+    console.log('Chat context being used:', context);
     const response = await apiRequest("POST", "/api/chat", {
       message,
       context,
