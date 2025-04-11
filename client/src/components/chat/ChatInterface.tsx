@@ -34,14 +34,14 @@ export default function ChatInterface() {
     setMessages([
       {
         id: "welcome",
-        content: "👋 Welcome to FenceQuote Pro! I'll help you create a professional estimate for your fencing project. Let's get started with some basic information.",
+        content: "👋 ¡Bienvenido a FenceQuote Pro! Te ayudaré a crear un presupuesto profesional para tu proyecto de cerca.",
         sender: "bot"
       },
       {
         id: "fence-type",
-        content: "What type of fence are you looking to install?",
+        content: "¿Qué tipo de cerca te gustaría instalar?",
         sender: "bot",
-        options: ["Wood Fence", "Vinyl Fence", "Chain Link", "Other"]
+        options: ["Wood Fence", "Vinyl Fence", "Chain Link"]
       }
     ]);
   }, []);

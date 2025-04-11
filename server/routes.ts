@@ -127,11 +127,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                           lowercaseMessage.includes("vinyl fence") ? "Vinyl Fence" : "Chain Link";
         
         response = {
-          message: `Great choice! What is the approximate length of the ${fenceType.toLowerCase()} in feet?`,
+          message: `Excelente elección. Para el ${fenceType}, las alturas estándar son: 3, 4, 6 u 8 pies. ¿Qué altura necesitas?`,
           context: { 
             ...context,
             fenceType
-          }
+          },
+          options: ["3 pies", "4 pies", "6 pies", "8 pies"]
         };
       } else if (/\d+\s*(?:feet|foot|ft)/.test(lowercaseMessage) || /^\d+$/.test(lowercaseMessage.trim())) {
         // User provided a length
