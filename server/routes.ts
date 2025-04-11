@@ -151,26 +151,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
           context: { ...context, clientAddress: message }
         };
       } else if (!userContext.fenceType && (
-          lowercaseMessage.includes("wood fence") || 
-          lowercaseMessage.includes("vinyl fence") || 
-          lowercaseMessage.includes("chain link"))) {
+          lowercaseMessage.includes("fence") || 
+          lowercaseMessage.includes("cerca"))) {
+        
+        // Detectar tipo de cerca mencionado
+        const fenceType = Object.values(fenceTypes).find(type => 
+          lowercaseMessage.includes(type.name.toLowerCase())
+        );
 
-        const fenceType = lowercaseMessage.includes("wood fence") ? "Wood Fence" : 
-                          lowercaseMessage.includes("vinyl fence") ? "Vinyl Fence" : "Chain Link";
-
-        // Si es Wood Fence, usar las reglas de woodfencerules.js
-        if (fenceType === "Wood Fence") {
-          const heightOptions = Object.keys(config.fenceRules.heightFactors);
+        if (fenceType) {
+          const rules = getFenceRules(fenceType.name);
+          const questions = getFenceQuestions(fenceType.name);
+          
           response = {
-            message: `¡Chido! Para cercas de madera tenemos estas alturas disponibles: ${heightOptions.join(", ")} pies. ¿Cuál te late más?`,
-            context: { ...context, fenceType },
-            options: heightOptions.map(h => `${h} pies`)
+            message: `¡Excelente elección! ${fenceType.description}. ${questions[0]}`,
+            context: { 
+              ...context, 
+              fenceType: fenceType.name,
+              currentQuestion: 0,
+              questions
+            },
+            options: Object.keys(rules.heightFactors).map(h => `${h} pies`)
           };
         } else {
+          // Si no se especificó tipo, mostrar opciones
           response = {
-            message: `Excelente elección. Para el ${fenceType}, ¿qué altura necesitas?`,
-            context: { ...context, fenceType },
-            options: ["4 pies", "6 pies", "8 pies"]
+            message: "¿Qué tipo de cerca te gustaría instalar? Tenemos estas opciones disponibles:",
+            context: { ...context },
+            options: Object.values(fenceTypes).map(type => type.name)
           };
         }
       } else if (/\d+\s*(?:feet|foot|ft)/.test(lowercaseMessage) || /^\d+$/.test(lowercaseMessage.trim())) {
