@@ -17,51 +17,74 @@ export default function Sidebar() {
       </div>
       
       {/* Sidebar Nav */}
-      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-        <Link 
-          href="/" 
-          className={`flex items-center p-2 rounded-md ${
-            location === "/" 
-              ? "bg-primary bg-opacity-20 text-primary" 
-              : "hover:bg-accent"
-          }`}
-        >
-          <i className="ri-chat-1-line mr-3"></i>
-          <span>New Estimate</span>
-        </Link>
-        <Link 
-          href="/history" 
-          className={`flex items-center p-2 rounded-md ${
-            location === "/history" 
-              ? "bg-primary bg-opacity-20 text-primary" 
-              : "hover:bg-accent"
-          }`}
-        >
-          <i className="ri-history-line mr-3"></i>
-          <span>History</span>
-        </Link>
-        <Link 
-          href="/templates" 
-          className={`flex items-center p-2 rounded-md ${
-            location === "/templates" 
-              ? "bg-primary bg-opacity-20 text-primary" 
-              : "hover:bg-accent"
-          }`}
-        >
-          <i className="ri-template-line mr-3"></i>
-          <span>Templates</span>
-        </Link>
-        <Link 
-          href="/settings" 
-          className={`flex items-center p-2 rounded-md ${
-            location === "/settings" 
-              ? "bg-primary bg-opacity-20 text-primary" 
-              : "hover:bg-accent"
-          }`}
-        >
-          <i className="ri-settings-3-line mr-3"></i>
-          <span>Settings</span>
-        </Link>
+      <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
+        {/* Principal */}
+        <div className="space-y-1">
+          <div className="px-2 text-sm font-medium text-muted-foreground mb-2">Principal</div>
+          <Link href="/" className={`flex items-center p-2 rounded-md ${location === "/" ? "bg-primary bg-opacity-20 text-primary" : "hover:bg-accent"}`}>
+            <i className="ri-dashboard-line mr-3"></i>
+            <span>Dashboard</span>
+          </Link>
+        </div>
+
+        {/* Proyectos */}
+        <div className="space-y-1">
+          <div className="px-2 text-sm font-medium text-muted-foreground mb-2">Proyectos</div>
+          <Link href="/new-estimate" className={`flex items-center p-2 rounded-md ${location === "/new-estimate" ? "bg-primary bg-opacity-20 text-primary" : "hover:bg-accent"}`}>
+            <i className="ri-file-add-line mr-3"></i>
+            <span>Nuevo Estimado</span>
+          </Link>
+          <Link href="/new-contract" className={`flex items-center p-2 rounded-md ${location === "/new-contract" ? "bg-primary bg-opacity-20 text-primary" : "hover:bg-accent"}`}>
+            <i className="ri-file-text-line mr-3"></i>
+            <span>Nuevo Contrato</span>
+          </Link>
+          <Link href="/projects" className={`flex items-center p-2 rounded-md ${location === "/projects" ? "bg-primary bg-opacity-20 text-primary" : "hover:bg-accent"}`}>
+            <i className="ri-calendar-todo-line mr-3"></i>
+            <span>Proyectos Activos</span>
+          </Link>
+          <Link href="/history" className={`flex items-center p-2 rounded-md ${location === "/history" ? "bg-primary bg-opacity-20 text-primary" : "hover:bg-accent"}`}>
+            <i className="ri-history-line mr-3"></i>
+            <span>Historial</span>
+          </Link>
+        </div>
+
+        {/* Catálogo */}
+        <div className="space-y-1">
+          <div className="px-2 text-sm font-medium text-muted-foreground mb-2">Catálogo</div>
+          <Link href="/category/wood" className={`flex items-center p-2 rounded-md ${location === "/category/wood" ? "bg-primary bg-opacity-20 text-primary" : "hover:bg-accent"}`}>
+            <i className="ri-wood-line mr-3"></i>
+            <span>Cercas de Madera</span>
+          </Link>
+          <Link href="/category/metal" className={`flex items-center p-2 rounded-md ${location === "/category/metal" ? "bg-primary bg-opacity-20 text-primary" : "hover:bg-accent"}`}>
+            <i className="ri-copper-diamond-line mr-3"></i>
+            <span>Cercas Metálicas</span>
+          </Link>
+          <Link href="/category/vinyl" className={`flex items-center p-2 rounded-md ${location === "/category/vinyl" ? "bg-primary bg-opacity-20 text-primary" : "hover:bg-accent"}`}>
+            <i className="ri-layout-line mr-3"></i>
+            <span>Cercas de Vinilo</span>
+          </Link>
+          <Link href="/category/chain" className={`flex items-center p-2 rounded-md ${location === "/category/chain" ? "bg-primary bg-opacity-20 text-primary" : "hover:bg-accent"}`}>
+            <i className="ri-links-line mr-3"></i>
+            <span>Cercas Chain Link</span>
+          </Link>
+        </div>
+
+        {/* Configuración */}
+        <div className="space-y-1">
+          <div className="px-2 text-sm font-medium text-muted-foreground mb-2">Configuración</div>
+          <Link href="/settings/profile" className={`flex items-center p-2 rounded-md ${location === "/settings/profile" ? "bg-primary bg-opacity-20 text-primary" : "hover:bg-accent"}`}>
+            <i className="ri-user-settings-line mr-3"></i>
+            <span>Perfil de Empresa</span>
+          </Link>
+          <Link href="/settings/pricing" className={`flex items-center p-2 rounded-md ${location === "/settings/pricing" ? "bg-primary bg-opacity-20 text-primary" : "hover:bg-accent"}`}>
+            <i className="ri-money-dollar-circle-line mr-3"></i>
+            <span>Precios y Tarifas</span>
+          </Link>
+          <Link href="/templates" className={`flex items-center p-2 rounded-md ${location === "/templates" ? "bg-primary bg-opacity-20 text-primary" : "hover:bg-accent"}`}>
+            <i className="ri-file-list-3-line mr-3"></i>
+            <span>Plantillas</span>
+          </Link>
+        </div>
       </nav>
       
       {/* Sidebar Footer */}
