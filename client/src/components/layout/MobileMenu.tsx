@@ -62,8 +62,8 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
         <div className="flex justify-between items-center p-4 border-b border-border">
           <div className="flex items-center">
             <img 
-              src="/White logo - no background.png" 
-              alt="Owl Fenc Logo" 
+              src="/attached_assets/White logo - no background.png" 
+              alt="Owl Fenc" 
               className="h-12 w-auto max-w-[180px] object-contain" 
             />
           </div>

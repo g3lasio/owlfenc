@@ -42,8 +42,8 @@ export default function Header({ toggleMobileMenu, isMobileMenuOpen }: HeaderPro
         </button>
         
         <img 
-          src="/White logo - no background.png" 
-          alt="Owl Fenc Logo" 
+          src="/attached_assets/White logo - no background.png" 
+          alt="Owl Fenc" 
           className="h-10 w-auto object-contain" 
         />
       </div>
