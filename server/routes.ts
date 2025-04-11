@@ -412,14 +412,24 @@ app.get('/api/profile', async (req: Request, res: Response) => {
     res.json({
       companyName: user.company,
       ownerName: user.ownerName,
+      role: user.role,
       email: user.email,
       phone: user.phone,
+      mobilePhone: user.mobilePhone,
       address: user.address,
+      city: user.city,
+      state: user.state,
+      zipCode: user.zipCode,
       license: user.license,
+      insurancePolicy: user.insurancePolicy,
       ein: user.ein,
       businessType: user.businessType,
+      yearEstablished: user.yearEstablished,
       website: user.website,
       description: user.description,
+      specialties: user.specialties || [],
+      socialMedia: user.socialMedia || {},
+      documents: user.documents || {},
       logo: user.logo
     });
   } catch (error) {
@@ -440,14 +450,24 @@ app.post('/api/profile', async (req: Request, res: Response) => {
     const updatedUser = await storage.updateUser(userId, {
       company: req.body.companyName,
       ownerName: req.body.ownerName,
+      role: req.body.role,
       email: req.body.email,
       phone: req.body.phone,
+      mobilePhone: req.body.mobilePhone,
       address: req.body.address,
+      city: req.body.city,
+      state: req.body.state,
+      zipCode: req.body.zipCode,
       license: req.body.license,
+      insurancePolicy: req.body.insurancePolicy,
       ein: req.body.ein,
       businessType: req.body.businessType,
+      yearEstablished: req.body.yearEstablished,
       website: req.body.website,
       description: req.body.description,
+      specialties: req.body.specialties,
+      socialMedia: req.body.socialMedia,
+      documents: req.body.documents,
       logo: req.body.logo
     });
     

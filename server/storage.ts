@@ -282,10 +282,30 @@ export class MemStorage implements IStorage {
       username: "john_contractor",
       password: "password123", // In a real app, this would be hashed
       company: "Acme Fencing",
+      ownerName: "John Smith",
+      role: "Propietario",
       email: "john@acmefencing.com",
       phone: "(503) 555-1234",
-      address: "123 Main St, Portland, OR 97204",
+      mobilePhone: "(503) 555-5678",
+      address: "123 Main St",
+      city: "Portland",
+      state: "OR",
+      zipCode: "97204",
       license: "CCB #123456",
+      insurancePolicy: "INS-9876543",
+      ein: "12-3456789",
+      businessType: "LLC",
+      yearEstablished: "2010",
+      website: "https://www.acmefencing.com",
+      description: "Especialistas en instalación de cercas residenciales y comerciales con más de 10 años de experiencia en el mercado.",
+      specialties: ["Cercas de madera", "Cercas de vinilo", "Cercas de hierro", "Cercas de privacidad"],
+      socialMedia: {
+        facebook: "https://facebook.com/acmefencing",
+        instagram: "https://instagram.com/acmefencing",
+        linkedin: "https://linkedin.com/company/acmefencing"
+      },
+      documents: {},
+      logo: "",
       createdAt: new Date()
     };
     this.users.set(user.id, user);
