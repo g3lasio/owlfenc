@@ -30,7 +30,14 @@ function getHeightFactor(height) {
  *    postType: string ("4x4", "6x6", "metalBlack", o "auto" para 4x4 por defecto)
  * @returns {object} Detalle completo del cálculo.
  */
+function validateInput(linearFeet, height, state) {
+  if (!linearFeet || linearFeet <= 0) throw new Error("La longitud debe ser mayor a 0");
+  if (!height || ![3,4,6,8].includes(height)) throw new Error("Altura inválida. Use 3, 4, 6 u 8 pies");
+  if (!state || !config.laborCostDatabase[state]) throw new Error("Estado inválido o no encontrado");
+}
+
 function calculateWoodFenceCost(linearFeet, height, state, options = {}) {
+  validateInput(linearFeet, height, state);
   const {
     demolition = false,
     painting = false,

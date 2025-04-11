@@ -219,15 +219,19 @@
         <table class="totals-table">
           <tr>
             <td class="label">Subtotal:</td>
-            <td class="right">{{subtotal}}</td>
+            <td class="right">${{subtotal}}</td>
           </tr>
           <tr>
             <td class="label">Descuento:</td>
-            <td class="right">{{discount}}</td>
+            <td class="right">${{discount}}</td>
           </tr>
           <tr>
             <td class="label">Total:</td>
-            <td class="right">{{total}}</td>
+            <td class="right">${{total}}</td>
+          </tr>
+          <tr>
+            <td class="label">Fecha de Vencimiento:</td>
+            <td class="right">{{validUntil}}</td>
           </tr>
         </table>
       </div>
