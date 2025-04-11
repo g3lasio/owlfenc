@@ -15,21 +15,16 @@ export class ChatService {
     this.openai = new OpenAI({ apiKey });
   }
 
-  private getFenceTypeOptions() {
-    return Object.keys(this.fenceTypes).map(type => ({
-      text: this.fenceTypes[type].name,
-      clickable: true
-    }));
-  }
+  private lastUserContext: any = null;
 
-  private getHeightOptions() {
-    return ["3 feet", "4 feet", "6 feet", "8 feet"].map(height => ({
-      text: height,
-      clickable: true
-    }));
+  private contextHasChanged(newContext: any): boolean {
+    return JSON.stringify(this.lastUserContext) !== JSON.stringify(newContext);
   }
 
   async processMessage(message: string, context: any = {}) {
+    // Update context tracking
+    const contextChanged = this.contextHasChanged(context);
+    this.lastUserContext = {...context};
     try {
       const conversationState = this.determineConversationState(context);
       let options = [];
@@ -75,16 +70,20 @@ export class ChatService {
         options = this.getHeightOptions();
       }
 
-      const systemPrompt = `Eres Mervin, un asistente mexicano carismático y experto en cercas para ${context.contractorName || 'Owl Fence'}. 
-      Si es el primer mensaje (isInitialMessage = true), preséntate como Mervin y da la bienvenida al usuario de manera amigable y mexicana.
-      De lo contrario, sigue este flujo exacto de preguntas:
-      1. Pide el nombre del cliente
-      2. Pregunta el tipo de cerca (wood, chain link, vinyl)
-      3. Pregunta la altura (3, 4, 6, 8 pies)
-      4. Pregunta los pies lineales
-      5. Pregunta si necesita demolición
-      6. Pregunta si quiere pintura
-      7. Pregunta si quiere puertas
+      const systemPrompt = `Eres Mervin, asistente de ${context.contractorName || 'Owl Fence'}. 
+      - Sé breve y directo
+      - Haz UNA sola pregunta a la vez
+      - Respuestas cortas y amigables
+      - Si el contexto del usuario cambió, utilízalo inmediatamente
+      
+      Flujo de preguntas:
+      1. Nombre del cliente
+      2. Tipo de cerca
+      3. Altura
+      4. Pies lineales
+      5. ¿Demolición?
+      6. ¿Pintura?
+      7. ¿Puertas?
       
       Usa las reglas de ${JSON.stringify(woodRules)} para los cálculos.`;
 
