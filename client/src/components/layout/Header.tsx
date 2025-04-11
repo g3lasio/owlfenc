@@ -41,7 +41,11 @@ export default function Header({ toggleMobileMenu, isMobileMenuOpen }: HeaderPro
           <i className="ri-menu-line text-xl"></i>
         </button>
         
-        <img src="/White logo - no background.png" alt="Owl Fenc Logo" className="h-8 max-w-[200px] object-contain" />
+        <img 
+          src="/White logo - no background.png" 
+          alt="Owl Fenc Logo" 
+          className="h-10 w-auto object-contain" 
+        />
       </div>
       
       <div className="ml-auto flex items-center space-x-4">

@@ -64,7 +64,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             <img 
               src="/White logo - no background.png" 
               alt="Owl Fenc Logo" 
-              className="h-10 w-auto object-contain" 
+              className="h-12 w-auto max-w-[180px] object-contain" 
             />
           </div>
           <button 
