@@ -43,11 +43,13 @@ export default function Header({
       </button>
 
       <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center justify-center">
-        <img
-          src="https://i.postimg.cc/4yc9M62C/White-logo-no-background.png"
-          alt="Owl Fenc"
-          className="h-14 w-auto object-contain"
-        />
+        <Link href="/" className="cursor-pointer">
+          <img
+            src="https://i.postimg.cc/4yc9M62C/White-logo-no-background.png"
+            alt="Owl Fenc"
+            className="h-14 w-auto object-contain"
+          />
+        </Link>
       </div>
 
       <div className="flex items-center space-x-4">
