@@ -12,10 +12,9 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   const menuPanelRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
+    if (location) {
       onClose();
-    }, 150);
-    return () => clearTimeout(timeoutId);
+    }
   }, [location, onClose]);
   
   useEffect(() => {
