@@ -204,86 +204,86 @@ export default function Profile() {
     <div className="flex-1 p-4 md:p-6 space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Perfil de la Compañía</h1>
-          <p className="text-muted-foreground">Administra la información de tu empresa de cercas</p>
+          <h1 className="text-2xl font-bold">Company Profile</h1>
+          <p className="text-muted-foreground">Manage your fencing company information</p>
         </div>
         <Button onClick={handleSave} disabled={loading} size="lg">
-          {loading ? "Guardando..." : "Guardar Cambios"}
+          {loading ? "Saving..." : "Save Changes"}
         </Button>
       </div>
       
       <Tabs defaultValue="info" className="space-y-6">
         <TabsList className="w-full border-b flex flex-wrap justify-start md:justify-center p-0 h-auto">
-          <TabsTrigger value="info" className="flex-grow md:flex-grow-0">Información General</TabsTrigger>
-          <TabsTrigger value="legal" className="flex-grow md:flex-grow-0">Documentación</TabsTrigger>
-          <TabsTrigger value="specialties" className="flex-grow md:flex-grow-0">Especialidades</TabsTrigger>
-          <TabsTrigger value="profile" className="flex-grow md:flex-grow-0">Perfil del Usuario</TabsTrigger>
+          <TabsTrigger value="info" className="flex-grow md:flex-grow-0">General Information</TabsTrigger>
+          <TabsTrigger value="legal" className="flex-grow md:flex-grow-0">Documentation</TabsTrigger>
+          <TabsTrigger value="specialties" className="flex-grow md:flex-grow-0">Specialties</TabsTrigger>
+          <TabsTrigger value="profile" className="flex-grow md:flex-grow-0">User Profile</TabsTrigger>
         </TabsList>
 
-        {/* PESTAÑA INFORMACIÓN GENERAL */}
+        {/* GENERAL INFORMATION TAB */}
         <TabsContent value="info" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Información General y Contacto</CardTitle>
+              <CardTitle>General Information and Contact</CardTitle>
               <CardDescription>
-                Datos principales de tu empresa para estimaciones y contratos.
+                Main details about your company for estimates and contracts.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Información básica de la empresa */}
+              {/* Company basic information */}
               <div>
-                <h3 className="text-lg font-medium mb-4">Datos de la Empresa</h3>
+                <h3 className="text-lg font-medium mb-4">Company Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="companyName">Nombre de la Empresa</Label>
+                    <Label htmlFor="companyName">Company Name</Label>
                     <Input
                       id="companyName"
                       name="companyName"
                       value={companyInfo.companyName}
                       onChange={handleChange}
-                      placeholder="Tu Empresa S.A. de C.V."
+                      placeholder="Your Company Inc."
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="businessType">Tipo de Negocio</Label>
+                    <Label htmlFor="businessType">Business Type</Label>
                     <Select 
                       value={companyInfo.businessType}
                       onValueChange={(value) => handleSelectChange("businessType", value)}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecciona el tipo de negocio" />
+                        <SelectValue placeholder="Select business type" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="LLC">LLC</SelectItem>
-                        <SelectItem value="Sole Proprietorship">Propietario único</SelectItem>
-                        <SelectItem value="Corporation">Corporación</SelectItem>
-                        <SelectItem value="Partnership">Sociedad</SelectItem>
+                        <SelectItem value="Sole Proprietorship">Sole Proprietorship</SelectItem>
+                        <SelectItem value="Corporation">Corporation</SelectItem>
+                        <SelectItem value="Partnership">Partnership</SelectItem>
                         <SelectItem value="S-Corporation">S-Corporation</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="ownerName">Nombre del Propietario</Label>
+                    <Label htmlFor="ownerName">Owner Name</Label>
                     <Input
                       id="ownerName"
                       name="ownerName"
                       value={companyInfo.ownerName}
                       onChange={handleChange}
-                      placeholder="Juan Pérez"
+                      placeholder="John Smith"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="role">Rol en la Empresa</Label>
+                    <Label htmlFor="role">Role in Company</Label>
                     <Input
                       id="role"
                       name="role"
                       value={companyInfo.role}
                       onChange={handleChange}
-                      placeholder="Propietario, Gerente, etc."
+                      placeholder="Owner, Manager, etc."
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="yearEstablished">Año de Establecimiento</Label>
+                    <Label htmlFor="yearEstablished">Year Established</Label>
                     <Input
                       id="yearEstablished"
                       name="yearEstablished"
@@ -293,33 +293,33 @@ export default function Profile() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="website">Sitio Web</Label>
+                    <Label htmlFor="website">Website</Label>
                     <Input
                       id="website"
                       name="website"
                       type="url"
                       value={companyInfo.website}
                       onChange={handleChange}
-                      placeholder="https://www.tuempresa.com"
+                      placeholder="https://www.yourcompany.com"
                     />
                   </div>
                 </div>
                 <div className="space-y-2 mt-4">
-                  <Label htmlFor="description">Descripción de la Empresa</Label>
+                  <Label htmlFor="description">Company Description</Label>
                   <Textarea
                     id="description"
                     name="description"
                     value={companyInfo.description}
                     onChange={handleChange}
-                    placeholder="Describe tu empresa y servicios principales..."
+                    placeholder="Describe your company and main services..."
                     rows={4}
                   />
                 </div>
               </div>
 
-              {/* Sección de Logo */}
+              {/* Logo Section */}
               <div className="border-t pt-4">
-                <h3 className="text-lg font-medium mb-4">Logo de la Empresa</h3>
+                <h3 className="text-lg font-medium mb-4">Company Logo</h3>
                 <div className="flex flex-col md:flex-row items-center gap-6">
                   <div className="w-40 h-40 border rounded-lg flex items-center justify-center bg-muted overflow-hidden">
                     {companyInfo.logo ? (
@@ -327,13 +327,13 @@ export default function Profile() {
                     ) : (
                       <div className="flex flex-col items-center justify-center text-muted-foreground">
                         <Globe className="w-12 h-12 mb-2" />
-                        <span>Sin logo</span>
+                        <span>No logo</span>
                       </div>
                     )}
                   </div>
                   <div className="space-y-3">
                     <p className="text-sm text-muted-foreground">
-                      Tu logo aparecerá en tus estimaciones, contratos y comunicaciones con clientes.
+                      Your logo will appear on your estimates, contracts, and client communications.
                     </p>
                     <div>
                       <input
@@ -349,33 +349,33 @@ export default function Profile() {
                         className="flex items-center gap-2"
                       >
                         <Upload className="w-4 h-4" />
-                        Subir Logo
+                        Upload Logo
                       </Button>
                       <p className="text-xs text-muted-foreground mt-2">
-                        Formatos permitidos: PNG, JPG. Tamaño máximo: 2MB
+                        Allowed formats: PNG, JPG. Maximum size: 2MB
                       </p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Información de contacto */}
+              {/* Contact Information */}
               <div className="border-t pt-4">
-                <h3 className="text-lg font-medium mb-4">Información de Contacto</h3>
+                <h3 className="text-lg font-medium mb-4">Contact Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="email">Correo Electrónico</Label>
+                    <Label htmlFor="email">Email Address</Label>
                     <Input
                       id="email"
                       name="email"
                       type="email"
                       value={companyInfo.email}
                       onChange={handleChange}
-                      placeholder="contacto@tuempresa.com"
+                      placeholder="contact@yourcompany.com"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Teléfono de Oficina</Label>
+                    <Label htmlFor="phone">Office Phone</Label>
                     <Input
                       id="phone"
                       name="phone"
@@ -386,7 +386,7 @@ export default function Profile() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="mobilePhone">Teléfono Móvil</Label>
+                    <Label htmlFor="mobilePhone">Mobile Phone</Label>
                     <Input
                       id="mobilePhone"
                       name="mobilePhone"
@@ -400,17 +400,17 @@ export default function Profile() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
                   <div className="space-y-2">
-                    <Label htmlFor="address">Dirección</Label>
+                    <Label htmlFor="address">Address</Label>
                     <Input
                       id="address"
                       name="address"
                       value={companyInfo.address}
                       onChange={handleChange}
-                      placeholder="Calle Principal #123"
+                      placeholder="123 Main Street"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="city">Ciudad</Label>
+                    <Label htmlFor="city">City</Label>
                     <Input
                       id="city"
                       name="city"
@@ -420,7 +420,7 @@ export default function Profile() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="state">Estado</Label>
+                    <Label htmlFor="state">State</Label>
                     <Input
                       id="state"
                       name="state"
@@ -430,7 +430,7 @@ export default function Profile() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="zipCode">Código Postal</Label>
+                    <Label htmlFor="zipCode">Zip Code</Label>
                     <Input
                       id="zipCode"
                       name="zipCode"
@@ -442,7 +442,7 @@ export default function Profile() {
                 </div>
 
                 <div className="mt-4 pt-4">
-                  <h3 className="text-lg font-medium mb-4">Redes Sociales</h3>
+                  <h3 className="text-lg font-medium mb-4">Social Media</h3>
                   <div className="grid grid-cols-1 gap-4">
                     <div className="flex items-center gap-3">
                       <Facebook className="w-5 h-5 text-blue-600" />
@@ -450,7 +450,7 @@ export default function Profile() {
                         name="facebook"
                         value={companyInfo.socialMedia.facebook || ""}
                         onChange={(e) => handleSocialMediaChange("facebook", e.target.value)}
-                        placeholder="https://facebook.com/tuempresa"
+                        placeholder="https://facebook.com/yourcompany"
                       />
                     </div>
                     <div className="flex items-center gap-3">
@@ -459,7 +459,7 @@ export default function Profile() {
                         name="instagram"
                         value={companyInfo.socialMedia.instagram || ""}
                         onChange={(e) => handleSocialMediaChange("instagram", e.target.value)}
-                        placeholder="https://instagram.com/tuempresa"
+                        placeholder="https://instagram.com/yourcompany"
                       />
                     </div>
                     <div className="flex items-center gap-3">
@@ -468,7 +468,7 @@ export default function Profile() {
                         name="linkedin"
                         value={companyInfo.socialMedia.linkedin || ""}
                         onChange={(e) => handleSocialMediaChange("linkedin", e.target.value)}
-                        placeholder="https://linkedin.com/company/tuempresa"
+                        placeholder="https://linkedin.com/company/yourcompany"
                       />
                     </div>
                   </div>
@@ -478,19 +478,19 @@ export default function Profile() {
           </Card>
         </TabsContent>
 
-        {/* PESTAÑA DOCUMENTACIÓN */}
+        {/* DOCUMENTATION TAB */}
         <TabsContent value="legal" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Documentación Legal</CardTitle>
+              <CardTitle>Legal Documentation</CardTitle>
               <CardDescription>
-                Información legal y documentos importantes de la empresa.
+                Legal information and important company documents.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="license">Número de Licencia</Label>
+                  <Label htmlFor="license">License Number</Label>
                   <Input
                     id="license"
                     name="license"
@@ -510,7 +510,7 @@ export default function Profile() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="insurancePolicy">Póliza de Seguro</Label>
+                  <Label htmlFor="insurancePolicy">Insurance Policy</Label>
                   <Input
                     id="insurancePolicy"
                     name="insurancePolicy"
@@ -522,7 +522,7 @@ export default function Profile() {
               </div>
 
               <div className="border-t pt-4 mt-4">
-                <h3 className="text-lg font-medium mb-4">Documentos de la Empresa</h3>
+                <h3 className="text-lg font-medium mb-4">Company Documents</h3>
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -536,16 +536,16 @@ export default function Profile() {
                 
                 <Accordion type="single" collapsible className="w-full">
                   <AccordionItem value="licenses">
-                    <AccordionTrigger>Licencias y Permisos</AccordionTrigger>
+                    <AccordionTrigger>Licenses and Permits</AccordionTrigger>
                     <AccordionContent>
                       <div className="grid gap-4">
                         <div className="border rounded-md p-4 flex justify-between items-center">
                           <div className="flex items-center gap-3">
                             <FileText className="text-blue-500" />
                             <div>
-                              <p className="font-medium">Licencia de Contratista</p>
+                              <p className="font-medium">Contractor License</p>
                               <p className="text-sm text-muted-foreground">
-                                {companyInfo.documents?.licenseDocument ? "Documento cargado" : "No hay documento"}
+                                {companyInfo.documents?.licenseDocument ? "Document uploaded" : "No document"}
                               </p>
                             </div>
                           </div>
@@ -558,7 +558,7 @@ export default function Profile() {
                             }}
                           >
                             <Upload className="w-4 h-4 mr-2" />
-                            Subir
+                            Upload
                           </Button>
                         </div>
                         
@@ -566,9 +566,9 @@ export default function Profile() {
                           <div className="flex items-center gap-3">
                             <FileText className="text-blue-500" />
                             <div>
-                              <p className="font-medium">Certificado de Seguro</p>
+                              <p className="font-medium">Insurance Certificate</p>
                               <p className="text-sm text-muted-foreground">
-                                {companyInfo.documents?.insuranceDocument ? "Documento cargado" : "No hay documento"}
+                                {companyInfo.documents?.insuranceDocument ? "Document uploaded" : "No document"}
                               </p>
                             </div>
                           </div>
@@ -581,7 +581,7 @@ export default function Profile() {
                             }}
                           >
                             <Upload className="w-4 h-4 mr-2" />
-                            Subir
+                            Upload
                           </Button>
                         </div>
                       </div>
@@ -589,16 +589,16 @@ export default function Profile() {
                   </AccordionItem>
                   
                   <AccordionItem value="contracts">
-                    <AccordionTrigger>Contratos y Acuerdos</AccordionTrigger>
+                    <AccordionTrigger>Contracts and Agreements</AccordionTrigger>
                     <AccordionContent>
                       <div className="grid gap-4">
                         <div className="border rounded-md p-4 flex justify-between items-center">
                           <div className="flex items-center gap-3">
                             <FileText className="text-green-500" />
                             <div>
-                              <p className="font-medium">Términos y Condiciones Estándar</p>
+                              <p className="font-medium">Standard Terms and Conditions</p>
                               <p className="text-sm text-muted-foreground">
-                                {companyInfo.documents?.termsDocument ? "Documento cargado" : "No hay documento"}
+                                {companyInfo.documents?.termsDocument ? "Document uploaded" : "No document"}
                               </p>
                             </div>
                           </div>
@@ -611,7 +611,7 @@ export default function Profile() {
                             }}
                           >
                             <Upload className="w-4 h-4 mr-2" />
-                            Subir
+                            Upload
                           </Button>
                         </div>
                         
@@ -619,9 +619,9 @@ export default function Profile() {
                           <div className="flex items-center gap-3">
                             <FileText className="text-green-500" />
                             <div>
-                              <p className="font-medium">Garantías</p>
+                              <p className="font-medium">Warranty Information</p>
                               <p className="text-sm text-muted-foreground">
-                                {companyInfo.documents?.warrantyDocument ? "Documento cargado" : "No hay documento"}
+                                {companyInfo.documents?.warrantyDocument ? "Document uploaded" : "No document"}
                               </p>
                             </div>
                           </div>
@@ -634,7 +634,7 @@ export default function Profile() {
                             }}
                           >
                             <Upload className="w-4 h-4 mr-2" />
-                            Subir
+                            Upload
                           </Button>
                         </div>
                       </div>
@@ -642,16 +642,16 @@ export default function Profile() {
                   </AccordionItem>
                   
                   <AccordionItem value="other">
-                    <AccordionTrigger>Otros Documentos</AccordionTrigger>
+                    <AccordionTrigger>Other Documents</AccordionTrigger>
                     <AccordionContent>
                       <div className="grid gap-4">
                         <div className="border rounded-md p-4 flex justify-between items-center">
                           <div className="flex items-center gap-3">
                             <FileText className="text-purple-500" />
                             <div>
-                              <p className="font-medium">Catálogo de Productos</p>
+                              <p className="font-medium">Product Catalog</p>
                               <p className="text-sm text-muted-foreground">
-                                {companyInfo.documents?.catalogDocument ? "Documento cargado" : "No hay documento"}
+                                {companyInfo.documents?.catalogDocument ? "Document uploaded" : "No document"}
                               </p>
                             </div>
                           </div>
@@ -664,7 +664,7 @@ export default function Profile() {
                             }}
                           >
                             <Upload className="w-4 h-4 mr-2" />
-                            Subir
+                            Upload
                           </Button>
                         </div>
                         
@@ -672,9 +672,9 @@ export default function Profile() {
                           <div className="flex items-center gap-3">
                             <FileText className="text-purple-500" />
                             <div>
-                              <p className="font-medium">Folleto de Empresa</p>
+                              <p className="font-medium">Company Brochure</p>
                               <p className="text-sm text-muted-foreground">
-                                {companyInfo.documents?.brochureDocument ? "Documento cargado" : "No hay documento"}
+                                {companyInfo.documents?.brochureDocument ? "Document uploaded" : "No document"}
                               </p>
                             </div>
                           </div>
@@ -687,7 +687,7 @@ export default function Profile() {
                             }}
                           >
                             <Upload className="w-4 h-4 mr-2" />
-                            Subir
+                            Upload
                           </Button>
                         </div>
                       </div>
@@ -699,13 +699,13 @@ export default function Profile() {
           </Card>
         </TabsContent>
 
-        {/* PESTAÑA ESPECIALIDADES */}
+        {/* SPECIALTIES TAB */}
         <TabsContent value="specialties" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Especialidades y Servicios</CardTitle>
+              <CardTitle>Specialties and Services</CardTitle>
               <CardDescription>
-                Indica los tipos de cercas y servicios que ofreces.
+                Indicate the types of fences and services you offer.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -723,7 +723,7 @@ export default function Profile() {
                   </Badge>
                 ))}
                 {companyInfo.specialties.length === 0 && (
-                  <p className="text-muted-foreground text-sm">No hay especialidades añadidas.</p>
+                  <p className="text-muted-foreground text-sm">No specialties added.</p>
                 )}
               </div>
               
@@ -731,7 +731,7 @@ export default function Profile() {
                 <Input
                   value={newSpecialty}
                   onChange={(e) => setNewSpecialty(e.target.value)}
-                  placeholder="Ej: Cercas de Madera, Instalación de Puertas, etc."
+                  placeholder="Ex: Wood Fences, Gate Installation, etc."
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
