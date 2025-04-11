@@ -1,4 +1,3 @@
-
 import { useLocation } from "wouter";
 
 interface HeaderProps {
@@ -6,17 +5,20 @@ interface HeaderProps {
   isMobileMenuOpen: boolean;
 }
 
-export default function Header({ toggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
+export default function Header({
+  toggleMobileMenu,
+  isMobileMenuOpen,
+}: HeaderProps) {
   const [location] = useLocation();
-  
+
   const handleMenuToggle = () => {
-    console.log('Menu toggle clicked, current state:', isMobileMenuOpen);
+    console.log("Menu toggle clicked, current state:", isMobileMenuOpen);
     toggleMobileMenu();
   };
-  
+
   let title = "Dashboard";
   let subtitle = "Bienvenido";
-  
+
   if (location === "/new-estimate") {
     title = "Nuevo Estimado";
     subtitle = "Crear un nuevo estimado con IA";
@@ -27,10 +29,10 @@ export default function Header({ toggleMobileMenu, isMobileMenuOpen }: HeaderPro
     title = "Plantillas";
     subtitle = "Gestionar plantillas";
   }
-  
+
   return (
     <header className="h-16 flex items-center justify-between px-4 border-b border-border bg-card">
-      <button 
+      <button
         className="p-2 rounded-md hover:bg-accent transition-colors"
         onClick={handleMenuToggle}
         aria-label="Menu principal"
@@ -41,13 +43,13 @@ export default function Header({ toggleMobileMenu, isMobileMenuOpen }: HeaderPro
       </button>
 
       <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center justify-center">
-        <img 
-          src="/attached_assets/White logo - no background.png" 
-          alt="Owl Fenc" 
-          className="h-12 w-auto object-contain" 
+        <img
+          src="/attached_assets/White logo - no background.png"
+          alt=""
+          className="h-12 w-auto object-contain"
         />
       </div>
-      
+
       <div className="flex items-center space-x-4">
         <button className="relative p-2 rounded-md hover:bg-accent">
           <i className="ri-notification-3-line text-xl"></i>
