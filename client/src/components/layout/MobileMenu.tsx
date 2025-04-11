@@ -116,7 +116,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           {/* 4. Configuración y Sistema */}
           <div className="space-y-1">
             <div className="px-2 text-sm font-medium text-muted-foreground mb-2">Configuración</div>
-            <Link href="/settings/profile" className="flex items-center p-2 rounded-md hover:bg-accent">
+            <Link href="/profile" className="flex items-center p-2 rounded-md hover:bg-accent">
               <i className="ri-user-settings-line mr-3"></i>
               <span>Perfil de Empresa</span>
             </Link>

@@ -8,6 +8,7 @@ import Home from "@/pages/Home";
 import History from "@/pages/History";
 import Templates from "@/pages/Templates";
 import Settings from "@/pages/Settings";
+import Profile from "@/pages/Profile";
 
 function Router() {
   return (
@@ -16,6 +17,7 @@ function Router() {
       <Route path="/history" component={History} />
       <Route path="/templates" component={Templates} />
       <Route path="/settings" component={Settings} />
+      <Route path="/profile" component={Profile} />
       <Route component={NotFound} />
     </Switch>
   );
