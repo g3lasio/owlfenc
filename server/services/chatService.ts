@@ -45,7 +45,10 @@ export class ChatService {
             role: "system",
             content: "Eres un asistente para una empresa de construcción de cercas. Haz una pregunta a la vez y espera la respuesta antes de continuar. Usa las reglas y precios de woodfencerules.js para tus cálculos."
           },
-          ...context.messages || [],
+          ...((context.messages || []).map(m => ({
+            role: m.sender === "user" ? "user" : "assistant",
+            content: m.content
+          }))),
           {
             role: "user",
             content: message

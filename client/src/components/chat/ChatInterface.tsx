@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 export interface Message {
   id: string;
   content: string;
-  sender: "user" | "bot";
+  sender: "user" | "assistant";
   options?: string[];
   template?: {
     type: "estimate" | "contract";
@@ -28,103 +28,103 @@ export default function ChatInterface() {
   const [projectId, setProjectId] = useState<string>(`PRJ-${Date.now().toString().slice(-6)}`);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  
+
   // Initial bot message
   useEffect(() => {
     setMessages([
       {
         id: "welcome",
         content: "¡Qué onda primo! 👋 ¡Bienvenido a Owl Fence! Para armarte un presupuesto bien chingón, primero necesito algunos datos tuyos.",
-        sender: "bot"
+        sender: "assistant"
       },
       {
         id: "client-info",
         content: "¿Me puedes dar tu nombre completo?",
-        sender: "bot"
+        sender: "assistant"
       }
     ]);
   }, []);
-  
+
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [messages]);
-  
+
   const handleSendMessage = async (messageText: string, selectedOption?: string) => {
     if (isProcessing) return;
-    
+
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       content: selectedOption || messageText,
       sender: "user"
     };
-    
+
     setMessages(prev => [...prev, userMessage]);
     setIsProcessing(true);
-    
+
     // Add a typing indicator
     setMessages(prev => [
       ...prev,
-      { id: "typing", sender: "bot", content: "", isTyping: true }
+      { id: "typing", sender: "assistant", content: "", isTyping: true }
     ]);
-    
+
     try {
       // Process the message
       const response = await processChatMessage(
         selectedOption || messageText, 
         { ...context, messages: messages.map(m => ({ role: m.sender, content: m.content })) }
       );
-      
+
       // Remove typing indicator
       setMessages(prev => prev.filter(m => !m.isTyping));
-      
+
       // Update context
       setContext(prev => ({ ...prev, ...response.context }));
-      
+
       // Add AI response to messages
       if (response.message) {
         const botMessage: Message = {
           id: `bot-${Date.now()}`,
           content: response.message,
-          sender: "bot",
+          sender: "assistant",
           options: response.options || undefined
         };
-        
+
         setMessages(prev => [...prev, botMessage]);
       }
-      
+
       // If there's a template, add it to messages
       if (response.template) {
         const templateMessage: Message = {
           id: `template-${Date.now()}`,
           content: "Here's a preview of your document:",
-          sender: "bot",
+          sender: "assistant",
           template: {
             type: response.template.type,
             html: response.template.html
           }
         };
-        
+
         setMessages(prev => [...prev, templateMessage]);
       }
     } catch (error) {
       console.error("Error processing message:", error);
-      
+
       // Remove typing indicator
       setMessages(prev => prev.filter(m => !m.isTyping));
-      
+
       // Show error message
       setMessages(prev => [
         ...prev,
         {
           id: `error-${Date.now()}`,
           content: "Sorry, there was an error processing your message. Please try again.",
-          sender: "bot"
+          sender: "assistant"
         }
       ]);
-      
+
       toast({
         variant: "destructive",
         title: "Error",
@@ -134,11 +134,11 @@ export default function ChatInterface() {
       setIsProcessing(false);
     }
   };
-  
+
   const handleOptionClick = (option: string) => {
     handleSendMessage(option, option);
   };
-  
+
   const handleDownloadPDF = async (html: string, type: "estimate" | "contract") => {
     try {
       if (type === "estimate") {
@@ -146,7 +146,7 @@ export default function ChatInterface() {
       } else {
         await downloadContractPDF(html, projectId);
       }
-      
+
       toast({
         title: "Success",
         description: `Your ${type} has been downloaded as a PDF.`,
@@ -161,29 +161,29 @@ export default function ChatInterface() {
       });
     }
   };
-  
+
   const handleEditDetails = (templateType: "estimate" | "contract") => {
     setMessages(prev => [
       ...prev,
       {
         id: `edit-${Date.now()}`,
         content: `What details would you like to change in the ${templateType}?`,
-        sender: "bot"
+        sender: "assistant"
       }
     ]);
   };
-  
+
   const handleEmailClient = (templateType: "estimate" | "contract") => {
     setMessages(prev => [
       ...prev,
       {
         id: `email-${Date.now()}`,
         content: `To email this ${templateType} to your client, please confirm their email address:`,
-        sender: "bot"
+        sender: "assistant"
       }
     ]);
   };
-  
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Chat Messages */}
@@ -195,7 +195,7 @@ export default function ChatInterface() {
           if (message.isTyping) {
             return <TypingIndicator key={message.id} />;
           }
-          
+
           if (message.template) {
             return (
               <div key={message.id} className="chat-message bot-message">
@@ -233,7 +233,7 @@ export default function ChatInterface() {
               </div>
             );
           }
-          
+
           return (
             <ChatMessage
               key={message.id}
@@ -243,7 +243,7 @@ export default function ChatInterface() {
           );
         })}
       </div>
-      
+
       {/* Chat Input */}
       <ChatInput 
         onSendMessage={handleSendMessage} 
