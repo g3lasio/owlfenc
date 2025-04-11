@@ -752,38 +752,38 @@ export default function Profile() {
           </Card>
         </TabsContent>
 
-        {/* PESTAÑA PERFIL DE USUARIO */}
+        {/* USER PROFILE TAB */}
         <TabsContent value="profile" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Perfil del Usuario</CardTitle>
+              <CardTitle>User Profile</CardTitle>
               <CardDescription>
-                Información personal sobre el usuario y sus credenciales.
+                Personal information about the user and their credentials.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="username">Nombre de Usuario</Label>
+                  <Label htmlFor="username">Username</Label>
                   <Input
                     id="username"
                     name="username"
                     value="john_contractor"
                     disabled
-                    placeholder="Nombre de usuario"
+                    placeholder="Username"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="userEmail">Correo Electrónico Personal</Label>
+                  <Label htmlFor="userEmail">Personal Email</Label>
                   <Input
                     id="userEmail"
                     name="userEmail"
                     type="email"
-                    placeholder="usuario@gmail.com"
+                    placeholder="user@gmail.com"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="userPhone">Teléfono Personal</Label>
+                  <Label htmlFor="userPhone">Personal Phone</Label>
                   <Input
                     id="userPhone"
                     name="userPhone"
@@ -792,20 +792,20 @@ export default function Profile() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="userPosition">Cargo/Posición</Label>
+                  <Label htmlFor="userPosition">Position/Role</Label>
                   <Input
                     id="userPosition"
                     name="userPosition"
-                    placeholder="Director de Operaciones, Gerente, etc."
+                    placeholder="Operations Director, Manager, etc."
                   />
                 </div>
               </div>
               
               <div className="border-t pt-4 mt-4">
-                <h3 className="text-lg font-medium mb-4">Cambiar Contraseña</h3>
+                <h3 className="text-lg font-medium mb-4">Change Password</h3>
                 <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="currentPassword">Contraseña Actual</Label>
+                    <Label htmlFor="currentPassword">Current Password</Label>
                     <Input
                       id="currentPassword"
                       name="currentPassword"
@@ -814,7 +814,7 @@ export default function Profile() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="newPassword">Nueva Contraseña</Label>
+                    <Label htmlFor="newPassword">New Password</Label>
                     <Input
                       id="newPassword"
                       name="newPassword"
@@ -823,7 +823,7 @@ export default function Profile() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirmar Contraseña</Label>
+                    <Label htmlFor="confirmPassword">Confirm Password</Label>
                     <Input
                       id="confirmPassword"
                       name="confirmPassword"
@@ -831,7 +831,7 @@ export default function Profile() {
                       placeholder="••••••••"
                     />
                   </div>
-                  <Button className="w-full md:w-auto" variant="outline">Actualizar Contraseña</Button>
+                  <Button className="w-full md:w-auto" variant="outline">Update Password</Button>
                 </div>
               </div>
             </CardContent>
