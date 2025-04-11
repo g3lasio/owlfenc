@@ -25,9 +25,10 @@ export default function Header({ toggleMobileMenu }: HeaderProps) {
   return (
     <header className="h-16 flex items-center px-4 border-b border-border">
       <button 
-        className="md:hidden p-2 rounded-md hover:bg-accent transition-colors"
-        onClick={toggleMobileMenu}
+        className="md:hidden p-2 rounded-md hover:bg-accent transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
+        onClick={() => toggleMobileMenu()}
         aria-label="Toggle menu"
+        type="button"
       >
         <i className="ri-menu-line text-xl"></i>
       </button>

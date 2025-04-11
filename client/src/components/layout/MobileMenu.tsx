@@ -28,9 +28,10 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   
   return (
     <div 
-      className={`fixed inset-0 bg-background/80 backdrop-blur-sm z-50 md:hidden transition-opacity duration-300 ${
+      className={`fixed inset-0 bg-background/80 backdrop-blur-sm z-[100] md:hidden transition-all duration-300 ${
         isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
       }`}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div 
         ref={menuPanelRef}
