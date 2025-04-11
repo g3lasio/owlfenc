@@ -141,14 +141,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Generate HTML from template
-      const html = await generateEstimateHtml(
-        projectDetails.fenceType,
-        projectDetails.fenceLength,
-        projectDetails.fenceHeight,
-        projectDetails.gates || [],
-        projectDetails.clientName,
-        projectDetails.address
-      );
+      const html = await generateEstimateHtml({
+        fenceType: projectDetails.fenceType,
+        fenceLength: projectDetails.fenceLength,
+        fenceHeight: projectDetails.fenceHeight,
+        gates: projectDetails.gates || [],
+        clientName: projectDetails.clientName,
+        address: projectDetails.address,
+        context: projectDetails.context || {}
+      });
 
       res.json({ html });
     } catch (error) {
@@ -297,7 +298,7 @@ interface EstimateData {
   fenceType: string;
   fenceLength: number;
   fenceHeight: number;
-  gates: Array<{type: string; width: number; price: number}>;
+  gates: Array<{type: string; width: number; price: number; description?: string}>;
   clientName: string;
   address: string;
   context: Record<string, any>;
@@ -332,25 +333,24 @@ async function generateEstimateHtml({
   const woodRules = await import("../client/src/data/rules/woodfencerules.js");
   
   // 4. Calcular costos detallados
-  try {
-    const estimateDetails = woodRules.calculateWoodFenceCost(
-      fenceLength,
-      fenceHeight,
-      context.state || "California",
-      {
-        demolition: Boolean(context.demolition),
-        painting: Boolean(context.painting),
-        additionalLattice: Boolean(context.lattice),
-        postType: context.postType || "auto"
-      }
-    );
-
-    // 5. Validar resultados
-    if (!estimateDetails?.finalTotalCost) {
-      throw new Error('Invalid cost calculation results');
+  const estimateDetails = woodRules.calculateWoodFenceCost(
+    fenceLength,
+    fenceHeight,
+    context.state || "California",
+    {
+      demolition: Boolean(context.demolition),
+      painting: Boolean(context.painting),
+      additionalLattice: Boolean(context.lattice),
+      postType: context.postType || "auto"
     }
+  );
 
-    // 6. Preparar datos estructurados para la plantilla
+  // 5. Validar resultados
+  if (!estimateDetails?.finalTotalCost) {
+    throw new Error('Invalid cost calculation results');
+  }
+
+  // 6. Preparar datos estructurados para la plantilla
   const templateData = {
     metadata: {
       projectId: `EST-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`,
@@ -390,9 +390,16 @@ async function generateEstimateHtml({
     }
   };
 
-  try {
-    const user = await storage.getUser(userId);
-    let html = templateObj.html
+  // Calcular los valores para las variables que faltaban
+  const fencePrice = parseFloat(estimateDetails.finalTotalCost);
+  const materialsPrice = parseFloat(estimateDetails.totalMaterialsCost);
+  const subtotal = parseFloat(estimateDetails.baseTotalCost);
+  const taxRate = settings?.pricingSettings?.taxRate || 8.75;
+  const taxAmount = subtotal * taxRate / 100;
+  const total = fencePrice;
+
+  const user = await storage.getUser(userId);
+  let html = templateObj.html
     .replace(/{{projectId}}/g, templateData.metadata.projectId)
     .replace(/{{company}}/g, user?.company || 'Your Company Name')
     .replace(/{{address}}/g, user?.address || 'Your Address')
@@ -412,11 +419,6 @@ async function generateEstimateHtml({
     .replace(/{{taxAmount}}/g, taxAmount.toFixed(2))
     .replace(/{{total}}/g, total.toFixed(2))
     .replace(/{{completionTime}}/g, calculateCompletionTime(fenceLength));
-    return html;
-  } catch (error) {
-    console.error('Error generating HTML:', error);
-    throw error;
-  }
 
   // Handle gates
   let gatesHtml = '';
