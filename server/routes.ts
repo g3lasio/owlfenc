@@ -204,6 +204,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Profile routes
+  app.get('/api/user-profile', async (req: Request, res: Response) => {
+    try {
+      // En una app real, obtendríamos el userId de la sesión
+      const userId = 1;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: 'Usuario no encontrado' });
+      }
+
+      // Aseguramos que la respuesta sea JSON
+      res.setHeader('Content-Type', 'application/json');
+      
+      res.json({
+        companyName: user.company,
+        ownerName: user.ownerName,
+        role: user.role,
+        email: user.email,
+        phone: user.phone,
+        mobilePhone: user.mobilePhone,
+        address: user.address,
+        city: user.city,
+        state: user.state,
+        zipCode: user.zipCode,
+        license: user.license,
+        insurancePolicy: user.insurancePolicy,
+        ein: user.ein,
+        businessType: user.businessType,
+        yearEstablished: user.yearEstablished,
+        website: user.website,
+        description: user.description,
+        specialties: user.specialties || [],
+        socialMedia: user.socialMedia || {},
+        documents: user.documents || {},
+        logo: user.logo
+      });
+    } catch (error) {
+      console.error('Error getting profile:', error);
+      res.status(500).json({ message: 'Error al obtener el perfil' });
+    }
+  });
+
+  app.post('/api/user-profile', async (req: Request, res: Response) => {
+    try {
+      const userId = 1;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: 'Usuario no encontrado' });
+      }
+      
+      const updatedUser = await storage.updateUser(userId, {
+        company: req.body.companyName,
+        ownerName: req.body.ownerName,
+        role: req.body.role,
+        email: req.body.email,
+        phone: req.body.phone,
+        mobilePhone: req.body.mobilePhone,
+        address: req.body.address,
+        city: req.body.city,
+        state: req.body.state,
+        zipCode: req.body.zipCode,
+        license: req.body.license,
+        insurancePolicy: req.body.insurancePolicy,
+        ein: req.body.ein,
+        businessType: req.body.businessType,
+        yearEstablished: req.body.yearEstablished,
+        website: req.body.website,
+        description: req.body.description,
+        specialties: req.body.specialties,
+        socialMedia: req.body.socialMedia,
+        documents: req.body.documents,
+        logo: req.body.logo
+      });
+      
+      res.json(updatedUser);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      res.status(500).json({ message: 'Error al actualizar el perfil' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
