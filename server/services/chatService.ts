@@ -43,7 +43,7 @@ export class ChatService {
         options = this.getHeightOptions();
       }
 
-      const systemPrompt = `Eres un asistente mexicano carismático para una empresa de construcción de cercas. 
+      const systemPrompt = `Eres un asistente mexicano carismático para ${context.contractorName || 'una empresa de construcción de cercas'}. 
       Sigue este flujo exacto de preguntas:
       1. Pide el nombre del cliente
       2. Pregunta el tipo de cerca (wood, chain link, vinyl)
