@@ -412,6 +412,11 @@ async function generateEstimateHtml({
     .replace(/{{taxAmount}}/g, taxAmount.toFixed(2))
     .replace(/{{total}}/g, total.toFixed(2))
     .replace(/{{completionTime}}/g, calculateCompletionTime(fenceLength));
+    return html;
+  } catch (error) {
+    console.error('Error generating HTML:', error);
+    throw error;
+  }
 
   // Handle gates
   let gatesHtml = '';
