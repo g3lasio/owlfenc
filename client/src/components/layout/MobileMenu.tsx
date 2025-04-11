@@ -12,7 +12,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   const menuPanelRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
-    if (location) {
+    if (location && location !== '/') {
       console.log('Location changed, closing menu');
       onClose();
     }
@@ -20,6 +20,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
 
   useEffect(() => {
     console.log('Menu state changed:', isOpen);
+    document.body.style.overflow = isOpen ? 'hidden' : 'auto';
   }, [isOpen]);
   
   useEffect(() => {

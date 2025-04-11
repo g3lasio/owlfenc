@@ -11,12 +11,17 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(prevState => {
-      const newState = !prevState;
-      console.log('Menu state:', newState);
-      return newState;
-    });
+    setIsMobileMenuOpen(prevState => !prevState);
   };
+
+  useEffect(() => {
+    console.log('Menu state updated:', isMobileMenuOpen);
+    if (isMobileMenuOpen) {
+      document.body.classList.add('menu-open');
+    } else {
+      document.body.classList.remove('menu-open');
+    }
+  }, [isMobileMenuOpen]);
   
   return (
     <div className="flex h-screen">
