@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import Header from "./Header";
 import MobileMenu from "./MobileMenu";
-import { Routes, Route, BrowserRouter } from "react-router-dom"; // Added BrowserRouter and corrected import
+import { Route, Switch } from "wouter";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -35,14 +35,13 @@ export default function AppLayout({ children }: AppLayoutProps) {
   }, [isMobileMenuOpen]);
 
   return (
-    <BrowserRouter> {/* Added BrowserRouter */}
-      <div className="flex h-screen">
+    <div className="flex h-screen">
         <main className="flex-1 flex flex-col overflow-hidden">
           <Header toggleMobileMenu={toggleMobileMenu} isMobileMenuOpen={isMobileMenuOpen} />
-          <Routes>
-            <Route path="/settings/profile" element={<Profile />} />
-            <Route path="*" element={children} /> {/* Added a catch-all route for other paths */}
-          </Routes>
+          <Switch>
+            <Route path="/settings/profile" component={Profile} />
+            <Route path="*">{children}</Route>
+          </Switch>
         </main>
 
         <MobileMenu 
@@ -50,6 +49,5 @@ export default function AppLayout({ children }: AppLayoutProps) {
           onClose={() => setIsMobileMenuOpen(false)} 
         />
       </div>
-    </BrowserRouter>
   );
 }
