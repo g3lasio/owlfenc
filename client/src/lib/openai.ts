@@ -1,5 +1,6 @@
 
 import { apiRequest } from "./queryClient";
+import { woodFenceRules } from '../data/rules/woodfencerules.js';
 
 // Using GPT-4 since it's the most capable model for handling Mexican slang and humor
 const GPT_MODEL = "gpt-4";
