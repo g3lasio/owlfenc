@@ -1,4 +1,4 @@
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 
 interface HeaderProps {
   toggleMobileMenu: () => void;
