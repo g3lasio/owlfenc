@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function Profile() {
   const [companyInfo, setCompanyInfo] = useState({
@@ -19,10 +20,31 @@ export default function Profile() {
     ein: "",
     businessType: "",
     website: "",
-    description: ""
+    description: "",
+    logo: ""
   });
   
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    loadCompanyProfile();
+  }, []);
+
+  const loadCompanyProfile = async () => {
+    try {
+      const response = await apiRequest("GET", "/api/profile");
+      const data = await response.json();
+      setCompanyInfo(data);
+    } catch (error) {
+      console.error("Error loading profile:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo cargar el perfil.",
+        variant: "destructive"
+      });
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -33,18 +55,22 @@ export default function Profile() {
   };
 
   const handleSave = async () => {
+    setLoading(true);
     try {
-      // TODO: Implementar guardado en la base de datos
+      await apiRequest("POST", "/api/profile", companyInfo);
       toast({
         title: "Perfil actualizado",
         description: "La información de la compañía ha sido guardada.",
       });
     } catch (error) {
+      console.error("Error saving profile:", error);
       toast({
         title: "Error",
         description: "No se pudo guardar la información.",
         variant: "destructive"
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -52,14 +78,16 @@ export default function Profile() {
     <div className="flex-1 p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Perfil de la Compañía</h1>
-        <Button onClick={handleSave}>Guardar Cambios</Button>
+        <Button onClick={handleSave} disabled={loading}>
+          {loading ? "Guardando..." : "Guardar Cambios"}
+        </Button>
       </div>
       
       <Tabs defaultValue="info" className="space-y-6">
         <TabsList>
           <TabsTrigger value="info">Información General</TabsTrigger>
           <TabsTrigger value="docs">Documentación</TabsTrigger>
-          <TabsTrigger value="files">Archivos</TabsTrigger>
+          <TabsTrigger value="branding">Logo & Marca</TabsTrigger>
         </TabsList>
 
         <TabsContent value="info" className="space-y-4">
@@ -180,17 +208,23 @@ export default function Profile() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="files" className="space-y-4">
+        <TabsContent value="branding" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Archivos de la Empresa</CardTitle>
+              <CardTitle>Logo y Marca</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
-                <i className="ri-upload-cloud-2-line text-4xl text-muted-foreground"></i>
-                <p className="mt-2">Arrastra archivos aquí o haz clic para seleccionar</p>
-                <p className="text-sm text-muted-foreground">PDF, JPG, PNG hasta 10MB</p>
-                <input type="file" className="hidden" />
+              <div className="space-y-4">
+                <div className="flex items-center space-x-4">
+                  <div className="w-32 h-32 border rounded-lg flex items-center justify-center">
+                    {companyInfo.logo ? (
+                      <img src={companyInfo.logo} alt="Logo" className="max-w-full max-h-full" />
+                    ) : (
+                      <span className="text-muted-foreground">Sin logo</span>
+                    )}
+                  </div>
+                  <Button variant="outline">Subir Logo</Button>
+                </div>
               </div>
             </CardContent>
           </Card>
