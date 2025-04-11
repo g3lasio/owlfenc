@@ -89,16 +89,16 @@ export default function Sidebar() {
       
       {/* Sidebar Footer */}
       <div className="p-4 border-t border-border">
-        <div className="flex items-center mb-4">
+        <Link href="/profile" className="flex items-center mb-4 hover:bg-accent rounded-md p-2">
           <div className="w-8 h-8 rounded-full bg-accent text-center leading-8">J</div>
           <div className="ml-2">
             <div className="text-sm font-medium">John Contractor</div>
             <div className="text-xs text-muted-foreground">Premium Plan</div>
           </div>
-          <button className="ml-auto p-1 rounded-md hover:bg-accent">
+          <button className="ml-auto p-1 rounded-md hover:bg-accent/50">
             <i className="ri-logout-box-r-line"></i>
           </button>
-        </div>
+        </Link>
         <div className="mt-4 bg-accent rounded-md p-2 text-xs text-muted-foreground">
           <div className="flex items-center">
             <i className="ri-rocket-line mr-2 text-secondary"></i>

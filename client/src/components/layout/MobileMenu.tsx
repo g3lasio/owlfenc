@@ -158,7 +158,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
 
         {/* Pie del Menú - Información del Usuario */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border bg-card">
-          <div className="flex items-center">
+          <Link href="/profile" className="flex items-center w-full">
             <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center">
               <i className="ri-user-line"></i>
             </div>
@@ -169,7 +169,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             <button className="ml-auto p-2 rounded-md hover:bg-accent">
               <i className="ri-logout-box-r-line"></i>
             </button>
-          </div>
+          </Link>
         </div>
       </div>
     </div>

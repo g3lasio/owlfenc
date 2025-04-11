@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function Profile() {
   const [companyInfo, setCompanyInfo] = useState({
@@ -22,6 +23,14 @@ export default function Profile() {
   });
   
   const { toast } = useToast();
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setCompanyInfo(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
   const handleSave = async () => {
     try {
@@ -41,7 +50,10 @@ export default function Profile() {
 
   return (
     <div className="flex-1 p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Perfil de la Compañía</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Perfil de la Compañía</h1>
+        <Button onClick={handleSave}>Guardar Cambios</Button>
+      </div>
       
       <Tabs defaultValue="info" className="space-y-6">
         <TabsList>
@@ -50,126 +62,135 @@ export default function Profile() {
           <TabsTrigger value="files">Archivos</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="info">
+        <TabsContent value="info" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Información de la Compañía</CardTitle>
+              <CardTitle>Información de la Empresa</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="companyName">Nombre de la Compañía</Label>
-                  <Input 
+                  <Label htmlFor="companyName">Nombre de la Empresa</Label>
+                  <Input
                     id="companyName"
+                    name="companyName"
                     value={companyInfo.companyName}
-                    onChange={(e) => setCompanyInfo({...companyInfo, companyName: e.target.value})}
+                    onChange={handleChange}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="ownerName">Nombre del Propietario</Label>
-                  <Input 
+                  <Input
                     id="ownerName"
+                    name="ownerName"
                     value={companyInfo.ownerName}
-                    onChange={(e) => setCompanyInfo({...companyInfo, ownerName: e.target.value})}
+                    onChange={handleChange}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="ein">EIN Number</Label>
-                  <Input 
-                    id="ein"
-                    value={companyInfo.ein}
-                    onChange={(e) => setCompanyInfo({...companyInfo, ein: e.target.value})}
+                  <Label htmlFor="email">Correo Electrónico</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={companyInfo.email}
+                    onChange={handleChange}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="businessType">Tipo de Negocio</Label>
-                  <Input 
-                    id="businessType"
-                    value={companyInfo.businessType}
-                    onChange={(e) => setCompanyInfo({...companyInfo, businessType: e.target.value})}
+                  <Label htmlFor="phone">Teléfono</Label>
+                  <Input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    value={companyInfo.phone}
+                    onChange={handleChange}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="license">Número de Licencia</Label>
-                  <Input 
-                    id="license"
-                    value={companyInfo.license}
-                    onChange={(e) => setCompanyInfo({...companyInfo, license: e.target.value})}
+                  <Label htmlFor="address">Dirección</Label>
+                  <Input
+                    id="address"
+                    name="address"
+                    value={companyInfo.address}
+                    onChange={handleChange}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="website">Sitio Web</Label>
-                  <Input 
+                  <Input
                     id="website"
+                    name="website"
+                    type="url"
                     value={companyInfo.website}
-                    onChange={(e) => setCompanyInfo({...companyInfo, website: e.target.value})}
-                  />
-                </div>
-                <div className="col-span-2 space-y-2">
-                  <Label htmlFor="description">Descripción del Negocio</Label>
-                  <textarea 
-                    id="description"
-                    className="w-full min-h-[100px] p-2 border rounded"
-                    value={companyInfo.description}
-                    onChange={(e) => setCompanyInfo({...companyInfo, description: e.target.value})}
+                    onChange={handleChange}
                   />
                 </div>
               </div>
-              <Button onClick={handleSave} className="w-full">
-                Guardar Información
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="docs">
-          <Card>
-            <CardHeader>
-              <CardTitle>Documentos Importantes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="border rounded p-4">
-                  <h3 className="font-medium mb-2">Licencia de Contratista</h3>
-                  <Button variant="outline">
-                    <i className="ri-upload-line mr-2"></i> Subir Documento
-                  </Button>
-                </div>
-                <div className="border rounded p-4">
-                  <h3 className="font-medium mb-2">Certificado de LLC</h3>
-                  <Button variant="outline">
-                    <i className="ri-upload-line mr-2"></i> Subir Documento
-                  </Button>
-                </div>
-                <div className="border rounded p-4">
-                  <h3 className="font-medium mb-2">Seguro de Responsabilidad</h3>
-                  <Button variant="outline">
-                    <i className="ri-upload-line mr-2"></i> Subir Documento
-                  </Button>
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Descripción de la Empresa</Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  value={companyInfo.description}
+                  onChange={handleChange}
+                  rows={4}
+                />
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="files">
+        <TabsContent value="docs" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Archivos de la Compañía</CardTitle>
+              <CardTitle>Documentación Legal</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="license">Número de Licencia</Label>
+                  <Input
+                    id="license"
+                    name="license"
+                    value={companyInfo.license}
+                    onChange={handleChange}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ein">EIN (Tax ID)</Label>
+                  <Input
+                    id="ein"
+                    name="ein"
+                    value={companyInfo.ein}
+                    onChange={handleChange}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="businessType">Tipo de Negocio</Label>
+                  <Input
+                    id="businessType"
+                    name="businessType"
+                    value={companyInfo.businessType}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="files" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Archivos de la Empresa</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <Button className="w-full">
-                  <i className="ri-folder-add-line mr-2"></i> Nueva Carpeta
-                </Button>
-                <Button variant="outline" className="w-full">
-                  <i className="ri-upload-line mr-2"></i> Subir Archivos
-                </Button>
-                <div className="border rounded-lg p-4 min-h-[200px]">
-                  <p className="text-center text-muted-foreground">
-                    No hay archivos subidos
-                  </p>
-                </div>
+              <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
+                <i className="ri-upload-cloud-2-line text-4xl text-muted-foreground"></i>
+                <p className="mt-2">Arrastra archivos aquí o haz clic para seleccionar</p>
+                <p className="text-sm text-muted-foreground">PDF, JPG, PNG hasta 10MB</p>
+                <input type="file" className="hidden" />
               </div>
             </CardContent>
           </Card>
