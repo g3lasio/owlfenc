@@ -17,7 +17,7 @@ export default function ChatMessage({ message, onOptionClick }: ChatMessageProps
   const messageClass = message.sender === "user" ? "user-message" : "bot-message";
   
   return (
-    <div className={`chat-message ${messageClass} flex items-start gap-2`}>
+    <div className={`chat-message ${messageClass} flex items-start gap-3 mb-4`}>
       {message.sender === "assistant" && (
         <Avatar className="w-8 h-8 mt-1">
           <AvatarImage src="https://i.postimg.cc/h40sSgpH/Untitled-design-2.png" alt="Mervin" />
@@ -33,14 +33,16 @@ export default function ChatMessage({ message, onOptionClick }: ChatMessageProps
                 <Button
                   key={index}
                   variant="outline"
-                  size="sm"
-                  className="h-auto py-2 px-3 justify-start font-normal"
+                  size="lg"
+                  className="h-auto py-3 px-4 justify-start font-medium relative overflow-hidden group bg-gradient-to-r from-background to-accent/10 hover:from-primary/20 hover:to-accent/20 transition-all duration-300 border-accent/30"
                   onClick={() => onOptionClick && onOptionClick(option.text)}
                 >
-                  <span>{option.text}</span>
+                  <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent group-hover:translate-x-full duration-700 transition-transform"></span>
+                  <i className="ri-fence-line mr-2 text-lg group-hover:text-primary transition-colors"></i>
+                  <span className="group-hover:text-primary transition-colors">{option.text}</span>
                 </Button>
               ) : (
-                <div key={index} className="text-muted-foreground px-3 py-2">
+                <div key={index} className="text-muted-foreground px-4 py-3">
                   {option.text}
                 </div>
               )
