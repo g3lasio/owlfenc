@@ -351,10 +351,12 @@ async function generateEstimateHtml({
     }
 
     // 6. Preparar datos estructurados para la plantilla
-    try {
-  const projectId = `EST-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`;
   const templateData = {
     metadata: {
+      projectId: `EST-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`,
+      createdAt: new Date().toISOString(),
+      validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+    },
       projectId,
       createdAt: new Date().toISOString(),
       validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
@@ -392,17 +394,9 @@ async function generateEstimateHtml({
     }
   };
 
-  const fencePrice = calculateFencePrice(fenceType, fenceLength, fenceHeight, pricingSettings);
-  const gatesPrice = gates.reduce((sum, gate) => sum + gate.price, 0);
-  const materialsPrice = Math.round(fenceLength * 0.1) * 10; // simplified calculation
-  const subtotal = fencePrice + gatesPrice + materialsPrice;
-  const taxRate = pricingSettings.taxRate;
-  const taxAmount = Math.round(subtotal * (taxRate / 100) * 100) / 100;
-  const total = subtotal + taxAmount;
-
-  // For simplicity, we'll use a basic templating approach
-  const user = await storage.getUser(userId);
-  let html = template
+  try {
+    const user = await storage.getUser(userId);
+    let html = templateObj.html
     .replace(/{{projectId}}/g, templateData.metadata.projectId)
     .replace(/{{company}}/g, user?.company || 'Your Company Name')
     .replace(/{{address}}/g, user?.address || 'Your Address')
