@@ -350,7 +350,8 @@ async function generateEstimateHtml({
       throw new Error('Invalid cost calculation results');
     }
 
-  // 6. Preparar datos estructurados para la plantilla
+    // 6. Preparar datos estructurados para la plantilla
+    try {
   const projectId = `EST-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`;
   const templateData = {
     metadata: {
@@ -399,13 +400,10 @@ async function generateEstimateHtml({
   const taxAmount = Math.round(subtotal * (taxRate / 100) * 100) / 100;
   const total = subtotal + taxAmount;
 
-  // Generate a reference ID
-  const projectId = `EST-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`;
-
   // For simplicity, we'll use a basic templating approach
   const user = await storage.getUser(userId);
   let html = template
-    .replace(/{{projectId}}/g, projectId)
+    .replace(/{{projectId}}/g, templateData.metadata.projectId)
     .replace(/{{company}}/g, user?.company || 'Your Company Name')
     .replace(/{{address}}/g, user?.address || 'Your Address')
     .replace(/{{phone}}/g, user?.phone || 'Your Phone')
