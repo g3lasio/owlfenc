@@ -14,7 +14,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       onClose();
-    }, 150); // Pequeño delay para mejorar la experiencia
+    }, 150);
     return () => clearTimeout(timeoutId);
   }, [location, onClose]);
   
@@ -53,6 +53,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
+        {/* Encabezado del Menú */}
         <div className="flex justify-between items-center p-4 border-b border-border">
           <div className="flex items-center">
             <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
@@ -69,12 +70,18 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
         </div>
 
         <nav className="p-4 space-y-6">
-          {/* Inicio y Nuevos Documentos */}
+          {/* 1. Inicio y Dashboard */}
           <div className="space-y-1">
+            <div className="px-2 text-sm font-medium text-muted-foreground mb-2">Principal</div>
             <Link href="/" className="flex items-center p-2 rounded-md hover:bg-accent">
               <i className="ri-dashboard-line mr-3"></i>
-              <span>Inicio</span>
+              <span>Dashboard</span>
             </Link>
+          </div>
+
+          {/* 2. Proyectos y Documentos */}
+          <div className="space-y-1">
+            <div className="px-2 text-sm font-medium text-muted-foreground mb-2">Proyectos</div>
             <Link href="/new-estimate" className="flex items-center p-2 rounded-md hover:bg-accent">
               <i className="ri-file-add-line mr-3"></i>
               <span>Nuevo Estimado</span>
@@ -83,90 +90,81 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
               <i className="ri-file-text-line mr-3"></i>
               <span>Nuevo Contrato</span>
             </Link>
-          </div>
-
-          {/* Historial y Proyectos */}
-          <div className="space-y-1">
-            <div className="px-2 text-sm font-medium text-muted-foreground">Historial y Proyectos</div>
-            <Link href="/estimates" className="flex items-center p-2 rounded-md hover:bg-accent">
-              <i className="ri-mail-send-line mr-3"></i>
-              <span>Estimados Enviados</span>
-            </Link>
-            <Link href="/contracts" className="flex items-center p-2 rounded-md hover:bg-accent">
-              <i className="ri-check-double-line mr-3"></i>
-              <span>Contratos Aceptados</span>
-            </Link>
             <Link href="/projects" className="flex items-center p-2 rounded-md hover:bg-accent">
               <i className="ri-calendar-todo-line mr-3"></i>
-              <span>Proyectos en Curso</span>
+              <span>Proyectos Activos</span>
+            </Link>
+            <Link href="/history" className="flex items-center p-2 rounded-md hover:bg-accent">
+              <i className="ri-history-line mr-3"></i>
+              <span>Historial</span>
             </Link>
           </div>
 
-          {/* Categorías de Cercas */}
+          {/* 3. Tipos de Cercas */}
           <div className="space-y-1">
-            <div className="px-2 text-sm font-medium text-muted-foreground">Categorías de Cercas</div>
+            <div className="px-2 text-sm font-medium text-muted-foreground mb-2">Catálogo</div>
             <Link href="/category/wood" className="flex items-center p-2 rounded-md hover:bg-accent">
               <i className="ri-wood-line mr-3"></i>
-              <span>Wood Fences</span>
+              <span>Cercas de Madera</span>
             </Link>
             <Link href="/category/metal" className="flex items-center p-2 rounded-md hover:bg-accent">
               <i className="ri-copper-diamond-line mr-3"></i>
-              <span>Metal Fences</span>
+              <span>Cercas Metálicas</span>
             </Link>
             <Link href="/category/vinyl" className="flex items-center p-2 rounded-md hover:bg-accent">
               <i className="ri-layout-line mr-3"></i>
-              <span>Vinyl Fences</span>
+              <span>Cercas de Vinilo</span>
             </Link>
             <Link href="/category/chain" className="flex items-center p-2 rounded-md hover:bg-accent">
               <i className="ri-links-line mr-3"></i>
-              <span>Chain Link Fences</span>
+              <span>Cercas Chain Link</span>
             </Link>
           </div>
 
-          {/* Coming Soon */}
+          {/* 4. Configuración y Sistema */}
           <div className="space-y-1">
-            <div className="px-2 text-sm font-medium text-muted-foreground">Coming Soon</div>
-            <div className="p-2 text-muted-foreground">
-              <div className="flex items-center mb-2">
-                <i className="ri-augmented-reality-line mr-3"></i>
-                <span>AR Estimator</span>
-              </div>
-              <div className="flex items-center mb-2">
-                <i className="ri-robot-line mr-3"></i>
-                <span>AI Project Manager</span>
-              </div>
-              <div className="flex items-center">
-                <i className="ri-shield-check-line mr-3"></i>
-                <span>Property Ownership Verifier</span>
-              </div>
-            </div>
+            <div className="px-2 text-sm font-medium text-muted-foreground mb-2">Configuración</div>
+            <Link href="/settings/profile" className="flex items-center p-2 rounded-md hover:bg-accent">
+              <i className="ri-user-settings-line mr-3"></i>
+              <span>Perfil de Empresa</span>
+            </Link>
+            <Link href="/settings/pricing" className="flex items-center p-2 rounded-md hover:bg-accent">
+              <i className="ri-money-dollar-circle-line mr-3"></i>
+              <span>Precios y Tarifas</span>
+            </Link>
+            <Link href="/templates" className="flex items-center p-2 rounded-md hover:bg-accent">
+              <i className="ri-file-list-3-line mr-3"></i>
+              <span>Plantillas</span>
+            </Link>
+            <Link href="/settings/notifications" className="flex items-center p-2 rounded-md hover:bg-accent">
+              <i className="ri-notification-3-line mr-3"></i>
+              <span>Notificaciones</span>
+            </Link>
           </div>
 
-          {/* Configuración y Ayuda */}
+          {/* 5. Soporte y Ayuda */}
           <div className="space-y-1">
-            <Link href="/settings" className="flex items-center p-2 rounded-md hover:bg-accent">
-              <i className="ri-settings-3-line mr-3"></i>
-              <span>Configuración</span>
-            </Link>
+            <div className="px-2 text-sm font-medium text-muted-foreground mb-2">Soporte</div>
             <Link href="/help" className="flex items-center p-2 rounded-md hover:bg-accent">
               <i className="ri-question-line mr-3"></i>
-              <span>Ayuda y Soporte</span>
+              <span>Centro de Ayuda</span>
             </Link>
-            <Link href="/about" className="flex items-center p-2 rounded-md hover:bg-accent">
-              <i className="ri-information-line mr-3"></i>
-              <span>Acerca de</span>
+            <Link href="/contact" className="flex items-center p-2 rounded-md hover:bg-accent">
+              <i className="ri-customer-service-2-line mr-3"></i>
+              <span>Contactar Soporte</span>
             </Link>
           </div>
         </nav>
 
+        {/* Pie del Menú - Información del Usuario */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border bg-card">
           <div className="flex items-center">
             <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center">
               <i className="ri-user-line"></i>
             </div>
             <div className="ml-2">
-              <div className="text-sm font-medium">Mi Perfil</div>
-              <div className="text-xs text-muted-foreground">Premium Plan</div>
+              <div className="text-sm font-medium">Mi Cuenta</div>
+              <div className="text-xs text-muted-foreground">Plan Premium</div>
             </div>
             <button className="ml-auto p-2 rounded-md hover:bg-accent">
               <i className="ri-logout-box-r-line"></i>
