@@ -361,10 +361,13 @@ async function generateEstimateHtml({
     contractor: {
       company: context.contractorName,
       address: context.contractorAddress,
-    phone: context.contractorPhone,
-    license: context.contractorLicense,
-    clientName,
-    clientAddress: address,
+      phone: context.contractorPhone,
+      license: context.contractorLicense
+    },
+    client: {
+      name: clientName,
+      address: address
+    },
     fenceDetails: {
       type: fenceType,
       length: fenceLength,
