@@ -1,12 +1,4 @@
-// Si usas Node.js, puedes importar el JSON de esta manera:
-// const config = require('./materialParameters.json');
-
-// Para entornos compatibles con ES Modules, puedes hacer:
-// import config from './materialParameters.json';
-
-// Aquí asumiremos que la variable "config" contiene la data importada.
-
-const config = require('./materialParameters.json');
+import config from '../prices/materialParameters.json';
 
 /**
  * Función para obtener el factor de ajuste por altura.
