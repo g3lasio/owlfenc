@@ -27,10 +27,14 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   }, [isOpen, onClose]);
   
   return (
-    <div className={`fixed inset-0 bg-background/80 backdrop-blur-sm z-50 md:hidden ${isOpen ? "block" : "hidden"}`}>
+    <div 
+      className={`fixed inset-0 bg-background/80 backdrop-blur-sm z-50 md:hidden transition-opacity duration-300 ${
+        isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+      }`}
+    >
       <div 
         ref={menuPanelRef}
-        className={`bg-card w-80 h-full overflow-y-auto transform transition-transform duration-300 ${
+        className={`bg-card w-80 h-full overflow-y-auto transform transition-transform duration-300 shadow-lg ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
