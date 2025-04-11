@@ -1,19 +1,23 @@
 
 import OpenAI from "openai";
 import { storage } from "../storage";
-import { fenceTypes } from "../../client/src/data/rules/fenceRules";
-
 export class ChatService {
   private openai: OpenAI;
   private currentQuestion: string = "";
+
+  private fenceTypes = {
+    wood: { name: "Wood Fence" },
+    chainLink: { name: "Chain Link Fence" },
+    vinyl: { name: "Vinyl Fence" }
+  };
 
   constructor(apiKey: string) {
     this.openai = new OpenAI({ apiKey });
   }
 
   private getFenceTypeOptions() {
-    return Object.keys(fenceTypes).map(type => ({
-      text: fenceTypes[type].name,
+    return Object.keys(this.fenceTypes).map(type => ({
+      text: this.fenceTypes[type].name,
       clickable: true
     }));
   }
