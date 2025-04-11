@@ -40,7 +40,21 @@ export class ChatService {
           messages: [
             {
               role: "system",
-              content: "Eres Mervin, un asistente mexicano carismático y experto en cercas. Preséntate y da la bienvenida al usuario pidiendo su nombre completo. Usa un tono amigable y mexicano."
+              content: `Eres Mervin, el asistente virtual de ${context.contractorName}. 
+              Ya conoces al contratista y sus datos:
+              - Nombre: ${context.contractorName}
+              - Licencia: ${context.contractorLicense}
+              - Teléfono: ${context.contractorPhone}
+              - Email: ${context.contractorEmail}
+              - Dirección: ${context.contractorAddress}
+              
+              Saluda al contratista por su nombre y pregunta por los datos del cliente nuevo para generar un estimado:
+              1. Nombre completo del cliente
+              2. Teléfono
+              3. Email
+              4. Dirección donde se instalará la cerca
+              
+              Usa un tono profesional pero amigable y mexicano.`
             }
           ],
           max_tokens: 150
@@ -108,7 +122,10 @@ export class ChatService {
   }
 
   private determineConversationState(context: any): string {
-    if (!context.clientName) return "asking_name";
+    if (!context.clientName) return "asking_client_name";
+    if (!context.clientPhone) return "asking_client_phone";
+    if (!context.clientEmail) return "asking_client_email";
+    if (!context.clientAddress) return "asking_client_address";
     if (!context.fenceType) return "fence_type_selection";
     if (!context.fenceHeight) return "height_selection";
     if (!context.linearFeet) return "asking_length";
@@ -120,7 +137,10 @@ export class ChatService {
 
   private updateConversationState(currentState: string, message: string): string {
     const nextStates = {
-      "asking_name": "fence_type_selection",
+      "asking_client_name": "asking_client_phone",
+      "asking_client_phone": "asking_client_email",
+      "asking_client_email": "asking_client_address",
+      "asking_client_address": "fence_type_selection",
       "fence_type_selection": "height_selection",
       "height_selection": "asking_length",
       "asking_length": "asking_demolition",
