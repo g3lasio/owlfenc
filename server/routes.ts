@@ -9,6 +9,7 @@ import {
 import OpenAI from "openai";
 import { z } from "zod";
 import puppeteer from "puppeteer";
+import chatService from './chatService'; // Import the new chat service
 
 // Initialize OpenAI API
 const GPT_MODEL = "gpt-4";
@@ -105,8 +106,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const { message, context = {}, userId = 1 } = schema.parse(req.body);
-
-      // Obtener información del usuario/contratista
       const user = await storage.getUser(userId);
       const userContext = {
         contractorName: user?.company || '',
@@ -117,181 +116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...context
       };
 
-      // This is a simplified version. In a real app, we would use OpenAI to process the message,
-      // update the project details, and return the appropriate response.
-
-      // Just for demo purposes, we'll handle a few basic cases here
-      let response: any = {
-        message: "I'll help you with that.",
-        context: { ...context }
-      };
-
-      // Fake basic conversation flow based on common fence project details
-      const lowercaseMessage = message.toLowerCase();
-
-      // Flujo de recopilación de datos del cliente
-      if (!userContext.clientName) {
-        response = {
-          message: "¿Me puedes dar tu nombre, por favor?",
-          context: { ...context, clientName: message }
-        };
-      } else if (!userContext.clientPhone) {
-        response = {
-          message: "¿Y tu número de teléfono?",
-          context: { ...context, clientPhone: message }
-        };
-      } else if (!userContext.clientEmail) {
-        response = {
-          message: "¿Cuál es tu correo electrónico?",
-          context: { ...context, clientEmail: message }
-        };
-      } else if (!userContext.clientAddress) {
-        response = {
-          message: "¿Cuál es la dirección donde se instalará la cerca?",
-          context: { ...context, clientAddress: message }
-        };
-      } else if (!userContext.fenceType && (
-          lowercaseMessage.includes("fence") || 
-          lowercaseMessage.includes("cerca"))) {
-        
-        // Detectar tipo de cerca mencionado
-        const fenceType = Object.values(fenceTypes).find(type => 
-          lowercaseMessage.includes(type.name.toLowerCase())
-        );
-
-        if (fenceType) {
-          const rules = getFenceRules(fenceType.name);
-          const questions = getFenceQuestions(fenceType.name);
-          
-          response = {
-            message: `¡Excelente elección! ${fenceType.description}. ${questions[0]}`,
-            context: { 
-              ...context, 
-              fenceType: fenceType.name,
-              currentQuestion: 0,
-              questions
-            },
-            options: Object.keys(rules.heightFactors).map(h => `${h} pies`)
-          };
-        } else {
-          // Si no se especificó tipo, mostrar opciones
-          response = {
-            message: "¿Qué tipo de cerca te gustaría instalar? Tenemos estas opciones disponibles:",
-            context: { ...context },
-            options: Object.values(fenceTypes).map(type => type.name)
-          };
-        }
-      } else if (/\d+\s*(?:feet|foot|ft)/.test(lowercaseMessage) || /^\d+$/.test(lowercaseMessage.trim())) {
-        // User provided a length
-        const length = parseInt(lowercaseMessage.match(/\d+/)[0], 10);
-
-        response = {
-          message: "Y, ¿qué altura le pondrías a la cerca?  Las alturas estándar son 4, 6 u 8 pies.",
-          context: { 
-            ...context,
-            fenceLength: length
-          }
-        };
-      } else if (/4ft|6ft|8ft|4\s*feet|6\s*feet|8\s*feet/.test(lowercaseMessage) || /^[468]$/.test(lowercaseMessage.trim())) {
-        // User provided a height
-        const height = parseInt(lowercaseMessage.match(/[468]/)[0], 10);
-
-        // Only proceed to gates question if we have both fence type and length
-        if (context.fenceType && context.fenceLength) {
-          response = {
-            message: "¿Quieres agregar alguna puerta? Si es así, ¿cuántas y de qué ancho (el estándar es de 3 pies para pasillos y 10 pies para entradas de vehículos)?",
-            context: { 
-              ...context,
-              fenceHeight: height
-            }
-          };
-        } else {
-          // Ask for missing information
-          response = {
-            message: context.fenceType ? 
-              "¿Y de qué longitud aproximada será la cerca, en pies?" :
-              "¿Qué tipo de cerca te gustaría instalar, primo?",
-            context: {
-              ...context,
-              fenceHeight: height
-            }
-          };
-        }
-      } else if (lowercaseMessage.includes("gate") || lowercaseMessage.includes("3ft") || lowercaseMessage.includes("10ft")) {
-        // User provided gate information
-        const walkGate = lowercaseMessage.includes("walk") || lowercaseMessage.includes("3ft");
-        const driveGate = lowercaseMessage.includes("drive") || lowercaseMessage.includes("10ft");
-
-        const gates = [];
-        if (walkGate) {
-          gates.push({ type: "Walk", width: 3, description: "Matching material with hardware", price: 250 });
-        }
-        if (driveGate) {
-          gates.push({ type: "Drive", width: 10, description: "Double swing with heavy-duty hinges and latch", price: 650 });
-        }
-
-        response = {
-          message: "¡Chingón! Ahora necesito algunos datos del cliente para preparar el presupuesto. ¿Cuál es el nombre del cliente y la dirección de la propiedad?",
-          context: { 
-            ...context,
-            gates
-          }
-        };
-      } else if (context.fenceType && context.fenceLength && context.fenceHeight && !context.clientName) {
-        // User provided client information
-        const address = message.split(',').length > 2 ? message.substring(message.indexOf(',')).trim() : "Address not specified";
-        const clientName = message.split(',')[0].trim();
-
-        response = {
-          message: `¡Eso mero! Ya preparé una vista previa del presupuesto para ti usando los datos de ${userContext.contractorName}. Por favor, revísalo:`,
-          context: { 
-            ...userContext,
-            clientName,
-            address
-          },
-          template: {
-            type: "estimate",
-            html: await generateEstimateHtml(context.fenceType, context.fenceLength, context.fenceHeight, context.gates || [], clientName, address)
-          }
-        };
-      } else if (lowercaseMessage.includes("contract")) {
-        // User wants to create a contract
-        response = {
-          message: "Aquí está el contrato basado en los detalles del presupuesto:",
-          context: { 
-            ...context
-          },
-          template: {
-            type: "contract",
-            html: await generateContractHtml(context)
-          }
-        };
-      } else {
-        try {
-          // For other messages, use OpenAI to generate a response
-          const aiResponse = await openai.chat.completions.create({
-            model: GPT_MODEL,
-            messages: [
-              {
-                role: "system",
-                content: "Eres un asistente para una empresa de construcción de cercas. Ayudas a los clientes a diseñar y obtener presupuestos para proyectos de instalación de cercas. Mantén las respuestas breves y concéntrate en recopilar la información necesaria para los presupuestos de cercas. Habla como un mexicano, usando expresiones coloquiales y un tono amigable."
-              },
-              {
-                role: "user",
-                content: message
-              }
-            ],
-            max_tokens: 150
-          });
-
-          response.message = aiResponse.choices[0].message.content;
-        } catch (error) {
-          console.error("Error calling OpenAI:", error);
-          // Fallback response if OpenAI fails
-          response.message = "¡Qué onda, primo! Estoy aquí para ayudarte con tu proyecto de cercas. ¿Qué tipo de cerca te interesa?";
-        }
-      }
-
+      const response = await chatService.processMessage(message, userContext);
       res.json(response);
     } catch (error) {
       console.error('Error processing chat message:', error);

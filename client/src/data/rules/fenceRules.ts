@@ -39,7 +39,14 @@ export const fenceTypes = {
     questions: [
       "¿Qué altura necesitas para tu cerca?",
       "¿Prefieres un estilo tradicional o moderno?",
-      "¿Te gustaría agregar algún acabado decorativo como lattice?"
+      "¿Qué tipo de postes prefieres usar (4x4, 6x6 o metal)?",
+      "¿Necesitas remover una cerca existente?",
+      "¿Te gustaría agregar algún acabado decorativo como lattice?",
+      "¿Necesitas puertas? ¿De qué ancho?",
+      "¿Te gustaría agregar un acabado protector o pintura?",
+      "¿El terreno es plano o tiene desniveles?",
+      "¿Hay obstáculos como árboles o rocas en la línea de la cerca?",
+      "¿Necesitas permisos de construcción en tu zona?"
     ]
   },
   chainLink: {
