@@ -34,7 +34,7 @@ export default function ChatInterface() {
     setMessages([
       {
         id: "welcome",
-        content: "👋 ¡Bienvenido a FenceQuote Pro! Te ayudaré a crear un presupuesto profesional para tu proyecto de cerca.",
+        content: "¡Qué onda primo! 👋 ¡Bienvenido a Owl Fence! Échame la mano con algunos datos y te armo un presupuesto bien chingón para tu cerca.",
         sender: "bot"
       },
       {
