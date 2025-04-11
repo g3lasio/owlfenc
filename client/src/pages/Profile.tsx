@@ -93,7 +93,7 @@ export default function Profile() {
 
   const loadCompanyProfile = async () => {
     try {
-      const response = await apiRequest("GET", "/api/profile");
+      const response = await apiRequest("GET", "/api/user-profile");
       const data = await response.json();
       setCompanyInfo(data);
     } catch (error) {
@@ -184,7 +184,7 @@ export default function Profile() {
   const handleSave = async () => {
     setLoading(true);
     try {
-      await apiRequest("POST", "/api/profile", companyInfo);
+      await apiRequest("POST", "/api/user-profile", companyInfo);
       toast({
         title: "Perfil actualizado",
         description: "La información de la compañía ha sido guardada exitosamente.",
