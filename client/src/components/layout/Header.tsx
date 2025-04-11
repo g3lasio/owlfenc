@@ -30,19 +30,18 @@ export default function Header({ toggleMobileMenu, isMobileMenuOpen }: HeaderPro
   
   return (
     <header className="h-16 flex items-center px-4 border-b border-border bg-card">
-      <button 
-        className="p-2 rounded-md hover:bg-accent transition-colors"
-        onClick={handleMenuToggle}
-        aria-label="Menu principal"
-        aria-expanded={isMobileMenuOpen}
-        type="button"
-      >
-        <i className="ri-menu-line text-xl"></i>
-      </button>
-      
-      <div className="ml-4">
-        <h2 className="text-xl font-bold">{title}</h2>
-        <p className="text-sm text-muted-foreground">{subtitle}</p>
+      <div className="flex items-center gap-4">
+        <button 
+          className="p-2 rounded-md hover:bg-accent transition-colors"
+          onClick={handleMenuToggle}
+          aria-label="Menu principal"
+          aria-expanded={isMobileMenuOpen}
+          type="button"
+        >
+          <i className="ri-menu-line text-xl"></i>
+        </button>
+        
+        <img src="/White logo - no background.png" alt="Owl Fenc Logo" className="h-8 max-w-[200px] object-contain" />
       </div>
       
       <div className="ml-auto flex items-center space-x-4">
