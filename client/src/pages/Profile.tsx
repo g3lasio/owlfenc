@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -94,6 +94,9 @@ export default function Profile() {
           <Card>
             <CardHeader>
               <CardTitle>Información de la Empresa</CardTitle>
+              <CardDescription>
+                Esta información aparecerá en tus estimaciones y contratos.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -104,6 +107,7 @@ export default function Profile() {
                     name="companyName"
                     value={companyInfo.companyName}
                     onChange={handleChange}
+                    placeholder="Tu Empresa S.A. de C.V."
                   />
                 </div>
                 <div className="space-y-2">
@@ -113,6 +117,7 @@ export default function Profile() {
                     name="ownerName"
                     value={companyInfo.ownerName}
                     onChange={handleChange}
+                    placeholder="Juan Pérez"
                   />
                 </div>
                 <div className="space-y-2">
@@ -123,6 +128,7 @@ export default function Profile() {
                     type="email"
                     value={companyInfo.email}
                     onChange={handleChange}
+                    placeholder="contacto@tuempresa.com"
                   />
                 </div>
                 <div className="space-y-2">
@@ -133,6 +139,7 @@ export default function Profile() {
                     type="tel"
                     value={companyInfo.phone}
                     onChange={handleChange}
+                    placeholder="(123) 456-7890"
                   />
                 </div>
                 <div className="space-y-2">
@@ -142,6 +149,7 @@ export default function Profile() {
                     name="address"
                     value={companyInfo.address}
                     onChange={handleChange}
+                    placeholder="Calle Principal #123, Ciudad"
                   />
                 </div>
                 <div className="space-y-2">
@@ -152,6 +160,7 @@ export default function Profile() {
                     type="url"
                     value={companyInfo.website}
                     onChange={handleChange}
+                    placeholder="https://www.tuempresa.com"
                   />
                 </div>
               </div>
@@ -162,6 +171,7 @@ export default function Profile() {
                   name="description"
                   value={companyInfo.description}
                   onChange={handleChange}
+                  placeholder="Describe tu empresa y servicios principales..."
                   rows={4}
                 />
               </div>
@@ -173,6 +183,9 @@ export default function Profile() {
           <Card>
             <CardHeader>
               <CardTitle>Documentación Legal</CardTitle>
+              <CardDescription>
+                Información legal y documentos importantes de la empresa.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -183,6 +196,7 @@ export default function Profile() {
                     name="license"
                     value={companyInfo.license}
                     onChange={handleChange}
+                    placeholder="CCB #123456"
                   />
                 </div>
                 <div className="space-y-2">
@@ -192,6 +206,7 @@ export default function Profile() {
                     name="ein"
                     value={companyInfo.ein}
                     onChange={handleChange}
+                    placeholder="12-3456789"
                   />
                 </div>
                 <div className="space-y-2">
@@ -201,6 +216,7 @@ export default function Profile() {
                     name="businessType"
                     value={companyInfo.businessType}
                     onChange={handleChange}
+                    placeholder="LLC, Corporación, etc."
                   />
                 </div>
               </div>
@@ -212,18 +228,26 @@ export default function Profile() {
           <Card>
             <CardHeader>
               <CardTitle>Logo y Marca</CardTitle>
+              <CardDescription>
+                Personaliza la imagen de tu empresa.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="flex items-center space-x-4">
-                  <div className="w-32 h-32 border rounded-lg flex items-center justify-center">
+                  <div className="w-32 h-32 border rounded-lg flex items-center justify-center bg-muted">
                     {companyInfo.logo ? (
-                      <img src={companyInfo.logo} alt="Logo" className="max-w-full max-h-full" />
+                      <img src={companyInfo.logo} alt="Logo" className="max-w-full max-h-full object-contain" />
                     ) : (
                       <span className="text-muted-foreground">Sin logo</span>
                     )}
                   </div>
-                  <Button variant="outline">Subir Logo</Button>
+                  <div className="space-y-2">
+                    <Button variant="outline">Subir Logo</Button>
+                    <p className="text-sm text-muted-foreground">
+                      Formatos permitidos: PNG, JPG. Tamaño máximo: 2MB
+                    </p>
+                  </div>
                 </div>
               </div>
             </CardContent>
