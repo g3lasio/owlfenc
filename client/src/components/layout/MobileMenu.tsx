@@ -12,7 +12,10 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   const menuPanelRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
-    onClose();
+    const timeoutId = setTimeout(() => {
+      onClose();
+    }, 150); // Pequeño delay para mejorar la experiencia
+    return () => clearTimeout(timeoutId);
   }, [location, onClose]);
   
   useEffect(() => {
@@ -39,7 +42,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   
   return (
     <div 
-      className={`fixed inset-0 bg-background/80 backdrop-blur-sm z-[100] md:hidden transition-all duration-300 ${
+      className={`fixed inset-0 bg-background/80 backdrop-blur-sm z-[9999] md:hidden transition-all duration-300 ease-in-out ${
         isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
       }`}
       onClick={(e) => e.target === e.currentTarget && onClose()}

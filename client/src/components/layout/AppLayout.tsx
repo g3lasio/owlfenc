@@ -11,7 +11,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(prevState => !prevState);
+    setIsMobileMenuOpen(prevState => {
+      const newState = !prevState;
+      console.log('Mobile menu state:', newState);
+      return newState;
+    });
   };
   
   return (
