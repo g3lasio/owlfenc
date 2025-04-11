@@ -1,18 +1,29 @@
+
 import { apiRequest } from "./queryClient";
 
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-const GPT_MODEL = "gpt-4o";
+// Using GPT-4 since it's the most capable model for handling Mexican slang and humor
+const GPT_MODEL = "gpt-4";
+
+const MEXICAN_STYLE_PROMPT = `Actúa como un mexicano carismático y bromista. Usa expresiones como:
+- "¡Qué onda primo!"
+- "¡Échale ganas!"
+- "¡Está bien chingón!"
+- "¡No manches!"
+- "¡Órale!"
+Mantén un tono amigable y casual, como si estuvieras hablando con un primo.`;
 
 export async function generateEstimate(projectDetails: any): Promise<string> {
   try {
     const response = await apiRequest("POST", "/api/generate-estimate", {
-      projectDetails
+      projectDetails,
+      model: GPT_MODEL,
+      systemPrompt: MEXICAN_STYLE_PROMPT
     });
     
     const data = await response.json();
     return data.html;
   } catch (error) {
-    console.error("Error generating estimate:", error);
+    console.error("¡Chale! Error generando el estimado:", error);
     throw error;
   }
 }
@@ -20,13 +31,15 @@ export async function generateEstimate(projectDetails: any): Promise<string> {
 export async function generateContract(projectDetails: any): Promise<string> {
   try {
     const response = await apiRequest("POST", "/api/generate-contract", {
-      projectDetails
+      projectDetails,
+      model: GPT_MODEL,
+      systemPrompt: MEXICAN_STYLE_PROMPT
     });
     
     const data = await response.json();
     return data.html;
   } catch (error) {
-    console.error("Error generating contract:", error);
+    console.error("¡No manches! Error generando el contrato:", error);
     throw error;
   }
 }
@@ -35,13 +48,15 @@ export async function processChatMessage(message: string, context: any): Promise
   try {
     const response = await apiRequest("POST", "/api/chat", {
       message,
-      context
+      context,
+      model: GPT_MODEL,
+      systemPrompt: MEXICAN_STYLE_PROMPT
     });
     
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error("Error processing chat message:", error);
+    console.error("¡Ay caramba! Error procesando el mensaje:", error);
     throw error;
   }
 }
