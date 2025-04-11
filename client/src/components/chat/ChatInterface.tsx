@@ -34,14 +34,13 @@ export default function ChatInterface() {
     setMessages([
       {
         id: "welcome",
-        content: "¡Qué onda primo! 👋 ¡Bienvenido a Owl Fence! Échame la mano con algunos datos y te armo un presupuesto bien chingón para tu cerca.",
+        content: "¡Qué onda primo! 👋 ¡Bienvenido a Owl Fence! Para armarte un presupuesto bien chingón, primero necesito algunos datos tuyos.",
         sender: "bot"
       },
       {
-        id: "fence-type",
-        content: "¿Qué tipo de cerca te gustaría instalar?",
-        sender: "bot",
-        options: ["Wood Fence", "Vinyl Fence", "Chain Link"]
+        id: "client-info",
+        content: "¿Me puedes dar tu nombre completo?",
+        sender: "bot"
       }
     ]);
   }, []);

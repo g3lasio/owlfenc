@@ -19,6 +19,18 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
+// Configuration object (needs to be populated appropriately)
+const config = {
+  fenceRules: {
+    heightFactors: {
+      "4": 1,
+      "6": 1.2,
+      "8": 1.5
+    }
+  }
+};
+
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Add API routes
   app.get('/api/projects', async (req: Request, res: Response) => {
@@ -117,23 +129,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Fake basic conversation flow based on common fence project details
       const lowercaseMessage = message.toLowerCase();
 
-      // Si no hay tipo de cerca seleccionado, preguntar primero
-      if (!userContext.fenceType && (
+      // Flujo de recopilación de datos del cliente
+      if (!userContext.clientName) {
+        response = {
+          message: "¿Me puedes dar tu nombre, por favor?",
+          context: { ...context, clientName: message }
+        };
+      } else if (!userContext.clientPhone) {
+        response = {
+          message: "¿Y tu número de teléfono?",
+          context: { ...context, clientPhone: message }
+        };
+      } else if (!userContext.clientEmail) {
+        response = {
+          message: "¿Cuál es tu correo electrónico?",
+          context: { ...context, clientEmail: message }
+        };
+      } else if (!userContext.clientAddress) {
+        response = {
+          message: "¿Cuál es la dirección donde se instalará la cerca?",
+          context: { ...context, clientAddress: message }
+        };
+      } else if (!userContext.fenceType && (
           lowercaseMessage.includes("wood fence") || 
           lowercaseMessage.includes("vinyl fence") || 
           lowercaseMessage.includes("chain link"))) {
-        // Usuario seleccionó tipo de cerca
+
         const fenceType = lowercaseMessage.includes("wood fence") ? "Wood Fence" : 
                           lowercaseMessage.includes("vinyl fence") ? "Vinyl Fence" : "Chain Link";
 
-        response = {
-          message: `Excelente elección. Para el ${fenceType}, las alturas estándar son: 3, 4, 6 u 8 pies. ¿Qué altura necesitas?`,
-          context: { 
-            ...context,
-            fenceType
-          },
-          options: ["3 pies", "4 pies", "6 pies", "8 pies"]
-        };
+        // Si es Wood Fence, usar las reglas de woodfencerules.js
+        if (fenceType === "Wood Fence") {
+          const heightOptions = Object.keys(config.fenceRules.heightFactors);
+          response = {
+            message: `¡Chido! Para cercas de madera tenemos estas alturas disponibles: ${heightOptions.join(", ")} pies. ¿Cuál te late más?`,
+            context: { ...context, fenceType },
+            options: heightOptions.map(h => `${h} pies`)
+          };
+        } else {
+          response = {
+            message: `Excelente elección. Para el ${fenceType}, ¿qué altura necesitas?`,
+            context: { ...context, fenceType },
+            options: ["4 pies", "6 pies", "8 pies"]
+          };
+        }
       } else if (/\d+\s*(?:feet|foot|ft)/.test(lowercaseMessage) || /^\d+$/.test(lowercaseMessage.trim())) {
         // User provided a length
         const length = parseInt(lowercaseMessage.match(/\d+/)[0], 10);
@@ -526,7 +565,7 @@ function calculateFencePrice(type: string, length: number, height: number, prici
                     pricingSettings.fencePrices.chainLink;
 
   // Apply height multiplier
-  const heightMultiplier = height === 4 ? 0.8 : height === 8 ? 1.2 : 1;
+  const heightMultiplier = config.fenceRules.heightFactors[height] || 1; // Use config for height factors
 
   return Math.round(basePrice * length * heightMultiplier);
 }
