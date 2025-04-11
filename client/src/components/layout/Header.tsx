@@ -44,9 +44,9 @@ export default function Header({
 
       <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center justify-center">
         <img
-          src="/attached_assets/White logo - no background.png"
-          alt=""
-          className="h-12 w-auto object-contain"
+          src="https://i.postimg.cc/4yc9M62C/White-logo-no-background.png"
+          alt="Owl Fenc"
+          className="h-14 w-auto object-contain"
         />
       </div>
 
