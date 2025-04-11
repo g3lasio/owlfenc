@@ -64,7 +64,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
               <i className="ri-fence-line text-white"></i>
             </div>
-            <h1 className="ml-2 text-lg font-bold">FenceQuote Pro</h1>
+            <h1 className="ml-2 text-lg font-bold">Owl Fence</h1>
           </div>
           <button 
             className="p-1 rounded-md hover:bg-accent"

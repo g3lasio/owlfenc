@@ -15,7 +15,7 @@ export default function Header({ toggleMobileMenu, isMobileMenuOpen }: HeaderPro
   };
   
   let title = "Dashboard";
-  let subtitle = "Bienvenido a FenceQuote Pro";
+  let subtitle = "Bienvenido a Owl Fence";
   
   if (location === "/new-estimate") {
     title = "Nuevo Estimado";
