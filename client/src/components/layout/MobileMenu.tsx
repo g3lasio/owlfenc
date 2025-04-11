@@ -61,7 +61,11 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
         {/* Encabezado del Menú */}
         <div className="flex justify-between items-center p-4 border-b border-border">
           <div className="flex items-center">
-            <img src="/White logo - no background.png" alt="Owl Fenc Logo" className="h-8 max-w-[180px] object-contain" />
+            <img 
+              src="/White logo - no background.png" 
+              alt="Owl Fenc Logo" 
+              className="h-10 w-auto object-contain" 
+            />
           </div>
           <button 
             className="p-1 rounded-md hover:bg-accent"
