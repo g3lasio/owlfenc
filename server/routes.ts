@@ -9,7 +9,7 @@ import {
 import OpenAI from "openai";
 import { z } from "zod";
 import puppeteer from "puppeteer";
-import chatService from './chatService'; // Import the new chat service
+import { chatService } from './services/chatService'; // Import the new chat service
 
 // Initialize OpenAI API
 const GPT_MODEL = "gpt-4";
