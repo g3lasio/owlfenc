@@ -1,5 +1,5 @@
+
 import { useState } from "react";
-import Sidebar from "./Sidebar";
 import Header from "./Header";
 import MobileMenu from "./MobileMenu";
 
@@ -13,23 +13,18 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(prevState => {
       const newState = !prevState;
-      console.log('Mobile menu state:', newState);
+      console.log('Menu state:', newState);
       return newState;
     });
   };
   
   return (
     <div className="flex h-screen">
-      {/* Sidebar - Hidden on mobile */}
-      <Sidebar />
-      
-      {/* Main Content Area */}
       <main className="flex-1 flex flex-col overflow-hidden">
         <Header toggleMobileMenu={toggleMobileMenu} isMobileMenuOpen={isMobileMenuOpen} />
         {children}
       </main>
       
-      {/* Mobile Menu */}
       <MobileMenu 
         isOpen={isMobileMenuOpen} 
         onClose={() => setIsMobileMenuOpen(false)} 
