@@ -160,34 +160,50 @@
 
       <!-- Detalles del Proyecto -->
       <div class="section">
-        <h3>Detalles del Proyecto</h3>
-        <table class="info-table">
-          <tr>
-            <td class="label">Ubicación:</td>
-            <td>{{projectAddress}}</td>
-          </tr>
-          <tr>
-            <td class="label">Tipo de Cerca:</td>
-            <td>{{fenceType}}</td>
-          </tr>
-          <tr>
-            <td class="label">Longitud:</td>
-            <td>{{fenceLength}} pies lineales</td>
-          </tr>
-          <tr>
-            <td class="label">Altura:</td>
-            <td>{{fenceHeight}} pies</td>
-          </tr>
-          <tr>
-            <td class="label">Postes:</td>
-            <td>{{postType}} cada {{postSpacing}} pies</td>
-          </tr>
-          <tr>
-            <td class="label">Descripción:</td>
-            <td>{{projectDescription}}</td>
-          </tr>
-        </table>
-      </div>
+          <h3>Detalles del Proyecto</h3>
+          <table class="info-table">
+            <tr>
+              <td class="label">Ubicación:</td>
+              <td>{{clientAddress}}</td>
+            </tr>
+            <tr>
+              <td class="label">Tipo de Cerca:</td>
+              <td>{{fenceDetails.type}}</td>
+            </tr>
+            <tr>
+              <td class="label">Longitud:</td>
+              <td>{{fenceDetails.length}} pies lineales</td>
+            </tr>
+            <tr>
+              <td class="label">Altura:</td>
+              <td>{{fenceDetails.height}} pies</td>
+            </tr>
+          </table>
+
+          <h4 class="mt-4 mb-2">Desglose de Materiales</h4>
+          <table class="info-table">
+            <tr>
+              <td class="label">Postes:</td>
+              <td>${{breakdown.posts}}</td>
+            </tr>
+            <tr>
+              <td class="label">Concreto:</td>
+              <td>${{breakdown.concrete}}</td>
+            </tr>
+            <tr>
+              <td class="label">Rieles:</td>
+              <td>${{breakdown.rails}}</td>
+            </tr>
+            <tr>
+              <td class="label">Pickets:</td>
+              <td>${{breakdown.pickets}}</td>
+            </tr>
+            <tr>
+              <td class="label">Hardware:</td>
+              <td>${{breakdown.hardware}}</td>
+            </tr>
+          </table>
+        </div>
 
       <!-- Desglose de Servicios y Materiales -->
       <div class="section">

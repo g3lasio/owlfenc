@@ -299,19 +299,61 @@ async function generateEstimateHtml(
   fenceHeight: number, 
   gates: any[], 
   clientName: string, 
-  address: string
+  address: string,
+  context: any = {}
 ): Promise<string> {
-  // Get default template
   const userId = 1;
   const templateObj = await storage.getDefaultTemplate(userId, "estimate");
   const template = templateObj ? templateObj.html : '';
-
-  // Calculate pricing based on fence details
   const settings = await storage.getSettings(userId);
-  const pricingSettings = settings?.pricingSettings || {
-    fencePrices: { wood: 30, vinyl: 40, chainLink: 25 },
-    gatePrices: { walkGate: 250, driveGate: 650 },
-    taxRate: 8.75
+
+  // Importar reglas de cerca
+  const woodRules = await import("../client/src/data/rules/woodfencerules.js");
+  
+  // Calcular costos usando las reglas específicas
+  const estimateDetails = woodRules.calculateWoodFenceCost(
+    fenceLength,
+    fenceHeight,
+    context.state || "California",
+    {
+      demolition: context.demolition || false,
+      painting: context.painting || false,
+      additionalLattice: context.lattice || false,
+      postType: context.postType || "auto"
+    }
+  );
+
+  // Preparar datos para la plantilla
+  const templateData = {
+    projectId: `EST-${Date.now()}`,
+    currentDate: new Date().toLocaleDateString(),
+    company: context.contractorName,
+    address: context.contractorAddress,
+    phone: context.contractorPhone,
+    license: context.contractorLicense,
+    clientName,
+    clientAddress: address,
+    fenceDetails: {
+      type: fenceType,
+      length: fenceLength,
+      height: fenceHeight,
+      gates: gates.length ? gates : []
+    },
+    costs: {
+      materials: estimateDetails.totalMaterialsCost,
+      labor: estimateDetails.laborCost,
+      subtotal: estimateDetails.baseTotalCost,
+      tax: (parseFloat(estimateDetails.baseTotalCost) * (settings?.pricingSettings?.taxRate || 8.75) / 100).toFixed(2),
+      total: estimateDetails.finalTotalCost
+    },
+    breakdown: {
+      posts: estimateDetails.postsCost,
+      concrete: estimateDetails.concreteCost,
+      rails: estimateDetails.railsCost,
+      pickets: estimateDetails.picketsCost,
+      hardware: estimateDetails.hangersCost,
+      screws: estimateDetails.screwsCost
+    }
   };
 
   const fencePrice = calculateFencePrice(fenceType, fenceLength, fenceHeight, pricingSettings);
