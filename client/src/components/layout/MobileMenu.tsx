@@ -13,9 +13,14 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   
   useEffect(() => {
     if (location) {
+      console.log('Location changed, closing menu');
       onClose();
     }
   }, [location, onClose]);
+
+  useEffect(() => {
+    console.log('Menu state changed:', isOpen);
+  }, [isOpen]);
   
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

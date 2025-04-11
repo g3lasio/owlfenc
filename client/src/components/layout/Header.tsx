@@ -9,6 +9,11 @@ interface HeaderProps {
 export default function Header({ toggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
   const [location] = useLocation();
   
+  const handleMenuToggle = () => {
+    console.log('Menu toggle clicked, current state:', isMobileMenuOpen);
+    toggleMobileMenu();
+  };
+  
   let title = "Dashboard";
   let subtitle = "Bienvenido a FenceQuote Pro";
   
@@ -27,7 +32,7 @@ export default function Header({ toggleMobileMenu, isMobileMenuOpen }: HeaderPro
     <header className="h-16 flex items-center px-4 border-b border-border bg-card">
       <button 
         className="p-2 rounded-md hover:bg-accent transition-colors"
-        onClick={toggleMobileMenu}
+        onClick={handleMenuToggle}
         aria-label="Menu principal"
         aria-expanded={isMobileMenuOpen}
         type="button"
