@@ -293,42 +293,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
 }
 
 // Helper functions
-async function generateEstimateHtml(
-  fenceType: string, 
-  fenceLength: number, 
-  fenceHeight: number, 
-  gates: any[], 
-  clientName: string, 
-  address: string,
-  context: any = {}
-): Promise<string> {
-  const userId = 1;
-  const templateObj = await storage.getDefaultTemplate(userId, "estimate");
-  const template = templateObj ? templateObj.html : '';
-  const settings = await storage.getSettings(userId);
+interface EstimateData {
+  fenceType: string;
+  fenceLength: number;
+  fenceHeight: number;
+  gates: Array<{type: string; width: number; price: number}>;
+  clientName: string;
+  address: string;
+  context: Record<string, any>;
+}
 
-  // Importar reglas de cerca
+async function generateEstimateHtml({
+  fenceType,
+  fenceLength,
+  fenceHeight,
+  gates,
+  clientName,
+  address,
+  context = {}
+}: EstimateData): Promise<string> {
+  // 1. Validación de datos
+  if (!fenceType || !fenceLength || !fenceHeight || !clientName || !address) {
+    throw new Error('Missing required estimate data');
+  }
+
+  // 2. Obtener template y configuración
+  const userId = 1;
+  const [templateObj, settings] = await Promise.all([
+    storage.getDefaultTemplate(userId, "estimate"),
+    storage.getSettings(userId)
+  ]);
+
+  if (!templateObj?.html) {
+    throw new Error('Estimate template not found');
+  }
+
+  // 3. Importar y validar reglas
   const woodRules = await import("../client/src/data/rules/woodfencerules.js");
   
-  // Calcular costos usando las reglas específicas
-  const estimateDetails = woodRules.calculateWoodFenceCost(
-    fenceLength,
-    fenceHeight,
-    context.state || "California",
-    {
-      demolition: context.demolition || false,
-      painting: context.painting || false,
-      additionalLattice: context.lattice || false,
-      postType: context.postType || "auto"
-    }
-  );
+  // 4. Calcular costos detallados
+  try {
+    const estimateDetails = woodRules.calculateWoodFenceCost(
+      fenceLength,
+      fenceHeight,
+      context.state || "California",
+      {
+        demolition: Boolean(context.demolition),
+        painting: Boolean(context.painting),
+        additionalLattice: Boolean(context.lattice),
+        postType: context.postType || "auto"
+      }
+    );
 
-  // Preparar datos para la plantilla
+    // 5. Validar resultados
+    if (!estimateDetails?.finalTotalCost) {
+      throw new Error('Invalid cost calculation results');
+    }
+
+  // 6. Preparar datos estructurados para la plantilla
+  const projectId = `EST-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`;
   const templateData = {
-    projectId: `EST-${Date.now()}`,
-    currentDate: new Date().toLocaleDateString(),
-    company: context.contractorName,
-    address: context.contractorAddress,
+    metadata: {
+      projectId,
+      createdAt: new Date().toISOString(),
+      validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+    },
+    contractor: {
+      company: context.contractorName,
+      address: context.contractorAddress,
     phone: context.contractorPhone,
     license: context.contractorLicense,
     clientName,
