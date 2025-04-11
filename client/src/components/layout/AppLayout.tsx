@@ -21,7 +21,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col overflow-hidden">
-        <Header toggleMobileMenu={toggleMobileMenu} />
+        <Header toggleMobileMenu={toggleMobileMenu} isMobileMenuOpen={isMobileMenuOpen} />
         {children}
       </main>
       

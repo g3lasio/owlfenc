@@ -2,9 +2,10 @@ import { useLocation } from "wouter";
 
 interface HeaderProps {
   toggleMobileMenu: () => void;
+  isMobileMenuOpen: boolean;
 }
 
-export default function Header({ toggleMobileMenu }: HeaderProps) {
+export default function Header({ toggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
   const [location] = useLocation();
   
   // Determine the title based on the current route
