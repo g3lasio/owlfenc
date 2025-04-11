@@ -1,5 +1,5 @@
 
-import { woodFenceRules } from './woodfencerules';
+import { woodFenceRules } from './woodfencerules.js';
 import config from '../prices/materialParameters.json';
 
 export interface FenceRules {

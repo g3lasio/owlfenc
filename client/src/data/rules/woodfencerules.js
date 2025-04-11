@@ -1,12 +1,24 @@
 import config from '../prices/materialParameters.json';
 
+export const woodFenceRules = {
+  posts: config.fenceRules.posts,
+  concrete: config.fenceRules.concrete,
+  rails: config.fenceRules.rails,
+  pickets: config.fenceRules.pickets,
+  hangers: config.fenceRules.hangers,
+  screws: config.fenceRules.screws,
+  recargoMaterial: config.fenceRules.recargoMaterial,
+  heightFactors: config.fenceRules.heightFactors,
+  lattice: config.fenceRules.lattice
+};
+
 /**
  * Función para obtener el factor de ajuste por altura.
  * Basado en los parámetros de config.fenceRules.heightFactors.
  * @param {number} height - Altura del fence en pies.
  * @returns {number} Factor de altura.
  */
-function getHeightFactor(height) {
+export function getHeightFactor(height) {
   const factors = config.fenceRules.heightFactors;
   if (factors.hasOwnProperty(height.toString())) {
     return factors[height.toString()];
@@ -15,28 +27,7 @@ function getHeightFactor(height) {
   }
 }
 
-/**
- * Calcula el costo total de un Wood Fence, desglosando materiales y mano de obra,
- * aplicando ajustes por altura y opciones adicionales (painting y lattice).
- *
- * @param {number} linearFeet - Longitud total del fence en pies.
- * @param {number} height - Altura del fence en pies (3, 6, 8, etc.).
- * @param {string} state - Estado para obtener el costo promedio de mano de obra.
- * @param {object} options - Opciones del proyecto:
- *    demolition: boolean (true si incluye demolición)
- *    painting: boolean (true si se incluye pintura a $3.50/ft²)
- *    laborRate: number (valor manual en $/ft para mano de obra; si se omite, se usa la base de datos)
- *    additionalLattice: boolean (true si se agrega lattice adicional)
- *    postType: string ("4x4", "6x6", "metalBlack", o "auto" para 4x4 por defecto)
- * @returns {object} Detalle completo del cálculo.
- */
-function validateInput(linearFeet, height, state) {
-  if (!linearFeet || linearFeet <= 0) throw new Error("La longitud debe ser mayor a 0");
-  if (!height || ![3,4,6,8].includes(height)) throw new Error("Altura inválida. Use 3, 4, 6 u 8 pies");
-  if (!state || !config.laborCostDatabase[state]) throw new Error("Estado inválido o no encontrado");
-}
-
-function calculateWoodFenceCost(linearFeet, height, state, options = {}) {
+export function calculateWoodFenceCost(linearFeet, height, state, options = {}) {
   validateInput(linearFeet, height, state);
   const {
     demolition = false,
@@ -157,6 +148,12 @@ function calculateWoodFenceCost(linearFeet, height, state, options = {}) {
   };
 }
 
+function validateInput(linearFeet, height, state) {
+  if (!linearFeet || linearFeet <= 0) throw new Error("La longitud debe ser mayor a 0");
+  if (!height || ![3,4,6,8].includes(height)) throw new Error("Altura inválida. Use 3, 4, 6 u 8 pies");
+  if (!state || !config.laborCostDatabase[state]) throw new Error("Estado inválido o no encontrado");
+}
+
 /**
  * Calcula la distribución del costo total por pie lineal entre materiales y mano de obra,
  * basándose en un costo base por pie (sin incluir costos adicionales de pintura o lattice).
@@ -165,7 +162,7 @@ function calculateWoodFenceCost(linearFeet, height, state, options = {}) {
  * @param {boolean} demolition - Indica si el proyecto incluye demolición.
  * @returns {object} Distribución en $/ft.
  */
-function calculateRates(baseCostPerFt, demolition) {
+export function calculateRates(baseCostPerFt, demolition) {
   const ratioNew = { material: 0.45, labor: 0.55 };
   const ratioDemo = { material: 0.41, labor: 0.59 };
   let ratios = demolition ? ratioDemo : ratioNew;
