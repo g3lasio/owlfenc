@@ -397,6 +397,67 @@ function calculateFencePrice(type: string, length: number, height: number, prici
                     type.toLowerCase().includes('vinyl') ? pricingSettings.fencePrices.vinyl : 
                     pricingSettings.fencePrices.chainLink;
 
+
+// Profile routes
+app.get('/api/profile', async (req: Request, res: Response) => {
+  try {
+    // En una app real, obtendríamos el userId de la sesión
+    const userId = 1;
+    const user = await storage.getUser(userId);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+    
+    res.json({
+      companyName: user.company,
+      ownerName: user.ownerName,
+      email: user.email,
+      phone: user.phone,
+      address: user.address,
+      license: user.license,
+      ein: user.ein,
+      businessType: user.businessType,
+      website: user.website,
+      description: user.description,
+      logo: user.logo
+    });
+  } catch (error) {
+    console.error('Error getting profile:', error);
+    res.status(500).json({ message: 'Error al obtener el perfil' });
+  }
+});
+
+app.post('/api/profile', async (req: Request, res: Response) => {
+  try {
+    const userId = 1;
+    const user = await storage.getUser(userId);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+    
+    const updatedUser = await storage.updateUser(userId, {
+      company: req.body.companyName,
+      ownerName: req.body.ownerName,
+      email: req.body.email,
+      phone: req.body.phone,
+      address: req.body.address,
+      license: req.body.license,
+      ein: req.body.ein,
+      businessType: req.body.businessType,
+      website: req.body.website,
+      description: req.body.description,
+      logo: req.body.logo
+    });
+    
+    res.json(updatedUser);
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    res.status(500).json({ message: 'Error al actualizar el perfil' });
+  }
+});
+
   // Apply height multiplier
   const heightMultiplier = config.fenceRules.heightFactors[height] || 1; // Use config for height factors
 

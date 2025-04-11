@@ -47,6 +47,21 @@ export class MemStorage implements IStorage {
   private projects: Map<number, Project>;
   private templates: Map<number, Template>;
   private settings: Map<number, Settings>;
+
+  async updateUser(id: number, userData: Partial<User>): Promise<User> {
+    const user = this.users.get(id);
+    if (!user) {
+      throw new Error(`User with ID ${id} not found`);
+    }
+    
+    const updatedUser: User = {
+      ...user,
+      ...userData
+    };
+    this.users.set(id, updatedUser);
+    return updatedUser;
+  }
+
   private chatLogs: Map<number, ChatLog>;
   private currentIds: {
     users: number;
