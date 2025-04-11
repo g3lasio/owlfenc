@@ -1,6 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Message } from "./ChatInterface";
 
+interface Option {
+  text: string;
+  clickable: boolean;
+}
+
 interface ChatMessageProps {
   message: Message;
   onOptionClick?: (option: string) => void;
@@ -15,16 +20,22 @@ export default function ChatMessage({ message, onOptionClick }: ChatMessageProps
       
       {message.options && message.options.length > 0 && (
         <div className="mt-2 grid grid-cols-2 gap-2">
-          {message.options.map((option, index) => (
-            <Button
-              key={index}
-              variant="outline"
-              size="sm"
-              className="h-auto py-2 px-3 justify-start font-normal"
-              onClick={() => onOptionClick && onOptionClick(option)}
-            >
-              <span>{option}</span>
-            </Button>
+          {message.options.map((option: Option, index) => (
+            option.clickable ? (
+              <Button
+                key={index}
+                variant="outline"
+                size="sm"
+                className="h-auto py-2 px-3 justify-start font-normal"
+                onClick={() => onOptionClick && onOptionClick(option.text)}
+              >
+                <span>{option.text}</span>
+              </Button>
+            ) : (
+              <div key={index} className="text-muted-foreground px-3 py-2">
+                {option.text}
+              </div>
+            )
           ))}
         </div>
       )}
