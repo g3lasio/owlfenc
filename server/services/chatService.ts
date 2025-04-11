@@ -33,6 +33,24 @@ export class ChatService {
     try {
       const conversationState = this.determineConversationState(context);
       let options = [];
+
+      if (message === "START_CHAT" && context.isInitialMessage) {
+        const initialResponse = await this.openai.chat.completions.create({
+          model: "gpt-4",
+          messages: [
+            {
+              role: "system",
+              content: "Eres Mervin, un asistente mexicano carismático y experto en cercas. Preséntate y da la bienvenida al usuario pidiendo su nombre completo. Usa un tono amigable y mexicano."
+            }
+          ],
+          max_tokens: 150
+        });
+        return {
+          message: initialResponse.choices[0].message.content,
+          options: [],
+          context: { ...context, currentState: "asking_name" }
+        };
+      }
       
       // Get fence rules from the imported module
       const woodRules = await import("../../client/src/data/rules/woodfencerules.js");
@@ -43,8 +61,9 @@ export class ChatService {
         options = this.getHeightOptions();
       }
 
-      const systemPrompt = `Eres un asistente mexicano carismático para ${context.contractorName || 'una empresa de construcción de cercas'}. 
-      Sigue este flujo exacto de preguntas:
+      const systemPrompt = `Eres Mervin, un asistente mexicano carismático y experto en cercas para ${context.contractorName || 'Owl Fence'}. 
+      Si es el primer mensaje (isInitialMessage = true), preséntate como Mervin y da la bienvenida al usuario de manera amigable y mexicana.
+      De lo contrario, sigue este flujo exacto de preguntas:
       1. Pide el nombre del cliente
       2. Pregunta el tipo de cerca (wood, chain link, vinyl)
       3. Pregunta la altura (3, 4, 6, 8 pies)

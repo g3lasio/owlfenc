@@ -31,18 +31,25 @@ export default function ChatInterface() {
 
   // Initial bot message
   useEffect(() => {
-    setMessages([
-      {
-        id: "welcome",
-        content: "¡Qué onda primo! 👋 ¡Bienvenido a Owl Fence! Para armarte un presupuesto bien chingón, primero necesito algunos datos tuyos.",
-        sender: "assistant"
-      },
-      {
-        id: "client-info",
-        content: "¿Me puedes dar tu nombre completo?",
-        sender: "assistant"
+    const initializeChat = async () => {
+      try {
+        const response = await processChatMessage("START_CHAT", { isInitialMessage: true });
+        if (response.message) {
+          setMessages([
+            {
+              id: "welcome",
+              content: response.message,
+              sender: "assistant",
+              options: response.options
+            }
+          ]);
+        }
+      } catch (error) {
+        console.error("Error initializing chat:", error);
       }
-    ]);
+    };
+    
+    initializeChat();
   }, []);
 
   // Auto-scroll to bottom when messages change
