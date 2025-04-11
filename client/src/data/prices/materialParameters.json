@@ -1,0 +1,140 @@
+{
+  "fenceRules": {
+    "posts": {
+      "spacingFt": 8,
+      "extraPost": 1,
+      "postLengthForHeight": {
+        "6": "8",
+        "8": "10"
+      },
+      "optionalTypes": ["4x4", "6x6", "metalBlack"],
+      "defaultType": "4x4"
+    },
+    "concrete": {
+      "bagsPerPost": 2
+    },
+    "rails": {
+      "quantity": 2,
+      "segmentLengthFt": 8
+    },
+    "pickets": {
+      "coverageInches": 7.5,
+      "extraFactor": 1.15
+    },
+    "hangers": {
+      "perPost": 4
+    },
+    "screws": {
+      "boxesPerFeet": 0.02
+    },
+    "recargoMaterial": 1.10,
+    "heightFactors": {
+      "3": 0.80,
+      "6": 1.00,
+      "8": 1.20
+    },
+    "lattice": {
+      "enabled": true,
+      "costPerLinearFt": 4.00,
+      "additionalHeight": 2,
+      "costMultiplier": 1.30
+    }
+  },
+  "materialParameters": {
+    "posts": {
+      "4x4x8": 16.88,
+      "4x4x10": 23.28,
+      "6x6x8": 29.99,
+      "6x6x10": 39.99,
+      "metal8": 41.87,
+      "metal10": 52.00
+    },
+    "concrete": {
+      "80lb": 9.62
+    },
+    "lumber": {
+      "2x4_8ft": 8.88,
+      "2x6_12ft": 19.48,
+      "2x2_8ft": 4.21
+    },
+    "pickets": {
+      "default": 7.58
+    },
+    "hangers": {
+      "default": 3.12
+    },
+    "screws": {
+      "box_5lbs": 16.00
+    },
+    "optional": {
+      "stainSealantPerGallon": 25.00,
+      "latticePerFt": 4.00,
+      "postCaps": 5.00,
+      "gateKit": "varies"
+    }
+  },
+  "laborCostDatabase": {
+    "Alabama": { "newFence": [35.63, 36.87], "withDemo": [37.18, 40.27] },
+    "Alaska": { "newFence": [50.12, 51.89], "withDemo": [52.30, 56.65] },
+    "Arizona": { "newFence": [45.14, 46.71], "withDemo": [47.10, 51.03] },
+    "Arkansas": { "newFence": [35.90, 37.15], "withDemo": [37.46, 40.59] },
+    "California": { "newFence": [58.65, 60.69], "withDemo": [61.20, 66.30] },
+    "Colorado": { "newFence": [41.29, 42.72], "withDemo": [43.08, 46.67] },
+    "Connecticut": { "newFence": [45.46, 47.04], "withDemo": [47.44, 51.39] },
+    "Delaware": { "newFence": [40.80, 42.22], "withDemo": [42.58, 46.12] },
+    "Distrito de Columbia": { "newFence": [57.44, 59.44], "withDemo": [59.94, 64.94] },
+    "Florida": { "newFence": [41.62, 43.07], "withDemo": [43.43, 47.05] },
+    "Georgia": { "newFence": [36.96, 38.25], "withDemo": [38.57, 41.78] },
+    "Hawaii": { "newFence": [75.66, 78.29], "withDemo": [78.95, 85.53] },
+    "Idaho": { "newFence": [41.29, 42.72], "withDemo": [43.08, 46.67] },
+    "Illinois": { "newFence": [38.21, 39.54], "withDemo": [39.88, 43.20] },
+    "Indiana": { "newFence": [36.64, 37.91], "withDemo": [38.23, 41.42] },
+    "Iowa": { "newFence": [36.31, 37.57], "withDemo": [37.88, 41.04] },
+    "Kansas": { "newFence": [35.21, 36.44], "withDemo": [36.74, 39.81] },
+    "Kentucky": { "newFence": [37.65, 38.96], "withDemo": [39.29, 42.56] },
+    "Louisiana": { "newFence": [37.33, 38.63], "withDemo": [38.95, 42.20] },
+    "Maine": { "newFence": [45.38, 46.96], "withDemo": [47.35, 51.30] },
+    "Maryland": { "newFence": [46.68, 48.30], "withDemo": [48.71, 52.77] },
+    "Massachusetts": { "newFence": [59.06, 61.12], "withDemo": [61.63, 66.77] },
+    "Michigan": { "newFence": [36.59, 37.87], "withDemo": [38.18, 41.37] },
+    "Minnesota": { "newFence": [38.49, 39.83], "withDemo": [40.16, 43.51] },
+    "Mississippi": { "newFence": [35.58, 36.82], "withDemo": [37.13, 40.22] },
+    "Missouri": { "newFence": [35.90, 37.15], "withDemo": [37.46, 40.59] },
+    "Montana": { "newFence": [38.41, 39.75], "withDemo": [40.08, 43.42] },
+    "Nebraska": { "newFence": [37.69, 38.99], "withDemo": [39.32, 42.60] },
+    "Nevada": { "newFence": [41.00, 42.42], "withDemo": [42.78, 46.35] },
+    "New Hampshire": { "newFence": [45.59, 47.17], "withDemo": [47.57, 51.53] },
+    "New Jersey": { "newFence": [46.38, 47.99], "withDemo": [48.40, 52.43] },
+    "New Mexico": { "newFence": [37.77, 39.08], "withDemo": [39.41, 42.69] },
+    "New York": { "newFence": [49.91, 51.65], "withDemo": [52.08, 56.42] },
+    "North Carolina": { "newFence": [39.59, 40.97], "withDemo": [41.32, 44.76] },
+    "North Dakota": { "newFence": [37.20, 38.50], "withDemo": [38.82, 42.06] },
+    "Ohio": { "newFence": [38.13, 39.46], "withDemo": [39.79, 43.11] },
+    "Oklahoma": { "newFence": [34.68, 35.89], "withDemo": [36.19, 39.21] },
+    "Oregon": { "newFence": [45.33, 46.91], "withDemo": [47.30, 51.25] },
+    "Pennsylvania": { "newFence": [38.49, 39.83], "withDemo": [40.16, 43.51] },
+    "Rhode Island": { "newFence": [45.41, 46.99], "withDemo": [47.39, 51.34] },
+    "South Carolina": { "newFence": [38.81, 40.16], "withDemo": [40.50, 43.88] },
+    "South Dakota": { "newFence": [37.33, 38.63], "withDemo": [38.95, 42.20] },
+    "Tennessee": { "newFence": [36.64, 37.91], "withDemo": [38.23, 41.42] },
+    "Texas": { "newFence": [37.52, 38.83], "withDemo": [39.16, 42.42] },
+    "Utah": { "newFence": [42.46, 43.93], "withDemo": [44.30, 47.99] },
+    "Vermont": { "newFence": [46.30, 47.91], "withDemo": [48.31, 52.34] },
+    "Virginia": { "newFence": [40.77, 42.19], "withDemo": [42.54, 46.09] },
+    "Washington": { "newFence": [46.22, 47.83], "withDemo": [48.23, 52.25] },
+    "West Virginia": { "newFence": [34.04, 35.22], "withDemo": [35.52, 38.48] },
+    "Wisconsin": { "newFence": [39.26, 40.63], "withDemo": [40.97, 44.38] },
+    "Wyoming": { "newFence": [38.65, 39.99], "withDemo": [40.33, 43.69] }
+  },
+  "laborRatios": {
+    "newFence": { "material": 0.45, "labor": 0.55 },
+    "withDemo": { "material": 0.41, "labor": 0.59 }
+  },
+  "generalSettings": {
+    "defaultLaborRatioNew": 0.55,
+    "defaultMaterialRatioNew": 0.45,
+    "defaultLaborRatioDemo": 0.59,
+    "defaultMaterialRatioDemo": 0.41,
+    "flexibility": "Los valores de ratios pueden ser ajustados manualmente por el contratista."
+  }
+}
