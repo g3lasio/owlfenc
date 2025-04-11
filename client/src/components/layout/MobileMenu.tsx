@@ -111,18 +111,6 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
               <i className="ri-wood-line mr-3"></i>
               <span>Cercas de Madera</span>
             </Link>
-            <Link href="/category/metal" className="flex items-center p-2 rounded-md hover:bg-accent">
-              <i className="ri-copper-diamond-line mr-3"></i>
-              <span>Cercas Metálicas</span>
-            </Link>
-            <Link href="/category/vinyl" className="flex items-center p-2 rounded-md hover:bg-accent">
-              <i className="ri-layout-line mr-3"></i>
-              <span>Cercas de Vinilo</span>
-            </Link>
-            <Link href="/category/chain" className="flex items-center p-2 rounded-md hover:bg-accent">
-              <i className="ri-links-line mr-3"></i>
-              <span>Cercas Chain Link</span>
-            </Link>
           </div>
 
           {/* 4. Configuración y Sistema */}
