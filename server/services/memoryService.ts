@@ -1,5 +1,5 @@
 
-import { db } from "../firebase.ts";
+import { db } from "../firebase";
 
 interface ConversationData {
   messages: Array<{

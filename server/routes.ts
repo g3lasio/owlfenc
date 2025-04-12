@@ -116,7 +116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...context
       };
 
-      const response = await chatService.processMessage(message, userContext);
+      const response = await chatService.handleMessage(message, userContext);
       res.json(response);
     } catch (error) {
       console.error('Error processing chat message:', error);
