@@ -116,51 +116,119 @@ export class ChatService {
       
       // Manejo del estado confirming_details - resumen de toda la información
       if (conversationState === "confirming_details") {
-        // Construye un resumen de toda la información recopilada
+        const hasAllRequiredInfo = context.clientName && 
+                                 context.clientPhone && 
+                                 context.clientEmail && 
+                                 context.clientAddress &&
+                                 context.fenceType &&
+                                 context.fenceHeight &&
+                                 context.linearFeet;
+
+        if (!hasAllRequiredInfo) {
+          return {
+            message: "¡Órale! Me faltan algunos datos importantes. Permíteme hacer las preguntas necesarias.",
+            options: [],
+            context: {
+              ...context,
+              currentState: "asking_client_name"
+            }
+          };
+        }
+
         const summary = `
-        Aquí está el resumen de la información que tengo:
+        ¡Perfecto! Aquí está el resumen de la información:
         
-        Cliente: ${context.clientName || 'No proporcionado'}
-        Teléfono: ${context.clientPhone || 'No proporcionado'}
-        Email: ${context.clientEmail || 'No proporcionado'}
-        Dirección: ${context.clientAddress || 'No proporcionada'}
-        Tipo de cerca: ${context.fenceType || 'No seleccionado'}
-        Altura: ${context.fenceHeight ? context.fenceHeight + ' pies' : 'No seleccionada'}
-        Longitud: ${context.linearFeet ? context.linearFeet + ' pies' : 'No proporcionada'}
-        Demolición necesaria: ${context.demolition ? 'Sí' : 'No'}
-        Pintura incluida: ${context.painting ? 'Sí' : 'No'}
-        Puertas: ${context.gates ? (Array.isArray(context.gates) ? context.gates.length : 'Sí') : 'No'}
+        📋 Datos del Cliente:
+        - Nombre: ${context.clientName}
+        - Tel: ${context.clientPhone || 'Pendiente'}
+        - Email: ${context.clientEmail || 'Pendiente'}
+        - Dirección: ${context.clientAddress}
+
+        🏗️ Detalles de la Cerca:
+        - Tipo: ${context.fenceType}
+        - Altura: ${context.fenceHeight} ft
+        - Longitud: ${context.linearFeet} ft
+        
+        ⚙️ Extras:
+        - Demolición: ${context.demolition ? 'Sí' : 'No'}
+        - Pintura: ${context.painting ? 'Sí' : 'No'}
+        - Puertas: ${context.gates ? (Array.isArray(context.gates) ? context.gates.length + ' puerta(s)' : 'Sí') : 'No'}
         `;
-        
+
+        // Si el mensaje confirma que todo está correcto, transicionar automáticamente
+        if (message.toLowerCase().includes("correcto") || 
+            message.toLowerCase().includes("si") || 
+            message.toLowerCase().includes("sí")) {
+          return {
+            message: "¡Órale! Voy a preparar tu estimado con estos datos. Dame un momento...",
+            options: [],
+            context: {
+              ...context,
+              currentState: "preparing_estimate"
+            }
+          };
+        }
+
         return {
-          message: "¡Excelente! Ahora tengo toda la información que necesito. " + 
-                  "¿Está todo correcto o quieres cambiar algo antes de que prepare el estimado? " +
-                  summary,
-          options: ["Todo está correcto, prepara el estimado", "Necesito cambiar algunos detalles"],
+          message: summary + "\n\n¿Todo está correcto o necesitas hacer algún cambio? 🤔",
+          options: ["✅ Todo está correcto, prepara el estimado", "🔄 Necesito hacer cambios"],
           context: {
             ...context,
-            currentState: message.includes("correcto") ? "preparing_estimate" : "confirming_details"
+            currentState: "confirming_details"
           }
         };
       }
       
       // Manejo del estado preparing_estimate - generación del estimado
       if (conversationState === "preparing_estimate") {
-        // Genera el estimado
-        const estimateHtml = await this.generateEstimate(context);
-        
-        return {
-          message: "¡Ya mero! Estoy preparando tu estimado con todos los detalles que me proporcionaste. ¡Listo! Aquí está tu estimado. ¿Quieres que lo revise contigo o prefieres que te lo envíe por correo?",
-          template: {
-            type: "estimate",
-            html: estimateHtml
-          },
-          options: ["Revisar estimado conmigo", "Enviar por correo"],
-          context: {
-            ...context,
-            currentState: "estimate_ready"
+        try {
+          // Validar que tenemos toda la información necesaria
+          if (!context.clientName || !context.clientAddress || !context.fenceType || 
+              !context.fenceHeight || !context.linearFeet) {
+            return {
+              message: "¡Ups! Me faltan algunos datos importantes. Volvamos a las preguntas.",
+              options: [],
+              context: {
+                ...context,
+                currentState: "asking_client_name"
+              }
+            };
           }
-        };
+
+          // Genera el estimado
+          const estimateHtml = await this.generateEstimate(context);
+          
+          const summary = `
+          🎉 ¡Listo compa! Ya preparé el estimado para:
+          - ${context.fenceType} de ${context.fenceHeight} ft de altura
+          - ${context.linearFeet} ft lineales
+          - Para: ${context.clientName}
+          - En: ${context.clientAddress}
+          `;
+
+          return {
+            message: summary + "\n\n¿Quieres que lo revisemos juntos o prefieres que te lo envíe por correo? 📧",
+            template: {
+              type: "estimate",
+              html: estimateHtml
+            },
+            options: ["👀 Revisar estimado juntos", "📨 Enviar por correo"],
+            context: {
+              ...context,
+              currentState: "estimate_ready"
+            }
+          };
+        } catch (error) {
+          console.error("Error generando estimado:", error);
+          return {
+            message: "¡Chin! Hubo un problema generando el estimado. ¿Podemos verificar la información?",
+            options: [],
+            context: {
+              ...context,
+              currentState: "confirming_details"
+            }
+          };
+        }
       }
       
       // Get fence rules from the imported module
