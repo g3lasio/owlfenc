@@ -8,6 +8,7 @@ export default {
       fontFamily: {
         inter: ['Inter', 'sans-serif'],
         quantico: ['Quantico', 'sans-serif'],
+        dubai: ['Rubik', 'sans-serif'],
       },
       borderRadius: {
         lg: "var(--radius)",

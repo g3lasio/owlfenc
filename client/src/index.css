@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Quantico:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Quantico:wght@400;700&family=Rubik:wght@300;400;500;700&display=swap');
 @import url('https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css');
 
 @tailwind base;
@@ -52,7 +52,7 @@
   }
   
   body {
-    @apply font-inter antialiased bg-background text-foreground;
+    @apply font-dubai antialiased bg-background text-foreground;
   }
   
   h1, h2, h3, h4, h5, h6 {
@@ -60,11 +60,15 @@
   }
   
   input, textarea, select, .form-input {
-    @apply border-accent focus:ring-accent focus:border-accent;
+    @apply border-accent focus:ring-accent focus:border-accent font-dubai;
   }
   
   button, .btn {
-    @apply focus:ring-accent;
+    @apply focus:ring-accent font-quantico;
+  }
+  
+  p, span, div {
+    @apply font-dubai;
   }
 }
 
@@ -90,7 +94,7 @@
   }
   
   .template-preview {
-    @apply font-inter p-8 bg-white text-slate-800 max-h-[400px] overflow-y-auto rounded-lg;
+    @apply font-dubai p-8 bg-white text-slate-800 max-h-[400px] overflow-y-auto rounded-lg;
   }
   
   .template-preview h1,
