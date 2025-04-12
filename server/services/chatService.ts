@@ -1,101 +1,396 @@
 
-import { mervinProfile } from "./mervinProfile";
-import { mervinRoles } from "./mervinRoles";
-import { memoryService } from "./memoryService";
 import OpenAI from "openai";
 
 interface ChatContext {
-  contractorId: string;
-  conversationId: string;
-  currentStep?: string;
-  collectedData?: Record<string, any>;
+  currentState?: string;
+  clientName?: string;
+  clientPhone?: string;
+  clientEmail?: string;
+  clientAddress?: string;
+  fenceType?: string;
+  fenceHeight?: number;
+  linearFeet?: number;
+  demolition?: boolean;
+  painting?: boolean;
+  gates?: any[];
+  postType?: string;
+  state?: string;
 }
 
+interface ChatResponse {
+  message: string;
+  context?: ChatContext;
+  options?: string[];
+  template?: { 
+    type: string; 
+    html: string;
+  };
+}
+
+// Implementación simplificada y robusta de ChatService
 class ChatService {
-  private context: ChatContext;
+  private openai: OpenAI;
 
-  constructor(
-    private openai: OpenAI,
-    private contractorId: string,
-  ) {
-    this.context = {
-      contractorId,
-      conversationId: `chat-${Date.now()}`,
-      currentStep: mervinRoles.workflow.states.initial
-    };
+  constructor(apiKey: string) {
+    this.openai = new OpenAI({ apiKey });
   }
 
-  private async loadContextualData() {
-    const { preferences, recentConversations } = await memoryService.getLearningContext(this.contractorId);
-    return { preferences, recentConversations };
-  }
+  async handleMessage(message: string, userContext: any = {}): Promise<ChatResponse> {
+    try {
+      // Si es mensaje inicial, dar la bienvenida
+      if (message === "START_CHAT" && userContext.isInitialMessage) {
+        return this.getInitialResponse(userContext);
+      }
 
-  private async generateSystemPrompt() {
-    const contextData = await this.loadContextualData();
-    const basePrompt = `
-      Eres Mervin, un asistente experto en generar estimados y contratos.
-      Personalidad: ${JSON.stringify(mervinProfile)}
-      Contexto: ${JSON.stringify(contextData)}
-      Workflow actual: ${this.context.currentStep}
-    `;
-    return basePrompt;
-  }
-
-  private validateTransition(nextStep: string): boolean {
-    return mervinRoles.workflow.transitions.validateStep(
-      this.context.currentStep,
-      this.context.collectedData
-    );
-  }
-
-  async handleMessage(message: string, userContext: any = {}) {
-    const systemPrompt = await this.generateSystemPrompt();
-
-    const response = await this.openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: message }
-      ],
-      temperature: 0.7,
-      max_tokens: 150
-    });
-
-    const aiResponse = response.choices[0].message.content;
-    await this.updateContext(message, aiResponse);
-    await this.saveConversationMemory();
-
-    return {
-      message: aiResponse,
-      context: this.context
-    };
-  }
-
-  private async updateContext(userMessage: string, aiResponse: string) {
-    const nextStep = mervinRoles.workflow.transitions.getNextStep(
-      this.context.currentStep,
-      this.context.collectedData
-    );
-
-    if (this.validateTransition(nextStep)) {
-      this.context.currentStep = nextStep;
+      // Comenzamos a procesar el mensaje del usuario y actualizar el contexto
+      const context: ChatContext = { ...userContext };
+      const currentState = this.determineConversationState(context);
+      
+      // Si tenemos todos los datos y el estado es confirming_details, generar estimado
+      if (currentState === "confirming_details" && 
+          (message.toLowerCase().includes("correcto") || 
+           message.toLowerCase().includes("sí") || 
+           message.toLowerCase().includes("si"))) {
+        return this.prepareEstimateResponse(context);
+      }
+      
+      // En cualquier otro caso, responder apropiadamente según el estado
+      const response = await this.generateResponse(message, context, currentState);
+      const nextState = this.getNextState(currentState, message, context);
+      
+      return {
+        message: response,
+        options: this.getOptionsForState(nextState, message),
+        context: { ...context, currentState: nextState }
+      };
+    } catch (error) {
+      console.error("Error en ChatService:", error);
+      return { 
+        message: "Lo siento, ocurrió un error procesando tu mensaje. ¿Podrías intentarlo de nuevo?",
+        context: userContext
+      };
     }
   }
 
-  private async saveConversationMemory() {
-    await memoryService.saveConversation(
-      this.context.contractorId,
-      this.context.conversationId,
-      {
-        messages: [],
-        context: this.context,
-        timestamp: Date.now()
+  private async getInitialResponse(context: any): Promise<ChatResponse> {
+    try {
+      const response = await this.openai.chat.completions.create({
+        model: "gpt-4",
+        messages: [
+          {
+            role: "system",
+            content: `Eres Mervin, el asistente virtual de ${context.contractorName || "Acme Fencing"}. 
+Conoces al contratista y sus datos:
+- Nombre: ${context.contractorName || "Acme Fencing"}
+- Licencia: ${context.contractorLicense || "CCB #123456"}
+- Teléfono: ${context.contractorPhone || "(555) 123-4567"}
+- Email: ${context.contractorEmail || "info@acmefencing.com"}
+- Dirección: ${context.contractorAddress || "123 Main St"}
+
+Saluda al contratista por su nombre y pregunta por los datos del cliente nuevo para generar un estimado:
+1. Nombre completo del cliente
+2. Teléfono
+3. Email
+4. Dirección donde se instalará la cerca
+
+Usa un tono profesional pero amigable, con toques mexicanos.`,
+          },
+        ],
+        max_tokens: 150,
+      });
+
+      return {
+        message: response.choices[0].message.content || "¡Hola! ¿Cómo puedo ayudarte hoy?",
+        context: { ...context, currentState: "asking_client_name" }
+      };
+    } catch (error) {
+      console.error("Error al obtener respuesta inicial:", error);
+      return {
+        message: "¡Hola! Estoy aquí para ayudarte a crear un estimado para tu cliente. ¿Me podrías proporcionar el nombre del cliente para comenzar?",
+        context: { ...context, currentState: "asking_client_name" }
+      };
+    }
+  }
+
+  private determineConversationState(context: ChatContext): string {
+    // Verificar si ya tenemos todos los datos
+    const hasAllInfo =
+      context.clientName &&
+      context.clientPhone &&
+      context.clientEmail &&
+      context.clientAddress &&
+      context.fenceType &&
+      context.fenceHeight &&
+      context.linearFeet &&
+      context.demolition !== undefined &&
+      context.painting !== undefined &&
+      context.gates !== undefined;
+
+    if (hasAllInfo && context.currentState === "asking_gates") {
+      return "confirming_details";
+    }
+
+    // Verificar qué datos faltan y devolver el estado correspondiente
+    if (!context.clientName) return "asking_client_name";
+    if (!context.clientPhone) return "asking_client_phone";
+    if (!context.clientEmail) return "asking_client_email";
+    if (!context.clientAddress) return "asking_client_address";
+    if (!context.fenceType) return "fence_type_selection";
+    if (!context.fenceHeight) return "height_selection";
+    if (!context.linearFeet) return "asking_length";
+    if (context.demolition === undefined) return "asking_demolition";
+    if (context.painting === undefined) return "asking_painting";
+    if (context.gates === undefined) return "asking_gates";
+
+    return context.currentState || "asking_client_name";
+  }
+
+  private getNextState(currentState: string, message: string, context: ChatContext): string {
+    // Extraer información del mensaje según el estado actual
+    if (currentState === "asking_client_name" && message.trim().length > 0) {
+      context.clientName = message.trim();
+      return "asking_client_phone";
+    }
+    
+    if (currentState === "asking_client_phone") {
+      // Extraer teléfono (buscar secuencia de números)
+      const phoneMatch = message.match(/\d{3}[\s-]?\d{3}[\s-]?\d{4}/);
+      if (phoneMatch) {
+        context.clientPhone = phoneMatch[0];
+        return "asking_client_email";
       }
-    );
+      context.clientPhone = message.trim();
+      return "asking_client_email";
+    }
+    
+    if (currentState === "asking_client_email") {
+      // Extraer email (buscar formato de email)
+      const emailMatch = message.match(/\S+@\S+\.\S+/);
+      if (emailMatch) {
+        context.clientEmail = emailMatch[0];
+      } else {
+        context.clientEmail = message.trim();
+      }
+      return "asking_client_address";
+    }
+    
+    if (currentState === "asking_client_address") {
+      context.clientAddress = message.trim();
+      return "fence_type_selection";
+    }
+    
+    if (currentState === "fence_type_selection") {
+      const lowerMessage = message.toLowerCase();
+      if (lowerMessage.includes("madera") || lowerMessage.includes("wood")) {
+        context.fenceType = "Wood Fence";
+      } else if (lowerMessage.includes("chain") || lowerMessage.includes("metal")) {
+        context.fenceType = "Chain Link Fence";
+      } else if (lowerMessage.includes("vinyl") || lowerMessage.includes("vinilo")) {
+        context.fenceType = "Vinyl Fence";
+      } else {
+        context.fenceType = "Wood Fence"; // Default
+      }
+      return "height_selection";
+    }
+    
+    if (currentState === "height_selection") {
+      const heightMatch = message.match(/\d+/);
+      if (heightMatch) {
+        const height = parseInt(heightMatch[0]);
+        if ([3, 4, 6, 8].includes(height)) {
+          context.fenceHeight = height;
+        } else {
+          context.fenceHeight = 6; // Default
+        }
+      } else {
+        context.fenceHeight = 6; // Default
+      }
+      return "asking_length";
+    }
+    
+    if (currentState === "asking_length") {
+      const lengthMatch = message.match(/\d+/);
+      if (lengthMatch) {
+        context.linearFeet = parseInt(lengthMatch[0]);
+      } else {
+        context.linearFeet = 100; // Default
+      }
+      context.state = "California"; // Default state
+      return "asking_demolition";
+    }
+    
+    if (currentState === "asking_demolition") {
+      const lowerMessage = message.toLowerCase();
+      context.demolition = lowerMessage.includes("sí") || lowerMessage.includes("si") || lowerMessage.includes("yes");
+      return "asking_painting";
+    }
+    
+    if (currentState === "asking_painting") {
+      const lowerMessage = message.toLowerCase();
+      context.painting = lowerMessage.includes("sí") || lowerMessage.includes("si") || lowerMessage.includes("yes");
+      return "asking_gates";
+    }
+    
+    if (currentState === "asking_gates") {
+      const lowerMessage = message.toLowerCase();
+      if (lowerMessage.includes("sí") || lowerMessage.includes("si") || lowerMessage.includes("yes")) {
+        context.gates = [{ type: "Standard", width: 4, price: 350, description: "Puerta estándar" }];
+      } else {
+        context.gates = [];
+      }
+      return "confirming_details";
+    }
+    
+    // Si estamos en confirming_details y confirmaron, pasamos a preparar el estimado
+    if (currentState === "confirming_details") {
+      const lowerMessage = message.toLowerCase();
+      if (lowerMessage.includes("correcto") || lowerMessage.includes("sí") || lowerMessage.includes("si")) {
+        return "preparing_estimate";
+      }
+      return "confirming_details";
+    }
+    
+    return currentState;
+  }
+
+  private getOptionsForState(state: string, message: string = ""): string[] {
+    const isSpanish = this.detectLanguage(message);
+    
+    switch (state) {
+      case "fence_type_selection":
+        return isSpanish
+          ? ["Cerca de Madera", "Cerca de Metal (Chain Link)", "Cerca de Vinilo"]
+          : ["Wood Fence", "Chain Link Fence", "Vinyl Fence"];
+      
+      case "height_selection":
+        return isSpanish
+          ? ["3 pies (36 pulgadas)", "4 pies (48 pulgadas)", "6 pies (72 pulgadas)", "8 pies (96 pulgadas)"]
+          : ["3 feet (36 inches)", "4 feet (48 inches)", "6 feet (72 inches)", "8 feet (96 inches)"];
+      
+      case "asking_length":
+        return ["50 pies", "75 pies", "100 pies", "125 pies", "150 pies"];
+      
+      case "asking_demolition":
+        return ["Sí, necesito demolición", "No, no necesito demolición"];
+      
+      case "asking_painting":
+        return ["Sí, quiero incluir pintura", "No, no necesito pintura"];
+      
+      case "asking_gates":
+        return ["Sí, necesito puertas", "No, no necesito puertas"];
+      
+      case "confirming_details":
+        return ["✅ Todo está correcto, prepara el estimado", "🔄 Necesito hacer cambios"];
+      
+      default:
+        return [];
+    }
+  }
+
+  private detectLanguage(message: string): boolean {
+    // Detección simple de español por palabras clave
+    const spanishIndicators = [
+      "hola", "gracias", "por favor", "pies", "cerca", "madera", "necesito",
+    ];
+    return spanishIndicators.some((word) => message.toLowerCase().includes(word));
+  }
+
+  private async generateResponse(message: string, context: ChatContext, currentState: string): Promise<string> {
+    try {
+      const isSpanish = this.detectLanguage(message);
+      const basePrompt = isSpanish
+        ? `Eres Mervin, un asistente profesional bilingüe de ${context.contractorName || "Acme Fence"}. 
+Usa un tono profesional y amigable en español y pregunta una sola cosa por mensaje.`
+        : `You are Mervin, a professional bilingual assistant from ${context.contractorName || "Acme Fence"}. 
+Ask one question per message in clear, friendly English.`;
+
+      const rules = `
+Reglas:
+- Una pregunta por mensaje, máximo dos líneas.
+- Usa humor ligero y tono cordial.
+- Prioriza: Client info, Fence details, Extras.`;
+
+      const examples = `
+Ejemplo:
+"¿Qué tipo de cerca deseas, compa? Wood Fence, Chain Link, o Vinyl Fence?"`;
+
+      const priorities = `
+Priority:
+1. Client info (name, phone, email, address)
+2. Fence details (type, height, length)
+3. Extras (demolition, painting, gates)`;
+
+      const systemPrompt = basePrompt + "\n" + rules + "\n" + examples + "\n" + priorities;
+
+      const response = await this.openai.chat.completions.create({
+        model: "gpt-4",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: message },
+        ],
+        temperature: 0.7,
+        max_tokens: 150,
+      });
+
+      return response.choices[0].message.content || "Lo siento, no pude procesar tu mensaje.";
+    } catch (error) {
+      console.error("Error al generar respuesta:", error);
+      
+      // Respuestas de fallback según el estado actual
+      switch (currentState) {
+        case "asking_client_name":
+          return "¿Cuál es el nombre del cliente?";
+        case "asking_client_phone":
+          return "¿Me podrías proporcionar el número de teléfono del cliente?";
+        case "asking_client_email":
+          return "¿Cuál es el correo electrónico del cliente?";
+        case "asking_client_address":
+          return "¿Cuál es la dirección donde se instalará la cerca?";
+        case "fence_type_selection":
+          return "¿Qué tipo de cerca te gustaría instalar? ¿Wood Fence, Chain Link o Vinyl Fence?";
+        case "height_selection":
+          return "¿Qué altura necesitas para la cerca? ¿3, 4, 6 u 8 pies?";
+        case "asking_length":
+          return "¿Cuántos pies lineales de cerca necesitas?";
+        case "asking_demolition":
+          return "¿Necesitas demolición?";
+        case "asking_painting":
+          return "¿Quieres incluir pintura en el proyecto?";
+        case "asking_gates":
+          return "¿Necesitas incluir puertas?";
+        case "confirming_details":
+          return "¿Confirmamos los detalles y procedemos con el estimado?";
+        default:
+          return "¿En qué más puedo ayudarte?";
+      }
+    }
+  }
+
+  private async prepareEstimateResponse(context: ChatContext): Promise<ChatResponse> {
+    try {
+      // Aquí se podría generar el HTML del estimado, pero para simplificar
+      // vamos a devolver un mensaje de éxito indicando que se está preparando
+      const summary = `
+🎉 ¡Listo compa! Ya voy a preparar el estimado para:
+- ${context.fenceType} de ${context.fenceHeight} ft de altura
+- ${context.linearFeet} ft lineales
+- Para: ${context.clientName}
+- En: ${context.clientAddress}
+`;
+      
+      return {
+        message: summary + "\n\n¿Quieres que lo revisemos juntos o prefieres que te lo envíe por correo? 📧",
+        options: ["👀 Revisar estimado juntos", "📨 Enviar por correo"],
+        context: { ...context, currentState: "estimate_ready" }
+      };
+    } catch (error) {
+      console.error("Error al preparar el estimado:", error);
+      return {
+        message: "Lo siento, ha ocurrido un error al preparar el estimado. ¿Podemos intentarlo de nuevo?",
+        context: { ...context, currentState: "asking_client_name" }
+      };
+    }
   }
 }
 
-export const chatService = new ChatService(
-  new OpenAI({ apiKey: process.env.OPENAI_API_KEY }),
-  '1' // Default contractor ID
-);
+export const chatService = new ChatService(process.env.OPENAI_API_KEY || "");

@@ -1,5 +1,16 @@
 
 import { db } from "../firebase";
+import { 
+  collection, 
+  doc, 
+  setDoc, 
+  getDoc, 
+  getDocs, 
+  updateDoc, 
+  query, 
+  orderBy, 
+  limit as limitQuery
+} from "firebase/firestore";
 
 interface ConversationData {
   messages: Array<{
@@ -21,49 +32,96 @@ interface ContractorPreferences {
   };
 }
 
+// Función para obtener datos temporales si hay problemas con Firebase
+const getTemporaryData = () => {
+  return {
+    preferences: {
+      name: "Acme Fencing",
+      language: "es",
+      defaultGreeting: "¡Hola, bienvenido a Acme Fencing!"
+    },
+    recentConversations: []
+  };
+};
+
 export const memoryService = {
   saveConversation: async (
     contractorId: string,
     conversationId: string,
     data: ConversationData
   ) => {
-    await db
-      .collection("contractors")
-      .doc(contractorId)
-      .collection("conversations")
-      .doc(conversationId)
-      .set({
+    try {
+      const contractorsCollection = collection(db, "contractors");
+      const contractorDoc = doc(contractorsCollection, contractorId);
+      const conversationsCollection = collection(contractorDoc, "conversations");
+      const conversationDoc = doc(conversationsCollection, conversationId);
+      
+      await setDoc(conversationDoc, {
         ...data,
         timestamp: Date.now()
       });
+    } catch (error) {
+      console.error("Error saving conversation:", error);
+    }
   },
 
   getPastConversations: async (contractorId: string, limit = 10) => {
-    const snapshot = await db
-      .collection("contractors")
-      .doc(contractorId)
-      .collection("conversations")
-      .orderBy("timestamp", "desc")
-      .limit(limit)
-      .get();
-    return snapshot.docs.map(doc => doc.data() as ConversationData);
+    try {
+      const contractorsCollection = collection(db, "contractors");
+      const contractorDoc = doc(contractorsCollection, contractorId);
+      const conversationsCollection = collection(contractorDoc, "conversations");
+      
+      const q = query(
+        conversationsCollection, 
+        orderBy("timestamp", "desc"),
+        limitQuery(limit)
+      );
+      
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => doc.data() as ConversationData);
+    } catch (error) {
+      console.error("Error getting past conversations:", error);
+      return [];
+    }
   },
 
   getContractorPreferences: async (contractorId: string) => {
-    const doc = await db.collection("contractors").doc(contractorId).get();
-    return doc.exists ? (doc.data() as ContractorPreferences) : null;
+    try {
+      const contractorsCollection = collection(db, "contractors");
+      const contractorDoc = doc(contractorsCollection, contractorId);
+      const docSnapshot = await getDoc(contractorDoc);
+      
+      return docSnapshot.exists() ? (docSnapshot.data() as ContractorPreferences) : null;
+    } catch (error) {
+      console.error("Error getting contractor preferences:", error);
+      return null;
+    }
   },
 
   updateContractorPreferences: async (
     contractorId: string,
     preferences: Partial<ContractorPreferences>
   ) => {
-    await db.collection("contractors").doc(contractorId).update(preferences);
+    try {
+      const contractorsCollection = collection(db, "contractors");
+      const contractorDoc = doc(contractorsCollection, contractorId);
+      await updateDoc(contractorDoc, preferences as any);
+    } catch (error) {
+      console.error("Error updating contractor preferences:", error);
+    }
   },
 
   getLearningContext: async (contractorId: string) => {
-    const preferences = await memoryService.getContractorPreferences(contractorId);
-    const recentConversations = await memoryService.getPastConversations(contractorId, 5);
-    return { preferences, recentConversations };
+    try {
+      const preferences = await memoryService.getContractorPreferences(contractorId);
+      const recentConversations = await memoryService.getPastConversations(contractorId, 5);
+      return { 
+        preferences: preferences || { name: "Contratista", language: "es" }, 
+        recentConversations 
+      };
+    } catch (error) {
+      console.error("Error getting learning context:", error);
+      return getTemporaryData();
+    }
   }
 };
