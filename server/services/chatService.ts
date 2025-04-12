@@ -11,7 +11,7 @@ interface ChatContext {
   collectedData?: Record<string, any>;
 }
 
-export class ChatService {
+class ChatService {
   private context: ChatContext;
 
   constructor(
@@ -33,7 +33,7 @@ export class ChatService {
   private async generateSystemPrompt() {
     const contextData = await this.loadContextualData();
     const basePrompt = `
-      Eres Mervin, un asistente de ventas experto en cercas.
+      Eres Mervin, un asistente experto en generar estimados y contratos.
       Personalidad: ${JSON.stringify(mervinProfile)}
       Contexto: ${JSON.stringify(contextData)}
       Workflow actual: ${this.context.currentStep}
@@ -49,10 +49,8 @@ export class ChatService {
   }
 
   async handleMessage(message: string, userContext: any = {}) {
-    // Generar prompt del sistema
     const systemPrompt = await this.generateSystemPrompt();
 
-    // Procesar mensaje con OpenAI
     const response = await this.openai.chat.completions.create({
       model: "gpt-4",
       messages: [
@@ -63,7 +61,6 @@ export class ChatService {
       max_tokens: 150
     });
 
-    // Actualizar contexto y memoria
     const aiResponse = response.choices[0].message.content;
     await this.updateContext(message, aiResponse);
     await this.saveConversationMemory();
@@ -75,7 +72,6 @@ export class ChatService {
   }
 
   private async updateContext(userMessage: string, aiResponse: string) {
-    // Actualizar datos recopilados y estado del workflow
     const nextStep = mervinRoles.workflow.transitions.getNextStep(
       this.context.currentStep,
       this.context.collectedData
@@ -98,3 +94,8 @@ export class ChatService {
     );
   }
 }
+
+export const chatService = new ChatService(
+  new OpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+  '1' // Default contractor ID
+);
