@@ -7,42 +7,42 @@
 
 @layer base {
   :root {
-    --background: 222 47% 11%;
+    --background: 0 0% 7%;
     --foreground: 210 40% 98%;
     
-    --card: 217 33% 17%;
+    --card: 0 0% 10%;
     --card-foreground: 210 40% 98%;
     
-    --popover: 222 47% 11%;
+    --popover: 0 0% 7%;
     --popover-foreground: 210 40% 98%;
     
-    --primary: 262 83% 58%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 180 100% 50%;
+    --primary-foreground: 0 0% 0%;
     
     --secondary: 173 84% 65%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary-foreground: 0 0% 7%;
     
-    --muted: 217 33% 17%;
+    --muted: 0 0% 15%;
     --muted-foreground: 215 16% 65%;
     
-    --accent: 217 33% 17%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 180 100% 50%;
+    --accent-foreground: 0 0% 0%;
     
     --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
     
-    --border: 217 33% 27%;
-    --input: 217 33% 17%;
-    --ring: 262 83% 58%;
+    --border: 180 100% 50%;
+    --input: 0 0% 15%;
+    --ring: 180 100% 50%;
     
-    --sidebar-background: 217 33% 17%;
+    --sidebar-background: 0 0% 10%;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 262 83% 58%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 33% 27%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217 33% 27%;
-    --sidebar-ring: 262 83% 58%;
+    --sidebar-primary: 180 100% 50%;
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: 180 100% 25%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 180 100% 50%;
+    --sidebar-ring: 180 100% 50%;
     
     --radius: 0.5rem;
   }
@@ -58,15 +58,23 @@
   h1, h2, h3, h4, h5, h6 {
     @apply font-quantico;
   }
+  
+  input, textarea, select, .form-input {
+    @apply border-accent focus:ring-accent focus:border-accent;
+  }
+  
+  button, .btn {
+    @apply focus:ring-accent;
+  }
 }
 
 @layer components {
   .chat-message {
-    @apply max-w-[85%] rounded-2xl mb-3 py-3 px-4 break-words;
+    @apply max-w-[85%] rounded-2xl mb-3 py-3 px-4 break-words border border-accent;
   }
   
   .user-message {
-    @apply bg-primary text-white rounded-tr-sm ml-auto;
+    @apply bg-primary text-primary-foreground rounded-tr-sm ml-auto;
   }
   
   .bot-message {
