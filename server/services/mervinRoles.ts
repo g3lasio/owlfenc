@@ -1,50 +1,91 @@
-// mervinRoles.ts
+
+export interface WorkflowStep {
+  id: string;
+  name: string;
+  requiredData: string[];
+  nextSteps: string[];
+  validations?: ((data: any) => boolean)[];
+}
 
 export const mervinRoles = {
-  tasks: [
-    "Recordar proyectos anteriores y clientes",
-    "Recopilar información actualizada del cliente",
-    "Consultar reglas (woodfencerules.js) y precios (materialParameters.json)",
-    "Preparar estimados personalizados",
-    "Generar preview interactivo para revisión antes del PDF",
-    "Permitir modificaciones claras y precisas al estimado",
-    "Notificar al contratista cuando se apruebe un estimado",
-    "Generar contratos precisos usando templates HTML predefinidos",
-  ],
+  tasks: {
+    dataCollection: [
+      "Recopilar información del cliente",
+      "Validar datos proporcionados",
+      "Gestionar preferencias del contratista",
+      "Mantener contexto de conversación"
+    ],
+    estimateGeneration: [
+      "Calcular costos de materiales",
+      "Aplicar reglas de negocio",
+      "Generar vista previa de estimado",
+      "Permitir ajustes y modificaciones"
+    ],
+    contractManagement: [
+      "Generar contratos desde plantillas",
+      "Validar información legal",
+      "Gestionar firmas y aprobaciones"
+    ]
+  },
 
   workflow: {
-    newEstimate: [
-      "Saludo inicial personalizado",
-      "Recopilar datos cliente y proyecto",
-      "Confirmar información recopilada",
-      "Generar preview del estimado",
-      "Esperar confirmación/modificaciones del contratista",
-      "Generar PDF definitivo del estimado",
-      "Almacenar proyecto en historial",
-    ],
-    contractGeneration: [
-      "Detectar aprobación del estimado",
-      "Recuperar datos completos del proyecto",
-      "Realizar validación adicional con el contratista",
-      "Generar contrato usando template específico",
-      "Almacenar contrato generado y notificar al contratista",
-    ],
-  },
+    states: {
+      initial: "greeting",
+      final: "farewell",
+      current: null
+    },
 
-  adjustmentsAllowed: [
-    "Agregar/quitar postes, concreto, pickets, tornillos, etc.",
-    "Ajustar cantidades, dimensiones y materiales",
-    "Modificar condiciones específicas y adicionales del proyecto",
-  ],
+    steps: {
+      greeting: {
+        id: "greeting",
+        name: "Saludo Inicial",
+        requiredData: ["contractorName"],
+        nextSteps: ["clientData"]
+      },
+      clientData: {
+        id: "clientData",
+        name: "Datos del Cliente",
+        requiredData: ["name", "phone", "email", "address"],
+        nextSteps: ["fenceDetails"]
+      },
+      fenceDetails: {
+        id: "fenceDetails",
+        name: "Detalles de la Cerca",
+        requiredData: ["type", "height", "length"],
+        nextSteps: ["estimate"]
+      }
+    },
+
+    transitions: {
+      validateStep: (currentStep: string, data: any): boolean => {
+        const step = mervinRoles.workflow.steps[currentStep];
+        return step.requiredData.every(field => data[field]);
+      },
+
+      getNextStep: (currentStep: string, data: any): string => {
+        if (!mervinRoles.workflow.transitions.validateStep(currentStep, data)) {
+          return currentStep;
+        }
+        const step = mervinRoles.workflow.steps[currentStep];
+        return step.nextSteps[0];
+      }
+    }
+  },
 
   notifications: {
-    onEstimateApproval:
-      "El cliente ha aprobado el estimado, carnal. ¿Generamos contrato de una vez?",
-    onEstimateRevision:
-      "Hay modificaciones pendientes en este estimado, primo. Échales un ojo.",
-  },
-
-  responseTiming: {
-    maxEstimateGenerationTime: 80000, // 80 segundos
-  },
+    types: {
+      estimateApproval: "El cliente ha aprobado el estimado",
+      estimateRevision: "Hay modificaciones pendientes",
+      contractReady: "Contrato listo para revisión"
+    },
+    
+    createNotification: (type: keyof typeof mervinRoles.notifications.types, data: any) => {
+      return {
+        type,
+        message: mervinRoles.notifications.types[type],
+        data,
+        timestamp: new Date()
+      };
+    }
+  }
 };

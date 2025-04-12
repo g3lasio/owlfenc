@@ -1,57 +1,100 @@
-// chatService.ts
+
 import { mervinProfile } from "./mervinProfile";
 import { mervinRoles } from "./mervinRoles";
 import { memoryService } from "./memoryService";
 import OpenAI from "openai";
 
+interface ChatContext {
+  contractorId: string;
+  conversationId: string;
+  currentStep?: string;
+  collectedData?: Record<string, any>;
+}
+
 export class ChatService {
+  private context: ChatContext;
+
   constructor(
     private openai: OpenAI,
     private contractorId: string,
-  ) {}
+  ) {
+    this.context = {
+      contractorId,
+      conversationId: `chat-${Date.now()}`,
+      currentStep: mervinRoles.workflow.states.initial
+    };
+  }
 
-  async handleMessage(message: string, context: any) {
-    // Cargar preferencias y memoria del contratista
-    const preferences = await memoryService.getContractorPreferences(
-      this.contractorId,
+  private async loadContextualData() {
+    const { preferences, recentConversations } = await memoryService.getLearningContext(this.contractorId);
+    return { preferences, recentConversations };
+  }
+
+  private async generateSystemPrompt() {
+    const contextData = await this.loadContextualData();
+    const basePrompt = `
+      Eres Mervin, un asistente de ventas experto en cercas.
+      Personalidad: ${JSON.stringify(mervinProfile)}
+      Contexto: ${JSON.stringify(contextData)}
+      Workflow actual: ${this.context.currentStep}
+    `;
+    return basePrompt;
+  }
+
+  private validateTransition(nextStep: string): boolean {
+    return mervinRoles.workflow.transitions.validateStep(
+      this.context.currentStep,
+      this.context.collectedData
     );
-    const pastConversations = await memoryService.getPastConversations(
-      this.contractorId,
-    );
+  }
 
-    // Determinar estado actual y próximos pasos usando mervinRoles.workflow
-    const conversationState = this.determineState(context);
+  async handleMessage(message: string, userContext: any = {}) {
+    // Generar prompt del sistema
+    const systemPrompt = await this.generateSystemPrompt();
 
-    // Generar mensajes personalizados usando mervinProfile y contexto
-    const greeting = mervinProfile.greeting(
-      preferences.name,
-      preferences.gender,
-    );
-
-    // Usar OpenAI con prompts adaptados a roles y perfil claramente definidos
+    // Procesar mensaje con OpenAI
     const response = await this.openai.chat.completions.create({
       model: "gpt-4",
       messages: [
-        {
-          role: "system",
-          content: `Personalidad: ${JSON.stringify(mervinProfile)}. Tareas: ${JSON.stringify(mervinRoles.tasks)}.`,
-        },
-        { role: "user", content: message },
+        { role: "system", content: systemPrompt },
+        { role: "user", content: message }
       ],
-      max_tokens: 150,
+      temperature: 0.7,
+      max_tokens: 150
     });
 
-    // Guardar memoria de conversación actualizada
-    await memoryService.saveConversation(
-      this.contractorId,
-      context.conversationId,
-      context,
-    );
+    // Actualizar contexto y memoria
+    const aiResponse = response.choices[0].message.content;
+    await this.updateContext(message, aiResponse);
+    await this.saveConversationMemory();
 
-    return response.choices[0].message.content;
+    return {
+      message: aiResponse,
+      context: this.context
+    };
   }
 
-  determineState(context: any) {
-    // lógica clara y robusta de estados
+  private async updateContext(userMessage: string, aiResponse: string) {
+    // Actualizar datos recopilados y estado del workflow
+    const nextStep = mervinRoles.workflow.transitions.getNextStep(
+      this.context.currentStep,
+      this.context.collectedData
+    );
+
+    if (this.validateTransition(nextStep)) {
+      this.context.currentStep = nextStep;
+    }
+  }
+
+  private async saveConversationMemory() {
+    await memoryService.saveConversation(
+      this.context.contractorId,
+      this.context.conversationId,
+      {
+        messages: [],
+        context: this.context,
+        timestamp: Date.now()
+      }
+    );
   }
 }
