@@ -361,6 +361,27 @@ Haz una pregunta a la vez.`;
     currentState: string,
     message: string,
   ): Promise<string> {
+    // Validar si tenemos todos los datos necesarios
+    const validateRequiredData = () => {
+      const required = [
+        'clientName',
+        'clientPhone',
+        'clientEmail',
+        'clientAddress',
+        'fenceType',
+        'fenceHeight',
+        'linearFeet'
+      ];
+      
+      return required.every(field => this.lastUserContext[field]);
+    };
+
+    // Extraer números del mensaje
+    const extractNumber = (msg: string): number | null => {
+      const matches = msg.match(/\d+/);
+      return matches ? parseInt(matches[0]) : null;
+    };
+
     const nextStates: Record<string, string> = {
       asking_client_name: "asking_client_phone",
       asking_client_phone: "asking_client_email",
@@ -374,6 +395,15 @@ Haz una pregunta a la vez.`;
       asking_gates: "confirming_details",
       confirming_details: "preparing_estimate",
     };
+
+    // Procesar mensajes según el estado actual
+    if (currentState === "asking_length") {
+      const feet = extractNumber(message);
+      if (feet) {
+        this.lastUserContext.linearFeet = feet;
+        this.lastUserContext.state = "California"; // Default state
+      }
+    }
 
     if (
       currentState === "confirming_details" &&
@@ -460,24 +490,54 @@ Haz una pregunta a la vez.`;
 
   private async generateEstimate(context: any) {
     try {
+      // Validar datos requeridos
+      const requiredFields = [
+        'clientName',
+        'clientPhone', 
+        'clientEmail',
+        'clientAddress',
+        'fenceType',
+        'fenceHeight',
+        'linearFeet'
+      ];
+
+      const missingFields = requiredFields.filter(field => !context[field]);
+      
+      if (missingFields.length > 0) {
+        throw new Error(`Faltan datos requeridos: ${missingFields.join(', ')}`);
+      }
+
+      // Preparar detalles del proyecto
+      const projectDetails = {
+        clientName: context.clientName,
+        clientPhone: context.clientPhone,
+        clientEmail: context.clientEmail,
+        address: context.clientAddress,
+        fenceType: context.fenceType,
+        fenceHeight: context.fenceHeight,
+        fenceLength: context.linearFeet,
+        demolition: context.demolition || false,
+        painting: context.painting || false,
+        gates: context.gates || [],
+        state: context.state || 'California',
+        context: {
+          ...context,
+          estimateDate: new Date().toISOString(),
+          projectId: `EST-${Date.now()}`,
+          contractorInfo: {
+            name: context.contractorName,
+            license: context.contractorLicense,
+            phone: context.contractorPhone,
+            email: context.contractorEmail,
+            address: context.contractorAddress
+          }
+        },
+      };
+
       const response = await fetch("/api/generate-estimate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          projectDetails: {
-            clientName: context.clientName,
-            clientPhone: context.clientPhone,
-            clientEmail: context.clientEmail,
-            address: context.clientAddress,
-            fenceType: context.fenceType,
-            fenceHeight: context.fenceHeight,
-            fenceLength: context.linearFeet,
-            demolition: context.demolition,
-            painting: context.painting,
-            gates: context.gates,
-            context: context,
-          },
-        }),
+        body: JSON.stringify({ projectDetails }),
       });
       const data = await response.json();
       return data.html;
