@@ -294,28 +294,61 @@ Usa un tono profesional pero amigable, con toques mexicanos.`,
     return spanishIndicators.some((word) => message.toLowerCase().includes(word));
   }
 
+  private getQuestionSequence(fenceType: string): string[] {
+    const baseQuestions = [
+      'clientName',
+      'clientPhone',
+      'clientEmail',
+      'clientAddress'
+    ];
+
+    const woodFenceQuestions = [
+      'height',
+      'linearFeet',
+      'postType',
+      'demolition',
+      'painting',
+      'gates'
+    ];
+
+    return [...baseQuestions, ...woodFenceQuestions];
+  }
+
   private calculateProgress(context: ChatContext): number {
-    const requiredFields = ['clientName', 'clientPhone', 'clientEmail', 'clientAddress', 'fenceType', 'fenceHeight', 'linearFeet', 'demolition', 'painting', 'gates'];
-    const completedFields = requiredFields.filter(field => context[field] !== undefined).length;
-    return Math.round((completedFields / requiredFields.length) * 100);
+    const sequence = this.getQuestionSequence(context.fenceType || 'wood');
+    const completed = sequence.filter(field => context[field] !== undefined).length;
+    return Math.round((completed / sequence.length) * 100);
+  }
+
+  private getNextQuestion(context: ChatContext): string {
+    const sequence = this.getQuestionSequence(context.fenceType || 'wood');
+    const nextField = sequence.find(field => context[field] === undefined);
+    
+    const questions = {
+      clientName: '¿Cuál es el nombre completo del cliente?',
+      clientPhone: '¿Cuál es el número de teléfono para contactar?',
+      clientEmail: '¿Cuál es el correo electrónico?',
+      clientAddress: '¿Cuál es la dirección de instalación?',
+      height: '¿Qué altura necesita? (3, 4, 6 u 8 pies)',
+      linearFeet: '¿Cuántos pies lineales de cerca necesita?',
+      postType: '¿Qué tipo de postes prefiere? (4x4, 6x6 o metal)',
+      demolition: '¿Necesita demolición de cerca existente?',
+      painting: '¿Desea incluir pintura o acabado?',
+      gates: '¿Cuántas puertas necesita?'
+    };
+
+    return questions[nextField] || '¿Podemos revisar los detalles del proyecto?';
   }
 
   private async generateResponse(message: string, context: ChatContext, currentState: string): Promise<string> {
     try {
-      const progress = this.calculateProgress(context);
+      const nextQuestion = this.getNextQuestion(context);
       const isSpanish = this.detectLanguage(message);
       const basePrompt = isSpanish
-        ? `Eres Mervin, asistente de ${context.contractorName || "Acme Fence"}. IMPORTANTE:
-- Haz UNA sola pregunta corta por mensaje
-- Muestra el progreso: [${progress}% completado]
-- Sé breve y directo`
-        : `You are Mervin from ${context.contractorName || "Acme Fence"}. IMPORTANT:
-- Ask ONE short question per message
-- Show progress: [${progress}% completed]
-- Be brief and direct`;
-
-      const rules = `Formato: "[XX% completado] ¿Tu pregunta breve aquí?"`;
-      const systemPrompt = basePrompt + "\n" + rules;
+        ? `Eres Mervin, asistente de ${context.contractorName || "Acme Fence"}. 
+Haz solo esta pregunta: "${nextQuestion}"`
+        : `You are Mervin from ${context.contractorName || "Acme Fence"}.
+Ask only this question: "${nextQuestion}"`;
 
       const response = await this.openai.chat.completions.create({
         model: "gpt-4",

@@ -25,6 +25,19 @@ export default function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [context, setContext] = useState<Record<string, any>>({});
   const [isProcessing, setIsProcessing] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  const ProgressBar = () => (
+    <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 my-4">
+      <div 
+        className="bg-blue-600 h-2.5 rounded-full" 
+        style={{ width: `${progress}%` }}
+      ></div>
+      <div className="text-sm text-center mt-1">
+        Progreso: {progress}%
+      </div>
+    </div>
+  );
   const [projectId, setProjectId] = useState<string>(`PRJ-${Date.now().toString().slice(-6)}`);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
