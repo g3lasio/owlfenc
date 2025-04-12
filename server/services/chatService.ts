@@ -126,6 +126,24 @@ export class ChatService {
   }
 
   private determineConversationState(context: any): string {
+    // Verificar si tenemos toda la información necesaria
+    const hasAllInfo = context.clientName && 
+                      context.clientPhone && 
+                      context.clientEmail && 
+                      context.clientAddress &&
+                      context.fenceType &&
+                      context.fenceHeight &&
+                      context.linearFeet &&
+                      context.demolition !== undefined &&
+                      context.painting !== undefined &&
+                      context.gates !== undefined;
+
+    // Si tenemos toda la información, preparar el estimado
+    if (hasAllInfo) {
+      return "preparing_estimate";
+    }
+
+    // Si no, continuar con el flujo normal
     if (!context.clientName) return "asking_client_name";
     if (!context.clientPhone) return "asking_client_phone";
     if (!context.clientEmail) return "asking_client_email";
@@ -136,10 +154,11 @@ export class ChatService {
     if (context.demolition === undefined) return "asking_demolition";
     if (context.painting === undefined) return "asking_painting";
     if (context.gates === undefined) return "asking_gates";
-    return "calculating_estimate";
+    
+    return "preparing_estimate";
   }
 
-  private updateConversationState(currentState: string, message: string): string {
+  private async updateConversationState(currentState: string, message: string): Promise<string> {
     const nextStates = {
       "asking_client_name": "asking_client_phone",
       "asking_client_phone": "asking_client_email",
@@ -150,9 +169,56 @@ export class ChatService {
       "asking_length": "asking_demolition",
       "asking_demolition": "asking_painting",
       "asking_painting": "asking_gates",
-      "asking_gates": "calculating_estimate"
+      "asking_gates": "preparing_estimate"
     };
-    return nextStates[currentState] || "calculating_estimate";
+
+    const nextState = nextStates[currentState] || currentState;
+    
+    if (nextState === "preparing_estimate") {
+      // Generar el estimado usando el template
+      const estimateHtml = await this.generateEstimate(context);
+      return {
+        message: "¡Listo! Aquí está tu estimado. ¿Quieres que lo revise contigo o prefieres que te lo envíe por correo?",
+        template: {
+          type: "estimate",
+          html: estimateHtml
+        }
+      };
+    }
+
+    return nextState;
+  }
+
+  private async generateEstimate(context: any) {
+    try {
+      const response = await fetch('/api/generate-estimate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          projectDetails: {
+            clientName: context.clientName,
+            clientPhone: context.clientPhone,
+            clientEmail: context.clientEmail,
+            address: context.clientAddress,
+            fenceType: context.fenceType,
+            fenceHeight: context.fenceHeight,
+            fenceLength: context.linearFeet,
+            demolition: context.demolition,
+            painting: context.painting,
+            gates: context.gates,
+            context: context
+          }
+        })
+      });
+
+      const data = await response.json();
+      return data.html;
+    } catch (error) {
+      console.error('Error generating estimate:', error);
+      throw error;
+    }
   }
 }
 
