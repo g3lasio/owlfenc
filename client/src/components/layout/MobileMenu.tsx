@@ -76,7 +76,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
         <nav className="p-4 space-y-6">
           {/* 1. Inicio y Dashboard */}
           <div className="space-y-1">
-            <div className="px-2 text-sm font-medium text-muted-foreground mb-2">Principal</div>
+            <div className="px-2 text-sm font-medium text-muted-foreground mb-2 font-quantico">Principal</div>
             <Link href="/" className="flex items-center p-2 rounded-md hover:bg-accent">
               <i className="ri-dashboard-line mr-3"></i>
               <span>Dashboard</span>
@@ -85,7 +85,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
 
           {/* 2. Proyectos y Documentos */}
           <div className="space-y-1">
-            <div className="px-2 text-sm font-medium text-muted-foreground mb-2">Proyectos</div>
+            <div className="px-2 text-sm font-medium text-muted-foreground mb-2 font-quantico">Proyectos</div>
             <Link href="/new-estimate" className="flex items-center p-2 rounded-md hover:bg-accent">
               <i className="ri-file-add-line mr-3"></i>
               <span>Nuevo Estimado</span>
@@ -106,7 +106,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
 
           {/* 3. Tipos de Cercas */}
           <div className="space-y-1">
-            <div className="px-2 text-sm font-medium text-muted-foreground mb-2">Catálogo</div>
+            <div className="px-2 text-sm font-medium text-muted-foreground mb-2 font-quantico">Catálogo</div>
             <Link href="/category/wood" className="flex items-center p-2 rounded-md hover:bg-accent">
               <i className="ri-wood-line mr-3"></i>
               <span>Cercas de Madera</span>
@@ -115,7 +115,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
 
           {/* 4. Configuración y Sistema */}
           <div className="space-y-1">
-            <div className="px-2 text-sm font-medium text-muted-foreground mb-2">Configuración</div>
+            <div className="px-2 text-sm font-medium text-muted-foreground mb-2 font-quantico">Configuración</div>
             <Link href="/profile" className="flex items-center p-2 rounded-md hover:bg-accent">
               <i className="ri-user-settings-line mr-3"></i>
               <span>Perfil de Empresa</span>
@@ -136,7 +136,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
 
           {/* 5. Soporte y Ayuda */}
           <div className="space-y-1">
-            <div className="px-2 text-sm font-medium text-muted-foreground mb-2">Soporte</div>
+            <div className="px-2 text-sm font-medium text-muted-foreground mb-2 font-quantico">Soporte</div>
             <Link href="/help" className="flex items-center p-2 rounded-md hover:bg-accent">
               <i className="ri-question-line mr-3"></i>
               <span>Centro de Ayuda</span>
