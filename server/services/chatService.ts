@@ -11,21 +11,36 @@ export class ChatService {
     vinyl: { name: "Vinyl Fence" }
   };
   
-  private getFenceTypeOptions(): string[] {
-    return [
+  private getFenceTypeOptions(isSpanish: boolean): string[] {
+    return isSpanish ? [
       "Cerca de Madera",
       "Cerca de Metal (Chain Link)",
       "Cerca de Vinilo"
+    ] : [
+      "Wood Fence",
+      "Chain Link Fence",
+      "Vinyl Fence"
     ];
   }
   
-  private getHeightOptions(): string[] {
-    return [
-      "3 pies de altura",
-      "4 pies de altura",
-      "6 pies de altura",
-      "8 pies de altura"
+  private getHeightOptions(isSpanish: boolean): string[] {
+    return isSpanish ? [
+      "3 pies (36 pulgadas)",
+      "4 pies (48 pulgadas)", 
+      "6 pies (72 pulgadas)",
+      "8 pies (96 pulgadas)"
+    ] : [
+      "3 feet (36 inches)",
+      "4 feet (48 inches)",
+      "6 feet (72 inches)", 
+      "8 feet (96 inches)"
     ];
+  }
+
+  private detectLanguage(message: string): boolean {
+    // Simple language detection based on common Spanish words
+    const spanishIndicators = ['hola', 'gracias', 'por favor', 'pies', 'cerca', 'madera', 'necesito'];
+    return spanishIndicators.some(word => message.toLowerCase().includes(word));
   }
   
   private getDemolitionOptions(): string[] {
@@ -165,12 +180,20 @@ export class ChatService {
         options = this.getGatesOptions();
       }
 
-      const systemPrompt = `Eres Mervin, un asistente súper mexicano y carismático de ${context.contractorName || 'Owl Fence'}. 
-      Tu personalidad:
-      - Usas MUCHAS expresiones mexicanas ("chale", "órale", "va que va", "sale y vale", "chido", "fierro")
-      - Eres súper directo y divertido, como un cuate de confianza
-      - Haces UNA SOLA pregunta por mensaje, corta y al grano
-      - Tu humor es 100% mexicano pero profesional
+      const isSpanish = this.detectLanguage(message);
+      const systemPrompt = isSpanish ? 
+        `Eres Mervin, un asistente profesional bilingüe de ${context.contractorName || 'Owl Fence'}. 
+        Tu personalidad en español:
+        - Usas un español profesional con toques amigables
+        - Siempre mencionas medidas en pies y pulgadas
+        - Haces UNA pregunta por mensaje, clara y directa
+        - Mantienes un tono cordial pero eficiente` :
+        `You are Mervin, a professional bilingual assistant from ${context.contractorName || 'Owl Fence'}.
+        Your English personality:
+        - You use professional yet friendly American English
+        - You always specify measurements in feet and inches
+        - You ask ONE question per message, clear and direct
+        - You maintain a cordial but efficient tone`;
       
       Reglas estrictas:
       - UNA pregunta por mensaje, no más
