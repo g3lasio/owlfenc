@@ -27,6 +27,27 @@ export class ChatService {
       "8 pies de altura"
     ];
   }
+  
+  private getDemolitionOptions(): string[] {
+    return [
+      "Sí, necesito demolición",
+      "No, no necesito demolición"
+    ];
+  }
+  
+  private getPaintingOptions(): string[] {
+    return [
+      "Sí, quiero incluir pintura",
+      "No, no necesito pintura"
+    ];
+  }
+  
+  private getGatesOptions(): string[] {
+    return [
+      "Sí, necesito puertas",
+      "No, no necesito puertas"
+    ];
+  }
 
   constructor(apiKey: string) {
     this.openai = new OpenAI({ apiKey });
@@ -131,10 +152,17 @@ export class ChatService {
       // @ts-ignore - No necesitamos tipado para woodRules ya que solo se usa para el prompt
       const woodRules = await import("../../client/src/data/rules/woodfencerules.js");
       
+      // Asignar opciones según el estado de la conversación
       if (conversationState === "fence_type_selection") {
         options = this.getFenceTypeOptions();
       } else if (conversationState === "height_selection") {
         options = this.getHeightOptions();
+      } else if (conversationState === "asking_demolition") {
+        options = this.getDemolitionOptions();
+      } else if (conversationState === "asking_painting") {
+        options = this.getPaintingOptions();
+      } else if (conversationState === "asking_gates") {
+        options = this.getGatesOptions();
       }
 
       const systemPrompt = `Eres Mervin, un asistente súper mexicano y carismático de ${context.contractorName || 'Owl Fence'}. 
@@ -179,16 +207,44 @@ export class ChatService {
         max_tokens: 150
       });
 
-      // Actualización del estado de la conversación
-      const nextState = this.updateConversationState(conversationState, message);
+      // Actualización del estado de la conversación y contexto
+      const nextState = await this.updateConversationState(conversationState, message);
+      
+      // Aquí actualizamos el contexto para incluir datos capturados en updateConversationState
+      const updatedContext = {
+        ...context,
+        ...this.lastUserContext, // Incluimos cualquier cambio que se haya hecho durante updateConversationState
+        currentState: nextState
+      };
+      
+      // Si es un tipo de cerca "Wood Fence", cargamos reglas específicas
+      if (updatedContext.fenceType === "Wood Fence" && conversationState === "fence_type_selection") {
+        const woodFencePrompt = `
+          Ahora el cliente ha seleccionado Cerca de Madera.
+          
+          Para cercas de madera, recuerda:
+          - Las alturas estándar son 3, 4, 6 y 8 pies
+          - Para 6 pies o más, recomendar postes 4x4 o 6x6
+          - Preguntar sobre demolición, pintura y puertas
+          
+          Haz una pregunta a la vez siguiendo el flujo establecido.
+        `;
+        
+        // Modificamos el mensaje en caso de selección de cerca de madera
+        if (aiResponse.choices[0].message.content?.includes("?")) {
+          // Solo si el mensaje contiene una pregunta
+          return {
+            message: aiResponse.choices[0].message.content || "¿Qué altura necesitas para tu cerca de madera? 🌵",
+            options,
+            context: updatedContext
+          };
+        }
+      }
 
       return {
         message: aiResponse.choices[0].message.content || "Lo siento, no pude procesar tu mensaje.",
         options,
-        context: {
-          ...context,
-          currentState: nextState
-        }
+        context: updatedContext
       };
     } catch (error) {
       console.error("Error en ChatService:", error);
@@ -258,9 +314,81 @@ export class ChatService {
       "confirming_details": "preparing_estimate"
     };
 
-    // Para transiciones específicas basadas en el mensaje
+    // Transiciones específicas basadas en el mensaje
     if (currentState === "confirming_details" && message.toLowerCase().includes("correcto")) {
       return "preparing_estimate";
+    }
+    
+    // Capturar el nombre del cliente
+    if (currentState === "asking_client_name") {
+      // Intentamos extraer un nombre de al menos dos palabras
+      const nameParts = message.trim().split(/\s+/);
+      if (nameParts.length >= 2) {
+        this.lastUserContext.clientName = message.trim();
+      }
+    }
+    
+    // Si está seleccionando el tipo de cerca
+    if (currentState === "fence_type_selection") {
+      // Detectar selección del tipo de cerca
+      const lowerMessage = message.toLowerCase();
+      if (lowerMessage.includes("madera")) {
+        this.lastUserContext.fenceType = "Wood Fence";
+        console.log("Tipo de cerca seleccionado: Wood Fence");
+        
+        // Cargar las reglas de woodfencerules.js para cercas de madera
+        // @ts-ignore
+        const woodRules = await import("../../client/src/data/rules/woodfencerules.js");
+        
+        // Establecer valores predeterminados basados en las reglas
+        if (woodRules && woodRules.defaultSettings) {
+          this.lastUserContext.woodRulesLoaded = true;
+          this.lastUserContext.postType = woodRules.defaultSettings.postType || "4x4";
+        }
+      } else if (lowerMessage.includes("metal") || lowerMessage.includes("chain link")) {
+        this.lastUserContext.fenceType = "Chain Link Fence";
+      } else if (lowerMessage.includes("vinilo") || lowerMessage.includes("vinyl")) {
+        this.lastUserContext.fenceType = "Vinyl Fence";
+      }
+    }
+    
+    // Si está seleccionando altura
+    if (currentState === "height_selection") {
+      // Extraer altura de la selección
+      const lowerMessage = message.toLowerCase();
+      if (lowerMessage.includes("3")) {
+        this.lastUserContext.fenceHeight = 3;
+      } else if (lowerMessage.includes("4")) {
+        this.lastUserContext.fenceHeight = 4;
+      } else if (lowerMessage.includes("6")) {
+        this.lastUserContext.fenceHeight = 6;
+      } else if (lowerMessage.includes("8")) {
+        this.lastUserContext.fenceHeight = 8;
+      }
+    }
+    
+    // Si está respondiendo sobre demolición
+    if (currentState === "asking_demolition") {
+      const lowerMessage = message.toLowerCase();
+      this.lastUserContext.demolition = lowerMessage.includes("sí") || lowerMessage.includes("si") || lowerMessage.includes("necesito demolición");
+    }
+    
+    // Si está respondiendo sobre pintura
+    if (currentState === "asking_painting") {
+      const lowerMessage = message.toLowerCase();
+      this.lastUserContext.painting = lowerMessage.includes("sí") || lowerMessage.includes("si") || lowerMessage.includes("incluir pintura");
+    }
+    
+    // Si está respondiendo sobre puertas
+    if (currentState === "asking_gates") {
+      const lowerMessage = message.toLowerCase();
+      const needsGates = lowerMessage.includes("sí") || lowerMessage.includes("si") || lowerMessage.includes("necesito puertas");
+      this.lastUserContext.gates = needsGates ? [] : false;
+      
+      // Si necesita puertas, inicializamos un array vacío que se llenará después
+      if (needsGates) {
+        this.lastUserContext.gatesCount = 1; // Por defecto 1 puerta
+      }
     }
 
     const nextState = nextStates[currentState] || currentState;

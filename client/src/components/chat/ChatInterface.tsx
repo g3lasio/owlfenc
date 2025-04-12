@@ -13,7 +13,7 @@ export interface Message {
   id: string;
   content: string;
   sender: "user" | "assistant";
-  options?: string[];
+  options?: string[] | { text: string; clickable: boolean }[];
   template?: {
     type: "estimate" | "contract";
     html: string;
