@@ -13,6 +13,11 @@ interface ChatMessageProps {
   onOptionClick?: (option: string) => void;
 }
 
+const extractProgress = (content: string): number | null => {
+  const match = content.match(/\[(\d+)%\s*(?:completado|completed)\]/i);
+  return match ? parseInt(match[1]) : null;
+};
+
 export default function ChatMessage({ message, onOptionClick }: ChatMessageProps) {
   const messageClass = message.sender === "user" ? "user-message" : "bot-message";
   

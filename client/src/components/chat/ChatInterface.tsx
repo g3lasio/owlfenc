@@ -28,13 +28,25 @@ export default function ChatInterface() {
   const [progress, setProgress] = useState(0);
 
   const ProgressBar = () => (
-    <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 my-4">
-      <div 
-        className="bg-blue-600 h-2.5 rounded-full" 
-        style={{ width: `${progress}%` }}
-      ></div>
-      <div className="text-sm text-center mt-1">
-        Progreso: {progress}%
+    <div className="fixed top-16 left-0 right-0 z-50 px-4 py-2 bg-background/80 backdrop-blur-sm border-b">
+      <div className="max-w-3xl mx-auto">
+        <div className="flex items-center gap-2">
+          <div className="flex-1 bg-secondary rounded-full h-3 overflow-hidden">
+            <div 
+              className="bg-primary h-full rounded-full transition-all duration-500 ease-in-out"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <span className="text-sm font-medium w-16 text-right">
+            {progress}%
+          </span>
+        </div>
+        <div className="text-xs text-muted-foreground text-center mt-1">
+          {progress < 30 ? 'Recopilando información básica...' :
+           progress < 60 ? 'Obteniendo detalles del proyecto...' :
+           progress < 90 ? 'Refinando especificaciones...' :
+           'Finalizando estimado...'}
+        </div>
       </div>
     </div>
   );
