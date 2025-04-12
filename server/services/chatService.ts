@@ -195,11 +195,15 @@ export class ChatService {
         - You ask ONE question per message, clear and direct
         - You maintain a cordial but efficient tone`;
       
+      const rules = `
       Reglas estrictas:
       - UNA pregunta por mensaje, no más
       - Máximo 2 líneas de texto por respuesta
       - Usa albures ligeros y humor mexicano
       - Si hay duda, recomienda basado en ${JSON.stringify(woodRules)}
+      `;
+      
+      systemPrompt += rules;
       
       Ejemplos de respuestas correctas:
       "¿Qué onda cuate, de qué material quieres tu cerca? 🌵"
