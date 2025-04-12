@@ -31,13 +31,13 @@ export default function ChatInterface() {
     <div className="fixed top-16 left-0 right-0 z-50 px-4 py-2 bg-background/80 backdrop-blur-sm border-b">
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center gap-2">
-          <div className="flex-1 bg-secondary rounded-full h-3 overflow-hidden">
+          <div className="flex-1 bg-muted rounded-full h-3 overflow-hidden">
             <div 
-              className="bg-primary h-full rounded-full transition-all duration-500 ease-in-out"
+              className="bg-primary h-full rounded-full transition-all duration-300 ease-out"
               style={{ width: `${progress}%` }}
             />
           </div>
-          <span className="text-sm font-medium w-16 text-right">
+          <span className="text-sm font-medium w-14 text-right">
             {progress}%
           </span>
         </div>
@@ -45,7 +45,7 @@ export default function ChatInterface() {
           {progress < 30 ? 'Recopilando información básica...' :
            progress < 60 ? 'Obteniendo detalles del proyecto...' :
            progress < 90 ? 'Refinando especificaciones...' :
-           'Finalizando estimado...'}
+           'Preparando estimado...'}
         </div>
       </div>
     </div>
@@ -73,7 +73,7 @@ export default function ChatInterface() {
         console.error("Error initializing chat:", error);
       }
     };
-    
+
     initializeChat();
   }, []);
 
@@ -281,6 +281,7 @@ export default function ChatInterface() {
         onSendMessage={handleSendMessage} 
         isDisabled={isProcessing}
       />
+      {isProcessing && <ProgressBar />}
     </div>
   );
 }

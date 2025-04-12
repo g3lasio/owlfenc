@@ -406,21 +406,68 @@ Tu única pregunta debe ser: "${nextQuestion}"`;
   }
 
   private calculateProgress(context: ChatContext): number {
-    const totalFields = 9; // Number of required fields
-    let completedFields = 0;
+    const requiredFields = [
+      { field: 'clientName', weight: 15 },
+      { field: 'clientPhone', weight: 15 },
+      { field: 'clientEmail', weight: 15 },
+      { field: 'clientAddress', weight: 15 },
+      { field: 'fenceType', weight: 10 },
+      { field: 'fenceHeight', weight: 10 },
+      { field: 'linearFeet', weight: 10 },
+      { field: 'demolition', weight: 5 },
+      { field: 'painting', weight: 5 }
+    ];
 
-    if (context.clientName) completedFields++;
-    if (context.clientPhone) completedFields++;
-    if (context.clientEmail) completedFields++;
-    if (context.clientAddress) completedFields++;
-    if (context.fenceType) completedFields++;
-    if (context.fenceHeight) completedFields++;
-    if (context.linearFeet) completedFields++;
-    if (context.demolition !== undefined) completedFields++;
-    if (context.painting !== undefined) completedFields++;
+    const progress = requiredFields.reduce((total, { field, weight }) => {
+      return total + (context[field] !== undefined ? weight : 0);
+    }, 0);
 
+    return Math.min(100, progress);
+  }
 
-    return Math.round((completedFields / totalFields) * 100);
+  private async generateResponse(message: string, context: ChatContext, currentState: string): Promise<string> {
+    try {
+      const progress = this.calculateProgress(context);
+      const nextField = this.getNextRequiredField(context);
+      
+      if (!nextField) {
+        return `¡Perfecto! Tengo toda la información necesaria. [${progress}% completado]`;
+      }
+
+      const questions = {
+        clientName: '¿Cuál es el nombre completo del cliente?',
+        clientPhone: '¿Cuál es el número de teléfono para contactar?',
+        clientEmail: '¿Cuál es el correo electrónico?',
+        clientAddress: '¿Cuál es la dirección de instalación?',
+        fenceType: '¿Qué tipo de cerca necesita? (Madera, Metal o Vinilo)',
+        fenceHeight: '¿Qué altura necesita? (3, 4, 6 u 8 pies)',
+        linearFeet: '¿Cuántos pies lineales de cerca necesita?',
+        demolition: '¿Necesita demolición de cerca existente?',
+        painting: '¿Desea incluir pintura o acabado?'
+      };
+
+      const response = `[${progress}% completado] ${questions[nextField]}`;
+      return response;
+    } catch (error) {
+      console.error("Error generando respuesta:", error);
+      return "Disculpe, hubo un error. ¿Podemos continuar con la información del cliente?";
+    }
+  }
+
+  private getNextRequiredField(context: ChatContext): string | null {
+    const fields = [
+      'clientName',
+      'clientPhone', 
+      'clientEmail',
+      'clientAddress',
+      'fenceType',
+      'fenceHeight',
+      'linearFeet',
+      'demolition',
+      'painting'
+    ];
+
+    return fields.find(field => context[field] === undefined) || null;
   }
 
 
