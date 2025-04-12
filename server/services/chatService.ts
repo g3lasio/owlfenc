@@ -181,7 +181,7 @@ export class ChatService {
       }
 
       const isSpanish = this.detectLanguage(message);
-      const systemPrompt = isSpanish ? 
+      const basePrompt = isSpanish ? 
         `Eres Mervin, un asistente profesional bilingüe de ${context.contractorName || 'Owl Fence'}. 
         Tu personalidad en español:
         - Usas un español profesional con toques amigables
@@ -203,11 +203,13 @@ export class ChatService {
       - Si hay duda, recomienda basado en ${JSON.stringify(woodRules)}
       `;
       
-      systemPrompt += rules;
-      
+      const examples = `
       Ejemplos de respuestas correctas:
       "¿Qué onda cuate, de qué material quieres tu cerca? 🌵"
       "¡Arre! ¿Cuántos metros necesitas, compa? 🤠"
+      `;
+      
+      const systemPrompt = basePrompt + rules + examples;
       
       Prioriza obtener:
       1. Info del cliente (nombre, contacto)
