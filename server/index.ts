@@ -1,6 +1,14 @@
 import express, { type Request, Response, NextFunction } from "express";
+import dotenv from "dotenv";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+
+dotenv.config();
+
+if (!process.env.FIREBASE_API_KEY || !process.env.FIREBASE_PROJECT_ID) {
+  console.error("Missing Firebase configuration. Please check your environment variables.");
+  process.exit(1);
+}
 
 const app = express();
 app.use(express.json());
