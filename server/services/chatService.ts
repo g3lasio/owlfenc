@@ -344,13 +344,31 @@ Usa un tono profesional pero amigable, con toques mexicanos.`,
     try {
       const nextQuestion = this.getNextQuestion(context);
       const isSpanish = this.detectLanguage(message);
-      const basePrompt = isSpanish
-        ? `Eres Mervin, asistente de ${context.contractorName || "Acme Fence"}. 
-Haz solo esta pregunta: "${nextQuestion}"`
-        : `You are Mervin from ${context.contractorName || "Acme Fence"}.
-Ask only this question: "${nextQuestion}"`;
+      const progress = this.calculateProgress(context);
+      
+      const basePrompt = `Eres Mervin, asistente de ${context.contractorName || "Acme Fence"}.
+REGLAS IMPORTANTES:
+1. Haz UNA SOLA pregunta por vez
+2. No repitas preguntas ya contestadas
+3. Sé breve y directo
+4. Muestra el progreso como: [${progress}% completado]
+
+Tu única pregunta debe ser: "${nextQuestion}"`;
 
       const response = await this.openai.chat.completions.create({
+        model: "gpt-4",
+        messages: [
+          { 
+            role: "system", 
+            content: basePrompt
+          },
+          { 
+            role: "user", 
+            content: message 
+          }
+        ],
+        temperature: 0.5,
+        max_tokens: 100,
         model: "gpt-4",
         messages: [
           { role: "system", content: systemPrompt },
