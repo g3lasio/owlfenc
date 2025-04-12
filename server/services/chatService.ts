@@ -294,32 +294,28 @@ Usa un tono profesional pero amigable, con toques mexicanos.`,
     return spanishIndicators.some((word) => message.toLowerCase().includes(word));
   }
 
+  private calculateProgress(context: ChatContext): number {
+    const requiredFields = ['clientName', 'clientPhone', 'clientEmail', 'clientAddress', 'fenceType', 'fenceHeight', 'linearFeet', 'demolition', 'painting', 'gates'];
+    const completedFields = requiredFields.filter(field => context[field] !== undefined).length;
+    return Math.round((completedFields / requiredFields.length) * 100);
+  }
+
   private async generateResponse(message: string, context: ChatContext, currentState: string): Promise<string> {
     try {
+      const progress = this.calculateProgress(context);
       const isSpanish = this.detectLanguage(message);
       const basePrompt = isSpanish
-        ? `Eres Mervin, un asistente profesional bilingüe de ${context.contractorName || "Acme Fence"}. 
-Usa un tono profesional y amigable en español y pregunta una sola cosa por mensaje.`
-        : `You are Mervin, a professional bilingual assistant from ${context.contractorName || "Acme Fence"}. 
-Ask one question per message in clear, friendly English.`;
+        ? `Eres Mervin, asistente de ${context.contractorName || "Acme Fence"}. IMPORTANTE:
+- Haz UNA sola pregunta corta por mensaje
+- Muestra el progreso: [${progress}% completado]
+- Sé breve y directo`
+        : `You are Mervin from ${context.contractorName || "Acme Fence"}. IMPORTANT:
+- Ask ONE short question per message
+- Show progress: [${progress}% completed]
+- Be brief and direct`;
 
-      const rules = `
-Reglas:
-- Una pregunta por mensaje, máximo dos líneas.
-- Usa humor ligero y tono cordial.
-- Prioriza: Client info, Fence details, Extras.`;
-
-      const examples = `
-Ejemplo:
-"¿Qué tipo de cerca deseas, compa? Wood Fence, Chain Link, o Vinyl Fence?"`;
-
-      const priorities = `
-Priority:
-1. Client info (name, phone, email, address)
-2. Fence details (type, height, length)
-3. Extras (demolition, painting, gates)`;
-
-      const systemPrompt = basePrompt + "\n" + rules + "\n" + examples + "\n" + priorities;
+      const rules = `Formato: "[XX% completado] ¿Tu pregunta breve aquí?"`;
+      const systemPrompt = basePrompt + "\n" + rules;
 
       const response = await this.openai.chat.completions.create({
         model: "gpt-4",
