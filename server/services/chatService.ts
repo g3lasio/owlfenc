@@ -225,10 +225,24 @@ Usa un tono profesional pero amigable, con toques mexicanos.`,
       }
 
       // Establecer opciones basadas en el estado de la conversación
-      if (conversationState === "fence_type_selection") {
+      if (conversationState === "asking_client_name") {
+        // No opciones para nombre, entrada libre
+        options = [];
+      } else if (conversationState === "asking_client_phone") {
+        // No opciones para teléfono, entrada libre
+        options = [];
+      } else if (conversationState === "asking_client_email") {
+        // No opciones para email, entrada libre
+        options = [];
+      } else if (conversationState === "asking_client_address") {
+        // No opciones para dirección, entrada libre
+        options = [];
+      } else if (conversationState === "fence_type_selection") {
         options = this.getFenceTypeOptions(this.detectLanguage(message));
       } else if (conversationState === "height_selection") {
         options = this.getHeightOptions(this.detectLanguage(message));
+      } else if (conversationState === "asking_length") {
+        options = ["50 pies", "75 pies", "100 pies", "125 pies", "150 pies", "Otra longitud"];
       } else if (conversationState === "asking_demolition") {
         options = this.getDemolitionOptions();
       } else if (conversationState === "asking_painting") {
