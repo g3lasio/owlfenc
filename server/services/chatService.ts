@@ -61,6 +61,55 @@ export class ChatService {
         };
       }
       
+      // Manejo del estado confirming_details - resumen de toda la información
+      if (conversationState === "confirming_details") {
+        // Construye un resumen de toda la información recopilada
+        const summary = `
+        Aquí está el resumen de la información que tengo:
+        
+        Cliente: ${context.clientName || 'No proporcionado'}
+        Teléfono: ${context.clientPhone || 'No proporcionado'}
+        Email: ${context.clientEmail || 'No proporcionado'}
+        Dirección: ${context.clientAddress || 'No proporcionada'}
+        Tipo de cerca: ${context.fenceType || 'No seleccionado'}
+        Altura: ${context.fenceHeight ? context.fenceHeight + ' pies' : 'No seleccionada'}
+        Longitud: ${context.linearFeet ? context.linearFeet + ' pies' : 'No proporcionada'}
+        Demolición necesaria: ${context.demolition ? 'Sí' : 'No'}
+        Pintura incluida: ${context.painting ? 'Sí' : 'No'}
+        Puertas: ${context.gates ? (Array.isArray(context.gates) ? context.gates.length : 'Sí') : 'No'}
+        `;
+        
+        return {
+          message: "¡Excelente! Ahora tengo toda la información que necesito. " + 
+                  "¿Está todo correcto o quieres cambiar algo antes de que prepare el estimado? " +
+                  summary,
+          options: ["Todo está correcto, prepara el estimado", "Necesito cambiar algunos detalles"],
+          context: {
+            ...context,
+            currentState: message.includes("correcto") ? "preparing_estimate" : "confirming_details"
+          }
+        };
+      }
+      
+      // Manejo del estado preparing_estimate - generación del estimado
+      if (conversationState === "preparing_estimate") {
+        // Genera el estimado
+        const estimateHtml = await this.generateEstimate(context);
+        
+        return {
+          message: "¡Ya mero! Estoy preparando tu estimado con todos los detalles que me proporcionaste. ¡Listo! Aquí está tu estimado. ¿Quieres que lo revise contigo o prefieres que te lo envíe por correo?",
+          template: {
+            type: "estimate",
+            html: estimateHtml
+          },
+          options: ["Revisar estimado conmigo", "Enviar por correo"],
+          context: {
+            ...context,
+            currentState: "estimate_ready"
+          }
+        };
+      }
+      
       // Get fence rules from the imported module
       const woodRules = await import("../../client/src/data/rules/woodfencerules.js");
       
@@ -92,6 +141,7 @@ export class ChatService {
       2. Detalles de la cerca (tipo, altura, longitud)
       3. Extras (demolición, pintura, puertas)`;
 
+      // Procesamiento del mensaje con OpenAI
       const aiResponse = await this.openai.chat.completions.create({
         model: "gpt-4",
         messages: [
@@ -111,12 +161,15 @@ export class ChatService {
         max_tokens: 150
       });
 
+      // Actualización del estado de la conversación
+      const nextState = this.updateConversationState(conversationState, message);
+
       return {
         message: aiResponse.choices[0].message.content,
         options,
         context: {
           ...context,
-          currentState: this.updateConversationState(conversationState, message)
+          currentState: nextState
         }
       };
     } catch (error) {
@@ -169,23 +222,11 @@ export class ChatService {
       "asking_length": "asking_demolition",
       "asking_demolition": "asking_painting",
       "asking_painting": "asking_gates",
-      "asking_gates": "preparing_estimate"
+      "asking_gates": "confirming_details",
+      "confirming_details": "preparing_estimate"
     };
 
     const nextState = nextStates[currentState] || currentState;
-    
-    if (nextState === "preparing_estimate") {
-      // Generar el estimado usando el template
-      const estimateHtml = await this.generateEstimate(context);
-      return {
-        message: "¡Listo! Aquí está tu estimado. ¿Quieres que lo revise contigo o prefieres que te lo envíe por correo?",
-        template: {
-          type: "estimate",
-          html: estimateHtml
-        }
-      };
-    }
-
     return nextState;
   }
 
