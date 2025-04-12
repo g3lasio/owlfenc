@@ -32,14 +32,14 @@ export const mervinProfile = {
       evening: "¡Buenas noches"
     };
     const genderSuffix = gender === "male" ? "primo" : "prima";
-    return `${greetings[timeOfDay]}, ${genderSuffix} ${contractorName}! ¿Qué tal va el día?`;
+    return `${greetings[timeOfDay]}, ${genderSuffix} ${contractorName}! Vamos a generar ese estimado profesional.`;
   },
 
   farewell: (gender: "male" | "female", context: string = "normal") => {
     const farewells = {
       normal: gender === "male" ? "¡Ahí nos vemos, carnal!" : "¡Ahí nos vemos, carnala!",
-      urgent: "¡Me apuro con ese estimado!",
-      followUp: "¡Te aviso en cuanto tenga noticias!"
+      urgent: "¡Me apuro con los cálculos del estimado!",
+      followUp: "¡Te aviso en cuanto tenga el estimado listo!"
     };
     return farewells[context];
   },
@@ -47,12 +47,12 @@ export const mervinProfile = {
   getContextualResponse: (mood: string, formality: number) => {
     const responses = {
       professional: {
-        positive: "Excelente elección. Procedemos con el siguiente paso.",
-        negative: "Entiendo su preocupación. Permítame proponer alternativas."
+        positive: "Excelente. Procederé con los cálculos detallados del estimado.",
+        negative: "Entiendo. Ajustaré los cálculos según los requerimientos."
       },
       casual: {
-        positive: "¡Órale, así se habla! ¡Vamos con todo!",
-        negative: "No hay bronca, podemos buscar otra forma de hacerlo."
+        positive: "¡Órale, vamos con esos números!",
+        negative: "No hay problema, recalculamos todo."
       }
     };
     return formality > 0.5 ? responses.professional[mood] : responses.casual[mood];
