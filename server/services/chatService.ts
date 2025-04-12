@@ -323,7 +323,7 @@ Usa un tono profesional pero amigable, con toques mexicanos.`,
   private getNextQuestion(context: ChatContext): string {
     const sequence = this.getQuestionSequence(context.fenceType || 'wood');
     const nextField = sequence.find(field => context[field] === undefined);
-    
+
     const questions = {
       clientName: '¿Cuál es el nombre completo del cliente?',
       clientPhone: '¿Cuál es el número de teléfono para contactar?',
@@ -345,7 +345,7 @@ Usa un tono profesional pero amigable, con toques mexicanos.`,
       const nextQuestion = this.getNextQuestion(context);
       const isSpanish = this.detectLanguage(message);
       const progress = this.calculateProgress(context);
-      
+
       const basePrompt = `Eres Mervin, asistente de ${context.contractorName || "Acme Fence"}.
 REGLAS IMPORTANTES:
 1. Haz UNA SOLA pregunta por vez
@@ -369,13 +369,6 @@ Tu única pregunta debe ser: "${nextQuestion}"`;
         ],
         temperature: 0.5,
         max_tokens: 100,
-        model: "gpt-4",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: message },
-        ],
-        temperature: 0.7,
-        max_tokens: 150,
       });
 
       return response.choices[0].message.content || "Lo siento, no pude procesar tu mensaje.";
