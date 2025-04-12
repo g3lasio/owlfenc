@@ -10,6 +10,23 @@ export class ChatService {
     chainLink: { name: "Chain Link Fence" },
     vinyl: { name: "Vinyl Fence" }
   };
+  
+  private getFenceTypeOptions(): string[] {
+    return [
+      "Cerca de Madera",
+      "Cerca de Metal (Chain Link)",
+      "Cerca de Vinilo"
+    ];
+  }
+  
+  private getHeightOptions(): string[] {
+    return [
+      "3 pies de altura",
+      "4 pies de altura",
+      "6 pies de altura",
+      "8 pies de altura"
+    ];
+  }
 
   constructor(apiKey: string) {
     this.openai = new OpenAI({ apiKey });
@@ -27,7 +44,7 @@ export class ChatService {
     this.lastUserContext = {...context};
     try {
       const conversationState = this.determineConversationState(context);
-      let options = [];
+      let options: string[] = [];
 
       if (message === "START_CHAT" && context.isInitialMessage) {
         const initialResponse = await this.openai.chat.completions.create({
@@ -35,13 +52,13 @@ export class ChatService {
           messages: [
             {
               role: "system",
-              content: `Eres Mervin, el asistente virtual de ${context.contractorName}. 
+              content: `Eres Mervin, el asistente virtual de ${context.contractorName || 'Acme Fencing'}. 
               Ya conoces al contratista y sus datos:
-              - Nombre: ${context.contractorName}
-              - Licencia: ${context.contractorLicense}
-              - Teléfono: ${context.contractorPhone}
-              - Email: ${context.contractorEmail}
-              - Dirección: ${context.contractorAddress}
+              - Nombre: ${context.contractorName || 'Acme Fencing'}
+              - Licencia: ${context.contractorLicense || 'CCB #123456'}
+              - Teléfono: ${context.contractorPhone || '(555) 123-4567'}
+              - Email: ${context.contractorEmail || 'info@acmefencing.com'}
+              - Dirección: ${context.contractorAddress || '123 Main St'}
               
               Saluda al contratista por su nombre y pregunta por los datos del cliente nuevo para generar un estimado:
               1. Nombre completo del cliente
@@ -55,9 +72,9 @@ export class ChatService {
           max_tokens: 150
         });
         return {
-          message: initialResponse.choices[0].message.content,
+          message: initialResponse.choices[0].message.content || "¡Hola! ¿Cómo puedo ayudarte hoy?",
           options: [],
-          context: { ...context, currentState: "asking_name" }
+          context: { ...context, currentState: "asking_client_name" }
         };
       }
       
@@ -111,6 +128,7 @@ export class ChatService {
       }
       
       // Get fence rules from the imported module
+      // @ts-ignore - No necesitamos tipado para woodRules ya que solo se usa para el prompt
       const woodRules = await import("../../client/src/data/rules/woodfencerules.js");
       
       if (conversationState === "fence_type_selection") {
@@ -149,7 +167,7 @@ export class ChatService {
             role: "system",
             content: systemPrompt
           },
-          ...(context.messages || []).map(m => ({
+          ...(context.messages || []).map((m: any) => ({
             role: m.sender === "user" ? "user" : "assistant",
             content: m.content
           })),
@@ -165,7 +183,7 @@ export class ChatService {
       const nextState = this.updateConversationState(conversationState, message);
 
       return {
-        message: aiResponse.choices[0].message.content,
+        message: aiResponse.choices[0].message.content || "Lo siento, no pude procesar tu mensaje.",
         options,
         context: {
           ...context,
@@ -179,6 +197,13 @@ export class ChatService {
   }
 
   private determineConversationState(context: any): string {
+    // Si ya estamos en ciertos estados, mantenerlos
+    if (context.currentState === "confirming_details" || 
+        context.currentState === "preparing_estimate" ||
+        context.currentState === "estimate_ready") {
+      return context.currentState;
+    }
+    
     // Verificar si tenemos toda la información necesaria
     const hasAllInfo = context.clientName && 
                       context.clientPhone && 
@@ -191,9 +216,9 @@ export class ChatService {
                       context.painting !== undefined &&
                       context.gates !== undefined;
 
-    // Si tenemos toda la información, preparar el estimado
-    if (hasAllInfo) {
-      return "preparing_estimate";
+    // Si tenemos toda la información, vamos al resumen para confirmar
+    if (hasAllInfo && context.currentState === "asking_gates") {
+      return "confirming_details";
     }
 
     // Si no, continuar con el flujo normal
@@ -208,11 +233,18 @@ export class ChatService {
     if (context.painting === undefined) return "asking_painting";
     if (context.gates === undefined) return "asking_gates";
     
-    return "preparing_estimate";
+    // Si ya tenemos toda la información pero no estamos en el paso final,
+    // probablemente estamos editando algún detalle, entonces confirmamos
+    if (hasAllInfo) {
+      return "confirming_details";
+    }
+    
+    // Caso por defecto
+    return context.currentState || "asking_client_name";
   }
 
   private async updateConversationState(currentState: string, message: string): Promise<string> {
-    const nextStates = {
+    const nextStates: Record<string, string> = {
       "asking_client_name": "asking_client_phone",
       "asking_client_phone": "asking_client_email",
       "asking_client_email": "asking_client_address",
@@ -225,6 +257,11 @@ export class ChatService {
       "asking_gates": "confirming_details",
       "confirming_details": "preparing_estimate"
     };
+
+    // Para transiciones específicas basadas en el mensaje
+    if (currentState === "confirming_details" && message.toLowerCase().includes("correcto")) {
+      return "preparing_estimate";
+    }
 
     const nextState = nextStates[currentState] || currentState;
     return nextState;
