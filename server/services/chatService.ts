@@ -209,12 +209,13 @@ export class ChatService {
       "¡Arre! ¿Cuántos metros necesitas, compa? 🤠"
       `;
       
-      const systemPrompt = basePrompt + rules + examples;
-      
-      Prioriza obtener:
-      1. Info del cliente (nombre, contacto)
-      2. Detalles de la cerca (tipo, altura, longitud)
-      3. Extras (demolición, pintura, puertas)`;
+      const priorities = `
+      Priority information to obtain:
+      1. Client info (name, contact)
+      2. Fence details (type, height, length)
+      3. Extras (demolition, painting, gates)`;
+
+      const systemPrompt = basePrompt + rules + examples + priorities;
 
       // Procesamiento del mensaje con OpenAI
       const aiResponse = await this.openai.chat.completions.create({
