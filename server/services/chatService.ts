@@ -516,8 +516,10 @@ Tu única pregunta debe ser: "${nextQuestion}"`;
 
       // Generar documento usando documentService
       const pdfBuffer = await documentService.generateDocument(documentData, 'estimate');
+      
+      if (!pdfBuffer) {
         return {
-          message: `⚠️ Aún faltan algunos detalles (${progress}% completado). ¿Continuamos con la información faltante?`,
+          message: "Lo siento, hubo un error generando el documento. ¿Intentamos de nuevo?",
           context: { ...context }
         };
       }
