@@ -1,4 +1,3 @@
-
 import { ChatContext } from './chatService';
 
 export interface WorkflowState {
@@ -96,5 +95,39 @@ export const mervinRoles = {
       });
     }
     return ["✅ Confirmar y continuar", "🔄 Editar información"];
+  },
+  getOptionsForState(state: string, message: string = ""): string[] {
+    // Opciones clickeables optimizadas por estado
+    switch (state) {
+      case "fence_type_selection":
+        return ["🌲 Cerca de Madera", "🔗 Cerca de Chain Link", "🏠 Cerca de Vinilo"];
+
+      case "height_selection":
+        return ["3 pies", "4 pies", "6 pies", "8 pies"];
+
+      case "asking_length":
+        return ["50 pies", "75 pies", "100 pies", "150 pies", "200 pies"];
+
+      case "asking_demolition":
+        return ["✅ Sí, incluir demolición", "❌ No necesito demolición"];
+
+      case "asking_painting":
+        return ["✅ Sí, incluir pintura", "❌ No necesito pintura"];
+
+      case "asking_gates":
+        return ["✅ Sí, necesito puertas", "❌ No necesito puertas"];
+
+      case "confirming_details":
+        return ["✅ Generar Estimado", "📝 Editar Información"];
+
+      case "preparing_estimate":
+        return ["📄 Ver Estimado", "📧 Enviar por Email", "💾 Guardar PDF"];
+
+      case "document_ready":
+        return ["✅ Aprobar y Generar Contrato", "📝 Hacer Cambios", "📧 Enviar al Cliente"];
+
+      default:
+        return [];
+    }
   }
 };

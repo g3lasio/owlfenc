@@ -475,7 +475,47 @@ Tu única pregunta debe ser: "${nextQuestion}"`;
   private async prepareEstimateResponse(context: ChatContext): Promise<ChatResponse> {
     try {
       const progress = this.calculateProgress(context);
-      if (progress < 100) {
+      
+      // Validar que tengamos toda la información necesaria
+      const requiredFields = [
+        'clientName', 'clientPhone', 'clientEmail', 'clientAddress',
+        'fenceType', 'fenceHeight', 'linearFeet', 'demolition', 'painting'
+      ];
+
+      const missingFields = requiredFields.filter(field => !context[field]);
+      
+      if (missingFields.length > 0) {
+        return {
+          message: `Aún necesito algunos datos: ${missingFields.join(', ')}`,
+          context: { ...context, currentState: 'collecting_info' }
+        };
+      }
+
+      // Preparar datos para el documento
+      const documentData = {
+        clientName: context.clientName,
+        clientPhone: context.clientPhone,
+        clientEmail: context.clientEmail,
+        clientAddress: context.clientAddress,
+        fenceType: context.fenceType,
+        fenceHeight: context.fenceHeight,
+        linearFeet: context.linearFeet,
+        demolition: context.demolition,
+        painting: context.painting,
+        gates: context.gates || [],
+        breakdown: this.calculateBreakdown(context),
+        costs: this.calculateCosts(context),
+        contractorInfo: {
+          name: "Acme Fencing",
+          phone: "(555) 123-4567",
+          email: "info@acmefencing.com",
+          address: "123 Main St",
+          license: "CCB #123456"
+        }
+      };
+
+      // Generar documento usando documentService
+      const pdfBuffer = await documentService.generateDocument(documentData, 'estimate');
         return {
           message: `⚠️ Aún faltan algunos detalles (${progress}% completado). ¿Continuamos con la información faltante?`,
           context: { ...context }
