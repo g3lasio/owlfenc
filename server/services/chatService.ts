@@ -449,26 +449,35 @@ Usa un tono profesional pero amigable, con toques mexicanos.`,
   }
   private async generateResponse(message: string, context: ChatContext, currentState: string): Promise<string> {
     try {
-      const progress = this.calculateProgress(context);
-      const nextField = this.getNextRequiredField(context);
-
-      if (!nextField) {
-        return `¡Perfecto! Tengo toda la información necesaria. [${progress}% completado]`;
+      // Actualizar el contexto basado en el mensaje y estado actual
+      if (currentState === "asking_client_name" && !context.clientName) {
+        context.clientName = message;
+        currentState = "asking_client_phone";
+      } else if (currentState === "asking_client_phone" && !context.clientPhone) {
+        context.clientPhone = message;
+        currentState = "asking_client_email";
+      } else if (currentState === "asking_client_email" && !context.clientEmail) {
+        context.clientEmail = message;
+        currentState = "asking_client_address";
+      } else if (currentState === "asking_client_address" && !context.clientAddress) {
+        context.clientAddress = message;
+        currentState = "fence_type_selection";
       }
 
+      const progress = this.calculateProgress(context);
       const questions = {
-        clientName: '¿Cuál es el nombre completo del cliente?',
-        clientPhone: '¿Cuál es el número de teléfono para contactar?',
-        clientEmail: '¿Cuál es el correo electrónico?',
-        clientAddress: '¿Cuál es la dirección de instalación?',
-        fenceType: '¿Qué tipo de cerca necesita? (Madera, Metal o Vinilo)',
-        fenceHeight: '¿Qué altura necesita? (3, 4, 6 u 8 pies)',
-        linearFeet: '¿Cuántos pies lineales de cerca necesita?',
-        demolition: '¿Necesita demolición de cerca existente?',
-        painting: '¿Desea incluir pintura o acabado?'
+        asking_client_name: '¿Cuál es el nombre completo del cliente?',
+        asking_client_phone: '¿Cuál es el número de teléfono para contactar?',
+        asking_client_email: '¿Cuál es el correo electrónico?',
+        asking_client_address: '¿Cuál es la dirección de instalación?',
+        fence_type_selection: '¿Qué tipo de cerca necesita? (Madera, Metal o Vinilo)',
+        height_selection: '¿Qué altura necesita? (3, 4, 6 u 8 pies)',
+        asking_length: '¿Cuántos pies lineales de cerca necesita?',
+        asking_demolition: '¿Necesita demolición de cerca existente?',
+        asking_painting: '¿Desea incluir pintura o acabado?'
       };
 
-      const response = `[${progress}% completado] ${questions[nextField]}`;
+      const response = `[${progress}% completado] ${questions[currentState] || '¿Continuamos con el siguiente paso?'}`;
       return response;
     } catch (error) {
       console.error("Error generando respuesta:", error);
