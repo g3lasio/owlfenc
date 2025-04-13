@@ -108,15 +108,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { message, context = {}, userId = 1 } = schema.parse(req.body);
       const user = await storage.getUser(userId);
       const userContext = {
-        contractorName: user?.company || '',
-        contractorPhone: user?.phone || '',
-        contractorEmail: user?.email || '',
-        contractorAddress: user?.address || '',
-        contractorLicense: user?.license || '',
+        contractorName: user?.company || 'Acme Fencing',
+        contractorPhone: user?.phone || '(503) 555-1234',
+        contractorEmail: user?.email || 'john@acmefencing.com',
+        contractorAddress: user?.address || '123 Main St',
+        contractorLicense: user?.license || 'CCB #123456',
         ...context
       };
 
       const response = await chatService.handleMessage(message, userContext);
+      
+      // Si tenemos un template en la respuesta, guardarlo como proyecto
+      if (response.template && response.context) {
+        try {
+          // Generar un ID único para el proyecto
+          const projectId = `proj_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+          
+          // Preparar datos del proyecto
+          const projectData = {
+            userId: userId,
+            projectId: projectId,
+            clientName: response.context.clientName || 'Cliente',
+            clientEmail: response.context.clientEmail || '',
+            clientPhone: response.context.clientPhone || '',
+            address: response.context.clientAddress || '',
+            fenceType: response.context.fenceType || 'Wood Fence',
+            status: 'estimate_generated',
+            estimateHtml: response.template.html,
+            details: JSON.stringify(response.context),
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+          
+          // Intentar guardar el proyecto
+          try {
+            const project = await storage.createProject(projectData);
+            console.log('Proyecto guardado:', project.projectId);
+            
+            // Añadir el ID del proyecto a la respuesta
+            response.projectId = projectId;
+          } catch (saveError) {
+            console.error('Error al guardar el proyecto:', saveError);
+          }
+        } catch (projectError) {
+          console.error('Error preparando datos del proyecto:', projectError);
+        }
+      }
+      
       res.json(response);
     } catch (error) {
       console.error('Error processing chat message:', error);
