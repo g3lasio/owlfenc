@@ -452,24 +452,40 @@ Usa un tono profesional pero amigable, con toques mexicanos.`,
       // Actualizar el contexto basado en el mensaje y estado actual
       if (currentState === "asking_client_name" && !context.clientName) {
         context.clientName = message;
-        currentState = "asking_client_phone";
-      } else if (currentState === "asking_client_phone" && !context.clientPhone) {
+        return "¿Cuál es el número de teléfono para contactar?";
+      } 
+      if (currentState === "asking_client_phone" && !context.clientPhone) {
         context.clientPhone = message;
-        currentState = "asking_client_email";
-      } else if (currentState === "asking_client_email" && !context.clientEmail) {
+        return "¿Cuál es el correo electrónico?";
+      } 
+      if (currentState === "asking_client_email" && !context.clientEmail) {
         context.clientEmail = message;
-        currentState = "asking_client_address";
-      } else if (currentState === "asking_client_address" && !context.clientAddress) {
+        return "¿Cuál es la dirección de instalación?";
+      } 
+      if (currentState === "asking_client_address" && !context.clientAddress) {
         context.clientAddress = message;
-        currentState = "fence_type_selection";
+        return "¿Qué tipo de cerca necesita? (Madera, Metal o Vinilo)";
+      }
+      
+      // Si ya tenemos toda la información básica, mostrar resumen
+      if (context.clientName && context.clientPhone && context.clientEmail && context.clientAddress) {
+        const progress = this.calculateProgress(context);
+        return `
+✅ He recopilado la siguiente información:
+
+📋 Datos del Cliente:
+- Nombre: ${context.clientName}
+- Teléfono: ${context.clientPhone}
+- Email: ${context.clientEmail}
+- Dirección: ${context.clientAddress}
+
+[${progress}% completado]
+
+¿Es correcta esta información? Podemos continuar con los detalles de la cerca o hacer correcciones.`;
       }
 
-      const progress = this.calculateProgress(context);
+      // Si llegamos aquí, continuar con preguntas sobre la cerca
       const questions = {
-        asking_client_name: '¿Cuál es el nombre completo del cliente?',
-        asking_client_phone: '¿Cuál es el número de teléfono para contactar?',
-        asking_client_email: '¿Cuál es el correo electrónico?',
-        asking_client_address: '¿Cuál es la dirección de instalación?',
         fence_type_selection: '¿Qué tipo de cerca necesita? (Madera, Metal o Vinilo)',
         height_selection: '¿Qué altura necesita? (3, 4, 6 u 8 pies)',
         asking_length: '¿Cuántos pies lineales de cerca necesita?',
@@ -477,8 +493,7 @@ Usa un tono profesional pero amigable, con toques mexicanos.`,
         asking_painting: '¿Desea incluir pintura o acabado?'
       };
 
-      const response = `[${progress}% completado] ${questions[currentState] || '¿Continuamos con el siguiente paso?'}`;
-      return response;
+      return questions[currentState] || '¿Continuamos con el siguiente paso?';
     } catch (error) {
       console.error("Error generando respuesta:", error);
       return "Disculpe, hubo un error. ¿Podemos continuar con la información del cliente?";
