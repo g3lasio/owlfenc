@@ -114,7 +114,7 @@ Usa un tono profesional pero amigable, con toques mexicanos.`,
 
   private determineConversationState(context: ChatContext): string {
     const currentState = context.currentState || "collecting_customer_info";
-    
+
     // Validar el estado actual
     if (!mervinRoles.validateState(currentState, context)) {
       return currentState;
@@ -343,59 +343,6 @@ Usa un tono profesional pero amigable, con toques mexicanos.`,
   }
 
   private getNextRequiredField(context: ChatContext): string | null {
-      
-      if (!nextField) {
-        return `¡Perfecto! Tengo toda la información necesaria. [${progress}% completado]`;
-      }
-
-      const questions = {
-        clientName: '¿Cuál es el nombre completo del cliente?',
-        clientPhone: '¿Cuál es el número de teléfono para contactar?',
-        clientEmail: '¿Cuál es el correo electrónico?',
-        clientAddress: '¿Cuál es la dirección de instalación?',
-        fenceType: '¿Qué tipo de cerca necesita? (Madera, Metal o Vinilo)',
-        fenceHeight: '¿Qué altura necesita? (3, 4, 6 u 8 pies)',
-        linearFeet: '¿Cuántos pies lineales de cerca necesita?',
-        demolition: '¿Necesita demolición de cerca existente?',
-        painting: '¿Desea incluir pintura o acabado?'
-      };
-
-      const response = `[${progress}% completado] ${questions[nextField]}`;
-      return response;
-    } catch (error) {
-      console.error("Error generando respuesta:", error);
-      return "Disculpe, hubo un error. ¿Podemos continuar con la información del cliente?";
-    }
-  }
-    try {
-      const progress = this.calculateProgress(context);
-      const nextField = this.getNextRequiredField(context);
-      
-      if (!nextField) {
-        return `¡Perfecto! Tengo toda la información necesaria. [${progress}% completado]`;
-      }
-
-      const questions = {
-        clientName: '¿Cuál es el nombre completo del cliente?',
-        clientPhone: '¿Cuál es el número de teléfono para contactar?',
-        clientEmail: '¿Cuál es el correo electrónico?',
-        clientAddress: '¿Cuál es la dirección de instalación?',
-        fenceType: '¿Qué tipo de cerca necesita? (Madera, Metal o Vinilo)',
-        fenceHeight: '¿Qué altura necesita? (3, 4, 6 u 8 pies)',
-        linearFeet: '¿Cuántos pies lineales de cerca necesita?',
-        demolition: '¿Necesita demolición de cerca existente?',
-        painting: '¿Desea incluir pintura o acabado?'
-      };
-
-      const response = `[${progress}% completado] ${questions[nextField]}`;
-      return response;
-    } catch (error) {
-      console.error("Error generando respuesta:", error);
-      return "Disculpe, hubo un error. ¿Podemos continuar con la información del cliente?";
-    }
-  }
-
-  private getNextRequiredField(context: ChatContext): string | null {
     const fields = [
       'clientName',
       'clientPhone', 
@@ -415,7 +362,7 @@ Usa un tono profesional pero amigable, con toques mexicanos.`,
   private async prepareEstimateResponse(context: ChatContext): Promise<ChatResponse> {
     try {
       const progress = this.calculateProgress(context);
-      
+
       // Validar que tengamos toda la información necesaria
       const requiredFields = [
         'clientName', 'clientPhone', 'clientEmail', 'clientAddress',
@@ -423,7 +370,7 @@ Usa un tono profesional pero amigable, con toques mexicanos.`,
       ];
 
       const missingFields = requiredFields.filter(field => !context[field]);
-      
+
       if (missingFields.length > 0) {
         return {
           message: `Aún necesito algunos datos: ${missingFields.join(', ')}`,
@@ -456,7 +403,7 @@ Usa un tono profesional pero amigable, con toques mexicanos.`,
 
       // Generar documento usando documentService
       const pdfBuffer = await documentService.generateDocument(documentData, 'estimate');
-      
+
       if (!pdfBuffer) {
         return {
           message: "Lo siento, hubo un error generando el documento. ¿Intentamos de nuevo?",
@@ -498,6 +445,34 @@ Usa un tono profesional pero amigable, con toques mexicanos.`,
         message: "Lo siento, ha ocurrido un error al preparar el estimado. ¿Podemos intentarlo de nuevo?",
         context: { ...context, currentState: "asking_client_name" }
       };
+    }
+  }
+  private async generateResponse(message: string, context: ChatContext, currentState: string): Promise<string> {
+    try {
+      const progress = this.calculateProgress(context);
+      const nextField = this.getNextRequiredField(context);
+
+      if (!nextField) {
+        return `¡Perfecto! Tengo toda la información necesaria. [${progress}% completado]`;
+      }
+
+      const questions = {
+        clientName: '¿Cuál es el nombre completo del cliente?',
+        clientPhone: '¿Cuál es el número de teléfono para contactar?',
+        clientEmail: '¿Cuál es el correo electrónico?',
+        clientAddress: '¿Cuál es la dirección de instalación?',
+        fenceType: '¿Qué tipo de cerca necesita? (Madera, Metal o Vinilo)',
+        fenceHeight: '¿Qué altura necesita? (3, 4, 6 u 8 pies)',
+        linearFeet: '¿Cuántos pies lineales de cerca necesita?',
+        demolition: '¿Necesita demolición de cerca existente?',
+        painting: '¿Desea incluir pintura o acabado?'
+      };
+
+      const response = `[${progress}% completado] ${questions[nextField]}`;
+      return response;
+    } catch (error) {
+      console.error("Error generando respuesta:", error);
+      return "Disculpe, hubo un error. ¿Podemos continuar con la información del cliente?";
     }
   }
 }
