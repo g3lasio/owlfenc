@@ -342,10 +342,7 @@ Usa un tono profesional pero amigable, con toques mexicanos.`,
     return questions[nextField] || '¿Podemos revisar los detalles del proyecto?';
   }
 
-  private async generateResponse(message: string, context: ChatContext, currentState: string): Promise<string> {
-    try {
-      const progress = this.calculateProgress(context);
-      const nextField = this.getNextRequiredField(context);
+  private getNextRequiredField(context: ChatContext): string | null {
       
       if (!nextField) {
         return `¡Perfecto! Tengo toda la información necesaria. [${progress}% completado]`;
