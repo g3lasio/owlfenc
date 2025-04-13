@@ -494,22 +494,50 @@ El estimado está listo. ¿Deseas guardarlo o enviarlo al cliente?`;
 
   private async generateResponse(message: string, context: ChatContext, currentState: string): Promise<string> {
     try {
-      // Actualizar el contexto basado en el mensaje y estado actual
-      if (currentState === "asking_client_name" && !context.clientName) {
+      // Validar y actualizar el contexto basado en el mensaje actual
+      if (!context.clientName || currentState === "asking_client_name") {
         context.clientName = message;
-        return "¿Cuál es el número de teléfono para contactar?";
+        context.currentState = "asking_client_phone";
+        return "Gracias. ¿Cuál es el número de teléfono para contactar?";
       } 
-      if (currentState === "asking_client_phone" && !context.clientPhone) {
+      
+      if (!context.clientPhone || currentState === "asking_client_phone") {
+        // Validar formato de teléfono básico
+        const phoneMatch = message.match(/\d{3}[\s-]?\d{3}[\s-]?\d{4}/);
+        if (phoneMatch) {
+          context.clientPhone = phoneMatch[0];
+          context.currentState = "asking_client_email";
+          return "¿Cuál es el correo electrónico del cliente?";
+        }
         context.clientPhone = message;
-        return "¿Cuál es el correo electrónico?";
+        context.currentState = "asking_client_email";
+        return "¿Cuál es el correo electrónico del cliente?";
       } 
-      if (currentState === "asking_client_email" && !context.clientEmail) {
-        context.clientEmail = message;
-        return "¿Cuál es la dirección de instalación?";
+      
+      if (!context.clientEmail || currentState === "asking_client_email") {
+        const emailMatch = message.match(/\S+@\S+\.\S+/);
+        if (emailMatch) {
+          context.clientEmail = emailMatch[0];
+        } else {
+          context.clientEmail = message;
+        }
+        context.currentState = "asking_client_address";
+        return "¿Cuál es la dirección donde se instalará la cerca?";
       } 
-      if (currentState === "asking_client_address" && !context.clientAddress) {
+      
+      if (!context.clientAddress || currentState === "asking_client_address") {
         context.clientAddress = message;
-        return "¿Qué tipo de cerca necesita? (Madera, Metal o Vinilo)";
+        context.currentState = "fence_type_selection";
+        return `
+Perfecto, he recopilado la siguiente información:
+
+📋 Datos del Cliente:
+- Nombre: ${context.clientName}
+- Teléfono: ${context.clientPhone}
+- Email: ${context.clientEmail}
+- Dirección: ${context.clientAddress}
+
+¿Es correcta esta información? Si es así, ¿qué tipo de cerca necesita? (Madera, Metal o Vinilo)`;
       }
       
       // Si ya tenemos toda la información básica, mostrar resumen
