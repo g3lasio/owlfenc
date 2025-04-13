@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { mervinRoles } from './mervinRoles';
 
 interface ChatContext {
   currentState?: string;
@@ -343,90 +344,32 @@ Usa un tono profesional pero amigable, con toques mexicanos.`,
 
   private async generateResponse(message: string, context: ChatContext, currentState: string): Promise<string> {
     try {
-      const nextQuestion = this.getNextQuestion(context);
-      const isSpanish = this.detectLanguage(message);
       const progress = this.calculateProgress(context);
-
-      const basePrompt = `Eres Mervin, asistente de ${context.contractorName || "Acme Fence"}.
-REGLAS IMPORTANTES:
-1. Haz UNA SOLA pregunta por vez
-2. No repitas preguntas ya contestadas
-3. Sé breve y directo
-4. Muestra el progreso como: [${progress}% completado]
-
-Tu única pregunta debe ser: "${nextQuestion}"`;
-
-      const response = await this.openai.chat.completions.create({
-        model: "gpt-4",
-        messages: [
-          { 
-            role: "system", 
-            content: basePrompt
-          },
-          { 
-            role: "user", 
-            content: message 
-          }
-        ],
-        temperature: 0.5,
-        max_tokens: 100,
-      });
-
-      return response.choices[0].message.content || "Lo siento, no pude procesar tu mensaje.";
-    } catch (error) {
-      console.error("Error al generar respuesta:", error);
-
-      // Respuestas de fallback según el estado actual
-      switch (currentState) {
-        case "asking_client_name":
-          return "¿Cuál es el nombre del cliente?";
-        case "asking_client_phone":
-          return "¿Me podrías proporcionar el número de teléfono del cliente?";
-        case "asking_client_email":
-          return "¿Cuál es el correo electrónico del cliente?";
-        case "asking_client_address":
-          return "¿Cuál es la dirección donde se instalará la cerca?";
-        case "fence_type_selection":
-          return "¿Qué tipo de cerca te gustaría instalar? ¿Wood Fence, Chain Link o Vinyl Fence?";
-        case "height_selection":
-          return "¿Qué altura necesitas para la cerca? ¿3, 4, 6 u 8 pies?";
-        case "asking_length":
-          return "¿Cuántos pies lineales de cerca necesitas?";
-        case "asking_demolition":
-          return "¿Necesitas demolición?";
-        case "asking_painting":
-          return "¿Quieres incluir pintura en el proyecto?";
-        case "asking_gates":
-          return "¿Necesitas incluir puertas?";
-        case "confirming_details":
-          return "¿Confirmamos los detalles y procedemos con el estimado?";
-        default:
-          return "¿En qué más puedo ayudarte?";
+      const nextField = this.getNextRequiredField(context);
+      
+      if (!nextField) {
+        return `¡Perfecto! Tengo toda la información necesaria. [${progress}% completado]`;
       }
+
+      const questions = {
+        clientName: '¿Cuál es el nombre completo del cliente?',
+        clientPhone: '¿Cuál es el número de teléfono para contactar?',
+        clientEmail: '¿Cuál es el correo electrónico?',
+        clientAddress: '¿Cuál es la dirección de instalación?',
+        fenceType: '¿Qué tipo de cerca necesita? (Madera, Metal o Vinilo)',
+        fenceHeight: '¿Qué altura necesita? (3, 4, 6 u 8 pies)',
+        linearFeet: '¿Cuántos pies lineales de cerca necesita?',
+        demolition: '¿Necesita demolición de cerca existente?',
+        painting: '¿Desea incluir pintura o acabado?'
+      };
+
+      const response = `[${progress}% completado] ${questions[nextField]}`;
+      return response;
+    } catch (error) {
+      console.error("Error generando respuesta:", error);
+      return "Disculpe, hubo un error. ¿Podemos continuar con la información del cliente?";
     }
   }
-
-  private calculateProgress(context: ChatContext): number {
-    const requiredFields = [
-      { field: 'clientName', weight: 15 },
-      { field: 'clientPhone', weight: 15 },
-      { field: 'clientEmail', weight: 15 },
-      { field: 'clientAddress', weight: 15 },
-      { field: 'fenceType', weight: 10 },
-      { field: 'fenceHeight', weight: 10 },
-      { field: 'linearFeet', weight: 10 },
-      { field: 'demolition', weight: 5 },
-      { field: 'painting', weight: 5 }
-    ];
-
-    const progress = requiredFields.reduce((total, { field, weight }) => {
-      return total + (context[field] !== undefined ? weight : 0);
-    }, 0);
-
-    return Math.min(100, progress);
-  }
-
-  private async generateResponse(message: string, context: ChatContext, currentState: string): Promise<string> {
     try {
       const progress = this.calculateProgress(context);
       const nextField = this.getNextRequiredField(context);
