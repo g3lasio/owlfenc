@@ -112,21 +112,17 @@ Usa un tono profesional pero amigable, con toques mexicanos.`,
   }
 
   private determineConversationState(context: ChatContext): string {
-    // Verificar si ya tenemos todos los datos
-    const hasAllInfo =
-      context.clientName &&
-      context.clientPhone &&
-      context.clientEmail &&
-      context.clientAddress &&
-      context.fenceType &&
-      context.fenceHeight &&
-      context.linearFeet &&
-      context.demolition !== undefined &&
-      context.painting !== undefined &&
-      context.gates !== undefined;
+    const currentState = context.currentState || "collecting_customer_info";
+    
+    // Validar el estado actual
+    if (!mervinRoles.validateState(currentState, context)) {
+      return currentState;
+    }
 
-    if (hasAllInfo && context.currentState === "asking_gates") {
-      return "confirming_details";
+    // Si el estado actual es válido, obtener el siguiente estado
+    const nextState = mervinRoles.getNextState(currentState);
+    if (nextState) {
+      return nextState;
     }
 
     // Verificar qué datos faltan y devolver el estado correspondiente
@@ -253,13 +249,18 @@ Usa un tono profesional pero amigable, con toques mexicanos.`,
   }
 
   private getOptionsForState(state: string, message: string = ""): string[] {
-    const isSpanish = this.detectLanguage(message);
+    // Obtener opciones clickeables según el estado actual
+    const stateOptions = mervinRoles.getClickableOptions(state);
+    if (stateOptions.length > 0) {
+      return stateOptions;
+    }
 
+    // Opciones por defecto para inputs específicos
     switch (state) {
-      case "fence_type_selection":
-        return isSpanish
-          ? ["Cerca de Madera", "Cerca de Metal (Chain Link)", "Cerca de Vinilo"]
-          : ["Wood Fence", "Chain Link Fence", "Vinyl Fence"];
+      case "collecting_project_info":
+        if (!context.fenceType) {
+          return ["🌲 Cerca de Madera", "🔗 Cerca de Metal (Chain Link)", "🏠 Cerca de Vinilo"];
+        }
 
       case "height_selection":
         return isSpanish
