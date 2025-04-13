@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { mervinRoles } from './mervinRoles';
+import * as woodFenceRules from '../../client/src/data/rules/woodfencerules.js';
 
 interface ChatContext {
   currentState?: string;
@@ -15,6 +16,11 @@ interface ChatContext {
   gates?: any[];
   postType?: string;
   state?: string;
+  
+  // Fields to track conversation flow
+  lastQuestion?: string;
+  progress?: number;
+  isConfirmed?: boolean;
 }
 
 interface ChatResponse {
@@ -251,7 +257,7 @@ Usa un tono profesional pero amigable, con toques mexicanos.`,
 
   private getOptionsForState(state: string, message: string = ""): string[] {
     // Obtener opciones clickeables según el estado actual
-    const stateOptions = mervinRoles.getClickableOptions(state);
+    const stateOptions = mervinRoles.getOptionsForState(state, message);
     if (stateOptions.length > 0) {
       return stateOptions;
     }
@@ -259,11 +265,13 @@ Usa un tono profesional pero amigable, con toques mexicanos.`,
     // Opciones por defecto para inputs específicos
     switch (state) {
       case "collecting_project_info":
-        if (!context.fenceType) {
-          return ["🌲 Cerca de Madera", "🔗 Cerca de Metal (Chain Link)", "🏠 Cerca de Vinilo"];
-        }
+        return ["🌲 Cerca de Madera", "🔗 Cerca de Metal (Chain Link)", "🏠 Cerca de Vinilo"];
+
+      case "fence_type_selection":
+        return ["🌲 Cerca de Madera", "🔗 Cerca de Metal (Chain Link)", "🏠 Cerca de Vinilo"];
 
       case "height_selection":
+        const isSpanish = this.detectLanguage(message);
         return isSpanish
           ? ["3 pies (36 pulgadas)", "4 pies (48 pulgadas)", "6 pies (72 pulgadas)", "8 pies (96 pulgadas)"]
           : ["3 feet (36 inches)", "4 feet (48 inches)", "6 feet (72 inches)", "8 feet (96 inches)"];
