@@ -490,61 +490,10 @@ async function generateContractHtml(projectDetails: any): Promise<string> {
   return html;
 }
 
-async function generatePDF(html: string): Promise<Buffer> {
-  // Launch a headless browser
-  const browser = await puppeteer.launch({
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    headless: true
-  });
+import { documentService } from './services/documentService';
 
-  try {
-    const page = await browser.newPage();
-
-    // Set content and wait for any resources to load
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-
-    // Add default styling
-    await page.addStyleTag({
-      content: `
-        body {
-          font-family: 'Arial', sans-serif;
-          color: #333;
-          line-height: 1.5;
-          padding: 20px;
-        }
-        h1, h2 {
-          color: #000;
-        }
-        table {
-          width: 100%;
-          border-collapse: collapse;
-        }
-        th, td {
-          border: 1px solid #ddd;
-          padding: 8px;
-        }
-        th {
-          background-color: #f2f2f2;
-        }
-      `
-    });
-
-    // Generate PDF
-    const pdfBuffer = await page.pdf({
-      format: 'Letter',
-      printBackground: true,
-      margin: {
-        top: '0.5in',
-        right: '0.5in',
-        bottom: '0.5in',
-        left: '0.5in'
-      }
-    });
-
-    return pdfBuffer;
-  } finally {
-    await browser.close();
-  }
+async function generatePDF(data: any, type: 'estimate' | 'contract'): Promise<Buffer> {
+  return await documentService.generateDocument(data, type);
 }
 
 // Helper functions for calculations
