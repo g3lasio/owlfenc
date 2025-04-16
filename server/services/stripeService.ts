@@ -110,53 +110,84 @@ class StripeService {
    */
   async createSubscriptionCheckout(options: SubscriptionCheckoutOptions): Promise<string> {
     try {
+      console.log(`Preparando checkout para plan ID ${options.planId} con ciclo ${options.billingCycle}`);
+      
+      // Primero verificar la conexión con Stripe
+      const isConnected = await this.verifyStripeConnection();
+      if (!isConnected) {
+        throw new Error('No se pudo establecer conexión con Stripe. Verifique las credenciales API.');
+      }
+      
       const plan = await storage.getSubscriptionPlan(options.planId);
       if (!plan) {
         throw new Error(`Plan con ID ${options.planId} no encontrado`);
       }
       
-      // Asegurarse de que el plan existe en Stripe
-      await this.createOrUpdateStripePlan(plan);
+      console.log(`Plan encontrado: ${plan.name} (${plan.code})`);
       
-      // Obtener el precio correspondiente al plan y ciclo de facturación
-      const prices = await stripe.prices.list({
-        active: true,
-        limit: 100
-      });
-      
-      const price = prices.data.find(p => 
-        p.metadata.plan_code === plan.code && 
-        p.metadata.billing_cycle === options.billingCycle
-      );
-      
-      if (!price) {
-        throw new Error(`Precio no encontrado para el plan ${plan.name} con ciclo ${options.billingCycle}`);
-      }
-      
-      // Crear sesión de checkout
-      const session = await stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
-        line_items: [
-          {
-            price: price.id,
-            quantity: 1,
-          },
-        ],
-        mode: 'subscription',
-        success_url: options.successUrl,
-        cancel_url: options.cancelUrl,
-        customer_email: options.email,
-        client_reference_id: options.userId.toString(),
-        metadata: {
-          userId: options.userId.toString(),
-          planId: options.planId.toString(),
-          billingCycle: options.billingCycle
+      try {
+        // Asegurarse de que el plan existe en Stripe
+        await this.createOrUpdateStripePlan(plan);
+        
+        // Obtener el precio correspondiente al plan y ciclo de facturación
+        const prices = await stripe.prices.list({
+          active: true,
+          limit: 100
+        });
+        
+        console.log(`Se encontraron ${prices.data.length} precios activos en Stripe`);
+        
+        const price = prices.data.find(p => 
+          p.metadata && p.metadata.plan_code === plan.code && 
+          p.metadata.billing_cycle === options.billingCycle
+        );
+        
+        if (!price) {
+          console.error(`No se encontró precio para plan ${plan.code} con ciclo ${options.billingCycle}`);
+          console.log('Precios disponibles:', 
+            prices.data.map(p => `${p.id}: ${p.metadata?.plan_code || 'sin código'} - ${p.metadata?.billing_cycle || 'sin ciclo'}`).join(', ')
+          );
+          throw new Error(`Precio no encontrado para el plan ${plan.name} con ciclo ${options.billingCycle}`);
         }
-      });
-      
-      return session.url || '';
+        
+        console.log(`Precio encontrado: ${price.id} para plan ${plan.name} (${options.billingCycle})`);
+        
+        // Crear sesión de checkout
+        const session = await stripe.checkout.sessions.create({
+          payment_method_types: ['card'],
+          line_items: [
+            {
+              price: price.id,
+              quantity: 1,
+            },
+          ],
+          mode: 'subscription',
+          success_url: options.successUrl,
+          cancel_url: options.cancelUrl,
+          customer_email: options.email,
+          client_reference_id: options.userId.toString(),
+          metadata: {
+            userId: options.userId.toString(),
+            planId: options.planId.toString(),
+            billingCycle: options.billingCycle
+          }
+        });
+        
+        if (!session || !session.url) {
+          throw new Error('No se pudo crear la sesión de checkout');
+        }
+        
+        console.log('Sesión de checkout creada correctamente con ID:', session.id);
+        return session.url;
+      } catch (stripeError: any) {
+        console.error('Error específico de Stripe durante la creación de checkout:', stripeError);
+        if (stripeError.type === 'StripeAuthenticationError') {
+          throw new Error('Error de autenticación con Stripe: La clave API no es válida.');
+        }
+        throw stripeError;
+      }
     } catch (error) {
-      console.error('Error al crear sesión de checkout:', error);
+      console.error('Error general al crear sesión de checkout:', error);
       throw error;
     }
   }
@@ -166,23 +197,48 @@ class StripeService {
    */
   async createCustomerPortalSession(options: ManageSubscriptionOptions): Promise<string> {
     try {
+      console.log(`Preparando portal de cliente para suscripción ID ${options.subscriptionId}`);
+      
+      // Primero verificar la conexión con Stripe
+      const isConnected = await this.verifyStripeConnection();
+      if (!isConnected) {
+        throw new Error('No se pudo establecer conexión con Stripe. Verifique las credenciales API.');
+      }
+      
       const subscription = await storage.getUserSubscription(options.subscriptionId);
       if (!subscription || subscription.userId !== options.userId) {
         throw new Error('Suscripción no encontrada o no pertenece al usuario');
       }
       
+      console.log(`Suscripción encontrada: ID ${subscription.id}, Plan ID ${subscription.planId}`);
+      
       if (!subscription.stripeCustomerId) {
         throw new Error('No hay un cliente de Stripe asociado a esta suscripción');
       }
       
-      const session = await stripe.billingPortal.sessions.create({
-        customer: subscription.stripeCustomerId,
-        return_url: options.successUrl
-      });
+      console.log(`Cliente de Stripe ID: ${subscription.stripeCustomerId}`);
       
-      return session.url;
+      try {
+        const session = await stripe.billingPortal.sessions.create({
+          customer: subscription.stripeCustomerId,
+          return_url: options.successUrl
+        });
+        
+        if (!session || !session.url) {
+          throw new Error('No se pudo crear la sesión del portal de cliente');
+        }
+        
+        console.log('Portal de cliente creado correctamente con URL:', session.url.substring(0, 60) + '...');
+        return session.url;
+      } catch (stripeError: any) {
+        console.error('Error específico de Stripe durante la creación del portal:', stripeError);
+        if (stripeError.type === 'StripeAuthenticationError') {
+          throw new Error('Error de autenticación con Stripe: La clave API no es válida.');
+        }
+        throw stripeError;
+      }
     } catch (error) {
-      console.error('Error al crear portal de cliente:', error);
+      console.error('Error general al crear portal de cliente:', error);
       throw error;
     }
   }
@@ -435,10 +491,39 @@ class StripeService {
   }
   
   /**
+   * Verifica la conexión con Stripe y que las credenciales sean válidas
+   */
+  async verifyStripeConnection(): Promise<boolean> {
+    try {
+      // Intenta obtener una lista de productos, lo que verificará las credenciales
+      const products = await stripe.products.list({ limit: 1 });
+      console.log(`Conexión con Stripe verificada. Se encontraron ${products.data.length} productos.`);
+      return true;
+    } catch (error: any) {
+      console.error('Error al verificar la conexión con Stripe:', error.message);
+      
+      // Proporcionar mensajes específicos para diferentes tipos de errores
+      if (error.type === 'StripeAuthenticationError') {
+        console.error('Error de autenticación con Stripe: La clave API no es válida.');
+      } else if (error.type === 'StripeConnectionError') {
+        console.error('Error de conexión con Stripe: No se pudo establecer conexión con la API.');
+      }
+      
+      return false;
+    }
+  }
+  
+  /**
    * Sincroniza todos los planes de suscripción con Stripe
    */
   async syncPlansWithStripe(): Promise<void> {
     try {
+      // Verificar primero que la conexión a Stripe funciona
+      const isConnected = await this.verifyStripeConnection();
+      if (!isConnected) {
+        throw new Error('No se pudo establecer conexión con Stripe. Verifique las credenciales.');
+      }
+      
       const plans = await storage.getAllSubscriptionPlans();
       
       for (const plan of plans) {

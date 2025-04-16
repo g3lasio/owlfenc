@@ -387,31 +387,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/subscription/create-portal', async (req: Request, res: Response) => {
     try {
+      console.log('Solicitud de creación de portal de cliente recibida:', req.body);
+      
+      // Validar los parámetros de la solicitud
       const schema = z.object({
         successUrl: z.string()
       });
       
-      const { successUrl } = schema.parse(req.body);
+      const validationResult = schema.safeParse(req.body);
+      
+      if (!validationResult.success) {
+        console.error('Error de validación:', validationResult.error);
+        return res.status(400).json({ 
+          message: 'Datos de solicitud inválidos',
+          errors: validationResult.error.format() 
+        });
+      }
+      
+      const { successUrl } = validationResult.data;
       
       // En una app real, obtendríamos el userId de la sesión
       const userId = 1;
+      
+      // Verificar que el usuario tiene una suscripción activa
       const subscription = await storage.getUserSubscriptionByUserId(userId);
       
       if (!subscription) {
+        console.error(`No se encontró una suscripción activa para el usuario ${userId}`);
         return res.status(404).json({ message: 'No se encontró una suscripción activa' });
       }
       
-      const portalUrl = await stripeService.createCustomerPortalSession({
-        subscriptionId: subscription.id,
-        userId,
-        successUrl,
-        cancelUrl: successUrl
-      });
+      console.log(`Creando portal de cliente para suscripción ID: ${subscription.id}`);
       
-      res.json({ url: portalUrl });
-    } catch (error) {
-      console.error('Error al crear portal de cliente:', error);
-      res.status(500).json({ message: 'Error al crear portal de cliente' });
+      try {
+        const portalUrl = await stripeService.createCustomerPortalSession({
+          subscriptionId: subscription.id,
+          userId,
+          successUrl,
+          cancelUrl: successUrl
+        });
+        
+        if (!portalUrl) {
+          throw new Error('No se recibió URL del portal válida');
+        }
+        
+        console.log('Portal de cliente creado exitosamente, URL:', portalUrl.substring(0, 60) + '...');
+        res.json({ url: portalUrl });
+      } catch (stripeError: any) {
+        console.error('Error específico de Stripe:', stripeError.message || stripeError);
+        res.status(502).json({ 
+          message: 'Error al comunicarse con el servicio de pagos',
+          details: stripeError.message || 'Error desconocido'
+        });
+      }
+    } catch (error: any) {
+      console.error('Error general al crear portal de cliente:', error);
+      res.status(500).json({ 
+        message: 'Error al crear portal de cliente',
+        details: error.message || 'Error desconocido'
+      });
     }
   });
 

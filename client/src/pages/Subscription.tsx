@@ -142,29 +142,43 @@ export default function Subscription() {
   // Comprueba si la redirección es de un checkout exitoso o cancelado
   React.useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
+    const isSuccess = urlParams.get("success") === "true";
+    const isCanceled = urlParams.get("canceled") === "true";
     
-    if (urlParams.get("success") === "true") {
-      toast({
-        title: "¡Suscripción exitosa!",
-        description: "Tu suscripción ha sido procesada correctamente.",
-      });
+    // Solo procesar si hay parámetros de éxito o cancelación
+    if (isSuccess || isCanceled) {
+      console.log("Detectados parámetros de redirección:", { isSuccess, isCanceled });
       
-      // Eliminar el parámetro de la URL sin recargar la página
-      const newUrl = window.location.pathname;
-      window.history.pushState({}, document.title, newUrl);
+      // Limpiar parámetros de URL inmediatamente
+      try {
+        const newUrl = window.location.pathname;
+        window.history.pushState({}, document.title, newUrl);
+        console.log("Parámetros de URL limpiados");
+      } catch (error) {
+        console.error("Error al limpiar parámetros de URL:", error);
+      }
       
-      // Actualizar los datos de la suscripción
-      queryClient.invalidateQueries({ queryKey: ["/api/subscription/user-subscription"] });
-    } else if (urlParams.get("canceled") === "true") {
-      toast({
-        title: "Suscripción cancelada",
-        description: "Has cancelado el proceso de suscripción.",
-        variant: "destructive",
-      });
-      
-      // Eliminar el parámetro de la URL sin recargar la página
-      const newUrl = window.location.pathname;
-      window.history.pushState({}, document.title, newUrl);
+      // Procesar resultado después de un breve retraso para permitir que la interfaz se renderice
+      setTimeout(() => {
+        if (isSuccess) {
+          console.log("Procesando redirección exitosa");
+          toast({
+            title: "¡Suscripción exitosa!",
+            description: "Tu suscripción ha sido procesada correctamente.",
+          });
+          
+          // Actualizar los datos de la suscripción
+          queryClient.invalidateQueries({ queryKey: ["/api/subscription/user-subscription"] });
+          console.log("Datos de suscripción actualizados");
+        } else if (isCanceled) {
+          console.log("Procesando redirección cancelada");
+          toast({
+            title: "Suscripción cancelada",
+            description: "Has cancelado el proceso de suscripción.",
+            variant: "destructive",
+          });
+        }
+      }, 100);
     }
   }, [toast, queryClient]);
 
