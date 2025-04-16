@@ -116,15 +116,24 @@ export default function Header({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem>
-                <Link href="/help" className="flex items-center w-full">
-                  <i className="ri-question-line mr-2"></i>
-                  <span>Centro de Ayuda</span>
+                <a href="mailto:mervin@owlfenc.com" className="flex items-center w-full">
+                  <i className="ri-customer-service-line mr-2"></i>
+                  <span>Contactar Soporte</span>
+                </a>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem>
+                <Link href="/about-owlfenc" className="flex items-center w-full">
+                  <i className="ri-building-2-line mr-2"></i>
+                  <span>About Owl Fence App</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <Link href="/contact" className="flex items-center w-full">
-                  <i className="ri-customer-service-line mr-2"></i>
-                  <span>Contactar Soporte</span>
+                <Link href="/about-mervin" className="flex items-center w-full">
+                  <i className="ri-robot-line mr-2"></i>
+                  <span>About Mervin AI</span>
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
