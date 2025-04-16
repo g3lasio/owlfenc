@@ -594,6 +594,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ message: 'Error importando clientes', error: error.message });
     }
   });
+  
+  // Importar contactos desde archivos vCard (Apple Contacts)
+  app.post('/api/clients/import/vcf', async (req: Request, res: Response) => {
+    try {
+      const schema = z.object({
+        vcfData: z.string(),
+        userId: z.number().default(1)
+      });
+
+      const { vcfData, userId } = schema.parse(req.body);
+      
+      // Dividir el archivo vCard en contactos individuales
+      const vcardEntries = vcfData.split('BEGIN:VCARD')
+        .filter(entry => entry.trim().length > 0);
+      
+      const clients = [];
+      
+      // Procesar cada entrada vCard
+      for (let i = 0; i < vcardEntries.length; i++) {
+        const entry = vcardEntries[i];
+        const clientData: any = {
+          userId,
+          tags: ['Contactos Apple'],
+          source: 'Apple Contacts',
+          clientId: `apple_${Date.now()}_${Math.floor(Math.random() * 1000)}_${i}`
+        };
+        
+        // Extraer información del contacto vCard
+        
+        // Nombre (FN:)
+        const nameMatch = entry.match(/FN:(.*?)(?:\r?\n|$)/);
+        if (nameMatch && nameMatch[1]) {
+          clientData.name = nameMatch[1].trim();
+        }
+        
+        // Organización (ORG:)
+        const orgMatch = entry.match(/ORG:(.*?)(?:\r?\n|$)/);
+        if (orgMatch && orgMatch[1]) {
+          clientData.notes = `Organización: ${orgMatch[1].trim()}`;
+        }
+        
+        // Email (EMAIL:)
+        const emailMatch = entry.match(/EMAIL[^:]*:(.*?)(?:\r?\n|$)/);
+        if (emailMatch && emailMatch[1]) {
+          clientData.email = emailMatch[1].trim();
+        }
+        
+        // Teléfono (TEL:)
+        const phoneMatches = Array.from(entry.matchAll(/TEL[^:]*:(.*?)(?:\r?\n|$)/g));
+        if (phoneMatches.length > 0) {
+          // Primer número como teléfono principal
+          clientData.phone = phoneMatches[0][1].trim();
+          
+          // Segundo número (si existe) como móvil
+          if (phoneMatches.length > 1) {
+            clientData.mobilePhone = phoneMatches[1][1].trim();
+          }
+        }
+        
+        // Dirección (ADR:)
+        const adrMatch = entry.match(/ADR[^:]*:(.*?)(?:\r?\n|$)/);
+        if (adrMatch && adrMatch[1]) {
+          const adrParts = adrMatch[1].split(';').filter(part => part.trim());
+          
+          // Formato vCard para dirección: PO Box;Extended Address;Street;City;State;Postal Code;Country
+          if (adrParts.length >= 3) {
+            const street = adrParts[2] ? adrParts[2].trim() : '';
+            clientData.address = street;
+            
+            if (adrParts.length >= 4) {
+              const city = adrParts[3] ? adrParts[3].trim() : '';
+              clientData.city = city;
+            }
+            
+            if (adrParts.length >= 5) {
+              const state = adrParts[4] ? adrParts[4].trim() : '';
+              clientData.state = state;
+            }
+            
+            if (adrParts.length >= 6) {
+              const zipCode = adrParts[5] ? adrParts[5].trim() : '';
+              clientData.zipCode = zipCode;
+            }
+          }
+        }
+        
+        // Solo agregar contactos con nombre
+        if (clientData.name) {
+          clients.push(clientData);
+        }
+      }
+      
+      // Importar clientes en lote
+      const importedClients = [];
+      for (const clientData of clients) {
+        const client = await storage.createClient(clientData);
+        importedClients.push(client);
+      }
+      
+      res.status(201).json({ 
+        message: `${importedClients.length} contactos de Apple importados correctamente`,
+        clients: importedClients
+      });
+    } catch (error) {
+      console.error('Error importando contactos de Apple:', error);
+      res.status(400).json({ message: 'Error importando contactos de Apple', error: error.message });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
