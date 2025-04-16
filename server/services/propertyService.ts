@@ -185,16 +185,26 @@ class PropertyService {
               
             } catch (apiError: any) {
               // Registra el error pero continúa probando
-              console.error(`Error con ${endpoint} y header ${Object.keys(header)[0]}:`, 
-                apiError.message, 
-                apiError.response ? `Status: ${apiError.response.status}` : 'Sin respuesta');
+              console.error(`=== ERROR DETALLADO ATTOM API ===`);
+              console.error(`Endpoint: ${endpoint}`);
+              console.error(`Header usado: ${Object.keys(header)[0]}`);
+              console.error(`Mensaje de error: ${apiError.message}`);
+              console.error(`Status code: ${apiError.response?.status || 'N/A'}`);
               
-              // Registrar siempre la respuesta completa para diagnóstico
               if (apiError.response) {
-                console.log('Respuesta de error detallada para status ' + apiError.response.status + ':', 
-                  JSON.stringify(apiError.response.data || {}));
-                console.log('Headers de respuesta:', JSON.stringify(apiError.response.headers || {}));
+                console.error(`Detalles completos del error:`);
+                console.error(`- Status: ${apiError.response.status}`);
+                console.error(`- Datos: ${JSON.stringify(apiError.response.data || {}, null, 2)}`);
+                console.error(`- Headers de respuesta: ${JSON.stringify(apiError.response.headers || {}, null, 2)}`);
+                
+                // Verificar específicamente errores de autenticación
+                if (apiError.response.status === 401 || apiError.response.status === 403) {
+                  console.error('PROBLEMA DE AUTENTICACIÓN DETECTADO');
+                  console.error('Longitud de API key:', header[Object.keys(header)[0]]?.length || 'N/A');
+                  console.error('Primeros 5 caracteres:', header[Object.keys(header)[0]]?.substring(0, 5) || 'N/A');
+                }
               }
+              console.error(`================================`);
               
               // Continuar con la siguiente combinación
               continue;
