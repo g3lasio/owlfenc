@@ -1,0 +1,19 @@
+Reutilizar conexiones (Keep-Alive): Por defecto, Axios en Node usa el módulo http/https de Node.js. Para alto rendimiento, considera habilitar Keep-Alive en el agente HTTP para reutilizar la conexión TLS en llamadas sucesivas. Esto se logra pasando un agente configurado en Axios (httpAgent/httpsAgent con keepAlive: true). Esto reduce latencia en entornos de múltiples llamadas secuenciales. Por ejemplo:
+typescript
+Copy
+Edit
+import https from 'https';
+const agent = new https.Agent({ keepAlive: true });
+const attomClient = axios.create({
+  baseURL: 'https://api.gateway.attomdata.com/propertyapi/v1.0.0',
+  headers: { 'Accept': 'application/json', 'APIKey': ATTOM_API_KEY },
+  httpsAgent: agent,
+  timeout: 10000
+});
+Esto es especialmente útil si se van a realizar muchas peticiones en poco tiempo (p. ej., procesar una lista de propiedades).
+Autenticación segura: Nunca expongas el API key en el frontend ni en repositorios. En Express, colócalo en variables de entorno o en un almacén seguro. Para mayor seguridad, si tu backend es público, puedes implementar verificación adicional (ej. limitar qué orígenes pueden disparar tu endpoint que a su vez llama a ATTOM, para evitar abuso de tu servicio).
+Formato de respuesta: Asegúrate de solicitar JSON (como ya hacemos con Accept: application/json). La API también soporta XML, pero JSON facilita el manejo en JavaScript/TypeScript sin necesidad de parseos adicionales​
+api.developer.attomdata.com
+.
+TLS y verificación: La URL api.gateway.attomdata.com es HTTPS, por lo que la comunicación va cifrada. Axios maneja esto automáticamente. Solo en casos muy particulares modificarías opciones de verificación (p. ej. certificados autofirmados en entornos de prueba, no aplicable aquí).
+Tamaño de respuesta y compresión: ATTOM puede devolver respuestas bastante grandes (sobre todo si se obtienen muchos campos o resultados múltiples). Axios manejará JSON grandes, pero podrías habilitar compresión HTTP si la API lo soporta (ver cabecera Accept-Encoding: gzip). Sin embargo, la mayoría de clientes HTTP ya negocian esto automáticamente. Puedes comprobar si ATTOM envía Content-Encoding: gzip y, si no, forzarlo, aunque usualmente no es necesario.
