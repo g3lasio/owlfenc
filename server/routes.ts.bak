@@ -1,0 +1,1458 @@
+import type { Express, Request, Response, NextFunction } from "express";
+import { createServer, type Server } from "http";
+import { storage } from "./storage";
+import { 
+  insertProjectSchema, 
+  insertTemplateSchema, 
+  insertChatLogSchema
+} from "@shared/schema";
+import OpenAI from "openai";
+import { z } from "zod";
+import puppeteer from "puppeteer";
+import * as crypto from "crypto";
+import Stripe from "stripe";
+import { chatService } from './services/chatService';
+import { propertyService } from './services/propertyService';
+import { documentService } from './services/documentService';
+import { memoryService } from './services/memoryService';
+import { stripeService } from './services/stripeService';
+
+// Initialize OpenAI API
+const GPT_MODEL = "gpt-4";
+if (!process.env.OPENAI_API_KEY) {
+  throw new Error("OPENAI_API_KEY no está configurado en las variables de entorno");
+}
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
+
+// Configuration object (needs to be populated appropriately)
+const config = {
+  fenceRules: {
+    heightFactors: {
+      "4": 1,
+      "6": 1.2,
+      "8": 1.5
+    }
+  }
+};
+
+
+export async function registerRoutes(app: Express): Promise<Server> {
+  // Add API routes
+  app.get('/api/projects', async (req: Request, res: Response) => {
+    try {
+      // In a real app, we would get the user ID from the session
+      const userId = 1; // Default user ID
+      const projects = await storage.getProjectsByUserId(userId);
+      res.json(projects);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+      res.status(500).json({ message: 'Failed to fetch projects' });
+    }
+  });
+
+  app.get('/api/projects/:projectId', async (req: Request, res: Response) => {
+    try {
+      const { projectId } = req.params;
+      const project = await storage.getProjectByProjectId(projectId);
+
+      if (!project) {
+        return res.status(404).json({ message: 'Project not found' });
+      }
+
+      res.json(project);
+    } catch (error) {
+      console.error('Error fetching project:', error);
+      res.status(500).json({ message: 'Failed to fetch project' });
+    }
+  });
+
+  app.post('/api/projects', async (req: Request, res: Response) => {
+    try {
+      const projectData = insertProjectSchema.parse(req.body);
+      const project = await storage.createProject(projectData);
+      res.status(201).json(project);
+    } catch (error) {
+      console.error('Error creating project:', error);
+      res.status(400).json({ message: 'Invalid project data' });
+    }
+  });
+
+  app.get('/api/templates/:type', async (req: Request, res: Response) => {
+    try {
+      const { type } = req.params;
+      // In a real app, we would get the user ID from the session
+      const userId = 1; // Default user ID
+      const templates = await storage.getTemplatesByType(userId, type);
+      res.json(templates);
+    } catch (error) {
+      console.error('Error fetching templates:', error);
+      res.status(500).json({ message: 'Failed to fetch templates' });
+    }
+  });
+
+  app.post('/api/templates', async (req: Request, res: Response) => {
+    try {
+      const templateData = insertTemplateSchema.parse(req.body);
+      const template = await storage.createTemplate(templateData);
+      res.status(201).json(template);
+    } catch (error) {
+      console.error('Error creating template:', error);
+      res.status(400).json({ message: 'Invalid template data' });
+    }
+  });
+
+  app.post('/api/chat', async (req: Request, res: Response) => {
+    try {
+      const schema = z.object({
+        message: z.string(),
+        context: z.record(z.any()).optional(),
+        userId: z.number().optional()
+      });
+
+      const { message, context = {}, userId = 1 } = schema.parse(req.body);
+      const user = await storage.getUser(userId);
+      const userContext = {
+        contractorName: user?.company || 'Acme Fencing',
+        contractorPhone: user?.phone || '(503) 555-1234',
+        contractorEmail: user?.email || 'john@acmefencing.com',
+        contractorAddress: user?.address || '123 Main St',
+        contractorLicense: user?.license || 'CCB #123456',
+        ...context
+      };
+
+      const response = await chatService.handleMessage(message, userContext);
+      
+      // Si tenemos un template en la respuesta, guardarlo como proyecto
+      if (response.template && response.context) {
+        try {
+          // Generar un ID único para el proyecto
+          const projectId = `proj_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+          
+          // Preparar datos del proyecto
+          const projectData = {
+            userId: userId,
+            projectId: projectId,
+            clientName: response.context.clientName || 'Cliente',
+            clientEmail: response.context.clientEmail || '',
+            clientPhone: response.context.clientPhone || '',
+            address: response.context.clientAddress || '',
+            fenceType: response.context.fenceType || 'Wood Fence',
+            status: 'estimate_generated',
+            estimateHtml: response.template.html,
+            details: JSON.stringify(response.context),
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+          
+          // Intentar guardar el proyecto
+          try {
+            const project = await storage.createProject(projectData);
+            console.log('Proyecto guardado:', project.projectId);
+            
+            // Añadir el ID del proyecto a la respuesta
+            response.projectId = projectId;
+          } catch (saveError) {
+            console.error('Error al guardar el proyecto:', saveError);
+          }
+        } catch (projectError) {
+          console.error('Error preparando datos del proyecto:', projectError);
+        }
+      }
+      
+      res.json(response);
+    } catch (error) {
+      console.error('Error processing chat message:', error);
+      res.status(400).json({ message: 'Invalid request' });
+    }
+  });
+
+  app.post('/api/generate-estimate', async (req: Request, res: Response) => {
+    try {
+      const schema = z.object({
+        projectDetails: z.record(z.any())
+      });
+
+      const { projectDetails } = schema.parse(req.body);
+
+      // Get the default estimate template
+      const userId = 1; // Default user ID
+      const template = await storage.getDefaultTemplate(userId, "estimate");
+
+      if (!template) {
+        return res.status(404).json({ message: 'No default estimate template found' });
+      }
+
+      // Generate HTML from template
+      const html = await generateEstimateHtml({
+        fenceType: projectDetails.fenceType,
+        fenceLength: projectDetails.fenceLength,
+        fenceHeight: projectDetails.fenceHeight,
+        gates: projectDetails.gates || [],
+        clientName: projectDetails.clientName,
+        address: projectDetails.address,
+        context: projectDetails.context || {}
+      });
+
+      res.json({ html });
+    } catch (error) {
+      console.error('Error generating estimate:', error);
+      res.status(400).json({ message: 'Failed to generate estimate' });
+    }
+  });
+
+  app.post('/api/generate-contract', async (req: Request, res: Response) => {
+    try {
+      const schema = z.object({
+        projectDetails: z.record(z.any())
+      });
+
+      const { projectDetails } = schema.parse(req.body);
+
+      // Get the default contract template
+      const userId = 1; // Default user ID
+      const template = await storage.getDefaultTemplate(userId, "contract");
+
+      if (!template) {
+        return res.status(404).json({ message: 'No default contract template found' });
+      }
+
+      // Generate HTML from template
+      const html = await generateContractHtml(projectDetails);
+
+      res.json({ html });
+    } catch (error) {
+      console.error('Error generating contract:', error);
+      res.status(400).json({ message: 'Failed to generate contract' });
+    }
+  });
+
+  app.post('/api/generate-pdf', async (req: Request, res: Response) => {
+    try {
+      const schema = z.object({
+        html: z.string(),
+        filename: z.string()
+      });
+
+      const { html, filename } = schema.parse(req.body);
+
+      // Generate PDF from HTML
+      const pdfBuffer = await generatePDF(html);
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(pdfBuffer);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      res.status(400).json({ message: 'Failed to generate PDF' });
+    }
+  });
+
+  // Profile routes
+  app.get('/api/user-profile', async (req: Request, res: Response) => {
+    try {
+      // En una app real, obtendríamos el userId de la sesión
+      const userId = 1;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: 'Usuario no encontrado' });
+      }
+
+      // Aseguramos que la respuesta sea JSON
+      res.setHeader('Content-Type', 'application/json');
+      
+      res.json({
+        companyName: user.company,
+        ownerName: user.ownerName,
+        role: user.role,
+        email: user.email,
+        phone: user.phone,
+        mobilePhone: user.mobilePhone,
+        address: user.address,
+        city: user.city,
+        state: user.state,
+        zipCode: user.zipCode,
+        license: user.license,
+        insurancePolicy: user.insurancePolicy,
+        ein: user.ein,
+        businessType: user.businessType,
+        yearEstablished: user.yearEstablished,
+        website: user.website,
+        description: user.description,
+        specialties: user.specialties || [],
+        socialMedia: user.socialMedia || {},
+        documents: user.documents || {},
+        logo: user.logo
+      });
+    } catch (error) {
+      console.error('Error getting profile:', error);
+      res.status(500).json({ message: 'Error al obtener el perfil' });
+    }
+  });
+
+  app.post('/api/user-profile', async (req: Request, res: Response) => {
+    try {
+      const userId = 1;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: 'Usuario no encontrado' });
+      }
+      
+      const updatedUser = await storage.updateUser(userId, {
+        company: req.body.companyName,
+        ownerName: req.body.ownerName,
+        role: req.body.role,
+        email: req.body.email,
+        phone: req.body.phone,
+        mobilePhone: req.body.mobilePhone,
+        address: req.body.address,
+        city: req.body.city,
+        state: req.body.state,
+        zipCode: req.body.zipCode,
+        license: req.body.license,
+        insurancePolicy: req.body.insurancePolicy,
+        ein: req.body.ein,
+        businessType: req.body.businessType,
+        yearEstablished: req.body.yearEstablished,
+        website: req.body.website,
+        description: req.body.description,
+        specialties: req.body.specialties,
+        socialMedia: req.body.socialMedia,
+        documents: req.body.documents,
+        logo: req.body.logo
+      });
+      
+      res.json(updatedUser);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      console.log('Profile data attempted to save:', req.body);
+      res.status(500).json({ message: 'Error al actualizar el perfil' });
+    }
+  });
+
+  // Property ownership verification route
+  app.get('/api/property-verification', async (req: Request, res: Response) => {
+    try {
+      const { address } = req.query;
+      
+      console.log('\n===== SOLICITUD DE VERIFICACIÓN DE PROPIEDAD =====');
+      console.log('Timestamp:', new Date().toISOString());
+      console.log('Dirección solicitada:', address);
+      
+      if (!address || typeof address !== 'string') {
+        console.log('Error: Se proporcionó una dirección inválida');
+        return res.status(400).json({ 
+          message: 'Se requiere una dirección válida para verificar la propiedad' 
+        });
+      }
+
+      console.log('API Key ATTOM disponible:', process.env.ATTOM_API_KEY ? 'Sí' : 'No');
+      if (process.env.ATTOM_API_KEY) {
+        console.log('Longitud de API Key:', process.env.ATTOM_API_KEY.length);
+        console.log('Primeros 5 caracteres:', process.env.ATTOM_API_KEY.substring(0, 5));
+      }
+      
+      console.log('Solicitando datos de propiedad para dirección:', address);
+      console.log('Iniciando solicitud a ATTOM API...');
+      
+      const startTime = Date.now();
+      const propertyData = await propertyService.getPropertyByAddress(address);
+      const endTime = Date.now();
+      
+      console.log(`Solicitud completada en ${endTime - startTime}ms`);
+      
+      // Incluso si la API falla, deberíamos obtener datos de respaldo
+      if (!propertyData) {
+        console.log('Error crítico: No se obtuvo ningún dato de propiedad, ni siquiera el respaldo');
+        return res.status(404).json({ 
+          message: 'No se encontró información para la dirección proporcionada' 
+        });
+      }
+      
+      // Verificar si los datos son auténticos o de respaldo
+      if (propertyData.verified) {
+        console.log('ÉXITO: Datos verificados obtenidos de ATTOM API');
+        console.log('Datos de propietario:', propertyData.owner);
+        console.log('Propiedad ocupada por el propietario:', propertyData.ownerOccupied);
+      } else {
+        console.log('ALERTA: Se están usando datos de respaldo (no verificados)');
+      }
+      
+      console.log('Enviando respuesta al cliente...');
+      console.log('===== FIN DE SOLICITUD DE VERIFICACIÓN =====\n');
+      
+      res.json(propertyData);
+    } catch (error: any) {
+      console.error('ERROR EN VERIFICACIÓN DE PROPIEDAD:');
+      console.error('Mensaje:', error.message);
+      console.error('Stack:', error.stack);
+      
+      res.status(500).json({ 
+        message: 'Error al verificar los datos de la propiedad',
+        error: error.message
+      });
+      
+      console.log('===== FIN DE SOLICITUD DE VERIFICACIÓN (CON ERROR) =====\n');
+    }
+  });
+
+  // Client routes
+  app.get('/api/clients', async (req: Request, res: Response) => {
+    try {
+      // En una app real, obtendríamos el userId de la sesión
+      const userId = 1; // Default user ID
+      const clients = await storage.getClientsByUserId(userId);
+      res.json(clients);
+    } catch (error) {
+      console.error('Error obteniendo clientes:', error);
+      res.status(500).json({ message: 'Error al obtener clientes' });
+    }
+  });
+
+  app.get('/api/clients/:id', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const client = await storage.getClient(parseInt(id));
+      
+      if (!client) {
+        return res.status(404).json({ message: 'Cliente no encontrado' });
+      }
+      
+      res.json(client);
+    } catch (error) {
+      console.error('Error obteniendo cliente:', error);
+      res.status(500).json({ message: 'Error al obtener cliente' });
+    }
+  });
+
+  app.post('/api/clients', async (req: Request, res: Response) => {
+    try {
+      // Validar los datos del cliente
+      const schema = z.object({
+        userId: z.number().default(1),
+        clientId: z.string().optional(),
+        name: z.string(),
+        email: z.string().email().optional(),
+        phone: z.string().optional(),
+        mobilePhone: z.string().optional(),
+        address: z.string().optional(),
+        city: z.string().optional(),
+        state: z.string().optional(),
+        zipCode: z.string().optional(),
+        notes: z.string().optional(),
+        source: z.string().optional(),
+        tags: z.array(z.string()).optional(),
+        lastContact: z.date().optional(),
+      });
+
+      const clientData = schema.parse(req.body);
+      
+      // Generar clientId si no se proporciona
+      if (!clientData.clientId) {
+        clientData.clientId = `client_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+      }
+
+      const client = await storage.createClient(clientData);
+      res.status(201).json(client);
+    } catch (error) {
+      console.error('Error creando cliente:', error);
+      res.status(400).json({ message: 'Datos de cliente inválidos', error: error.message });
+    }
+  });
+
+  app.put('/api/clients/:id', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const clientId = parseInt(id);
+      
+      // Verificar que el cliente existe
+      const existingClient = await storage.getClient(clientId);
+      if (!existingClient) {
+        return res.status(404).json({ message: 'Cliente no encontrado' });
+      }
+      
+      const schema = z.object({
+        name: z.string().optional(),
+        email: z.string().email().optional(),
+        phone: z.string().optional(),
+        mobilePhone: z.string().optional(),
+        address: z.string().optional(),
+        city: z.string().optional(),
+        state: z.string().optional(),
+        zipCode: z.string().optional(),
+        notes: z.string().optional(),
+        source: z.string().optional(),
+        tags: z.array(z.string()).optional(),
+        lastContact: z.date().optional(),
+      });
+
+      const clientData = schema.parse(req.body);
+      const updatedClient = await storage.updateClient(clientId, clientData);
+      
+      res.json(updatedClient);
+    } catch (error) {
+      console.error('Error actualizando cliente:', error);
+      res.status(400).json({ message: 'Datos de cliente inválidos', error: error.message });
+    }
+  });
+
+  app.delete('/api/clients/:id', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const clientId = parseInt(id);
+      
+      // Verificar que el cliente existe
+      const existingClient = await storage.getClient(clientId);
+      if (!existingClient) {
+        return res.status(404).json({ message: 'Cliente no encontrado' });
+      }
+      
+      const result = await storage.deleteClient(clientId);
+      
+      if (result) {
+        res.status(200).json({ message: 'Cliente eliminado correctamente' });
+      } else {
+        res.status(500).json({ message: 'Error al eliminar cliente' });
+      }
+    } catch (error) {
+      console.error('Error eliminando cliente:', error);
+      res.status(500).json({ message: 'Error al eliminar cliente' });
+    }
+  });
+
+  // Importar clientes desde CSV
+  app.post('/api/clients/import/csv', async (req: Request, res: Response) => {
+    try {
+      const schema = z.object({
+        csvData: z.string(),
+        userId: z.number().default(1),
+      });
+
+      const { csvData, userId } = schema.parse(req.body);
+      
+      // Procesar los datos CSV
+      const lines = csvData.split('\n');
+      const headers = lines[0].split(',').map(header => header.trim());
+      
+      const clients = [];
+      
+      // Procesar cada línea del CSV
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        
+        const values = line.split(',');
+        const clientData: any = { userId };
+        
+        // Mapear valores según los encabezados
+        headers.forEach((header, index) => {
+          if (values[index]) {
+            const value = values[index].trim();
+            
+            // Mapear nombres de campos CSV a nombres de campos del modelo
+            switch (header.toLowerCase()) {
+              case 'nombre':
+                clientData.name = value;
+                break;
+              case 'correo':
+              case 'email':
+                clientData.email = value;
+                break;
+              case 'teléfono':
+              case 'telefono':
+              case 'phone':
+                clientData.phone = value;
+                break;
+              case 'móvil':
+              case 'movil':
+              case 'celular':
+              case 'mobile':
+                clientData.mobilePhone = value;
+                break;
+              case 'dirección':
+              case 'direccion':
+              case 'address':
+                clientData.address = value;
+                break;
+              case 'ciudad':
+              case 'city':
+                clientData.city = value;
+                break;
+              case 'estado':
+              case 'state':
+                clientData.state = value;
+                break;
+              case 'código postal':
+              case 'codigo postal':
+              case 'zip':
+              case 'zipcode':
+                clientData.zipCode = value;
+                break;
+              case 'notas':
+              case 'notes':
+                clientData.notes = value;
+                break;
+              case 'origen':
+              case 'source':
+                clientData.source = value;
+                break;
+              case 'etiquetas':
+              case 'tags':
+                clientData.tags = value.split(';').map(tag => tag.trim());
+                break;
+              default:
+                // Campos adicionales se ignoran
+                break;
+            }
+          }
+        });
+        
+        // Solo agregar clientes válidos con nombre
+        if (clientData.name) {
+          clientData.clientId = `client_${Date.now()}_${Math.floor(Math.random() * 1000)}_${i}`;
+          clients.push(clientData);
+        }
+      }
+      
+      // Importar clientes en lote
+      const importedClients = [];
+      for (const clientData of clients) {
+        const client = await storage.createClient(clientData);
+        importedClients.push(client);
+      }
+      
+      res.status(201).json({ 
+        message: `${importedClients.length} clientes importados correctamente`,
+        clients: importedClients
+      });
+    } catch (error) {
+      console.error('Error importando clientes:', error);
+      res.status(400).json({ message: 'Error importando clientes', error: error.message });
+    }
+  });
+  
+  // Importar contactos desde archivos vCard (Apple Contacts)
+  app.post('/api/clients/import/vcf', async (req: Request, res: Response) => {
+    try {
+      const schema = z.object({
+        vcfData: z.string(),
+        userId: z.number().default(1)
+      });
+
+      const { vcfData, userId } = schema.parse(req.body);
+      
+      // Dividir el archivo vCard en contactos individuales
+      const vcardEntries = vcfData.split('BEGIN:VCARD')
+        .filter(entry => entry.trim().length > 0);
+      
+      const clients = [];
+      
+      // Procesar cada entrada vCard
+      for (let i = 0; i < vcardEntries.length; i++) {
+        const entry = vcardEntries[i];
+        const clientData: any = {
+          userId,
+          tags: ['Contactos Apple'],
+          source: 'Apple Contacts',
+          clientId: `apple_${Date.now()}_${Math.floor(Math.random() * 1000)}_${i}`
+        };
+        
+        // Extraer información del contacto vCard
+        
+        // Nombre (FN:)
+        const nameMatch = entry.match(/FN:(.*?)(?:\r?\n|$)/);
+        if (nameMatch && nameMatch[1]) {
+          clientData.name = nameMatch[1].trim();
+        }
+        
+        // Organización (ORG:)
+        const orgMatch = entry.match(/ORG:(.*?)(?:\r?\n|$)/);
+        if (orgMatch && orgMatch[1]) {
+          clientData.notes = `Organización: ${orgMatch[1].trim()}`;
+        }
+        
+        // Email (EMAIL:)
+        const emailMatch = entry.match(/EMAIL[^:]*:(.*?)(?:\r?\n|$)/);
+        if (emailMatch && emailMatch[1]) {
+          clientData.email = emailMatch[1].trim();
+        }
+        
+        // Teléfono (TEL:)
+        const phoneMatches = Array.from(entry.matchAll(/TEL[^:]*:(.*?)(?:\r?\n|$)/g));
+        if (phoneMatches.length > 0) {
+          // Primer número como teléfono principal
+          clientData.phone = phoneMatches[0][1].trim();
+          
+          // Segundo número (si existe) como móvil
+          if (phoneMatches.length > 1) {
+            clientData.mobilePhone = phoneMatches[1][1].trim();
+          }
+        }
+        
+        // Dirección (ADR:)
+        const adrMatch = entry.match(/ADR[^:]*:(.*?)(?:\r?\n|$)/);
+        if (adrMatch && adrMatch[1]) {
+          const adrParts = adrMatch[1].split(';').filter(part => part.trim());
+          
+          // Formato vCard para dirección: PO Box;Extended Address;Street;City;State;Postal Code;Country
+          if (adrParts.length >= 3) {
+            const street = adrParts[2] ? adrParts[2].trim() : '';
+            clientData.address = street;
+            
+            if (adrParts.length >= 4) {
+              const city = adrParts[3] ? adrParts[3].trim() : '';
+              clientData.city = city;
+            }
+            
+            if (adrParts.length >= 5) {
+              const state = adrParts[4] ? adrParts[4].trim() : '';
+              clientData.state = state;
+            }
+            
+            if (adrParts.length >= 6) {
+              const zipCode = adrParts[5] ? adrParts[5].trim() : '';
+              clientData.zipCode = zipCode;
+            }
+          }
+        }
+        
+        // Solo agregar contactos con nombre
+        if (clientData.name) {
+          clients.push(clientData);
+        }
+      }
+      
+      // Importar clientes en lote
+      const importedClients = [];
+      for (const clientData of clients) {
+        const client = await storage.createClient(clientData);
+        importedClients.push(client);
+      }
+      
+      res.status(201).json({ 
+        message: `${importedClients.length} contactos de Apple importados correctamente`,
+        clients: importedClients
+      });
+    } catch (error) {
+      console.error('Error importando contactos de Apple:', error);
+      res.status(400).json({ message: 'Error importando contactos de Apple', error: error.message });
+    }
+  });
+
+  const httpServer = createServer(app);
+  return httpServer;
+}
+
+// Helper functions
+interface EstimateData {
+  fenceType: string;
+  fenceLength: number;
+  fenceHeight: number;
+  gates: Array<{type: string; width: number; price: number; description?: string}>;
+  clientName: string;
+  address: string;
+  context: Record<string, any>;
+}
+
+async function generateEstimateHtml({
+  fenceType,
+  fenceLength,
+  fenceHeight,
+  gates,
+  clientName,
+  address,
+  context = {}
+}: EstimateData): Promise<string> {
+  // 1. Validación de datos
+  if (!fenceType || !fenceLength || !fenceHeight || !clientName || !address) {
+    throw new Error('Missing required estimate data');
+  }
+
+  // 2. Obtener template y configuración
+  const userId = 1;
+  const [templateObj, settings] = await Promise.all([
+    storage.getDefaultTemplate(userId, "estimate"),
+    storage.getSettings(userId)
+  ]);
+
+  if (!templateObj?.html) {
+    throw new Error('Estimate template not found');
+  }
+
+  // 3. Importar y validar reglas
+  const woodRules = await import("../client/src/data/rules/woodfencerules.js");
+  
+  // 4. Calcular costos detallados
+  const estimateDetails = woodRules.calculateWoodFenceCost(
+    fenceLength,
+    fenceHeight,
+    context.state || "California",
+    {
+      demolition: Boolean(context.demolition),
+      painting: Boolean(context.painting),
+      additionalLattice: Boolean(context.lattice),
+      postType: context.postType || "auto"
+    }
+  );
+
+  // 5. Validar resultados
+  if (!estimateDetails?.finalTotalCost) {
+    throw new Error('Invalid cost calculation results');
+  }
+
+  // 6. Preparar datos estructurados para la plantilla
+  const templateData = {
+    metadata: {
+      projectId: `EST-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`,
+      createdAt: new Date().toISOString(),
+      validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+    },
+    contractor: {
+      company: context.contractorName,
+      address: context.contractorAddress,
+      phone: context.contractorPhone,
+      license: context.contractorLicense
+    },
+    client: {
+      name: clientName,
+      address: address
+    },
+    fenceDetails: {
+      type: fenceType,
+      length: fenceLength,
+      height: fenceHeight,
+      gates: gates.length ? gates : []
+    },
+    costs: {
+      materials: estimateDetails.totalMaterialsCost,
+      labor: estimateDetails.laborCost,
+      subtotal: estimateDetails.baseTotalCost,
+      tax: (parseFloat(estimateDetails.baseTotalCost) * (settings?.pricingSettings?.taxRate || 8.75) / 100).toFixed(2),
+      total: estimateDetails.finalTotalCost
+    },
+    breakdown: {
+      posts: estimateDetails.postsCost,
+      concrete: estimateDetails.concreteCost,
+      rails: estimateDetails.railsCost,
+      pickets: estimateDetails.picketsCost,
+      hardware: estimateDetails.hangersCost,
+      screws: estimateDetails.screwsCost
+    }
+  };
+
+  // Calcular los valores para las variables que faltaban
+  const fencePrice = parseFloat(estimateDetails.finalTotalCost);
+  const materialsPrice = parseFloat(estimateDetails.totalMaterialsCost);
+  const subtotal = parseFloat(estimateDetails.baseTotalCost);
+  const taxRate = settings?.pricingSettings?.taxRate || 8.75;
+  const taxAmount = subtotal * taxRate / 100;
+  const total = fencePrice;
+
+  const user = await storage.getUser(userId);
+  let html = templateObj.html
+    .replace(/{{projectId}}/g, templateData.metadata.projectId)
+    .replace(/{{company}}/g, user?.company || 'Your Company Name')
+    .replace(/{{address}}/g, user?.address || 'Your Address')
+    .replace(/{{phone}}/g, user?.phone || 'Your Phone')
+    .replace(/{{license}}/g, user?.license || 'Your License')
+    .replace(/{{clientName}}/g, clientName)
+    .replace(/{{clientAddress}}/g, address)
+    .replace(/{{currentDate}}/g, new Date().toLocaleDateString())
+    .replace(/{{fenceType}}/g, fenceType)
+    .replace(/{{fenceHeight}}/g, String(fenceHeight))
+    .replace(/{{fenceLength}}/g, String(fenceLength))
+    .replace(/{{fenceDetails}}/g, getFenceDetails(fenceType))
+    .replace(/{{fencePrice}}/g, fencePrice.toFixed(2))
+    .replace(/{{materialsPrice}}/g, materialsPrice.toFixed(2))
+    .replace(/{{subtotal}}/g, subtotal.toFixed(2))
+    .replace(/{{taxRate}}/g, taxRate.toFixed(2))
+    .replace(/{{taxAmount}}/g, taxAmount.toFixed(2))
+    .replace(/{{total}}/g, total.toFixed(2))
+    .replace(/{{completionTime}}/g, calculateCompletionTime(fenceLength));
+
+  // Handle gates
+  let gatesHtml = '';
+  gates.forEach(gate => {
+    gatesHtml += `
+      <tr>
+        <td>
+          <p class="font-medium">${gate.width}ft Wide ${gate.type} Gate</p>
+          <p class="text-sm">${gate.description}</p>
+        </td>
+        <td class="text-right">$${gate.price.toFixed(2)}</td>
+      </tr>
+    `;
+  });
+
+  html = html.replace(/{{#each gates}}[\s\S]*?{{\/each}}/g, gatesHtml);
+
+  return html;
+}
+
+async function generateContractHtml(projectDetails: any): Promise<string> {
+  // Get default template
+  const userId = 1;
+  const templateObj = await storage.getDefaultTemplate(userId, "contract");
+  const template = templateObj ? templateObj.html : '';
+
+  // For a contract, we need to calculate payment details
+  const total = projectDetails.total || 5000; // Default if not provided
+  const depositAmount = Math.round(total * 0.5 * 100) / 100;
+  const balanceAmount = Math.round((total - depositAmount) * 100) / 100;
+
+  // Calculate start date (2 weeks from now)
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() + 14);
+  const startDateFormatted = startDate.toLocaleDateString();
+
+  // Generate a reference ID
+  const projectId = `CON-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`;
+
+  // For simplicity, we'll use a basic templating approach
+  const user = await storage.getUser(userId);
+  let html = template
+    .replace(/{{projectId}}/g, projectId)
+    .replace(/{{company}}/g, user?.company || 'Your Company Name')
+    .replace(/{{address}}/g, user?.address || 'Your Address')
+    .replace(/{{phone}}/g, user?.phone || 'Your Phone')
+    .replace(/{{license}}/g, user?.license || 'Your License')
+    .replace(/{{clientName}}/g, projectDetails.clientName || 'Client Name')
+    .replace(/{{clientAddress}}/g, projectDetails.address || 'Client Address')
+    .replace(/{{currentDate}}/g, new Date().toLocaleDateString())
+    .replace(/{{fenceType}}/g, projectDetails.fenceType || 'Wood')
+    .replace(/{{fenceHeight}}/g, String(projectDetails.fenceHeight || 6))
+    .replace(/{{fenceLength}}/g, String(projectDetails.fenceLength || 100))
+    .replace(/{{depositAmount}}/g, depositAmount.toFixed(2))
+    .replace(/{{balanceAmount}}/g, balanceAmount.toFixed(2))
+    .replace(/{{total}}/g, total.toFixed(2))
+    .replace(/{{startDate}}/g, startDateFormatted)
+    .replace(/{{completionTime}}/g, calculateCompletionTime(projectDetails.fenceLength || 100));
+
+  // Handle gates
+  let gatesHtml = '';
+  const gates = projectDetails.gates || [];
+  gates.forEach(gate => {
+    gatesHtml += `<li>Install one ${gate.width}ft wide ${gate.type} gate with all necessary hardware</li>`;
+  });
+
+  html = html.replace(/{{#each gates}}[\s\S]*?{{\/each}}/g, gatesHtml);
+
+  return html;
+}
+
+async function generatePDF(data: any, type: 'estimate' | 'contract'): Promise<Buffer> {
+  return await documentService.generateDocument(data, type);
+}
+
+// Helper functions for calculations
+function calculateFencePrice(type: string, length: number, height: number, pricingSettings: any): number {
+  const basePrice = type.toLowerCase().includes('wood') ? pricingSettings.fencePrices.wood : 
+                    type.toLowerCase().includes('vinyl') ? pricingSettings.fencePrices.vinyl : 
+                    pricingSettings.fencePrices.chainLink;
+
+  // Apply height multiplier
+  const heightMultiplier = config.fenceRules.heightFactors[height.toString()] || 1; // Use config for height factors
+
+  return Math.round(basePrice * length * heightMultiplier);
+}
+
+function getFenceDetails(type: string): string {
+  if (type.toLowerCase().includes('wood')) {
+    return 'Pressure-treated pine, post-set in concrete';
+  } else if (type.toLowerCase().includes('vinyl')) {
+    return 'Premium vinyl panels, post-set in concrete';
+  } else if (type.toLowerCase().includes('chain')) {
+    return 'Galvanized chain link, post-set in concrete';
+  }
+  return 'Standard installation, post-set in concrete';
+}
+
+function calculateCompletionTime(length: number): string {
+  if (length <= 50) return '3-5';
+  if (length <= 100) return '5-7';
+  if (length <= 200) return '7-10';
+  return '10-14';
+}
+
+// Rutas de suscripción y pagos
+app.get('/api/subscription/plans', async (req: Request, res: Response) => {
+  try {
+    const plans = await storage.getAllSubscriptionPlans();
+    res.json(plans);
+  } catch (error) {
+    console.error('Error al obtener planes de suscripción:', error);
+    res.status(500).json({ message: 'Error al obtener planes de suscripción' });
+  }
+});
+
+app.get('/api/subscription/user-subscription', async (req: Request, res: Response) => {
+  try {
+    // En una app real, obtendríamos el userId de la sesión
+    const userId = 1; // Default user ID
+    const subscription = await storage.getUserSubscriptionByUserId(userId);
+    
+    if (!subscription) {
+      return res.json({ active: false });
+    }
+    
+    // Si hay una suscripción, obtener el plan asociado
+    const plan = await storage.getSubscriptionPlan(subscription.planId || 0);
+    
+    res.json({
+      active: subscription.status === 'active',
+      subscription,
+      plan
+    });
+  } catch (error) {
+    console.error('Error al obtener suscripción del usuario:', error);
+    res.status(500).json({ message: 'Error al obtener suscripción' });
+  }
+});
+
+app.post('/api/subscription/create-checkout', async (req: Request, res: Response) => {
+  try {
+    const schema = z.object({
+      planId: z.number(),
+      billingCycle: z.enum(['monthly', 'yearly']),
+      successUrl: z.string(),
+      cancelUrl: z.string()
+    });
+    
+    const { planId, billingCycle, successUrl, cancelUrl } = schema.parse(req.body);
+    
+    // En una app real, obtendríamos el userId y la información del usuario de la sesión
+    const userId = 1;
+    const user = await storage.getUser(userId);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+    
+    const checkoutUrl = await stripeService.createSubscriptionCheckout({
+      planId,
+      userId,
+      email: user.email || 'cliente@example.com',
+      name: user.company || 'Cliente',
+      billingCycle,
+      successUrl,
+      cancelUrl
+    });
+    
+    res.json({ url: checkoutUrl });
+  } catch (error) {
+    console.error('Error al crear sesión de checkout:', error);
+    res.status(500).json({ message: 'Error al crear sesión de checkout' });
+  }
+});
+
+app.post('/api/subscription/create-portal', async (req: Request, res: Response) => {
+  try {
+    const schema = z.object({
+      successUrl: z.string()
+    });
+    
+    const { successUrl } = schema.parse(req.body);
+    
+    // En una app real, obtendríamos el userId de la sesión
+    const userId = 1;
+    const subscription = await storage.getUserSubscriptionByUserId(userId);
+    
+    if (!subscription) {
+      return res.status(404).json({ message: 'No se encontró una suscripción activa' });
+    }
+    
+    const portalUrl = await stripeService.createCustomerPortalSession({
+      subscriptionId: subscription.id,
+      userId,
+      successUrl,
+      cancelUrl: successUrl
+    });
+    
+    res.json({ url: portalUrl });
+  } catch (error) {
+    console.error('Error al crear portal de cliente:', error);
+    res.status(500).json({ message: 'Error al crear portal de cliente' });
+  }
+});
+
+app.post('/api/webhook/stripe', async (req: Request, res: Response) => {
+  const sig = req.headers['stripe-signature'] as string;
+  
+  try {
+    // Esta es la línea donde necesitamos verificar la firma del webhook
+    // En producción, deberíamos tener un webhook secret como una variable de entorno
+    // const event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    
+    // Para este ejemplo, procesaremos todos los eventos sin verificar
+    const event = req.body;
+    
+    // Manejar el evento usando nuestro servicio
+    await stripeService.handleWebhookEvent(event);
+    
+    res.json({ received: true });
+  } catch (error) {
+    console.error('Error al procesar webhook de Stripe:', error);
+    res.status(400).json({ message: 'Error al procesar webhook' });
+  }
+});
+
+app.get('/api/subscription/payment-history', async (req: Request, res: Response) => {
+  try {
+    // En una app real, obtendríamos el userId de la sesión
+    const userId = 1;
+    const paymentHistory = await storage.getPaymentHistoryByUserId(userId);
+    
+    res.json(paymentHistory);
+  } catch (error) {
+    console.error('Error al obtener historial de pagos:', error);
+    res.status(500).json({ message: 'Error al obtener historial de pagos' });
+  }
+});
+
+// Ruta para sincronizar planes con Stripe (solo para administradores)
+app.post('/api/admin/sync-plans', async (req: Request, res: Response) => {
+  try {
+    // En una app real, verificaríamos que el usuario es un administrador
+    await stripeService.syncPlansWithStripe();
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error al sincronizar planes con Stripe:', error);
+    res.status(500).json({ message: 'Error al sincronizar planes' });
+  }
+});
+
+// Crear y retornar el servidor HTTP
+const server = createServer(app);
+return server;
+
+// --- Rutas de suscripción y pagos ---
+  app.get('/api/subscription/plans', async (req: Request, res: Response) => {
+    try {
+      const plans = await storage.getAllSubscriptionPlans();
+      res.json(plans);
+    } catch (error) {
+      console.error('Error al obtener planes de suscripción:', error);
+      res.status(500).json({ message: 'Error al obtener planes de suscripción' });
+    }
+  });
+
+  app.get('/api/subscription/user-subscription', async (req: Request, res: Response) => {
+    try {
+      // En una app real, obtendríamos el userId de la sesión
+      const userId = 1; // Default user ID
+      const subscription = await storage.getUserSubscriptionByUserId(userId);
+      
+      if (!subscription) {
+        return res.json({ active: false });
+      }
+      
+      // Si hay una suscripción, obtener el plan asociado
+      const plan = await storage.getSubscriptionPlan(subscription.planId || 0);
+      
+      res.json({
+        active: subscription.status === 'active',
+        subscription,
+        plan
+      });
+    } catch (error) {
+      console.error('Error al obtener suscripción del usuario:', error);
+      res.status(500).json({ message: 'Error al obtener suscripción' });
+    }
+  });
+
+  app.post('/api/subscription/create-checkout', async (req: Request, res: Response) => {
+    try {
+      const schema = z.object({
+        planId: z.number(),
+        billingCycle: z.enum(['monthly', 'yearly']),
+        successUrl: z.string(),
+        cancelUrl: z.string()
+      });
+      
+      const { planId, billingCycle, successUrl, cancelUrl } = schema.parse(req.body);
+      
+      // En una app real, obtendríamos el userId y la información del usuario de la sesión
+      const userId = 1;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: 'Usuario no encontrado' });
+      }
+      
+      const checkoutUrl = await stripeService.createSubscriptionCheckout({
+        planId,
+        userId,
+        email: user.email || 'cliente@example.com',
+        name: user.company || 'Cliente',
+        billingCycle,
+        successUrl,
+        cancelUrl
+      });
+      
+      res.json({ url: checkoutUrl });
+    } catch (error) {
+      console.error('Error al crear sesión de checkout:', error);
+      res.status(500).json({ message: 'Error al crear sesión de checkout' });
+    }
+  });
+
+  app.post('/api/subscription/create-portal', async (req: Request, res: Response) => {
+    try {
+      const schema = z.object({
+        successUrl: z.string()
+      });
+      
+      const { successUrl } = schema.parse(req.body);
+      
+      // En una app real, obtendríamos el userId de la sesión
+      const userId = 1;
+      const subscription = await storage.getUserSubscriptionByUserId(userId);
+      
+      if (!subscription) {
+        return res.status(404).json({ message: 'No se encontró una suscripción activa' });
+      }
+      
+      const portalUrl = await stripeService.createCustomerPortalSession({
+        subscriptionId: subscription.id,
+        userId,
+        successUrl,
+        cancelUrl: successUrl
+      });
+      
+      res.json({ url: portalUrl });
+    } catch (error) {
+      console.error('Error al crear portal de cliente:', error);
+      res.status(500).json({ message: 'Error al crear portal de cliente' });
+    }
+  });
+
+  app.post('/api/webhook/stripe', async (req: Request, res: Response) => {
+    const sig = req.headers['stripe-signature'] as string;
+    
+    try {
+      // Esta es la línea donde necesitamos verificar la firma del webhook
+      // En producción, deberíamos tener un webhook secret como una variable de entorno
+      // const event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+      
+      // Para este ejemplo, procesaremos todos los eventos sin verificar
+      const event = req.body;
+      
+      // Manejar el evento usando nuestro servicio
+      await stripeService.handleWebhookEvent(event);
+      
+      res.json({ received: true });
+    } catch (error) {
+      console.error('Error al procesar webhook de Stripe:', error);
+      res.status(400).json({ message: 'Error al procesar webhook' });
+    }
+  });
+
+  app.get('/api/subscription/payment-history', async (req: Request, res: Response) => {
+    try {
+      // En una app real, obtendríamos el userId de la sesión
+      const userId = 1;
+      const paymentHistory = await storage.getPaymentHistoryByUserId(userId);
+      
+      res.json(paymentHistory);
+    } catch (error) {
+      console.error('Error al obtener historial de pagos:', error);
+      res.status(500).json({ message: 'Error al obtener historial de pagos' });
+    }
+  });
+
+  // Ruta para sincronizar planes con Stripe (solo para administradores)
+  app.post('/api/admin/sync-plans', async (req: Request, res: Response) => {
+    try {
+      // En una app real, verificaríamos que el usuario es un administrador
+      await stripeService.syncPlansWithStripe();
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error al sincronizar planes con Stripe:', error);
+      res.status(500).json({ message: 'Error al sincronizar planes' });
+    }
+  });
+
+  // Helper functions for calculations
+  function calculateFencePrice(type: string, length: number, height: number, pricingSettings: any): number {
+    const basePrice = type.toLowerCase().includes('wood') ? pricingSettings.fencePrices.wood : 
+                      type.toLowerCase().includes('vinyl') ? pricingSettings.fencePrices.vinyl : 
+                      pricingSettings.fencePrices.chainLink;
+
+    // Apply height multiplier
+    const heightMultiplier = config.fenceRules.heightFactors[height] || 1; // Use config for height factors
+
+    return Math.round(basePrice * length * heightMultiplier);
+  }
+
+  function getFenceDetails(type: string): string {
+    if (type.toLowerCase().includes('wood')) {
+      return 'Pressure-treated pine, post-set in concrete';
+    } else if (type.toLowerCase().includes('vinyl')) {
+      return 'Premium vinyl panels, post-set in concrete';
+    } else if (type.toLowerCase().includes('chain')) {
+      return 'Galvanized chain link, post-set in concrete';
+    }
+    return 'Standard installation, post-set in concrete';
+  }
+
+  function calculateCompletionTime(length: number): string {
+    if (length <= 50) return '3-5';
+    if (length <= 100) return '5-7';
+    if (length <= 200) return '7-10';
+    return '10-14';
+  }
+
+  // Rutas de suscripción y pagos
+  app.get('/api/subscription/plans', async (req: Request, res: Response) => {
+    try {
+      const plans = await storage.getAllSubscriptionPlans();
+      res.json(plans);
+    } catch (error) {
+      console.error('Error al obtener planes de suscripción:', error);
+      res.status(500).json({ message: 'Error al obtener planes de suscripción' });
+    }
+  });
+
+  app.get('/api/subscription/user-subscription', async (req: Request, res: Response) => {
+    try {
+      // En una app real, obtendríamos el userId de la sesión
+      const userId = 1; // Default user ID
+      const subscription = await storage.getUserSubscriptionByUserId(userId);
+      
+      if (!subscription) {
+        return res.json({ active: false });
+      }
+      
+      // Si hay una suscripción, obtener el plan asociado
+      const plan = await storage.getSubscriptionPlan(subscription.planId || 0);
+      
+      res.json({
+        active: subscription.status === 'active',
+        subscription,
+        plan
+      });
+    } catch (error) {
+      console.error('Error al obtener suscripción del usuario:', error);
+      res.status(500).json({ message: 'Error al obtener suscripción' });
+    }
+  });
+
+  app.post('/api/subscription/create-checkout', async (req: Request, res: Response) => {
+    try {
+      const schema = z.object({
+        planId: z.number(),
+        billingCycle: z.enum(['monthly', 'yearly']),
+        successUrl: z.string(),
+        cancelUrl: z.string()
+      });
+      
+      const { planId, billingCycle, successUrl, cancelUrl } = schema.parse(req.body);
+      
+      // En una app real, obtendríamos el userId y la información del usuario de la sesión
+      const userId = 1;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: 'Usuario no encontrado' });
+      }
+      
+      const checkoutUrl = await stripeService.createSubscriptionCheckout({
+        planId,
+        userId,
+        email: user.email || 'cliente@example.com',
+        name: user.company || 'Cliente',
+        billingCycle,
+        successUrl,
+        cancelUrl
+      });
+      
+      res.json({ url: checkoutUrl });
+    } catch (error) {
+      console.error('Error al crear sesión de checkout:', error);
+      res.status(500).json({ message: 'Error al crear sesión de checkout' });
+    }
+  });
+
+  app.post('/api/subscription/create-portal', async (req: Request, res: Response) => {
+    try {
+      const schema = z.object({
+        successUrl: z.string()
+      });
+      
+      const { successUrl } = schema.parse(req.body);
+      
+      // En una app real, obtendríamos el userId de la sesión
+      const userId = 1;
+      const subscription = await storage.getUserSubscriptionByUserId(userId);
+      
+      if (!subscription) {
+        return res.status(404).json({ message: 'No se encontró una suscripción activa' });
+      }
+      
+      const portalUrl = await stripeService.createCustomerPortalSession({
+        subscriptionId: subscription.id,
+        userId,
+        successUrl,
+        cancelUrl: successUrl
+      });
+      
+      res.json({ url: portalUrl });
+    } catch (error) {
+      console.error('Error al crear portal de cliente:', error);
+      res.status(500).json({ message: 'Error al crear portal de cliente' });
+    }
+  });
+
+  app.post('/api/webhook/stripe', async (req: Request, res: Response) => {
+    const sig = req.headers['stripe-signature'] as string;
+    
+    try {
+      // Esta es la línea donde necesitamos verificar la firma del webhook
+      // En producción, deberíamos tener un webhook secret como una variable de entorno
+      // const event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+      
+      // Para este ejemplo, procesaremos todos los eventos sin verificar
+      const event = req.body;
+      
+      // Manejar el evento usando nuestro servicio
+      await stripeService.handleWebhookEvent(event);
+      
+      res.json({ received: true });
+    } catch (error) {
+      console.error('Error al procesar webhook de Stripe:', error);
+      res.status(400).json({ message: 'Error al procesar webhook' });
+    }
+  });
+
+  app.get('/api/subscription/payment-history', async (req: Request, res: Response) => {
+    try {
+      // En una app real, obtendríamos el userId de la sesión
+      const userId = 1;
+      const paymentHistory = await storage.getPaymentHistoryByUserId(userId);
+      
+      res.json(paymentHistory);
+    } catch (error) {
+      console.error('Error al obtener historial de pagos:', error);
+      res.status(500).json({ message: 'Error al obtener historial de pagos' });
+    }
+  });
+
+  // Ruta para sincronizar planes con Stripe (solo para administradores)
+  app.post('/api/admin/sync-plans', async (req: Request, res: Response) => {
+    try {
+      // En una app real, verificaríamos que el usuario es un administrador
+      await stripeService.syncPlansWithStripe();
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error al sincronizar planes con Stripe:', error);
+      res.status(500).json({ message: 'Error al sincronizar planes' });
+    }
+  });
+
+  // Crear y retornar el servidor HTTP
+  const server = createServer(app);
+  return server;
+}

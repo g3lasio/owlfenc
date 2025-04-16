@@ -4,7 +4,7 @@ import { storage } from '../storage';
 
 // Inicializar Stripe con la clave secreta
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2024-04-10', // Usar la versión más reciente disponible
+  apiVersion: '2023-10-16', // Usar una versión compatible
 });
 
 interface SubscriptionCheckoutOptions {
@@ -227,6 +227,10 @@ class StripeService {
       // Obtener detalles de la suscripción de Stripe
       const subscription = await stripe.subscriptions.retrieve(session.subscription);
       
+      // Convertir los timestamp de Unix a objetos Date
+      const currentPeriodStart = new Date(subscription.current_period_start * 1000);
+      const currentPeriodEnd = new Date(subscription.current_period_end * 1000);
+      
       // Crear o actualizar la suscripción en nuestra base de datos
       const existingSubscription = await storage.getUserSubscriptionByUserId(userId);
       
@@ -237,8 +241,8 @@ class StripeService {
           stripeCustomerId: session.customer,
           stripeSubscriptionId: session.subscription,
           status: subscription.status,
-          currentPeriodStart: new Date(subscription.current_period_start * 1000),
-          currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+          currentPeriodStart: currentPeriodStart,
+          currentPeriodEnd: currentPeriodEnd,
           cancelAtPeriodEnd: subscription.cancel_at_period_end,
           billingCycle,
           updatedAt: new Date()
@@ -251,8 +255,8 @@ class StripeService {
           stripeCustomerId: session.customer,
           stripeSubscriptionId: session.subscription,
           status: subscription.status,
-          currentPeriodStart: new Date(subscription.current_period_start * 1000),
-          currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+          currentPeriodStart: currentPeriodStart,
+          currentPeriodEnd: currentPeriodEnd,
           cancelAtPeriodEnd: subscription.cancel_at_period_end,
           billingCycle
         });
@@ -282,11 +286,15 @@ class StripeService {
       if (subscriptions && subscriptions.length > 0) {
         const subscription = subscriptions[0];
         
+        // Convertir los timestamp de Unix a objetos Date
+        const currentPeriodStart = new Date(stripeSubscription.current_period_start * 1000);
+        const currentPeriodEnd = new Date(stripeSubscription.current_period_end * 1000);
+        
         // Actualizar la suscripción con la información más reciente
         await storage.updateUserSubscription(subscription.id, {
           status: stripeSubscription.status,
-          currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
-          currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
+          currentPeriodStart: currentPeriodStart,
+          currentPeriodEnd: currentPeriodEnd,
           cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
           updatedAt: new Date()
         });
