@@ -30,6 +30,18 @@ export default function Sidebar() {
             <i className="ri-dashboard-line text-lg mr-3"></i>
             <span>Dashboard</span>
           </Link>
+          <Link href="/property-verifier" className={`flex items-center p-2 rounded-md ${isActive("/property-verifier") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
+            <i className="ri-shield-check-line text-lg mr-3"></i>
+            <span>🛡️ Property Ownership Verifier</span>
+          </Link>
+          <Link href="/ai-project-manager" className={`flex items-center p-2 rounded-md ${isActive("/ai-project-manager") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
+            <i className="ri-robot-line text-lg mr-3"></i>
+            <span>🧠 AI Project Manager</span>
+          </Link>
+          <Link href="/ar-fence-estimator" className={`flex items-center p-2 rounded-md ${isActive("/ar-fence-estimator") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
+            <i className="ri-augmented-reality-line text-lg mr-3"></i>
+            <span>🧱 AR Fence Estimator</span>
+          </Link>
         </div>
 
         {/* Proyectos */}

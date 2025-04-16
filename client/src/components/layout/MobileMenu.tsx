@@ -95,6 +95,18 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
               <i className="ri-dashboard-line text-lg mr-3"></i>
               <span>Dashboard</span>
             </Link>
+            <Link href="/property-verifier" className="flex items-center p-2 rounded-md hover:bg-accent">
+              <i className="ri-shield-check-line text-lg mr-3"></i>
+              <span>🛡️ Property Ownership Verifier</span>
+            </Link>
+            <Link href="/ai-project-manager" className="flex items-center p-2 rounded-md hover:bg-accent">
+              <i className="ri-robot-line text-lg mr-3"></i>
+              <span>🧠 AI Project Manager</span>
+            </Link>
+            <Link href="/ar-fence-estimator" className="flex items-center p-2 rounded-md hover:bg-accent">
+              <i className="ri-augmented-reality-line text-lg mr-3"></i>
+              <span>🧱 AR Fence Estimator</span>
+            </Link>
           </div>
 
           {/* 2. Proyectos */}

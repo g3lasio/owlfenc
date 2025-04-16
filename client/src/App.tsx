@@ -9,6 +9,9 @@ import Projects from "@/pages/Projects";
 import Templates from "@/pages/Templates";
 import Settings from "@/pages/Settings";
 import Profile from "@/pages/Profile";
+import PropertyOwnershipVerifier from "@/pages/PropertyOwnershipVerifier";
+import AIProjectManager from "@/pages/AIProjectManager";
+import ARFenceEstimator from "@/pages/ARFenceEstimator";
 
 function Router() {
   return (
@@ -18,6 +21,9 @@ function Router() {
       <Route path="/templates" component={Templates} />
       <Route path="/settings" component={Settings} />
       <Route path="/profile" component={Profile} />
+      <Route path="/property-verifier" component={PropertyOwnershipVerifier} />
+      <Route path="/ai-project-manager" component={AIProjectManager} />
+      <Route path="/ar-fence-estimator" component={ARFenceEstimator} />
       <Route component={NotFound} />
     </Switch>
   );
