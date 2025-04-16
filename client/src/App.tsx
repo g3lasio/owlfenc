@@ -17,6 +17,7 @@ import AboutOwlFence from "@/pages/AboutOwlFence";
 import AboutMervin from "@/pages/AboutMervin";
 import LegalPolicy from "@/pages/LegalPolicy";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import PricingSettings from "@/pages/PricingSettings";
 
 function Router() {
   return (
@@ -34,6 +35,7 @@ function Router() {
       <Route path="/about-mervin" component={AboutMervin} />
       <Route path="/legal-policy" component={LegalPolicy} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
+      <Route path="/settings/pricing" component={PricingSettings} />
       <Route component={NotFound} />
     </Switch>
   );
