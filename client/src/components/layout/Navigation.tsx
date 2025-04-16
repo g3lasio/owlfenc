@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
-import { mainNavigationConfig, userNavigationConfig } from "@/config/navigationItems";
-import { NavigationSection } from "@/types/navigation";
+import { mainNavigationConfig, userNavigationConfig } from "../../config/navigationItems";
+import { NavigationSection } from "../../types/navigation";
 
 interface NavigationProps {
   // Si es mobile o desktop

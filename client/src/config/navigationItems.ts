@@ -46,11 +46,6 @@ export const mainNavigationConfig: NavigationSection[] = [
         icon: "ri-money-dollar-circle-line",
       },
       {
-        label: "Planes de Suscripción",
-        path: "/subscription",
-        icon: "ri-vip-crown-line",
-      },
-      {
         label: "Historial",
         path: "/history",
         icon: "ri-history-line",
