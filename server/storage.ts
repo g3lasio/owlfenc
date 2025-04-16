@@ -41,6 +41,14 @@ export interface IStorage {
   getChatLog(projectId: number): Promise<ChatLog | undefined>;
   createChatLog(chatLog: InsertChatLog): Promise<ChatLog>;
   updateChatLog(id: number, messages: any): Promise<ChatLog>;
+  
+  // Client methods
+  getClient(id: number): Promise<Client | undefined>;
+  getClientByClientId(clientId: string): Promise<Client | undefined>;
+  getClientsByUserId(userId: number): Promise<Client[]>;
+  createClient(client: InsertClient): Promise<Client>;
+  updateClient(id: number, client: Partial<Client>): Promise<Client>;
+  deleteClient(id: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -64,12 +72,14 @@ export class MemStorage implements IStorage {
   }
 
   private chatLogs: Map<number, ChatLog>;
+  private clients: Map<number, Client>;
   private currentIds: {
     users: number;
     projects: number;
     templates: number;
     settings: number;
     chatLogs: number;
+    clients: number;
   };
 
   constructor() {
@@ -78,12 +88,14 @@ export class MemStorage implements IStorage {
     this.templates = new Map();
     this.settings = new Map();
     this.chatLogs = new Map();
+    this.clients = new Map();
     this.currentIds = {
       users: 1,
       projects: 1,
       templates: 1,
       settings: 1,
-      chatLogs: 1
+      chatLogs: 1,
+      clients: 1
     };
     
     // Add some default data

@@ -156,6 +156,44 @@ export const insertMaterialSchema = createInsertSchema(materials).pick({
   sku: true,
 });
 
+// Clients table
+export const clients = pgTable("clients", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  clientId: text("client_id").notNull(),
+  name: text("name").notNull(),
+  email: text("email"),
+  phone: text("phone"),
+  mobilePhone: text("mobile_phone"),
+  address: text("address"),
+  city: text("city"),
+  state: text("state"),
+  zipCode: text("zip_code"),
+  notes: text("notes"),
+  source: text("source"),  // Where the client came from (referral, advertisement, etc.)
+  tags: jsonb("tags"),     // Array of tags for categorizing clients
+  lastContact: timestamp("last_contact"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertClientSchema = createInsertSchema(clients).pick({
+  userId: true,
+  clientId: true,
+  name: true,
+  email: true,
+  phone: true,
+  mobilePhone: true,
+  address: true,
+  city: true,
+  state: true,
+  zipCode: true,
+  notes: true,
+  source: true,
+  tags: true,
+  lastContact: true,
+});
+
 // Export types
 export type Material = typeof materials.$inferSelect;
 export type InsertMaterial = z.infer<typeof insertMaterialSchema>;
@@ -174,3 +212,6 @@ export type InsertSettings = z.infer<typeof insertSettingsSchema>;
 
 export type ChatLog = typeof chatLogs.$inferSelect;
 export type InsertChatLog = z.infer<typeof insertChatLogSchema>;
+
+export type Client = typeof clients.$inferSelect;
+export type InsertClient = z.infer<typeof insertClientSchema>;
