@@ -141,6 +141,13 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
               <span>Proyectos</span>
             </Link>
             <Link
+              href="/clients"
+              className="flex items-center p-2 rounded-md hover:bg-accent"
+            >
+              <i className="ri-user-3-line text-lg mr-3"></i>
+              <span>Clientes</span>
+            </Link>
+            <Link
               href="/templates"
               className="flex items-center p-2 rounded-md hover:bg-accent"
             >
