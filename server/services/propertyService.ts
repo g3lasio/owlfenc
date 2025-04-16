@@ -60,7 +60,7 @@ class PropertyService {
 
   private getHeaders() {
     return {
-      'APIKey': this.apiKey, // Nombre correcto del header según la documentación
+      'apikey': this.apiKey, // Intentamos con 'apikey' en minúsculas
       'Accept': 'application/json'
     };
   }
@@ -98,90 +98,113 @@ class PropertyService {
       
       if (this.apiKey && this.apiKey.length > 10) {
         console.log('Usando la API de ATTOM con clave API disponible');
+        console.log('Longitud de la clave API:', this.apiKey.length);
+        console.log('Primeros 5 caracteres de la clave API:', this.apiKey.substring(0, 5));
         
-        try {
-          // Parsear la dirección para el formato requerido por ATTOM
-          const { address1, address2 } = this.parseAddress(address);
-          
-          if (!address1 || address1.length < 3) {
-            throw new Error('Dirección incompleta. Se requiere al menos calle y número.');
-          }
-          
-          console.log(`Consultando API ATTOM con: address1=${address1}, address2=${address2}`);
-          
-          // Obtener detalles de propiedad incluyendo información del propietario
-          const propertyResponse = await this.attomClient.get('/property/detailowner', {
-            params: { 
-              address1, 
-              address2 
-            }
-          });
-          
-          // Verificar si se encontraron resultados
-          if (!propertyResponse.data.property || propertyResponse.data.property.length === 0) {
-            console.log('No se encontró propiedad para la dirección proporcionada');
-            throw new Error('Propiedad no encontrada');
-          }
-          
-          // Procesar datos de la respuesta
-          const propertyData = propertyResponse.data.property[0];
-          
-          // Extraer datos de propietario y detalles físicos
-          const ownerData = this.extractOwnerData(propertyData);
-          const propertyDetails = this.extractPropertyDetails(propertyData);
-          
-          // Combinar los datos en un objeto unificado
-          const fullPropertyData: FullPropertyData = {
-            ...propertyDetails,
-            ...ownerData,
-            address: address,
-            verified: true
-          };
-          
-          console.log('Datos de propiedad obtenidos exitosamente desde ATTOM');
-          return fullPropertyData;
-          
-        } catch (apiError: any) {
-          console.error('Error al consultar la API ATTOM:', apiError.message);
-          
-          // En caso de error de API, verificar si tenemos suficiente información para un segundo intento con el endpoint /property/detail
-          if (apiError.message !== 'Propiedad no encontrada') {
+        // Probar diferentes combinaciones de headers para API key
+        const apiKeyHeaders = [
+          { 'apikey': this.apiKey },         // Minúsculas (estándar común)
+          { 'APIKey': this.apiKey },         // CamelCase (según documentación)
+          { 'api_key': this.apiKey },        // Snake case
+          { 'api-key': this.apiKey },        // Kebab case
+          { 'X-API-Key': this.apiKey }       // Prefijo X común
+        ];
+        
+        // Probar diferentes endpoints
+        const endpoints = [
+          '/property/basicprofile',         // El endpoint más simple
+          '/property/detail',               // Detalles de propiedad
+          '/property/detailowner'           // Detalles + propietario
+        ];
+        
+        // Intentar diferentes combinaciones de headers y endpoints
+        for (const header of apiKeyHeaders) {
+          for (const endpoint of endpoints) {
             try {
+              // Parsear la dirección para el formato requerido por ATTOM
               const { address1, address2 } = this.parseAddress(address);
-              console.log('Intentando con endpoint alternativo /property/detail');
               
-              const detailResponse = await this.attomClient.get('/property/detail', {
+              if (!address1 || address1.length < 3) {
+                throw new Error('Dirección incompleta. Se requiere al menos calle y número.');
+              }
+              
+              console.log(`Probando endpoint: ${endpoint} con header: ${Object.keys(header)[0]}`);
+              console.log(`Consultando API ATTOM con: address1=${address1}, address2=${address2}`);
+              
+              // Crea un cliente temporal con el header específico para este intento
+              const tempClient = axios.create({
+                baseURL: this.baseUrl,
+                headers: {
+                  ...header,
+                  'Accept': 'application/json'
+                },
+                timeout: 10000
+              });
+              
+              // Intenta realizar la solicitud con esta combinación de header y endpoint
+              const response = await tempClient.get(endpoint, {
                 params: { 
                   address1, 
                   address2 
                 }
               });
               
-              if (detailResponse.data.property && detailResponse.data.property.length > 0) {
-                const propertyData = detailResponse.data.property[0];
-                const propertyDetails = this.extractPropertyDetails(propertyData);
-                
-                // Cuando usamos /detail en lugar de /detailowner, puede faltar info del propietario
-                const fullPropertyData: FullPropertyData = {
-                  ...propertyDetails,
-                  owner: "No disponible",
-                  ownerOccupied: false,
-                  address: address,
-                  verified: true
-                };
-                
-                console.log('Datos parciales de propiedad obtenidos desde ATTOM');
-                return fullPropertyData;
+              console.log('¡Éxito! Respuesta recibida con status:', response.status);
+              
+              // Si llegamos aquí, significa que la solicitud fue exitosa
+              if (!response.data.property || response.data.property.length === 0) {
+                console.log('No se encontró propiedad para la dirección proporcionada');
+                continue; // Probar siguiente combinación
               }
-            } catch (secondError: any) {
-              console.error('Segundo intento también falló:', secondError.message);
+              
+              // Procesar datos de la respuesta
+              const propertyData = response.data.property[0];
+              
+              // Extraer datos según el endpoint usado
+              let ownerData = { owner: "No disponible", mailingAddress: "", ownerOccupied: false };
+              const propertyDetails = this.extractPropertyDetails(propertyData);
+              
+              // Si fue un endpoint con info de propietario, extrae esos datos
+              if (endpoint === '/property/detailowner') {
+                ownerData = this.extractOwnerData(propertyData);
+              }
+              
+              // Combinar los datos en un objeto unificado
+              const fullPropertyData: FullPropertyData = {
+                ...propertyDetails,
+                ...ownerData,
+                address: address,
+                verified: true
+              };
+              
+              console.log('Datos de propiedad obtenidos exitosamente desde ATTOM con combinación:');
+              console.log('- Header:', Object.keys(header)[0]);
+              console.log('- Endpoint:', endpoint);
+              
+              return fullPropertyData;
+              
+            } catch (apiError: any) {
+              // Registra el error pero continúa probando
+              console.error(`Error con ${endpoint} y header ${Object.keys(header)[0]}:`, 
+                apiError.message, 
+                apiError.response ? `Status: ${apiError.response.status}` : 'Sin respuesta');
+              
+              // Registrar siempre la respuesta completa para diagnóstico
+              if (apiError.response) {
+                console.log('Respuesta de error detallada para status ' + apiError.response.status + ':', 
+                  JSON.stringify(apiError.response.data || {}));
+                console.log('Headers de respuesta:', JSON.stringify(apiError.response.headers || {}));
+              }
+              
+              // Continuar con la siguiente combinación
+              continue;
             }
           }
-          
-          // Si ambos intentos fallan, volvemos a los datos de respaldo
-          console.log('Usando datos de respaldo debido a errores en API');
-          return this.getBackupPropertyData(address);
         }
+        
+        // Si llegamos aquí, es porque ninguna combinación funcionó
+        console.log('Todas las combinaciones fallaron, usando datos de respaldo');
+        return this.getBackupPropertyData(address);
       } else {
         console.log('No hay clave API de ATTOM disponible o válida, usando datos de respaldo');
         return this.getBackupPropertyData(address);
