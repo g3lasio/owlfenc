@@ -4,7 +4,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 export default function ARFenceEstimator() {
   return (
     <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-2">AR Fence Estimator</h1>
+      <div className="flex items-center gap-3 mb-2">
+        <div className="p-2 bg-primary/10 rounded-lg">
+          <i className="ri-3d-cube-sphere-line text-3xl text-primary"></i>
+        </div>
+        <h1 className="text-3xl font-bold">AR Fence Estimator</h1>
+      </div>
       <p className="text-muted-foreground mb-6">
         Coming Soon: Visualize fences in augmented reality before construction.
       </p>
