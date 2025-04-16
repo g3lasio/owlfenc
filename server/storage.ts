@@ -656,8 +656,8 @@ export class MemStorage implements IStorage {
         id: this.currentIds.subscriptionPlans++,
         name: "🧤 Primo Chambeador",
         code: "primo_chambeador",
-        price: 2900, // $29/mes en centavos
-        yearlyPrice: 27800, // $278/año en centavos
+        price: 1900, // $19/mes en centavos
+        yearlyPrice: 18240, // $182.40/año en centavos (20% descuento)
         description: "Plan básico para contratistas que están comenzando su negocio",
         features: [
           "Hasta 10 estimaciones por mes",
@@ -674,8 +674,8 @@ export class MemStorage implements IStorage {
         id: this.currentIds.subscriptionPlans++,
         name: "🔨 El Mero Patrón",
         code: "mero_patron",
-        price: 5900, // $59/mes en centavos
-        yearlyPrice: 56600, // $566/año en centavos
+        price: 4900, // $49/mes en centavos
+        yearlyPrice: 47040, // $470.40/año en centavos (20% descuento)
         description: "Plan intermedio para contratistas con negocios en crecimiento",
         features: [
           "Estimaciones ilimitadas",
@@ -694,8 +694,8 @@ export class MemStorage implements IStorage {
         id: this.currentIds.subscriptionPlans++,
         name: "👑 El Chingón Mayor",
         code: "chingon_mayor",
-        price: 9900, // $99/mes en centavos
-        yearlyPrice: 95000, // $950/año en centavos
+        price: 8900, // $89/mes en centavos
+        yearlyPrice: 85440, // $854.40/año en centavos (20% descuento)
         description: "Plan premium para contratistas profesionales con altos volúmenes de trabajo",
         features: [
           "Estimaciones y contratos ilimitados",
