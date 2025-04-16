@@ -55,7 +55,12 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           ? "opacity-100 pointer-events-auto"
           : "opacity-0 pointer-events-none"
       }`}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+      onClick={(e) => {
+        e.preventDefault();
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
     >
       <div
         ref={menuPanelRef}

@@ -44,8 +44,12 @@ export default function Header({
   return (
     <header className="h-16 flex items-center justify-between px-4 border-b border-border bg-card">
       <button
-        className="p-2 rounded-md hover:bg-accent transition-colors"
-        onClick={handleMenuToggle}
+        className="p-2 rounded-md hover:bg-accent transition-colors z-[10000]"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          handleMenuToggle();
+        }}
         aria-label="Menu principal"
         aria-expanded={isMobileMenuOpen}
         type="button"
