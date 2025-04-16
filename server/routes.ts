@@ -333,30 +333,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { address } = req.query;
       
+      console.log('\n===== SOLICITUD DE VERIFICACIÓN DE PROPIEDAD =====');
+      console.log('Timestamp:', new Date().toISOString());
+      console.log('Dirección solicitada:', address);
+      
       if (!address || typeof address !== 'string') {
+        console.log('Error: Se proporcionó una dirección inválida');
         return res.status(400).json({ 
           message: 'Se requiere una dirección válida para verificar la propiedad' 
         });
       }
 
-      console.log('Verificando propiedad para dirección:', address);
+      console.log('API Key ATTOM disponible:', process.env.ATTOM_API_KEY ? 'Sí' : 'No');
+      if (process.env.ATTOM_API_KEY) {
+        console.log('Longitud de API Key:', process.env.ATTOM_API_KEY.length);
+        console.log('Primeros 5 caracteres:', process.env.ATTOM_API_KEY.substring(0, 5));
+      }
+      
+      console.log('Solicitando datos de propiedad para dirección:', address);
+      console.log('Iniciando solicitud a ATTOM API...');
+      
+      const startTime = Date.now();
       const propertyData = await propertyService.getPropertyByAddress(address);
+      const endTime = Date.now();
+      
+      console.log(`Solicitud completada en ${endTime - startTime}ms`);
       
       // Incluso si la API falla, deberíamos obtener datos de respaldo
       if (!propertyData) {
-        console.log('No se obtuvo ningún dato de propiedad, ni siquiera el respaldo');
+        console.log('Error crítico: No se obtuvo ningún dato de propiedad, ni siquiera el respaldo');
         return res.status(404).json({ 
           message: 'No se encontró información para la dirección proporcionada' 
         });
       }
       
-      console.log('Datos de propiedad obtenidos:', JSON.stringify(propertyData).substring(0, 100) + '...');
+      // Verificar si los datos son auténticos o de respaldo
+      if (propertyData.verified) {
+        console.log('ÉXITO: Datos verificados obtenidos de ATTOM API');
+        console.log('Datos de propietario:', propertyData.owner);
+        console.log('Propiedad ocupada por el propietario:', propertyData.ownerOccupied);
+      } else {
+        console.log('ALERTA: Se están usando datos de respaldo (no verificados)');
+      }
+      
+      console.log('Enviando respuesta al cliente...');
+      console.log('===== FIN DE SOLICITUD DE VERIFICACIÓN =====\n');
+      
       res.json(propertyData);
-    } catch (error) {
-      console.error('Error verificando propiedad:', error);
+    } catch (error: any) {
+      console.error('ERROR EN VERIFICACIÓN DE PROPIEDAD:');
+      console.error('Mensaje:', error.message);
+      console.error('Stack:', error.stack);
+      
       res.status(500).json({ 
-        message: 'Error al verificar los datos de la propiedad' 
+        message: 'Error al verificar los datos de la propiedad',
+        error: error.message
       });
+      
+      console.log('===== FIN DE SOLICITUD DE VERIFICACIÓN (CON ERROR) =====\n');
     }
   });
 

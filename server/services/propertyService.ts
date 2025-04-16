@@ -110,11 +110,11 @@ class PropertyService {
           { 'X-API-Key': this.apiKey }       // Prefijo X común
         ];
         
-        // Probar diferentes endpoints
+        // Probar diferentes endpoints, priorizando el endpoint de propietario
         const endpoints = [
-          '/property/basicprofile',         // El endpoint más simple
+          '/property/detailowner',           // Detalles + propietario (AHORA CON PERMISOS)
           '/property/detail',               // Detalles de propiedad
-          '/property/detailowner'           // Detalles + propietario
+          '/property/basicprofile'          // El endpoint más simple
         ];
         
         // Intentar diferentes combinaciones de headers y endpoints
@@ -255,26 +255,53 @@ class PropertyService {
     let mailingAddress = '';
     let ownerOccupied = false;
 
+    // Añadir logs detallados para diagnosticar
+    console.log('Extrayendo datos de propietario de la respuesta de ATTOM');
+
     try {
+      // Verificar si hay datos de propietario disponibles
       if (propertyData.owner && propertyData.owner.length > 0) {
+        console.log('Se encontraron datos de propietario:', 
+          propertyData.owner.length, 'propietarios en los resultados');
+        
+        // Imprimir una muestra de los datos disponibles para diagnóstico
+        console.log('Estructura de datos de propietario:', 
+          Object.keys(propertyData.owner[0]).join(', '));
+        
         const ownerInfo = propertyData.owner[0];
         
-        // Get owner name
+        // Get owner name 
         if (ownerInfo.name) {
           owner = ownerInfo.name;
+          console.log('Nombre de propietario encontrado:', owner);
+        } else {
+          console.log('No se encontró nombre de propietario');
         }
         
         // Get mailing address
         if (ownerInfo.mailingAddress) {
           mailingAddress = this.formatAddress(ownerInfo.mailingAddress);
+          console.log('Dirección postal formateada:', mailingAddress);
+          
+          // Para diagnóstico, mostrar estructura original
+          console.log('Estructura de dirección postal:', 
+            Object.keys(ownerInfo.mailingAddress).join(', '));
+        } else {
+          console.log('No se encontró dirección postal');
         }
         
         // Determine if owner occupied by comparing property and mailing addresses
         const propertyAddress = this.formatAddress(propertyData.address);
         ownerOccupied = propertyAddress.toLowerCase() === mailingAddress.toLowerCase();
+        console.log('Dirección de propiedad:', propertyAddress);
+        console.log('Es propiedad ocupada por el propietario:', ownerOccupied);
+      } else {
+        console.log('No se encontraron datos de propietario en la respuesta');
+        // Verificar si hay alguna información disponible que podría contener datos de propietario
+        console.log('Campos disponibles en la respuesta:', Object.keys(propertyData).join(', '));
       }
     } catch (err) {
-      console.error('Error extracting owner data:', err);
+      console.error('Error extrayendo datos de propietario:', err);
     }
 
     return {
