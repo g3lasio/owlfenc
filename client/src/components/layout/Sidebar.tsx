@@ -55,6 +55,14 @@ export default function Sidebar() {
             <i className="ri-user-3-line text-lg mr-3"></i>
             <span>Clientes</span>
           </Link>
+          <Link href="/settings/pricing" className={`flex items-center p-2 rounded-md ${isActive("/settings/pricing") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
+            <i className="ri-money-dollar-circle-line text-lg mr-3"></i>
+            <span>Precios y Tarifas</span>
+          </Link>
+          <Link href="/settings/billing" className={`flex items-center p-2 rounded-md ${isActive("/settings/billing") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
+            <i className="ri-bank-card-line text-lg mr-3"></i>
+            <span>Facturación</span>
+          </Link>
           <Link href="/history" className={`flex items-center p-2 rounded-md ${isActive("/history") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
             <i className="ri-history-line text-lg mr-3"></i>
             <span>Historial</span>
@@ -80,14 +88,6 @@ export default function Sidebar() {
           <Link href="/profile" className={`flex items-center p-2 rounded-md ${isActive("/profile") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
             <i className="ri-building-line text-lg mr-3"></i>
             <span>Perfil de Empresa</span>
-          </Link>
-          <Link href="/settings/pricing" className={`flex items-center p-2 rounded-md ${isActive("/settings/pricing") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
-            <i className="ri-money-dollar-circle-line text-lg mr-3"></i>
-            <span>Precios y Tarifas</span>
-          </Link>
-          <Link href="/settings/billing" className={`flex items-center p-2 rounded-md ${isActive("/settings/billing") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
-            <i className="ri-bank-card-line text-lg mr-3"></i>
-            <span>Facturación</span>
           </Link>
           <Link href="/settings/employees" className={`flex items-center p-2 rounded-md ${isActive("/settings/employees") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
             <i className="ri-team-line text-lg mr-3"></i>

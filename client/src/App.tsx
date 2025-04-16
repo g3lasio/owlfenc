@@ -7,7 +7,6 @@ import AppLayout from "@/components/layout/AppLayout";
 import Home from "@/pages/Home";
 import Projects from "@/pages/Projects";
 import Clients from "@/pages/Clients";
-import Templates from "@/pages/Templates";
 import Settings from "@/pages/Settings";
 import Profile from "@/pages/Profile";
 import PropertyOwnershipVerifier from "@/pages/PropertyOwnershipVerifier";
@@ -25,7 +24,6 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/projects" component={Projects} />
       <Route path="/clients" component={Clients} />
-      <Route path="/templates" component={Templates} />
       <Route path="/settings" component={Settings} />
       <Route path="/profile" component={Profile} />
       <Route path="/property-verifier" component={PropertyOwnershipVerifier} />

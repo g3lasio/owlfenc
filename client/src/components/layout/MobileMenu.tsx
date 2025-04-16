@@ -148,11 +148,25 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
               <span>Clientes</span>
             </Link>
             <Link
-              href="/templates"
+              href="/settings/pricing"
               className="flex items-center p-2 rounded-md hover:bg-accent"
             >
-              <i className="ri-file-list-3-line text-lg mr-3"></i>
-              <span>Plantillas</span>
+              <i className="ri-money-dollar-circle-line text-lg mr-3"></i>
+              <span>Precios y Tarifas</span>
+            </Link>
+            <Link
+              href="/settings/billing"
+              className="flex items-center p-2 rounded-md hover:bg-accent"
+            >
+              <i className="ri-bank-card-line text-lg mr-3"></i>
+              <span>Facturación</span>
+            </Link>
+            <Link
+              href="/history"
+              className="flex items-center p-2 rounded-md hover:bg-accent"
+            >
+              <i className="ri-history-line text-lg mr-3"></i>
+              <span>Historial</span>
             </Link>
           </div>
 
@@ -188,20 +202,6 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             >
               <i className="ri-building-line text-lg mr-3"></i>
               <span>Perfil de Empresa</span>
-            </Link>
-            <Link
-              href="/settings/pricing"
-              className="flex items-center p-2 rounded-md hover:bg-accent"
-            >
-              <i className="ri-money-dollar-circle-line text-lg mr-3"></i>
-              <span>Precios y Tarifas</span>
-            </Link>
-            <Link
-              href="/settings/billing"
-              className="flex items-center p-2 rounded-md hover:bg-accent"
-            >
-              <i className="ri-bank-card-line text-lg mr-3"></i>
-              <span>Facturación</span>
             </Link>
             <Link
               href="/settings/employees"
