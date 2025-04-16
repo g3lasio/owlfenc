@@ -51,10 +51,6 @@ export default function Sidebar() {
             <i className="ri-folder-line text-lg mr-3"></i>
             <span>Proyectos</span>
           </Link>
-          <Link href="/templates" className={`flex items-center p-2 rounded-md ${isActive("/templates") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
-            <i className="ri-file-list-3-line text-lg mr-3"></i>
-            <span>Plantillas</span>
-          </Link>
           <Link href="/history" className={`flex items-center p-2 rounded-md ${isActive("/history") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
             <i className="ri-history-line text-lg mr-3"></i>
             <span>Historial</span>
