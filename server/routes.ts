@@ -339,17 +339,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      console.log('Verificando propiedad para dirección:', address);
       const propertyData = await propertyService.getPropertyByAddress(address);
       
+      // Incluso si la API falla, deberíamos obtener datos de respaldo
       if (!propertyData) {
+        console.log('No se obtuvo ningún dato de propiedad, ni siquiera el respaldo');
         return res.status(404).json({ 
           message: 'No se encontró información para la dirección proporcionada' 
         });
       }
       
+      console.log('Datos de propiedad obtenidos:', JSON.stringify(propertyData).substring(0, 100) + '...');
       res.json(propertyData);
     } catch (error) {
-      console.error('Error verifying property:', error);
+      console.error('Error verificando propiedad:', error);
       res.status(500).json({ 
         message: 'Error al verificar los datos de la propiedad' 
       });
