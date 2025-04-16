@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import Header from "./Header";
 import MobileMenu from "./MobileMenu";
+import Sidebar from "./Sidebar";
+import UserMenu from "./UserMenu"; 
 import { Route, Switch } from "wouter";
 
 interface AppLayoutProps {
@@ -16,7 +18,6 @@ const Profile = () => {
     </div>
   );
 };
-
 
 export default function AppLayout({ children }: AppLayoutProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -40,20 +41,28 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
   return (
     <div className="flex h-screen">
-        <main className="flex-1 flex flex-col overflow-auto">
-          <Header toggleMobileMenu={toggleMobileMenu} isMobileMenuOpen={isMobileMenuOpen} />
-          <div className="flex-1 overflow-auto">
-            <Switch>
-              <Route path="/settings/profile" component={Profile} />
-              <Route path="*">{children}</Route>
-            </Switch>
-          </div>
-        </main>
+      {/* Sidebar izquierdo (solo visible en desktop) */}
+      <Sidebar />
+      
+      {/* Contenido principal */}
+      <main className="flex-1 flex flex-col overflow-auto">
+        <Header toggleMobileMenu={toggleMobileMenu} isMobileMenuOpen={isMobileMenuOpen} />
+        <div className="flex-1 overflow-auto">
+          <Switch>
+            <Route path="/settings/profile" component={Profile} />
+            <Route path="*">{children}</Route>
+          </Switch>
+        </div>
+      </main>
 
-        <MobileMenu 
-          isOpen={isMobileMenuOpen} 
-          onClose={() => setIsMobileMenuOpen(false)} 
-        />
-      </div>
+      {/* UserMenu derecho (solo visible en desktop) */}
+      <UserMenu />
+      
+      {/* Menú móvil (solo visible en mobile cuando se activa) */}
+      <MobileMenu 
+        isOpen={isMobileMenuOpen} 
+        onClose={() => setIsMobileMenuOpen(false)} 
+      />
+    </div>
   );
 }

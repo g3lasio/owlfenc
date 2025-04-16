@@ -1,15 +1,21 @@
 import { Link, useLocation } from "wouter";
-import { navigationConfig } from "@/config/navigationItems";
+import { mainNavigationConfig, userNavigationConfig } from "@/config/navigationItems";
+import { NavigationSection } from "@/types/navigation";
 
 interface NavigationProps {
   // Si es mobile o desktop
   variant: "sidebar" | "drawer";
+  // Si es para la navegación principal o de usuario
+  type?: "main" | "user";
   // Solo para drawer: función para cerrar el drawer
   onClose?: () => void;
 }
 
-export function Navigation({ variant, onClose }: NavigationProps) {
+export function Navigation({ variant, type = "main", onClose }: NavigationProps) {
   const [location] = useLocation();
+  
+  // Seleccionar la configuración adecuada según el tipo
+  const navigationConfig = type === "main" ? mainNavigationConfig : userNavigationConfig;
   
   const isActive = (path: string) => {
     if (path === "/") return location === "/";
@@ -71,7 +77,7 @@ export function Navigation({ variant, onClose }: NavigationProps) {
 
   return (
     <nav className={`flex-1 ${variant === "sidebar" ? "p-4" : "p-4"} space-y-5 overflow-y-auto`}>
-      {navigationConfig.map((section, index) => (
+      {navigationConfig.map((section: NavigationSection, index: number) => (
         <div key={section.title} className="space-y-1">
           <div className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
             {section.title}

@@ -1,16 +1,7 @@
-interface NavigationItem {
-  label: string;
-  path: string;
-  icon: string;
-  children?: NavigationItem[];
-}
+import { NavigationItem, NavigationSection } from "@/types/navigation";
 
-interface NavigationSection {
-  title: string;
-  items: NavigationItem[];
-}
-
-export const navigationConfig: NavigationSection[] = [
+// Configuración para el menú principal (izquierdo)
+export const mainNavigationConfig: NavigationSection[] = [
   {
     title: "Principal",
     items: [
@@ -65,7 +56,11 @@ export const navigationConfig: NavigationSection[] = [
         icon: "ri-history-line",
       },
     ],
-  },
+  }
+];
+
+// Configuración para el menú de usuario (derecho)
+export const userNavigationConfig: NavigationSection[] = [
   {
     title: "Mi Cuenta",
     items: [
