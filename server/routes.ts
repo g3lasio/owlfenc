@@ -9,7 +9,8 @@ import {
 import OpenAI from "openai";
 import { z } from "zod";
 import puppeteer from "puppeteer";
-import { chatService } from './services/chatService'; // Import the new chat service
+import { chatService } from './services/chatService';
+import { propertyService } from './services/propertyService';
 
 // Initialize OpenAI API
 const GPT_MODEL = "gpt-4";
@@ -324,6 +325,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error updating profile:', error);
       console.log('Profile data attempted to save:', req.body);
       res.status(500).json({ message: 'Error al actualizar el perfil' });
+    }
+  });
+
+  // Property ownership verification route
+  app.get('/api/property-verification', async (req: Request, res: Response) => {
+    try {
+      const { address } = req.query;
+      
+      if (!address || typeof address !== 'string') {
+        return res.status(400).json({ 
+          message: 'Se requiere una dirección válida para verificar la propiedad' 
+        });
+      }
+
+      const propertyData = await propertyService.getPropertyByAddress(address);
+      
+      if (!propertyData) {
+        return res.status(404).json({ 
+          message: 'No se encontró información para la dirección proporcionada' 
+        });
+      }
+      
+      res.json(propertyData);
+    } catch (error) {
+      console.error('Error verifying property:', error);
+      res.status(500).json({ 
+        message: 'Error al verificar los datos de la propiedad' 
+      });
     }
   });
 
