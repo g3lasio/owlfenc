@@ -59,9 +59,9 @@ export default function Sidebar() {
             <i className="ri-money-dollar-circle-line text-lg mr-3"></i>
             <span>Precios y Tarifas</span>
           </Link>
-          <Link href="/settings/billing" className={`flex items-center p-2 rounded-md ${isActive("/settings/billing") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
-            <i className="ri-bank-card-line text-lg mr-3"></i>
-            <span>Facturación</span>
+          <Link href="/subscription" className={`flex items-center p-2 rounded-md ${isActive("/subscription") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
+            <i className="ri-vip-crown-line text-lg mr-3"></i>
+            <span>Planes de Suscripción</span>
           </Link>
           <Link href="/history" className={`flex items-center p-2 rounded-md ${isActive("/history") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
             <i className="ri-history-line text-lg mr-3"></i>
@@ -129,7 +129,11 @@ export default function Sidebar() {
           </div>
           <div className="ml-2">
             <div className="text-sm font-medium">John Contractor</div>
-            <div className="text-xs text-muted-foreground">Plan Premium</div>
+            <div className="text-xs text-muted-foreground">
+              <Link href="/subscription" className="hover:text-primary">
+                Gestionar Suscripción
+              </Link>
+            </div>
           </div>
           <button className="ml-auto p-1.5 rounded-md hover:bg-destructive/10 hover:text-destructive">
             <i className="ri-logout-box-r-line"></i>

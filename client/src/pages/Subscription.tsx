@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { PricingToggle } from "@/components/ui/pricing-toggle";
 import { PricingCard } from "@/components/ui/pricing-card";
 import { Loader2 } from "lucide-react";
@@ -41,18 +40,27 @@ export default function Subscription() {
     setIsLoading(true);
 
     try {
-      const { url } = await apiRequest("/api/subscription/create-checkout", {
+      const response = await fetch("/api/subscription/create-checkout", {
         method: "POST",
-        body: {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           planId,
           billingCycle: isYearly ? "yearly" : "monthly",
           successUrl: window.location.origin + "/subscription?success=true",
           cancelUrl: window.location.origin + "/subscription?canceled=true",
-        },
+        }),
       });
-
+      
+      const data = await response.json();
+      
       // Redireccionar al checkout de Stripe
-      window.location.href = url;
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("No se recibió URL de checkout");
+      }
     } catch (error) {
       console.error("Error al crear sesión de checkout:", error);
       toast({
@@ -60,7 +68,6 @@ export default function Subscription() {
         description: "No se pudo crear la sesión de checkout. Inténtelo de nuevo más tarde.",
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
     }
   };
@@ -70,15 +77,24 @@ export default function Subscription() {
     setIsLoading(true);
 
     try {
-      const { url } = await apiRequest("/api/subscription/create-portal", {
+      const response = await fetch("/api/subscription/create-portal", {
         method: "POST",
-        body: {
-          successUrl: window.location.origin + "/subscription",
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          successUrl: window.location.origin + "/subscription",
+        }),
       });
-
+      
+      const data = await response.json();
+      
       // Redireccionar al portal de cliente de Stripe
-      window.location.href = url;
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("No se recibió URL del portal");
+      }
     } catch (error) {
       console.error("Error al crear portal de cliente:", error);
       toast({
@@ -86,7 +102,6 @@ export default function Subscription() {
         description: "No se pudo crear el portal de cliente. Inténtelo de nuevo más tarde.",
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
     }
   };
