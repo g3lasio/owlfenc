@@ -1,6 +1,5 @@
 import { Link, useLocation } from "wouter";
 import { navigationConfig } from "@/config/navigationItems";
-import { Fragment } from "react";
 
 interface NavigationProps {
   // Si es mobile o desktop
@@ -73,16 +72,14 @@ export function Navigation({ variant, onClose }: NavigationProps) {
   return (
     <nav className={`flex-1 ${variant === "sidebar" ? "p-4" : "p-4"} space-y-5 overflow-y-auto`}>
       {navigationConfig.map((section, index) => (
-        <Fragment key={section.title}>
-          <div className="space-y-1">
-            <div className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-              {section.title}
-            </div>
-            <div className="space-y-1">
-              {section.items.map(renderNavItem)}
-            </div>
+        <div key={section.title} className="space-y-1">
+          <div className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+            {section.title}
           </div>
-        </Fragment>
+          <div className="space-y-1">
+            {section.items.map(renderNavItem)}
+          </div>
+        </div>
       ))}
     </nav>
   );
