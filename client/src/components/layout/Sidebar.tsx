@@ -76,6 +76,10 @@ export default function Sidebar() {
             <i className="ri-user-3-line text-lg mr-3"></i>
             <span>Perfil Personal</span>
           </Link>
+          <Link href="/subscription" className={`flex items-center p-2 rounded-md ${isActive("/subscription") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
+            <i className="ri-vip-crown-line text-lg mr-3"></i>
+            <span>Suscripción</span>
+          </Link>
           <Link href="/settings/notifications" className={`flex items-center p-2 rounded-md ${isActive("/settings/notifications") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
             <i className="ri-notification-3-line text-lg mr-3"></i>
             <span>Notificaciones</span>
