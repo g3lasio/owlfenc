@@ -10,7 +10,13 @@ import {
   ChatLog, 
   InsertChatLog,
   Client,
-  InsertClient
+  InsertClient,
+  SubscriptionPlan,
+  InsertSubscriptionPlan,
+  UserSubscription,
+  InsertUserSubscription,
+  PaymentHistory,
+  InsertPaymentHistory
 } from "@shared/schema";
 
 export interface IStorage {
@@ -375,6 +381,113 @@ export class MemStorage implements IStorage {
     return this.clients.delete(id);
   }
   
+  // Subscription Plan methods
+  async getSubscriptionPlan(id: number): Promise<SubscriptionPlan | undefined> {
+    return this.subscriptionPlans.get(id);
+  }
+  
+  async getSubscriptionPlanByCode(code: string): Promise<SubscriptionPlan | undefined> {
+    return Array.from(this.subscriptionPlans.values()).find(
+      (plan) => plan.code === code
+    );
+  }
+  
+  async getAllSubscriptionPlans(): Promise<SubscriptionPlan[]> {
+    return Array.from(this.subscriptionPlans.values())
+      .filter(plan => plan.isActive)
+      .sort((a, b) => a.price - b.price); // Ordenados por precio de menor a mayor
+  }
+  
+  async createSubscriptionPlan(insertPlan: InsertSubscriptionPlan): Promise<SubscriptionPlan> {
+    const id = this.currentIds.subscriptionPlans++;
+    const now = new Date();
+    const plan: SubscriptionPlan = {
+      ...insertPlan,
+      id,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.subscriptionPlans.set(id, plan);
+    return plan;
+  }
+  
+  async updateSubscriptionPlan(id: number, planData: Partial<SubscriptionPlan>): Promise<SubscriptionPlan> {
+    const plan = this.subscriptionPlans.get(id);
+    if (!plan) {
+      throw new Error(`Subscription plan with ID ${id} not found`);
+    }
+    
+    const updatedPlan: SubscriptionPlan = {
+      ...plan,
+      ...planData,
+      updatedAt: new Date()
+    };
+    this.subscriptionPlans.set(id, updatedPlan);
+    return updatedPlan;
+  }
+  
+  // User Subscription methods
+  async getUserSubscription(id: number): Promise<UserSubscription | undefined> {
+    return this.userSubscriptions.get(id);
+  }
+  
+  async getUserSubscriptionByUserId(userId: number): Promise<UserSubscription | undefined> {
+    return Array.from(this.userSubscriptions.values()).find(
+      (subscription) => subscription.userId === userId
+    );
+  }
+  
+  async createUserSubscription(insertSubscription: InsertUserSubscription): Promise<UserSubscription> {
+    const id = this.currentIds.userSubscriptions++;
+    const now = new Date();
+    const subscription: UserSubscription = {
+      ...insertSubscription,
+      id,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.userSubscriptions.set(id, subscription);
+    return subscription;
+  }
+  
+  async updateUserSubscription(id: number, subscriptionData: Partial<UserSubscription>): Promise<UserSubscription> {
+    const subscription = this.userSubscriptions.get(id);
+    if (!subscription) {
+      throw new Error(`User subscription with ID ${id} not found`);
+    }
+    
+    const updatedSubscription: UserSubscription = {
+      ...subscription,
+      ...subscriptionData,
+      updatedAt: new Date()
+    };
+    this.userSubscriptions.set(id, updatedSubscription);
+    return updatedSubscription;
+  }
+  
+  // Payment History methods
+  async getPaymentHistory(id: number): Promise<PaymentHistory | undefined> {
+    return this.paymentHistory.get(id);
+  }
+  
+  async getPaymentHistoryByUserId(userId: number): Promise<PaymentHistory[]> {
+    return Array.from(this.paymentHistory.values())
+      .filter(payment => payment.userId === userId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+  
+  async createPaymentHistory(insertPayment: InsertPaymentHistory): Promise<PaymentHistory> {
+    const id = this.currentIds.paymentHistory++;
+    const now = new Date();
+    const payment: PaymentHistory = {
+      ...insertPayment,
+      id,
+      createdAt: now
+    };
+    this.paymentHistory.set(id, payment);
+    return payment;
+  }
+  
   // Seed some initial data
   private seedData() {
     // Add a default user
@@ -535,6 +648,73 @@ export class MemStorage implements IStorage {
     
     clients.forEach(client => {
       this.clients.set(client.id, client);
+    });
+    
+    // Agregar planes de suscripción predeterminados
+    const subscriptionPlans = [
+      {
+        id: this.currentIds.subscriptionPlans++,
+        name: "🧤 Primo Chambeador",
+        code: "primo_chambeador",
+        price: 2900, // $29/mes en centavos
+        yearlyPrice: 27800, // $278/año en centavos
+        description: "Plan básico para contratistas que están comenzando su negocio",
+        features: [
+          "Hasta 10 estimaciones por mes",
+          "Hasta 5 contratos por mes",
+          "1 plantilla personalizable",
+          "Soporte por correo electrónico"
+        ],
+        motto: "Con poco se arranca, con coraje se crece: deja a Mervin el papeleo y dale duro.",
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: this.currentIds.subscriptionPlans++,
+        name: "🔨 El Mero Patrón",
+        code: "mero_patron",
+        price: 5900, // $59/mes en centavos
+        yearlyPrice: 56600, // $566/año en centavos
+        description: "Plan intermedio para contratistas con negocios en crecimiento",
+        features: [
+          "Estimaciones ilimitadas",
+          "Hasta 20 contratos por mes",
+          "3 plantillas personalizables",
+          "Gestión de clientes",
+          "Soporte prioritario",
+          "Recordatorios automáticos"
+        ],
+        motto: "Menos rollo, más billete: conviértete en el patrón de tus proyectos.",
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: this.currentIds.subscriptionPlans++,
+        name: "👑 El Chingón Mayor",
+        code: "chingon_mayor",
+        price: 9900, // $99/mes en centavos
+        yearlyPrice: 95000, // $950/año en centavos
+        description: "Plan premium para contratistas profesionales con altos volúmenes de trabajo",
+        features: [
+          "Estimaciones y contratos ilimitados",
+          "Plantillas personalizables ilimitadas",
+          "Gestión avanzada de clientes y proyectos",
+          "Integración con contabilidad",
+          "Reportes y análisis avanzados",
+          "Soporte telefónico prioritario 24/7",
+          "Capacitación personalizada"
+        ],
+        motto: "La cima es tuya: cierra trato tras trato sin despeinarte; Mervin resuelve el papeleo mientras tú dominas el negocio.",
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ];
+    
+    subscriptionPlans.forEach(plan => {
+      this.subscriptionPlans.set(plan.id, plan);
     });
   }
   

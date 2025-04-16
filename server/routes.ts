@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
@@ -9,8 +9,13 @@ import {
 import OpenAI from "openai";
 import { z } from "zod";
 import puppeteer from "puppeteer";
+import * as crypto from "crypto";
+import Stripe from "stripe";
 import { chatService } from './services/chatService';
 import { propertyService } from './services/propertyService';
+import { documentService } from './services/documentService';
+import { memoryService } from './services/memoryService';
+import { stripeService } from './services/stripeService';
 
 // Initialize OpenAI API
 const GPT_MODEL = "gpt-4";
