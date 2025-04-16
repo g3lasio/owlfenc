@@ -37,71 +37,104 @@ export default function Subscription() {
 
   // Crea sesión de checkout para un plan seleccionado
   const createCheckoutSession = async (planId: number) => {
+    console.log("Iniciando creación de sesión de checkout para plan:", planId);
     setIsLoading(true);
 
     try {
+      // Construir los parámetros para la solicitud
+      const params = {
+        planId,
+        billingCycle: isYearly ? "yearly" : "monthly",
+        successUrl: window.location.origin + "/subscription?success=true",
+        cancelUrl: window.location.origin + "/subscription?canceled=true",
+      };
+      
+      console.log("Enviando solicitud a Stripe con parámetros:", JSON.stringify(params));
+      
       const response = await fetch("/api/subscription/create-checkout", {
         method: "POST",
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          planId,
-          billingCycle: isYearly ? "yearly" : "monthly",
-          successUrl: window.location.origin + "/subscription?success=true",
-          cancelUrl: window.location.origin + "/subscription?canceled=true",
-        }),
+        body: JSON.stringify(params),
       });
+      
+      // Verificar si la respuesta es exitosa
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Error del servidor: ${errorData.message || response.statusText}`);
+      }
       
       const data = await response.json();
+      console.log("Respuesta recibida del servidor:", data);
       
       // Redireccionar al checkout de Stripe
-      if (data.url) {
-        window.location.href = data.url;
+      if (data && data.url) {
+        console.log("Redirigiendo a URL de Stripe:", data.url);
+        // Usar window.location.replace para una redirección completa
+        window.location.replace(data.url);
       } else {
-        throw new Error("No se recibió URL de checkout");
+        throw new Error("No se recibió URL de checkout válida");
       }
     } catch (error) {
-      console.error("Error al crear sesión de checkout:", error);
+      console.error("Error detallado al crear sesión de checkout:", error);
       toast({
-        title: "Error",
-        description: "No se pudo crear la sesión de checkout. Inténtelo de nuevo más tarde.",
+        title: "Error en la redirección",
+        description: "No se pudo procesar la solicitud de suscripción. Por favor, intente de nuevo o contacte a soporte.",
         variant: "destructive",
       });
+    } finally {
+      // Asegurar que siempre se restablezca el estado de carga
       setIsLoading(false);
     }
   };
 
   // Crear portal de cliente para gestionar la suscripción
   const createCustomerPortal = async () => {
+    console.log("Iniciando creación de portal de cliente");
     setIsLoading(true);
 
     try {
+      const params = {
+        successUrl: window.location.origin + "/subscription",
+      };
+      
+      console.log("Enviando solicitud para crear portal de cliente");
+      
       const response = await fetch("/api/subscription/create-portal", {
         method: "POST",
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          successUrl: window.location.origin + "/subscription",
-        }),
+        body: JSON.stringify(params),
       });
+      
+      // Verificar si la respuesta es exitosa
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Error del servidor: ${errorData.message || response.statusText}`);
+      }
       
       const data = await response.json();
+      console.log("Respuesta recibida para portal de cliente:", data);
       
       // Redireccionar al portal de cliente de Stripe
-      if (data.url) {
-        window.location.href = data.url;
+      if (data && data.url) {
+        console.log("Redirigiendo a URL del portal de cliente:", data.url);
+        // Usar window.location.replace para una redirección completa
+        window.location.replace(data.url);
       } else {
-        throw new Error("No se recibió URL del portal");
+        throw new Error("No se recibió URL válida del portal de cliente");
       }
     } catch (error) {
-      console.error("Error al crear portal de cliente:", error);
+      console.error("Error detallado al crear portal de cliente:", error);
       toast({
-        title: "Error",
-        description: "No se pudo crear el portal de cliente. Inténtelo de nuevo más tarde.",
+        title: "Error en la redirección",
+        description: "No se pudo acceder al portal de cliente. Por favor, intente de nuevo o contacte a soporte.",
         variant: "destructive",
       });
+    } finally {
+      // Asegurar que siempre se restablezca el estado de carga
       setIsLoading(false);
     }
   };
