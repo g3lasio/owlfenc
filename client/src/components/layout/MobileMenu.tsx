@@ -54,93 +54,116 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
     >
       <div 
         ref={menuPanelRef}
-        className={`bg-card w-80 h-full overflow-y-auto transform transition-transform duration-300 shadow-lg ${
+        className={`bg-card w-[280px] h-full overflow-y-auto transform transition-transform duration-300 shadow-lg ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* Encabezado del Menú */}
-        <div className="flex justify-center items-center p-4 border-b border-border relative">
+        <div className="flex justify-between items-center p-4 border-b border-border">
           <img 
             src="https://i.postimg.cc/4yc9M62C/White-logo-no-background.png" 
             alt="Owl Fenc" 
-            className="h-16 w-auto max-w-[220px] object-contain" 
+            className="h-12 w-auto max-w-[180px] object-contain" 
           />
           <button 
-            className="p-1 rounded-md hover:bg-accent"
+            className="p-1.5 rounded-md hover:bg-accent"
             onClick={onClose}
           >
             <i className="ri-close-line text-xl"></i>
           </button>
         </div>
 
-        <nav className="p-4 space-y-6">
-          {/* 1. Inicio y Dashboard */}
+        {/* Información del Usuario */}
+        <div className="p-4 border-b border-border bg-accent/10">
+          <div className="flex items-center">
+            <div className="w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center">
+              <span className="font-medium text-sm">JC</span>
+            </div>
+            <div className="ml-3">
+              <div className="text-sm font-medium">John Contractor</div>
+              <div className="text-xs text-muted-foreground">Plan Premium</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Menú Principal */}
+        <nav className="p-4 space-y-6 overflow-y-auto">
+          {/* 1. Principal */}
           <div className="space-y-1">
-            <div className="px-2 text-sm font-medium text-muted-foreground mb-2 font-quantico">Principal</div>
+            <div className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Principal</div>
             <Link href="/" className="flex items-center p-2 rounded-md hover:bg-accent">
-              <i className="ri-dashboard-line mr-3"></i>
+              <i className="ri-dashboard-line text-lg mr-3"></i>
               <span>Dashboard</span>
             </Link>
           </div>
 
-          {/* 2. Proyectos y Documentos */}
+          {/* 2. Proyectos */}
           <div className="space-y-1">
-            <div className="px-2 text-sm font-medium text-muted-foreground mb-2 font-quantico">Proyectos</div>
+            <div className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Proyectos</div>
             <Link href="/projects" className="flex items-center p-2 rounded-md hover:bg-accent">
-              <i className="ri-folder-line mr-3"></i>
+              <i className="ri-folder-line text-lg mr-3"></i>
               <span>Proyectos</span>
+            </Link>
+            <Link href="/templates" className="flex items-center p-2 rounded-md hover:bg-accent">
+              <i className="ri-file-list-3-line text-lg mr-3"></i>
+              <span>Plantillas</span>
             </Link>
           </div>
 
-          {/* 4. Configuración y Sistema */}
+          {/* 3. Mi Cuenta */}
           <div className="space-y-1">
-            <div className="px-2 text-sm font-medium text-muted-foreground mb-2 font-quantico">Configuración</div>
-            <Link href="/profile" className="flex items-center p-2 rounded-md hover:bg-accent">
-              <i className="ri-user-settings-line mr-3"></i>
-              <span>Perfil de Empresa</span>
-            </Link>
-            <Link href="/settings/pricing" className="flex items-center p-2 rounded-md hover:bg-accent">
-              <i className="ri-money-dollar-circle-line mr-3"></i>
-              <span>Precios y Tarifas</span>
-            </Link>
-            <Link href="/templates" className="flex items-center p-2 rounded-md hover:bg-accent">
-              <i className="ri-file-list-3-line mr-3"></i>
-              <span>Plantillas</span>
+            <div className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Mi Cuenta</div>
+            <Link href="/settings/account" className="flex items-center p-2 rounded-md hover:bg-accent">
+              <i className="ri-user-3-line text-lg mr-3"></i>
+              <span>Perfil Personal</span>
             </Link>
             <Link href="/settings/notifications" className="flex items-center p-2 rounded-md hover:bg-accent">
-              <i className="ri-notification-3-line mr-3"></i>
+              <i className="ri-notification-3-line text-lg mr-3"></i>
               <span>Notificaciones</span>
             </Link>
           </div>
 
-          {/* 5. Soporte y Ayuda */}
+          {/* 4. Configuración de Empresa */}
           <div className="space-y-1">
-            <div className="px-2 text-sm font-medium text-muted-foreground mb-2 font-quantico">Soporte</div>
+            <div className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Configuración de Empresa</div>
+            <Link href="/profile" className="flex items-center p-2 rounded-md hover:bg-accent">
+              <i className="ri-building-line text-lg mr-3"></i>
+              <span>Perfil de Empresa</span>
+            </Link>
+            <Link href="/settings/pricing" className="flex items-center p-2 rounded-md hover:bg-accent">
+              <i className="ri-money-dollar-circle-line text-lg mr-3"></i>
+              <span>Precios y Tarifas</span>
+            </Link>
+            <Link href="/settings/billing" className="flex items-center p-2 rounded-md hover:bg-accent">
+              <i className="ri-bank-card-line text-lg mr-3"></i>
+              <span>Facturación</span>
+            </Link>
+            <Link href="/settings/employees" className="flex items-center p-2 rounded-md hover:bg-accent">
+              <i className="ri-team-line text-lg mr-3"></i>
+              <span>Empleados</span>
+            </Link>
+          </div>
+
+          {/* 5. Soporte */}
+          <div className="space-y-1">
+            <div className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Soporte</div>
             <Link href="/help" className="flex items-center p-2 rounded-md hover:bg-accent">
-              <i className="ri-question-line mr-3"></i>
+              <i className="ri-question-line text-lg mr-3"></i>
               <span>Centro de Ayuda</span>
             </Link>
             <Link href="/contact" className="flex items-center p-2 rounded-md hover:bg-accent">
-              <i className="ri-customer-service-2-line mr-3"></i>
+              <i className="ri-customer-service-2-line text-lg mr-3"></i>
               <span>Contactar Soporte</span>
             </Link>
           </div>
         </nav>
 
-        {/* Pie del Menú - Información del Usuario */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border bg-card">
-          <Link href="/profile" className="flex items-center w-full">
-            <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center">
-              <i className="ri-user-line"></i>
-            </div>
-            <div className="ml-2">
-              <div className="text-sm font-medium">Mi Cuenta</div>
-              <div className="text-xs text-muted-foreground">Plan Premium</div>
-            </div>
-            <button className="ml-auto p-2 rounded-md hover:bg-accent">
-              <i className="ri-logout-box-r-line"></i>
-            </button>
-          </Link>
+        {/* Pie del Menú */}
+        <div className="p-4 border-t border-border">
+          <button className="flex items-center w-full p-2 rounded-md hover:bg-destructive/10 hover:text-destructive">
+            <i className="ri-logout-box-r-line text-lg mr-3"></i>
+            <span>Cerrar Sesión</span>
+          </button>
         </div>
       </div>
     </div>
