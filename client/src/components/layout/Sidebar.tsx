@@ -94,13 +94,17 @@ export default function Sidebar() {
         {/* Soporte */}
         <div className="space-y-1">
           <div className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Soporte</div>
-          <Link href="/help" className={`flex items-center p-2 rounded-md ${isActive("/help") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
-            <i className="ri-question-line text-lg mr-3"></i>
-            <span>Centro de Ayuda</span>
-          </Link>
-          <Link href="/contact" className={`flex items-center p-2 rounded-md ${isActive("/contact") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
+          <a href="mailto:mervin@owlfenc.com" className={`flex items-center p-2 rounded-md hover:bg-accent`}>
             <i className="ri-customer-service-line text-lg mr-3"></i>
             <span>Contactar Soporte</span>
+          </a>
+          <Link href="/about-owlfenc" className={`flex items-center p-2 rounded-md ${isActive("/about-owlfenc") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
+            <i className="ri-building-2-line text-lg mr-3"></i>
+            <span>Acerca de Owl Fence App</span>
+          </Link>
+          <Link href="/about-mervin" className={`flex items-center p-2 rounded-md ${isActive("/about-mervin") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
+            <i className="ri-robot-line text-lg mr-3"></i>
+            <span>Acerca de Mervin AI</span>
           </Link>
         </div>
       </nav>
