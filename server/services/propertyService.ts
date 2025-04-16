@@ -1,4 +1,5 @@
-import axios from 'axios';
+import axios, { AxiosInstance } from 'axios';
+import https from 'https';
 
 interface PropertyOwnerData {
   owner: string;
@@ -28,27 +29,64 @@ export interface FullPropertyData {
   verified: boolean;
 }
 
+interface AddressParts {
+  address1: string; // Número y calle
+  address2: string; // Ciudad, estado y código postal
+}
+
 class PropertyService {
   private apiKey: string;
   private baseUrl: string = 'https://api.gateway.attomdata.com/propertyapi/v1.0.0';
+  private attomClient: AxiosInstance;
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
+    
+    // Crear agente HTTPS con Keep-Alive habilitado para reutilizar conexiones
+    const agent = new https.Agent({ 
+      keepAlive: true,
+      keepAliveMsecs: 1000, // Tiempo de keep-alive en milisegundos
+      maxSockets: 10 // Número máximo de sockets
+    });
+    
+    // Configurar cliente Axios reutilizable
+    this.attomClient = axios.create({
+      baseURL: this.baseUrl,
+      headers: this.getHeaders(),
+      httpsAgent: agent,
+      timeout: 10000 // timeout en 10 segundos
+    });
   }
 
   private getHeaders() {
     return {
-      'apikey': this.apiKey,
+      'APIKey': this.apiKey, // Nombre correcto del header según la documentación
       'Accept': 'application/json'
     };
   }
 
   /**
-   * Format address for ATTOM API query
+   * Parse address into parts required by ATTOM API
    * Expects format like: "123 Main St, City, State ZIP"
    */
-  private formatAddressForSearch(address: string): string {
-    return encodeURIComponent(address.trim());
+  private parseAddress(address: string): AddressParts {
+    const parts = address.split(',');
+    
+    if (parts.length < 2) {
+      // Si no hay coma, usamos la entrada completa como address1
+      return {
+        address1: address.trim(),
+        address2: ''
+      };
+    }
+    
+    // Primera parte es la calle (address1)
+    const address1 = parts[0].trim();
+    
+    // El resto se une para formar address2 (ciudad, estado, ZIP)
+    const address2 = parts.slice(1).join(',').trim();
+    
+    return { address1, address2 };
   }
 
   /**
@@ -58,47 +96,98 @@ class PropertyService {
     try {
       console.log('Intentando obtener datos de propiedad para la dirección:', address);
       
-      // En un entorno de producción real, intentaríamos obtener datos de la API ATTOM aquí
       if (this.apiKey && this.apiKey.length > 10) {
         console.log('Usando la API de ATTOM con clave API disponible');
+        
         try {
-          const formattedAddress = this.formatAddressForSearch(address);
+          // Parsear la dirección para el formato requerido por ATTOM
+          const { address1, address2 } = this.parseAddress(address);
           
-          // Primer intento: obtener el perfil básico de la propiedad
-          const propertyResponse = await axios.get(
-            `${this.baseUrl}/property/basicprofile`,
-            {
-              headers: this.getHeaders(),
-              params: {
-                address: formattedAddress
-              }
-            }
-          );
-
-          if (!propertyResponse.data.property || propertyResponse.data.property.length === 0) {
-            console.log('No se encontró propiedad para la dirección, usando datos de respaldo');
-            return this.getBackupPropertyData(address);
+          if (!address1 || address1.length < 3) {
+            throw new Error('Dirección incompleta. Se requiere al menos calle y número.');
           }
-
-          // Si llegamos aquí, obtuvimos datos reales...
-          // Pero para este ejercicio, vamos a usar datos de respaldo de todos modos
-          console.log('Usando datos de respaldo incluso aunque la API funcionó (para demo)');
+          
+          console.log(`Consultando API ATTOM con: address1=${address1}, address2=${address2}`);
+          
+          // Obtener detalles de propiedad incluyendo información del propietario
+          const propertyResponse = await this.attomClient.get('/property/detailowner', {
+            params: { 
+              address1, 
+              address2 
+            }
+          });
+          
+          // Verificar si se encontraron resultados
+          if (!propertyResponse.data.property || propertyResponse.data.property.length === 0) {
+            console.log('No se encontró propiedad para la dirección proporcionada');
+            throw new Error('Propiedad no encontrada');
+          }
+          
+          // Procesar datos de la respuesta
+          const propertyData = propertyResponse.data.property[0];
+          
+          // Extraer datos de propietario y detalles físicos
+          const ownerData = this.extractOwnerData(propertyData);
+          const propertyDetails = this.extractPropertyDetails(propertyData);
+          
+          // Combinar los datos en un objeto unificado
+          const fullPropertyData: FullPropertyData = {
+            ...propertyDetails,
+            ...ownerData,
+            address: address,
+            verified: true
+          };
+          
+          console.log('Datos de propiedad obtenidos exitosamente desde ATTOM');
+          return fullPropertyData;
+          
         } catch (apiError: any) {
-          console.error('Error de la API ATTOM:', apiError.message);
-          console.log('Usando datos de respaldo debido al error de API');
+          console.error('Error al consultar la API ATTOM:', apiError.message);
+          
+          // En caso de error de API, verificar si tenemos suficiente información para un segundo intento con el endpoint /property/detail
+          if (apiError.message !== 'Propiedad no encontrada') {
+            try {
+              const { address1, address2 } = this.parseAddress(address);
+              console.log('Intentando con endpoint alternativo /property/detail');
+              
+              const detailResponse = await this.attomClient.get('/property/detail', {
+                params: { 
+                  address1, 
+                  address2 
+                }
+              });
+              
+              if (detailResponse.data.property && detailResponse.data.property.length > 0) {
+                const propertyData = detailResponse.data.property[0];
+                const propertyDetails = this.extractPropertyDetails(propertyData);
+                
+                // Cuando usamos /detail en lugar de /detailowner, puede faltar info del propietario
+                const fullPropertyData: FullPropertyData = {
+                  ...propertyDetails,
+                  owner: "No disponible",
+                  ownerOccupied: false,
+                  address: address,
+                  verified: true
+                };
+                
+                console.log('Datos parciales de propiedad obtenidos desde ATTOM');
+                return fullPropertyData;
+              }
+            } catch (secondError: any) {
+              console.error('Segundo intento también falló:', secondError.message);
+            }
+          }
+          
+          // Si ambos intentos fallan, volvemos a los datos de respaldo
+          console.log('Usando datos de respaldo debido a errores en API');
+          return this.getBackupPropertyData(address);
         }
       } else {
         console.log('No hay clave API de ATTOM disponible o válida, usando datos de respaldo');
+        return this.getBackupPropertyData(address);
       }
-      
-      // Siempre devolvemos datos de respaldo para esta demo
-      const backupData = this.getBackupPropertyData(address);
-      console.log('Datos de respaldo generados:', JSON.stringify(backupData).substring(0, 100) + '...');
-      return backupData;
-      
     } catch (error: any) {
       console.error('Error inesperado en getPropertyByAddress:', error.message);
-      // Incluso en caso de error, intentamos devolver datos de respaldo
       try {
         return this.getBackupPropertyData(address);
       } catch (backupError) {
