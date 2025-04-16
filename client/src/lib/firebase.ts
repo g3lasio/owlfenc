@@ -28,28 +28,56 @@ const db = getFirestore(app);
 // Projects collection
 export const saveProject = async (projectData: any) => {
   try {
-    const docRef = await addDoc(collection(db, "projects"), {
+    // Ensure project has a status, default to "draft" if not provided
+    const projectWithStatus = {
       ...projectData,
+      status: projectData.status || "draft",
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now()
-    });
-    return { id: docRef.id, ...projectData };
+    };
+    
+    const docRef = await addDoc(collection(db, "projects"), projectWithStatus);
+    return { id: docRef.id, ...projectWithStatus };
   } catch (error) {
     console.error("Error saving project:", error);
     throw error;
   }
 };
 
-export const getProjects = async () => {
+export const getProjects = async (filters?: { status?: string, fenceType?: string }) => {
   try {
-    const q = query(
+    let q = query(
       collection(db, "projects"), 
       orderBy("createdAt", "desc")
     );
+    
+    // Apply filters if provided
+    if (filters) {
+      const queryConstraints = [];
+      
+      if (filters.status) {
+        queryConstraints.push(where("status", "==", filters.status));
+      }
+      
+      if (filters.fenceType) {
+        queryConstraints.push(where("fenceType", "==", filters.fenceType));
+      }
+      
+      if (queryConstraints.length > 0) {
+        q = query(
+          collection(db, "projects"),
+          ...queryConstraints,
+          orderBy("createdAt", "desc")
+        );
+      }
+    }
+    
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
-      ...doc.data()
+      ...doc.data(),
+      // Ensure status is set, default to "draft" if missing
+      status: doc.data().status || "draft"
     }));
   } catch (error) {
     console.error("Error getting projects:", error);

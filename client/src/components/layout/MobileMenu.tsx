@@ -86,30 +86,9 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           {/* 2. Proyectos y Documentos */}
           <div className="space-y-1">
             <div className="px-2 text-sm font-medium text-muted-foreground mb-2 font-quantico">Proyectos</div>
-            <Link href="/new-estimate" className="flex items-center p-2 rounded-md hover:bg-accent">
-              <i className="ri-file-add-line mr-3"></i>
-              <span>Nuevo Estimado</span>
-            </Link>
-            <Link href="/new-contract" className="flex items-center p-2 rounded-md hover:bg-accent">
-              <i className="ri-file-text-line mr-3"></i>
-              <span>Nuevo Contrato</span>
-            </Link>
             <Link href="/projects" className="flex items-center p-2 rounded-md hover:bg-accent">
-              <i className="ri-calendar-todo-line mr-3"></i>
-              <span>Proyectos Activos</span>
-            </Link>
-            <Link href="/history" className="flex items-center p-2 rounded-md hover:bg-accent">
-              <i className="ri-history-line mr-3"></i>
-              <span>Historial</span>
-            </Link>
-          </div>
-
-          {/* 3. Tipos de Cercas */}
-          <div className="space-y-1">
-            <div className="px-2 text-sm font-medium text-muted-foreground mb-2 font-quantico">Catálogo</div>
-            <Link href="/category/wood" className="flex items-center p-2 rounded-md hover:bg-accent">
-              <i className="ri-wood-line mr-3"></i>
-              <span>Cercas de Madera</span>
+              <i className="ri-folder-line mr-3"></i>
+              <span>Proyectos</span>
             </Link>
           </div>
 
