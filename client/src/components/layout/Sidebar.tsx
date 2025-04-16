@@ -110,6 +110,14 @@ export default function Sidebar() {
             <i className="ri-robot-line text-lg mr-3"></i>
             <span>Acerca de Mervin AI</span>
           </Link>
+          <Link href="/legal-policy" className={`flex items-center p-2 rounded-md ${isActive("/legal-policy") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
+            <i className="ri-article-line text-lg mr-3"></i>
+            <span>Políticas Legales</span>
+          </Link>
+          <Link href="/privacy-policy" className={`flex items-center p-2 rounded-md ${isActive("/privacy-policy") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
+            <i className="ri-lock-line text-lg mr-3"></i>
+            <span>Política de Privacidad</span>
+          </Link>
         </div>
       </nav>
       

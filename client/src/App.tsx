@@ -15,6 +15,8 @@ import AIProjectManager from "@/pages/AIProjectManager";
 import ARFenceEstimator from "@/pages/ARFenceEstimator";
 import AboutOwlFence from "@/pages/AboutOwlFence";
 import AboutMervin from "@/pages/AboutMervin";
+import LegalPolicy from "@/pages/LegalPolicy";
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
 
 function Router() {
   return (
@@ -30,6 +32,8 @@ function Router() {
       <Route path="/ar-fence-estimator" component={ARFenceEstimator} />
       <Route path="/about-owlfenc" component={AboutOwlFence} />
       <Route path="/about-mervin" component={AboutMervin} />
+      <Route path="/legal-policy" component={LegalPolicy} />
+      <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Route component={NotFound} />
     </Switch>
   );
