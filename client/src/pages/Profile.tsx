@@ -204,6 +204,52 @@ export default function Profile() {
 
   return (
     <div className="flex-1 p-4 md:p-6 space-y-6">
+      {/* User Profile Banner */}
+      <div className="bg-card border border-border rounded-lg p-4 mb-6">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
+          <div className="flex-shrink-0">
+            <div className="w-24 h-24 rounded-full bg-primary/20 text-primary flex items-center justify-center">
+              <span className="text-3xl font-medium">JC</span>
+            </div>
+          </div>
+          <div className="flex-1">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
+              <div>
+                <h1 className="text-2xl font-bold">John Contractor</h1>
+                <p className="text-muted-foreground">Fence Installation Specialist</p>
+              </div>
+              <div className="mt-2 sm:mt-0">
+                <div className="bg-gradient-to-r from-emerald-500 to-lime-600 text-white px-4 py-2 rounded-full font-medium text-sm inline-flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  Plan El Mero Patrón
+                </div>
+                <div className="text-center mt-2">
+                  <Link to="/subscription" className="text-xs text-primary hover:underline">
+                    Cambiar plan
+                  </Link>
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+              <div className="bg-accent/20 rounded-md p-3 text-center">
+                <p className="text-sm text-muted-foreground">Proyectos Activos</p>
+                <p className="text-xl font-semibold">12</p>
+              </div>
+              <div className="bg-accent/20 rounded-md p-3 text-center">
+                <p className="text-sm text-muted-foreground">Clientes</p>
+                <p className="text-xl font-semibold">47</p>
+              </div>
+              <div className="bg-accent/20 rounded-md p-3 text-center">
+                <p className="text-sm text-muted-foreground">Vence</p>
+                <p className="text-xl font-semibold">15 Mayo 2025</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold">Company Profile</h1>
