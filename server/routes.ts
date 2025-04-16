@@ -360,6 +360,241 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Client routes
+  app.get('/api/clients', async (req: Request, res: Response) => {
+    try {
+      // En una app real, obtendríamos el userId de la sesión
+      const userId = 1; // Default user ID
+      const clients = await storage.getClientsByUserId(userId);
+      res.json(clients);
+    } catch (error) {
+      console.error('Error obteniendo clientes:', error);
+      res.status(500).json({ message: 'Error al obtener clientes' });
+    }
+  });
+
+  app.get('/api/clients/:id', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const client = await storage.getClient(parseInt(id));
+      
+      if (!client) {
+        return res.status(404).json({ message: 'Cliente no encontrado' });
+      }
+      
+      res.json(client);
+    } catch (error) {
+      console.error('Error obteniendo cliente:', error);
+      res.status(500).json({ message: 'Error al obtener cliente' });
+    }
+  });
+
+  app.post('/api/clients', async (req: Request, res: Response) => {
+    try {
+      // Validar los datos del cliente
+      const schema = z.object({
+        userId: z.number().default(1),
+        clientId: z.string().optional(),
+        name: z.string(),
+        email: z.string().email().optional(),
+        phone: z.string().optional(),
+        mobilePhone: z.string().optional(),
+        address: z.string().optional(),
+        city: z.string().optional(),
+        state: z.string().optional(),
+        zipCode: z.string().optional(),
+        notes: z.string().optional(),
+        source: z.string().optional(),
+        tags: z.array(z.string()).optional(),
+        lastContact: z.date().optional(),
+      });
+
+      const clientData = schema.parse(req.body);
+      
+      // Generar clientId si no se proporciona
+      if (!clientData.clientId) {
+        clientData.clientId = `client_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+      }
+
+      const client = await storage.createClient(clientData);
+      res.status(201).json(client);
+    } catch (error) {
+      console.error('Error creando cliente:', error);
+      res.status(400).json({ message: 'Datos de cliente inválidos', error: error.message });
+    }
+  });
+
+  app.put('/api/clients/:id', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const clientId = parseInt(id);
+      
+      // Verificar que el cliente existe
+      const existingClient = await storage.getClient(clientId);
+      if (!existingClient) {
+        return res.status(404).json({ message: 'Cliente no encontrado' });
+      }
+      
+      const schema = z.object({
+        name: z.string().optional(),
+        email: z.string().email().optional(),
+        phone: z.string().optional(),
+        mobilePhone: z.string().optional(),
+        address: z.string().optional(),
+        city: z.string().optional(),
+        state: z.string().optional(),
+        zipCode: z.string().optional(),
+        notes: z.string().optional(),
+        source: z.string().optional(),
+        tags: z.array(z.string()).optional(),
+        lastContact: z.date().optional(),
+      });
+
+      const clientData = schema.parse(req.body);
+      const updatedClient = await storage.updateClient(clientId, clientData);
+      
+      res.json(updatedClient);
+    } catch (error) {
+      console.error('Error actualizando cliente:', error);
+      res.status(400).json({ message: 'Datos de cliente inválidos', error: error.message });
+    }
+  });
+
+  app.delete('/api/clients/:id', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const clientId = parseInt(id);
+      
+      // Verificar que el cliente existe
+      const existingClient = await storage.getClient(clientId);
+      if (!existingClient) {
+        return res.status(404).json({ message: 'Cliente no encontrado' });
+      }
+      
+      const result = await storage.deleteClient(clientId);
+      
+      if (result) {
+        res.status(200).json({ message: 'Cliente eliminado correctamente' });
+      } else {
+        res.status(500).json({ message: 'Error al eliminar cliente' });
+      }
+    } catch (error) {
+      console.error('Error eliminando cliente:', error);
+      res.status(500).json({ message: 'Error al eliminar cliente' });
+    }
+  });
+
+  // Importar clientes desde CSV
+  app.post('/api/clients/import/csv', async (req: Request, res: Response) => {
+    try {
+      const schema = z.object({
+        csvData: z.string(),
+        userId: z.number().default(1),
+      });
+
+      const { csvData, userId } = schema.parse(req.body);
+      
+      // Procesar los datos CSV
+      const lines = csvData.split('\n');
+      const headers = lines[0].split(',').map(header => header.trim());
+      
+      const clients = [];
+      
+      // Procesar cada línea del CSV
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        
+        const values = line.split(',');
+        const clientData: any = { userId };
+        
+        // Mapear valores según los encabezados
+        headers.forEach((header, index) => {
+          if (values[index]) {
+            const value = values[index].trim();
+            
+            // Mapear nombres de campos CSV a nombres de campos del modelo
+            switch (header.toLowerCase()) {
+              case 'nombre':
+                clientData.name = value;
+                break;
+              case 'correo':
+              case 'email':
+                clientData.email = value;
+                break;
+              case 'teléfono':
+              case 'telefono':
+              case 'phone':
+                clientData.phone = value;
+                break;
+              case 'móvil':
+              case 'movil':
+              case 'celular':
+              case 'mobile':
+                clientData.mobilePhone = value;
+                break;
+              case 'dirección':
+              case 'direccion':
+              case 'address':
+                clientData.address = value;
+                break;
+              case 'ciudad':
+              case 'city':
+                clientData.city = value;
+                break;
+              case 'estado':
+              case 'state':
+                clientData.state = value;
+                break;
+              case 'código postal':
+              case 'codigo postal':
+              case 'zip':
+              case 'zipcode':
+                clientData.zipCode = value;
+                break;
+              case 'notas':
+              case 'notes':
+                clientData.notes = value;
+                break;
+              case 'origen':
+              case 'source':
+                clientData.source = value;
+                break;
+              case 'etiquetas':
+              case 'tags':
+                clientData.tags = value.split(';').map(tag => tag.trim());
+                break;
+              default:
+                // Campos adicionales se ignoran
+                break;
+            }
+          }
+        });
+        
+        // Solo agregar clientes válidos con nombre
+        if (clientData.name) {
+          clientData.clientId = `client_${Date.now()}_${Math.floor(Math.random() * 1000)}_${i}`;
+          clients.push(clientData);
+        }
+      }
+      
+      // Importar clientes en lote
+      const importedClients = [];
+      for (const clientData of clients) {
+        const client = await storage.createClient(clientData);
+        importedClients.push(client);
+      }
+      
+      res.status(201).json({ 
+        message: `${importedClients.length} clientes importados correctamente`,
+        clients: importedClients
+      });
+    } catch (error) {
+      console.error('Error importando clientes:', error);
+      res.status(400).json({ message: 'Error importando clientes', error: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

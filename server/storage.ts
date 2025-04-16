@@ -8,7 +8,9 @@ import {
   Settings, 
   InsertSettings, 
   ChatLog, 
-  InsertChatLog
+  InsertChatLog,
+  Client,
+  InsertClient
 } from "@shared/schema";
 
 export interface IStorage {
@@ -287,6 +289,61 @@ export class MemStorage implements IStorage {
     return updatedChatLog;
   }
   
+  // Client methods
+  async getClient(id: number): Promise<Client | undefined> {
+    return this.clients.get(id);
+  }
+  
+  async getClientByClientId(clientId: string): Promise<Client | undefined> {
+    return Array.from(this.clients.values()).find(
+      (client) => client.clientId === clientId
+    );
+  }
+  
+  async getClientsByUserId(userId: number): Promise<Client[]> {
+    return Array.from(this.clients.values()).filter(
+      (client) => client.userId === userId
+    ).sort((a, b) => {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }
+  
+  async createClient(insertClient: InsertClient): Promise<Client> {
+    const id = this.currentIds.clients++;
+    const now = new Date();
+    const client: Client = {
+      ...insertClient,
+      id,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.clients.set(id, client);
+    return client;
+  }
+  
+  async updateClient(id: number, clientData: Partial<Client>): Promise<Client> {
+    const client = this.clients.get(id);
+    if (!client) {
+      throw new Error(`Client with ID ${id} not found`);
+    }
+    
+    const updatedClient: Client = {
+      ...client,
+      ...clientData,
+      updatedAt: new Date()
+    };
+    this.clients.set(id, updatedClient);
+    return updatedClient;
+  }
+  
+  async deleteClient(id: number): Promise<boolean> {
+    if (!this.clients.has(id)) {
+      throw new Error(`Client with ID ${id} not found`);
+    }
+    
+    return this.clients.delete(id);
+  }
+  
   // Seed some initial data
   private seedData() {
     // Add a default user
@@ -383,6 +440,71 @@ export class MemStorage implements IStorage {
       updatedAt: new Date()
     };
     this.settings.set(settings.id, settings);
+    
+    // Add sample clients
+    const clients = [
+      {
+        id: this.currentIds.clients++,
+        userId: user.id,
+        clientId: `client_${Date.now()}_1`,
+        name: "María González",
+        email: "maria@example.com",
+        phone: "(503) 555-7890",
+        mobilePhone: "(503) 555-7891",
+        address: "456 Oak Street",
+        city: "Portland",
+        state: "OR",
+        zipCode: "97205",
+        notes: "Cliente frecuente, interesado en cercas de madera",
+        source: "Referido",
+        tags: ["Residencial", "Cliente frecuente"],
+        lastContact: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 días atrás
+        createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 días atrás
+        updatedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+      },
+      {
+        id: this.currentIds.clients++,
+        userId: user.id,
+        clientId: `client_${Date.now()}_2`,
+        name: "Carlos Rodríguez",
+        email: "carlos@example.com",
+        phone: "(503) 555-4567",
+        mobilePhone: "(503) 555-4568",
+        address: "789 Pine Avenue",
+        city: "Beaverton",
+        state: "OR",
+        zipCode: "97006",
+        notes: "Propietario de varios negocios, buscando cercas comerciales",
+        source: "Página web",
+        tags: ["Comercial", "VIP"],
+        lastContact: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 días atrás
+        createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000), // 60 días atrás
+        updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
+      },
+      {
+        id: this.currentIds.clients++,
+        userId: user.id,
+        clientId: `client_${Date.now()}_3`,
+        name: "Ana Martínez",
+        email: "ana@example.com",
+        phone: "(503) 555-2345",
+        mobilePhone: "(503) 555-2346",
+        address: "321 Cedar Road",
+        city: "Hillsboro",
+        state: "OR",
+        zipCode: "97123",
+        notes: "Busca una cerca para su patio trasero",
+        source: "Google",
+        tags: ["Residencial", "Nuevo cliente"],
+        lastContact: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 día atrás
+        createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000), // 15 días atrás
+        updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
+      }
+    ];
+    
+    clients.forEach(client => {
+      this.clients.set(client.id, client);
+    });
   }
   
   private getDefaultEstimateHtml(): string {
