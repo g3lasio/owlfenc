@@ -1,13 +1,7 @@
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
+import Navigation from "./Navigation";
 
 export default function Sidebar() {
-  const [location] = useLocation();
-  
-  const isActive = (path: string) => {
-    if (path === "/") return location === "/";
-    return location.startsWith(path);
-  };
-  
   return (
     <aside className="hidden md:flex md:w-64 lg:w-72 flex-col bg-card border-r border-border">
       {/* Sidebar Header */}
@@ -21,109 +15,8 @@ export default function Sidebar() {
         <p className="text-sm text-muted-foreground mt-1">Estimate & Contract Generator</p>
       </div>
       
-      {/* Sidebar Nav */}
-      <nav className="flex-1 p-4 space-y-5 overflow-y-auto">
-        {/* Principal */}
-        <div className="space-y-1">
-          <div className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Principal</div>
-          <Link href="/" className={`flex items-center p-2 rounded-md ${isActive("/") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
-            <i className="ri-dashboard-line text-lg mr-3"></i>
-            <span>Dashboard</span>
-          </Link>
-          <Link href="/property-verifier" className={`flex items-center p-2 rounded-md ${isActive("/property-verifier") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
-            <i className="ri-shield-check-line text-lg mr-3"></i>
-            <span>🛡️ Property Ownership Verifier</span>
-          </Link>
-          <Link href="/ai-project-manager" className={`flex items-center p-2 rounded-md ${isActive("/ai-project-manager") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
-            <i className="ri-robot-line text-lg mr-3"></i>
-            <span>🧠 AI Project Manager</span>
-          </Link>
-          <Link href="/ar-fence-estimator" className={`flex items-center p-2 rounded-md ${isActive("/ar-fence-estimator") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
-            <i className="ri-augmented-reality-line text-lg mr-3"></i>
-            <span>🧱 AR Fence Estimator</span>
-          </Link>
-        </div>
-
-        {/* Proyectos */}
-        <div className="space-y-1">
-          <div className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Proyectos</div>
-          <Link href="/projects" className={`flex items-center p-2 rounded-md ${isActive("/projects") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
-            <i className="ri-folder-line text-lg mr-3"></i>
-            <span>Proyectos</span>
-          </Link>
-          <Link href="/clients" className={`flex items-center p-2 rounded-md ${isActive("/clients") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
-            <i className="ri-user-3-line text-lg mr-3"></i>
-            <span>Clientes</span>
-          </Link>
-          <Link href="/settings/pricing" className={`flex items-center p-2 rounded-md ${isActive("/settings/pricing") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
-            <i className="ri-money-dollar-circle-line text-lg mr-3"></i>
-            <span>Precios y Tarifas</span>
-          </Link>
-          <Link href="/subscription" className={`flex items-center p-2 rounded-md ${isActive("/subscription") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
-            <i className="ri-vip-crown-line text-lg mr-3"></i>
-            <span>Planes de Suscripción</span>
-          </Link>
-          <Link href="/history" className={`flex items-center p-2 rounded-md ${isActive("/history") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
-            <i className="ri-history-line text-lg mr-3"></i>
-            <span>Historial</span>
-          </Link>
-        </div>
-
-        {/* Mi Cuenta */}
-        <div className="space-y-1">
-          <div className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Mi Cuenta</div>
-          <Link href="/settings/account" className={`flex items-center p-2 rounded-md ${isActive("/settings/account") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
-            <i className="ri-user-3-line text-lg mr-3"></i>
-            <span>Perfil Personal</span>
-          </Link>
-          <Link href="/subscription" className={`flex items-center p-2 rounded-md ${isActive("/subscription") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
-            <i className="ri-vip-crown-line text-lg mr-3"></i>
-            <span>Suscripción</span>
-          </Link>
-          <Link href="/settings/notifications" className={`flex items-center p-2 rounded-md ${isActive("/settings/notifications") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
-            <i className="ri-notification-3-line text-lg mr-3"></i>
-            <span>Notificaciones</span>
-          </Link>
-        </div>
-
-        {/* Configuración de Empresa */}
-        <div className="space-y-1">
-          <div className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Configuración de Empresa</div>
-          <Link href="/profile" className={`flex items-center p-2 rounded-md ${isActive("/profile") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
-            <i className="ri-building-line text-lg mr-3"></i>
-            <span>Perfil de Empresa</span>
-          </Link>
-          <Link href="/settings/employees" className={`flex items-center p-2 rounded-md ${isActive("/settings/employees") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
-            <i className="ri-team-line text-lg mr-3"></i>
-            <span>Empleados</span>
-          </Link>
-        </div>
-
-        {/* Soporte */}
-        <div className="space-y-1">
-          <div className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Soporte</div>
-          <a href="mailto:mervin@owlfenc.com" className={`flex items-center p-2 rounded-md hover:bg-accent`}>
-            <i className="ri-customer-service-line text-lg mr-3"></i>
-            <span>Contactar Soporte</span>
-          </a>
-          <Link href="/about-owlfenc" className={`flex items-center p-2 rounded-md ${isActive("/about-owlfenc") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
-            <i className="ri-building-2-line text-lg mr-3"></i>
-            <span>Acerca de Owl Fence App</span>
-          </Link>
-          <Link href="/about-mervin" className={`flex items-center p-2 rounded-md ${isActive("/about-mervin") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
-            <i className="ri-robot-line text-lg mr-3"></i>
-            <span>Acerca de Mervin AI</span>
-          </Link>
-          <Link href="/legal-policy" className={`flex items-center p-2 rounded-md ${isActive("/legal-policy") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
-            <i className="ri-article-line text-lg mr-3"></i>
-            <span>Políticas Legales</span>
-          </Link>
-          <Link href="/privacy-policy" className={`flex items-center p-2 rounded-md ${isActive("/privacy-policy") ? "bg-primary/15 text-primary" : "hover:bg-accent"}`}>
-            <i className="ri-lock-line text-lg mr-3"></i>
-            <span>Política de Privacidad</span>
-          </Link>
-        </div>
-      </nav>
+      {/* Navegación usando el componente unificado */}
+      <Navigation variant="sidebar" />
       
       {/* Sidebar Footer */}
       <div className="p-4 border-t border-border">
