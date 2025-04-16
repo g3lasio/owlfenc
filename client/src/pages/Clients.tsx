@@ -66,7 +66,7 @@ export default function Clients() {
   const [filteredClients, setFilteredClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedTag, setSelectedTag] = useState("");
+  const [selectedTag, setSelectedTag] = useState("_all");
   const [activeTab, setActiveTab] = useState("all");
   const [showAddClientDialog, setShowAddClientDialog] = useState(false);
   const [showEditClientDialog, setShowEditClientDialog] = useState(false);
@@ -75,6 +75,7 @@ export default function Clients() {
   const [currentClient, setCurrentClient] = useState<Client | null>(null);
   const [importType, setImportType] = useState<"csv" | "apple">("csv");
   const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [appleContactsFile, setAppleContactsFile] = useState<File | null>(null);
   const { toast } = useToast();
 
   // Formulario para añadir/editar cliente
@@ -148,7 +149,7 @@ export default function Clients() {
     }
     
     // Filtrar por etiqueta
-    if (selectedTag) {
+    if (selectedTag && selectedTag !== "_all") {
       result = result.filter(client => 
         client.tags && client.tags.includes(selectedTag)
       );
@@ -375,6 +376,71 @@ export default function Clients() {
       csvImportForm.setValue('csvData', 'Archivo seleccionado');
     }
   };
+  
+  // Manejar importación de contactos de Apple
+  const handleAppleContactsImport = async () => {
+    try {
+      if (!appleContactsFile) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Por favor selecciona un archivo vCard (.vcf)"
+        });
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        if (!e.target || typeof e.target.result !== 'string') return;
+        
+        try {
+          const vcfData = e.target.result;
+          
+          // Enviar los datos al servidor
+          const response = await fetch('/api/clients/import/vcf', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ vcfData }),
+          });
+          
+          if (!response.ok) {
+            throw new Error('Error al importar contactos de Apple');
+          }
+          
+          const result = await response.json();
+          
+          // Añadir los nuevos clientes a la lista
+          setClients(prevClients => [...prevClients, ...result.clients]);
+          
+          toast({
+            title: "Importación exitosa",
+            description: result.message || `Se importaron ${result.clients.length} contactos de Apple.`
+          });
+          
+          setShowImportDialog(false);
+          setAppleContactsFile(null);
+        } catch (error) {
+          console.error('Error processing vCard file:', error);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Error al procesar el archivo vCard"
+          });
+        }
+      };
+      
+      reader.readAsText(appleContactsFile);
+    } catch (error) {
+      console.error('Error importing Apple contacts:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudieron importar los contactos de Apple"
+      });
+    }
+  };
 
   // Manejar apertura del formulario de edición
   const openEditForm = (client: Client) => {
@@ -504,7 +570,7 @@ export default function Clients() {
                 <SelectValue placeholder="Filtrar por etiqueta" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas las etiquetas</SelectItem>
+                <SelectItem value="_all">Todas las etiquetas</SelectItem>
                 {allTags.map((tag) => (
                   <SelectItem key={tag} value={tag}>
                     {tag}
@@ -1083,16 +1149,30 @@ export default function Clients() {
             </TabsContent>
             <TabsContent value="apple">
               <div className="space-y-4">
-                <div className="p-4 bg-muted rounded-md text-center">
-                  <p className="text-sm mb-3">
-                    Importa contactos directamente desde tu cuenta de Apple.
+                <div className="space-y-2">
+                  <Label htmlFor="apple-vcard-file">Archivo vCard (.vcf)</Label>
+                  <Input 
+                    id="apple-vcard-file" 
+                    type="file" 
+                    accept=".vcf" 
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        setAppleContactsFile(e.target.files[0]);
+                      }
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Exporta tus contactos de la app de Contactos de Apple como archivo .vcf y súbelo aquí.
                   </p>
-                  <Button disabled>
-                    Conectar con Apple
-                  </Button>
-                  <p className="text-xs text-muted-foreground mt-3">
-                    Esta función estará disponible próximamente.
-                  </p>
+                </div>
+                <div className="p-3 bg-muted rounded-md">
+                  <h4 className="text-sm font-medium mb-2">Cómo exportar contactos desde Apple:</h4>
+                  <ol className="text-xs space-y-1 text-muted-foreground list-decimal pl-4">
+                    <li>Abre la app Contactos en tu iPhone/iPad o Mac</li>
+                    <li>Selecciona los contactos que deseas exportar</li>
+                    <li>Selecciona Archivo &gt; Exportar &gt; Exportar vCard</li>
+                    <li>Guarda el archivo .vcf y luego súbelo aquí</li>
+                  </ol>
                 </div>
                 <DialogFooter>
                   <Button
@@ -1100,7 +1180,14 @@ export default function Clients() {
                     variant="outline"
                     onClick={() => setShowImportDialog(false)}
                   >
-                    Cerrar
+                    Cancelar
+                  </Button>
+                  <Button 
+                    type="button" 
+                    disabled={!appleContactsFile}
+                    onClick={handleAppleContactsImport}
+                  >
+                    Importar Contactos
                   </Button>
                 </DialogFooter>
               </div>
