@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Plus, X, Upload, FileText, Facebook, Instagram, Linkedin, Globe, Mail, Phone } from "lucide-react";
+import { SubscriptionInfo } from "@/components/ui/subscription-info";
+import { Link } from "wouter";
 import { 
   Accordion,
   AccordionContent,
@@ -754,6 +756,49 @@ export default function Profile() {
 
         {/* USER PROFILE TAB */}
         <TabsContent value="profile" className="space-y-4">
+          {/* Subscription Information */}
+          <div className="mb-6">
+            <h3 className="text-xl font-medium mb-4">Plan de Suscripción</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="md:col-span-2">
+                <div className="h-full">
+                  <SubscriptionInfo showHeader={false} />
+                </div>
+              </div>
+              <div>
+                <Card className="h-full">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Beneficios de Suscripción</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-2 text-sm">
+                      <li className="flex items-start">
+                        <span className="text-primary mr-2">✓</span>
+                        <span>Acceso a Mervin AI para ayudarte con tus proyectos</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="text-primary mr-2">✓</span>
+                        <span>Generación de estimaciones precisas</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="text-primary mr-2">✓</span>
+                        <span>Clientes y proyectos ilimitados</span>
+                      </li>
+                    </ul>
+                    <div className="mt-4 pt-3 border-t">
+                      <Link to="/subscription">
+                        <Button variant="outline" className="w-full">
+                          Ver todos los planes
+                        </Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </div>
+
+          {/* User Profile Card */}
           <Card>
             <CardHeader>
               <CardTitle>User Profile</CardTitle>
