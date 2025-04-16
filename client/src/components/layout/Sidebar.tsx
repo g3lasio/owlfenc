@@ -30,14 +30,6 @@ export default function Sidebar() {
         {/* Proyectos */}
         <div className="space-y-1">
           <div className="px-2 text-sm font-medium text-muted-foreground mb-2">Proyectos</div>
-          <Link href="/new-estimate" className={`flex items-center p-2 rounded-md ${location === "/new-estimate" ? "bg-primary bg-opacity-20 text-primary" : "hover:bg-accent"}`}>
-            <i className="ri-file-add-line mr-3"></i>
-            <span>Nuevo Estimado</span>
-          </Link>
-          <Link href="/new-contract" className={`flex items-center p-2 rounded-md ${location === "/new-contract" ? "bg-primary bg-opacity-20 text-primary" : "hover:bg-accent"}`}>
-            <i className="ri-file-text-line mr-3"></i>
-            <span>Nuevo Contrato</span>
-          </Link>
           <Link href="/projects" className={`flex items-center p-2 rounded-md ${location === "/projects" ? "bg-primary bg-opacity-20 text-primary" : "hover:bg-accent"}`}>
             <i className="ri-calendar-todo-line mr-3"></i>
             <span>Proyectos Activos</span>
@@ -45,27 +37,6 @@ export default function Sidebar() {
           <Link href="/history" className={`flex items-center p-2 rounded-md ${location === "/history" ? "bg-primary bg-opacity-20 text-primary" : "hover:bg-accent"}`}>
             <i className="ri-history-line mr-3"></i>
             <span>Historial</span>
-          </Link>
-        </div>
-
-        {/* Catálogo */}
-        <div className="space-y-1">
-          <div className="px-2 text-sm font-medium text-muted-foreground mb-2">Catálogo</div>
-          <Link href="/category/wood" className={`flex items-center p-2 rounded-md ${location === "/category/wood" ? "bg-primary bg-opacity-20 text-primary" : "hover:bg-accent"}`}>
-            <i className="ri-wood-line mr-3"></i>
-            <span>Cercas de Madera</span>
-          </Link>
-          <Link href="/category/metal" className={`flex items-center p-2 rounded-md ${location === "/category/metal" ? "bg-primary bg-opacity-20 text-primary" : "hover:bg-accent"}`}>
-            <i className="ri-copper-diamond-line mr-3"></i>
-            <span>Cercas Metálicas</span>
-          </Link>
-          <Link href="/category/vinyl" className={`flex items-center p-2 rounded-md ${location === "/category/vinyl" ? "bg-primary bg-opacity-20 text-primary" : "hover:bg-accent"}`}>
-            <i className="ri-layout-line mr-3"></i>
-            <span>Cercas de Vinilo</span>
-          </Link>
-          <Link href="/category/chain" className={`flex items-center p-2 rounded-md ${location === "/category/chain" ? "bg-primary bg-opacity-20 text-primary" : "hover:bg-accent"}`}>
-            <i className="ri-links-line mr-3"></i>
-            <span>Cercas Chain Link</span>
           </Link>
         </div>
 
