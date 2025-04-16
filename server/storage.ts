@@ -51,6 +51,24 @@ export interface IStorage {
   createClient(client: InsertClient): Promise<Client>;
   updateClient(id: number, client: Partial<Client>): Promise<Client>;
   deleteClient(id: number): Promise<boolean>;
+  
+  // Subscription Plan methods
+  getSubscriptionPlan(id: number): Promise<SubscriptionPlan | undefined>;
+  getSubscriptionPlanByCode(code: string): Promise<SubscriptionPlan | undefined>;
+  getAllSubscriptionPlans(): Promise<SubscriptionPlan[]>;
+  createSubscriptionPlan(plan: InsertSubscriptionPlan): Promise<SubscriptionPlan>;
+  updateSubscriptionPlan(id: number, plan: Partial<SubscriptionPlan>): Promise<SubscriptionPlan>;
+  
+  // User Subscription methods
+  getUserSubscription(id: number): Promise<UserSubscription | undefined>;
+  getUserSubscriptionByUserId(userId: number): Promise<UserSubscription | undefined>;
+  createUserSubscription(subscription: InsertUserSubscription): Promise<UserSubscription>;
+  updateUserSubscription(id: number, subscription: Partial<UserSubscription>): Promise<UserSubscription>;
+  
+  // Payment History methods
+  getPaymentHistory(id: number): Promise<PaymentHistory | undefined>;
+  getPaymentHistoryByUserId(userId: number): Promise<PaymentHistory[]>;
+  createPaymentHistory(payment: InsertPaymentHistory): Promise<PaymentHistory>;
 }
 
 export class MemStorage implements IStorage {
@@ -58,7 +76,51 @@ export class MemStorage implements IStorage {
   private projects: Map<number, Project>;
   private templates: Map<number, Template>;
   private settings: Map<number, Settings>;
+  private chatLogs: Map<number, ChatLog>;
+  private clients: Map<number, Client>;
+  private subscriptionPlans: Map<number, SubscriptionPlan>;
+  private userSubscriptions: Map<number, UserSubscription>;
+  private paymentHistory: Map<number, PaymentHistory>;
+  
+  private currentIds: {
+    users: number;
+    projects: number;
+    templates: number;
+    settings: number;
+    chatLogs: number;
+    clients: number;
+    subscriptionPlans: number;
+    userSubscriptions: number;
+    paymentHistory: number;
+  };
 
+  constructor() {
+    this.users = new Map();
+    this.projects = new Map();
+    this.templates = new Map();
+    this.settings = new Map();
+    this.chatLogs = new Map();
+    this.clients = new Map();
+    this.subscriptionPlans = new Map();
+    this.userSubscriptions = new Map();
+    this.paymentHistory = new Map();
+    
+    this.currentIds = {
+      users: 1,
+      projects: 1,
+      templates: 1,
+      settings: 1,
+      chatLogs: 1,
+      clients: 1,
+      subscriptionPlans: 1,
+      userSubscriptions: 1,
+      paymentHistory: 1
+    };
+    
+    // Add some default data
+    this.seedData();
+  }
+  
   async updateUser(id: number, userData: Partial<User>): Promise<User> {
     const user = this.users.get(id);
     if (!user) {
@@ -71,37 +133,6 @@ export class MemStorage implements IStorage {
     };
     this.users.set(id, updatedUser);
     return updatedUser;
-  }
-
-  private chatLogs: Map<number, ChatLog>;
-  private clients: Map<number, Client>;
-  private currentIds: {
-    users: number;
-    projects: number;
-    templates: number;
-    settings: number;
-    chatLogs: number;
-    clients: number;
-  };
-
-  constructor() {
-    this.users = new Map();
-    this.projects = new Map();
-    this.templates = new Map();
-    this.settings = new Map();
-    this.chatLogs = new Map();
-    this.clients = new Map();
-    this.currentIds = {
-      users: 1,
-      projects: 1,
-      templates: 1,
-      settings: 1,
-      chatLogs: 1,
-      clients: 1
-    };
-    
-    // Add some default data
-    this.seedData();
   }
   
   // User methods

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, jsonb, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, jsonb, boolean, primaryKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -215,3 +215,91 @@ export type InsertChatLog = z.infer<typeof insertChatLogSchema>;
 
 export type Client = typeof clients.$inferSelect;
 export type InsertClient = z.infer<typeof insertClientSchema>;
+
+// Subscription Plans table
+export const subscriptionPlans = pgTable("subscription_plans", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  code: text("code").notNull().unique(), // primo_chambeador, mero_patron, chingon_mayor
+  price: integer("price").notNull(), // Monthly price in cents
+  yearlyPrice: integer("yearly_price").notNull(), // Yearly price in cents
+  description: text("description"),
+  features: jsonb("features"), // Array of features included in this plan
+  motto: text("motto"), // Lema del plan
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlans).pick({
+  name: true,
+  code: true,
+  price: true,
+  yearlyPrice: true,
+  description: true,
+  features: true,
+  motto: true,
+  isActive: true,
+});
+
+// User Subscriptions table
+export const userSubscriptions = pgTable("user_subscriptions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  planId: integer("plan_id").references(() => subscriptionPlans.id),
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  status: text("status").default("active"), // active, canceled, past_due, etc.
+  currentPeriodStart: timestamp("current_period_start"),
+  currentPeriodEnd: timestamp("current_period_end"),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").default(false),
+  billingCycle: text("billing_cycle").default("monthly"), // monthly or yearly
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertUserSubscriptionSchema = createInsertSchema(userSubscriptions).pick({
+  userId: true,
+  planId: true,
+  stripeCustomerId: true,
+  stripeSubscriptionId: true,
+  status: true,
+  currentPeriodStart: true,
+  currentPeriodEnd: true,
+  cancelAtPeriodEnd: true,
+  billingCycle: true,
+});
+
+// Payment history table
+export const paymentHistory = pgTable("payment_history", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  subscriptionId: integer("subscription_id").references(() => userSubscriptions.id),
+  stripePaymentIntentId: text("stripe_payment_intent_id"),
+  stripeInvoiceId: text("stripe_invoice_id"),
+  amount: integer("amount").notNull(), // Amount in cents
+  status: text("status").notNull(), // succeeded, failed, pending
+  paymentMethod: text("payment_method"), // card, bank transfer, etc.
+  receiptUrl: text("receipt_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertPaymentHistorySchema = createInsertSchema(paymentHistory).pick({
+  userId: true,
+  subscriptionId: true,
+  stripePaymentIntentId: true,
+  stripeInvoiceId: true,
+  amount: true,
+  status: true,
+  paymentMethod: true,
+  receiptUrl: true,
+});
+
+export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
+export type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlanSchema>;
+
+export type UserSubscription = typeof userSubscriptions.$inferSelect;
+export type InsertUserSubscription = z.infer<typeof insertUserSubscriptionSchema>;
+
+export type PaymentHistory = typeof paymentHistory.$inferSelect;
+export type InsertPaymentHistory = z.infer<typeof insertPaymentHistorySchema>;
