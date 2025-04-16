@@ -127,13 +127,13 @@ export default function Header({
               <DropdownMenuItem>
                 <Link href="/about-owlfenc" className="flex items-center w-full">
                   <i className="ri-building-2-line mr-2"></i>
-                  <span>About Owl Fence App</span>
+                  <span>Acerca de Owl Fence App</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <Link href="/about-mervin" className="flex items-center w-full">
                   <i className="ri-robot-line mr-2"></i>
-                  <span>About Mervin AI</span>
+                  <span>Acerca de Mervin AI</span>
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>

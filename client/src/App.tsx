@@ -12,6 +12,8 @@ import Profile from "@/pages/Profile";
 import PropertyOwnershipVerifier from "@/pages/PropertyOwnershipVerifier";
 import AIProjectManager from "@/pages/AIProjectManager";
 import ARFenceEstimator from "@/pages/ARFenceEstimator";
+import AboutOwlFence from "@/pages/AboutOwlFence";
+import AboutMervin from "@/pages/AboutMervin";
 
 function Router() {
   return (
@@ -24,6 +26,8 @@ function Router() {
       <Route path="/property-verifier" component={PropertyOwnershipVerifier} />
       <Route path="/ai-project-manager" component={AIProjectManager} />
       <Route path="/ar-fence-estimator" component={ARFenceEstimator} />
+      <Route path="/about-owlfenc" component={AboutOwlFence} />
+      <Route path="/about-mervin" component={AboutMervin} />
       <Route component={NotFound} />
     </Switch>
   );
