@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Home, Check, User, Calendar } from "lucide-react";
+import axios from "axios";
 
 interface PropertyDetails {
   owner: string;
@@ -16,6 +18,7 @@ interface PropertyDetails {
   yearBuilt: number;
   propertyType: string;
   verified: boolean;
+  ownerOccupied?: boolean;
 }
 
 export default function PropertyOwnershipVerifier() {
@@ -26,63 +29,56 @@ export default function PropertyOwnershipVerifier() {
 
   const handleSearch = async () => {
     if (!address.trim()) {
-      setError("Please enter a valid address");
+      setError("Por favor, ingresa una dirección válida");
       return;
     }
 
     setLoading(true);
     setError(null);
     
-    // This would be replaced with an actual API call in production
-    // For demo purposes, we're simulating a response after a delay
-    setTimeout(() => {
-      try {
-        // Mock data for demonstration purposes
-        const mockPropertyDetails: PropertyDetails = {
-          owner: "John Smith",
-          address: address,
-          sqft: 2250,
-          bedrooms: 4,
-          bathrooms: 2.5,
-          lotSize: "0.25 acres",
-          yearBuilt: 2005,
-          propertyType: "Single Family Residence",
-          verified: true
-        };
-        
-        setPropertyDetails(mockPropertyDetails);
-        setLoading(false);
-      } catch (err) {
-        setError("Error fetching property details. Please try again.");
+    try {
+      const response = await axios.get('/api/property-verification', {
+        params: { address: address.trim() }
+      });
+      
+      if (response.data) {
+        setPropertyDetails(response.data);
+      } else {
+        setError("No se encontró información para esta dirección");
         setPropertyDetails(null);
-        setLoading(false);
       }
-    }, 2000);
+    } catch (err: any) {
+      console.error('Error verificando propiedad:', err);
+      setError(err.response?.data?.message || "Error al verificar la propiedad. Por favor, intenta nuevamente.");
+      setPropertyDetails(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-2">Property Ownership Verifier</h1>
+      <h1 className="text-3xl font-bold mb-2">Verificador de Propiedad</h1>
       <p className="text-muted-foreground mb-6">
-        Verify property ownership to avoid scams and ensure you're dealing with the legitimate owner.
+        Verifica la propiedad para evitar estafas y asegurarte de que estás tratando con el propietario legítimo.
       </p>
 
       <div className="mb-8">
         <Card>
           <CardHeader>
-            <CardTitle>Verify Property Ownership</CardTitle>
+            <CardTitle>Verificar Propiedad</CardTitle>
             <CardDescription>
-              Enter the property address to verify its ownership details
+              Ingresa la dirección de la propiedad para verificar sus detalles de propiedad
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="grid grid-cols-12 gap-4">
                 <div className="col-span-12 sm:col-span-9">
-                  <Label htmlFor="address">Property Address</Label>
+                  <Label htmlFor="address">Dirección de la Propiedad</Label>
                   <Input 
                     id="address" 
-                    placeholder="Enter complete property address" 
+                    placeholder="Ingresa la dirección completa de la propiedad" 
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
                   />
@@ -93,7 +89,7 @@ export default function PropertyOwnershipVerifier() {
                     onClick={handleSearch}
                     disabled={loading}
                   >
-                    {loading ? "Searching..." : "Search"}
+                    {loading ? "Buscando..." : "Buscar"}
                   </Button>
                 </div>
               </div>
@@ -129,65 +125,112 @@ export default function PropertyOwnershipVerifier() {
       ) : propertyDetails ? (
         <Card>
           <CardHeader>
-            <CardTitle>Property Details</CardTitle>
+            <CardTitle>Detalles de la Propiedad</CardTitle>
             <CardDescription>
-              Verified information about the property
+              Información verificada sobre la propiedad
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-1">Current Ownership</h3>
-                <p className="text-lg font-medium flex items-center">
-                  {propertyDetails.owner}
-                  {propertyDetails.verified && (
-                    <span className="ml-2 bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-                      Verified Owner
-                    </span>
-                  )}
-                </p>
+              <div className="col-span-1 sm:col-span-2 p-3 bg-green-50 rounded-lg border border-green-100 mb-2">
+                <div className="flex items-start">
+                  <User className="text-green-600 mr-3 mt-1" size={20} />
+                  <div>
+                    <h3 className="text-sm font-medium text-green-800 mb-1">Propiedad verificada de:</h3>
+                    <p className="text-lg font-bold text-green-900 flex items-center">
+                      {propertyDetails.owner}
+                      {propertyDetails.verified && (
+                        <span className="ml-2 bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full flex items-center">
+                          <Check className="mr-1" size={12} />
+                          Propietario Verificado
+                        </span>
+                      )}
+                      {propertyDetails.ownerOccupied && (
+                        <span className="ml-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                          Vive en la propiedad
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                </div>
               </div>
               
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-1">Property Type</h3>
-                <p className="text-lg font-medium">{propertyDetails.propertyType}</p>
+              <div className="p-3 rounded-lg border">
+                <div className="flex items-start">
+                  <Home className="text-primary mr-3 mt-1" size={20} />
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Tipo de propiedad</h3>
+                    <p className="text-lg font-medium">{propertyDetails.propertyType}</p>
+                  </div>
+                </div>
               </div>
               
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-1">Living Area</h3>
-                <p className="text-lg font-medium">{propertyDetails.sqft.toLocaleString()} sqft</p>
+              <div className="p-3 rounded-lg border">
+                <div className="flex items-start">
+                  <Calendar className="text-primary mr-3 mt-1" size={20} />
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Año de construcción</h3>
+                    <p className="text-lg font-medium">{propertyDetails.yearBuilt}</p>
+                  </div>
+                </div>
               </div>
               
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-1">Lot Size</h3>
-                <p className="text-lg font-medium">{propertyDetails.lotSize}</p>
+              <div className="p-3 rounded-lg border">
+                <div className="flex items-start">
+                  <svg className="text-primary mr-3 mt-1" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="2" y="2" width="20" height="20" rx="2" stroke="currentColor" strokeWidth="2" />
+                    <path d="M2 7h20" stroke="currentColor" strokeWidth="2" />
+                  </svg>
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Área habitable</h3>
+                    <p className="text-lg font-medium">{propertyDetails.sqft.toLocaleString()} pie² / m²</p>
+                  </div>
+                </div>
               </div>
               
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-1">Bedrooms / Bathrooms</h3>
-                <p className="text-lg font-medium">{propertyDetails.bedrooms} bed / {propertyDetails.bathrooms} bath</p>
+              <div className="p-3 rounded-lg border">
+                <div className="flex items-start">
+                  <svg className="text-primary mr-3 mt-1" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5z" stroke="currentColor" strokeWidth="2" />
+                    <path d="M7 12h10" stroke="currentColor" strokeWidth="2" />
+                  </svg>
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Tamaño del terreno</h3>
+                    <p className="text-lg font-medium">{propertyDetails.lotSize}</p>
+                  </div>
+                </div>
               </div>
               
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-1">Year Built</h3>
-                <p className="text-lg font-medium">{propertyDetails.yearBuilt}</p>
+              <div className="p-3 rounded-lg border">
+                <div className="flex items-start">
+                  <svg className="text-primary mr-3 mt-1" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7" stroke="currentColor" strokeWidth="2" />
+                    <path d="M12 14v-7" stroke="currentColor" strokeWidth="2" />
+                    <path d="M8 11v-4" stroke="currentColor" strokeWidth="2" />
+                    <path d="M16 11v-4" stroke="currentColor" strokeWidth="2" />
+                  </svg>
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Habitaciones / Baños</h3>
+                    <p className="text-lg font-medium">{propertyDetails.bedrooms} hab / {propertyDetails.bathrooms} baños</p>
+                  </div>
+                </div>
               </div>
             </div>
             
             <div className="mt-6 pt-4 border-t">
-              <h3 className="text-md font-semibold mb-2">What this means for your project:</h3>
+              <h3 className="text-md font-semibold mb-2">Lo que esto significa para tu proyecto:</h3>
               <ul className="space-y-2">
                 <li className="flex items-start">
-                  <span className="mr-2 text-green-500">✓</span>
-                  <span>The person requesting work is the verified property owner</span>
+                  <Check className="text-green-500 mr-2 flex-shrink-0 mt-0.5" size={18} />
+                  <span>La persona que solicita el trabajo es el propietario verificado de la propiedad</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="mr-2 text-green-500">✓</span>
-                  <span>Property details match county records</span>
+                  <Check className="text-green-500 mr-2 flex-shrink-0 mt-0.5" size={18} />
+                  <span>Los detalles de la propiedad coinciden con los registros del condado</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="mr-2 text-green-500">✓</span>
-                  <span>No liens or financial issues detected that could affect payment</span>
+                  <Check className="text-green-500 mr-2 flex-shrink-0 mt-0.5" size={18} />
+                  <span>No se detectaron gravámenes o problemas financieros que pudieran afectar el pago</span>
                 </li>
               </ul>
             </div>
@@ -196,37 +239,37 @@ export default function PropertyOwnershipVerifier() {
       ) : null}
       
       <div className="mt-6">
-        <h2 className="text-xl font-semibold mb-3">Why Verify Property Ownership?</h2>
+        <h2 className="text-xl font-semibold mb-3">¿Por qué verificar la propiedad?</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Prevent Fraud</CardTitle>
+              <CardTitle className="text-lg">Prevenir fraudes</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                Ensure you're dealing with the legitimate property owner to avoid scams and payment issues.
+                Asegúrate de estar tratando con el propietario legítimo para evitar estafas y problemas de pago.
               </p>
             </CardContent>
           </Card>
           
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Avoid Legal Problems</CardTitle>
+              <CardTitle className="text-lg">Evitar problemas legales</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                Confirm proper authorization for construction work to avoid disputes and potential lawsuits.
+                Confirma la autorización adecuada para el trabajo de construcción para evitar disputas y posibles demandas.
               </p>
             </CardContent>
           </Card>
           
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Build Client Trust</CardTitle>
+              <CardTitle className="text-lg">Generar confianza</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                Show professionalism by verifying property details before beginning work on any project.
+                Muestra profesionalismo al verificar los detalles de la propiedad antes de comenzar cualquier proyecto.
               </p>
             </CardContent>
           </Card>
