@@ -72,39 +72,12 @@ export default function Header({
         <DropdownMenu open={isUserMenuOpen} onOpenChange={setIsUserMenuOpen}>
           <DropdownMenuTrigger asChild>
             <button className="flex items-center space-x-2 p-1 rounded-full hover:bg-accent">
-              <div className="flex-shrink-0 relative group">
-                <input
-                  type="file"
-                  id="avatar-upload"
-                  className="hidden"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      // Handle avatar upload here
-                      console.log("Avatar file:", file);
-                    }
-                  }}
-                />
-                <label
-                  htmlFor="avatar-upload"
-                  className="cursor-pointer block w-24 h-24 rounded-full overflow-hidden"
-                >
-                  <div className="w-full h-full bg-primary/20 text-primary flex items-center justify-center relative">
-                    <span className="text-3xl font-medium">JC</span>
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <i className="ri-camera-line text-white text-xl"></i>
-                    </div>
-                  </div>
-                </label>
+              <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center">
+                <span className="text-sm font-medium">JC</span>
               </div>
-              <div className="flex-1">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium">John Contractor</p>
-                  <p className="text-xs text-muted-foreground">
-                    admin@fencequotepro.com
-                  </p>
-                </div>
+              <div className="flex flex-col space-y-0.5">
+                <p className="text-sm font-medium">John Contractor</p>
+                <p className="text-xs text-muted-foreground">admin@fencequotepro.com</p>
               </div>
             </button>
           </DropdownMenuTrigger>
