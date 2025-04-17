@@ -29,6 +29,9 @@ export default function Subscription() {
     throwOnError: false,
     staleTime: 1000 * 60 * 5, // Cache por 5 minutos
     retry: 3,
+    onSuccess: (data) => {
+      console.log("Planes cargados exitosamente:", data);
+    },
     onError: (error) => {
       console.error("Error cargando planes:", error);
     }
@@ -190,11 +193,30 @@ export default function Subscription() {
   // Determinar cuál plan marcar como el más popular (El Mero Patrón)
   const getIsMostPopular = (planCode: string) => planCode === "mero_patron";
 
-  if (isLoadingPlans || isLoadingUserSubscription) {
+  const isLoading = isLoadingPlans || isLoadingUserSubscription;
+  const hasError = !plans || plans.length === 0;
+
+  if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] p-4">
-        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-        <p className="text-muted-foreground">Cargando planes de suscripción...</p>
+      <div className="container max-w-6xl py-12">
+        <div className="flex flex-col items-center justify-center min-h-[60vh] p-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+          <p className="text-muted-foreground">Cargando planes de suscripción...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (hasError) {
+    return (
+      <div className="container max-w-6xl py-12">
+        <div className="flex flex-col items-center justify-center min-h-[60vh] p-4">
+          <div className="text-red-500 mb-4">
+            <i className="ri-error-warning-line text-4xl"></i>
+          </div>
+          <h2 className="text-xl font-semibold mb-2">Error al cargar los planes</h2>
+          <p className="text-muted-foreground">No se pudieron cargar los planes de suscripción.</p>
+        </div>
       </div>
     );
   }
