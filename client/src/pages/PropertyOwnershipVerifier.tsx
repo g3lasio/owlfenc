@@ -38,7 +38,6 @@ export default function PropertyOwnershipVerifier() {
   // Detectar errores de la API de Google Maps
   useEffect(() => {
     const handleGoogleMapsError = (event: ErrorEvent) => {
-      // Verificar si el error es de la API de Google Maps
       if (event.message && 
           (event.message.includes("Google Maps JavaScript API") || 
            event.message.includes("Google Maps Places API") ||
@@ -46,13 +45,22 @@ export default function PropertyOwnershipVerifier() {
         console.error("Google Maps API error detected:", event.message);
         setApiError(true);
         setUseManualInput(true);
+        setError("Error: La API de Google Maps no está configurada correctamente. Por favor verifica que la clave API sea válida y tenga los servicios necesarios habilitados (Maps JavaScript API, Places API, Geocoding API).");
       }
     };
     
-    // Añadir el event listener para capturar errores
+    const validateGoogleMapsKey = () => {
+      const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+      if (!apiKey || apiKey.length < 20) {
+        setApiError(true);
+        setUseManualInput(true);
+        setError("Error: No se encontró una clave API válida de Google Maps. Verifica la variable de entorno VITE_GOOGLE_MAPS_API_KEY.");
+      }
+    };
+
+    validateGoogleMapsKey();
     window.addEventListener('error', handleGoogleMapsError);
     
-    // Limpiar el event listener
     return () => {
       window.removeEventListener('error', handleGoogleMapsError);
     };
