@@ -243,9 +243,14 @@ export default function PropertyOwnershipVerifier() {
                     <div className="relative">
                       <GooglePlacesAutocomplete
                         apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
-                        apiOptions={{ language: 'es', region: 'mx' }}
+                        apiOptions={{ 
+                          language: 'es',
+                          region: 'mx',
+                          libraries: ['places']
+                        }}
                         autocompletionRequest={{
-                          componentRestrictions: { country: ['mx', 'us', 'es'] }
+                          componentRestrictions: { country: ['mx', 'us', 'es'] },
+                          types: ['address']
                         }}
                         selectProps={{
                           value: placeValue,
