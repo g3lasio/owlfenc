@@ -1,3 +1,4 @@
+
 import { NavigationItem, NavigationSection } from "@/types/navigation";
 
 // Configuración para el menú principal (izquierdo)
@@ -8,22 +9,22 @@ export const mainNavigationConfig: NavigationSection[] = [
       {
         label: "Dashboard",
         path: "/",
-        icon: "ri-dashboard-line",
+        icon: "ri-layout-grid-line",
       },
       {
         label: "Ownership Verifier",
         path: "/property-verifier",
-        icon: "ri-shield-check-line",
+        icon: "ri-shield-keyhole-line",
       },
       {
         label: "AI Project Manager",
         path: "/ai-project-manager",
-        icon: "ri-robot-line",
+        icon: "ri-brain-line",
       },
       {
         label: "AR Fence Estimator",
         path: "/ar-fence-estimator", 
-        icon: "ri-augmented-reality-line",
+        icon: "ri-camera-lens-line",
       },
     ],
   },
@@ -33,22 +34,22 @@ export const mainNavigationConfig: NavigationSection[] = [
       {
         label: "Proyectos",
         path: "/projects",
-        icon: "ri-folder-line",
+        icon: "ri-briefcase-4-line",
       },
       {
         label: "Clientes",
         path: "/clients",
-        icon: "ri-user-3-line",
+        icon: "ri-user-star-line",
       },
       {
         label: "Precios y Tarifas",
         path: "/settings/pricing",
-        icon: "ri-money-dollar-circle-line",
+        icon: "ri-coins-line",
       },
       {
         label: "Historial",
         path: "/history",
-        icon: "ri-history-line",
+        icon: "ri-time-line",
       },
     ],
   }
@@ -62,17 +63,17 @@ export const userNavigationConfig: NavigationSection[] = [
       {
         label: "Perfil Personal",
         path: "/settings/account",
-        icon: "ri-user-3-line",
+        icon: "ri-user-settings-line",
       },
       {
         label: "Suscripción",
         path: "/subscription",
-        icon: "ri-vip-crown-line",
+        icon: "ri-vip-diamond-line",
       },
       {
         label: "Notificaciones",
         path: "/settings/notifications",
-        icon: "ri-notification-3-line",
+        icon: "ri-notification-4-line",
       },
     ],
   },
@@ -82,7 +83,7 @@ export const userNavigationConfig: NavigationSection[] = [
       {
         label: "Perfil de Empresa",
         path: "/profile",
-        icon: "ri-building-line",
+        icon: "ri-building-4-line",
       },
       {
         label: "Empleados",
@@ -97,27 +98,27 @@ export const userNavigationConfig: NavigationSection[] = [
       {
         label: "Contactar Soporte",
         path: "mailto:mervin@owlfenc.com",
-        icon: "ri-customer-service-line",
+        icon: "ri-customer-service-2-line",
       },
       {
         label: "Acerca de Owl Fence App",
         path: "/about-owlfenc",
-        icon: "ri-building-2-line",
+        icon: "ri-store-3-line",
       },
       {
         label: "Acerca de Mervin AI",
         path: "/about-mervin",
-        icon: "ri-robot-line",
+        icon: "ri-openai-line",
       },
       {
         label: "Políticas Legales",
         path: "/legal-policy",
-        icon: "ri-article-line",
+        icon: "ri-file-shield-2-line",
       },
       {
         label: "Política de Privacidad",
         path: "/privacy-policy",
-        icon: "ri-lock-line",
+        icon: "ri-shield-check-line",
       },
     ],
   },
