@@ -5,8 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Home, Check, User, Calendar } from "lucide-react";
+import { Home, Check, User, Calendar, MapPin } from "lucide-react";
 import axios from "axios";
+import GooglePlacesAutocomplete, { geocodeByAddress, getLatLng } from 'react-google-places-autocomplete';
 
 interface PropertyDetails {
   owner: string;
@@ -26,24 +27,32 @@ export default function PropertyOwnershipVerifier() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [propertyDetails, setPropertyDetails] = useState<PropertyDetails | null>(null);
+  const [placeValue, setPlaceValue] = useState<any>(null);
+  // No longer used with Google Places Autocomplete
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  const handleAddressChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setAddress(value);
-
-    if (value.length > 3) {
+  // Handler for the old input change method (no longer used)
+  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAddress(e.target.value);
+  };
+  
+  // Manejar la selección de la dirección del autocompletado
+  const handlePlaceSelect = async (place: any) => {
+    if (place && place.value) {
       try {
-        const response = await fetch(`/api/address/suggestions?query=${encodeURIComponent(value)}`);
-        const data = await response.json();
-        setSuggestions(data);
-        setShowSuggestions(true);
+        // Obtener la dirección formateada del valor seleccionado
+        setAddress(place.value.description);
+        
+        // Obtener más detalles de la ubicación (opcional)
+        const results = await geocodeByAddress(place.value.description);
+        if (results && results.length > 0) {
+          const latLng = await getLatLng(results[0]);
+          console.log("Coordenadas seleccionadas:", latLng);
+        }
       } catch (error) {
-        console.error('Error fetching suggestions:', error);
+        console.error("Error al procesar la dirección seleccionada:", error);
       }
-    } else {
-      setSuggestions([]);
     }
   };
 
@@ -130,30 +139,52 @@ export default function PropertyOwnershipVerifier() {
                 <div className="col-span-12 sm:col-span-9">
                   <Label htmlFor="address">Dirección de la Propiedad</Label>
                   <div className="relative">
-                    <Input 
-                      id="address"
-                      placeholder="Ingresa la dirección completa de la propiedad"
-                      value={address}
-                      onChange={handleAddressChange}
-                      onFocus={() => setShowSuggestions(true)}
-                      autoComplete="off"
+                    <GooglePlacesAutocomplete
+                      apiKey={process.env.GOOGLE_MAPS_API_KEY}
+                      selectProps={{
+                        value: placeValue,
+                        onChange: (value) => {
+                          setPlaceValue(value);
+                          handlePlaceSelect(value);
+                        },
+                        placeholder: "Ingresa la dirección completa de la propiedad",
+                        noOptionsMessage: () => "No se encontraron resultados",
+                        loadingMessage: () => "Buscando direcciones...",
+                        styles: {
+                          control: (provided) => ({
+                            ...provided,
+                            height: '42px',
+                            borderRadius: '7px',
+                            boxShadow: 'none',
+                            borderColor: '#e2e8f0',
+                            paddingLeft: '30px', // Add padding for the icon
+                            '&:hover': {
+                              borderColor: '#cbd5e1',
+                            }
+                          }),
+                          option: (provided, state) => ({
+                            ...provided,
+                            backgroundColor: state.isFocused ? '#f1f5f9' : 'white',
+                            color: '#334155',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            padding: '8px 12px',
+                          }),
+                          menu: (provided) => ({
+                            ...provided,
+                            borderRadius: '7px',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                          }),
+                          input: (provided) => ({
+                            ...provided,
+                            fontSize: '14px',
+                          }),
+                        },
+                      }}
                     />
-                    {showSuggestions && suggestions.length > 0 && (
-                      <div className="absolute z-10 w-full bg-white border rounded-md shadow-lg mt-1">
-                        {suggestions.map((suggestion, index) => (
-                          <div
-                            key={index}
-                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                            onClick={() => {
-                              setAddress(suggestion);
-                              setShowSuggestions(false);
-                            }}
-                          >
-                            {suggestion}
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    <div className="absolute top-3 left-3 text-gray-400 pointer-events-none">
+                      <MapPin size={16} className="opacity-60" />
+                    </div>
                   </div>
                 </div>
                 <div className="col-span-12 sm:col-span-3 flex items-end">
