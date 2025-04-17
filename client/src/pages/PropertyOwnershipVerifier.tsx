@@ -44,11 +44,52 @@ export default function PropertyOwnershipVerifier() {
         // Obtener la dirección formateada del valor seleccionado
         setAddress(place.value.description);
         
-        // Obtener más detalles de la ubicación (opcional)
+        // Limpiar cualquier error previo
+        setError(null);
+        
+        // Obtener más detalles de la ubicación para enriquecer los datos
         const results = await geocodeByAddress(place.value.description);
         if (results && results.length > 0) {
+          // Obtener coordenadas
           const latLng = await getLatLng(results[0]);
           console.log("Coordenadas seleccionadas:", latLng);
+          
+          // Analizar los componentes de la dirección para extracción de datos
+          const addressComponents = results[0].address_components;
+          
+          // Extraer información útil como código postal, ciudad, estado, etc.
+          let zipCode = '';
+          let city = '';
+          let state = '';
+          let neighborhood = '';
+          
+          addressComponents.forEach((component: any) => {
+            const types = component.types;
+            
+            if (types.includes('postal_code')) {
+              zipCode = component.long_name;
+            }
+            
+            if (types.includes('locality')) {
+              city = component.long_name;
+            }
+            
+            if (types.includes('administrative_area_level_1')) {
+              state = component.long_name;
+            }
+            
+            if (types.includes('neighborhood')) {
+              neighborhood = component.long_name;
+            }
+          });
+          
+          console.log('Información adicional:', { zipCode, city, state, neighborhood });
+          
+          // Iniciar automáticamente la búsqueda después de seleccionar una dirección
+          // con un pequeño retraso para mejor experiencia de usuario
+          setTimeout(() => {
+            handleSearch();
+          }, 300);
         }
       } catch (error) {
         console.error("Error al procesar la dirección seleccionada:", error);
@@ -140,7 +181,11 @@ export default function PropertyOwnershipVerifier() {
                   <Label htmlFor="address">Dirección de la Propiedad</Label>
                   <div className="relative">
                     <GooglePlacesAutocomplete
-                      apiKey={process.env.GOOGLE_MAPS_API_KEY}
+                      apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
+                      apiOptions={{ language: 'es', region: 'mx' }}
+                      autocompletionRequest={{
+                        componentRestrictions: { country: ['mx', 'us', 'es'] }
+                      }}
                       selectProps={{
                         value: placeValue,
                         onChange: (value) => {
@@ -174,6 +219,7 @@ export default function PropertyOwnershipVerifier() {
                             ...provided,
                             borderRadius: '7px',
                             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                            zIndex: 100,
                           }),
                           input: (provided) => ({
                             ...provided,
