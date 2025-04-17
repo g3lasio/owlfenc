@@ -968,7 +968,7 @@ export default function Clients() {
                   control={clientForm.control}
                   name="address"
                   render={({ field }) => (
-                    <FormItem                    <FormItem className="col-span-2">
+                    <FormItem className="col-span-2">
                       <FormLabel>Dirección</FormLabel>
                       <FormControl>
                         <AddressAutocomplete
