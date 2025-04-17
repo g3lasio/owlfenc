@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from "react";
 import ChatMessage from "./ChatMessage";
 import ChatInput from "./ChatInput";
+import ChatFooter from "./ChatFooter";
 import TypingIndicator from "./TypingIndicator";
 import EstimatePreview from "../templates/EstimatePreview";
 import ContractPreview from "../templates/ContractPreview";
@@ -299,6 +300,8 @@ export default function ChatInterface() {
 
       {/* Chat Input */}
       <ChatInput onSendMessage={handleSendMessage} isDisabled={isProcessing} />
+      {/* Footer with legal links */}
+      <ChatFooter />
       {isProcessing && <ProgressBar />}
     </div>
     </div>

@@ -147,4 +147,68 @@
   .template-preview th {
     @apply bg-slate-100;
   }
+  
+  /* Footer styles */
+  .chat-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 40;
+    padding-bottom: 4px;
+  }
+  
+  .footer-gradient {
+    background: linear-gradient(90deg, rgba(0, 191, 255, 0.15) 0%, rgba(0, 255, 255, 0.15) 50%, rgba(0, 191, 255, 0.15) 100%);
+    padding: 5px 0;
+    border-top: 1px solid hsla(var(--border), 0.2);
+    width: 100%;
+  }
+  
+  .footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 1rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    font-family: 'Quantico', sans-serif;
+    font-size: 0.75rem;
+  }
+  
+  .footer-link {
+    color: hsl(var(--primary));
+    opacity: 0.8;
+    text-decoration: none;
+    transition: opacity 0.2s ease-in-out;
+  }
+  
+  .footer-link:hover {
+    opacity: 1;
+    text-decoration: underline;
+  }
+  
+  .footer-copyright {
+    color: hsl(var(--muted-foreground));
+    font-size: 0.7rem;
+    text-align: center;
+  }
+  
+  /* Make sure the chat input is repositioned to accommodate the footer */
+  .chat-input {
+    position: fixed;
+    bottom: 28px; /* Adjusted to make room for the footer */
+    left: 0;
+    right: 0;
+    background-color: hsl(var(--background));
+    border-top: 1px solid hsl(var(--border));
+    z-index: 50;
+  }
+  
+  /* Adjust the container padding for the repositioned chat input and footer */
+  .chat-container {
+    height: 100%;
+    overflow-y: auto;
+    padding-bottom: 150px; /* Increased to make room for both input and footer */
+  }
 }
