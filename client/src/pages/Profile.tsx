@@ -17,6 +17,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Plus, X, Upload, FileText, Facebook, Instagram, Linkedin, Globe, Mail, Phone } from "lucide-react";
 import { SubscriptionInfo } from "@/components/ui/subscription-info";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { Link } from "wouter";
 import { 
   Accordion,
