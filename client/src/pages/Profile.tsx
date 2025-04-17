@@ -59,7 +59,8 @@ interface CompanyInfoType {
 }
 
 export default function Profile() {
-  const [companyInfo, setCompanyInfo] = useState<CompanyInfoType>({
+  const { profile, isLoading: isLoadingProfile, error: profileError, updateProfile } = useProfile();
+  const [companyInfo, setCompanyInfo] = useState<CompanyInfoType>(profile || {
     companyName: "",
     ownerName: "",
     role: "",
@@ -187,7 +188,7 @@ export default function Profile() {
   const handleSave = async () => {
     setLoading(true);
     try {
-      await apiRequest("POST", "/api/user-profile", companyInfo);
+      await updateProfile(companyInfo);
       toast({
         title: "Perfil actualizado",
         description: "La información de la compañía ha sido guardada exitosamente.",

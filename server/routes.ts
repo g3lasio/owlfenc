@@ -93,23 +93,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(project);
     } catch (error) {
-
-// Endpoint para sugerencias de direcciones
-app.get('/api/address/suggestions', async (req: Request, res: Response) => {
-  const query = req.query.query as string;
-  try {
-    const response = await axios.get(
-      `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&types=address&key=${process.env.GOOGLE_MAPS_API_KEY}`
-    );
-
-    const suggestions = response.data.predictions.map((prediction: any) => prediction.description);
-    res.json(suggestions);
-  } catch (error) {
-    console.error('Error fetching address suggestions:', error);
-    res.status(500).json({ error: 'Error fetching suggestions' });
-  }
-});
-
       console.error('Error fetching project:', error);
       res.status(500).json({ message: 'Failed to fetch project' });
     }
@@ -500,6 +483,71 @@ app.get('/api/address/suggestions', async (req: Request, res: Response) => {
     } catch (error) {
       console.error('Error al sincronizar planes con Stripe:', error);
       res.status(500).json({ message: 'Error al sincronizar planes' });
+    }
+  });
+
+  app.get('/api/user-profile', async (req: Request, res: Response) => {
+    try {
+      // En producción, obtener userId del token de autenticación
+      const userId = 1; // Por ahora usar ID fijo para desarrollo
+      const user = await storage.getUser(userId);
+
+      if (!user) {
+        return res.status(404).json({ 
+          message: "Perfil no encontrado",
+          code: "PROFILE_NOT_FOUND"
+        });
+      }
+
+      // Asegurarse de que todos los campos requeridos existan
+      const profile = {
+        companyName: user.companyName || "",
+        ownerName: user.ownerName || "",
+        role: user.role || "",
+        email: user.email || "",
+        phone: user.phone || "",
+        mobilePhone: user.mobilePhone || "",
+        address: user.address || "",
+        city: user.city || "",
+        state: user.state || "",
+        zipCode: user.zipCode || "",
+        license: user.license || "",
+        insurancePolicy: user.insurancePolicy || "",
+        ein: user.ein || "",
+        businessType: user.businessType || "",
+        yearEstablished: user.yearEstablished || "",
+        website: user.website || "",
+        description: user.description || "",
+        specialties: user.specialties || [],
+        socialMedia: user.socialMedia || {},
+        documents: user.documents || {},
+        logo: user.logo || ""
+      };
+
+      res.json(profile);
+    } catch (error) {
+      console.error("Error loading profile:", error);
+      res.status(500).json({ 
+        message: "Error al cargar el perfil",
+        code: "INTERNAL_ERROR"
+      });
+    }
+  });
+
+
+  // Endpoint para sugerencias de direcciones
+  app.get('/api/address/suggestions', async (req: Request, res: Response) => {
+    const query = req.query.query as string;
+    try {
+      const response = await axios.get(
+        `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&types=address&key=${process.env.GOOGLE_MAPS_API_KEY}`
+      );
+
+      const suggestions = response.data.predictions.map((prediction: any) => prediction.description);
+      res.json(suggestions);
+    } catch (error) {
+      console.error('Error fetching address suggestions:', error);
+      res.status(500).json({ error: 'Error fetching suggestions' });
     }
   });
 
