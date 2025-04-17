@@ -42,19 +42,25 @@ export function Navigation({ variant, type = "main", onClose }: NavigationProps)
   const renderNavItem = (item: { path: string; icon: string; label: string }) => {
     const itemClass = getItemClass(item.path);
     
+    const handleClick = (e: React.MouseEvent) => {
+      // Si es un enlace de correo, esperamos un poco antes de cerrar
+      if (isMail(item.path)) {
+        setTimeout(() => {
+          onClose?.();
+        }, 300);
+      } else {
+        // Para navegación normal, cerramos inmediatamente
+        onClose?.();
+      }
+    };
+    
     if (isMail(item.path)) {
       return (
         <a 
           key={item.path} 
           href={item.path} 
           className={`${itemBaseClass} hover:bg-accent`}
-          onClick={(e) => {
-            if (variant === "drawer") {
-              setTimeout(() => {
-                onClose?.();
-              }, 300);
-            }
-          }}
+          onClick={handleClick}
         >
           <i className={`${item.icon} text-lg mr-3`}></i>
           <span>{item.label}</span>
@@ -67,12 +73,7 @@ export function Navigation({ variant, type = "main", onClose }: NavigationProps)
         key={item.path}
         href={item.path}
         className={itemClass}
-        onClick={(e) => {
-          // Cerrar siempre el drawer al navegar, independiente de la variante
-          if (onClose) {
-            onClose();
-          }
-        }}
+        onClick={handleClick}
       >
         <i className={`${item.icon} text-lg mr-3`}></i>
         <span>{item.label}</span>
