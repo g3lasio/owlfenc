@@ -114,11 +114,11 @@ export default function Header({
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <Link
-                  href="/settings/notifications"
+                  href="/subscription"
                   className="flex items-center w-full"
                 >
-                  <i className="ri-notification-2-line mr-2"></i>
-                  <span>Notificaciones</span>
+                  <i className="ri-vip-crown-line mr-2"></i>
+                  <span>Upgrade Plan</span>
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
