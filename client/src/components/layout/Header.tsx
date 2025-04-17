@@ -71,13 +71,9 @@ export default function Header({
         {/* User Profile Dropdown */}
         <DropdownMenu open={isUserMenuOpen} onOpenChange={setIsUserMenuOpen}>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center space-x-2 p-1 rounded-full hover:bg-accent">
+            <button className="p-1 rounded-full hover:bg-accent">
               <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center">
                 <span className="text-sm font-medium">JC</span>
-              </div>
-              <div className="flex flex-col space-y-0.5">
-                <p className="text-sm font-medium">John Contractor</p>
-                <p className="text-xs text-muted-foreground">admin@fencequotepro.com</p>
               </div>
             </button>
           </DropdownMenuTrigger>
