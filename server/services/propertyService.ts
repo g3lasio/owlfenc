@@ -103,18 +103,15 @@ class PropertyService {
         
         // Probar diferentes combinaciones de headers para API key
         const apiKeyHeaders = [
-          { 'apikey': this.apiKey },         // Minúsculas (estándar común)
-          { 'APIKey': this.apiKey },         // CamelCase (según documentación)
-          { 'api_key': this.apiKey },        // Snake case
-          { 'api-key': this.apiKey },        // Kebab case
-          { 'X-API-Key': this.apiKey }       // Prefijo X común
+          { 'apikey': this.apiKey },         // Formato estándar ATTOM
+          { 'APIKey': this.apiKey },         // Formato alternativo documentado
+          { 'Authorization': `Bearer ${this.apiKey}` }  // Formato Bearer token
         ];
         
         // Probar diferentes endpoints, priorizando el endpoint de propietario
         const endpoints = [
-          '/property/detailowner',           // Detalles + propietario (AHORA CON PERMISOS)
-          '/property/detail',               // Detalles de propiedad
-          '/property/basicprofile'          // El endpoint más simple
+          '/property/detailowner',           // Endpoint prioritario: detalles + propietario
+          '/property/detail'                 // Endpoint secundario: solo detalles
         ];
         
         // Intentar diferentes combinaciones de headers y endpoints
