@@ -99,22 +99,25 @@
     height: 100%;
   }
   
-  .chat-container {
+  .chat-outer-container {
     position: relative;
-    display: flex;
-    flex-direction: column;
     height: 100%;
+    overflow: hidden;
+  }
+
+  .chat-container {
+    height: 100%;
+    overflow-y: auto;
+    padding-bottom: 120px;
   }
 
   .messages-container {
     flex: 1;
     margin-bottom: 0;
-    padding-bottom: 120px;
-    overflow-y: auto;
   }
 
   .chat-input {
-    position: absolute;
+    position: fixed;
     bottom: 0;
     left: 0;
     right: 0;

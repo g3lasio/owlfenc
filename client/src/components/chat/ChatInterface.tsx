@@ -232,10 +232,11 @@ export default function ChatInterface() {
   };
 
   return (
-    <div className="flex flex-col h-full chat-container">
-      {/* Chat Messages */}
-      <div
-        ref={chatContainerRef}
+    <div className="relative flex flex-col h-full chat-outer-container">
+      <div className="flex flex-col h-full chat-container">
+        {/* Chat Messages */}
+        <div
+          ref={chatContainerRef}
         className="flex-1 overflow-y-auto p-4 scrollbar-hide messages-container"
       >
         {messages.map((message) => {
