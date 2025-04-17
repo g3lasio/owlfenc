@@ -155,43 +155,70 @@
     left: 0;
     right: 0;
     z-index: 40;
-    padding-bottom: 4px;
+    padding-bottom: 3px;
   }
   
   .footer-gradient {
-    background: linear-gradient(90deg, rgba(0, 191, 255, 0.15) 0%, rgba(0, 255, 255, 0.15) 50%, rgba(0, 191, 255, 0.15) 100%);
+    background: linear-gradient(90deg, 
+      rgba(0, 150, 255, 0.12) 0%, 
+      rgba(0, 220, 255, 0.18) 25%, 
+      rgba(0, 255, 255, 0.2) 50%, 
+      rgba(0, 220, 255, 0.18) 75%, 
+      rgba(0, 150, 255, 0.12) 100%);
     padding: 5px 0;
-    border-top: 1px solid hsla(var(--border), 0.2);
+    border-top: 1px solid hsla(var(--border), 0.15);
     width: 100%;
+    backdrop-filter: blur(5px);
   }
   
   .footer-content {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 1rem;
+    padding: 0 1.5rem;
     max-width: 1200px;
     margin: 0 auto;
     font-family: 'Quantico', sans-serif;
     font-size: 0.75rem;
+    letter-spacing: 0.02em;
   }
   
   .footer-link {
     color: hsl(var(--primary));
-    opacity: 0.8;
+    opacity: 0.75;
     text-decoration: none;
-    transition: opacity 0.2s ease-in-out;
+    transition: all 0.2s ease-in-out;
+    text-shadow: 0 0 8px hsla(var(--primary), 0.3);
+    font-weight: 400;
   }
   
   .footer-link:hover {
     opacity: 1;
     text-decoration: underline;
+    text-shadow: 0 0 12px hsla(var(--primary), 0.5);
   }
   
   .footer-copyright {
     color: hsl(var(--muted-foreground));
     font-size: 0.7rem;
     text-align: center;
+    opacity: 0.85;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 640px) {
+    .footer-content {
+      padding: 0 0.75rem;
+      font-size: 0.7rem;
+    }
+    
+    .footer-copyright {
+      font-size: 0.65rem;
+      max-width: 150px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
   }
   
   /* Make sure the chat input is repositioned to accommodate the footer */
