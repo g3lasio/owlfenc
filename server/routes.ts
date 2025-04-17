@@ -486,6 +486,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rutas para clientes
+  app.get('/api/clients', async (req: Request, res: Response) => {
+    try {
+      // En una app real, obtendríamos el userId de la sesión
+      const userId = 1;
+      const clients = await storage.getClientsByUserId(userId);
+      res.json(clients);
+    } catch (error) {
+      console.error('Error fetching clients:', error);
+      res.status(500).json({ message: 'Error al obtener los clientes' });
+    }
+  });
+
+  app.post('/api/clients', async (req: Request, res: Response) => {
+    try {
+      const userId = 1; // En producción, obtener del token de autenticación
+      const clientData = {
+        ...req.body,
+        userId,
+        clientId: `client_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      const newClient = await storage.createClient(clientData);
+      res.status(201).json(newClient);
+    } catch (error) {
+      console.error('Error creating client:', error);
+      res.status(400).json({ message: 'Error al crear el cliente' });
+    }
+  });
+
+  app.post('/api/clients/import/csv', async (req: Request, res: Response) => {
+    try {
+      const userId = 1; // En producción, obtener del token de autenticación
+      const { csvData } = req.body;
+      
+      // Procesar el CSV y crear los clientes
+      const rows = csvData.split('\n').slice(1); // Ignorar encabezados
+      const clients = [];
+      
+      for (const row of rows) {
+        const [name, email, phone, address] = row.split(',');
+        if (name) {
+          const clientData = {
+            userId,
+            clientId: `client_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+            name: name.trim(),
+            email: email?.trim(),
+            phone: phone?.trim(),
+            address: address?.trim(),
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+          
+          const newClient = await storage.createClient(clientData);
+          clients.push(newClient);
+        }
+      }
+      
+      res.status(201).json({
+        message: `${clients.length} clientes importados exitosamente`,
+        clients
+      });
+    } catch (error) {
+      console.error('Error importing clients:', error);
+      res.status(400).json({ message: 'Error al importar clientes' });
+    }
+  });
+
   app.get('/api/user-profile', async (req: Request, res: Response) => {
     try {
       // En producción, obtener userId del token de autenticación

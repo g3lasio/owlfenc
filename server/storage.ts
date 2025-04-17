@@ -52,9 +52,25 @@ export interface IStorage {
   
   // Client methods
   getClient(id: number): Promise<Client | undefined>;
-  getClientByClientId(clientId: string): Promise<Client | undefined>;
-  getClientsByUserId(userId: number): Promise<Client[]>;
-  createClient(client: InsertClient): Promise<Client>;
+  async getClientByClientId(clientId: string): Promise<Client | undefined> {
+    return Array.from(this.clients.values()).find(c => c.clientId === clientId);
+  }
+
+  async getClientsByUserId(userId: number): Promise<Client[]> {
+    return Array.from(this.clients.values()).filter(c => c.userId === userId);
+  }
+
+  async createClient(client: InsertClient): Promise<Client> {
+    const id = this.currentIds.clients++;
+    const newClient = {
+      id,
+      ...client,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.clients.set(id, newClient);
+    return newClient;
+  }
   updateClient(id: number, client: Partial<Client>): Promise<Client>;
   deleteClient(id: number): Promise<boolean>;
   
