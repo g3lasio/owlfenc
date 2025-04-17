@@ -237,9 +237,9 @@ export default function ChatInterface() {
         {/* Chat Messages */}
         <div
           ref={chatContainerRef}
-        className="flex-1 overflow-y-auto p-4 scrollbar-hide messages-container"
-      >
-        {messages.map((message) => {
+          className="flex-1 overflow-y-auto p-4 scrollbar-hide messages-container"
+        >
+          {messages.map((message) => {
           if (message.isTyping) {
             return <TypingIndicator key={message.id} />;
           }
