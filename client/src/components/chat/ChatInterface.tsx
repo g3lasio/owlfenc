@@ -301,5 +301,6 @@ export default function ChatInterface() {
       <ChatInput onSendMessage={handleSendMessage} isDisabled={isProcessing} />
       {isProcessing && <ProgressBar />}
     </div>
+    </div>
   );
 }
