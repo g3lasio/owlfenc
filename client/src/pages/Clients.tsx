@@ -22,6 +22,14 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
+// Assuming AddressAutocomplete component is defined elsewhere and imported
+// This is a placeholder, replace with your actual implementation
+const AddressAutocomplete = ({ value, onChange, placeholder }) => {
+    return (
+      <Input placeholder={placeholder} value={value} onChange={e => onChange(e.target.value)} />
+    );
+  };
+
 interface Client {
   id: number;
   userId: number;
@@ -110,11 +118,11 @@ export default function Clients() {
       try {
         setIsLoading(true);
         const response = await fetch('/api/clients');
-        
+
         if (!response.ok) {
           throw new Error('Error al cargar clientes');
         }
-        
+
         const data = await response.json();
         setClients(data);
         setFilteredClients(data);
@@ -129,14 +137,14 @@ export default function Clients() {
         setIsLoading(false);
       }
     };
-    
+
     fetchClients();
   }, [toast]);
 
   // Filtrar clientes cuando cambian los filtros
   useEffect(() => {
     let result = [...clients];
-    
+
     // Filtrar por texto de búsqueda
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
@@ -147,14 +155,14 @@ export default function Clients() {
         (client.address && client.address.toLowerCase().includes(term))
       );
     }
-    
+
     // Filtrar por etiqueta
     if (selectedTag && selectedTag !== "_all") {
       result = result.filter(client => 
         client.tags && client.tags.includes(selectedTag)
       );
     }
-    
+
     // Filtrar por fuente
     if (activeTab !== "all") {
       if (activeTab === "no_source") {
@@ -163,7 +171,7 @@ export default function Clients() {
         result = result.filter(client => client.source === activeTab);
       }
     }
-    
+
     setFilteredClients(result);
   }, [searchTerm, selectedTag, activeTab, clients]);
 
@@ -208,25 +216,25 @@ export default function Clients() {
           },
           body: JSON.stringify(values),
         });
-        
+
         if (!response.ok) {
           throw new Error('Error al actualizar cliente');
         }
-        
+
         const updatedClient = await response.json();
-        
+
         // Actualizar la lista de clientes
         setClients(prevClients => 
           prevClients.map(client => 
             client.id === updatedClient.id ? updatedClient : client
           )
         );
-        
+
         toast({
           title: "Cliente actualizado",
           description: `${updatedClient.name} se ha actualizado correctamente.`
         });
-        
+
         setShowEditClientDialog(false);
       } else {
         // Crear nuevo cliente
@@ -237,24 +245,24 @@ export default function Clients() {
           },
           body: JSON.stringify(values),
         });
-        
+
         if (!response.ok) {
           throw new Error('Error al crear cliente');
         }
-        
+
         const newClient = await response.json();
-        
+
         // Añadir el nuevo cliente a la lista
         setClients(prevClients => [...prevClients, newClient]);
-        
+
         toast({
           title: "Cliente añadido",
           description: `${newClient.name} se ha añadido correctamente.`
         });
-        
+
         setShowAddClientDialog(false);
       }
-      
+
       // Resetear el formulario
       clientForm.reset();
     } catch (error) {
@@ -272,26 +280,26 @@ export default function Clients() {
   // Manejar eliminación de cliente
   const handleDeleteClient = async () => {
     if (!currentClient) return;
-    
+
     try {
       const response = await fetch(`/api/clients/${currentClient.id}`, {
         method: 'DELETE',
       });
-      
+
       if (!response.ok) {
         throw new Error('Error al eliminar cliente');
       }
-      
+
       // Eliminar el cliente de la lista
       setClients(prevClients => 
         prevClients.filter(client => client.id !== currentClient.id)
       );
-      
+
       toast({
         title: "Cliente eliminado",
         description: `${currentClient.name} se ha eliminado correctamente.`
       });
-      
+
       setShowDeleteDialog(false);
       setCurrentClient(null);
     } catch (error) {
@@ -315,14 +323,14 @@ export default function Clients() {
         });
         return;
       }
-      
+
       const reader = new FileReader();
       reader.onload = async (e) => {
         if (!e.target || typeof e.target.result !== 'string') return;
-        
+
         try {
           const csvData = e.target.result;
-          
+
           const response = await fetch('/api/clients/import/csv', {
             method: 'POST',
             headers: {
@@ -330,21 +338,21 @@ export default function Clients() {
             },
             body: JSON.stringify({ csvData }),
           });
-          
+
           if (!response.ok) {
             throw new Error('Error al importar clientes');
           }
-          
+
           const result = await response.json();
-          
+
           // Añadir los nuevos clientes a la lista
           setClients(prevClients => [...prevClients, ...result.clients]);
-          
+
           toast({
             title: "Importación exitosa",
             description: result.message
           });
-          
+
           setShowImportDialog(false);
           csvImportForm.reset();
           setCsvFile(null);
@@ -357,7 +365,7 @@ export default function Clients() {
           });
         }
       };
-      
+
       reader.readAsText(csvFile);
     } catch (error) {
       console.error('Error importing clients:', error);
@@ -376,7 +384,7 @@ export default function Clients() {
       csvImportForm.setValue('csvData', 'Archivo seleccionado');
     }
   };
-  
+
   // Manejar importación de contactos de Apple
   const handleAppleContactsImport = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -389,14 +397,14 @@ export default function Clients() {
         });
         return;
       }
-      
+
       const reader = new FileReader();
       reader.onload = async (e) => {
         if (!e.target || typeof e.target.result !== 'string') return;
-        
+
         try {
           const vcfData = e.target.result;
-          
+
           // Enviar los datos al servidor
           const response = await fetch('/api/clients/import/vcf', {
             method: 'POST',
@@ -405,21 +413,21 @@ export default function Clients() {
             },
             body: JSON.stringify({ vcfData }),
           });
-          
+
           if (!response.ok) {
             throw new Error('Error al importar contactos de Apple');
           }
-          
+
           const result = await response.json();
-          
+
           // Añadir los nuevos clientes a la lista
           setClients(prevClients => [...prevClients, ...result.clients]);
-          
+
           toast({
             title: "Importación exitosa",
             description: result.message || `Se importaron ${result.clients.length} contactos de Apple.`
           });
-          
+
           setShowImportDialog(false);
           setAppleContactsFile(null);
         } catch (error) {
@@ -431,7 +439,7 @@ export default function Clients() {
           });
         }
       };
-      
+
       reader.readAsText(appleContactsFile);
     } catch (error) {
       console.error('Error importing Apple contacts:', error);
@@ -446,7 +454,7 @@ export default function Clients() {
   // Manejar apertura del formulario de edición
   const openEditForm = (client: Client) => {
     setCurrentClient(client);
-    
+
     // Establecer valores del formulario
     clientForm.reset({
       name: client.name,
@@ -461,7 +469,7 @@ export default function Clients() {
       source: client.source || "",
       tags: client.tags || [],
     });
-    
+
     setShowEditClientDialog(true);
   };
 
@@ -553,7 +561,7 @@ export default function Clients() {
           )}
         </div>
       </div>
-      
+
       {/* Search and Filter Controls */}
       <div className="mb-6 space-y-4">
         <div className="flex flex-col md:flex-row gap-4">
@@ -581,7 +589,7 @@ export default function Clients() {
             </Select>
           </div>
         </div>
-        
+
         {/* Source Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="w-full md:w-auto flex flex-wrap">
@@ -595,12 +603,12 @@ export default function Clients() {
           </TabsList>
         </Tabs>
       </div>
-      
+
       {/* Results Count */}
       <div className="mb-4 text-sm text-muted-foreground">
         {filteredClients.length} {filteredClients.length === 1 ? 'cliente encontrado' : 'clientes encontrados'}
       </div>
-      
+
       {/* Clients Grid */}
       {filteredClients.length === 0 ? (
         <div className="text-center py-10 border rounded-lg">
@@ -770,10 +778,21 @@ export default function Clients() {
                   control={clientForm.control}
                   name="address"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="col-span-2">
                       <FormLabel>Dirección</FormLabel>
                       <FormControl>
-                        <Input placeholder="123 Calle Principal" {...field} />
+                        <AddressAutocomplete
+                          value={field.value}
+                          onChange={(address, details) => {
+                            field.onChange(address);
+                            if (details) {
+                              clientForm.setValue('city', details.city || '');
+                              clientForm.setValue('state', details.state || '');
+                              clientForm.setValue('zipCode', details.zipCode || '');
+                            }
+                          }}
+                          placeholder="123 Calle Principal"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -787,7 +806,7 @@ export default function Clients() {
                       <FormItem>
                         <FormLabel>Ciudad</FormLabel>
                         <FormControl>
-                          <Input placeholder="Ciudad" {...field} />
+                          <Input placeholder="Ciudad" {...field} readOnly />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -800,7 +819,7 @@ export default function Clients() {
                       <FormItem>
                         <FormLabel>Estado</FormLabel>
                         <FormControl>
-                          <Input placeholder="OR" {...field} />
+                          <Input placeholder="OR" {...field} readOnly />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -814,7 +833,7 @@ export default function Clients() {
                     <FormItem>
                       <FormLabel>Código Postal</FormLabel>
                       <FormControl>
-                        <Input placeholder="97204" {...field} />
+                        <Input placeholder="97204" {...field} readOnly />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -949,10 +968,21 @@ export default function Clients() {
                   control={clientForm.control}
                   name="address"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem                    <FormItem className="col-span-2">
                       <FormLabel>Dirección</FormLabel>
                       <FormControl>
-                        <Input placeholder="123 Calle Principal" {...field} />
+                        <AddressAutocomplete
+                          value={field.value}
+                          onChange={(address, details) => {
+                            field.onChange(address);
+                            if (details) {
+                              clientForm.setValue('city', details.city || '');
+                              clientForm.setValue('state', details.state || '');
+                              clientForm.setValue('zipCode', details.zipCode || '');
+                            }
+                          }}
+                          placeholder="123 Calle Principal"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -966,7 +996,7 @@ export default function Clients() {
                       <FormItem>
                         <FormLabel>Ciudad</FormLabel>
                         <FormControl>
-                          <Input placeholder="Ciudad" {...field} />
+                          <Input placeholder="Ciudad" {...field} readOnly />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -979,7 +1009,7 @@ export default function Clients() {
                       <FormItem>
                         <FormLabel>Estado</FormLabel>
                         <FormControl>
-                          <Input placeholder="OR" {...field} />
+                          <Input placeholder="OR" {...field} readOnly />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -993,7 +1023,7 @@ export default function Clients() {
                     <FormItem>
                       <FormLabel>Código Postal</FormLabel>
                       <FormControl>
-                        <Input placeholder="97204" {...field} />
+                        <Input placeholder="97204" {...field} readOnly />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -1088,7 +1118,7 @@ export default function Clients() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
       {/* Import Dialog */}
       <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
         <DialogContent className="sm:max-w-[500px]">

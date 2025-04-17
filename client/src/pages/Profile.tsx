@@ -481,14 +481,20 @@ export default function Profile() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="address">Address</Label>
-                    <Input
-                      id="address"
-                      name="address"
+                  <div className="col-span-2">
+                    <AddressAutocomplete
+                      label="Address"
                       value={companyInfo.address}
-                      onChange={handleChange}
-                      placeholder="123 Main Street"
+                      onChange={(address, details) => {
+                        setCompanyInfo(prev => ({
+                          ...prev,
+                          address: address,
+                          city: details?.city || prev.city,
+                          state: details?.state || prev.state,
+                          zipCode: details?.zipCode || prev.zipCode
+                        }));
+                      }}
+                      placeholder="Enter your company address"
                     />
                   </div>
                   <div className="space-y-2">
@@ -499,6 +505,7 @@ export default function Profile() {
                       value={companyInfo.city}
                       onChange={handleChange}
                       placeholder="Portland"
+                      readOnly
                     />
                   </div>
                   <div className="space-y-2">
@@ -509,6 +516,7 @@ export default function Profile() {
                       value={companyInfo.state}
                       onChange={handleChange}
                       placeholder="Oregon"
+                      readOnly
                     />
                   </div>
                   <div className="space-y-2">
@@ -519,6 +527,7 @@ export default function Profile() {
                       value={companyInfo.zipCode}
                       onChange={handleChange}
                       placeholder="97204"
+                      readOnly
                     />
                   </div>
                 </div>
