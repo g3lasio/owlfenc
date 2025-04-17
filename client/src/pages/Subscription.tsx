@@ -27,6 +27,11 @@ export default function Subscription() {
   const { data: plans, isLoading: isLoadingPlans } = useQuery<SubscriptionPlan[]>({
     queryKey: ["/api/subscription/plans"],
     throwOnError: false,
+    staleTime: 1000 * 60 * 5, // Cache por 5 minutos
+    retry: 3,
+    onError: (error) => {
+      console.error("Error cargando planes:", error);
+    }
   });
 
   // Obtenemos la información de la suscripción actual del usuario

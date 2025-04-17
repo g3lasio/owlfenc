@@ -329,6 +329,7 @@ app.get('/api/address/suggestions', async (req: Request, res: Response) => {
   });
 
   app.post('/api/subscription/create-checkout', async (req: Request, res: Response) => {
+    console.log(`[${new Date().toISOString()}] Iniciando creación de checkout`);
     try {
       console.log('Solicitud de creación de checkout recibida:', req.body);
 

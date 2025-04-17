@@ -28,6 +28,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
+  console.log(`[${new Date().toISOString()}] Iniciando petición: ${req.method} ${path}`);
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
   const originalResJson = res.json;

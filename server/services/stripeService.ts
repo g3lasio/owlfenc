@@ -36,19 +36,21 @@ class StripeService {
   async createOrUpdateStripePlan(plan: SubscriptionPlan): Promise<string> {
     // Verificar si ya existe un producto con este código
     let stripeProductId = '';
-    
+
     try {
+      console.log(`[${new Date().toISOString()}] Iniciando creación/actualización de plan Stripe - Plan ID: ${plan.id}, Código: ${plan.code}`);
       // Buscar si existe un producto con el mismo código en los metadatos
       const products = await stripe.products.list({
         active: true,
         limit: 100
       });
-      
+
       const existingProduct = products.data.find(
         p => p.metadata.plan_code === plan.code
       );
-      
+
       if (existingProduct) {
+        console.log(`[${new Date().toISOString()}] Plan encontrado en Stripe - ID: ${existingProduct.id}`);
         // Actualizar el producto existente
         const updatedProduct = await stripe.products.update(existingProduct.id, {
           name: plan.name,
@@ -59,10 +61,12 @@ class StripeService {
           }
         });
         stripeProductId = updatedProduct.id;
-        
+        console.log(`[${new Date().toISOString()}] Plan actualizado en Stripe - ID: ${updatedProduct.id}`);
+
         // Actualizar precios existentes o crear nuevos si es necesario
         // Aquí podríamos manejar cambios de precio, pero por ahora lo mantenemos simple
       } else {
+        console.log(`[${new Date().toISOString()}] Plan NO encontrado en Stripe - Creando nuevo plan`);
         // Crear un nuevo producto
         const product = await stripe.products.create({
           name: plan.name,
@@ -73,7 +77,8 @@ class StripeService {
           }
         });
         stripeProductId = product.id;
-        
+        console.log(`[${new Date().toISOString()}] Plan creado en Stripe - ID: ${product.id}`);
+
         // Crear precios para el producto (mensual y anual)
         await stripe.prices.create({
           product: product.id,
@@ -85,7 +90,7 @@ class StripeService {
             billing_cycle: 'monthly'
           }
         });
-        
+        console.log(`[${new Date().toISOString()}] Precio mensual creado para plan - ID: ${product.id}`);
         await stripe.prices.create({
           product: product.id,
           unit_amount: plan.yearlyPrice,
@@ -96,62 +101,64 @@ class StripeService {
             billing_cycle: 'yearly'
           }
         });
+        console.log(`[${new Date().toISOString()}] Precio anual creado para plan - ID: ${product.id}`);
       }
-      
+
       return stripeProductId;
     } catch (error) {
-      console.error('Error al crear/actualizar el producto en Stripe:', error);
+      console.error(`[${new Date().toISOString()}] Error al crear/actualizar el producto en Stripe:`, error);
       throw error;
     }
   }
-  
+
   /**
    * Crea una sesión de checkout para suscripción
    */
   async createSubscriptionCheckout(options: SubscriptionCheckoutOptions): Promise<string> {
     try {
-      console.log(`Preparando checkout para plan ID ${options.planId} con ciclo ${options.billingCycle}`);
-      
+      const startTime = Date.now();
+      console.log(`[${new Date().toISOString()}] Iniciando checkout - Plan ID: ${options.planId}, Ciclo: ${options.billingCycle}`);
+
       // Primero verificar la conexión con Stripe
       const isConnected = await this.verifyStripeConnection();
       if (!isConnected) {
         throw new Error('No se pudo establecer conexión con Stripe. Verifique las credenciales API.');
       }
-      
+
       const plan = await storage.getSubscriptionPlan(options.planId);
       if (!plan) {
         throw new Error(`Plan con ID ${options.planId} no encontrado`);
       }
-      
-      console.log(`Plan encontrado: ${plan.name} (${plan.code})`);
-      
+
+      console.log(`[${new Date().toISOString()}] Plan encontrado: ${plan.name} (${plan.code})`);
+
       try {
         // Asegurarse de que el plan existe en Stripe
         await this.createOrUpdateStripePlan(plan);
-        
+
         // Obtener el precio correspondiente al plan y ciclo de facturación
         const prices = await stripe.prices.list({
           active: true,
           limit: 100
         });
-        
-        console.log(`Se encontraron ${prices.data.length} precios activos en Stripe`);
-        
-        const price = prices.data.find(p => 
-          p.metadata && p.metadata.plan_code === plan.code && 
+
+        console.log(`[${new Date().toISOString()}] Se encontraron ${prices.data.length} precios activos en Stripe`);
+
+        const price = prices.data.find(p =>
+          p.metadata && p.metadata.plan_code === plan.code &&
           p.metadata.billing_cycle === options.billingCycle
         );
-        
+
         if (!price) {
-          console.error(`No se encontró precio para plan ${plan.code} con ciclo ${options.billingCycle}`);
-          console.log('Precios disponibles:', 
+          console.error(`[${new Date().toISOString()}] No se encontró precio para plan ${plan.code} con ciclo ${options.billingCycle}`);
+          console.log('[${new Date().toISOString()}] Precios disponibles:',
             prices.data.map(p => `${p.id}: ${p.metadata?.plan_code || 'sin código'} - ${p.metadata?.billing_cycle || 'sin ciclo'}`).join(', ')
           );
           throw new Error(`Precio no encontrado para el plan ${plan.name} con ciclo ${options.billingCycle}`);
         }
-        
-        console.log(`Precio encontrado: ${price.id} para plan ${plan.name} (${options.billingCycle})`);
-        
+
+        console.log(`[${new Date().toISOString()}] Precio encontrado: ${price.id} para plan ${plan.name} (${options.billingCycle})`);
+
         // Crear sesión de checkout
         const session = await stripe.checkout.sessions.create({
           payment_method_types: ['card'],
@@ -172,82 +179,85 @@ class StripeService {
             billingCycle: options.billingCycle
           }
         });
-        
+
         if (!session || !session.url) {
           throw new Error('No se pudo crear la sesión de checkout');
         }
-        
-        console.log('Sesión de checkout creada correctamente con ID:', session.id);
+
+        console.log(`[${new Date().toISOString()}] Sesión de checkout creada correctamente con ID:`, session.id);
+        const endTime = Date.now();
+        console.log(`[${new Date().toISOString()}] Checkout completado en ${endTime - startTime}ms`);
         return session.url;
       } catch (stripeError: any) {
-        console.error('Error específico de Stripe durante la creación de checkout:', stripeError);
+        console.error(`[${new Date().toISOString()}] Error específico de Stripe durante la creación de checkout:`, stripeError);
         if (stripeError.type === 'StripeAuthenticationError') {
           throw new Error('Error de autenticación con Stripe: La clave API no es válida.');
         }
         throw stripeError;
       }
     } catch (error) {
-      console.error('Error general al crear sesión de checkout:', error);
+      console.error(`[${new Date().toISOString()}] Error general al crear sesión de checkout:`, error);
       throw error;
     }
   }
-  
+
   /**
    * Crea un portal de cliente para gestionar la suscripción
    */
   async createCustomerPortalSession(options: ManageSubscriptionOptions): Promise<string> {
     try {
-      console.log(`Preparando portal de cliente para suscripción ID ${options.subscriptionId}`);
-      
+      console.log(`[${new Date().toISOString()}] Preparando portal de cliente para suscripción ID ${options.subscriptionId}`);
+
       // Primero verificar la conexión con Stripe
       const isConnected = await this.verifyStripeConnection();
       if (!isConnected) {
         throw new Error('No se pudo establecer conexión con Stripe. Verifique las credenciales API.');
       }
-      
+
       const subscription = await storage.getUserSubscription(options.subscriptionId);
       if (!subscription || subscription.userId !== options.userId) {
         throw new Error('Suscripción no encontrada o no pertenece al usuario');
       }
-      
-      console.log(`Suscripción encontrada: ID ${subscription.id}, Plan ID ${subscription.planId}`);
-      
+
+      console.log(`[${new Date().toISOString()}] Suscripción encontrada: ID ${subscription.id}, Plan ID ${subscription.planId}`);
+
       if (!subscription.stripeCustomerId) {
         throw new Error('No hay un cliente de Stripe asociado a esta suscripción');
       }
-      
-      console.log(`Cliente de Stripe ID: ${subscription.stripeCustomerId}`);
-      
+
+      console.log(`[${new Date().toISOString()}] Cliente de Stripe ID: ${subscription.stripeCustomerId}`);
+
       try {
         const session = await stripe.billingPortal.sessions.create({
           customer: subscription.stripeCustomerId,
           return_url: options.successUrl
         });
-        
+
         if (!session || !session.url) {
           throw new Error('No se pudo crear la sesión del portal de cliente');
         }
-        
-        console.log('Portal de cliente creado correctamente con URL:', session.url.substring(0, 60) + '...');
+
+        console.log(`[${new Date().toISOString()}] Portal de cliente creado correctamente con URL:`, session.url.substring(0, 60) + '...');
         return session.url;
       } catch (stripeError: any) {
-        console.error('Error específico de Stripe durante la creación del portal:', stripeError);
+        console.error(`[${new Date().toISOString()}] Error específico de Stripe durante la creación del portal:`, stripeError);
         if (stripeError.type === 'StripeAuthenticationError') {
           throw new Error('Error de autenticación con Stripe: La clave API no es válida.');
         }
         throw stripeError;
       }
     } catch (error) {
-      console.error('Error general al crear portal de cliente:', error);
+      console.error(`[${new Date().toISOString()}] Error general al crear portal de cliente:`, error);
       throw error;
     }
   }
-  
+
   /**
    * Maneja un evento de webhook de Stripe
    */
   async handleWebhookEvent(event: any): Promise<void> {
     try {
+      console.log(`[${new Date().toISOString()}] Evento de webhook recibido: ${event.type}`);
       switch (event.type) {
         case 'checkout.session.completed':
           await this.handleCheckoutCompleted(event.data.object);
@@ -268,34 +278,36 @@ class StripeService {
           await this.handlePaymentFailed(event.data.object);
           break;
         default:
-          console.log(`Evento de Stripe no manejado: ${event.type}`);
+          console.log(`[${new Date().toISOString()}] Evento de Stripe no manejado: ${event.type}`);
       }
     } catch (error) {
-      console.error('Error al manejar evento de webhook:', error);
+      console.error(`[${new Date().toISOString()}] Error al manejar evento de webhook:`, error);
       throw error;
     }
   }
-  
+
   /**
    * Maneja un evento de checkout completado
    */
   private async handleCheckoutCompleted(session: any): Promise<void> {
     try {
+      console.log(`[${new Date().toISOString()}] Manejando evento checkout.session.completed - Sesión ID: ${session.id}`);
       const userId = parseInt(session.metadata.userId);
       const planId = parseInt(session.metadata.planId);
       const billingCycle = session.metadata.billingCycle;
-      
+
       // Obtener detalles de la suscripción de Stripe
       const subscription = await stripe.subscriptions.retrieve(session.subscription);
-      
+
       // Convertir los timestamp de Unix a objetos Date
       const currentPeriodStart = new Date(subscription.current_period_start * 1000);
       const currentPeriodEnd = new Date(subscription.current_period_end * 1000);
-      
+
       // Crear o actualizar la suscripción en nuestra base de datos
       const existingSubscription = await storage.getUserSubscriptionByUserId(userId);
-      
+
       if (existingSubscription) {
+        console.log(`[${new Date().toISOString()}] Actualizando suscripción existente - ID: ${existingSubscription.id}`);
         // Actualizar la suscripción existente
         await storage.updateUserSubscription(existingSubscription.id, {
           planId,
@@ -309,6 +321,7 @@ class StripeService {
           updatedAt: new Date()
         });
       } else {
+        console.log(`[${new Date().toISOString()}] Creando nueva suscripción para usuario - ID: ${userId}`);
         // Crear una nueva suscripción
         await storage.createUserSubscription({
           userId,
@@ -322,35 +335,38 @@ class StripeService {
           billingCycle
         });
       }
+      console.log(`[${new Date().toISOString()}] Evento checkout.session.completed manejado correctamente`);
     } catch (error) {
-      console.error('Error al manejar checkout completado:', error);
+      console.error(`[${new Date().toISOString()}] Error al manejar checkout completado:`, error);
       throw error;
     }
   }
-  
+
   /**
    * Maneja un evento de suscripción creada
    */
   private async handleSubscriptionCreated(subscription: any): Promise<void> {
+    console.log(`[${new Date().toISOString()}] Evento customer.subscription.created recibido - ID: ${subscription.id}`);
     // Este evento ya es manejado por checkout.session.completed
     // Pero podríamos agregar lógica adicional aquí si es necesario
   }
-  
+
   /**
    * Maneja un evento de suscripción actualizada
    */
   private async handleSubscriptionUpdated(stripeSubscription: any): Promise<void> {
     try {
+      console.log(`[${new Date().toISOString()}] Evento customer.subscription.updated recibido - ID: ${stripeSubscription.id}`);
       // Encontrar la suscripción en nuestra base de datos
       const subscriptions = await this.findSubscriptionsByStripeId(stripeSubscription.id);
-      
+
       if (subscriptions && subscriptions.length > 0) {
         const subscription = subscriptions[0];
-        
+
         // Convertir los timestamp de Unix a objetos Date
         const currentPeriodStart = new Date(stripeSubscription.current_period_start * 1000);
         const currentPeriodEnd = new Date(stripeSubscription.current_period_end * 1000);
-        
+
         // Actualizar la suscripción con la información más reciente
         await storage.updateUserSubscription(subscription.id, {
           status: stripeSubscription.status,
@@ -359,51 +375,55 @@ class StripeService {
           cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
           updatedAt: new Date()
         });
+        console.log(`[${new Date().toISOString()}] Suscripción actualizada - ID: ${subscription.id}`);
       }
     } catch (error) {
-      console.error('Error al manejar actualización de suscripción:', error);
+      console.error(`[${new Date().toISOString()}] Error al manejar actualización de suscripción:`, error);
       throw error;
     }
   }
-  
+
   /**
    * Maneja un evento de suscripción eliminada
    */
   private async handleSubscriptionDeleted(stripeSubscription: any): Promise<void> {
     try {
+      console.log(`[${new Date().toISOString()}] Evento customer.subscription.deleted recibido - ID: ${stripeSubscription.id}`);
       // Encontrar la suscripción en nuestra base de datos
       const subscriptions = await this.findSubscriptionsByStripeId(stripeSubscription.id);
-      
+
       if (subscriptions && subscriptions.length > 0) {
         const subscription = subscriptions[0];
-        
+
         // Marcar la suscripción como cancelada
         await storage.updateUserSubscription(subscription.id, {
           status: 'canceled',
           updatedAt: new Date()
         });
+        console.log(`[${new Date().toISOString()}] Suscripción marcada como cancelada - ID: ${subscription.id}`);
       }
     } catch (error) {
-      console.error('Error al manejar eliminación de suscripción:', error);
+      console.error(`[${new Date().toISOString()}] Error al manejar eliminación de suscripción:`, error);
       throw error;
     }
   }
-  
+
   /**
    * Maneja un evento de pago exitoso
    */
   private async handlePaymentSucceeded(invoice: any): Promise<void> {
     try {
+      console.log(`[${new Date().toISOString()}] Evento invoice.payment_succeeded recibido - ID: ${invoice.id}`);
       if (!invoice.subscription) {
         return; // No es un pago de suscripción
       }
-      
+
       // Encontrar la suscripción en nuestra base de datos
       const subscriptions = await this.findSubscriptionsByStripeId(invoice.subscription);
-      
+
       if (subscriptions && subscriptions.length > 0) {
         const subscription = subscriptions[0];
-        
+
         // Registrar el pago exitoso
         await storage.createPaymentHistory({
           userId: subscription.userId,
@@ -415,36 +435,39 @@ class StripeService {
           paymentMethod: invoice.payment_method_details?.type || 'unknown',
           receiptUrl: invoice.hosted_invoice_url
         });
-        
+        console.log(`[${new Date().toISOString()}] Pago exitoso registrado - ID: ${invoice.id}`);
+
         // Actualizar la suscripción si es necesario
         if (subscription.status !== 'active') {
           await storage.updateUserSubscription(subscription.id, {
             status: 'active',
             updatedAt: new Date()
           });
+          console.log(`[${new Date().toISOString()}] Estado de suscripción actualizado a 'active' - ID: ${subscription.id}`);
         }
       }
     } catch (error) {
-      console.error('Error al manejar pago exitoso:', error);
+      console.error(`[${new Date().toISOString()}] Error al manejar pago exitoso:`, error);
       throw error;
     }
   }
-  
+
   /**
    * Maneja un evento de pago fallido
    */
   private async handlePaymentFailed(invoice: any): Promise<void> {
     try {
+      console.log(`[${new Date().toISOString()}] Evento invoice.payment_failed recibido - ID: ${invoice.id}`);
       if (!invoice.subscription) {
         return; // No es un pago de suscripción
       }
-      
+
       // Encontrar la suscripción en nuestra base de datos
       const subscriptions = await this.findSubscriptionsByStripeId(invoice.subscription);
-      
+
       if (subscriptions && subscriptions.length > 0) {
         const subscription = subscriptions[0];
-        
+
         // Registrar el pago fallido
         await storage.createPaymentHistory({
           userId: subscription.userId,
@@ -456,83 +479,91 @@ class StripeService {
           paymentMethod: invoice.payment_method_details?.type || 'unknown',
           receiptUrl: invoice.hosted_invoice_url
         });
-        
+        console.log(`[${new Date().toISOString()}] Pago fallido registrado - ID: ${invoice.id}`);
+
         // Actualizar el estado de la suscripción
         await storage.updateUserSubscription(subscription.id, {
           status: 'past_due',
           updatedAt: new Date()
         });
+        console.log(`[${new Date().toISOString()}] Estado de suscripción actualizado a 'past_due' - ID: ${subscription.id}`);
       }
     } catch (error) {
-      console.error('Error al manejar pago fallido:', error);
+      console.error(`[${new Date().toISOString()}] Error al manejar pago fallido:`, error);
       throw error;
     }
   }
-  
+
   /**
    * Busca suscripciones por ID de suscripción de Stripe
    */
   private async findSubscriptionsByStripeId(stripeSubscriptionId: string): Promise<UserSubscription[]> {
     try {
+      console.log(`[${new Date().toISOString()}] Buscando suscripciones por ID de Stripe - ID: ${stripeSubscriptionId}`);
       // Aquí normalmente haríamos una consulta a la base de datos
       // Pero como estamos usando un almacenamiento en memoria, tenemos que cargar todas las suscripciones
       // y filtrar manualmente
       const allSubscriptions = await Promise.all(
         Array.from(Array(1000).keys()).map(id => storage.getUserSubscription(id))
       );
-      
-      return allSubscriptions
+
+      const subscriptions = allSubscriptions
         .filter(Boolean)
         .filter(sub => sub?.stripeSubscriptionId === stripeSubscriptionId) as UserSubscription[];
+      console.log(`[${new Date().toISOString()}] Se encontraron ${subscriptions.length} suscripciones`);
+      return subscriptions;
     } catch (error) {
-      console.error('Error al buscar suscripciones por ID de Stripe:', error);
+      console.error(`[${new Date().toISOString()}] Error al buscar suscripciones por ID de Stripe:`, error);
       throw error;
     }
   }
-  
+
   /**
    * Verifica la conexión con Stripe y que las credenciales sean válidas
    */
   async verifyStripeConnection(): Promise<boolean> {
     try {
+      console.log(`[${new Date().toISOString()}] Verificando conexión con Stripe`);
       // Usar timeout para evitar bloqueos largos
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error('Timeout')), 5000);
       });
-      
+
       const verifyPromise = stripe.products.list({ limit: 1 });
       await Promise.race([verifyPromise, timeoutPromise]);
+      console.log(`[${new Date().toISOString()}] Conexión con Stripe exitosa`);
       return true;
     } catch (error: any) {
       if (error.message === 'Timeout') {
-        console.error('Timeout al verificar conexión con Stripe');
+        console.error(`[${new Date().toISOString()}] Timeout al verificar conexión con Stripe`);
       } else {
-        console.error('Error al verificar la conexión con Stripe:', error.message);
+        console.error(`[${new Date().toISOString()}] Error al verificar la conexión con Stripe:`, error.message);
       }
       return false;
     }
   }
-  
+
   /**
    * Sincroniza todos los planes de suscripción con Stripe
    */
   async syncPlansWithStripe(): Promise<void> {
     try {
+      console.log(`[${new Date().toISOString()}] Iniciando sincronización de planes con Stripe`);
       // Verificar primero que la conexión a Stripe funciona
       const isConnected = await this.verifyStripeConnection();
       if (!isConnected) {
         throw new Error('No se pudo establecer conexión con Stripe. Verifique las credenciales.');
       }
-      
+
       const plans = await storage.getAllSubscriptionPlans();
-      
+
       for (const plan of plans) {
         await this.createOrUpdateStripePlan(plan);
       }
-      
-      console.log(`Sincronizados ${plans.length} planes con Stripe`);
+
+      console.log(`[${new Date().toISOString()}] Sincronizados ${plans.length} planes con Stripe`);
     } catch (error) {
-      console.error('Error al sincronizar planes con Stripe:', error);
+      console.error(`[${new Date().toISOString()}] Error al sincronizar planes con Stripe:`, error);
       throw error;
     }
   }
