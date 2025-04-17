@@ -27,6 +27,7 @@ export default function ChatInterface() {
   const [context, setContext] = useState<Record<string, any>>({});
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [isChatActive, setIsChatActive] = useState(false); // Added state variable
 
   const ProgressBar = () => (
     <div className="fixed top-16 left-0 right-0 z-50 px-4 py-2 bg-background/80 backdrop-blur-sm border-b">
@@ -60,30 +61,34 @@ export default function ChatInterface() {
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  // Initial bot message
-  useEffect(() => {
-    const initializeChat = async () => {
-      try {
-        const response = await processChatMessage("START_CHAT", {
-          isInitialMessage: true,
-        });
-        if (response.message) {
-          setMessages([
-            {
-              id: "welcome",
-              content: response.message,
-              sender: "assistant",
-              options: response.options,
-            },
-          ]);
-        }
-      } catch (error) {
-        console.error("Error initializing chat:", error);
+  const activateChat = async () => {
+    setIsProcessing(true);
+    try {
+      const response = await processChatMessage("START_CHAT", {
+        isInitialMessage: true,
+      });
+      if (response.message) {
+        setMessages([
+          {
+            id: "welcome",
+            content: response.message,
+            sender: "assistant",
+            options: response.options,
+          },
+        ]);
+        setIsChatActive(true);
       }
-    };
-
-    initializeChat();
-  }, []);
+    } catch (error) {
+      console.error("Error activating chat:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to activate chat. Please try again.",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -240,70 +245,101 @@ export default function ChatInterface() {
           ref={chatContainerRef}
           className="flex-1 overflow-y-auto p-4 scrollbar-hide messages-container"
         >
-          {messages.map((message) => {
-          if (message.isTyping) {
-            return <TypingIndicator key={message.id} />;
-          }
-
-          if (message.template) {
-            return (
-              <div key={message.id} className="chat-message bot-message">
-                <p>{message.content}</p>
-                <div className="mt-4">
-                  {message.template.type === "estimate" ? (
-                    <EstimatePreview html={message.template.html} />
+          {!isChatActive ? (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center">
+                <h2 className="text-2xl font-bold mb-4">¿Necesitas ayuda con un estimado?</h2>
+                <p className="text-muted-foreground mb-6">Mervin está listo para asistirte cuando lo necesites</p>
+                <Button
+                  size="lg"
+                  onClick={activateChat}
+                  disabled={isProcessing}
+                  className="gap-2"
+                >
+                  {isProcessing ? (
+                    <>
+                      <i className="ri-loader-4-line animate-spin"></i>
+                      Activando Mervin...
+                    </>
                   ) : (
-                    <ContractPreview html={message.template.html} />
+                    <>
+                      <i className="ri-robot-line"></i>
+                      Chatear con Mervin
+                    </>
                   )}
-                </div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() =>
-                      handleDownloadPDF(
-                        message.template!.html,
-                        message.template!.type,
-                      )
-                    }
-                  >
-                    <i className="ri-download-line mr-1"></i> Download PDF
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEditDetails(message.template!.type)}
-                  >
-                    <i className="ri-edit-line mr-1"></i> Edit Details
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEmailClient(message.template!.type)}
-                  >
-                    <i className="ri-mail-send-line mr-1"></i> Email to Client
-                  </Button>
-                </div>
+                </Button>
               </div>
-            );
-          }
+            </div>
+          ) : (
+            <>
+              {messages.map((message) => {
+                if (message.isTyping) {
+                  return <TypingIndicator key={message.id} />;
+                }
 
-          return (
-            <ChatMessage
-              key={message.id}
-              message={message}
-              onOptionClick={handleOptionClick}
-            />
-          );
-        })}
+                if (message.template) {
+                  return (
+                    <div key={message.id} className="chat-message bot-message">
+                      <p>{message.content}</p>
+                      <div className="mt-4">
+                        {message.template.type === "estimate" ? (
+                          <EstimatePreview html={message.template.html} />
+                        ) : (
+                          <ContractPreview html={message.template.html} />
+                        )}
+                      </div>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() =>
+                            handleDownloadPDF(
+                              message.template!.html,
+                              message.template!.type,
+                            )
+                          }
+                        >
+                          <i className="ri-download-line mr-1"></i> Download PDF
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditDetails(message.template!.type)}
+                        >
+                          <i className="ri-edit-line mr-1"></i> Edit Details
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEmailClient(message.template!.type)}
+                        >
+                          <i className="ri-mail-send-line mr-1"></i> Email to Client
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <ChatMessage
+                    key={message.id}
+                    message={message}
+                    onOptionClick={handleOptionClick}
+                  />
+                );
+              })}
+            </>
+          )}
+        </div>
+
+        {/* Chat Input */}
+        {isChatActive && ( // Only render ChatInput if chat is active
+          <ChatInput onSendMessage={handleSendMessage} isDisabled={isProcessing} />
+        )}
+        {/* Footer with legal links */}
+        <ChatFooter />
+        {isProcessing && <ProgressBar />}
       </div>
-
-      {/* Chat Input */}
-      <ChatInput onSendMessage={handleSendMessage} isDisabled={isProcessing} />
-      {/* Footer with legal links */}
-      <ChatFooter />
-      {isProcessing && <ProgressBar />}
-    </div>
     </div>
   );
 }
