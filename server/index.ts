@@ -12,6 +12,11 @@ if (!process.env.FIREBASE_API_KEY || !process.env.FIREBASE_PROJECT_ID) {
 
 const app = express();
 app.use(express.json());
+
+// Sincronizar planes con Stripe al iniciar
+stripeService.syncPlansWithStripe().catch(error => {
+  console.error('Error al sincronizar planes con Stripe:', error);
+});
 app.use(express.urlencoded({ extended: false }));
 
 app.use((req, res, next) => {

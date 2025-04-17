@@ -16,6 +16,7 @@ import { propertyService } from './services/propertyService';
 import { documentService } from './services/documentService';
 import { memoryService } from './services/memoryService';
 import { stripeService } from './services/stripeService';
+import express from 'express'; // Import express to use express.raw
 
 // Initialize OpenAI API
 const GPT_MODEL = "gpt-4";
@@ -100,7 +101,7 @@ app.get('/api/address/suggestions', async (req: Request, res: Response) => {
     const response = await axios.get(
       `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&types=address&key=${process.env.GOOGLE_MAPS_API_KEY}`
     );
-    
+
     const suggestions = response.data.predictions.map((prediction: any) => prediction.description);
     res.json(suggestions);
   } catch (error) {
@@ -169,13 +170,13 @@ app.get('/api/address/suggestions', async (req: Request, res: Response) => {
       };
 
       const response = await chatService.handleMessage(message, userContext);
-      
+
       // Si tenemos un template en la respuesta, guardarlo como proyecto
       if (response.template && response.context) {
         try {
           // Generar un ID único para el proyecto
           const projectId = `proj_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-          
+
           // Preparar datos del proyecto
           const projectData = {
             userId: userId,
@@ -191,7 +192,7 @@ app.get('/api/address/suggestions', async (req: Request, res: Response) => {
             createdAt: new Date(),
             updatedAt: new Date()
           };
-          
+
           // Intentar guardar el proyecto
           try {
             const project = await storage.createProject(projectData);
@@ -203,7 +204,7 @@ app.get('/api/address/suggestions', async (req: Request, res: Response) => {
           console.error('Error preparando datos del proyecto:', projectError);
         }
       }
-      
+
       res.json(response);
     } catch (error) {
       console.error('Error processing chat message:', error);
@@ -308,14 +309,14 @@ app.get('/api/address/suggestions', async (req: Request, res: Response) => {
       // En una app real, obtendríamos el userId de la sesión
       const userId = 1; // Default user ID
       const subscription = await storage.getUserSubscriptionByUserId(userId);
-      
+
       if (!subscription) {
         return res.json({ active: false });
       }
-      
+
       // Si hay una suscripción, obtener el plan asociado
       const plan = await storage.getSubscriptionPlan(subscription.planId || 0);
-      
+
       res.json({
         active: subscription.status === 'active',
         subscription,
@@ -338,9 +339,9 @@ app.get('/api/address/suggestions', async (req: Request, res: Response) => {
         successUrl: z.string(),
         cancelUrl: z.string()
       });
-      
+
       const validationResult = schema.safeParse(req.body);
-      
+
       if (!validationResult.success) {
         console.error('Error de validación:', validationResult.error);
         return res.status(400).json({ 
@@ -348,27 +349,27 @@ app.get('/api/address/suggestions', async (req: Request, res: Response) => {
           errors: validationResult.error.format() 
         });
       }
-      
+
       const { planId, billingCycle, successUrl, cancelUrl } = validationResult.data;
-      
+
       // Verificar que el plan existe
       const plan = await storage.getSubscriptionPlan(planId);
       if (!plan) {
         console.error(`Plan con ID ${planId} no encontrado`);
         return res.status(404).json({ message: 'Plan de suscripción no encontrado' });
       }
-      
+
       // En una app real, obtendríamos el userId y la información del usuario de la sesión
       const userId = 1;
       const user = await storage.getUser(userId);
-      
+
       if (!user) {
         console.error(`Usuario con ID ${userId} no encontrado`);
         return res.status(404).json({ message: 'Usuario no encontrado' });
       }
-      
+
       console.log(`Creando sesión de checkout para plan: ${plan.name}, ciclo: ${billingCycle}`);
-      
+
       try {
         const checkoutUrl = await stripeService.createSubscriptionCheckout({
           planId,
@@ -379,11 +380,11 @@ app.get('/api/address/suggestions', async (req: Request, res: Response) => {
           successUrl,
           cancelUrl
         });
-        
+
         if (!checkoutUrl) {
           throw new Error('No se recibió URL de checkout válida');
         }
-        
+
         console.log('Sesión de checkout creada exitosamente, URL:', checkoutUrl.substring(0, 60) + '...');
         res.json({ url: checkoutUrl });
       } catch (stripeError: any) {
@@ -405,14 +406,14 @@ app.get('/api/address/suggestions', async (req: Request, res: Response) => {
   app.post('/api/subscription/create-portal', async (req: Request, res: Response) => {
     try {
       console.log('Solicitud de creación de portal de cliente recibida:', req.body);
-      
+
       // Validar los parámetros de la solicitud
       const schema = z.object({
         successUrl: z.string()
       });
-      
+
       const validationResult = schema.safeParse(req.body);
-      
+
       if (!validationResult.success) {
         console.error('Error de validación:', validationResult.error);
         return res.status(400).json({ 
@@ -420,22 +421,22 @@ app.get('/api/address/suggestions', async (req: Request, res: Response) => {
           errors: validationResult.error.format() 
         });
       }
-      
+
       const { successUrl } = validationResult.data;
-      
+
       // En una app real, obtendríamos el userId de la sesión
       const userId = 1;
-      
+
       // Verificar que el usuario tiene una suscripción activa
       const subscription = await storage.getUserSubscriptionByUserId(userId);
-      
+
       if (!subscription) {
         console.error(`No se encontró una suscripción activa para el usuario ${userId}`);
         return res.status(404).json({ message: 'No se encontró una suscripción activa' });
       }
-      
+
       console.log(`Creando portal de cliente para suscripción ID: ${subscription.id}`);
-      
+
       try {
         const portalUrl = await stripeService.createCustomerPortalSession({
           subscriptionId: subscription.id,
@@ -443,11 +444,11 @@ app.get('/api/address/suggestions', async (req: Request, res: Response) => {
           successUrl,
           cancelUrl: successUrl
         });
-        
+
         if (!portalUrl) {
           throw new Error('No se recibió URL del portal válida');
         }
-        
+
         console.log('Portal de cliente creado exitosamente, URL:', portalUrl.substring(0, 60) + '...');
         res.json({ url: portalUrl });
       } catch (stripeError: any) {
@@ -466,24 +467,13 @@ app.get('/api/address/suggestions', async (req: Request, res: Response) => {
     }
   });
 
-  app.post('/api/webhook/stripe', async (req: Request, res: Response) => {
-    const sig = req.headers['stripe-signature'] as string;
-    
+  app.post('/api/webhook/stripe', express.raw({type: 'application/json'}), async (req: Request, res: Response) => {
     try {
-      // Esta es la línea donde necesitamos verificar la firma del webhook
-      // En producción, deberíamos tener un webhook secret como una variable de entorno
-      // const event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
-      
-      // Para este ejemplo, procesaremos todos los eventos sin verificar
-      const event = req.body;
-      
-      // Manejar el evento usando nuestro servicio
-      await stripeService.handleWebhookEvent(event);
-      
+      await stripeService.handleWebhookEvent(req.body);
       res.json({ received: true });
     } catch (error) {
       console.error('Error al procesar webhook de Stripe:', error);
-      res.status(400).json({ message: 'Error al procesar webhook' });
+      res.status(400).send(`Webhook Error: ${error.message}`);
     }
   });
 
@@ -492,7 +482,7 @@ app.get('/api/address/suggestions', async (req: Request, res: Response) => {
       // En una app real, obtendríamos el userId de la sesión
       const userId = 1;
       const paymentHistory = await storage.getPaymentHistoryByUserId(userId);
-      
+
       res.json(paymentHistory);
     } catch (error) {
       console.error('Error al obtener historial de pagos:', error);
@@ -557,10 +547,10 @@ async function generateEstimateHtml({
 
   // Calculate fence price
   const fencePrice = calculateFencePrice(fenceType, fenceLength, fenceHeight, pricingSettings);
-  
+
   // Calculate gates price
   const gatesPrice = gates.reduce((total, gate) => total + gate.price, 0);
-  
+
   // Calculate subtotal and total
   const subtotal = fencePrice + gatesPrice;
   const taxRate = pricingSettings.taxRate || 0.08;
