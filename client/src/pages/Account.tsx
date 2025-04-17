@@ -56,6 +56,38 @@ export default function Account() {
               />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="firstName">Nombre(s)</Label>
+              <Input
+                id="firstName"
+                name="firstName"
+                placeholder="Ej: Juan Antonio"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="paternalLastName">Apellido Paterno</Label>
+              <Input
+                id="paternalLastName"
+                name="paternalLastName"
+                placeholder="Ej: González"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="maternalLastName">Apellido Materno</Label>
+              <Input
+                id="maternalLastName"
+                name="maternalLastName"
+                placeholder="Ej: Rodríguez"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="nickname">Apodo</Label>
+              <Input
+                id="nickname"
+                name="nickname"
+                placeholder="Ej: El Güero, El Flaco, etc."
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="userEmail">Email Personal</Label>
               <Input
                 id="userEmail"
