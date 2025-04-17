@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Home, Check, User, Calendar, MapPin } from "lucide-react";
+import { Home, Check, User, Calendar, MapPin, AlertTriangle } from "lucide-react";
 import axios from "axios";
 import GooglePlacesAutocomplete, { geocodeByAddress, getLatLng } from 'react-google-places-autocomplete';
 
@@ -28,9 +28,35 @@ export default function PropertyOwnershipVerifier() {
   const [error, setError] = useState<string | null>(null);
   const [propertyDetails, setPropertyDetails] = useState<PropertyDetails | null>(null);
   const [placeValue, setPlaceValue] = useState<any>(null);
-  // No longer used with Google Places Autocomplete
+  const [apiError, setApiError] = useState<boolean>(false);
+  const [useManualInput, setUseManualInput] = useState<boolean>(false);
+  
+  // Estados que ya no se usan con Google Places Autocomplete
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  
+  // Detectar errores de la API de Google Maps
+  useEffect(() => {
+    const handleGoogleMapsError = (event: ErrorEvent) => {
+      // Verificar si el error es de la API de Google Maps
+      if (event.message && 
+          (event.message.includes("Google Maps JavaScript API") || 
+           event.message.includes("Google Maps Places API") ||
+           event.message.includes("ApiNotActivatedMapError"))) {
+        console.error("Google Maps API error detected:", event.message);
+        setApiError(true);
+        setUseManualInput(true);
+      }
+    };
+    
+    // Añadir el event listener para capturar errores
+    window.addEventListener('error', handleGoogleMapsError);
+    
+    // Limpiar el event listener
+    return () => {
+      window.removeEventListener('error', handleGoogleMapsError);
+    };
+  }, []);
 
   // Handler for the old input change method (no longer used)
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -179,58 +205,99 @@ export default function PropertyOwnershipVerifier() {
               <div className="grid grid-cols-12 gap-4">
                 <div className="col-span-12 sm:col-span-9">
                   <Label htmlFor="address">Dirección de la Propiedad</Label>
-                  <div className="relative">
-                    <GooglePlacesAutocomplete
-                      apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
-                      apiOptions={{ language: 'es', region: 'mx' }}
-                      autocompletionRequest={{
-                        componentRestrictions: { country: ['mx', 'us', 'es'] }
-                      }}
-                      selectProps={{
-                        value: placeValue,
-                        onChange: (value) => {
-                          setPlaceValue(value);
-                          handlePlaceSelect(value);
-                        },
-                        placeholder: "Ingresa la dirección completa de la propiedad",
-                        noOptionsMessage: () => "No se encontraron resultados",
-                        loadingMessage: () => "Buscando direcciones...",
-                        styles: {
-                          control: (provided) => ({
-                            ...provided,
-                            height: '42px',
-                            borderRadius: '7px',
-                            boxShadow: 'none',
-                            borderColor: '#e2e8f0',
-                            paddingLeft: '30px', // Add padding for the icon
-                            '&:hover': {
-                              borderColor: '#cbd5e1',
-                            }
-                          }),
-                          option: (provided, state) => ({
-                            ...provided,
-                            backgroundColor: state.isFocused ? '#f1f5f9' : 'white',
-                            color: '#334155',
-                            cursor: 'pointer',
-                            fontSize: '14px',
-                            padding: '8px 12px',
-                          }),
-                          menu: (provided) => ({
-                            ...provided,
-                            borderRadius: '7px',
-                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                            zIndex: 100,
-                          }),
-                          input: (provided) => ({
-                            ...provided,
-                            fontSize: '14px',
-                          }),
-                        },
-                      }}
-                    />
-                    <div className="absolute top-3 left-3 text-gray-400 pointer-events-none">
-                      <MapPin size={16} className="opacity-60" />
+                  
+                  {apiError || useManualInput ? (
+                    // Entrada manual cuando hay error de Google Maps API
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <Input
+                          id="address"
+                          value={address}
+                          onChange={handleAddressChange}
+                          placeholder="Ingresa la dirección completa de la propiedad"
+                          className="pl-9"
+                        />
+                        <div className="absolute top-3 left-3 text-gray-400 pointer-events-none">
+                          <MapPin size={16} className="opacity-60" />
+                        </div>
+                      </div>
+                      
+                      <Alert className="py-2">
+                        <AlertTriangle className="h-4 w-4 mr-2" />
+                        <div className="text-xs">
+                          El autocompletado de direcciones no está disponible en este momento. 
+                          Por favor, ingresa la dirección completa manualmente.
+                        </div>
+                      </Alert>
                     </div>
+                  ) : (
+                    // Autocompletado con Google Maps cuando funciona
+                    <div className="relative">
+                      <GooglePlacesAutocomplete
+                        apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
+                        apiOptions={{ language: 'es', region: 'mx' }}
+                        autocompletionRequest={{
+                          componentRestrictions: { country: ['mx', 'us', 'es'] }
+                        }}
+                        selectProps={{
+                          value: placeValue,
+                          onChange: (value) => {
+                            setPlaceValue(value);
+                            handlePlaceSelect(value);
+                          },
+                          placeholder: "Ingresa la dirección completa de la propiedad",
+                          noOptionsMessage: () => "No se encontraron resultados",
+                          loadingMessage: () => "Buscando direcciones...",
+                          styles: {
+                            control: (provided) => ({
+                              ...provided,
+                              height: '42px',
+                              borderRadius: '7px',
+                              boxShadow: 'none',
+                              borderColor: '#e2e8f0',
+                              paddingLeft: '30px', // Add padding for the icon
+                              '&:hover': {
+                                borderColor: '#cbd5e1',
+                              }
+                            }),
+                            option: (provided, state) => ({
+                              ...provided,
+                              backgroundColor: state.isFocused ? '#f1f5f9' : 'white',
+                              color: '#334155',
+                              cursor: 'pointer',
+                              fontSize: '14px',
+                              padding: '8px 12px',
+                            }),
+                            menu: (provided) => ({
+                              ...provided,
+                              borderRadius: '7px',
+                              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                              zIndex: 100,
+                            }),
+                            input: (provided) => ({
+                              ...provided,
+                              fontSize: '14px',
+                            }),
+                          },
+                        }}
+                      />
+                      <div className="absolute top-3 left-3 text-gray-400 pointer-events-none">
+                        <MapPin size={16} className="opacity-60" />
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Link para cambiar entre modos manual y autocompletado */}
+                  <div className="mt-1">
+                    <button 
+                      type="button"
+                      onClick={() => setUseManualInput(!useManualInput)}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      {useManualInput 
+                        ? "Intentar usar autocompletado" 
+                        : "Cambiar a entrada manual"}
+                    </button>
                   </div>
                 </div>
                 <div className="col-span-12 sm:col-span-3 flex items-end">
