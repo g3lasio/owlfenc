@@ -71,9 +71,9 @@ export const userNavigationConfig: NavigationSection[] = [
         icon: "ri-vip-diamond-line",
       },
       {
-        label: "Notificaciones",
-        path: "/settings/notifications",
-        icon: "ri-notification-4-line",
+        label: "Upgrade Plan",
+        path: "/subscription",
+        icon: "ri-vip-crown-line",
       },
     ],
   },
