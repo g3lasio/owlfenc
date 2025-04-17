@@ -92,6 +92,12 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  .flex-col-reverse {
+    display: flex;
+    flex-direction: column-reverse;
+    height: 100%;
+  }
   
   .template-preview {
     @apply font-dubai p-8 bg-white text-slate-800 max-h-[400px] overflow-y-auto rounded-lg;
