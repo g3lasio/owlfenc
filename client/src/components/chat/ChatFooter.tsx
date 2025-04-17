@@ -7,7 +7,7 @@ export default function ChatFooter() {
       <div className="footer-gradient">
         <div className="footer-content">
           <Link to="/legal-policy" className="footer-link">Legal Policy</Link>
-          <span className="footer-copyright">© {new Date().getFullYear()} Owl Fence Company. Todos los derechos reservados.</span>
+          <span className="footer-copyright">© {new Date().getFullYear()} Owl Fenc Company. Todos los derechos reservados.</span>
           <Link to="/privacy-policy" className="footer-link">Privacy Policy</Link>
         </div>
       </div>

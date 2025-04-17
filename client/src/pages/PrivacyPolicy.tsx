@@ -36,7 +36,7 @@ export default function PrivacyPolicy() {
           
           <h2 className="text-xl font-semibold mb-4 mt-6">Contact Us</h2>
           <p className="mb-4">
-            If you have any questions about this Privacy Policy, please contact us at privacy@owlfence.com.
+            If you have any questions about this Privacy Policy, please contact us at privacy@owlfenc.com.
           </p>
         </div>
         

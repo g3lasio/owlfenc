@@ -10,7 +10,7 @@ export default function LegalPolicy() {
         <div className="prose prose-invert max-w-none">
           <h2 className="text-xl font-semibold mb-4">Terms of Service</h2>
           <p className="mb-4">
-            These Terms of Service ("Terms") govern your access to and use of Owl Fence Company's website, services, 
+            These Terms of Service ("Terms") govern your access to and use of Owl Fenc Company's website, services, 
             and applications (the "Services"). By accessing or using our Services, you agree to be bound by these Terms.
           </p>
           
@@ -23,13 +23,13 @@ export default function LegalPolicy() {
           <h2 className="text-xl font-semibold mb-4 mt-6">Intellectual Property</h2>
           <p className="mb-4">
             All content included in or made available through our Services, such as text, graphics, logos, images, 
-            as well as the compilation thereof, and any software used in our Services, is the property of Owl Fence 
+            as well as the compilation thereof, and any software used in our Services, is the property of Owl Fenc 
             Company or its suppliers and protected by copyright and other laws.
           </p>
           
           <h2 className="text-xl font-semibold mb-4 mt-6">Limitation of Liability</h2>
           <p className="mb-4">
-            In no event shall Owl Fence Company be liable for any indirect, incidental, special, consequential or 
+            In no event shall Owl Fenc Company be liable for any indirect, incidental, special, consequential or 
             punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible 
             losses, resulting from your access to or use of or inability to access or use the Services.
           </p>
