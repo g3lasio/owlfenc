@@ -33,6 +33,7 @@ type SocialMediaLinks = {
 };
 
 interface CompanyInfoType {
+  profilePhoto?: string;
   companyName: string;
   ownerName: string;
   role: string;
@@ -207,16 +208,49 @@ export default function Profile() {
       {/* User Profile Banner */}
       <div className="bg-card border border-border rounded-lg p-4 mb-6">
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
-          <div className="flex-shrink-0">
-            <div className="w-24 h-24 rounded-full bg-primary/20 text-primary flex items-center justify-center">
-              <span className="text-3xl font-medium">JC</span>
-            </div>
+          <div className="flex-shrink-0 relative">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  // Here you would typically upload the file to your storage
+                  // For now we'll just create an object URL
+                  const imageUrl = URL.createObjectURL(file);
+                  setCompanyInfo(prev => ({
+                    ...prev,
+                    profilePhoto: imageUrl
+                  }));
+                }
+              }}
+              className="hidden"
+              id="profile-photo-input"
+            />
+            <label 
+              htmlFor="profile-photo-input" 
+              className="cursor-pointer group relative block w-24 h-24 rounded-full overflow-hidden"
+            >
+              {companyInfo.profilePhoto ? (
+                <img 
+                  src={companyInfo.profilePhoto} 
+                  alt="Profile" 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-primary/20 text-primary flex items-center justify-center">
+                  <span className="text-3xl font-medium">JC</span>
+                </div>
+              )}
+              <div className="absolute inset-0 bg-black/50 group-hover:flex items-center justify-center hidden text-white">
+                <Upload className="w-6 h-6" />
+              </div>
+            </label>
           </div>
           <div className="flex-1">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
               <div>
                 <h1 className="text-2xl font-bold">John Contractor</h1>
-                <p className="text-muted-foreground">Fence Installation Specialist</p>
               </div>
               <div className="mt-2 sm:mt-0">
                 <div className="bg-gradient-to-r from-emerald-500 to-lime-600 text-white px-4 py-2 rounded-full font-medium text-sm inline-flex items-center">
