@@ -26,6 +26,26 @@ export default function PropertyOwnershipVerifier() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [propertyDetails, setPropertyDetails] = useState<PropertyDetails | null>(null);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  const handleAddressChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setAddress(value);
+
+    if (value.length > 3) {
+      try {
+        const response = await fetch(`/api/address/suggestions?query=${encodeURIComponent(value)}`);
+        const data = await response.json();
+        setSuggestions(data);
+        setShowSuggestions(true);
+      } catch (error) {
+        console.error('Error fetching suggestions:', error);
+      }
+    } else {
+      setSuggestions([]);
+    }
+  };
 
   const handleSearch = async () => {
     if (!address.trim()) {
@@ -109,12 +129,32 @@ export default function PropertyOwnershipVerifier() {
               <div className="grid grid-cols-12 gap-4">
                 <div className="col-span-12 sm:col-span-9">
                   <Label htmlFor="address">Dirección de la Propiedad</Label>
-                  <Input 
-                    id="address" 
-                    placeholder="Ingresa la dirección completa de la propiedad" 
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                  />
+                  <div className="relative">
+                    <Input 
+                      id="address"
+                      placeholder="Ingresa la dirección completa de la propiedad"
+                      value={address}
+                      onChange={handleAddressChange}
+                      onFocus={() => setShowSuggestions(true)}
+                      autoComplete="off"
+                    />
+                    {showSuggestions && suggestions.length > 0 && (
+                      <div className="absolute z-10 w-full bg-white border rounded-md shadow-lg mt-1">
+                        {suggestions.map((suggestion, index) => (
+                          <div
+                            key={index}
+                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                            onClick={() => {
+                              setAddress(suggestion);
+                              setShowSuggestions(false);
+                            }}
+                          >
+                            {suggestion}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="col-span-12 sm:col-span-3 flex items-end">
                   <Button 

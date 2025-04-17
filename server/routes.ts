@@ -92,6 +92,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(project);
     } catch (error) {
+
+// Endpoint para sugerencias de direcciones
+app.get('/api/address/suggestions', async (req: Request, res: Response) => {
+  const query = req.query.query as string;
+  try {
+    const response = await axios.get(
+      `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&types=address&key=${process.env.GOOGLE_MAPS_API_KEY}`
+    );
+    
+    const suggestions = response.data.predictions.map((prediction: any) => prediction.description);
+    res.json(suggestions);
+  } catch (error) {
+    console.error('Error fetching address suggestions:', error);
+    res.status(500).json({ error: 'Error fetching suggestions' });
+  }
+});
+
       console.error('Error fetching project:', error);
       res.status(500).json({ message: 'Failed to fetch project' });
     }
