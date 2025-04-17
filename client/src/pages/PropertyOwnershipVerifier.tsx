@@ -216,7 +216,7 @@ export default function PropertyOwnershipVerifier() {
                   </svg>
                   <div>
                     <h3 className="text-sm font-medium text-muted-foreground mb-1">Área habitable</h3>
-                    <p className="text-lg font-medium">{propertyDetails.sqft.toLocaleString()} pie² / m²</p>
+                    <p className="text-lg font-medium">{propertyDetails.sqft?.toLocaleString() || 'N/A'} pie² / m²</p>
                   </div>
                 </div>
               </div>
