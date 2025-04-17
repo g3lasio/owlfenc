@@ -1,4 +1,3 @@
-
 import { NavigationItem, NavigationSection } from "@/types/navigation";
 
 // Configuración para el menú principal (izquierdo)
