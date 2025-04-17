@@ -232,7 +232,7 @@ export default function ChatInterface() {
   };
 
   return (
-    <div className="flex flex-col h-full fixed-chat-container">
+    <div className="flex flex-col h-full chat-container">
       {/* Chat Messages */}
       <div
         ref={chatContainerRef}
