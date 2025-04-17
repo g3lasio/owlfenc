@@ -495,20 +495,20 @@ class StripeService {
    */
   async verifyStripeConnection(): Promise<boolean> {
     try {
-      // Intenta obtener una lista de productos, lo que verificará las credenciales
-      const products = await stripe.products.list({ limit: 1 });
-      console.log(`Conexión con Stripe verificada. Se encontraron ${products.data.length} productos.`);
+      // Usar timeout para evitar bloqueos largos
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout')), 5000);
+      });
+      
+      const verifyPromise = stripe.products.list({ limit: 1 });
+      await Promise.race([verifyPromise, timeoutPromise]);
       return true;
     } catch (error: any) {
-      console.error('Error al verificar la conexión con Stripe:', error.message);
-      
-      // Proporcionar mensajes específicos para diferentes tipos de errores
-      if (error.type === 'StripeAuthenticationError') {
-        console.error('Error de autenticación con Stripe: La clave API no es válida.');
-      } else if (error.type === 'StripeConnectionError') {
-        console.error('Error de conexión con Stripe: No se pudo establecer conexión con la API.');
+      if (error.message === 'Timeout') {
+        console.error('Timeout al verificar conexión con Stripe');
+      } else {
+        console.error('Error al verificar la conexión con Stripe:', error.message);
       }
-      
       return false;
     }
   }
