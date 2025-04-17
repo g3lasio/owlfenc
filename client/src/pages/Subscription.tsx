@@ -79,8 +79,22 @@ export default function Subscription() {
       // Redireccionar al checkout de Stripe
       if (data && data.url) {
         console.log("Redirigiendo a URL de Stripe:", data.url);
-        // Usar window.location.replace para una redirección completa
-        window.location.replace(data.url);
+        
+        // Abrir en una nueva pestaña para evitar problemas de redirección
+        const stripeWindow = window.open(data.url, '_blank');
+        
+        // Verificar si se pudo abrir la ventana
+        if (!stripeWindow) {
+          console.error("No se pudo abrir la ventana de Stripe. Es posible que esté bloqueado por el navegador.");
+          toast({
+            title: "Error en la redirección",
+            description: "No se pudo abrir la página de pago. Por favor, permita ventanas emergentes para este sitio y vuelva a intentarlo.",
+            variant: "destructive",
+          });
+        }
+        
+        // Siempre restablecer el estado de carga
+        setIsLoading(false);
       } else {
         throw new Error("No se recibió URL de checkout válida");
       }
@@ -129,8 +143,22 @@ export default function Subscription() {
       // Redireccionar al portal de cliente de Stripe
       if (data && data.url) {
         console.log("Redirigiendo a URL del portal de cliente:", data.url);
-        // Usar window.location.replace para una redirección completa
-        window.location.replace(data.url);
+        
+        // Abrir en una nueva pestaña para evitar problemas de redirección
+        const stripeWindow = window.open(data.url, '_blank');
+        
+        // Verificar si se pudo abrir la ventana
+        if (!stripeWindow) {
+          console.error("No se pudo abrir la ventana del portal de cliente. Es posible que esté bloqueado por el navegador.");
+          toast({
+            title: "Error en la redirección",
+            description: "No se pudo abrir el portal de cliente. Por favor, permita ventanas emergentes para este sitio y vuelva a intentarlo.",
+            variant: "destructive",
+          });
+        }
+        
+        // Siempre restablecer el estado de carga
+        setIsLoading(false);
       } else {
         throw new Error("No se recibió URL válida del portal de cliente");
       }
