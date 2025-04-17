@@ -193,10 +193,10 @@ export default function Subscription() {
   // Determinar cuál plan marcar como el más popular (El Mero Patrón)
   const getIsMostPopular = (planCode: string) => planCode === "mero_patron";
 
-  const isLoading = isLoadingPlans || isLoadingUserSubscription;
+  const isLoadingData = isLoadingPlans || isLoadingUserSubscription;
   const hasError = !plans || plans.length === 0;
 
-  if (isLoading) {
+  if (isLoadingData) {
     return (
       <div className="container max-w-6xl py-12">
         <div className="flex flex-col items-center justify-center min-h-[60vh] p-4">
