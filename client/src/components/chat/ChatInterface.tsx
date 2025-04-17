@@ -232,11 +232,11 @@ export default function ChatInterface() {
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex flex-col h-full fixed-chat-container">
       {/* Chat Messages */}
       <div
         ref={chatContainerRef}
-        className="flex-1 overflow-y-auto p-4 scrollbar-hide"
+        className="flex-1 overflow-y-auto p-4 scrollbar-hide messages-container"
       >
         {messages.map((message) => {
           if (message.isTyping) {
