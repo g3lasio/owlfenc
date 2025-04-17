@@ -3,26 +3,42 @@ import { useQuery } from "@tanstack/react-query";
 import Navigation from "./Navigation";
 import { Button } from "@/components/ui/button";
 
+// Definición de tipos para la suscripción y planes
+interface UserSubscription {
+  id?: number;
+  status: string;
+  planId?: number;
+}
+
+interface Plan {
+  id: number;
+  name: string;
+}
+
 export default function Sidebar() {
   // Obtenemos la información de la suscripción actual del usuario
-  const { data: userSubscription } = useQuery({
+  const { data: userSubscriptionData } = useQuery<UserSubscription | null>({
     queryKey: ["/api/subscription/user-subscription"],
     throwOnError: false,
   });
 
   // Obtenemos los planes disponibles
-  const { data: plans } = useQuery({
+  const { data: plansData } = useQuery<Plan[]>({
     queryKey: ["/api/subscription/plans"],
     throwOnError: false,
   });
 
+  // Convertir los datos para evitar errores de tipado
+  const userSubscription: UserSubscription | null = userSubscriptionData || null;
+  const plans: Plan[] | null = plansData || null;
+
   // Función para obtener el nombre del plan actual
-  const getCurrentPlanName = () => {
+  const getCurrentPlanName = (): string => {
     if (!userSubscription || !plans) return "El Mero Patrón";
 
     // Si hay un plan activo, buscamos su nombre
     if (userSubscription.status === "active" && userSubscription.planId) {
-      const currentPlan = plans.find(plan => plan.id === userSubscription.planId);
+      const currentPlan = plans.find((plan) => plan.id === userSubscription.planId);
       return currentPlan ? currentPlan.name : "El Mero Patrón";
     }
 
@@ -42,32 +58,18 @@ export default function Sidebar() {
         <p className="text-sm text-muted-foreground mt-1">Estimate & Contract Generator</p>
       </div>
 
+      {/* Botón de Upgrade Plan destacado */}
+      <div className="mx-4 mt-4">
+        <Link href="/subscription" className="w-full">
+          <Button size="default" className="w-full gap-2 bg-gradient-to-r from-primary to-amber-500 hover:from-primary/90 hover:to-amber-500/90">
+            <i className="ri-vip-crown-line text-lg"></i>
+            <span>Upgrade Plan</span>
+          </Button>
+        </Link>
+      </div>
+      
       {/* Navegación usando el componente unificado */}
       <Navigation variant="sidebar" />
-
-      {/* Plan de Suscripción */}
-      <div className="mx-4 my-4">
-        <div className="rounded-md overflow-hidden border border-border">
-          <div className="bg-gradient-to-r from-emerald-500 to-lime-600 py-1.5 px-3">
-            <div className="flex items-center justify-between">
-              <span className="text-white text-xs font-medium">Plan Actual</span>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-            </div>
-          </div>
-          <div className="bg-card p-2">
-            <div className="text-sm font-semibold">{getCurrentPlanName()}</div>
-            <div className="mt-2 flex justify-end">
-              <Link href="/subscription">
-                <Button size="sm" variant="outline" className="text-xs h-7">
-                  Actualizar Plan
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Sidebar Footer */}
       <div className="p-4 border-t border-border mt-auto">
@@ -78,9 +80,6 @@ export default function Sidebar() {
           <div className="ml-2">
             <div className="text-sm font-medium">John Contractor</div>
             <div className="text-xs text-muted-foreground">{getCurrentPlanName()}</div>
-            <Link to="/subscription" className="text-[10px] text-primary hover:underline">
-              Ascender a Chingón Mayor
-            </Link>
           </div>
           <button className="ml-auto p-1.5 rounded-md hover:bg-destructive/10 hover:text-destructive">
             <i className="ri-logout-box-r-line"></i>

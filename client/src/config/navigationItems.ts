@@ -65,12 +65,7 @@ export const userNavigationConfig: NavigationSection[] = [
         icon: "ri-user-settings-line",
       },
       {
-        label: "Suscripción",
-        path: "/subscription",
-        icon: "ri-vip-diamond-line",
-      },
-      {
-        label: "Upgrade Plan",
+        label: "Mejorar Plan",
         path: "/subscription",
         icon: "ri-vip-crown-line",
       },
