@@ -250,7 +250,7 @@ export default function Profile() {
           <div className="flex-1">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
               <div>
-                <h1 className="text-2xl font-bold">John Contractor</h1>
+                <h1 className="text-2xl font-bold">{companyInfo.ownerName || "John Contractor"}</h1>
               </div>
               <div className="mt-2 sm:mt-0">
                 <div className="bg-gradient-to-r from-emerald-500 to-lime-600 text-white px-4 py-2 rounded-full font-medium text-sm inline-flex items-center">
