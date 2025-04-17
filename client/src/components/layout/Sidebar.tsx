@@ -19,16 +19,16 @@ export default function Sidebar() {
   // Función para obtener el nombre del plan actual
   const getCurrentPlanName = () => {
     if (!userSubscription || !plans) return "El Mero Patrón";
-    
+
     // Si hay un plan activo, buscamos su nombre
     if (userSubscription.status === "active" && userSubscription.planId) {
       const currentPlan = plans.find(plan => plan.id === userSubscription.planId);
       return currentPlan ? currentPlan.name : "El Mero Patrón";
     }
-    
+
     return "El Mero Patrón";
   };
-  
+
   return (
     <aside className="hidden md:flex md:w-64 lg:w-72 flex-col bg-card border-r border-border">
       {/* Sidebar Header */}
@@ -41,10 +41,10 @@ export default function Sidebar() {
         </div>
         <p className="text-sm text-muted-foreground mt-1">Estimate & Contract Generator</p>
       </div>
-      
+
       {/* Navegación usando el componente unificado */}
       <Navigation variant="sidebar" />
-      
+
       {/* Plan de Suscripción */}
       <div className="mx-4 my-4">
         <div className="rounded-md overflow-hidden border border-border">
@@ -68,7 +68,7 @@ export default function Sidebar() {
           </div>
         </div>
       </div>
-      
+
       {/* Sidebar Footer */}
       <div className="p-4 border-t border-border mt-auto">
         <div className="flex items-center mb-4 hover:bg-accent/10 rounded-md p-2">
@@ -77,13 +77,16 @@ export default function Sidebar() {
           </div>
           <div className="ml-2">
             <div className="text-sm font-medium">John Contractor</div>
-            <div className="text-xs text-muted-foreground">Fence Installation Specialist</div>
+            <div className="text-xs text-muted-foreground">{getCurrentPlanName()}</div>
+            <Link to="/subscription" className="text-[10px] text-primary hover:underline">
+              Ascender a Chingón Mayor
+            </Link>
           </div>
           <button className="ml-auto p-1.5 rounded-md hover:bg-destructive/10 hover:text-destructive">
             <i className="ri-logout-box-r-line"></i>
           </button>
         </div>
-        
+
         <div className="mt-4 bg-accent/5 rounded-md p-3 text-xs border border-border">
           <div className="flex items-center mb-2">
             <i className="ri-rocket-line mr-2 text-primary"></i>
