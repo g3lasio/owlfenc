@@ -48,13 +48,13 @@ export function Navigation({ variant, type = "main", onClose }: NavigationProps)
           key={item.path} 
           href={item.path} 
           className={`${itemBaseClass} hover:bg-accent`}
-          onClick={variant === "drawer" ? (e) => {
-            // Para los mails, no cerramos el drawer inmediatamente para dar tiempo al usuario 
-            // de ver que se ha abierto su cliente de correo
-            setTimeout(() => {
-              onClose?.();
-            }, 300);
-          } : undefined}
+          onClick={(e) => {
+            if (variant === "drawer") {
+              setTimeout(() => {
+                onClose?.();
+              }, 300);
+            }
+          }}
         >
           <i className={`${item.icon} text-lg mr-3`}></i>
           <span>{item.label}</span>
@@ -67,7 +67,12 @@ export function Navigation({ variant, type = "main", onClose }: NavigationProps)
         key={item.path}
         href={item.path}
         className={itemClass}
-        onClick={variant === "drawer" ? onClose : undefined}
+        onClick={(e) => {
+          // Cerrar siempre el drawer al navegar, independiente de la variante
+          if (onClose) {
+            onClose();
+          }
+        }}
       >
         <i className={`${item.icon} text-lg mr-3`}></i>
         <span>{item.label}</span>
