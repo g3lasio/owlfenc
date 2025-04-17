@@ -68,12 +68,6 @@ export default function Header({
       </div>
 
       <div className="flex items-center space-x-4">
-        {/* Notifications Button */}
-        <button className="relative p-2 rounded-md hover:bg-accent">
-          <i className="ri-notification-3-line text-xl"></i>
-          <span className="absolute top-0 right-0 w-2 h-2 bg-primary rounded-full"></span>
-        </button>
-        
         {/* User Profile Dropdown */}
         <DropdownMenu open={isUserMenuOpen} onOpenChange={setIsUserMenuOpen}>
           <DropdownMenuTrigger asChild>
@@ -87,7 +81,9 @@ export default function Header({
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium">John Contractor</p>
-                <p className="text-xs text-muted-foreground">admin@fencequotepro.com</p>
+                <p className="text-xs text-muted-foreground">
+                  admin@fencequotepro.com
+                </p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
@@ -99,19 +95,28 @@ export default function Header({
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <Link href="/settings/pricing" className="flex items-center w-full">
+                <Link
+                  href="/settings/pricing"
+                  className="flex items-center w-full"
+                >
                   <i className="ri-money-dollar-circle-line mr-2"></i>
                   <span>Precios y Tarifas</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <Link href="/settings/account" className="flex items-center w-full">
+                <Link
+                  href="/settings/account"
+                  className="flex items-center w-full"
+                >
                   <i className="ri-user-3-line mr-2"></i>
                   <span>Mi Cuenta</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <Link href="/settings/notifications" className="flex items-center w-full">
+                <Link
+                  href="/settings/notifications"
+                  className="flex items-center w-full"
+                >
                   <i className="ri-notification-2-line mr-2"></i>
                   <span>Notificaciones</span>
                 </Link>
@@ -120,7 +125,10 @@ export default function Header({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem>
-                <a href="mailto:mervin@owlfenc.com" className="flex items-center w-full">
+                <a
+                  href="mailto:mervin@owlfenc.com"
+                  className="flex items-center w-full"
+                >
                   <i className="ri-customer-service-line mr-2"></i>
                   <span>Contactar Soporte</span>
                 </a>
@@ -129,7 +137,10 @@ export default function Header({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem>
-                <Link href="/about-owlfenc" className="flex items-center w-full">
+                <Link
+                  href="/about-owlfenc"
+                  className="flex items-center w-full"
+                >
                   <i className="ri-building-2-line mr-2"></i>
                   <span>Acerca de Owl Fence App</span>
                 </Link>
