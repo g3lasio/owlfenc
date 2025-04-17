@@ -302,7 +302,6 @@ export default function Profile() {
           <TabsTrigger value="info" className="flex-grow md:flex-grow-0">General Information</TabsTrigger>
           <TabsTrigger value="legal" className="flex-grow md:flex-grow-0">Documentation</TabsTrigger>
           <TabsTrigger value="specialties" className="flex-grow md:flex-grow-0">Specialties</TabsTrigger>
-          <TabsTrigger value="profile" className="flex-grow md:flex-grow-0">User Profile</TabsTrigger>
         </TabsList>
 
         {/* GENERAL INFORMATION TAB */}

@@ -105,7 +105,7 @@ export default function Header({
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <Link
-                  href="/settings/account"
+                  href="/account"
                   className="flex items-center w-full"
                 >
                   <i className="ri-user-3-line mr-2"></i>

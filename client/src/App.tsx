@@ -18,6 +18,7 @@ import LegalPolicy from "@/pages/LegalPolicy";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import PricingSettings from "@/pages/PricingSettings";
 import Subscription from "@/pages/Subscription";
+import Account from "./pages/Account"; // Added import for Account component
 
 function Router() {
   return (
@@ -36,6 +37,7 @@ function Router() {
       <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Route path="/settings/pricing" component={PricingSettings} />
       <Route path="/subscription" component={Subscription} />
+      <Route path="/account" component={Account} /> {/* Added route for Account */}
       <Route component={NotFound} />
     </Switch>
   );
