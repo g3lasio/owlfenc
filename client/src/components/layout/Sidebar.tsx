@@ -23,12 +23,16 @@ export default function Sidebar() {
 
   const handleLogout = async () => {
     try {
+      setLoading(true);
       await logout();
       toast({
         title: "Sesión cerrada",
         description: "Has cerrado sesión correctamente.",
       });
-      window.location.href = "/login";
+      // Forzar una redirección completa
+      setTimeout(() => {
+        window.location.replace("/login");
+      }, 100);
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
       toast({
@@ -36,8 +40,12 @@ export default function Sidebar() {
         title: "Error",
         description: "No se pudo cerrar la sesión. Intenta de nuevo.",
       });
+    } finally {
+      setLoading(false);
     }
   };
+
+  const [loading, setLoading] = useState(false);
 
   // Obtenemos la información de la suscripción actual del usuario
   const { data: userSubscriptionData } = useQuery<UserSubscription | null>({
@@ -106,9 +114,14 @@ export default function Sidebar() {
           </div>
           <button 
             onClick={handleLogout} 
-            className="ml-auto p-1.5 rounded-md hover:bg-destructive/10 hover:text-destructive"
+            disabled={loading}
+            className={`ml-auto p-1.5 rounded-md hover:bg-destructive/10 hover:text-destructive ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            <i className="ri-logout-box-r-line"></i>
+            {loading ? (
+              <i className="ri-loader-2-line animate-spin"></i>
+            ) : (
+              <i className="ri-logout-box-r-line"></i>
+            )}
           </button>
         </div>
 
