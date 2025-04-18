@@ -19,27 +19,96 @@ import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import PricingSettings from "@/pages/PricingSettings";
 import Subscription from "@/pages/Subscription";
 import Account from "./pages/Account";
-import History from "@/pages/History"; // Added import for History component
+import History from "@/pages/History";
+import Login from "@/pages/Login";
+import Signup from "@/pages/Signup";
+import RecuperarPassword from "@/pages/RecuperarPassword";
+import ResetPassword from "@/pages/ResetPassword";
+import EmailLinkCallback from "@/pages/EmailLinkCallback";
+import { AuthProvider } from "@/contexts/AuthContext";
+
+// Componente para páginas protegidas
+import { useAuth } from "@/contexts/AuthContext";
+import { Redirect } from "wouter";
+
+type ProtectedRouteProps = {
+  component: React.ComponentType<any>;
+};
+
+function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
+  const { currentUser, loading } = useAuth();
+
+  // Muestra un indicador de carga mientras se verifica la autenticación
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Redirige a login si no hay usuario autenticado
+  if (!currentUser) {
+    return <Redirect to="/login" />;
+  }
+
+  // Renderiza el componente si el usuario está autenticado
+  return <Component />;
+}
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/projects" component={Projects} />
-      <Route path="/clients" component={Clients} />
-      <Route path="/settings" component={Settings} />
-      <Route path="/profile" component={Profile} />
-      <Route path="/property-verifier" component={PropertyOwnershipVerifier} />
-      <Route path="/ai-project-manager" component={AIProjectManager} />
-      <Route path="/ar-fence-estimator" component={ARFenceEstimator} />
+      {/* Rutas públicas */}
+      <Route path="/login" component={Login} />
+      <Route path="/signup" component={Signup} />
+      <Route path="/recuperar-password" component={RecuperarPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
+      <Route path="/login/email-link-callback" component={EmailLinkCallback} />
       <Route path="/about-owlfenc" component={AboutOwlFence} />
       <Route path="/about-mervin" component={AboutMervin} />
       <Route path="/legal-policy" component={LegalPolicy} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
-      <Route path="/settings/pricing" component={PricingSettings} />
-      <Route path="/subscription" component={Subscription} />
-      <Route path="/account" component={Account} />
-      <Route path="/history" component={History} /> {/* Added route for History */}
+      
+      {/* Rutas protegidas */}
+      <Route path="/">
+        {() => <ProtectedRoute component={Home} />}
+      </Route>
+      <Route path="/projects">
+        {() => <ProtectedRoute component={Projects} />}
+      </Route>
+      <Route path="/clients">
+        {() => <ProtectedRoute component={Clients} />}
+      </Route>
+      <Route path="/settings">
+        {() => <ProtectedRoute component={Settings} />}
+      </Route>
+      <Route path="/profile">
+        {() => <ProtectedRoute component={Profile} />}
+      </Route>
+      <Route path="/property-verifier">
+        {() => <ProtectedRoute component={PropertyOwnershipVerifier} />}
+      </Route>
+      <Route path="/ai-project-manager">
+        {() => <ProtectedRoute component={AIProjectManager} />}
+      </Route>
+      <Route path="/ar-fence-estimator">
+        {() => <ProtectedRoute component={ARFenceEstimator} />}
+      </Route>
+      <Route path="/settings/pricing">
+        {() => <ProtectedRoute component={PricingSettings} />}
+      </Route>
+      <Route path="/subscription">
+        {() => <ProtectedRoute component={Subscription} />}
+      </Route>
+      <Route path="/account">
+        {() => <ProtectedRoute component={Account} />}
+      </Route>
+      <Route path="/history">
+        {() => <ProtectedRoute component={History} />}
+      </Route>
+      
+      {/* Página no encontrada */}
       <Route component={NotFound} />
     </Switch>
   );
@@ -48,10 +117,12 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AppLayout>
-        <Router />
-      </AppLayout>
-      <Toaster />
+      <AuthProvider>
+        <AppLayout>
+          <Router />
+        </AppLayout>
+        <Toaster />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

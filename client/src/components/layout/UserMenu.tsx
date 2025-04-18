@@ -1,11 +1,19 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import Navigation from "./Navigation";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { LogOut, Settings, User } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function UserMenu() {
+  const { currentUser, logout } = useAuth();
+  const [, navigate] = useLocation();
+  const { toast } = useToast();
+
   // Obtenemos la información de la suscripción actual del usuario
-  const { data: userSubscription, isLoading: isLoadingUserSubscription } = useQuery({
+  const { data: userSubscription } = useQuery({
     queryKey: ["/api/subscription/user-subscription"],
     throwOnError: false,
   });
@@ -29,18 +37,53 @@ export default function UserMenu() {
     return "Plan Básico";
   };
 
+  // Manejar cierre de sesión
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast({
+        title: "Sesión cerrada",
+        description: "Has cerrado sesión correctamente.",
+      });
+      navigate("/login");
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo cerrar la sesión. Intenta de nuevo.",
+      });
+    }
+  };
+
+  // Si no hay usuario autenticado, no mostrar el menú
+  if (!currentUser) {
+    return null;
+  }
+
+  // Obtener iniciales para el avatar
+  const getUserInitials = () => {
+    if (!currentUser.displayName) return "U";
+    
+    const nameParts = currentUser.displayName.split(" ");
+    if (nameParts.length === 1) return nameParts[0].charAt(0).toUpperCase();
+    
+    return (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase();
+  };
+
   return (
     <aside className="hidden md:flex md:w-72 flex-col bg-card border-l border-border">
       {/* User Menu Header */}
       <div className="p-4 border-b border-border">
         <div className="flex flex-col space-y-3">
           <div className="flex items-center">
-            <div className="w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center">
-              <span className="font-medium text-sm">JC</span>
-            </div>
+            <Avatar>
+              <AvatarImage src={currentUser.photoURL || undefined} alt={currentUser.displayName || "Usuario"} />
+              <AvatarFallback className="bg-primary/20 text-primary">{getUserInitials()}</AvatarFallback>
+            </Avatar>
             <div className="ml-3">
-              <div className="text-sm font-medium">John Contractor</div>
-              <div className="text-xs text-muted-foreground">Fence Installation Specialist</div>
+              <div className="text-sm font-medium">{currentUser.displayName || "Usuario"}</div>
+              <div className="text-xs text-muted-foreground">{currentUser.email}</div>
             </div>
           </div>
           
@@ -71,12 +114,32 @@ export default function UserMenu() {
       {/* Navegación usando el componente unificado con tipo "user" */}
       <Navigation variant="sidebar" type="user" />
       
+      {/* Menú de usuario y acciones */}
+      <div className="mt-auto p-3 space-y-1">
+        <Link href="/profile">
+          <Button variant="ghost" className="w-full justify-start">
+            <User className="h-4 w-4 mr-2" />
+            Mi Perfil
+          </Button>
+        </Link>
+        <Link href="/settings">
+          <Button variant="ghost" className="w-full justify-start">
+            <Settings className="h-4 w-4 mr-2" />
+            Configuración
+          </Button>
+        </Link>
+      </div>
+      
       {/* User Menu Footer */}
       <div className="p-4 border-t border-border">
-        <button className="flex items-center w-full p-2 rounded-md hover:bg-destructive/10 hover:text-destructive">
-          <i className="ri-logout-box-r-line text-lg mr-3"></i>
-          <span>Cerrar Sesión</span>
-        </button>
+        <Button 
+          variant="ghost" 
+          className="flex items-center w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive"
+          onClick={handleLogout}
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          Cerrar Sesión
+        </Button>
       </div>
     </aside>
   );
