@@ -126,47 +126,47 @@ export default function Login() {
   };
 
   return (
-    <div className="container mx-auto max-w-md py-12">
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="text-2xl text-center">Iniciar Sesión</CardTitle>
+    <div className="container mx-auto max-w-md px-4 py-8 md:py-12">
+      <Card className="w-full overflow-hidden">
+        <CardHeader className="px-4 py-5 sm:px-6">
+          <CardTitle className="text-xl sm:text-2xl text-center">Iniciar Sesión</CardTitle>
           <CardDescription className="text-center">
             Accede a tu cuenta de Mervin
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
+        <CardContent className="px-4 py-5 sm:px-6">
+          <div className="space-y-5">
             {/* Botones de inicio de sesión con proveedores */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
               <Button
                 variant="outline"
                 type="button"
                 disabled={isLoading}
                 onClick={handleGoogleLogin}
-                className="w-full"
+                className="px-4 py-2 h-auto"
               >
-                <FcGoogle className="mr-2 h-4 w-4" />
-                Google
+                <FcGoogle className="mr-2 h-5 w-5" />
+                <span>Google</span>
               </Button>
               <Button
                 variant="outline"
                 type="button"
                 disabled={isLoading}
                 onClick={handleAppleLogin}
-                className="w-full"
+                className="px-4 py-2 h-auto"
               >
-                <FaApple className="mr-2 h-4 w-4" />
-                Apple
+                <FaApple className="mr-2 h-5 w-5" />
+                <span>Apple</span>
               </Button>
               <Button
                 variant="outline"
                 type="button"
                 disabled={isLoading}
                 onClick={handleMicrosoftLogin}
-                className="w-full"
+                className="px-4 py-2 h-auto"
               >
-                <FaMicrosoft className="mr-2 h-4 w-4" />
-                Microsoft
+                <FaMicrosoft className="mr-2 h-5 w-5" />
+                <span>Microsoft</span>
               </Button>
             </div>
 
@@ -182,33 +182,33 @@ export default function Login() {
             </div>
 
             {/* Selector de método de inicio de sesión */}
-            <div className="flex justify-center space-x-2">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <Button
                 variant={loginMethod === "email" ? "default" : "outline"}
                 type="button"
                 onClick={() => setLoginMethod("email")}
-                className="flex-1"
+                className="w-full justify-start sm:justify-center"
               >
                 <HiMail className="mr-2 h-4 w-4" />
-                Email y Contraseña
+                <span className="text-sm">Email y Contraseña</span>
               </Button>
               <Button
                 variant={loginMethod === "emailLink" ? "default" : "outline"}
                 type="button"
                 onClick={() => setLoginMethod("emailLink")}
-                className="flex-1"
+                className="w-full justify-start sm:justify-center"
               >
                 <RiSendPlaneFill className="mr-2 h-4 w-4" />
-                Enlace por Email
+                <span className="text-sm">Enlace por Email</span>
               </Button>
               <Button
                 variant={loginMethod === "phone" ? "default" : "outline"}
                 type="button"
                 onClick={() => setLoginMethod("phone")}
-                className="flex-1"
+                className="w-full justify-start sm:justify-center"
               >
                 <HiPhone className="mr-2 h-4 w-4" />
-                Teléfono
+                <span className="text-sm">Teléfono</span>
               </Button>
             </div>
 
@@ -301,10 +301,10 @@ export default function Login() {
             )}
           </div>
         </CardContent>
-        <CardFooter className="flex justify-center">
-          <p className="text-sm text-muted-foreground">
+        <CardFooter className="flex justify-center px-4 py-5 sm:px-6">
+          <p className="text-sm text-muted-foreground text-center">
             ¿No tienes una cuenta?{" "}
-            <Button variant="link" className="p-0" onClick={() => navigate("/signup")}>
+            <Button variant="link" className="p-0 px-1" onClick={() => navigate("/signup")}>
               Regístrate
             </Button>
           </p>

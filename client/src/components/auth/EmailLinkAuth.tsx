@@ -73,7 +73,7 @@ export default function EmailLinkAuth({ onSuccess }: EmailLinkAuthProps) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full">
       {emailSent ? (
         <Alert className="bg-green-50 text-green-800 border-green-200">
           <CheckCircle className="h-4 w-4 text-green-600" />
@@ -85,8 +85,8 @@ export default function EmailLinkAuth({ onSuccess }: EmailLinkAuthProps) {
           </AlertDescription>
         </Alert>
       ) : (
-        <div>
-          <h2 className="text-xl font-semibold mb-2">Acceso sin contraseña</h2>
+        <div className="w-full">
+          <h2 className="text-lg sm:text-xl font-semibold mb-2">Acceso sin contraseña</h2>
           <p className="text-muted-foreground text-sm mb-4">
             Te enviaremos un enlace de acceso por correo electrónico
           </p>

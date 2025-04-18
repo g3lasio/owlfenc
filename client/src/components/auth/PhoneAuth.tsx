@@ -148,7 +148,7 @@ export default function PhoneAuth({ onSuccess }: PhoneAuthProps) {
           <div 
             id="recaptcha-container" 
             ref={recaptchaContainerRef} 
-            className="my-4"
+            className="my-4 flex justify-center"
           ></div>
           
           <Form {...phoneForm}>
