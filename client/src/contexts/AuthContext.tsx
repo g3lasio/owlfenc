@@ -7,7 +7,6 @@ import {
   logoutUser,
   loginWithGoogle,
   loginWithApple,
-  loginWithMicrosoft,
   sendEmailLink,
   resetPassword
 } from '../lib/firebase';
@@ -30,7 +29,6 @@ type AuthContextType = {
   logout: () => Promise<boolean>;
   loginWithGoogle: () => Promise<User>;
   loginWithApple: () => Promise<User>;
-  loginWithMicrosoft: () => Promise<User>;
   sendPasswordResetEmail: (email: string) => Promise<boolean>;
   sendEmailLoginLink: (email: string) => Promise<boolean>;
   clearError: () => void;

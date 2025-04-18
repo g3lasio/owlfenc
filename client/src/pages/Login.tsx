@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { FcGoogle } from "react-icons/fc";
-import { FaApple, FaMicrosoft } from "react-icons/fa";
+import { FaApple } from "react-icons/fa";
 import { RiSendPlaneFill } from "react-icons/ri";
 import { HiMail, HiPhone } from "react-icons/hi";
 import { useAuth } from "@/contexts/AuthContext";
@@ -106,24 +106,7 @@ export default function Login() {
     }
   };
 
-  // Manejar inicio de sesión con Microsoft
-  const handleMicrosoftLogin = async () => {
-    setIsLoading(true);
-    try {
-      clearError();
-      await loginWithMicrosoft();
-      navigate("/");
-    } catch (err: any) {
-      console.error("Error de inicio de sesión con Microsoft:", err);
-      toast({
-        variant: "destructive",
-        title: "Error de inicio de sesión",
-        description: err.message || "Ocurrió un error al iniciar sesión con Microsoft. Intenta de nuevo.",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  
 
   return (
     <div className="container mx-auto max-w-md px-4 py-8 md:py-12">
@@ -157,16 +140,6 @@ export default function Login() {
               >
                 <FaApple className="mr-2 h-5 w-5" />
                 <span>Apple</span>
-              </Button>
-              <Button
-                variant="outline"
-                type="button"
-                disabled={isLoading}
-                onClick={handleMicrosoftLogin}
-                className="px-4 py-2 h-auto"
-              >
-                <FaMicrosoft className="mr-2 h-5 w-5" />
-                <span>Microsoft</span>
               </Button>
             </div>
 
