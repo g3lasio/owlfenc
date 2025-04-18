@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { FcGoogle } from "react-icons/fc";
 import { FaApple, FaMicrosoft } from "react-icons/fa";
 import { useAuth } from "@/contexts/AuthContext";
+import { RiEyeLine, RiEyeOffLine } from "react-icons/ri"; // Added import
 
 // Esquema de validación para el formulario
 const signupSchema = z.object({
@@ -33,6 +34,7 @@ export default function Signup() {
   const { register, loginWithGoogle, loginWithApple, loginWithMicrosoft, error, clearError } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // Added state variable
 
   // Configurar el formulario
   const form = useForm<SignupFormValues>({
@@ -246,7 +248,24 @@ export default function Signup() {
                     <FormItem>
                       <FormLabel>Contraseña</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="******" {...field} />
+                        <div className="relative">
+                          <Input 
+                            type={showPassword ? "text" : "password"} 
+                            placeholder="******" 
+                            {...field} 
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                          >
+                            {showPassword ? (
+                              <RiEyeOffLine />
+                            ) : (
+                              <RiEyeLine />
+                            )}
+                          </button>
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -260,7 +279,24 @@ export default function Signup() {
                     <FormItem>
                       <FormLabel>Confirmar Contraseña</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="******" {...field} />
+                        <div className="relative">
+                          <Input 
+                            type={showPassword ? "text" : "password"} 
+                            placeholder="******" 
+                            {...field} 
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                          >
+                            {showPassword ? (
+                              <RiEyeOffLine />
+                            ) : (
+                              <RiEyeLine />
+                            )}
+                          </button>
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
