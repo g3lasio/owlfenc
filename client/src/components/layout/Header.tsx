@@ -9,6 +9,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface HeaderProps {
   toggleMobileMenu: () => void;
@@ -21,10 +23,35 @@ export default function Header({
 }: HeaderProps) {
   const [location] = useLocation();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { logout } = useAuth();
+  const { toast } = useToast();
 
   const handleMenuToggle = () => {
     console.log("Menu toggle clicked, current state:", isMobileMenuOpen);
     toggleMobileMenu();
+  };
+  
+  const handleLogout = async () => {
+    try {
+      setLoading(true);
+      await logout();
+      toast({
+        title: "Sesión cerrada",
+        description: "Has cerrado sesión correctamente.",
+      });
+      // Redirigir al login después de cerrar sesión
+      window.location.href = '/login';
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo cerrar la sesión. Intenta de nuevo.",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   let title = "Dashboard";
@@ -153,8 +180,16 @@ export default function Header({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive">
-              <i className="ri-logout-box-line mr-2"></i>
+            <DropdownMenuItem 
+              className="text-destructive cursor-pointer" 
+              onClick={handleLogout}
+              disabled={loading}
+            >
+              {loading ? (
+                <i className="ri-loader-2-line animate-spin mr-2"></i>
+              ) : (
+                <i className="ri-logout-box-line mr-2"></i>
+              )}
               <span>Cerrar Sesión</span>
             </DropdownMenuItem>
           </DropdownMenuContent>

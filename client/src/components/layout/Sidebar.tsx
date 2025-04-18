@@ -21,6 +21,7 @@ interface Plan {
 export default function Sidebar() {
   const { logout } = useAuth();
   const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -42,8 +43,6 @@ export default function Sidebar() {
       setLoading(false);
     }
   };
-
-  const [loading, setLoading] = useState(false);
 
   // Obtenemos la información de la suscripción actual del usuario
   const { data: userSubscriptionData } = useQuery<UserSubscription | null>({
