@@ -24,31 +24,15 @@ export default function Sidebar() {
 
   const handleLogout = async () => {
     try {
-      console.log("Iniciando proceso de cierre de sesión desde Sidebar");
       setLoading(true);
-      console.log("Estado de carga activado:", loading);
-      
-      console.log("Llamando a función logout()");
       await logout();
-      console.log("Logout completado exitosamente");
-      
       toast({
         title: "Sesión cerrada",
         description: "Has cerrado sesión correctamente.",
       });
-      console.log("Toast de éxito mostrado");
-      
-      // Forzar una redirección completa
-      console.log("Iniciando redirección a /login");
-      setTimeout(() => {
-        console.log("Ejecutando redirección...");
-        window.location.replace("/login");
-      }, 100);
+      window.location.href = '/login';
     } catch (error) {
-      console.error("Error detallado al cerrar sesión:", error);
-      console.log("Tipo de error:", error.name);
-      console.log("Mensaje de error:", error.message);
-      console.log("Stack trace:", error.stack);
+      console.error("Error al cerrar sesión:", error);
       toast({
         variant: "destructive",
         title: "Error",
