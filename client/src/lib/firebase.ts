@@ -45,6 +45,12 @@ const firebaseConfig = {
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "",
   storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.appspot.com`,
   appId: import.meta.env.VITE_FIREBASE_APP_ID || "",
+  // Add Replit domains to authorized domains
+  authDomains: [
+    "owl-fenc.firebaseapp.com",
+    window.location.hostname,
+    `${window.location.hostname}.repl.co`
+  ]
 };
 
 // Initialize Firebase
@@ -176,10 +182,18 @@ export const loginUser = async (email: string, password: string) => {
 // Iniciar sesión con Google
 export const loginWithGoogle = async () => {
   try {
+    // Configure custom auth domain
+    auth.config.authDomain = firebaseConfig.authDomains[0];
+    googleProvider.setCustomParameters({
+      prompt: 'select_account'
+    });
     const result = await signInWithPopup(auth, googleProvider);
     return result.user;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error iniciando sesión con Google:", error);
+    if (error.code === 'auth/unauthorized-domain') {
+      throw new Error('Por favor, asegúrate de estar usando un dominio autorizado. Si el problema persiste, contacta al soporte.');
+    }
     throw error;
   }
 };
@@ -187,10 +201,18 @@ export const loginWithGoogle = async () => {
 // Iniciar sesión con Apple
 export const loginWithApple = async () => {
   try {
+    // Configure custom auth domain
+    auth.config.authDomain = firebaseConfig.authDomains[0];
+    appleProvider.setCustomParameters({
+      locale: 'es'
+    });
     const result = await signInWithPopup(auth, appleProvider);
     return result.user;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error iniciando sesión con Apple:", error);
+    if (error.code === 'auth/unauthorized-domain') {
+      throw new Error('Por favor, asegúrate de estar usando un dominio autorizado. Si el problema persiste, contacta al soporte.');
+    }
     throw error;
   }
 };
