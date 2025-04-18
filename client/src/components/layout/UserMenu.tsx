@@ -51,12 +51,14 @@ export default function UserMenu() {
   // Manejar cierre de sesión
   const handleLogout = async () => {
     try {
+      setIsLoading(true);
       await logout();
       toast({
         title: "Sesión cerrada",
         description: "Has cerrado sesión correctamente.",
       });
-      navigate("/login");
+      // Forzar la redirección y limpiar el estado
+      window.location.href = "/login";
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
       toast({
@@ -64,6 +66,8 @@ export default function UserMenu() {
         title: "Error",
         description: "No se pudo cerrar la sesión. Intenta de nuevo.",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
