@@ -51,7 +51,11 @@ const firebaseConfig = {
     window.location.hostname,
     `${window.location.hostname}.repl.co`,
     `${window.location.hostname}.repl.dev`,
-    `${window.location.hostname}.repl.me`
+    `${window.location.hostname}.repl.me`,
+    `${window.location.hostname}`,
+    `*.repl.co`,
+    `*.repl.dev`,
+    `*.repl.me`
   ]
 };
 
