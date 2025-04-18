@@ -83,11 +83,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setLoading(true);
       setError(null);
       const user = await loginUser(email, password);
-      
+
       if (!user) {
         throw new Error('No se pudo iniciar sesión');
       }
-      
+
       const appUser: User = {
         uid: user.uid,
         email: user.email,
@@ -96,7 +96,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         phoneNumber: user.phoneNumber,
         emailVerified: user.emailVerified
       };
-      
+
       return appUser;
     } catch (err: any) {
       setError(err.message || 'Error al iniciar sesión');
@@ -112,14 +112,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setLoading(true);
       setError(null);
       const user = await registerUser(email, password);
-      
+
       // Para Firebase, actualizamos el displayName después del registro
       if (user && displayName) {
         await updateProfile(auth.currentUser!, {
           displayName: displayName
         });
       }
-      
+
       const appUser: User = {
         uid: user.uid,
         email: user.email,
@@ -128,7 +128,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         phoneNumber: user.phoneNumber,
         emailVerified: user.emailVerified
       };
-      
+
       return appUser;
     } catch (err: any) {
       setError(err.message || 'Error al registrar usuario');
@@ -143,11 +143,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setLoading(true);
       setError(null);
+      console.log("AuthContext: Iniciando proceso de signOut");
       await logoutUser();
+      console.log("AuthContext: signOut completado exitosamente");
       return true;
-    } catch (err: any) {
-      setError(err.message || 'Error al cerrar sesión');
-      throw err;
+    } catch (error: any) {
+      console.error("AuthContext: Error detallado en logout:", error);
+      console.log("AuthContext: Tipo de error:", error.name);
+      console.log("AuthContext: Mensaje de error:", error.message);
+      console.log("AuthContext: Stack trace:", error.stack);
+      setError(error.message || 'Error al cerrar sesión');
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -159,7 +165,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setLoading(true);
       setError(null);
       const user = await loginWithGoogle();
-      
+
       const appUser: User = {
         uid: user.uid,
         email: user.email,
@@ -168,7 +174,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         phoneNumber: user.phoneNumber,
         emailVerified: user.emailVerified
       };
-      
+
       return appUser;
     } catch (err: any) {
       setError(err.message || 'Error al iniciar sesión con Google');
@@ -184,7 +190,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setLoading(true);
       setError(null);
       const user = await loginWithApple();
-      
+
       const appUser: User = {
         uid: user.uid,
         email: user.email,
@@ -193,7 +199,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         phoneNumber: user.phoneNumber,
         emailVerified: user.emailVerified
       };
-      
+
       return appUser;
     } catch (err: any) {
       setError(err.message || 'Error al iniciar sesión con Apple');
@@ -209,7 +215,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setLoading(true);
       setError(null);
       const user = await loginWithMicrosoft();
-      
+
       const appUser: User = {
         uid: user.uid,
         email: user.email,
@@ -218,7 +224,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         phoneNumber: user.phoneNumber,
         emailVerified: user.emailVerified
       };
-      
+
       return appUser;
     } catch (err: any) {
       setError(err.message || 'Error al iniciar sesión con Microsoft');
