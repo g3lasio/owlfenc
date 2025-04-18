@@ -52,11 +52,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
   // Si es una página de autenticación, mostrar solo el contenido sin sidebar ni header
   if (isAuthPage) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="min-h-screen bg-background flex flex-col">
         <div className="flex-1">
           {children}
         </div>
-        <footer className="py-4 text-center text-sm text-gray-500">
+        <footer className="py-4 text-center text-sm text-muted-foreground">
           © {new Date().getFullYear()} Mervin - Todos los derechos reservados
         </footer>
       </div>
