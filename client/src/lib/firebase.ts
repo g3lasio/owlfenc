@@ -49,7 +49,8 @@ const firebaseConfig = {
   authDomains: [
     "owl-fenc.firebaseapp.com",
     window.location.hostname,
-    `${window.location.hostname}.repl.co`
+    `${window.location.hostname}.repl.co`,
+    `${window.location.hostname}.repl.dev`
   ]
 };
 

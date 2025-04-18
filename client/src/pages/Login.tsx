@@ -136,9 +136,10 @@ export default function Login() {
                 type="button"
                 onClick={handleAppleLogin}
                 className="px-4 py-2 h-auto"
+                disabled
               >
                 <FaApple className="mr-2 h-5 w-5" />
-                <span>Apple</span>
+                <span>Apple (Próximamente)</span>
               </Button>
             </div>
 
