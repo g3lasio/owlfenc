@@ -17,6 +17,7 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
   GoogleAuthProvider,
   OAuthProvider,
   sendPasswordResetEmail,
@@ -47,14 +48,15 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID || "",
   // Add Replit domains to authorized domains
   authDomains: [
+    window.location.hostname, // El dominio actual como primera prioridad
     "owl-fenc.firebaseapp.com",
     "owl-fenc.web.app",
+    `${window.location.hostname}.replit.app`,
     "replit.com",
     "*.repl.co",
     "*.repl.dev", 
     "*.repl.me",
     "*.riker.replit.dev",
-    window.location.hostname,
     `${window.location.hostname}.repl.co`,
     `${window.location.hostname}.repl.dev`,
     `${window.location.hostname}.repl.me`
@@ -209,31 +211,70 @@ export const loginWithGoogle = async () => {
 // Iniciar sesión con Apple
 export const loginWithApple = async () => {
   try {
-    // Configure custom auth domain and try each domain
-    for (const domain of firebaseConfig.authDomains) {
-      try {
-        auth.config.authDomain = domain;
-        appleProvider.setCustomParameters({
-          locale: 'es',
-          // Forzar re-autenticación
-          prompt: 'login'
-        });
-        const result = await signInWithPopup(auth, appleProvider);
-        return result.user;
-      } catch (domainError: any) {
-        if (domainError.code !== 'auth/unauthorized-domain') {
-          throw domainError;
-        }
-        // Continuar con el siguiente dominio si es error de dominio
-        continue;
+    // Usar directamente el dominio principal de Firebase para Apple
+    auth.config.authDomain = "owl-fenc.firebaseapp.com";
+    
+    console.log("Intentando autenticación con Apple usando dominio:", auth.config.authDomain);
+    
+    try {
+      // Configuraciones personalizadas para Apple
+      appleProvider.setCustomParameters({
+        locale: 'es',
+        // Otros parámetros que Apple pueda requerir si son necesarios
+      });
+      
+      // Primero intentar con popup
+      console.log("Intentando autenticación con Apple vía popup");
+      const result = await signInWithPopup(auth, appleProvider);
+      console.log("Autenticación exitosa con Apple vía popup");
+      return result.user;
+    } catch (popupError: any) {
+      console.error("Error con popup de Apple:", popupError);
+      
+      // Si el error es de tipo unauthorized-domain, es un problema de configuración
+      if (popupError.code === 'auth/unauthorized-domain') {
+        console.error("Dominio no autorizado para autenticación con Apple:", auth.config.authDomain);
+        throw new Error(`El dominio ${auth.config.authDomain} no está autorizado para la autenticación con Apple. Por favor, verifica la configuración en Firebase y Apple Developer.`);
       }
+      
+      // Si el error es de tipo popup bloqueado o cerrado, intentar con redirect
+      if (popupError.code === 'auth/cancelled-popup-request' || 
+          popupError.code === 'auth/popup-closed-by-user' ||
+          popupError.code === 'auth/popup-blocked') {
+        
+        console.log("Popup bloqueado o cerrado, intentando con redirect...");
+        
+        try {
+          console.log("Redireccionando para autenticación con Apple");
+          await signInWithRedirect(auth, appleProvider);
+          // Esta línea no se ejecutará ya que signInWithRedirect redirige la página
+          return null;
+        } catch (redirectError) {
+          console.error("Error en redirección de Apple:", redirectError);
+          throw redirectError;
+        }
+      }
+      
+      // Para cualquier otro tipo de error, lanzar directamente
+      throw popupError;
     }
-    throw new Error('No se pudo encontrar un dominio autorizado');
   } catch (error: any) {
-    console.error("Error iniciando sesión con Apple:", error);
+    console.error("Error general iniciando sesión con Apple:", error);
+    
+    // Mensajes de error específicos
     if (error.code === 'auth/operation-not-allowed') {
-      throw new Error('El inicio de sesión con Apple no está habilitado. Por favor, contacta al soporte.');
+      throw new Error('El proveedor Apple no está habilitado en Firebase. Por favor, contacta al soporte.');
     }
+    
+    if (error.code === 'auth/invalid-oauth-provider') {
+      throw new Error('La configuración del proveedor Apple es incorrecta. Verifica la configuración en Firebase Console.');
+    }
+    
+    // Errores específicos a invalid_request
+    if (error.message && error.message.includes('invalid_request')) {
+      throw new Error('La solicitud de autenticación con Apple es inválida. Por favor verifica que el dominio de redirección esté correctamente configurado en la consola de Apple Developer.');
+    }
+    
     throw error;
   }
 };
