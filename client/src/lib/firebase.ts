@@ -48,14 +48,16 @@ const firebaseConfig = {
   // Add Replit domains to authorized domains
   authDomains: [
     "owl-fenc.firebaseapp.com",
+    "owl-fenc.web.app",
+    "replit.com",
+    "*.repl.co",
+    "*.repl.dev", 
+    "*.repl.me",
+    "*.riker.replit.dev",
     window.location.hostname,
     `${window.location.hostname}.repl.co`,
     `${window.location.hostname}.repl.dev`,
-    `${window.location.hostname}.repl.me`,
-    `${window.location.hostname}`,
-    `*.repl.co`,
-    `*.repl.dev`,
-    `*.repl.me`
+    `${window.location.hostname}.repl.me`
   ]
 };
 
