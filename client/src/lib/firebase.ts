@@ -50,7 +50,8 @@ const firebaseConfig = {
     "owl-fenc.firebaseapp.com",
     window.location.hostname,
     `${window.location.hostname}.repl.co`,
-    `${window.location.hostname}.repl.dev`
+    `${window.location.hostname}.repl.dev`,
+    `${window.location.hostname}.repl.me`
   ]
 };
 
@@ -202,17 +203,30 @@ export const loginWithGoogle = async () => {
 // Iniciar sesión con Apple
 export const loginWithApple = async () => {
   try {
-    // Configure custom auth domain
-    auth.config.authDomain = firebaseConfig.authDomains[0];
-    appleProvider.setCustomParameters({
-      locale: 'es'
-    });
-    const result = await signInWithPopup(auth, appleProvider);
-    return result.user;
+    // Configure custom auth domain and try each domain
+    for (const domain of firebaseConfig.authDomains) {
+      try {
+        auth.config.authDomain = domain;
+        appleProvider.setCustomParameters({
+          locale: 'es',
+          // Forzar re-autenticación
+          prompt: 'login'
+        });
+        const result = await signInWithPopup(auth, appleProvider);
+        return result.user;
+      } catch (domainError: any) {
+        if (domainError.code !== 'auth/unauthorized-domain') {
+          throw domainError;
+        }
+        // Continuar con el siguiente dominio si es error de dominio
+        continue;
+      }
+    }
+    throw new Error('No se pudo encontrar un dominio autorizado');
   } catch (error: any) {
     console.error("Error iniciando sesión con Apple:", error);
-    if (error.code === 'auth/unauthorized-domain') {
-      throw new Error('Por favor, asegúrate de estar usando un dominio autorizado. Si el problema persiste, contacta al soporte.');
+    if (error.code === 'auth/operation-not-allowed') {
+      throw new Error('El inicio de sesión con Apple no está habilitado. Por favor, contacta al soporte.');
     }
     throw error;
   }
