@@ -40,11 +40,7 @@ export const mainNavigationConfig: NavigationSection[] = [
         path: "/clients",
         icon: "ri-user-star-line",
       },
-      {
-        label: "Precios y Tarifas",
-        path: "/settings/pricing",
-        icon: "ri-coins-line",
-      },
+      
       {
         label: "Historial",
         path: "/history",
