@@ -49,8 +49,8 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+export const db = getFirestore(app);
+export const auth = getAuth(app);
 
 // Proveedores de autenticación
 const googleProvider = new GoogleAuthProvider();
@@ -147,55 +147,14 @@ export const updateProject = async (id: string, projectData: any) => {
   }
 };
 
-// Templates collection
-export const saveTemplate = async (templateData: any) => {
-  try {
-    const docRef = await addDoc(collection(db, "templates"), {
-      ...templateData,
-      createdAt: Timestamp.now()
-    });
-    return { id: docRef.id, ...templateData };
-  } catch (error) {
-    console.error("Error saving template:", error);
-    throw error;
-  }
-};
+// **************************************
+// FUNCIONES DE AUTENTICACIÓN
+// **************************************
 
-export const getTemplates = async (type: string) => {
-  try {
-    const q = query(
-      collection(db, "templates"), 
-      where("type", "==", type)
-    );
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-  } catch (error) {
-    console.error("Error getting templates:", error);
-    throw error;
-  }
-};
-
-// =====================================================================
-// Funciones de Autenticación
-// =====================================================================
-
-// Estado de autenticación
-export const getCurrentUser = () => {
-  return auth.currentUser;
-};
-
-export const onAuthChange = (callback: (user: any) => void) => {
-  return onAuthStateChanged(auth, callback);
-};
-
-// Registro con email y contraseña
-export const registerWithEmail = async (email: string, password: string, displayName: string) => {
+// Registrar un nuevo usuario
+export const registerUser = async (email: string, password: string) => {
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    await updateProfile(userCredential.user, { displayName });
     return userCredential.user;
   } catch (error) {
     console.error("Error registrando usuario:", error);
@@ -203,8 +162,8 @@ export const registerWithEmail = async (email: string, password: string, display
   }
 };
 
-// Login con email y contraseña
-export const loginWithEmail = async (email: string, password: string) => {
+// Iniciar sesión con email y contraseña
+export const loginUser = async (email: string, password: string) => {
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     return userCredential.user;
@@ -214,7 +173,7 @@ export const loginWithEmail = async (email: string, password: string) => {
   }
 };
 
-// Login con Google
+// Iniciar sesión con Google
 export const loginWithGoogle = async () => {
   try {
     const result = await signInWithPopup(auth, googleProvider);
@@ -225,7 +184,7 @@ export const loginWithGoogle = async () => {
   }
 };
 
-// Login con Apple
+// Iniciar sesión con Apple
 export const loginWithApple = async () => {
   try {
     const result = await signInWithPopup(auth, appleProvider);
@@ -236,7 +195,7 @@ export const loginWithApple = async () => {
   }
 };
 
-// Login con Microsoft
+// Iniciar sesión con Microsoft
 export const loginWithMicrosoft = async () => {
   try {
     const result = await signInWithPopup(auth, microsoftProvider);
@@ -247,19 +206,137 @@ export const loginWithMicrosoft = async () => {
   }
 };
 
+// Enviar correo de restablecimiento de contraseña
+export const resetPassword = async (email: string) => {
+  try {
+    await sendPasswordResetEmail(auth, email);
+    return true;
+  } catch (error) {
+    console.error("Error enviando email de restablecimiento:", error);
+    throw error;
+  }
+};
+
+// Confirmar restablecimiento de contraseña
+export const confirmReset = async (code: string, newPassword: string) => {
+  try {
+    await confirmPasswordReset(auth, code, newPassword);
+    return true;
+  } catch (error) {
+    console.error("Error confirmando restablecimiento:", error);
+    throw error;
+  }
+};
+
+// Actualizar perfil de usuario
+export const updateUserProfile = async (displayName: string, photoURL?: string) => {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error("No hay usuario autenticado");
+    
+    await updateProfile(user, {
+      displayName,
+      photoURL: photoURL || user.photoURL
+    });
+    
+    return user;
+  } catch (error) {
+    console.error("Error actualizando perfil:", error);
+    throw error;
+  }
+};
+
+// Cambiar contraseña
+export const changePassword = async (currentPassword: string, newPassword: string) => {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error("No hay usuario autenticado");
+    if (!user.email) throw new Error("El usuario no tiene email asociado");
+    
+    // Re-autenticar al usuario antes de cambiar la contraseña
+    const credential = EmailAuthProvider.credential(user.email, currentPassword);
+    await reauthenticateWithCredential(user, credential);
+    
+    // Cambiar contraseña
+    await updatePassword(user, newPassword);
+    return true;
+  } catch (error) {
+    console.error("Error cambiando contraseña:", error);
+    throw error;
+  }
+};
+
+// Cambiar email
+export const changeEmail = async (password: string, newEmail: string) => {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error("No hay usuario autenticado");
+    if (!user.email) throw new Error("El usuario no tiene email asociado");
+    
+    // Re-autenticar al usuario antes de cambiar el email
+    const credential = EmailAuthProvider.credential(user.email, password);
+    await reauthenticateWithCredential(user, credential);
+    
+    // Cambiar email
+    await updateEmail(user, newEmail);
+    return true;
+  } catch (error) {
+    console.error("Error cambiando email:", error);
+    throw error;
+  }
+};
+
+// Vincular cuenta con Google
+export const linkWithGoogle = async () => {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error("No hay usuario autenticado");
+    
+    const result = await linkWithPopup(user, googleProvider);
+    return result.user;
+  } catch (error) {
+    console.error("Error vinculando cuenta Google:", error);
+    throw error;
+  }
+};
+
+// Desvincular proveedor
+export const unlinkProvider = async (providerId: string) => {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error("No hay usuario autenticado");
+    
+    await unlink(user, providerId);
+    return true;
+  } catch (error) {
+    console.error("Error desvinculando proveedor:", error);
+    throw error;
+  }
+};
+
 // Login con teléfono
-export const initPhoneLogin = (phoneNumber: string, recaptchaContainerId: string) => {
+export const initPhoneLogin = async (phoneNumber: string, recaptchaContainerId: string) => {
   try {
     // Configurar recaptcha
     const recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainerId, {
       size: 'normal',
       callback: () => {
         // reCAPTCHA resuelto, permitir al usuario continuar
+      },
+      'expired-callback': () => {
+        // Respuesta de reCAPTCHA expirada, pedirle al usuario que resuelva de nuevo
       }
     });
     
     // Enviar código SMS
-    return signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
+    const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
+    
+    // Destruir el reCAPTCHA para evitar duplicados
+    if (recaptchaVerifier) {
+      recaptchaVerifier.clear();
+    }
+    
+    return confirmationResult;
   } catch (error) {
     console.error("Error iniciando sesión con teléfono:", error);
     throw error;
@@ -293,139 +370,6 @@ export const sendEmailLink = async (email: string) => {
     return true;
   } catch (error) {
     console.error("Error enviando enlace de email:", error);
-    throw error;
-  }
-};
-
-export const completeEmailLinkSignIn = async () => {
-  try {
-    if (isSignInWithEmailLink(auth, window.location.href)) {
-      // Obtener el email de localStorage
-      let email = localStorage.getItem('emailForSignIn');
-      
-      if (!email) {
-        // Si el email no está en localStorage, pedirlo al usuario
-        email = window.prompt('Por favor, ingresa tu correo electrónico para confirmar tu cuenta');
-      }
-      
-      if (email) {
-        const result = await signInWithEmailLink(auth, email, window.location.href);
-        
-        // Limpiar email de localStorage
-        localStorage.removeItem('emailForSignIn');
-        
-        return result.user;
-      } else {
-        throw new Error("No se proporcionó un correo electrónico");
-      }
-    } else {
-      throw new Error("No es un enlace válido para iniciar sesión");
-    }
-  } catch (error) {
-    console.error("Error completando inicio de sesión con enlace:", error);
-    throw error;
-  }
-};
-
-// Recuperación de contraseña
-export const resetPassword = async (email: string) => {
-  try {
-    await sendPasswordResetEmail(auth, email);
-    return true;
-  } catch (error) {
-    console.error("Error enviando email de recuperación:", error);
-    throw error;
-  }
-};
-
-export const confirmReset = async (code: string, newPassword: string) => {
-  try {
-    await confirmPasswordReset(auth, code, newPassword);
-    return true;
-  } catch (error) {
-    console.error("Error confirmando recuperación:", error);
-    throw error;
-  }
-};
-
-// Actualizar perfil de usuario
-export const updateUserProfile = async (displayName: string, photoURL: string = "") => {
-  try {
-    const user = auth.currentUser;
-    if (!user) throw new Error("No hay usuario autenticado");
-    
-    await updateProfile(user, { displayName, photoURL });
-    return true;
-  } catch (error) {
-    console.error("Error actualizando perfil:", error);
-    throw error;
-  }
-};
-
-// Actualizar email
-export const updateUserEmail = async (newEmail: string, password: string) => {
-  try {
-    const user = auth.currentUser;
-    if (!user) throw new Error("No hay usuario autenticado");
-    if (!user.email) throw new Error("El usuario no tiene email asociado");
-    
-    // Re-autenticar al usuario antes de cambiar el email
-    const credential = EmailAuthProvider.credential(user.email, password);
-    await reauthenticateWithCredential(user, credential);
-    
-    // Actualizar email
-    await updateEmail(user, newEmail);
-    return true;
-  } catch (error) {
-    console.error("Error actualizando email:", error);
-    throw error;
-  }
-};
-
-// Actualizar contraseña
-export const updateUserPassword = async (currentPassword: string, newPassword: string) => {
-  try {
-    const user = auth.currentUser;
-    if (!user) throw new Error("No hay usuario autenticado");
-    if (!user.email) throw new Error("El usuario no tiene email asociado");
-    
-    // Re-autenticar al usuario antes de cambiar la contraseña
-    const credential = EmailAuthProvider.credential(user.email, currentPassword);
-    await reauthenticateWithCredential(user, credential);
-    
-    // Actualizar contraseña
-    await updatePassword(user, newPassword);
-    return true;
-  } catch (error) {
-    console.error("Error actualizando contraseña:", error);
-    throw error;
-  }
-};
-
-// Vincular cuentas
-export const linkGoogleAccount = async () => {
-  try {
-    const user = auth.currentUser;
-    if (!user) throw new Error("No hay usuario autenticado");
-    
-    const result = await linkWithPopup(user, googleProvider);
-    return result.user;
-  } catch (error) {
-    console.error("Error vinculando cuenta Google:", error);
-    throw error;
-  }
-};
-
-// Desvincular proveedor
-export const unlinkProvider = async (providerId: string) => {
-  try {
-    const user = auth.currentUser;
-    if (!user) throw new Error("No hay usuario autenticado");
-    
-    await unlink(user, providerId);
-    return true;
-  } catch (error) {
-    console.error("Error desvinculando proveedor:", error);
     throw error;
   }
 };

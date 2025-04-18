@@ -8,8 +8,8 @@ type EmailTemplate = 'password-reset' | 'verification' | 'welcome';
 interface EmailParams {
   to: string;
   subject: string;
-  text?: string;
-  html?: string;
+  text: string;
+  html: string;
 }
 
 export async function sendEmail(params: EmailParams): Promise<boolean> {
@@ -24,8 +24,8 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
       to: params.to,
       from: defaultSender,
       subject: params.subject,
-      text: params.text,
-      html: params.html,
+      text: params.text || '',
+      html: params.html || '',
     });
     
     return true;

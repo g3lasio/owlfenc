@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { onAuthStateChanged, updateProfile } from 'firebase/auth';
 import { 
-  getCurrentUser, 
-  onAuthChange, 
-  loginWithEmail, 
-  registerWithEmail, 
+  auth,
+  loginUser, 
+  registerUser, 
   logoutUser,
   loginWithGoogle,
   loginWithApple,
@@ -57,7 +57,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     // Escuchar cambios en la autenticación
-    const unsubscribe = onAuthChange((user) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         // Convertir al tipo User para usar en nuestra aplicación
         const appUser: User = {
@@ -84,7 +84,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setLoading(true);
       setError(null);
-      const user = await loginWithEmail(email, password);
+      const user = await loginUser(email, password);
       
       const appUser: User = {
         uid: user.uid,
@@ -109,12 +109,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setLoading(true);
       setError(null);
-      const user = await registerWithEmail(email, password, displayName);
+      const user = await registerUser(email, password);
+      
+      // Para Firebase, actualizamos el displayName después del registro
+      if (user && displayName) {
+        await updateProfile(auth.currentUser!, {
+          displayName: displayName
+        });
+      }
       
       const appUser: User = {
         uid: user.uid,
         email: user.email,
-        displayName: user.displayName,
+        displayName: displayName, // Usamos el displayName proporcionado
         photoURL: user.photoURL,
         phoneNumber: user.phoneNumber,
         emailVerified: user.emailVerified

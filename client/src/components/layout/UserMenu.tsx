@@ -12,21 +12,32 @@ export default function UserMenu() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
 
+  // Definimos interfaces para los tipos de datos
+  interface UserSubscription {
+    status: string;
+    planId: number;
+  }
+  
+  interface Plan {
+    id: number;
+    name: string;
+  }
+
   // Obtenemos la información de la suscripción actual del usuario
-  const { data: userSubscription } = useQuery({
+  const { data: userSubscription } = useQuery<UserSubscription>({
     queryKey: ["/api/subscription/user-subscription"],
     throwOnError: false,
   });
 
   // Obtenemos los planes disponibles
-  const { data: plans } = useQuery({
+  const { data: plans } = useQuery<Plan[]>({
     queryKey: ["/api/subscription/plans"],
     throwOnError: false,
   });
 
   // Función para obtener el nombre del plan actual
   const getCurrentPlanName = () => {
-    if (!userSubscription || !plans) return "Plan Básico";
+    if (!userSubscription || !plans || !Array.isArray(plans)) return "Plan Básico";
     
     // Si hay un plan activo, buscamos su nombre
     if (userSubscription.status === "active" && userSubscription.planId) {
