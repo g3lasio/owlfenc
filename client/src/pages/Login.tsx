@@ -14,6 +14,8 @@ import { FaApple, FaMicrosoft } from "react-icons/fa";
 import { RiSendPlaneFill } from "react-icons/ri";
 import { HiMail, HiPhone } from "react-icons/hi";
 import { useAuth } from "@/contexts/AuthContext";
+import PhoneAuth from "@/components/auth/PhoneAuth";
+import EmailLinkAuth from "@/components/auth/EmailLinkAuth";
 
 // Esquema de validación para el formulario
 const loginSchema = z.object({
@@ -211,23 +213,23 @@ export default function Login() {
             </div>
 
             {/* Formulario de inicio de sesión */}
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Correo Electrónico</FormLabel>
-                      <FormControl>
-                        <Input placeholder="tu@email.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            {loginMethod === "email" && (
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Correo Electrónico</FormLabel>
+                        <FormControl>
+                          <Input placeholder="tu@email.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                {loginMethod === "email" && (
                   <FormField
                     control={form.control}
                     name="password"
@@ -241,40 +243,48 @@ export default function Login() {
                       </FormItem>
                     )}
                   />
-                )}
 
-                {loginMethod === "phone" && (
-                  <div className="text-center p-4 bg-muted rounded-md">
-                    <p>Próximamente: Inicio de sesión con teléfono</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Esta función estará disponible pronto.
-                    </p>
-                  </div>
-                )}
-
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <span className="flex items-center justify-center">
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Cargando...
-                    </span>
-                  ) : (
-                    <>
-                      {loginMethod === "email" && "Iniciar Sesión"}
-                      {loginMethod === "emailLink" && "Enviar Enlace"}
-                      {loginMethod === "phone" && "Enviar Código"}
-                    </>
-                  )}
-                </Button>
-              </form>
-            </Form>
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <span className="flex items-center justify-center">
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Cargando...
+                      </span>
+                    ) : (
+                      "Iniciar Sesión"
+                    )}
+                  </Button>
+                </form>
+              </Form>
+            )}
+            
+            {loginMethod === "emailLink" && (
+              <div className="mt-4">
+                <EmailLinkAuth 
+                  onSuccess={() => {
+                    toast({
+                      title: "Enlace enviado",
+                      description: "Se ha enviado un enlace a tu correo electrónico. Por favor, revisa tu bandeja de entrada."
+                    });
+                  }}
+                />
+              </div>
+            )}
+            
+            {loginMethod === "phone" && (
+              <div className="mt-4">
+                <PhoneAuth 
+                  onSuccess={() => navigate("/")}
+                />
+              </div>
+            )}
 
             {/* Mensaje de error */}
             {error && (
