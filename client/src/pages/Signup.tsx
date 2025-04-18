@@ -16,6 +16,8 @@ import { useAuth } from "@/contexts/AuthContext";
 // Esquema de validación para el formulario
 const signupSchema = z.object({
   name: z.string().min(3, "El nombre debe tener al menos 3 caracteres"),
+  nickname: z.string().optional(),
+  phone: z.string().optional(),
   email: z.string().email("Ingresa un correo electrónico válido"),
   password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
   confirmPassword: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
@@ -37,6 +39,8 @@ export default function Signup() {
     resolver: zodResolver(signupSchema),
     defaultValues: {
       name: "",
+      nickname: "",
+      phone: "",
       email: "",
       password: "",
       confirmPassword: "",
@@ -137,7 +141,7 @@ export default function Signup() {
         <CardContent>
           <div className="space-y-4">
             {/* Botones de registro con proveedores */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <Button
                 variant="outline"
                 type="button"
@@ -157,16 +161,6 @@ export default function Signup() {
               >
                 <FaApple className="mr-2 h-4 w-4" />
                 Apple
-              </Button>
-              <Button
-                variant="outline"
-                type="button"
-                disabled={isLoading}
-                onClick={handleMicrosoftSignup}
-                className="w-full"
-              >
-                <FaMicrosoft className="mr-2 h-4 w-4" />
-                Microsoft
               </Button>
             </div>
 
@@ -192,6 +186,34 @@ export default function Signup() {
                       <FormLabel>Nombre completo</FormLabel>
                       <FormControl>
                         <Input placeholder="Juan Pérez" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="nickname"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Apodo (opcional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Tu apodo" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Teléfono (opcional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="+1 (555) 123-4567" type="tel" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
