@@ -2,6 +2,8 @@ import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import Navigation from "./Navigation";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 // Definición de tipos para la suscripción y planes
 interface UserSubscription {
@@ -16,6 +18,27 @@ interface Plan {
 }
 
 export default function Sidebar() {
+  const { logout } = useAuth();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast({
+        title: "Sesión cerrada",
+        description: "Has cerrado sesión correctamente.",
+      });
+      window.location.href = "/login";
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo cerrar la sesión. Intenta de nuevo.",
+      });
+    }
+  };
+
   // Obtenemos la información de la suscripción actual del usuario
   const { data: userSubscriptionData } = useQuery<UserSubscription | null>({
     queryKey: ["/api/subscription/user-subscription"],
@@ -81,7 +104,10 @@ export default function Sidebar() {
             <div className="text-sm font-medium">John Contractor</div>
             <div className="text-xs text-muted-foreground">{getCurrentPlanName()}</div>
           </div>
-          <button className="ml-auto p-1.5 rounded-md hover:bg-destructive/10 hover:text-destructive">
+          <button 
+            onClick={handleLogout} 
+            className="ml-auto p-1.5 rounded-md hover:bg-destructive/10 hover:text-destructive"
+          >
             <i className="ri-logout-box-r-line"></i>
           </button>
         </div>
