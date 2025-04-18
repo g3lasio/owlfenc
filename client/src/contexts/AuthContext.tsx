@@ -86,6 +86,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setError(null);
       const user = await loginUser(email, password);
       
+      if (!user) {
+        throw new Error('No se pudo iniciar sesión');
+      }
+      
       const appUser: User = {
         uid: user.uid,
         email: user.email,
