@@ -124,8 +124,7 @@ export default function Login() {
               <Button
                 variant="outline"
                 type="button"
-                disabled={true}
-                title="Próximamente"
+                onClick={handleGoogleLogin}
                 className="px-4 py-2 h-auto"
               >
                 <FcGoogle className="mr-2 h-5 w-5" />
@@ -134,8 +133,7 @@ export default function Login() {
               <Button
                 variant="outline"
                 type="button"
-                disabled={true}
-                title="Próximamente"
+                onClick={handleAppleLogin}
                 className="px-4 py-2 h-auto"
               >
                 <FaApple className="mr-2 h-5 w-5" />

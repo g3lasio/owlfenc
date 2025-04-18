@@ -145,8 +145,7 @@ export default function Signup() {
               <Button
                 variant="outline"
                 type="button"
-                disabled={true}
-                title="Próximamente"
+                onClick={handleGoogleSignup}
                 className="w-full"
               >
                 <FcGoogle className="mr-2 h-4 w-4" />
@@ -155,8 +154,7 @@ export default function Signup() {
               <Button
                 variant="outline"
                 type="button"
-                disabled={true}
-                title="Próximamente"
+                onClick={handleAppleSignup}
                 className="w-full"
               >
                 <FaApple className="mr-2 h-4 w-4" />
