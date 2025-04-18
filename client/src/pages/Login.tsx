@@ -112,9 +112,9 @@ export default function Login() {
     <div className="container mx-auto max-w-md px-4 py-8 md:py-12">
       <Card className="w-full overflow-hidden">
         <CardHeader className="px-4 py-5 sm:px-6">
-          <CardTitle className="text-xl sm:text-2xl text-center">Iniciar Sesión</CardTitle>
-          <CardDescription className="text-center">
-            Accede a tu cuenta de Mervin
+          <CardTitle className="text-2xl sm:text-3xl text-center font-bold">Iniciar Sesión</CardTitle>
+          <CardDescription className="text-center text-lg">
+            Accede a tu cuenta de Owl Fenc
           </CardDescription>
         </CardHeader>
         <CardContent className="px-4 py-5 sm:px-6">
@@ -152,36 +152,7 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Selector de método de inicio de sesión */}
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-              <Button
-                variant={loginMethod === "email" ? "default" : "outline"}
-                type="button"
-                onClick={() => setLoginMethod("email")}
-                className="w-full justify-start sm:justify-center"
-              >
-                <HiMail className="mr-2 h-4 w-4" />
-                <span className="text-sm">Email y Contraseña</span>
-              </Button>
-              <Button
-                variant={loginMethod === "emailLink" ? "default" : "outline"}
-                type="button"
-                onClick={() => setLoginMethod("emailLink")}
-                className="w-full justify-start sm:justify-center"
-              >
-                <RiSendPlaneFill className="mr-2 h-4 w-4" />
-                <span className="text-sm">Enlace por Email</span>
-              </Button>
-              <Button
-                variant={loginMethod === "phone" ? "default" : "outline"}
-                type="button"
-                onClick={() => setLoginMethod("phone")}
-                className="w-full justify-start sm:justify-center"
-              >
-                <HiPhone className="mr-2 h-4 w-4" />
-                <span className="text-sm">Teléfono</span>
-              </Button>
-            </div>
+            
 
             {/* Formulario de inicio de sesión */}
             {loginMethod === "email" && (

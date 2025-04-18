@@ -133,9 +133,9 @@ export default function Signup() {
     <div className="container mx-auto max-w-md py-12">
       <Card className="w-full">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">Crear Cuenta</CardTitle>
-          <CardDescription className="text-center">
-            Regístrate en Mervin para comenzar
+          <CardTitle className="text-2xl sm:text-3xl text-center font-bold">Crear Cuenta</CardTitle>
+          <CardDescription className="text-center text-lg">
+            Únete a la comunidad de Owl Fenc
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -197,8 +197,15 @@ export default function Signup() {
                     <FormItem>
                       <FormLabel>Apodo (opcional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="Tu apodo" {...field} />
+                        <Input 
+                          placeholder="Ej: El Flaco, El Pantera, El Gordo" 
+                          {...field}
+                          className="placeholder:text-muted-foreground/60" 
+                        />
                       </FormControl>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Usa un apodo que te identifique en la comunidad
+                      </p>
                       <FormMessage />
                     </FormItem>
                   )}
