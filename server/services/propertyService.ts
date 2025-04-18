@@ -60,7 +60,7 @@ class PropertyService {
 
   private getHeaders() {
     return {
-      'apikey': this.apiKey, // Intentamos con 'apikey' en minúsculas
+      'apikey': this.apiKey,
       'Accept': 'application/json'
     };
   }
@@ -103,20 +103,6 @@ class PropertyService {
     }
   }
 
-  private getRotatingHeaders() {
-    const headerFormats = [
-      { 'apikey': this.apiKey },
-      { 'APIKey': this.apiKey },
-      { 'X-API-Key': this.apiKey },
-      { 'Authorization': `Bearer ${this.apiKey}` },
-      { 'api_key': this.apiKey },
-      { 'api-key': this.apiKey }
-    ];
-
-    // Rotate based on timestamp to distribute requests
-    const index = Math.floor(Date.now() / 1000) % headerFormats.length;
-    return headerFormats[index];
-  }
 
   /**
    * Get property details by address
@@ -139,28 +125,13 @@ class PropertyService {
         console.log('Primeros 5 caracteres de la clave API:', this.apiKey.substring(0, 5));
 
 
-        const { address1, address2 } = this.parseAddress(address);
-
-        if (!address1 || address1.length < 3) {
-          throw new Error('Dirección incompleta. Se requiere al menos calle y número.');
-        }
-
         const apiCall = async () => {
-          const headers = this.getRotatingHeaders();
-          const tempClient = axios.create({
-            baseURL: this.baseUrl,
-            headers: {
-              ...headers,
-              'Accept': 'application/json'
-            },
-            timeout: 10000
-          });
-
-          const response = await tempClient.get('/property/detailowner', { //Priorizando /property/detailowner
-            params: { address1, address2 }
+          const response = await this.attomClient.get('/property/detailowner', { 
+            params: { address: address.trim() }
           });
 
           console.log('¡Éxito! Respuesta recibida con status:', response.status);
+          console.log('ATTOM raw response:', JSON.stringify(response.data, null,2));
 
           if (!response.data.property || response.data.property.length === 0) {
             console.log('No se encontró propiedad para la dirección proporcionada');
