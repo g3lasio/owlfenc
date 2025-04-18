@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { FcGoogle } from "react-icons/fc";
 import { FaApple } from "react-icons/fa";
@@ -106,7 +106,7 @@ export default function Login() {
     }
   };
 
-  
+
 
   return (
     <div className="container mx-auto max-w-md px-4 py-8 md:py-12">
@@ -124,8 +124,8 @@ export default function Login() {
               <Button
                 variant="outline"
                 type="button"
-                disabled={isLoading}
-                onClick={handleGoogleLogin}
+                disabled={true}
+                title="Próximamente"
                 className="px-4 py-2 h-auto"
               >
                 <FcGoogle className="mr-2 h-5 w-5" />
@@ -134,8 +134,8 @@ export default function Login() {
               <Button
                 variant="outline"
                 type="button"
-                disabled={isLoading}
-                onClick={handleAppleLogin}
+                disabled={true}
+                title="Próximamente"
                 className="px-4 py-2 h-auto"
               >
                 <FaApple className="mr-2 h-5 w-5" />
@@ -237,7 +237,7 @@ export default function Login() {
                 </form>
               </Form>
             )}
-            
+
             {loginMethod === "emailLink" && (
               <div className="mt-4">
                 <EmailLinkAuth 
@@ -250,7 +250,7 @@ export default function Login() {
                 />
               </div>
             )}
-            
+
             {loginMethod === "phone" && (
               <div className="mt-4">
                 <PhoneAuth 

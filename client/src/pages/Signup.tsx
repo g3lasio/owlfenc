@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { FcGoogle } from "react-icons/fc";
 import { FaApple, FaMicrosoft } from "react-icons/fa";
@@ -53,12 +53,12 @@ export default function Signup() {
     try {
       clearError();
       await register(data.email, data.password, data.name);
-      
+
       toast({
         title: "Registro exitoso",
         description: "Tu cuenta ha sido creada correctamente.",
       });
-      
+
       navigate("/");
     } catch (err: any) {
       console.error("Error de registro:", err);
@@ -145,8 +145,8 @@ export default function Signup() {
               <Button
                 variant="outline"
                 type="button"
-                disabled={isLoading}
-                onClick={handleGoogleSignup}
+                disabled={true}
+                title="Próximamente"
                 className="w-full"
               >
                 <FcGoogle className="mr-2 h-4 w-4" />
@@ -155,8 +155,8 @@ export default function Signup() {
               <Button
                 variant="outline"
                 type="button"
-                disabled={isLoading}
-                onClick={handleAppleSignup}
+                disabled={true}
+                title="Próximamente"
                 className="w-full"
               >
                 <FaApple className="mr-2 h-4 w-4" />
