@@ -129,14 +129,30 @@ class PropertyService {
           const { address1, address2 } = this.parseAddress(address);
           console.log('Llamando a ATTOM API con:', { address1, address2 });
           
+          console.log('Headers de la petición:', this.getHeaders());
+          
           const response = await this.attomClient.get('/property/detailowner', { 
             params: { 
               address1: address1,
               address2: address2
+            },
+            validateStatus: function (status) {
+              return status >= 200 && status < 300; // Solo acepta respuestas exitosas
+            },
+            headers: {
+              ...this.getHeaders(),
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
             }
           });
 
+          if (typeof response.data === 'string' || response.data instanceof String) {
+            console.error('Error: La API devolvió HTML en lugar de JSON');
+            throw new Error('Respuesta inválida de la API');
+          }
+
           console.log('¡Éxito! Respuesta recibida con status:', response.status);
+          console.log('Headers de respuesta:', response.headers);
           console.log('ATTOM raw response:', JSON.stringify(response.data, null,2));
 
           if (!response.data.property || response.data.property.length === 0) {
