@@ -208,29 +208,21 @@ export const loginWithGoogle = async () => {
 // Iniciar sesión con Apple
 export const loginWithApple = async () => {
   try {
+    // Para Apple, es preferible usar siempre redirección, ya que los popups
+    // suelen causar problemas específicos con el flujo de autenticación de Apple
+    // y pueden variar según el navegador y dispositivo.
+    
     // Configuración básica para el proveedor de Apple
     appleProvider.setCustomParameters({
+      // Parámetros mínimos necesarios para Apple Sign In
       locale: 'es',
-      state: Math.random().toString(36).substring(2) // Prevenir ataques CSRF
+      // Valor aleatorio para evitar ataques CSRF
+      state: Math.random().toString(36).substring(2)
     });
     
-    // Intentar con popup (más simple y rápido)
-    try {
-      const result = await signInWithPopup(auth, appleProvider);
-      return result.user;
-    } catch (error: any) {
-      console.error("Error con popup de Apple:", error);
-      
-      // Si el popup falla, intentar con redirección como fallback
-      if (error.code === 'auth/popup-blocked' || 
-          error.code === 'auth/popup-closed-by-user') {
-        console.log("Intentando con redirección como alternativa...");
-        await signInWithRedirect(auth, appleProvider);
-        return null; // La redirección navegará fuera de esta página
-      }
-      
-      throw error;
-    }
+    console.log("Iniciando autenticación con Apple mediante redirección...");
+    await signInWithRedirect(auth, appleProvider);
+    return null; // La redirección navegará fuera de esta página
   } catch (error: any) {
     console.error("Error iniciando sesión con Apple:", error);
     throw error;
@@ -243,7 +235,13 @@ export const loginWithMicrosoft = async () => {
     // Intentar con popup (más simple y rápido)
     try {
       const result = await signInWithPopup(auth, microsoftProvider);
-      return result.user;
+      // Aseguramos que tenemos un usuario válido
+      if (result && result.user) {
+        return result.user;
+      } else {
+        console.warn("Resultado de popup de Microsoft sin usuario");
+        return null;
+      }
     } catch (error: any) {
       console.error("Error con popup de Microsoft:", error);
       

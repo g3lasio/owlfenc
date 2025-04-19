@@ -17,6 +17,7 @@ export default function AppleCallback() {
   useEffect(() => {
     // Si ya hay un usuario autenticado, redirigir a la página principal
     if (currentUser) {
+      console.log("Usuario ya autenticado, redirigiendo a inicio", currentUser);
       navigate("/");
       return;
     }
@@ -25,11 +26,12 @@ export default function AppleCallback() {
       const auth = getAuth();
       try {
         console.log("Procesando redirección de Apple...");
+        
         // Obtener el resultado de la redirección
         const result = await getRedirectResult(auth);
         
         // Si hay un resultado, significa que la autenticación fue exitosa
-        if (result) {
+        if (result && result.user) {
           console.log("Autenticación con Apple exitosa", result.user);
           setSuccess(true);
           toast({
@@ -42,8 +44,7 @@ export default function AppleCallback() {
             navigate("/");
           }, 1000);
         } else {
-          // Si no hay resultado pero estamos en esta página, puede ser que el usuario llegó aquí directamente
-          // Esto no es necesariamente un error
+          // Si no hay resultado pero estamos en esta página, puede haber pasado algo
           console.log("No se encontró resultado de redirección");
           
           // Verificar si hay errores en la URL
@@ -53,10 +54,33 @@ export default function AppleCallback() {
           if (errorParam) {
             setError(`Error de autenticación: ${errorParam}`);
           } else {
-            // Si no hay error explícito, redirigir al login después de un breve momento
-            setTimeout(() => {
-              navigate("/login");
-            }, 2000);
+            // Verificar si tenemos un código de autorización de Apple
+            const codeParam = urlParams.get('code');
+            const stateParam = urlParams.get('state');
+            
+            if (codeParam && stateParam) {
+              // Tenemos un código y state, probablemente la autenticación está en proceso
+              console.log("Código de autorización detectado, esperando procesamiento automático...");
+              // Firebase debería manejar automáticamente este código
+              
+              // Esperamos un momento más para ver si el sistema procesa la autenticación
+              setTimeout(() => {
+                // Si después de 3 segundos seguimos sin usuario, redirigir al login
+                if (!auth.currentUser) {
+                  console.log("No se completó la autenticación automática");
+                  setError("La autenticación no se completó automáticamente. Por favor, intenta de nuevo.");
+                  setTimeout(() => {
+                    navigate("/login");
+                  }, 1000);
+                }
+              }, 3000);
+            } else {
+              // No hay información útil, redirigir al login
+              console.log("No hay información de autenticación, redirigiendo al login");
+              setTimeout(() => {
+                navigate("/login");
+              }, 2000);
+            }
           }
         }
       } catch (err: any) {
@@ -68,7 +92,9 @@ export default function AppleCallback() {
           setError("Credencial inválida. Por favor, intenta nuevamente.");
         } else if (err.code === 'auth/account-exists-with-different-credential') {
           setError("Ya existe una cuenta con este email pero con un método de inicio de sesión diferente.");
-        } else if (err.message.includes('invalid_request')) {
+        } else if (err.code === 'auth/internal-error') {
+          setError("Error interno de autenticación. Esto podría deberse a un problema con la configuración de Apple ID en Firebase.");
+        } else if (err.message && err.message.includes('invalid_request')) {
           setError("La solicitud a Apple ID es inválida. Esto podría ser un problema con la configuración del dominio de redirección.");
         }
         

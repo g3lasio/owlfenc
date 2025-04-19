@@ -194,6 +194,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return null;
       }
 
+      // User es un objeto Firebase User válido
       const appUser: User = {
         uid: user.uid,
         email: user.email,
@@ -217,25 +218,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setLoading(true);
       setError(null);
-      const user = await loginWithApple();
+      // loginWithApple siempre devuelve null porque usamos redirección directa
+      await loginWithApple();
       
-      // Si no hay usuario (debido a redirección), simplemente retornamos 
-      // El flujo continuará en la página de callback
-      if (!user) {
-        console.log("Redirección a Apple iniciada, no hay usuario inmediato");
-        return null;
-      }
-
-      const appUser: User = {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-        phoneNumber: user.phoneNumber,
-        emailVerified: user.emailVerified
-      };
-
-      return appUser;
+      console.log("Redirección a Apple iniciada, no hay usuario inmediato");
+      // Siempre retornamos null porque redireccionamos
+      return null;
     } catch (err: any) {
       console.error("Error detallado en appleLogin:", err);
       setError(err.message || 'Error al iniciar sesión con Apple');
@@ -258,6 +246,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return null;
       }
 
+      // Si llegamos aquí, tenemos un usuario válido
       const appUser: User = {
         uid: user.uid,
         email: user.email,
