@@ -192,28 +192,63 @@ export const loginUser = async (email: string, password: string) => {
 // Iniciar sesión con Google
 export const loginWithGoogle = async () => {
   try {
-    // Configure custom auth domain
-    const currentDomain = window.location.hostname;
-    auth.config.authDomain = currentDomain;
+    // Usar el dominio de Firebase (importante para auth)
+    auth.config.authDomain = "owl-fenc.firebaseapp.com";
     
+    console.log("Intentando autenticación con Google usando dominio:", auth.config.authDomain);
+    
+    // Parámetros específicos para Google
     googleProvider.setCustomParameters({
       prompt: 'select_account'
     });
     
     try {
+      // Intentamos primero con popup que es más simple
+      console.log("Intentando autenticación con Google vía popup");
       const result = await signInWithPopup(auth, googleProvider);
+      console.log("Autenticación exitosa con Google via popup");
       return result.user;
     } catch (popupError: any) {
       console.error("Error con popup de Google:", popupError);
-      if (popupError.code === 'auth/popup-blocked') {
-        console.log("Popup bloqueado, intentando con redirect...");
+      
+      // Si el popup falla por bloqueo o cierre, intentar con redirección
+      if (popupError.code === 'auth/popup-blocked' || 
+          popupError.code === 'auth/popup-closed-by-user' ||
+          popupError.code === 'auth/cancelled-popup-request') {
+        console.log("Popup no funcionó, intentando con redirección...");
+        
+        localStorage.setItem('googleAuthRedirect', 'true');
         await signInWithRedirect(auth, googleProvider);
-        return null;
+        return null; // La redirección navegará, esta línea no se ejecutará
       }
+      
+      // Si es un error de dominio no autorizado, probar con el dominio actual
+      if (popupError.code === 'auth/unauthorized-domain') {
+        console.error("Dominio no autorizado:", auth.config.authDomain);
+        
+        // Intentar con el dominio actual
+        auth.config.authDomain = window.location.hostname;
+        console.log("Reintentando con dominio actual:", auth.config.authDomain);
+        
+        try {
+          const result = await signInWithPopup(auth, googleProvider);
+          return result.user;
+        } catch (retryError: any) {
+          console.error("También falló con dominio actual:", retryError);
+          
+          // Como último recurso, intentar redirección
+          localStorage.setItem('googleAuthRedirect', 'true');
+          await signInWithRedirect(auth, googleProvider);
+          return null;
+        }
+      }
+      
       throw popupError;
     }
   } catch (error: any) {
-    console.error("Error iniciando sesión con Google:", error);
+    console.error("Error general iniciando sesión con Google:", error);
+    console.error("Código de error:", error.code);
+    console.error("Mensaje completo:", error.message);
     throw error;
   }
 };
@@ -221,9 +256,8 @@ export const loginWithGoogle = async () => {
 // Iniciar sesión con Apple
 export const loginWithApple = async () => {
   try {
-    // Usar el dominio actual para Apple
-    const currentDomain = window.location.hostname;
-    auth.config.authDomain = currentDomain;
+    // Usar el dominio de Firebase (importante para auth)
+    auth.config.authDomain = "owl-fenc.firebaseapp.com";
     
     console.log("Intentando autenticación con Apple usando dominio:", auth.config.authDomain);
     
@@ -232,63 +266,77 @@ export const loginWithApple = async () => {
       locale: 'es',
       // Generar un estado aleatorio para prevenir ataques CSRF
       state: Math.random().toString(36).substring(2),
-      // URL de redirección personalizada en nuestra app para manejar el resultado
-      // De esta forma, Apple redirigirá a esta URL específica en nuestra app
-      redirectUri: window.location.origin + "/__/auth/handler"
+      // URL de redirección personalizada a nuestra página de callback
+      redirectUri: `${window.location.origin}/apple-callback`
     });
     
-    // Intentar directamente con redirección para evitar problemas con popups
-    // Esta es la forma recomendada para Apple ID
     try {
-      console.log("Iniciando autenticación con Apple vía redirect");
+      // Intentamos primero con popup que es más simple y menos propenso a errores
+      console.log("Intentando autenticación con Apple vía popup");
+      const result = await signInWithPopup(auth, appleProvider);
+      console.log("Autenticación exitosa con Apple via popup");
+      return result.user;
+    } catch (popupError: any) {
+      console.error("Error con popup de Apple:", popupError);
       
-      // El redirect navegará a Apple, luego regresará a nuestra página de callback
-      await signInWithRedirect(auth, appleProvider);
+      // Si el popup falla, intentar con redirección
+      if (popupError.code === 'auth/popup-blocked' || 
+          popupError.code === 'auth/popup-closed-by-user' ||
+          popupError.code === 'auth/cancelled-popup-request') {
+        console.log("Popup no funcionó, intentando con redirección...");
+        
+        // Asegurarnos de que la redirección use la URL de callback correcta
+        localStorage.setItem('appleAuthRedirect', 'true'); // Para detectar la redirección en el callback
+        
+        await signInWithRedirect(auth, appleProvider);
+        return null; // La redirección navegará, esta línea no se ejecutará
+      }
       
-      // Esta línea no se ejecutará ya que signInWithRedirect redirige la página
-      return null;
-    } catch (redirectError: any) {
-      console.error("Error en redirección de Apple:", redirectError);
-      
-      // Si es un error de dominio no autorizado, intentar con el dominio actual
-      if (redirectError.code === 'auth/unauthorized-domain') {
+      // Si es un error de dominio no autorizado, probar con el dominio actual
+      if (popupError.code === 'auth/unauthorized-domain') {
         console.error("Dominio no autorizado:", auth.config.authDomain);
         
-        // Intentar con el dominio actual como alternativa
-        const currentDomain = window.location.hostname;
-        console.log("Reintentando con dominio actual:", currentDomain);
+        // Intentar con el dominio actual
+        auth.config.authDomain = window.location.hostname;
+        console.log("Reintentando con dominio actual:", auth.config.authDomain);
         
-        auth.config.authDomain = currentDomain;
         try {
-          // Intentar popup como última opción
-          console.log("Intentando autenticación con Apple vía popup (fallback)");
           const result = await signInWithPopup(auth, appleProvider);
-          console.log("Autenticación exitosa con Apple vía popup");
           return result.user;
-        } catch (popupError: any) {
-          console.error("Error con popup de Apple (fallback):", popupError);
-          throw popupError;
+        } catch (retryError: any) {
+          console.error("También falló con dominio actual:", retryError);
+          
+          // Como último recurso, intentar redirección
+          localStorage.setItem('appleAuthRedirect', 'true'); 
+          await signInWithRedirect(auth, appleProvider);
+          return null;
         }
       }
       
-      // Si es un error específico de invalid_request (URL incorrecta)
-      if (redirectError.message && redirectError.message.includes('invalid_request')) {
-        throw new Error('Error en la solicitud de autenticación con Apple. Por favor verifica que el dominio esté correctamente configurado en la consola de Apple Developer y Firebase. URL específica de callback: ' + 
+      // Para errores específicos, dar mensajes más claros
+      if (popupError.message && popupError.message.includes('invalid_request')) {
+        throw new Error('Error en la solicitud de autenticación con Apple. Verifica la configuración del dominio en Firebase Console y Apple Developer. URL de callback configurada: ' + 
           `${window.location.origin}/apple-callback`);
       }
       
-      throw redirectError;
+      throw popupError;
     }
   } catch (error: any) {
     console.error("Error general iniciando sesión con Apple:", error);
+    console.error("Código de error:", error.code);
+    console.error("Mensaje completo:", error.message);
     
-    // Mensajes de error específicos
+    // Mensajes de error específicos para mejorar la experiencia
     if (error.code === 'auth/operation-not-allowed') {
-      throw new Error('El proveedor Apple no está habilitado en Firebase. Por favor, contacta al soporte.');
+      throw new Error('El proveedor Apple no está habilitado en Firebase. Contacta al soporte.');
     }
     
     if (error.code === 'auth/invalid-oauth-provider') {
       throw new Error('La configuración del proveedor Apple es incorrecta. Verifica la configuración en Firebase Console.');
+    }
+    
+    if (error.code === 'auth/configuration-not-found') {
+      throw new Error('No se encontró la configuración de autenticación. Verifica que las claves de Firebase estén correctamente configuradas.');
     }
     
     // Devolver el error original
@@ -299,10 +347,58 @@ export const loginWithApple = async () => {
 // Iniciar sesión con Microsoft
 export const loginWithMicrosoft = async () => {
   try {
-    const result = await signInWithPopup(auth, microsoftProvider);
-    return result.user;
-  } catch (error) {
-    console.error("Error iniciando sesión con Microsoft:", error);
+    // Usar el dominio de Firebase (importante para auth)
+    auth.config.authDomain = "owl-fenc.firebaseapp.com";
+    
+    console.log("Intentando autenticación con Microsoft usando dominio:", auth.config.authDomain);
+    
+    try {
+      // Intentamos primero con popup que es más simple
+      console.log("Intentando autenticación con Microsoft vía popup");
+      const result = await signInWithPopup(auth, microsoftProvider);
+      console.log("Autenticación exitosa con Microsoft via popup");
+      return result.user;
+    } catch (popupError: any) {
+      console.error("Error con popup de Microsoft:", popupError);
+      
+      // Si el popup falla por bloqueo o cierre, intentar con redirección
+      if (popupError.code === 'auth/popup-blocked' || 
+          popupError.code === 'auth/popup-closed-by-user' ||
+          popupError.code === 'auth/cancelled-popup-request') {
+        console.log("Popup no funcionó, intentando con redirección...");
+        
+        localStorage.setItem('microsoftAuthRedirect', 'true');
+        await signInWithRedirect(auth, microsoftProvider);
+        return null; // La redirección navegará, esta línea no se ejecutará
+      }
+      
+      // Si es un error de dominio no autorizado, probar con el dominio actual
+      if (popupError.code === 'auth/unauthorized-domain') {
+        console.error("Dominio no autorizado:", auth.config.authDomain);
+        
+        // Intentar con el dominio actual
+        auth.config.authDomain = window.location.hostname;
+        console.log("Reintentando con dominio actual:", auth.config.authDomain);
+        
+        try {
+          const result = await signInWithPopup(auth, microsoftProvider);
+          return result.user;
+        } catch (retryError: any) {
+          console.error("También falló con dominio actual:", retryError);
+          
+          // Como último recurso, intentar redirección
+          localStorage.setItem('microsoftAuthRedirect', 'true');
+          await signInWithRedirect(auth, microsoftProvider);
+          return null;
+        }
+      }
+      
+      throw popupError;
+    }
+  } catch (error: any) {
+    console.error("Error general iniciando sesión con Microsoft:", error);
+    console.error("Código de error:", error.code);
+    console.error("Mensaje completo:", error.message);
     throw error;
   }
 };
