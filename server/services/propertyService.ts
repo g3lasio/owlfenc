@@ -128,9 +128,9 @@ class PropertyService {
         const apiCall = async () => {
           const { address1, address2 } = this.parseAddress(address);
           console.log('Llamando a ATTOM API con:', { address1, address2 });
-          
+
           console.log('Headers de la petición:', this.getHeaders());
-          
+
           console.log('Headers completos de la petición:', {
             ...this.getHeaders(),
             'Accept': 'application/json',
@@ -146,24 +146,27 @@ class PropertyService {
               return status >= 200 && status < 300;
             },
             headers: {
-              ...this.getHeaders(),
               'Accept': 'application/json',
               'Content-Type': 'application/json',
-              'apikey': this.apiKey // Asegurar que la apikey se envía en el header correcto
+              'apikey': this.apiKey,
+              'Cache-Control': 'no-cache'
             },
-            responseType: 'json' // Forzar respuesta JSON
+            maxRedirects: 0,
+            responseType: 'json',
+            decompress: true
           });
 
-          // Log de la respuesta completa
+          // Log de la respuesta para diagnóstico
           console.log('Response headers:', response.headers);
-          console.log('Content-Type de respuesta:', response.headers['content-type']);
+          console.log('Response status:', response.status);
+          console.log('Response type:', typeof response.data);
 
-          const contentType = response.headers['content-type'];
-          if (!contentType || !contentType.includes('application/json')) {
-            console.error('Error: Tipo de contenido inválido:', contentType);
-            console.error('Respuesta raw:', response.data);
-            throw new Error(`Respuesta inválida de la API: ${contentType}`);
+          // Validar que la respuesta sea JSON
+          if (response.headers['content-type']?.includes('text/html')) {
+            console.error('Error: API devolvió HTML en lugar de JSON');
+            throw new Error('API response format invalid');
           }
+
 
           if (typeof response.data === 'string') {
             try {
