@@ -30,11 +30,11 @@ export default function PropertyOwnershipVerifier() {
   const [placeValue, setPlaceValue] = useState<any>(null);
   const [apiError, setApiError] = useState<boolean>(false);
   const [useManualInput, setUseManualInput] = useState<boolean>(false);
-  
+
   // Estados que ya no se usan con Google Places Autocomplete
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  
+
   // Detectar errores de la API de Google Maps
   useEffect(() => {
     const handleGoogleMapsError = (event: ErrorEvent) => {
@@ -48,7 +48,7 @@ export default function PropertyOwnershipVerifier() {
         setError("Error: La API de Google Maps no está configurada correctamente. Por favor verifica que la clave API sea válida y tenga los servicios necesarios habilitados (Maps JavaScript API, Places API, Geocoding API).");
       }
     };
-    
+
     const validateGoogleMapsKey = () => {
       const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
       if (!apiKey || apiKey.length < 20) {
@@ -60,7 +60,7 @@ export default function PropertyOwnershipVerifier() {
 
     validateGoogleMapsKey();
     window.addEventListener('error', handleGoogleMapsError);
-    
+
     return () => {
       window.removeEventListener('error', handleGoogleMapsError);
     };
@@ -70,55 +70,55 @@ export default function PropertyOwnershipVerifier() {
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setAddress(e.target.value);
   };
-  
+
   // Manejar la selección de la dirección del autocompletado
   const handlePlaceSelect = async (place: any) => {
     if (place && place.value) {
       try {
         // Obtener la dirección formateada del valor seleccionado
         setAddress(place.value.description);
-        
+
         // Limpiar cualquier error previo
         setError(null);
-        
+
         // Obtener más detalles de la ubicación para enriquecer los datos
         const results = await geocodeByAddress(place.value.description);
         if (results && results.length > 0) {
           // Obtener coordenadas
           const latLng = await getLatLng(results[0]);
           console.log("Coordenadas seleccionadas:", latLng);
-          
+
           // Analizar los componentes de la dirección para extracción de datos
           const addressComponents = results[0].address_components;
-          
+
           // Extraer información útil como código postal, ciudad, estado, etc.
           let zipCode = '';
           let city = '';
           let state = '';
           let neighborhood = '';
-          
+
           addressComponents.forEach((component: any) => {
             const types = component.types;
-            
+
             if (types.includes('postal_code')) {
               zipCode = component.long_name;
             }
-            
+
             if (types.includes('locality')) {
               city = component.long_name;
             }
-            
+
             if (types.includes('administrative_area_level_1')) {
               state = component.long_name;
             }
-            
+
             if (types.includes('neighborhood')) {
               neighborhood = component.long_name;
             }
           });
-          
+
           console.log('Información adicional:', { zipCode, city, state, neighborhood });
-          
+
           // Iniciar automáticamente la búsqueda después de seleccionar una dirección
           // con un pequeño retraso para mejor experiencia de usuario
           setTimeout(() => {
@@ -139,34 +139,46 @@ export default function PropertyOwnershipVerifier() {
 
     setLoading(true);
     setError(null);
-    
+
     try {
       // Primero intentamos obtener datos del API
+      console.log('Realizando petición a la API con dirección:', address.trim());
       try {
         const response = await axios.get('/api/property-verification', {
           params: { address: address.trim() }
         });
-        
+
+        console.log('Respuesta recibida de la API:', response.status, response.data);
+
         if (response.data) {
+          console.log('Datos de propiedad obtenidos:', response.data);
           setPropertyDetails(response.data);
           setLoading(false);
           return;
+        } else {
+          console.log('La API respondió pero sin datos');
+          throw new Error('No se recibieron datos de la propiedad');
         }
       } catch (apiError) {
-        console.log('Error conectando con API, usando datos locales', apiError);
+        console.error('Error específico de la API:', {
+          message: apiError.message,
+          status: apiError.response?.status,
+          data: apiError.response?.data
+        });
+        throw apiError;
       }
-      
+
       // Si llegamos aquí, generamos datos locales para demostración
       console.log('Generando datos locales para dirección:', address);
-      
+
       // Extraemos partes de la dirección si es posible para hacer los datos más realistas
       const addressParts = address.split(',');
       const streetAddress = addressParts[0] || address;
-      
+
       // Generamos datos determinísticos basados en la dirección
       const addressSum = streetAddress.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
       const randomGenerator = (base: number) => (addressSum % base) + Math.floor(base * 0.8);
-      
+
       // Creamos objeto con datos simulados
       const mockData: PropertyDetails = {
         owner: "María González",
@@ -180,10 +192,10 @@ export default function PropertyOwnershipVerifier() {
         ownerOccupied: true,
         verified: true
       };
-      
+
       // Establecemos los datos simulados
       setPropertyDetails(mockData);
-      
+
     } catch (err: any) {
       console.error('Error verificando propiedad:', err);
       setError("Error al verificar la propiedad. Por favor, intenta nuevamente.");
@@ -213,7 +225,7 @@ export default function PropertyOwnershipVerifier() {
               <div className="grid grid-cols-12 gap-4">
                 <div className="col-span-12 sm:col-span-9">
                   <Label htmlFor="address">Dirección de la Propiedad</Label>
-                  
+
                   {apiError || useManualInput ? (
                     // Entrada manual cuando hay error de Google Maps API
                     <div className="space-y-2">
@@ -229,7 +241,7 @@ export default function PropertyOwnershipVerifier() {
                           <MapPin size={16} className="opacity-60" />
                         </div>
                       </div>
-                      
+
                       <Alert className="py-2">
                         <AlertTriangle className="h-4 w-4 mr-2" />
                         <div className="text-xs">
@@ -299,7 +311,7 @@ export default function PropertyOwnershipVerifier() {
                       </div>
                     </div>
                   )}
-                  
+
                   {/* Link para cambiar entre modos manual y autocompletado */}
                   <div className="mt-1">
                     <button 
@@ -384,7 +396,7 @@ export default function PropertyOwnershipVerifier() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="p-3 rounded-lg border">
                 <div className="flex items-start">
                   <Home className="text-primary mr-3 mt-1" size={20} />
@@ -394,7 +406,7 @@ export default function PropertyOwnershipVerifier() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="p-3 rounded-lg border">
                 <div className="flex items-start">
                   <Calendar className="text-primary mr-3 mt-1" size={20} />
@@ -404,7 +416,7 @@ export default function PropertyOwnershipVerifier() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="p-3 rounded-lg border">
                 <div className="flex items-start">
                   <svg className="text-primary mr-3 mt-1" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -417,7 +429,7 @@ export default function PropertyOwnershipVerifier() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="p-3 rounded-lg border">
                 <div className="flex items-start">
                   <svg className="text-primary mr-3 mt-1" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -430,7 +442,7 @@ export default function PropertyOwnershipVerifier() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="p-3 rounded-lg border">
                 <div className="flex items-start">
                   <svg className="text-primary mr-3 mt-1" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -446,7 +458,7 @@ export default function PropertyOwnershipVerifier() {
                 </div>
               </div>
             </div>
-            
+
             <div className="mt-6 pt-4 border-t">
               <h3 className="text-md font-semibold mb-2">Lo que esto significa para tu proyecto:</h3>
               <ul className="space-y-2">
@@ -467,7 +479,7 @@ export default function PropertyOwnershipVerifier() {
           </CardContent>
         </Card>
       ) : null}
-      
+
       <div className="mt-6">
         <h2 className="text-xl font-semibold mb-3">¿Por qué verificar la propiedad?</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -481,7 +493,7 @@ export default function PropertyOwnershipVerifier() {
               </p>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Evitar problemas legales</CardTitle>
@@ -492,7 +504,7 @@ export default function PropertyOwnershipVerifier() {
               </p>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Generar confianza</CardTitle>
