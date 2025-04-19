@@ -253,9 +253,9 @@ export const loginWithApple = async () => {
       }
 
       // Si el error es de tipo popup bloqueado o cerrado, intentar con redirect
-      if (popupError.code === 'auth/cancelled-popup-request' || 
-          popupError.code === 'auth/popup-closed-by-user' ||
-          popupError.code === 'auth/popup-blocked') {
+      if (error.code === 'auth/cancelled-popup-request' || 
+          error.code === 'auth/popup-closed-by-user' ||
+          error.code === 'auth/popup-blocked') {
 
         console.log("Popup bloqueado o cerrado, intentando con redirect...");
 
@@ -271,7 +271,7 @@ export const loginWithApple = async () => {
       }
 
       // Para cualquier otro tipo de error, lanzar directamente
-      throw popupError;
+      throw error;
     }
   } catch (error: any) {
     console.error("Error general iniciando sesión con Apple:", error);
