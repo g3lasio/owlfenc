@@ -58,11 +58,33 @@ class PropertyService {
     });
   }
 
-  private getHeaders() {
+  private getHeaders(attempt = 0) {
+    // Rotar entre diferentes formatos de header de autenticación
+    const authHeaders = [
+      { 'apikey': this.apiKey },
+      { 'APIKey': this.apiKey },
+      { 'Authorization': `Bearer ${this.apiKey}` },
+      { 'X-API-Key': this.apiKey }
+    ];
+    
     return {
-      'apikey': this.apiKey,
+      ...authHeaders[attempt % authHeaders.length],
       'Accept': 'application/json'
     };
+  }
+
+  private async retryWithDifferentAuth(fn: () => Promise<any>, maxAttempts = 4): Promise<any> {
+    let lastError;
+    for (let i = 0; i < maxAttempts; i++) {
+      try {
+        this.attomClient.defaults.headers = { ...this.attomClient.defaults.headers, ...this.getHeaders(i) };
+        return await fn();
+      } catch (error) {
+        console.log(`Intento ${i + 1} fallido, probando diferente formato de autenticación`);
+        lastError = error;
+      }
+    }
+    throw lastError;
   }
 
   /**
@@ -149,11 +171,30 @@ class PropertyService {
               'Accept': 'application/json',
               'Content-Type': 'application/json',
               'apikey': this.apiKey,
-              'Cache-Control': 'no-cache'
+              'Cache-Control': 'no-cache',
+              'X-Requested-With': 'XMLHttpRequest',
+              'User-Agent': 'Mozilla/5.0 (compatible; Property Service/1.0)'
             },
-            maxRedirects: 0,
+            maxRedirects: 5,
             responseType: 'json',
-            decompress: true
+            decompress: true,
+            transformResponse: [(data) => {
+              // Si la respuesta es HTML, intentar extraer JSON embebido
+              if (typeof data === 'string' && data.includes('<!DOCTYPE html>')) {
+                try {
+                  // Buscar cualquier JSON embebido en el HTML
+                  const jsonMatch = data.match(/\{[\s\S]*\}/);
+                  if (jsonMatch) {
+                    return JSON.parse(jsonMatch[0]);
+                  }
+                  throw new Error('No JSON found in HTML response');
+                } catch (e) {
+                  console.error('Error parsing embedded JSON:', e);
+                  throw new Error('Invalid API response format');
+                }
+              }
+              return data;
+            }]
           });
 
           // Log de la respuesta para diagnóstico
@@ -161,10 +202,26 @@ class PropertyService {
           console.log('Response status:', response.status);
           console.log('Response type:', typeof response.data);
 
-          // Validar que la respuesta sea JSON
-          if (response.headers['content-type']?.includes('text/html')) {
-            console.error('Error: API devolvió HTML en lugar de JSON');
-            throw new Error('API response format invalid');
+          // Validar y procesar la respuesta
+          if (!response.data || typeof response.data === 'string') {
+            console.error('Error: Respuesta inválida de la API');
+            console.log('Content-Type:', response.headers['content-type']);
+            console.log('Response data type:', typeof response.data);
+            
+            // Intentar extraer información útil de la respuesta
+            if (typeof response.data === 'string') {
+              if (response.data.includes('<!DOCTYPE html>')) {
+                console.log('Detectada respuesta HTML, intentando procesar...');
+                // Aquí podríamos implementar un parser HTML si es necesario
+                throw new Error('La API devolvió HTML en lugar de JSON');
+              }
+              try {
+                response.data = JSON.parse(response.data);
+              } catch (e) {
+                console.error('Error parseando respuesta como JSON:', e);
+                throw new Error('Formato de respuesta inválido');
+              }
+            }
           }
 
 
