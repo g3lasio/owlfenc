@@ -131,24 +131,47 @@ class PropertyService {
           
           console.log('Headers de la petición:', this.getHeaders());
           
+          console.log('Headers completos de la petición:', {
+            ...this.getHeaders(),
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          });
+
           const response = await this.attomClient.get('/property/detailowner', { 
             params: { 
               address1: address1,
               address2: address2
             },
             validateStatus: function (status) {
-              return status >= 200 && status < 300; // Solo acepta respuestas exitosas
+              return status >= 200 && status < 300;
             },
             headers: {
               ...this.getHeaders(),
               'Accept': 'application/json',
-              'Content-Type': 'application/json'
-            }
+              'Content-Type': 'application/json',
+              'apikey': this.apiKey // Asegurar que la apikey se envía en el header correcto
+            },
+            responseType: 'json' // Forzar respuesta JSON
           });
 
-          if (typeof response.data === 'string' || response.data instanceof String) {
-            console.error('Error: La API devolvió HTML en lugar de JSON');
-            throw new Error('Respuesta inválida de la API');
+          // Log de la respuesta completa
+          console.log('Response headers:', response.headers);
+          console.log('Content-Type de respuesta:', response.headers['content-type']);
+
+          const contentType = response.headers['content-type'];
+          if (!contentType || !contentType.includes('application/json')) {
+            console.error('Error: Tipo de contenido inválido:', contentType);
+            console.error('Respuesta raw:', response.data);
+            throw new Error(`Respuesta inválida de la API: ${contentType}`);
+          }
+
+          if (typeof response.data === 'string') {
+            try {
+              response.data = JSON.parse(response.data);
+            } catch (e) {
+              console.error('Error parseando respuesta como JSON:', e);
+              throw new Error('La respuesta no es JSON válido');
+            }
           }
 
           console.log('¡Éxito! Respuesta recibida con status:', response.status);
