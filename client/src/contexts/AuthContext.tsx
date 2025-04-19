@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { onAuthStateChanged, updateProfile } from 'firebase/auth';
+import { onAuthStateChanged, updateProfile, getRedirectResult } from 'firebase/auth';
 import { 
   auth,
   loginUser, 
@@ -56,9 +56,29 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Primero verificamos si hay algún resultado de redirección pendiente
+    const checkRedirectResult = async () => {
+      try {
+        console.log("Verificando resultado de redirección...");
+        const result = await getRedirectResult(auth);
+        
+        if (result && result.user) {
+          console.log("Resultado de redirección procesado exitosamente:", result.user);
+          // No necesitamos hacer nada más, onAuthStateChanged capturará este login
+        }
+      } catch (error) {
+        console.error("Error procesando resultado de redirección:", error);
+        // No seteamos el error aquí, para evitar confusión al usuario
+      }
+    };
+    
+    // Ejecutamos inmediatamente
+    checkRedirectResult();
+    
     // Escuchar cambios en la autenticación
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
+        console.log("Usuario autenticado detectado:", user.uid);
         // Convertir al tipo User para usar en nuestra aplicación
         const appUser: User = {
           uid: user.uid,
