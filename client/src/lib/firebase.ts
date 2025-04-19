@@ -193,17 +193,27 @@ export const loginUser = async (email: string, password: string) => {
 export const loginWithGoogle = async () => {
   try {
     // Configure custom auth domain
-    auth.config.authDomain = firebaseConfig.authDomains[0];
+    const currentDomain = window.location.hostname;
+    auth.config.authDomain = currentDomain;
+    
     googleProvider.setCustomParameters({
       prompt: 'select_account'
     });
-    const result = await signInWithPopup(auth, googleProvider);
-    return result.user;
+    
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      return result.user;
+    } catch (popupError: any) {
+      console.error("Error con popup de Google:", popupError);
+      if (popupError.code === 'auth/popup-blocked') {
+        console.log("Popup bloqueado, intentando con redirect...");
+        await signInWithRedirect(auth, googleProvider);
+        return null;
+      }
+      throw popupError;
+    }
   } catch (error: any) {
     console.error("Error iniciando sesión con Google:", error);
-    if (error.code === 'auth/unauthorized-domain') {
-      throw new Error('Por favor, asegúrate de estar usando un dominio autorizado. Si el problema persiste, contacta al soporte.');
-    }
     throw error;
   }
 };
@@ -211,9 +221,9 @@ export const loginWithGoogle = async () => {
 // Iniciar sesión con Apple
 export const loginWithApple = async () => {
   try {
-    // Usar el dominio principal de Firebase para Apple
-    // Este dominio debe estar correctamente configurado en la consola de Apple Developer
-    auth.config.authDomain = "owl-fenc.firebaseapp.com";
+    // Usar el dominio actual para Apple
+    const currentDomain = window.location.hostname;
+    auth.config.authDomain = currentDomain;
     
     console.log("Intentando autenticación con Apple usando dominio:", auth.config.authDomain);
     

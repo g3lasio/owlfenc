@@ -71,7 +71,7 @@ function Router() {
       <Route path="/about-mervin" component={AboutMervin} />
       <Route path="/legal-policy" component={LegalPolicy} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
-      
+
       {/* Rutas protegidas */}
       <Route path="/">
         {() => <ProtectedRoute component={Home} />}
@@ -109,7 +109,7 @@ function Router() {
       <Route path="/history">
         {() => <ProtectedRoute component={History} />}
       </Route>
-      
+
       {/* Página no encontrada */}
       <Route component={NotFound} />
     </Switch>
