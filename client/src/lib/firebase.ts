@@ -211,26 +211,39 @@ export const loginWithGoogle = async () => {
 // Iniciar sesión con Apple
 export const loginWithApple = async () => {
   try {
-    // Usar el dominio actual para Apple
-    auth.config.authDomain = window.location.hostname.includes('repl.co') 
-      ? `${window.location.hostname}`
-      : 'owl-fenc.firebaseapp.com';
+    // Usar los dominios autorizados
+    const domain = window.location.hostname;
+    auth.config.authDomain = domain;
 
-    console.log("Intentando autenticación con Apple usando dominio:", auth.config.authDomain);
+    // Asegurarnos que el dominio esté autorizado
+    if (!firebaseConfig.authDomains.includes(domain)) {
+      console.error("Dominio no autorizado:", domain);
+      throw new Error("Dominio no autorizado para autenticación con Apple");
+    }
+
+    console.log("Intentando autenticación con Apple usando dominio:", domain);
+
+    // Configuraciones personalizadas para Apple
+    appleProvider.setCustomParameters({
+      locale: 'es',
+      prompt: 'consent', // Solicitar consentimiento explícito
+      state: Math.random().toString(36).substring(2), // Estado aleatorio para seguridad
+    });
 
     try {
-      // Configuraciones personalizadas para Apple
-      appleProvider.setCustomParameters({
-        locale: 'es',
-        // Otros parámetros que Apple pueda requerir si son necesarios
-      });
-
-      // Primero intentar con popup
+      // Intentar primero con redirect para mejor compatibilidad
+      await signInWithRedirect(auth, appleProvider);
+      return null; // El flujo continuará después del redirect
+    } catch (redirectError: any) {
+      console.error("Error con redirect de Apple:", redirectError);
+      
+      // Si falla el redirect, intentar con popup como fallback
       console.log("Intentando autenticación con Apple vía popup");
       const result = await signInWithPopup(auth, appleProvider);
       console.log("Autenticación exitosa con Apple vía popup");
       return result.user;
-    } catch (popupError: any) {
+    }
+  } catch (error: any) {
       console.error("Error con popup de Apple:", popupError);
 
       // Si el error es de tipo unauthorized-domain, es un problema de configuración
