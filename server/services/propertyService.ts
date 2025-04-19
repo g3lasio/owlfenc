@@ -126,8 +126,14 @@ class PropertyService {
 
 
         const apiCall = async () => {
+          const { address1, address2 } = this.parseAddress(address);
+          console.log('Llamando a ATTOM API con:', { address1, address2 });
+          
           const response = await this.attomClient.get('/property/detailowner', { 
-            params: { address: address.trim() }
+            params: { 
+              address1: address1,
+              address2: address2
+            }
           });
 
           console.log('¡Éxito! Respuesta recibida con status:', response.status);
