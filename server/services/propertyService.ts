@@ -36,7 +36,26 @@ interface AddressParts {
 
 class PropertyService {
   private apiKey: string;
-  private baseUrl: string = 'https://api.gateway.attomdata.com/propertyapi/v1.0.0';
+  private endpoints = [
+    'https://api.gateway.attomdata.com/propertyapi/v1.0.0',
+    'https://api.gateway.attomdata.com/propertyapi/v1.0.0/property',
+    'https://api.gateway.attomdata.com/propertyapi/v1.0.0/sale',
+    'https://api.gateway.attomdata.com/propertyapi/v1.0.0/assessment'
+  ];
+  private baseUrl: string = this.endpoints[0];
+  
+  private async tryAllEndpoints(address: string): Promise<any> {
+    for (const endpoint of this.endpoints) {
+      try {
+        this.baseUrl = endpoint;
+        const result = await this.getPropertyByAddress(address);
+        if (result) return result;
+      } catch (error) {
+        console.log(`Error con endpoint ${endpoint}:`, error.message);
+      }
+    }
+    throw new Error('No se encontraron datos en ningún endpoint');
+  }
   private attomClient: AxiosInstance;
 
   constructor(apiKey: string) {
@@ -168,10 +187,18 @@ class PropertyService {
               return status >= 200 && status < 300;
             },
             headers: {
-              'Accept': 'application/json',
+              'Accept': 'application/json,text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+              'Accept-Language': 'en-US,en;q=0.5',
               'Content-Type': 'application/json',
               'apikey': this.apiKey,
               'Cache-Control': 'no-cache',
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+              'Connection': 'keep-alive',
+              'Upgrade-Insecure-Requests': '1',
+              'Sec-Fetch-Dest': 'document',
+              'Sec-Fetch-Mode': 'navigate',
+              'Sec-Fetch-Site': 'none',
+              'Sec-Fetch-User': '?1',
               'X-Requested-With': 'XMLHttpRequest',
               'User-Agent': 'Mozilla/5.0 (compatible; Property Service/1.0)'
             },
@@ -179,18 +206,37 @@ class PropertyService {
             responseType: 'json',
             decompress: true,
             transformResponse: [(data) => {
-              // Si la respuesta es HTML, intentar extraer JSON embebido
-              if (typeof data === 'string' && data.includes('<!DOCTYPE html>')) {
+              if (typeof data === 'string') {
+                // Si es JSON válido, intentar parsearlo directamente
                 try {
-                  // Buscar cualquier JSON embebido en el HTML
-                  const jsonMatch = data.match(/\{[\s\S]*\}/);
-                  if (jsonMatch) {
-                    return JSON.parse(jsonMatch[0]);
-                  }
-                  throw new Error('No JSON found in HTML response');
+                  return JSON.parse(data);
                 } catch (e) {
-                  console.error('Error parsing embedded JSON:', e);
-                  throw new Error('Invalid API response format');
+                  // Si es HTML, intentar extraer datos estructurados
+                  if (data.includes('<!DOCTYPE html>')) {
+                    const propertyData = {};
+                    
+                    // Extraer datos usando patrones comunes
+                    const ownerMatch = data.match(/"owner"[^{]*{([^}]+)}/);
+                    if (ownerMatch) {
+                      propertyData.owner = {};
+                      const nameMatch = ownerMatch[1].match(/"name"\s*:\s*"([^"]+)"/);
+                      if (nameMatch) propertyData.owner.name = nameMatch[1];
+                    }
+
+                    // Extraer detalles de propiedad
+                    const detailsMatch = data.match(/"property"[^{]*{([^}]+)}/);
+                    if (detailsMatch) {
+                      const yearMatch = detailsMatch[1].match(/"yearBuilt"\s*:\s*"?(\d+)"?/);
+                      if (yearMatch) propertyData.yearBuilt = parseInt(yearMatch[1]);
+                    }
+
+                    if (Object.keys(propertyData).length > 0) {
+                      return { property: [propertyData] };
+                    }
+                  }
+                  
+                  console.error('No se pudieron extraer datos del HTML');
+                  throw new Error('Formato de respuesta inválido');
                 }
               }
               return data;
