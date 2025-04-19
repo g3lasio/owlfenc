@@ -218,42 +218,63 @@ export const loginWithApple = async () => {
       throw new Error("Apple provider no inicializado");
     }
     
-    // Obtenemos origen actual para verificación
-    const currentOrigin = window.location.origin;
-    console.log("2. URL de origen actual:", currentOrigin);
-    
     // Datos del usuario actual (si existe) para diagnóstico
     const currentUser = auth.currentUser;
-    console.log("3. Estado de usuario antes de login:", currentUser ? 
+    console.log("2. Estado de usuario antes de login:", currentUser ? 
       "Usuario ya autenticado" : "No hay usuario autenticado");
     
-    // Configuración básica para el proveedor de Apple - manteniéndola mínima
-    // Los parámetros adicionales pueden causar conflictos con la configuración 
-    // interna de Firebase
+    // Dado que estamos teniendo problemas específicos de conexión con Apple,
+    // vamos a intentar usar el mecanismo de popup que puede tener menos
+    // restricciones de cookies/CORS en algunos ambientes
+    console.log("3. Intentando autenticación con Apple usando POPUP en lugar de redirección");
     
-    // Configuramos los parámetros mínimos - esto deja que Firebase maneje la mayor
-    // parte de la configuración automáticamente
-    appleProvider.setCustomParameters({
-      // Locale para mensajes de interfaz
-      locale: 'es'
-    });
-    
-    console.log("4. Parámetros configurados: (sólo locale='es', dejando que Firebase maneje el resto)");
-    
-    console.log("5. Iniciando autenticación con Apple mediante redirección...");
-    
-    // Intentamos la redirección con el proveedor configurado
-    await signInWithRedirect(auth, appleProvider);
-    console.log("6. Redirección iniciada (si se ve este mensaje, la redirección no ocurrió)");
-    
-    return null; // La redirección navegará fuera de esta página
+    try {
+      console.log("4. Iniciando popup de Apple...");
+      const result = await signInWithPopup(auth, appleProvider);
+      console.log("5. Autenticación con popup exitosa:", result.user ? "Usuario obtenido" : "No se obtuvo usuario");
+      return result.user;
+    } catch (popupError: any) {
+      console.error("Error con método popup:", popupError);
+      console.log("Código de error popup:", popupError.code);
+      
+      // Si el error es por popup bloqueado, intentamos con redirección como último recurso
+      if (popupError.code === 'auth/popup-blocked' || 
+          popupError.code === 'auth/popup-closed-by-user' ||
+          popupError.code === 'auth/cancelled-popup-request') {
+        
+        console.log("6. Popup bloqueado o cerrado, intentando con redirección como último recurso");
+        
+        // Configurar parámetros diferentes para un último intento
+        appleProvider.setCustomParameters({
+          // Solo establecemos locale, para minimizar configuraciones
+          locale: 'es'
+        });
+        
+        console.log("7. Iniciando último intento con redirección...");
+        await signInWithRedirect(auth, appleProvider);
+        console.log("8. Redirección iniciada");
+        return null;
+      }
+      
+      // Para otros errores, los propagamos
+      throw popupError;
+    }
   } catch (error: any) {
     // Log detallado del error
     console.error("=== ERROR EN APPLE LOGIN ===");
     console.error("Error iniciando sesión con Apple:", error);
     console.error("Código de error:", error.code);
     console.error("Mensaje de error:", error.message);
-    console.error("Error completo:", JSON.stringify(error, null, 2));
+    console.error("Error completo:", error);
+    
+    // Mensaje especial para error de conexión con Apple
+    if (error.message && error.message.includes('appleid.apple.com refused to connect')) {
+      console.error("DIAGNÓSTICO: Error de conexión con appleid.apple.com");
+      console.error("Esto podría indicar:");
+      console.error("1. Que la cuenta de desarrollador de Apple no está configurada correctamente");
+      console.error("2. Que el dominio de la aplicación no está autorizado en Apple Developer Console");
+      console.error("3. Que hay restricciones de red que impiden la conexión con Apple");
+    }
     
     // Propagamos el error para manejarlo en la UI
     throw error;

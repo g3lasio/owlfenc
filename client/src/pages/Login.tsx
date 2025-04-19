@@ -117,12 +117,22 @@ export default function Login() {
       let errorMessage = "Error al iniciar el proceso de autenticación con Apple. Por favor, verifica tu conexión e intenta de nuevo.";
       
       // Personalizar el mensaje según el tipo de error
-      if (err.message && err.message.includes('invalid_request')) {
+      if (err.message && err.message.includes('appleid.apple.com refused to connect')) {
+        errorMessage = "No se puede conectar con los servidores de Apple. Esto puede deberse a: \n" +
+                      "1) El dominio no está autorizado en la consola de desarrollador de Apple, \n" +
+                      "2) Hay problemas con la configuración de Sign in with Apple en Firebase, o \n" +
+                      "3) Existen restricciones de red que impiden la conexión. \n\n" + 
+                      "Te recomendamos usar otro método de inicio de sesión mientras resolvemos este problema.";
+      } else if (err.message && err.message.includes('invalid_request')) {
         errorMessage = "Error en la configuración de la autenticación con Apple. Contacta al soporte técnico.";
       } else if (err.code === 'auth/popup-closed-by-user') {
         errorMessage = "Ventana de inicio de sesión cerrada. Por favor, intenta de nuevo.";
+      } else if (err.code === 'auth/popup-blocked') {
+        errorMessage = "Tu navegador bloqueó la ventana emergente. Activa las ventanas emergentes y vuelve a intentarlo.";
       } else if (err.code === 'auth/unauthorized-domain') {
         errorMessage = "Este dominio no está autorizado para autenticación con Apple. Contacta al soporte técnico.";
+      } else if (err.code === 'auth/internal-error') {
+        errorMessage = "Error interno de autenticación. Prueba usando otro método de inicio de sesión como Google o Email.";
       }
       
       toast({

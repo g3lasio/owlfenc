@@ -107,7 +107,17 @@ export default function AppleCallback() {
                     projectId: auth.app.options.projectId || "No configurado"
                   });
                   
-                  setError("La autenticación no se completó automáticamente. Posible problema con la configuración de Firebase o Apple.");
+                  // Mensaje detallado con información de diagnóstico
+                  setError(
+                    "La autenticación con Apple no se completó correctamente. " +
+                    "Diagnóstico: Recibimos el código de Apple, pero Firebase no procesa la autenticación. " +
+                    "\n\nPosibles causas: " +
+                    "\n1. Dominio no autorizado en la consola de Apple Developer" +
+                    "\n2. Problema en la configuración de Firebase (verificar authDomain: " + 
+                    (auth.app.options.authDomain || "No configurado") + ")" +
+                    "\n3. Firewall o restricción de red que impide la comunicación entre servicios" +
+                    "\n\nPor favor, usa otro método de inicio de sesión mientras trabajamos en resolver este problema."
+                  );
                   setTimeout(() => {
                     navigate("/login");
                   }, 2000);
@@ -188,7 +198,9 @@ export default function AppleCallback() {
                 </svg>
               </div>
               <h3 className="font-medium text-lg">Ha ocurrido un error</h3>
-              <p className="text-muted-foreground">{error}</p>
+              <div className="text-muted-foreground whitespace-pre-line text-left max-w-md mx-auto">
+                {error}
+              </div>
               <Button onClick={() => navigate("/login")} className="mt-4">
                 Volver al inicio de sesión
               </Button>
