@@ -276,11 +276,14 @@ export default function PropertyOwnershipVerifier() {
                           styles: {
                             control: (provided) => ({
                               ...provided,
-                              height: '42px',
+                              minHeight: '42px',
+                              height: 'auto',
                               borderRadius: '7px',
                               boxShadow: 'none',
                               borderColor: '#e2e8f0',
-                              paddingLeft: '30px', // Add padding for the icon
+                              paddingLeft: '30px',
+                              paddingRight: '8px',
+                              whiteSpace: 'normal',
                               '&:hover': {
                                 borderColor: '#cbd5e1',
                               }
@@ -481,36 +484,36 @@ export default function PropertyOwnershipVerifier() {
       ) : null}
 
       <div className="mt-6">
-        <h2 className="text-xl font-semibold mb-3">¿Por qué verificar la propiedad?</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
+        <h2 className="text-xl font-semibold mb-3 text-center">¿Por qué verificar la propiedad?</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 max-w-5xl mx-auto">
+          <Card className="bg-gradient-to-br from-blue-500/10 to-purple-500/5 backdrop-blur-sm border border-blue-200/20 shadow-lg hover:shadow-blue-500/10 transition-all duration-300">
             <CardHeader>
-              <CardTitle className="text-lg">Prevenir fraudes</CardTitle>
+              <CardTitle className="text-lg text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-500">Prevenir fraudes</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground text-center">
                 Asegúrate de estar tratando con el propietario legítimo para evitar estafas y problemas de pago.
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-gradient-to-br from-emerald-500/10 to-blue-500/5 backdrop-blur-sm border border-emerald-200/20 shadow-lg hover:shadow-emerald-500/10 transition-all duration-300">
             <CardHeader>
-              <CardTitle className="text-lg">Evitar problemas legales</CardTitle>
+              <CardTitle className="text-lg text-center bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-blue-500">Evitar problemas legales</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground text-center">
                 Confirma la autorización adecuada para el trabajo de construcción para evitar disputas y posibles demandas.
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-gradient-to-br from-violet-500/10 to-fuchsia-500/5 backdrop-blur-sm border border-violet-200/20 shadow-lg hover:shadow-violet-500/10 transition-all duration-300">
             <CardHeader>
-              <CardTitle className="text-lg">Generar confianza</CardTitle>
+              <CardTitle className="text-lg text-center bg-clip-text text-transparent bg-gradient-to-r from-violet-500 to-fuchsia-500">Generar confianza</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground text-center">
                 Muestra profesionalismo al verificar los detalles de la propiedad antes de comenzar cualquier proyecto.
               </p>
             </CardContent>
