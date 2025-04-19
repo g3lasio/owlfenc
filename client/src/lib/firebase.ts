@@ -83,7 +83,7 @@ export const saveProject = async (projectData: any) => {
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now()
     };
-    
+
     const docRef = await addDoc(collection(db, "projects"), projectWithStatus);
     return { id: docRef.id, ...projectWithStatus };
   } catch (error) {
@@ -98,19 +98,19 @@ export const getProjects = async (filters?: { status?: string, fenceType?: strin
       collection(db, "projects"), 
       orderBy("createdAt", "desc")
     );
-    
+
     // Apply filters if provided
     if (filters) {
       const queryConstraints = [];
-      
+
       if (filters.status) {
         queryConstraints.push(where("status", "==", filters.status));
       }
-      
+
       if (filters.fenceType) {
         queryConstraints.push(where("fenceType", "==", filters.fenceType));
       }
-      
+
       if (queryConstraints.length > 0) {
         q = query(
           collection(db, "projects"),
@@ -119,7 +119,7 @@ export const getProjects = async (filters?: { status?: string, fenceType?: strin
         );
       }
     }
-    
+
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
@@ -137,7 +137,7 @@ export const getProjectById = async (id: string) => {
   try {
     const docRef = doc(db, "projects", id);
     const docSnap = await getDoc(docRef);
-    
+
     if (docSnap.exists()) {
       return { id: docSnap.id, ...docSnap.data() };
     } else {
@@ -211,18 +211,20 @@ export const loginWithGoogle = async () => {
 // Iniciar sesión con Apple
 export const loginWithApple = async () => {
   try {
-    // Usar directamente el dominio principal de Firebase para Apple
-    auth.config.authDomain = "owl-fenc.firebaseapp.com";
-    
+    // Usar el dominio actual para Apple
+    auth.config.authDomain = window.location.hostname.includes('repl.co') 
+      ? `${window.location.hostname}`
+      : 'owl-fenc.firebaseapp.com';
+
     console.log("Intentando autenticación con Apple usando dominio:", auth.config.authDomain);
-    
+
     try {
       // Configuraciones personalizadas para Apple
       appleProvider.setCustomParameters({
         locale: 'es',
         // Otros parámetros que Apple pueda requerir si son necesarios
       });
-      
+
       // Primero intentar con popup
       console.log("Intentando autenticación con Apple vía popup");
       const result = await signInWithPopup(auth, appleProvider);
@@ -230,20 +232,20 @@ export const loginWithApple = async () => {
       return result.user;
     } catch (popupError: any) {
       console.error("Error con popup de Apple:", popupError);
-      
+
       // Si el error es de tipo unauthorized-domain, es un problema de configuración
       if (popupError.code === 'auth/unauthorized-domain') {
         console.error("Dominio no autorizado para autenticación con Apple:", auth.config.authDomain);
         throw new Error(`El dominio ${auth.config.authDomain} no está autorizado para la autenticación con Apple. Por favor, verifica la configuración en Firebase y Apple Developer.`);
       }
-      
+
       // Si el error es de tipo popup bloqueado o cerrado, intentar con redirect
       if (popupError.code === 'auth/cancelled-popup-request' || 
           popupError.code === 'auth/popup-closed-by-user' ||
           popupError.code === 'auth/popup-blocked') {
-        
+
         console.log("Popup bloqueado o cerrado, intentando con redirect...");
-        
+
         try {
           console.log("Redireccionando para autenticación con Apple");
           await signInWithRedirect(auth, appleProvider);
@@ -254,27 +256,27 @@ export const loginWithApple = async () => {
           throw redirectError;
         }
       }
-      
+
       // Para cualquier otro tipo de error, lanzar directamente
       throw popupError;
     }
   } catch (error: any) {
     console.error("Error general iniciando sesión con Apple:", error);
-    
+
     // Mensajes de error específicos
     if (error.code === 'auth/operation-not-allowed') {
       throw new Error('El proveedor Apple no está habilitado en Firebase. Por favor, contacta al soporte.');
     }
-    
+
     if (error.code === 'auth/invalid-oauth-provider') {
       throw new Error('La configuración del proveedor Apple es incorrecta. Verifica la configuración en Firebase Console.');
     }
-    
+
     // Errores específicos a invalid_request
     if (error.message && error.message.includes('invalid_request')) {
       throw new Error('La solicitud de autenticación con Apple es inválida. Por favor verifica que el dominio de redirección esté correctamente configurado en la consola de Apple Developer.');
     }
-    
+
     throw error;
   }
 };
@@ -317,12 +319,12 @@ export const updateUserProfile = async (displayName: string, photoURL?: string) 
   try {
     const user = auth.currentUser;
     if (!user) throw new Error("No hay usuario autenticado");
-    
+
     await updateProfile(user, {
       displayName,
       photoURL: photoURL || user.photoURL
     });
-    
+
     return user;
   } catch (error) {
     console.error("Error actualizando perfil:", error);
@@ -336,11 +338,11 @@ export const changePassword = async (currentPassword: string, newPassword: strin
     const user = auth.currentUser;
     if (!user) throw new Error("No hay usuario autenticado");
     if (!user.email) throw new Error("El usuario no tiene email asociado");
-    
+
     // Re-autenticar al usuario antes de cambiar la contraseña
     const credential = EmailAuthProvider.credential(user.email, currentPassword);
     await reauthenticateWithCredential(user, credential);
-    
+
     // Cambiar contraseña
     await updatePassword(user, newPassword);
     return true;
@@ -356,11 +358,11 @@ export const changeEmail = async (password: string, newEmail: string) => {
     const user = auth.currentUser;
     if (!user) throw new Error("No hay usuario autenticado");
     if (!user.email) throw new Error("El usuario no tiene email asociado");
-    
+
     // Re-autenticar al usuario antes de cambiar el email
     const credential = EmailAuthProvider.credential(user.email, password);
     await reauthenticateWithCredential(user, credential);
-    
+
     // Cambiar email
     await updateEmail(user, newEmail);
     return true;
@@ -375,7 +377,7 @@ export const linkWithGoogle = async () => {
   try {
     const user = auth.currentUser;
     if (!user) throw new Error("No hay usuario autenticado");
-    
+
     const result = await linkWithPopup(user, googleProvider);
     return result.user;
   } catch (error) {
@@ -389,7 +391,7 @@ export const unlinkProvider = async (providerId: string) => {
   try {
     const user = auth.currentUser;
     if (!user) throw new Error("No hay usuario autenticado");
-    
+
     await unlink(user, providerId);
     return true;
   } catch (error) {
@@ -411,15 +413,15 @@ export const initPhoneLogin = async (phoneNumber: string, recaptchaContainerId: 
         // Respuesta de reCAPTCHA expirada, pedirle al usuario que resuelva de nuevo
       }
     });
-    
+
     // Enviar código SMS
     const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
-    
+
     // Destruir el reCAPTCHA para evitar duplicados
     if (recaptchaVerifier) {
       recaptchaVerifier.clear();
     }
-    
+
     return confirmationResult;
   } catch (error) {
     console.error("Error iniciando sesión con teléfono:", error);
@@ -445,12 +447,12 @@ export const sendEmailLink = async (email: string) => {
       url: window.location.origin + '/login/email-link-callback',
       handleCodeInApp: true
     };
-    
+
     await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-    
+
     // Guardar el email en localStorage para recuperarlo cuando el usuario haga clic en el enlace
     localStorage.setItem('emailForSignIn', email);
-    
+
     return true;
   } catch (error) {
     console.error("Error enviando enlace de email:", error);
@@ -475,11 +477,11 @@ export const deleteUserAccount = async (password: string) => {
     const user = auth.currentUser;
     if (!user) throw new Error("No hay usuario autenticado");
     if (!user.email) throw new Error("El usuario no tiene email asociado");
-    
+
     // Re-autenticar al usuario antes de eliminar la cuenta
     const credential = EmailAuthProvider.credential(user.email, password);
     await reauthenticateWithCredential(user, credential);
-    
+
     // Eliminar cuenta
     await deleteUser(user);
     return true;

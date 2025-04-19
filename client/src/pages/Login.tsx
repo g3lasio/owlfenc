@@ -94,15 +94,14 @@ export default function Login() {
     try {
       clearError();
       await loginWithApple();
-      navigate("/");
+      // No navegamos aquí porque loginWithApple hace un redirect
     } catch (err: any) {
       console.error("Error de inicio de sesión con Apple:", err);
       toast({
         variant: "destructive",
         title: "Error de inicio de sesión",
-        description: err.message || "Ocurrió un error al iniciar sesión con Apple. Intenta de nuevo.",
+        description: "Error al iniciar el proceso de autenticación con Apple. Por favor, verifica tu conexión e intenta de nuevo.",
       });
-    } finally {
       setIsLoading(false);
     }
   };
