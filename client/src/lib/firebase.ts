@@ -42,7 +42,7 @@ import {
 // Configuración de Firebase
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
-  authDomain: "owl-fenc.firebaseapp.com",
+  authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "",
   storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.appspot.com`,
   appId: import.meta.env.VITE_FIREBASE_APP_ID || ""
@@ -208,23 +208,54 @@ export const loginWithGoogle = async () => {
 // Iniciar sesión con Apple
 export const loginWithApple = async () => {
   try {
-    // Para Apple, es preferible usar siempre redirección, ya que los popups
-    // suelen causar problemas específicos con el flujo de autenticación de Apple
-    // y pueden variar según el navegador y dispositivo.
+    // Añadimos información detallada para diagnóstico
+    console.log("=== DIAGNÓSTICO APPLE LOGIN ===");
+    console.log("1. Configurando proveedor de Apple");
     
-    // Configuración básica para el proveedor de Apple
+    // Asegurarnos que el provider está correctamente inicializado
+    if (!appleProvider) {
+      console.error("Error crítico: El proveedor de Apple no está inicializado");
+      throw new Error("Apple provider no inicializado");
+    }
+    
+    // Obtenemos origen actual para verificación
+    const currentOrigin = window.location.origin;
+    console.log("2. URL de origen actual:", currentOrigin);
+    
+    // Datos del usuario actual (si existe) para diagnóstico
+    const currentUser = auth.currentUser;
+    console.log("3. Estado de usuario antes de login:", currentUser ? 
+      "Usuario ya autenticado" : "No hay usuario autenticado");
+    
+    // Configuración básica para el proveedor de Apple - manteniéndola mínima
+    // Los parámetros adicionales pueden causar conflictos con la configuración 
+    // interna de Firebase
+    
+    // Configuramos los parámetros mínimos - esto deja que Firebase maneje la mayor
+    // parte de la configuración automáticamente
     appleProvider.setCustomParameters({
-      // Parámetros mínimos necesarios para Apple Sign In
-      locale: 'es',
-      // Valor aleatorio para evitar ataques CSRF
-      state: Math.random().toString(36).substring(2)
+      // Locale para mensajes de interfaz
+      locale: 'es'
     });
     
-    console.log("Iniciando autenticación con Apple mediante redirección...");
+    console.log("4. Parámetros configurados: (sólo locale='es', dejando que Firebase maneje el resto)");
+    
+    console.log("5. Iniciando autenticación con Apple mediante redirección...");
+    
+    // Intentamos la redirección con el proveedor configurado
     await signInWithRedirect(auth, appleProvider);
+    console.log("6. Redirección iniciada (si se ve este mensaje, la redirección no ocurrió)");
+    
     return null; // La redirección navegará fuera de esta página
   } catch (error: any) {
+    // Log detallado del error
+    console.error("=== ERROR EN APPLE LOGIN ===");
     console.error("Error iniciando sesión con Apple:", error);
+    console.error("Código de error:", error.code);
+    console.error("Mensaje de error:", error.message);
+    console.error("Error completo:", JSON.stringify(error, null, 2));
+    
+    // Propagamos el error para manejarlo en la UI
     throw error;
   }
 };
