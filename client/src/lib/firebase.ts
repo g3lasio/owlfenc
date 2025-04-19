@@ -244,10 +244,10 @@ export const loginWithApple = async () => {
       return result.user;
     }
   } catch (error: any) {
-      console.error("Error con popup de Apple:", popupError);
+      console.error("Error con popup de Apple:", error);
 
       // Si el error es de tipo unauthorized-domain, es un problema de configuración
-      if (popupError.code === 'auth/unauthorized-domain') {
+      if (error.code === 'auth/unauthorized-domain') {
         console.error("Dominio no autorizado para autenticación con Apple:", auth.config.authDomain);
         throw new Error(`El dominio ${auth.config.authDomain} no está autorizado para la autenticación con Apple. Por favor, verifica la configuración en Firebase y Apple Developer.`);
       }
