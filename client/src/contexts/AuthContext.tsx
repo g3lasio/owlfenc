@@ -21,20 +21,20 @@ type User = {
   emailVerified: boolean;
 };
 
-type AuthContextType = {
+interface AuthContextType {
   currentUser: User | null;
   loading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<User>;
   register: (email: string, password: string, displayName: string) => Promise<User>;
   logout: () => Promise<boolean>;
-  loginWithGoogle: () => Promise<User>;
+  loginWithGoogle: () => Promise<User | null>; // Puede ser null en caso de redirección
   loginWithApple: () => Promise<User | null>; // Puede ser null en caso de redirección
-  loginWithMicrosoft: () => Promise<User>;
+  loginWithMicrosoft: () => Promise<User | null>; // Puede ser null en caso de redirección
   sendPasswordResetEmail: (email: string) => Promise<boolean>;
   sendEmailLoginLink: (email: string) => Promise<boolean>;
   clearError: () => void;
-};
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -187,6 +187,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setLoading(true);
       setError(null);
       const user = await loginWithGoogle();
+      
+      // Si el usuario es null (redirección), retornar null
+      if (!user) {
+        console.log("Redirección iniciada con Google");
+        return null;
+      }
 
       const appUser: User = {
         uid: user.uid,
@@ -245,6 +251,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setLoading(true);
       setError(null);
       const user = await loginWithMicrosoft();
+      
+      // Si el usuario es null (redirección), retornar null
+      if (!user) {
+        console.log("Redirección iniciada con Microsoft");
+        return null;
+      }
 
       const appUser: User = {
         uid: user.uid,
