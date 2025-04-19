@@ -1,0 +1,141 @@
+import { useEffect, useState } from "react";
+import { useLocation } from "wouter";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { getAuth, getRedirectResult, OAuthProvider } from "firebase/auth";
+
+export default function AppleCallback() {
+  const [, navigate] = useLocation();
+  const { toast } = useToast();
+  const { currentUser } = useAuth();
+  const [isProcessing, setIsProcessing] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    // Si ya hay un usuario autenticado, redirigir a la página principal
+    if (currentUser) {
+      navigate("/");
+      return;
+    }
+
+    const processAppleRedirect = async () => {
+      const auth = getAuth();
+      try {
+        console.log("Procesando redirección de Apple...");
+        // Obtener el resultado de la redirección
+        const result = await getRedirectResult(auth);
+        
+        // Si hay un resultado, significa que la autenticación fue exitosa
+        if (result) {
+          console.log("Autenticación con Apple exitosa", result.user);
+          setSuccess(true);
+          toast({
+            title: "Inicio de sesión exitoso",
+            description: "Has iniciado sesión correctamente con Apple.",
+          });
+          
+          // Esperar un segundo y redirigir
+          setTimeout(() => {
+            navigate("/");
+          }, 1000);
+        } else {
+          // Si no hay resultado pero estamos en esta página, puede ser que el usuario llegó aquí directamente
+          // Esto no es necesariamente un error
+          console.log("No se encontró resultado de redirección");
+          
+          // Verificar si hay errores en la URL
+          const urlParams = new URLSearchParams(window.location.search);
+          const errorParam = urlParams.get('error');
+          
+          if (errorParam) {
+            setError(`Error de autenticación: ${errorParam}`);
+          } else {
+            // Si no hay error explícito, redirigir al login después de un breve momento
+            setTimeout(() => {
+              navigate("/login");
+            }, 2000);
+          }
+        }
+      } catch (err: any) {
+        console.error("Error al procesar la redirección de Apple:", err);
+        setError(err.message || "Error al procesar la autenticación con Apple");
+        
+        // Mensajes específicos para errores comunes
+        if (err.code === 'auth/invalid-credential') {
+          setError("Credencial inválida. Por favor, intenta nuevamente.");
+        } else if (err.code === 'auth/account-exists-with-different-credential') {
+          setError("Ya existe una cuenta con este email pero con un método de inicio de sesión diferente.");
+        } else if (err.message.includes('invalid_request')) {
+          setError("La solicitud a Apple ID es inválida. Esto podría ser un problema con la configuración del dominio de redirección.");
+        }
+        
+        toast({
+          variant: "destructive",
+          title: "Error de autenticación con Apple",
+          description: err.message || "Error al procesar la autenticación. Intenta de nuevo.",
+        });
+      } finally {
+        setIsProcessing(false);
+      }
+    };
+
+    processAppleRedirect();
+  }, [currentUser, navigate, toast]);
+
+  return (
+    <div className="container mx-auto max-w-md py-12">
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="text-2xl text-center">Autenticación con Apple</CardTitle>
+          <CardDescription className="text-center">
+            Procesando tu inicio de sesión con Apple ID
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center py-6">
+          {isProcessing && (
+            <div className="text-center space-y-4">
+              <div className="flex justify-center">
+                <svg className="animate-spin h-12 w-12 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
+              <p className="text-muted-foreground">Verificando tu autenticación con Apple...</p>
+            </div>
+          )}
+
+          {error && (
+            <div className="text-center space-y-4">
+              <div className="text-destructive text-5xl mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="font-medium text-lg">Ha ocurrido un error</h3>
+              <p className="text-muted-foreground">{error}</p>
+              <Button onClick={() => navigate("/login")} className="mt-4">
+                Volver al inicio de sesión
+              </Button>
+            </div>
+          )}
+
+          {success && (
+            <div className="text-center space-y-4">
+              <div className="text-green-500 text-5xl mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h3 className="font-medium text-lg">¡Autenticación exitosa!</h3>
+              <p className="text-muted-foreground">Tu inicio de sesión con Apple ha sido verificado correctamente.</p>
+              <p className="text-muted-foreground">Serás redirigido automáticamente...</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
