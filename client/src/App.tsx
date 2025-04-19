@@ -66,6 +66,7 @@ function Router() {
       <Route path="/recuperar-password" component={RecuperarPassword} />
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/login/email-link-callback" component={EmailLinkCallback} />
+      <Route path="/apple-callback" component={AppleCallback} />
       <Route path="/about-owlfenc" component={AboutOwlFence} />
       <Route path="/about-mervin" component={AboutMervin} />
       <Route path="/legal-policy" component={LegalPolicy} />

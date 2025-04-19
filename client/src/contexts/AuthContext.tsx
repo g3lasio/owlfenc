@@ -7,6 +7,7 @@ import {
   logoutUser,
   loginWithGoogle,
   loginWithApple,
+  loginWithMicrosoft,
   sendEmailLink,
   resetPassword
 } from '../lib/firebase';
@@ -28,7 +29,8 @@ type AuthContextType = {
   register: (email: string, password: string, displayName: string) => Promise<User>;
   logout: () => Promise<boolean>;
   loginWithGoogle: () => Promise<User>;
-  loginWithApple: () => Promise<User>;
+  loginWithApple: () => Promise<User | null>; // Puede ser null en caso de redirección
+  loginWithMicrosoft: () => Promise<User>;
   sendPasswordResetEmail: (email: string) => Promise<boolean>;
   sendEmailLoginLink: (email: string) => Promise<boolean>;
   clearError: () => void;
@@ -190,6 +192,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setLoading(true);
       setError(null);
       const user = await loginWithApple();
+      
+      // Si no hay usuario (debido a redirección), simplemente retornamos 
+      // El flujo continuará en la página de callback
+      if (!user) {
+        console.log("Redirección a Apple iniciada, no hay usuario inmediato");
+        return null;
+      }
 
       const appUser: User = {
         uid: user.uid,
@@ -202,6 +211,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       return appUser;
     } catch (err: any) {
+      console.error("Error detallado en appleLogin:", err);
       setError(err.message || 'Error al iniciar sesión con Apple');
       throw err;
     } finally {

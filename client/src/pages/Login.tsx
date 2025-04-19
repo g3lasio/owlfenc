@@ -93,15 +93,44 @@ export default function Login() {
     setIsLoading(true);
     try {
       clearError();
-      await loginWithApple();
-      // No navegamos aquí porque loginWithApple hace un redirect
+      const result = await loginWithApple();
+      
+      // Si tenemos un resultado inmediato (poco probable con redirección)
+      if (result) {
+        toast({
+          title: "Inicio de sesión exitoso",
+          description: "Inicio de sesión con Apple completado",
+        });
+        navigate("/");
+      } else {
+        // Si no hay resultado, significa que se está redirigiendo
+        // Mostramos un mensaje informativo
+        toast({
+          title: "Redirigiendo...",
+          description: "Estás siendo redirigido a Apple para iniciar sesión",
+        });
+        // No hacemos nada más, la redirección ocurrirá automáticamente
+      }
     } catch (err: any) {
       console.error("Error de inicio de sesión con Apple:", err);
+      
+      let errorMessage = "Error al iniciar el proceso de autenticación con Apple. Por favor, verifica tu conexión e intenta de nuevo.";
+      
+      // Personalizar el mensaje según el tipo de error
+      if (err.message && err.message.includes('invalid_request')) {
+        errorMessage = "Error en la configuración de la autenticación con Apple. Contacta al soporte técnico.";
+      } else if (err.code === 'auth/popup-closed-by-user') {
+        errorMessage = "Ventana de inicio de sesión cerrada. Por favor, intenta de nuevo.";
+      } else if (err.code === 'auth/unauthorized-domain') {
+        errorMessage = "Este dominio no está autorizado para autenticación con Apple. Contacta al soporte técnico.";
+      }
+      
       toast({
         variant: "destructive",
         title: "Error de inicio de sesión",
-        description: "Error al iniciar el proceso de autenticación con Apple. Por favor, verifica tu conexión e intenta de nuevo.",
+        description: errorMessage,
       });
+    } finally {
       setIsLoading(false);
     }
   };
