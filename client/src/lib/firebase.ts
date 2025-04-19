@@ -234,7 +234,7 @@ export const loginWithApple = async () => {
       state: Math.random().toString(36).substring(2),
       // URL de redirección personalizada en nuestra app para manejar el resultado
       // De esta forma, Apple redirigirá a esta URL específica en nuestra app
-      redirectUri: `${window.location.origin}/apple-callback`
+      redirectUri: window.location.origin + "/__/auth/handler"
     });
     
     // Intentar directamente con redirección para evitar problemas con popups
