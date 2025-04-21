@@ -18,6 +18,7 @@ import { documentService } from './services/documentService';
 import { memoryService } from './services/memoryService';
 import { stripeService } from './services/stripeService';
 import { permitService } from './services/permitService';
+import { searchService } from './services/searchService';
 import express from 'express'; // Import express to use express.raw
 
 // Initialize OpenAI API
