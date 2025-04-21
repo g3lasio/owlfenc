@@ -25,31 +25,31 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, userData: Partial<User>): Promise<User>;
-  
+
   // Project methods
   getProject(id: number): Promise<Project | undefined>;
   getProjectByProjectId(projectId: string): Promise<Project | undefined>;
   getProjectsByUserId(userId: number): Promise<Project[]>;
   createProject(project: InsertProject): Promise<Project>;
   updateProject(id: number, project: Partial<Project>): Promise<Project>;
-  
+
   // Template methods
   getTemplate(id: number): Promise<Template | undefined>;
   getTemplatesByType(userId: number, type: string): Promise<Template[]>;
   getDefaultTemplate(userId: number, type: string): Promise<Template | undefined>;
   createTemplate(template: InsertTemplate): Promise<Template>;
   updateTemplate(id: number, template: Partial<Template>): Promise<Template>;
-  
+
   // Settings methods
   getSettings(userId: number): Promise<Settings | undefined>;
   createSettings(settings: InsertSettings): Promise<Settings>;
   updateSettings(userId: number, settings: Partial<Settings>): Promise<Settings>;
-  
+
   // Chat log methods
   getChatLog(projectId: number): Promise<ChatLog | undefined>;
   createChatLog(chatLog: InsertChatLog): Promise<ChatLog>;
   updateChatLog(id: number, messages: any): Promise<ChatLog>;
-  
+
   // Client methods
   getClient(id: number): Promise<Client | undefined>;
   getClientByClientId(clientId: string): Promise<Client | undefined>;
@@ -57,20 +57,20 @@ export interface IStorage {
   createClient(client: InsertClient): Promise<Client>;
   updateClient(id: number, client: Partial<Client>): Promise<Client>;
   deleteClient(id: number): Promise<boolean>;
-  
+
   // Subscription Plan methods
   getSubscriptionPlan(id: number): Promise<SubscriptionPlan | undefined>;
   getSubscriptionPlanByCode(code: string): Promise<SubscriptionPlan | undefined>;
   getAllSubscriptionPlans(): Promise<SubscriptionPlan[]>;
   createSubscriptionPlan(plan: InsertSubscriptionPlan): Promise<SubscriptionPlan>;
   updateSubscriptionPlan(id: number, plan: Partial<SubscriptionPlan>): Promise<SubscriptionPlan>;
-  
+
   // User Subscription methods
   getUserSubscription(id: number): Promise<UserSubscription | undefined>;
   getUserSubscriptionByUserId(userId: number): Promise<UserSubscription | undefined>;
   createUserSubscription(subscription: InsertUserSubscription): Promise<UserSubscription>;
   updateUserSubscription(id: number, subscription: Partial<UserSubscription>): Promise<UserSubscription>;
-  
+
   // Payment History methods
   getPaymentHistory(id: number): Promise<PaymentHistory | undefined>;
   getPaymentHistoryByUserId(userId: number): Promise<PaymentHistory[]>;
@@ -87,7 +87,7 @@ export class MemStorage implements IStorage {
   private subscriptionPlans: Map<number, SubscriptionPlan>;
   private userSubscriptions: Map<number, UserSubscription>;
   private paymentHistory: Map<number, PaymentHistory>;
-  
+
   private currentIds: {
     users: number;
     projects: number;
@@ -110,7 +110,7 @@ export class MemStorage implements IStorage {
     this.subscriptionPlans = new Map();
     this.userSubscriptions = new Map();
     this.paymentHistory = new Map();
-    
+
     this.currentIds = {
       users: 1,
       projects: 1,
@@ -122,17 +122,17 @@ export class MemStorage implements IStorage {
       userSubscriptions: 1,
       paymentHistory: 1
     };
-    
+
     // Add some default data
     this.seedData();
   }
-  
+
   async updateUser(id: number, userData: Partial<User>): Promise<User> {
     const user = this.users.get(id);
     if (!user) {
       throw new Error(`User with ID ${id} not found`);
     }
-    
+
     const updatedUser: User = {
       ...user,
       ...userData
@@ -140,7 +140,7 @@ export class MemStorage implements IStorage {
     this.users.set(id, updatedUser);
     return updatedUser;
   }
-  
+
   // User methods
   async getUser(id: number): Promise<User | undefined> {
     return this.users.get(id);
@@ -163,18 +163,18 @@ export class MemStorage implements IStorage {
     this.users.set(id, user);
     return user;
   }
-  
+
   // Project methods
   async getProject(id: number): Promise<Project | undefined> {
     return this.projects.get(id);
   }
-  
+
   async getProjectByProjectId(projectId: string): Promise<Project | undefined> {
     return Array.from(this.projects.values()).find(
       (project) => project.projectId === projectId
     );
   }
-  
+
   async getProjectsByUserId(userId: number): Promise<Project[]> {
     return Array.from(this.projects.values()).filter(
       (project) => project.userId === userId
@@ -182,7 +182,7 @@ export class MemStorage implements IStorage {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
   }
-  
+
   async createProject(insertProject: InsertProject): Promise<Project> {
     const id = this.currentIds.projects++;
     const now = new Date();
@@ -195,13 +195,13 @@ export class MemStorage implements IStorage {
     this.projects.set(id, project);
     return project;
   }
-  
+
   async updateProject(id: number, projectData: Partial<Project>): Promise<Project> {
     const project = this.projects.get(id);
     if (!project) {
       throw new Error(`Project with ID ${id} not found`);
     }
-    
+
     const updatedProject: Project = {
       ...project,
       ...projectData,
@@ -210,24 +210,24 @@ export class MemStorage implements IStorage {
     this.projects.set(id, updatedProject);
     return updatedProject;
   }
-  
+
   // Template methods
   async getTemplate(id: number): Promise<Template | undefined> {
     return this.templates.get(id);
   }
-  
+
   async getTemplatesByType(userId: number, type: string): Promise<Template[]> {
     return Array.from(this.templates.values()).filter(
       (template) => template.userId === userId && template.type === type
     );
   }
-  
+
   async getDefaultTemplate(userId: number, type: string): Promise<Template | undefined> {
     return Array.from(this.templates.values()).find(
       (template) => template.userId === userId && template.type === type && template.isDefault
     );
   }
-  
+
   async createTemplate(insertTemplate: InsertTemplate): Promise<Template> {
     const id = this.currentIds.templates++;
     const now = new Date();
@@ -239,13 +239,13 @@ export class MemStorage implements IStorage {
     this.templates.set(id, template);
     return template;
   }
-  
+
   async updateTemplate(id: number, templateData: Partial<Template>): Promise<Template> {
     const template = this.templates.get(id);
     if (!template) {
       throw new Error(`Template with ID ${id} not found`);
     }
-    
+
     const updatedTemplate: Template = {
       ...template,
       ...templateData
@@ -253,14 +253,14 @@ export class MemStorage implements IStorage {
     this.templates.set(id, updatedTemplate);
     return updatedTemplate;
   }
-  
+
   // Settings methods
   async getSettings(userId: number): Promise<Settings | undefined> {
     return Array.from(this.settings.values()).find(
       (setting) => setting.userId === userId
     );
   }
-  
+
   async createSettings(insertSettings: InsertSettings): Promise<Settings> {
     const id = this.currentIds.settings++;
     const now = new Date();
@@ -272,16 +272,16 @@ export class MemStorage implements IStorage {
     this.settings.set(id, settings);
     return settings;
   }
-  
+
   async updateSettings(userId: number, settingsData: Partial<Settings>): Promise<Settings> {
     const settings = Array.from(this.settings.values()).find(
       (setting) => setting.userId === userId
     );
-    
+
     if (!settings) {
       throw new Error(`Settings for user ${userId} not found`);
     }
-    
+
     const updatedSettings: Settings = {
       ...settings,
       ...settingsData,
@@ -290,14 +290,14 @@ export class MemStorage implements IStorage {
     this.settings.set(settings.id, updatedSettings);
     return updatedSettings;
   }
-  
+
   // Chat log methods
   async getChatLog(projectId: number): Promise<ChatLog | undefined> {
     return Array.from(this.chatLogs.values()).find(
       (chatLog) => chatLog.projectId === projectId
     );
   }
-  
+
   async createChatLog(insertChatLog: InsertChatLog): Promise<ChatLog> {
     const id = this.currentIds.chatLogs++;
     const now = new Date();
@@ -310,13 +310,13 @@ export class MemStorage implements IStorage {
     this.chatLogs.set(id, chatLog);
     return chatLog;
   }
-  
+
   async updateChatLog(id: number, messages: any): Promise<ChatLog> {
     const chatLog = this.chatLogs.get(id);
     if (!chatLog) {
       throw new Error(`Chat log with ID ${id} not found`);
     }
-    
+
     const updatedChatLog: ChatLog = {
       ...chatLog,
       messages,
@@ -325,18 +325,18 @@ export class MemStorage implements IStorage {
     this.chatLogs.set(id, updatedChatLog);
     return updatedChatLog;
   }
-  
+
   // Client methods
   async getClient(id: number): Promise<Client | undefined> {
     return this.clients.get(id);
   }
-  
+
   async getClientByClientId(clientId: string): Promise<Client | undefined> {
     return Array.from(this.clients.values()).find(
       (client) => client.clientId === clientId
     );
   }
-  
+
   async getClientsByUserId(userId: number): Promise<Client[]> {
     return Array.from(this.clients.values()).filter(
       (client) => client.userId === userId
@@ -344,7 +344,7 @@ export class MemStorage implements IStorage {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
   }
-  
+
   async createClient(insertClient: InsertClient): Promise<Client> {
     const id = this.currentIds.clients++;
     const now = new Date();
@@ -357,13 +357,13 @@ export class MemStorage implements IStorage {
     this.clients.set(id, client);
     return client;
   }
-  
+
   async updateClient(id: number, clientData: Partial<Client>): Promise<Client> {
     const client = this.clients.get(id);
     if (!client) {
       throw new Error(`Client with ID ${id} not found`);
     }
-    
+
     const updatedClient: Client = {
       ...client,
       ...clientData,
@@ -372,32 +372,32 @@ export class MemStorage implements IStorage {
     this.clients.set(id, updatedClient);
     return updatedClient;
   }
-  
+
   async deleteClient(id: number): Promise<boolean> {
     if (!this.clients.has(id)) {
       throw new Error(`Client with ID ${id} not found`);
     }
-    
+
     return this.clients.delete(id);
   }
-  
+
   // Subscription Plan methods
   async getSubscriptionPlan(id: number): Promise<SubscriptionPlan | undefined> {
     return this.subscriptionPlans.get(id);
   }
-  
+
   async getSubscriptionPlanByCode(code: string): Promise<SubscriptionPlan | undefined> {
     return Array.from(this.subscriptionPlans.values()).find(
       (plan) => plan.code === code
     );
   }
-  
+
   async getAllSubscriptionPlans(): Promise<SubscriptionPlan[]> {
     return Array.from(this.subscriptionPlans.values())
       .filter(plan => plan.isActive)
       .sort((a, b) => a.price - b.price); // Ordenados por precio de menor a mayor
   }
-  
+
   async createSubscriptionPlan(insertPlan: InsertSubscriptionPlan): Promise<SubscriptionPlan> {
     const id = this.currentIds.subscriptionPlans++;
     const now = new Date();
@@ -410,13 +410,13 @@ export class MemStorage implements IStorage {
     this.subscriptionPlans.set(id, plan);
     return plan;
   }
-  
+
   async updateSubscriptionPlan(id: number, planData: Partial<SubscriptionPlan>): Promise<SubscriptionPlan> {
     const plan = this.subscriptionPlans.get(id);
     if (!plan) {
       throw new Error(`Subscription plan with ID ${id} not found`);
     }
-    
+
     const updatedPlan: SubscriptionPlan = {
       ...plan,
       ...planData,
@@ -425,18 +425,18 @@ export class MemStorage implements IStorage {
     this.subscriptionPlans.set(id, updatedPlan);
     return updatedPlan;
   }
-  
+
   // User Subscription methods
   async getUserSubscription(id: number): Promise<UserSubscription | undefined> {
     return this.userSubscriptions.get(id);
   }
-  
+
   async getUserSubscriptionByUserId(userId: number): Promise<UserSubscription | undefined> {
     return Array.from(this.userSubscriptions.values()).find(
       (subscription) => subscription.userId === userId
     );
   }
-  
+
   async createUserSubscription(insertSubscription: InsertUserSubscription): Promise<UserSubscription> {
     const id = this.currentIds.userSubscriptions++;
     const now = new Date();
@@ -449,13 +449,13 @@ export class MemStorage implements IStorage {
     this.userSubscriptions.set(id, subscription);
     return subscription;
   }
-  
+
   async updateUserSubscription(id: number, subscriptionData: Partial<UserSubscription>): Promise<UserSubscription> {
     const subscription = this.userSubscriptions.get(id);
     if (!subscription) {
       throw new Error(`User subscription with ID ${id} not found`);
     }
-    
+
     const updatedSubscription: UserSubscription = {
       ...subscription,
       ...subscriptionData,
@@ -464,18 +464,18 @@ export class MemStorage implements IStorage {
     this.userSubscriptions.set(id, updatedSubscription);
     return updatedSubscription;
   }
-  
+
   // Payment History methods
   async getPaymentHistory(id: number): Promise<PaymentHistory | undefined> {
     return this.paymentHistory.get(id);
   }
-  
+
   async getPaymentHistoryByUserId(userId: number): Promise<PaymentHistory[]> {
     return Array.from(this.paymentHistory.values())
       .filter(payment => payment.userId === userId)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
-  
+
   async createPaymentHistory(insertPayment: InsertPaymentHistory): Promise<PaymentHistory> {
     const id = this.currentIds.paymentHistory++;
     const now = new Date();
@@ -487,7 +487,7 @@ export class MemStorage implements IStorage {
     this.paymentHistory.set(id, payment);
     return payment;
   }
-  
+
   // Seed some initial data
   private seedData() {
     // Add a default user
@@ -523,7 +523,7 @@ export class MemStorage implements IStorage {
       createdAt: new Date()
     };
     this.users.set(user.id, user);
-    
+
     // Add default templates
     const estimateTemplate: Template = {
       id: this.currentIds.templates++,
@@ -536,7 +536,7 @@ export class MemStorage implements IStorage {
       createdAt: new Date()
     };
     this.templates.set(estimateTemplate.id, estimateTemplate);
-    
+
     const contractTemplate: Template = {
       id: this.currentIds.templates++,
       userId: user.id,
@@ -548,7 +548,7 @@ export class MemStorage implements IStorage {
       createdAt: new Date()
     };
     this.templates.set(contractTemplate.id, contractTemplate);
-    
+
     // Add default settings
     const settings: Settings = {
       id: this.currentIds.settings++,
@@ -584,7 +584,7 @@ export class MemStorage implements IStorage {
       updatedAt: new Date()
     };
     this.settings.set(settings.id, settings);
-    
+
     // Add sample clients
     const clients = [
       {
@@ -645,66 +645,74 @@ export class MemStorage implements IStorage {
         updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
       }
     ];
-    
+
     clients.forEach(client => {
       this.clients.set(client.id, client);
     });
-    
+
     // Agregar planes de suscripción predeterminados
     const subscriptionPlans = [
       {
         id: this.currentIds.subscriptionPlans++,
         name: "🧤 Primo Chambeador",
         code: "primo_chambeador",
-        price: 1900, // $19/mes en centavos
-        yearlyPrice: 18240, // $182.40/año en centavos (20% descuento)
-        description: "Plan básico para contratistas que están comenzando su negocio",
+        price: 0, // Plan gratuito
+        yearlyPrice: 0,
+        description: "Plan gratuito para empezar",
         features: [
-          "Hasta 10 estimaciones por mes",
-          "Hasta 5 contratos por mes",
-          "1 plantilla personalizable",
-          "Soporte por correo electrónico"
+          "3 estimados por mes",
+          "1 plantilla básica",
+          "Chat básico con Mervin",
+          "Verificación de permisos básica",
+          "Acceso a calculadora de materiales",
+          "Soporte comunitario"
         ],
-        motto: "Con poco se arranca, con coraje se crece: deja a Mervin el papeleo y dale duro.",
+        motto: "Comienza a digitalizar tu negocio: prueba las herramientas básicas y crece con nosotros.",
         isActive: true,
         createdAt: new Date(),
         updatedAt: new Date()
       },
       {
         id: this.currentIds.subscriptionPlans++,
-        name: "🔨 El Mero Patrón",
+        name: "👷 Maestro Contratista",
+        code: "maestro_contratista",
+        price: 2900, // $29/mes en centavos
+        yearlyPrice: 27840, // $278.40/año en centavos (20% descuento)
+        description: "Plan profesional para contratistas en crecimiento",
+        features: [
+          "20 estimados por mes",
+          "5 plantillas personalizables",
+          "Chat avanzado con Mervin",
+          "Verificación de permisos completa",
+          "Asistente de AR para mediciones",
+          "Verificación de propiedad",
+          "Gestión básica de proyectos",
+          "Soporte por email prioritario"
+        ],
+        motto: "Escala tu negocio: automatiza tus procesos y ofrece servicios más profesionales.",
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: this.currentIds.subscriptionPlans++,
+        name: "👑 El Mero Patrón",
         code: "mero_patron",
         price: 4900, // $49/mes en centavos
         yearlyPrice: 47040, // $470.40/año en centavos (20% descuento)
-        description: "Plan intermedio para contratistas con negocios en crecimiento",
+        description: "Plan premium para contratistas establecidos",
         features: [
           "Estimaciones ilimitadas",
-          "Hasta 20 contratos por mes",
-          "3 plantillas personalizables",
-          "Gestión de clientes",
-          "Soporte prioritario",
-          "Recordatorios automáticos"
-        ],
-        motto: "Menos rollo, más billete: conviértete en el patrón de tus proyectos.",
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        id: this.currentIds.subscriptionPlans++,
-        name: "👑 El Chingón Mayor",
-        code: "chingon_mayor",
-        price: 8900, // $89/mes en centavos
-        yearlyPrice: 85440, // $854.40/año en centavos (20% descuento)
-        description: "Plan premium para contratistas profesionales con altos volúmenes de trabajo",
-        features: [
-          "Estimaciones y contratos ilimitados",
-          "Plantillas personalizables ilimitadas",
-          "Gestión avanzada de clientes y proyectos",
-          "Integración con contabilidad",
-          "Reportes y análisis avanzados",
-          "Soporte telefónico prioritario 24/7",
-          "Capacitación personalizada"
+          "Plantillas ilimitadas",
+          "Chat Premium con Mervin",
+          "Verificación de permisos con asesoría",
+          "Asistente de AR para mediciones",
+          "Verificación de propiedad premium",
+          "Gestión avanzada de proyectos con IA",
+          "Integración con herramientas contables",
+          "Análisis de datos y reportes",
+          "Soporte prioritario 24/7",
+          "Onboarding personalizado"
         ],
         motto: "La cima es tuya: cierra trato tras trato sin despeinarte; Mervin resuelve el papeleo mientras tú dominas el negocio.",
         isActive: true,
@@ -712,12 +720,12 @@ export class MemStorage implements IStorage {
         updatedAt: new Date()
       }
     ];
-    
+
     subscriptionPlans.forEach(plan => {
       this.subscriptionPlans.set(plan.id, plan);
     });
   }
-  
+
   private getDefaultEstimateHtml(): string {
     return `
       <div>
@@ -725,7 +733,7 @@ export class MemStorage implements IStorage {
           <h1 class="text-2xl font-bold">FENCE INSTALLATION ESTIMATE</h1>
           <p class="text-sm">Reference: {{projectId}}</p>
         </div>
-        
+
         <div class="grid grid-cols-2 gap-4 mb-6">
           <div>
             <h2 class="text-lg font-bold mb-2">Provider</h2>
@@ -742,7 +750,7 @@ export class MemStorage implements IStorage {
             <p>Valid for: 30 days</p>
           </div>
         </div>
-        
+
         <div class="mb-6">
           <h2 class="text-lg font-bold mb-2">Project Details</h2>
           <table class="w-full">
@@ -776,7 +784,7 @@ export class MemStorage implements IStorage {
             </tr>
           </table>
         </div>
-        
+
         <div class="mb-6">
           <table class="w-full">
             <tr>
@@ -793,7 +801,7 @@ export class MemStorage implements IStorage {
             </tr>
           </table>
         </div>
-        
+
         <div class="mb-6">
           <h2 class="text-lg font-bold mb-2">Terms & Conditions</h2>
           <ul class="list-disc pl-5 text-sm space-y-1">
@@ -804,7 +812,7 @@ export class MemStorage implements IStorage {
             <li>Customer responsible for marking underground utilities</li>
           </ul>
         </div>
-        
+
         <div class="grid grid-cols-2 gap-4 mt-8">
           <div>
             <p class="border-t pt-2">Customer Signature</p>
@@ -816,7 +824,7 @@ export class MemStorage implements IStorage {
       </div>
     `;
   }
-  
+
   private getDefaultContractHtml(): string {
     return `
       <div>
@@ -824,7 +832,7 @@ export class MemStorage implements IStorage {
           <h1 class="text-2xl font-bold">FENCE INSTALLATION CONTRACT</h1>
           <p class="text-sm">Reference: {{projectId}}</p>
         </div>
-        
+
         <div class="grid grid-cols-2 gap-4 mb-6">
           <div>
             <h2 class="text-lg font-bold mb-2">Contractor</h2>
@@ -840,11 +848,11 @@ export class MemStorage implements IStorage {
             <p>Contract Date: {{currentDate}}</p>
           </div>
         </div>
-        
+
         <div class="mb-6">
           <h2 class="text-lg font-bold mb-2">Scope of Work</h2>
           <p>The Contractor agrees to furnish all labor, materials, equipment, and services necessary for the complete and proper installation of a {{fenceType}} fence as described below:</p>
-          
+
           <ul class="list-disc pl-5 text-sm mt-2 space-y-1">
             <li>Install {{fenceLength}} linear feet of {{fenceHeight}}ft high {{fenceType}} fencing</li>
             {{#each gates}}
@@ -855,7 +863,7 @@ export class MemStorage implements IStorage {
             <li>Complete all work in a professional manner according to standard practices</li>
           </ul>
         </div>
-        
+
         <div class="mb-6">
           <h2 class="text-lg font-bold mb-2">Payment Schedule</h2>
           <table class="w-full">
@@ -873,17 +881,17 @@ export class MemStorage implements IStorage {
             </tr>
           </table>
         </div>
-        
+
         <div class="mb-6">
           <h2 class="text-lg font-bold mb-2">Timeline</h2>
           <p>Work will commence approximately {{startDate}} and is expected to be completed within {{completionTime}} business days, weather permitting.</p>
         </div>
-        
+
         <div class="mb-6">
           <h2 class="text-lg font-bold mb-2">Warranties and Guarantees</h2>
           <p>Contractor warrants all workmanship for a period of one (1) year from date of completion. Manufacturer warranties on materials will be provided to Client upon completion.</p>
         </div>
-        
+
         <div class="mb-6">
           <h2 class="text-lg font-bold mb-2">Terms and Conditions</h2>
           <ol class="list-decimal pl-5 text-sm space-y-1">
@@ -894,7 +902,7 @@ export class MemStorage implements IStorage {
             <li>This agreement may be cancelled by the Client within three business days following the signing of this agreement.</li>
           </ol>
         </div>
-        
+
         <div class="grid grid-cols-2 gap-4 mt-8">
           <div>
             <p class="font-bold">Contractor:</p>
