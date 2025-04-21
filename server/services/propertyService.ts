@@ -228,12 +228,22 @@ class PropertyService {
   }
 
   /**
-   * Retornar null cuando no se puede obtener información de la API
-   * Se ha eliminado la generación de datos sintéticos o de respaldo
+   * Maneja fallos de API
+   * No genera datos sintéticos o de respaldo, solo retorna null con mensajes de diagnóstico claros
    */
-  private handleApiFailure(address: string, reason: string): null | FullPropertyData {
+  private handleApiFailure(address: string, reason: string): null {
     console.log(`ERROR: No se pudieron obtener datos de propiedad para ${address}`);
     console.log(`Motivo: ${reason}`);
+    
+    // Si es un error de conectividad DNS, agregar información adicional para diagnóstico
+    if (reason.includes('ENOTFOUND')) {
+      console.log('DIAGNÓSTICO: Problema de resolución DNS detectado');
+      console.log('RECOMENDACIÓN: Este es un problema de conectividad específico del entorno.');
+      console.log('- Verificar la configuración de red del entorno');
+      console.log('- Considerar usar un servicio de proxy HTTP externo');
+      console.log('- Contactar al soporte de CoreLogic para opciones alternativas de acceso');
+    }
+    
     return null;
   }
 

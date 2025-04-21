@@ -649,12 +649,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Solicitud completada en ${endTime - startTime}ms`);
       
-      // Si no hay datos, devolver error
+      // Si no hay datos, devolver error con información detallada
       if (!propertyData) {
         console.log('Error crítico: No se obtuvo ningún dato de propiedad');
-        return res.status(404).json({ 
-          message: 'No se encontró información para la dirección proporcionada' 
-        });
+        
+        // Verificar si hubo un problema de DNS que se registró en los logs
+        const logOutput = global.lastApiErrorMessage || '';
+        const isDnsError = logOutput.includes('ENOTFOUND') || logOutput.includes('getaddrinfo');
+        
+        if (isDnsError) {
+          return res.status(502).json({
+            message: 'Error de conectividad con el servicio de datos de propiedades',
+            errorCode: 'CONNECTIVITY_ERROR',
+            details: 'No se pudo establecer conexión con el servicio de CoreLogic. Este es un problema de infraestructura, no de la dirección proporcionada.'
+          });
+        } else {
+          return res.status(404).json({ 
+            message: 'No se encontró información para la dirección proporcionada' 
+          });
+        }
       }
       
       // Verificar si los datos son auténticos

@@ -3,7 +3,7 @@
 
 import axios from 'axios';
 
-const SERVER_PORT = 3000; // Puerto donde se ejecuta el servidor Express
+const SERVER_PORT = 5000; // Puerto donde se ejecuta el servidor Express en Replit
 const TEST_ADDRESS = '123 Main St, Boston, MA 02101'; // Dirección de prueba
 
 async function testPropertyAPI() {
