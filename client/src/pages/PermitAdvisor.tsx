@@ -156,7 +156,15 @@ export default function PermitAdvisor() {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex flex-col space-y-2">
-        <h1 className="text-3xl font-bold">Mervin DeepSearch</h1>
+        <div className="flex items-center gap-3">
+          <div className="relative w-10 h-10 flex items-center justify-center bg-primary/10 rounded-lg">
+            <i className="ri-search-eye-line text-2xl text-primary"></i>
+            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-primary/20 rounded-full flex items-center justify-center">
+              <i className="ri-settings-4-line text-sm text-primary"></i>
+            </div>
+          </div>
+          <h1 className="text-3xl font-bold">Mervin DeepSearch</h1>
+        </div>
         <p className="text-muted-foreground">
           Tu asesor legal instantáneo para permisos y regulaciones de construcción
         </p>
