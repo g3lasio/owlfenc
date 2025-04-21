@@ -32,11 +32,11 @@ export interface FullPropertyData {
 class PropertyService {
   private consumerKey: string;
   private consumerSecret: string;
+  // Usar solo la URL de sandbox para las credenciales de demostración
   private baseUrls: string[] = [
-    'https://api.corelogic.com',
     'https://api-sandbox.corelogic.com' 
   ];
-  private baseUrl: string = 'https://api.corelogic.com';
+  private baseUrl: string = 'https://api-sandbox.corelogic.com';
   private coreLogicClient: AxiosInstance;
   private accessToken: string = '';
   private tokenExpiration: number = 0;
@@ -74,12 +74,19 @@ class PropertyService {
       
       console.log(`Intentando autenticación con CoreLogic: ${this.baseUrl}/access/oauth/token`);
       
+      // Usar el método recomendado: parámetros en el cuerpo en vez de Authorization Basic 
+      const params = new URLSearchParams();
+      params.append('grant_type', 'client_credentials');
+      params.append('client_id', this.consumerKey);
+      params.append('client_secret', this.consumerSecret);
+      
+      console.log('Enviando parámetros de autenticación como se recomienda en la documentación');
+      
       const response = await axios.post(`${this.baseUrl}/access/oauth/token`, 
-        'grant_type=client_credentials', 
+        params,
         {
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
-            'Authorization': `Basic ${Buffer.from(`${this.consumerKey}:${this.consumerSecret}`).toString('base64')}`,
             'Accept': 'application/json'
           },
           timeout: 15000 // 15 segundos de timeout para la autenticación

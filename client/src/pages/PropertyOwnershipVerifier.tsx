@@ -8,6 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Home, Check, User, Calendar, MapPin, AlertTriangle } from "lucide-react";
 import axios from "axios";
 import GooglePlacesAutocomplete, { geocodeByAddress, getLatLng } from 'react-google-places-autocomplete';
+import { useProfile } from "@/hooks/use-profile";
 
 interface PropertyDetails {
   owner: string;
@@ -23,6 +24,7 @@ interface PropertyDetails {
 }
 
 export default function PropertyOwnershipVerifier() {
+  const { userSubscription } = useProfile();
   const [address, setAddress] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
