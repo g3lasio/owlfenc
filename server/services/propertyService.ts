@@ -32,7 +32,7 @@ export interface FullPropertyData {
 class PropertyService {
   private consumerKey: string;
   private consumerSecret: string;
-  private baseUrl: string = 'https://api.corelogic.com';
+  private baseUrl: string = 'https://sandbox-api.corelogic.com';
   private coreLogicClient: AxiosInstance;
   private accessToken: string = '';
   private tokenExpiration: number = 0;
@@ -161,16 +161,19 @@ class PropertyService {
    * Retornar datos de respaldo cuando no se puede obtener información de la API
    */
   private getBackupPropertyData(address: string): FullPropertyData {
+    console.log('ALERTA DE DATOS: Generando datos de respaldo para', address);
+    console.log('Estos datos no son reales y solo se utilizan como respaldo');
+    
     // Extract address parts if possible to make the sample data appear more realistic
     const addressParts = address.split(',');
     const streetAddress = addressParts[0] || address;
 
-    // Generate realistic property data based on the address
+    // Generate data based on the address
     const addressSum = streetAddress.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
     const randomGenerator = (base: number) => (addressSum % base) + Math.floor(base * 0.8);
 
     return {
-      owner: "María González",
+      owner: "[DATOS NO VERIFICADOS] María González",
       address: address,
       sqft: 1800 + randomGenerator(1000),
       bedrooms: 3 + (addressSum % 3),
@@ -179,7 +182,7 @@ class PropertyService {
       yearBuilt: 1980 + (addressSum % 40),
       propertyType: "Single Family Residence",
       ownerOccupied: true,
-      verified: true
+      verified: false // Cambiado a false para indicar que son datos de respaldo
     };
   }
 
@@ -189,6 +192,7 @@ class PropertyService {
   async getPropertyByAddress(address: string): Promise<FullPropertyData | null> {
     try {
       console.log('Iniciando búsqueda de propiedad en CoreLogic para:', address);
+      console.log('Usando URL base:', this.baseUrl);
 
       // Revisar caché
       const cacheKey = `property_${address}`;
@@ -201,33 +205,45 @@ class PropertyService {
       // Verificar que tenemos las credenciales
       if (!this.consumerKey || !this.consumerSecret) {
         console.error('No se proporcionaron credenciales de CoreLogic válidas');
+        console.log('Usando datos de respaldo debido a falta de credenciales');
         return this.getBackupPropertyData(address);
       }
 
-      // Proceso principal de búsqueda
-      const propertyId = await this.findPropertyId(address);
-      if (!propertyId) {
-        console.log('No se pudo encontrar un ID de propiedad para la dirección');
+      // Intentar acceder a la API de CoreLogic
+      try {
+        // Proceso principal de búsqueda
+        const propertyId = await this.findPropertyId(address);
+        if (!propertyId) {
+          console.log('No se pudo encontrar un ID de propiedad para la dirección');
+          console.log('Usando datos de respaldo por falta de ID de propiedad');
+          return this.getBackupPropertyData(address);
+        }
+
+        // Obtener detalles de la propiedad
+        const propertyDetails = await this.getPropertyDetailsById(propertyId);
+        if (!propertyDetails) {
+          console.log('No se pudieron obtener detalles de la propiedad');
+          console.log('Usando datos de respaldo por falta de detalles');
+          return this.getBackupPropertyData(address);
+        }
+
+        // Extraer información relevante
+        const fullPropertyData = this.extractPropertyData(propertyDetails, address);
+        
+        // Guardar en caché
+        global.propertyCache = global.propertyCache || {};
+        global.propertyCache[cacheKey] = { data: fullPropertyData, timestamp: Date.now() };
+        
+        console.log('Retornando datos verificados de CoreLogic');
+        return fullPropertyData;
+      } catch (apiError: any) {
+        console.error('Error accediendo a la API de CoreLogic:', apiError.message);
+        console.log('Usando datos de respaldo debido a error de API');
         return this.getBackupPropertyData(address);
       }
-
-      // Obtener detalles de la propiedad
-      const propertyDetails = await this.getPropertyDetailsById(propertyId);
-      if (!propertyDetails) {
-        console.log('No se pudieron obtener detalles de la propiedad');
-        return this.getBackupPropertyData(address);
-      }
-
-      // Extraer información relevante
-      const fullPropertyData = this.extractPropertyData(propertyDetails, address);
-      
-      // Guardar en caché
-      global.propertyCache = global.propertyCache || {};
-      global.propertyCache[cacheKey] = { data: fullPropertyData, timestamp: Date.now() };
-      
-      return fullPropertyData;
     } catch (error: any) {
       console.error('Error general en getPropertyByAddress:', error.message);
+      console.log('Usando datos de respaldo debido a error general');
       return this.getBackupPropertyData(address);
     }
   }

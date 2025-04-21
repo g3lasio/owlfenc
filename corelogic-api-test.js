@@ -35,7 +35,7 @@ const agent = new https.Agent({
 });
 
 // Base URL de la API de CoreLogic
-const baseUrl = 'https://api.corelogic.com';
+const baseUrl = 'https://sandbox-api.corelogic.com';
 
 // Paso 1: Obtener token de acceso
 async function getAccessToken() {
