@@ -11,6 +11,7 @@ import { z } from "zod";
 import puppeteer from "puppeteer";
 import * as crypto from "crypto";
 import Stripe from "stripe";
+import axios from 'axios';
 import { chatService } from './services/chatService';
 import { propertyService } from './services/propertyService';
 import { documentService } from './services/documentService';
@@ -618,6 +619,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching address suggestions:', error);
       res.status(500).json({ error: 'Error fetching suggestions' });
+    }
+  });
+  
+  // Endpoint para obtener detalles de una propiedad por dirección
+  app.get('/api/property/details', async (req: Request, res: Response) => {
+    const address = req.query.address as string;
+    
+    if (!address) {
+      return res.status(400).json({ 
+        message: 'Se requiere el parámetro "address"' 
+      });
+    }
+    
+    console.log('===== INICIO DE SOLICITUD DE DETALLES DE PROPIEDAD =====');
+    console.log('Solicitando datos de propiedad para dirección:', address);
+    
+    try {
+      console.log('Credenciales CoreLogic disponibles:', 
+        process.env.CORELOGIC_CONSUMER_KEY ? 'Sí' : 'No',
+        process.env.CORELOGIC_CONSUMER_SECRET ? 'Sí' : 'No'
+      );
+      
+      console.log('Iniciando solicitud a CoreLogic API...');
+      
+      const startTime = Date.now();
+      const propertyData = await propertyService.getPropertyByAddress(address);
+      const endTime = Date.now();
+      
+      console.log(`Solicitud completada en ${endTime - startTime}ms`);
+      
+      // Si no hay datos, devolver error
+      if (!propertyData) {
+        console.log('Error crítico: No se obtuvo ningún dato de propiedad');
+        return res.status(404).json({ 
+          message: 'No se encontró información para la dirección proporcionada' 
+        });
+      }
+      
+      // Verificar si los datos son auténticos o de respaldo
+      if (propertyData.verified) {
+        console.log('ÉXITO: Datos verificados obtenidos de CoreLogic API');
+        console.log('Datos de propietario:', propertyData.owner);
+        console.log('Propiedad ocupada por el propietario:', propertyData.ownerOccupied);
+      } else {
+        console.log('ALERTA: Se están usando datos de respaldo (no verificados)');
+      }
+      
+      console.log('Enviando respuesta al cliente...');
+      console.log('===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====\n');
+      
+      res.json(propertyData);
+    } catch (error: any) {
+      console.error('ERROR EN VERIFICACIÓN DE PROPIEDAD:');
+      console.error('Mensaje:', error.message);
+      
+      res.status(500).json({ 
+        message: 'Error al obtener detalles de la propiedad',
+        error: error.message
+      });
     }
   });
 

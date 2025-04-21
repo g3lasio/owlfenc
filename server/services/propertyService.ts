@@ -34,7 +34,7 @@ class PropertyService {
   private consumerSecret: string;
   private baseUrl: string = 'https://api.corelogic.com';
   private coreLogicClient: AxiosInstance;
-  private accessToken: string | null = null;
+  private accessToken: string = '';
   private tokenExpiration: number = 0;
 
   constructor(consumerKey: string, consumerSecret: string) {
@@ -79,11 +79,12 @@ class PropertyService {
       );
 
       if (response.data && response.data.access_token) {
-        this.accessToken = response.data.access_token;
+        const token = response.data.access_token;
+        this.accessToken = token;
         // Establecemos la expiración un poco antes del tiempo real para tener margen
         this.tokenExpiration = Date.now() + (response.data.expires_in * 1000) - 60000;
         console.log('Token de acceso obtenido correctamente');
-        return this.accessToken;
+        return token;
       } else {
         throw new Error('No se pudo obtener el token de acceso');
       }
