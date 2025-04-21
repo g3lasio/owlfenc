@@ -144,7 +144,7 @@ export default function PropertyOwnershipVerifier() {
       // Primero intentamos obtener datos del API
       console.log('Realizando petición a la API con dirección:', address.trim());
       try {
-        const response = await axios.get('/api/property-verification', {
+        const response = await axios.get('/api/property/details', {
           params: { address: address.trim() }
         });
 
@@ -159,42 +159,25 @@ export default function PropertyOwnershipVerifier() {
           console.log('La API respondió pero sin datos');
           throw new Error('No se recibieron datos de la propiedad');
         }
-      } catch (apiError) {
+      } catch (apiError: any) {
         console.error('Error específico de la API:', {
           message: apiError.message,
           status: apiError.response?.status,
           data: apiError.response?.data
         });
-        throw apiError;
+        
+        // Mostramos el error al usuario usando el mensaje del servidor si está disponible
+        if (apiError.response?.data?.message) {
+          setError(`Error: ${apiError.response.data.message}`);
+        } else {
+          setError("Error al conectar con el servicio de verificación de propiedades. Por favor, intenta nuevamente.");
+        }
+        
+        // No generamos datos falsos, simplemente retornamos
+        setPropertyDetails(null);
+        setLoading(false);
+        return;
       }
-
-      // Si llegamos aquí, generamos datos locales para demostración
-      console.log('Generando datos locales para dirección:', address);
-
-      // Extraemos partes de la dirección si es posible para hacer los datos más realistas
-      const addressParts = address.split(',');
-      const streetAddress = addressParts[0] || address;
-
-      // Generamos datos determinísticos basados en la dirección
-      const addressSum = streetAddress.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
-      const randomGenerator = (base: number) => (addressSum % base) + Math.floor(base * 0.8);
-
-      // Creamos objeto con datos simulados
-      const mockData: PropertyDetails = {
-        owner: "María González",
-        address: address,
-        sqft: 1800 + randomGenerator(1000),
-        bedrooms: 3 + (addressSum % 3),
-        bathrooms: 2 + (addressSum % 2),
-        lotSize: `${(0.15 + (addressSum % 10) / 100).toFixed(2)} acres`,
-        yearBuilt: 1980 + (addressSum % 40),
-        propertyType: "Single Family Residence",
-        ownerOccupied: true,
-        verified: true
-      };
-
-      // Establecemos los datos simulados
-      setPropertyDetails(mockData);
 
     } catch (err: any) {
       console.error('Error verificando propiedad:', err);
