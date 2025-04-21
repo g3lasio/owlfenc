@@ -29,37 +29,17 @@ export interface FullPropertyData {
   verified: boolean;
 }
 
-interface AddressParts {
-  address1: string; // Número y calle
-  address2: string; // Ciudad, estado y código postal
-}
-
 class PropertyService {
-  private apiKey: string;
-  private endpoints = [
-    'https://api.gateway.attomdata.com/propertyapi/v1.0.0',
-    'https://api.gateway.attomdata.com/propertyapi/v1.0.0/property',
-    'https://api.gateway.attomdata.com/propertyapi/v1.0.0/sale',
-    'https://api.gateway.attomdata.com/propertyapi/v1.0.0/assessment'
-  ];
-  private baseUrl: string = this.endpoints[0];
-  
-  private async tryAllEndpoints(address: string): Promise<any> {
-    for (const endpoint of this.endpoints) {
-      try {
-        this.baseUrl = endpoint;
-        const result = await this.getPropertyByAddress(address);
-        if (result) return result;
-      } catch (error) {
-        console.log(`Error con endpoint ${endpoint}:`, error.message);
-      }
-    }
-    throw new Error('No se encontraron datos en ningún endpoint');
-  }
-  private attomClient: AxiosInstance;
+  private consumerKey: string;
+  private consumerSecret: string;
+  private baseUrl: string = 'https://api.corelogic.com';
+  private coreLogicClient: AxiosInstance;
+  private accessToken: string | null = null;
+  private tokenExpiration: number = 0;
 
-  constructor(apiKey: string) {
-    this.apiKey = apiKey;
+  constructor(consumerKey: string, consumerSecret: string) {
+    this.consumerKey = consumerKey;
+    this.consumerSecret = consumerSecret;
 
     // Crear agente HTTPS con Keep-Alive habilitado para reutilizar conexiones
     const agent = new https.Agent({ 
@@ -69,266 +49,115 @@ class PropertyService {
     });
 
     // Configurar cliente Axios reutilizable
-    this.attomClient = axios.create({
+    this.coreLogicClient = axios.create({
       baseURL: this.baseUrl,
-      headers: this.getHeaders(),
       httpsAgent: agent,
       timeout: 10000 // timeout en 10 segundos
     });
   }
 
-  private getHeaders(attempt = 0) {
-    // Rotar entre diferentes formatos de header de autenticación
-    const authHeaders = [
-      { 'apikey': this.apiKey },
-      { 'APIKey': this.apiKey },
-      { 'Authorization': `Bearer ${this.apiKey}` },
-      { 'X-API-Key': this.apiKey }
-    ];
-    
+  /**
+   * Obtiene un token de acceso para la API de CoreLogic
+   */
+  private async getAccessToken(): Promise<string> {
+    // Si ya tenemos un token válido, lo devolvemos
+    if (this.accessToken && Date.now() < this.tokenExpiration) {
+      return this.accessToken;
+    }
+
+    try {
+      console.log('Obteniendo nuevo token de acceso de CoreLogic...');
+      
+      const response = await axios.post(`${this.baseUrl}/access/oauth/token`, 
+        'grant_type=client_credentials', 
+        {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': `Basic ${Buffer.from(`${this.consumerKey}:${this.consumerSecret}`).toString('base64')}`
+          }
+        }
+      );
+
+      if (response.data && response.data.access_token) {
+        this.accessToken = response.data.access_token;
+        // Establecemos la expiración un poco antes del tiempo real para tener margen
+        this.tokenExpiration = Date.now() + (response.data.expires_in * 1000) - 60000;
+        console.log('Token de acceso obtenido correctamente');
+        return this.accessToken;
+      } else {
+        throw new Error('No se pudo obtener el token de acceso');
+      }
+    } catch (error: any) {
+      console.error('Error obteniendo token de acceso:', error.message);
+      throw new Error(`Error de autenticación con CoreLogic: ${error.message}`);
+    }
+  }
+
+  /**
+   * Actualiza los headers con el token de acceso
+   */
+  private async getAuthHeaders() {
+    const token = await this.getAccessToken();
     return {
-      ...authHeaders[attempt % authHeaders.length],
-      'Accept': 'application/json'
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
     };
   }
 
-  private async retryWithDifferentAuth(fn: () => Promise<any>, maxAttempts = 4): Promise<any> {
-    let lastError;
-    for (let i = 0; i < maxAttempts; i++) {
-      try {
-        this.attomClient.defaults.headers = { ...this.attomClient.defaults.headers, ...this.getHeaders(i) };
-        return await fn();
-      } catch (error) {
-        console.log(`Intento ${i + 1} fallido, probando diferente formato de autenticación`);
-        lastError = error;
-      }
-    }
-    throw lastError;
-  }
-
   /**
-   * Parse address into parts required by ATTOM API
-   * Expects format like: "123 Main St, City, State ZIP"
+   * Encuentra el ID de la propiedad basado en la dirección
    */
-  private parseAddress(address: string): AddressParts {
-    const parts = address.split(',');
-
-    if (parts.length < 2) {
-      // Si no hay coma, usamos la entrada completa como address1
-      return {
-        address1: address.trim(),
-        address2: ''
-      };
-    }
-
-    // Primera parte es la calle (address1)
-    const address1 = parts[0].trim();
-
-    // El resto se une para formar address2 (ciudad, estado, ZIP)
-    const address2 = parts.slice(1).join(',').trim();
-
-    return { address1, address2 };
-  }
-
-  private async retryWithExponentialBackoff(
-    fn: () => Promise<any>, 
-    retries = 3,
-    delay = 1000
-  ): Promise<any> {
+  private async findPropertyId(address: string): Promise<string | null> {
     try {
-      return await fn();
-    } catch (error) {
-      if (retries === 0) throw error;
-      await new Promise(resolve => setTimeout(resolve, delay));
-      return this.retryWithExponentialBackoff(fn, retries - 1, delay * 2);
-    }
-  }
+      console.log('Buscando propiedad por dirección:', address);
+      const headers = await this.getAuthHeaders();
+      
+      const response = await this.coreLogicClient.get('/property/v2/properties/search', {
+        headers,
+        params: {
+          address: address
+        }
+      });
 
+      console.log('Respuesta de búsqueda de propiedad:', JSON.stringify(response.data, null, 2));
 
-  /**
-   * Get property details by address
-   */
-  async getPropertyByAddress(address: string): Promise<FullPropertyData | null> {
-    try {
-      console.log('Intentando obtener datos de propiedad para la dirección:', address);
-
-      // Implementar un caché simple en memoria
-      const cacheKey = `property_${address}`;
-      const cached = global.propertyCache?.[cacheKey];
-      if (cached && Date.now() - cached.timestamp < 3600000) {
-        console.log('Retornando datos en caché');
-        return cached.data;
-      }
-
-      if (this.apiKey && this.apiKey.length > 10) {
-        console.log('Usando la API de ATTOM con clave API disponible');
-        console.log('Longitud de la clave API:', this.apiKey.length);
-        console.log('Primeros 5 caracteres de la clave API:', this.apiKey.substring(0, 5));
-
-
-        const apiCall = async () => {
-          const { address1, address2 } = this.parseAddress(address);
-          console.log('Llamando a ATTOM API con:', { address1, address2 });
-
-          console.log('Headers de la petición:', this.getHeaders());
-
-          console.log('Headers completos de la petición:', {
-            ...this.getHeaders(),
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          });
-
-          const response = await this.attomClient.get('/property/detailowner', { 
-            params: { 
-              address1: address1,
-              address2: address2
-            },
-            validateStatus: function (status) {
-              return status >= 200 && status < 300;
-            },
-            headers: {
-              'Accept': 'application/json,text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-              'Accept-Language': 'en-US,en;q=0.5',
-              'Content-Type': 'application/json',
-              'apikey': this.apiKey,
-              'Cache-Control': 'no-cache',
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-              'Connection': 'keep-alive',
-              'Upgrade-Insecure-Requests': '1',
-              'Sec-Fetch-Dest': 'document',
-              'Sec-Fetch-Mode': 'navigate',
-              'Sec-Fetch-Site': 'none',
-              'Sec-Fetch-User': '?1',
-              'X-Requested-With': 'XMLHttpRequest',
-              'User-Agent': 'Mozilla/5.0 (compatible; Property Service/1.0)'
-            },
-            maxRedirects: 5,
-            responseType: 'json',
-            decompress: true,
-            transformResponse: [(data) => {
-              if (typeof data === 'string') {
-                // Si es JSON válido, intentar parsearlo directamente
-                try {
-                  return JSON.parse(data);
-                } catch (e) {
-                  // Si es HTML, intentar extraer datos estructurados
-                  if (data.includes('<!DOCTYPE html>')) {
-                    const propertyData = {};
-                    
-                    // Extraer datos usando patrones comunes
-                    const ownerMatch = data.match(/"owner"[^{]*{([^}]+)}/);
-                    if (ownerMatch) {
-                      propertyData.owner = {};
-                      const nameMatch = ownerMatch[1].match(/"name"\s*:\s*"([^"]+)"/);
-                      if (nameMatch) propertyData.owner.name = nameMatch[1];
-                    }
-
-                    // Extraer detalles de propiedad
-                    const detailsMatch = data.match(/"property"[^{]*{([^}]+)}/);
-                    if (detailsMatch) {
-                      const yearMatch = detailsMatch[1].match(/"yearBuilt"\s*:\s*"?(\d+)"?/);
-                      if (yearMatch) propertyData.yearBuilt = parseInt(yearMatch[1]);
-                    }
-
-                    if (Object.keys(propertyData).length > 0) {
-                      return { property: [propertyData] };
-                    }
-                  }
-                  
-                  console.error('No se pudieron extraer datos del HTML');
-                  throw new Error('Formato de respuesta inválido');
-                }
-              }
-              return data;
-            }]
-          });
-
-          // Log de la respuesta para diagnóstico
-          console.log('Response headers:', response.headers);
-          console.log('Response status:', response.status);
-          console.log('Response type:', typeof response.data);
-
-          // Validar y procesar la respuesta
-          if (!response.data || typeof response.data === 'string') {
-            console.error('Error: Respuesta inválida de la API');
-            console.log('Content-Type:', response.headers['content-type']);
-            console.log('Response data type:', typeof response.data);
-            
-            // Intentar extraer información útil de la respuesta
-            if (typeof response.data === 'string') {
-              if (response.data.includes('<!DOCTYPE html>')) {
-                console.log('Detectada respuesta HTML, intentando procesar...');
-                // Aquí podríamos implementar un parser HTML si es necesario
-                throw new Error('La API devolvió HTML en lugar de JSON');
-              }
-              try {
-                response.data = JSON.parse(response.data);
-              } catch (e) {
-                console.error('Error parseando respuesta como JSON:', e);
-                throw new Error('Formato de respuesta inválido');
-              }
-            }
-          }
-
-
-          if (typeof response.data === 'string') {
-            try {
-              response.data = JSON.parse(response.data);
-            } catch (e) {
-              console.error('Error parseando respuesta como JSON:', e);
-              throw new Error('La respuesta no es JSON válido');
-            }
-          }
-
-          console.log('¡Éxito! Respuesta recibida con status:', response.status);
-          console.log('Headers de respuesta:', response.headers);
-          console.log('ATTOM raw response:', JSON.stringify(response.data, null,2));
-
-          if (!response.data.property || response.data.property.length === 0) {
-            console.log('No se encontró propiedad para la dirección proporcionada');
-            return null;
-          }
-
-          const propertyData = response.data.property[0];
-          let ownerData = { owner: "No disponible", mailingAddress: "", ownerOccupied: false };
-          const propertyDetails = this.extractPropertyDetails(propertyData);
-
-          if (response.data.property[0].owner) {
-            ownerData = this.extractOwnerData(propertyData);
-          }
-
-          const fullPropertyData: FullPropertyData = {
-            ...propertyDetails,
-            ...ownerData,
-            address: address,
-            verified: true
-          };
-
-          global.propertyCache = global.propertyCache || {};
-          global.propertyCache[cacheKey] = { data: fullPropertyData, timestamp: Date.now() };
-          return fullPropertyData;
-        };
-
-        return this.retryWithExponentialBackoff(apiCall);
-
+      if (response.data && response.data.properties && response.data.properties.length > 0) {
+        const propertyId = response.data.properties[0].propertyId;
+        console.log('ID de propiedad encontrado:', propertyId);
+        return propertyId;
       } else {
-        console.log('No hay clave API de ATTOM disponible o válida, usando datos de respaldo');
-        return this.getBackupPropertyData(address);
-      }
-    } catch (error: any) {
-      console.error('Error inesperado en getPropertyByAddress:', error.message);
-      try {
-        return this.getBackupPropertyData(address);
-      } catch (backupError) {
-        console.error('Error generando datos de respaldo:', backupError);
+        console.log('No se encontró ninguna propiedad para la dirección proporcionada');
         return null;
       }
+    } catch (error: any) {
+      console.error('Error buscando propiedad por dirección:', error.message);
+      return null;
     }
   }
 
   /**
-   * Get backup property data for demo purposes
-   * Used when API is unavailable or returns no results
+   * Obtiene los detalles completos de una propiedad usando su ID
+   */
+  private async getPropertyDetailsById(propertyId: string): Promise<any | null> {
+    try {
+      console.log('Obteniendo detalles de propiedad por ID:', propertyId);
+      const headers = await this.getAuthHeaders();
+      
+      const response = await this.coreLogicClient.get(`/property/v2/properties/${propertyId}`, {
+        headers
+      });
+
+      console.log('Detalles de propiedad recibidos');
+      return response.data;
+    } catch (error: any) {
+      console.error('Error obteniendo detalles de propiedad:', error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Retornar datos de respaldo cuando no se puede obtener información de la API
    */
   private getBackupPropertyData(address: string): FullPropertyData {
     // Extract address parts if possible to make the sample data appear more realistic
@@ -354,50 +183,108 @@ class PropertyService {
   }
 
   /**
-   * Extract owner data from property details
+   * Método principal: Obtiene información de la propiedad por dirección
+   */
+  async getPropertyByAddress(address: string): Promise<FullPropertyData | null> {
+    try {
+      console.log('Iniciando búsqueda de propiedad en CoreLogic para:', address);
+
+      // Revisar caché
+      const cacheKey = `property_${address}`;
+      const cached = global.propertyCache?.[cacheKey];
+      if (cached && Date.now() - cached.timestamp < 3600000) {
+        console.log('Retornando datos en caché');
+        return cached.data;
+      }
+
+      // Verificar que tenemos las credenciales
+      if (!this.consumerKey || !this.consumerSecret) {
+        console.error('No se proporcionaron credenciales de CoreLogic válidas');
+        return this.getBackupPropertyData(address);
+      }
+
+      // Proceso principal de búsqueda
+      const propertyId = await this.findPropertyId(address);
+      if (!propertyId) {
+        console.log('No se pudo encontrar un ID de propiedad para la dirección');
+        return this.getBackupPropertyData(address);
+      }
+
+      // Obtener detalles de la propiedad
+      const propertyDetails = await this.getPropertyDetailsById(propertyId);
+      if (!propertyDetails) {
+        console.log('No se pudieron obtener detalles de la propiedad');
+        return this.getBackupPropertyData(address);
+      }
+
+      // Extraer información relevante
+      const fullPropertyData = this.extractPropertyData(propertyDetails, address);
+      
+      // Guardar en caché
+      global.propertyCache = global.propertyCache || {};
+      global.propertyCache[cacheKey] = { data: fullPropertyData, timestamp: Date.now() };
+      
+      return fullPropertyData;
+    } catch (error: any) {
+      console.error('Error general en getPropertyByAddress:', error.message);
+      return this.getBackupPropertyData(address);
+    }
+  }
+
+  /**
+   * Extrae datos normalizados de la respuesta de CoreLogic
+   */
+  private extractPropertyData(propertyData: any, originalAddress: string): FullPropertyData {
+    try {
+      console.log('Extrayendo datos de propiedad desde respuesta de CoreLogic');
+      
+      // Extraer datos del propietario
+      const ownerData = this.extractOwnerData(propertyData);
+      
+      // Extraer detalles físicos de la propiedad
+      const propertyDetails = this.extractPropertyDetails(propertyData);
+      
+      return {
+        ...propertyDetails,
+        ...ownerData,
+        address: originalAddress,
+        verified: true
+      };
+    } catch (error: any) {
+      console.error('Error extrayendo datos de propiedad:', error.message);
+      return this.getBackupPropertyData(originalAddress);
+    }
+  }
+
+  /**
+   * Extrae datos del propietario de la respuesta de CoreLogic
    */
   private extractOwnerData(propertyData: any): PropertyOwnerData {
-    let owner = 'Unknown';
+    let owner = 'No disponible';
     let mailingAddress = '';
     let ownerOccupied = false;
 
-    console.log('Extrayendo datos de propietario de la respuesta de ATTOM');
-
     try {
-      // Verificar si hay datos de propietario disponible
+      // Lógica de extracción según la estructura de respuesta de CoreLogic
       if (propertyData.owner) {
-        console.log('Se encontraron datos de propietario');
-        console.log('Estructura de datos de propietario:', Object.keys(propertyData.owner).join(', '));
-
-        // Get owner name directamente del objeto owner
+        // Nombre del propietario
         if (propertyData.owner.name) {
           owner = propertyData.owner.name;
-          console.log('Nombre de propietario encontrado:', owner);
-        } else {
-          console.log('No se encontró nombre de propietario');
         }
-
-        // Get mailing address
+        
+        // Dirección postal
         if (propertyData.owner.mailingAddress) {
           mailingAddress = this.formatAddress(propertyData.owner.mailingAddress);
-          console.log('Dirección postal formateada:', mailingAddress);
-          console.log('Estructura de dirección postal:', 
-            Object.keys(propertyData.owner.mailingAddress).join(', '));
-        } else {
-          console.log('No se encontró dirección postal');
         }
-
-        // Determine if owner occupied
-        const propertyAddress = this.formatAddress(propertyData.address);
-        ownerOccupied = propertyAddress.toLowerCase() === mailingAddress.toLowerCase();
-        console.log('Dirección de propiedad:', propertyAddress);
-        console.log('Es propiedad ocupada por el propietario:', ownerOccupied);
-      } else {
-        console.log('No se encontraron datos de propietario en la respuesta');
-        console.log('Campos disponibles en la respuesta:', Object.keys(propertyData).join(', '));
+        
+        // Determinar si el propietario ocupa la propiedad
+        if (propertyData.address) {
+          const propertyAddress = this.formatAddress(propertyData.address);
+          ownerOccupied = propertyAddress.toLowerCase() === mailingAddress.toLowerCase();
+        }
       }
-    } catch (err) {
-      console.error('Error extrayendo datos de propietario:', err);
+    } catch (error: any) {
+      console.error('Error extrayendo datos de propietario:', error.message);
     }
 
     return {
@@ -408,7 +295,7 @@ class PropertyService {
   }
 
   /**
-   * Extract property details from property data
+   * Extrae detalles físicos de la propiedad
    */
   private extractPropertyDetails(propertyData: any): PropertyDetailsData {
     let sqft = 0;
@@ -419,39 +306,37 @@ class PropertyService {
     let propertyType = 'Unknown';
 
     try {
-      // Extract building data
-      if (propertyData.building && propertyData.building.length > 0) {
-        const building = propertyData.building[0];
-
-        // Size
-        if (building.size && building.size.universalSize) {
-          sqft = parseInt(building.size.universalSize, 10) || 0;
+      // Extraer según la estructura de CoreLogic
+      if (propertyData.building) {
+        // Superficie
+        if (propertyData.building.size) {
+          sqft = parseInt(propertyData.building.size.universalSize || propertyData.building.size.sqft, 10) || 0;
         }
-
-        // Rooms
-        if (building.rooms) {
-          bedrooms = parseInt(building.rooms.beds, 10) || 0;
-          bathrooms = parseFloat(building.rooms.bathsTotal) || 0;
+        
+        // Habitaciones
+        if (propertyData.building.rooms) {
+          bedrooms = parseInt(propertyData.building.rooms.bedrooms, 10) || 0;
+          bathrooms = parseFloat(propertyData.building.rooms.bathrooms) || 0;
         }
-
-        // Year built
-        if (building.yearBuilt) {
-          yearBuilt = parseInt(building.yearBuilt, 10) || 0;
+        
+        // Año de construcción
+        if (propertyData.building.yearBuilt) {
+          yearBuilt = parseInt(propertyData.building.yearBuilt, 10) || 0;
         }
       }
-
-      // Lot size
+      
+      // Tamaño del lote
       if (propertyData.lot && propertyData.lot.size) {
         const acres = parseFloat(propertyData.lot.size.acres) || 0;
         lotSize = `${acres.toFixed(2)} acres`;
       }
-
-      // Property type
-      if (propertyData.summary && propertyData.summary.propertyType) {
-        propertyType = propertyData.summary.propertyType;
+      
+      // Tipo de propiedad
+      if (propertyData.propertyType) {
+        propertyType = propertyData.propertyType;
       }
-    } catch (err) {
-      console.error('Error extracting property details:', err);
+    } catch (error: any) {
+      console.error('Error extrayendo detalles de propiedad:', error.message);
     }
 
     return {
@@ -465,32 +350,53 @@ class PropertyService {
   }
 
   /**
-   * Format address from parts
+   * Formatea una dirección a partir de un objeto
    */
   private formatAddress(addressObj: any): string {
-    const parts = [];
-
+    if (!addressObj) return '';
+    
+    // Si hay una versión de una línea, usarla
     if (addressObj.oneLine) {
       return addressObj.oneLine;
     }
+    
+    // Construir dirección a partir de componentes
+    const streetParts = [];
+    if (addressObj.streetNumber) streetParts.push(addressObj.streetNumber);
+    if (addressObj.streetName) streetParts.push(addressObj.streetName);
+    if (addressObj.streetSuffix) streetParts.push(addressObj.streetSuffix);
+    
+    const street = streetParts.join(' ');
+    
+    const locationParts = [];
+    if (addressObj.city) locationParts.push(addressObj.city);
+    if (addressObj.state) locationParts.push(addressObj.state);
+    if (addressObj.postalCode) locationParts.push(addressObj.postalCode);
+    
+    return street + (locationParts.length > 0 ? ', ' + locationParts.join(', ') : '');
+  }
 
-    if (addressObj.streetNumber) parts.push(addressObj.streetNumber);
-    if (addressObj.streetName) parts.push(addressObj.streetName);
-    if (addressObj.streetSuffix) parts.push(addressObj.streetSuffix);
-
-    const street = parts.join(' ');
-
-    const cityStateZip = [];
-    if (addressObj.city) cityStateZip.push(addressObj.city);
-    if (addressObj.state) cityStateZip.push(addressObj.state);
-    if (addressObj.postalCode) cityStateZip.push(addressObj.postalCode);
-
-    return street + (cityStateZip.length > 0 ? ', ' + cityStateZip.join(', ') : '');
+  /**
+   * Función de prueba para verificar la API de CoreLogic
+   */
+  async testApiConnection(): Promise<boolean> {
+    try {
+      await this.getAccessToken();
+      return true;
+    } catch (error) {
+      console.error('Error en prueba de conexión con CoreLogic:', error);
+      return false;
+    }
   }
 }
 
-export const propertyService = new PropertyService(process.env.ATTOM_API_KEY || '');
+// Instanciar el servicio con las credenciales de CoreLogic
+export const propertyService = new PropertyService(
+  process.env.CORELOGIC_CONSUMER_KEY || '',
+  process.env.CORELOGIC_CONSUMER_SECRET || ''
+);
 
+// Declarar la variable global para caché
 declare global {
   var propertyCache: { [key: string]: { data: FullPropertyData; timestamp: number } } | undefined;
 }
