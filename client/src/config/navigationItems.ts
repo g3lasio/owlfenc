@@ -18,7 +18,7 @@ export const mainNavigationConfig: NavigationSection[] = [
       {
         label: "Mervin DeepSearch",
         path: "/permit-advisor",
-        icon: "ri-law-line",
+        icon: "ri-robot-2-line",
       },
       {
         label: "AI Project Manager",
