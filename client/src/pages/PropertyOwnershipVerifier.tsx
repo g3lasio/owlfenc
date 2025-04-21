@@ -7,8 +7,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Home, Check, User, Calendar, MapPin, AlertTriangle } from "lucide-react";
 import axios from "axios";
+import { useQuery } from "@tanstack/react-query";
 import GooglePlacesAutocomplete, { geocodeByAddress, getLatLng } from 'react-google-places-autocomplete';
-import { useProfile } from "@/hooks/use-profile";
 
 interface PropertyDetails {
   owner: string;
@@ -24,7 +24,12 @@ interface PropertyDetails {
 }
 
 export default function PropertyOwnershipVerifier() {
-  const { userSubscription } = useProfile();
+  // Obtener la suscripción del usuario
+  const { data: userSubscription } = useQuery({
+    queryKey: ["/api/subscription/user-subscription"],
+    throwOnError: false,
+  });
+  
   const [address, setAddress] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
