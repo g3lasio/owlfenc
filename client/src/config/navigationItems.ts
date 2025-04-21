@@ -16,6 +16,11 @@ export const mainNavigationConfig: NavigationSection[] = [
         icon: "ri-shield-keyhole-line",
       },
       {
+        label: "Mervin DeepSearch",
+        path: "/permit-advisor",
+        icon: "ri-law-line",
+      },
+      {
         label: "AI Project Manager",
         path: "/ai-project-manager",
         icon: "ri-brain-line",

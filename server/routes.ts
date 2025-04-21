@@ -754,6 +754,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  
+  // Endpoint para probar la funcionalidad de búsqueda web de Mervin DeepSearch
+  app.get('/api/permit/test/search', async (req: Request, res: Response) => {
+    try {
+      console.log('===== PRUEBA DE BÚSQUEDA WEB MERVIN DEEPSEARCH =====');
+      
+      // Verificar que tenemos API key de OpenAI configurada
+      if (!process.env.OPENAI_API_KEY) {
+        console.error('Error: OpenAI API Key no configurada');
+        return res.status(500).json({
+          message: 'Error de configuración del servicio',
+          error: 'No se ha configurado la API de OpenAI'
+        });
+      }
+      
+      const query = String(req.query.query || 'fence permit requirements in Seattle, WA');
+      console.log(`Realizando búsqueda para: ${query}`);
+      
+      const startTime = Date.now();
+      const searchResults = await searchService.webSearch(query);
+      const endTime = Date.now();
+      
+      console.log(`Búsqueda completada en ${endTime - startTime}ms. Se encontraron ${searchResults.length} resultados.`);
+      console.log('===== FIN DE PRUEBA DE BÚSQUEDA WEB =====');
+      
+      res.json({
+        query,
+        results: searchResults,
+        time: `${endTime - startTime}ms`
+      });
+    } catch (error: any) {
+      console.error('ERROR EN PRUEBA DE BÚSQUEDA WEB:');
+      console.error('Mensaje:', error.message);
+      
+      res.status(500).json({ 
+        message: 'Error al realizar la búsqueda web',
+        error: error.message
+      });
+    }
+  });
+  
+  // Endpoint para probar la extracción de contenido web de Mervin DeepSearch
+  app.get('/api/permit/test/fetch', async (req: Request, res: Response) => {
+    try {
+      console.log('===== PRUEBA DE EXTRACCIÓN DE CONTENIDO MERVIN DEEPSEARCH =====');
+      
+      const url = String(req.query.url);
+      
+      if (!url) {
+        return res.status(400).json({ 
+          message: 'Se requiere el parámetro "url"'
+        });
+      }
+      
+      console.log(`Extrayendo contenido de: ${url}`);
+      
+      const startTime = Date.now();
+      const content = await searchService.fetchPage(url);
+      const endTime = Date.now();
+      
+      console.log(`Extracción completada en ${endTime - startTime}ms. Longitud del contenido: ${content.length} caracteres.`);
+      console.log('===== FIN DE PRUEBA DE EXTRACCIÓN DE CONTENIDO =====');
+      
+      res.json({
+        url,
+        contentLength: content.length,
+        contentPreview: content.substring(0, 500) + '...',
+        time: `${endTime - startTime}ms`
+      });
+    } catch (error: any) {
+      console.error('ERROR EN PRUEBA DE EXTRACCIÓN DE CONTENIDO:');
+      console.error('Mensaje:', error.message);
+      
+      res.status(500).json({ 
+        message: 'Error al extraer el contenido web',
+        error: error.message
+      });
+    }
+  });
 
   // Crear y retornar el servidor HTTP
   const server = createServer(app);
