@@ -453,7 +453,7 @@ export default function PropertyOwnershipVerifier() {
             </div>
 
             <div className="mt-6 pt-4 border-t">
-              <h3 className="text-md font-semibold mb-2">¡Ey {userSubscription?.planId === 3 ? 'Chingón' : userSubscription?.planId === 2 ? 'Patrón' : 'Primo'}! Esto es lo que debes saber:</h3>
+              <h3 className="text-md font-semibold mb-2">¡Ey {userSubscription?.planId == 3 ? 'Chingón' : userSubscription?.planId == 2 ? 'Patrón' : 'Primo'}! Esto es lo que debes saber:</h3>
               <ul className="space-y-3">
                 <li className="flex items-start bg-yellow-50 p-3 rounded-lg border border-yellow-200">
                   <AlertTriangle className="text-yellow-600 mr-2 flex-shrink-0 mt-0.5" size={18} />
@@ -474,7 +474,7 @@ export default function PropertyOwnershipVerifier() {
                   <i className="ri-shield-star-line text-blue-600 mr-2 mt-0.5 text-lg" />
                   <div>
                     <span className="font-medium text-blue-800">Recuerda:</span>
-                    <p className="text-blue-700">Tú eres {userSubscription?.planId === 3 ? 'el más chingón' : userSubscription?.planId === 2 ? 'un verdadero patrón' : 'un profesional'} - no te dejes engañar por intermediarios. ¡Tu trabajo vale lo que cobras!</p>
+                    <p className="text-blue-700">Tú eres {userSubscription?.planId == 3 ? 'el más chingón' : userSubscription?.planId == 2 ? 'un verdadero patrón' : 'un profesional'} - no te dejes engañar por intermediarios. ¡Tu trabajo vale lo que cobras!</p>
                   </div>
                 </li>
               </ul>
