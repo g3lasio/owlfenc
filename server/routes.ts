@@ -657,19 +657,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Verificar si los datos son auténticos o de respaldo
+      // Verificar si los datos son auténticos
       if (propertyData.verified) {
         console.log('ÉXITO: Datos verificados obtenidos de CoreLogic API');
         console.log('Datos de propietario:', propertyData.owner);
         console.log('Propiedad ocupada por el propietario:', propertyData.ownerOccupied);
+        
+        console.log('Enviando respuesta al cliente...');
+        console.log('===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====\n');
+        
+        res.json(propertyData);
       } else {
-        console.log('ALERTA: Se están usando datos de respaldo (no verificados)');
+        // Si los datos no están verificados, devolver un error en lugar de datos no verificados
+        console.log('ALERTA: No se pudieron obtener datos verificados');
+        console.log('===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====\n');
+        
+        return res.status(503).json({ 
+          message: 'No se pudieron verificar los datos de la propiedad. Por favor, intenta de nuevo más tarde o contacta al soporte.' 
+        });
       }
-      
-      console.log('Enviando respuesta al cliente...');
-      console.log('===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====\n');
-      
-      res.json(propertyData);
     } catch (error: any) {
       console.error('ERROR EN VERIFICACIÓN DE PROPIEDAD:');
       console.error('Mensaje:', error.message);

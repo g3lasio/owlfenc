@@ -182,32 +182,13 @@ class PropertyService {
   }
 
   /**
-   * Retornar datos de respaldo cuando no se puede obtener información de la API
+   * Retornar null cuando no se puede obtener información de la API
+   * Se ha eliminado la generación de datos sintéticos o de respaldo
    */
-  private getBackupPropertyData(address: string): FullPropertyData {
-    console.log('ALERTA DE DATOS: Generando datos de respaldo para', address);
-    console.log('Estos datos no son reales y solo se utilizan como respaldo');
-    
-    // Extract address parts if possible to make the sample data appear more realistic
-    const addressParts = address.split(',');
-    const streetAddress = addressParts[0] || address;
-
-    // Generate data based on the address
-    const addressSum = streetAddress.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
-    const randomGenerator = (base: number) => (addressSum % base) + Math.floor(base * 0.8);
-
-    return {
-      owner: "[DATOS NO VERIFICADOS] María González",
-      address: address,
-      sqft: 1800 + randomGenerator(1000),
-      bedrooms: 3 + (addressSum % 3),
-      bathrooms: 2 + (addressSum % 2),
-      lotSize: `${(0.15 + (addressSum % 10) / 100).toFixed(2)} acres`,
-      yearBuilt: 1980 + (addressSum % 40),
-      propertyType: "Single Family Residence",
-      ownerOccupied: true,
-      verified: false // Cambiado a false para indicar que son datos de respaldo
-    };
+  private handleApiFailure(address: string, reason: string): null {
+    console.log(`ERROR: No se pudieron obtener datos de propiedad para ${address}`);
+    console.log(`Motivo: ${reason}`);
+    return null;
   }
 
   /**
@@ -253,8 +234,7 @@ class PropertyService {
       // Verificar que tenemos las credenciales
       if (!this.consumerKey || !this.consumerSecret) {
         console.error('No se proporcionaron credenciales de CoreLogic válidas');
-        console.log('Usando datos de respaldo debido a falta de credenciales');
-        return this.getBackupPropertyData(address);
+        return this.handleApiFailure(address, 'Credenciales de API no proporcionadas');
       }
 
       // Intentar acceder a la API de CoreLogic con posibles reintentos
@@ -274,16 +254,14 @@ class PropertyService {
               continue;
             }
             
-            console.log('Usando datos de respaldo por falta de ID de propiedad');
-            return this.getBackupPropertyData(address);
+            return this.handleApiFailure(address, 'No se encontró ID de propiedad para esta dirección');
           }
 
           // Obtener detalles de la propiedad
           const propertyDetails = await this.getPropertyDetailsById(propertyId);
           if (!propertyDetails) {
             console.log('No se pudieron obtener detalles de la propiedad');
-            console.log('Usando datos de respaldo por falta de detalles');
-            return this.getBackupPropertyData(address);
+            return this.handleApiFailure(address, 'No se pudieron obtener detalles de la propiedad');
           }
 
           // Extraer información relevante
@@ -312,19 +290,17 @@ class PropertyService {
             }
           }
           
-          console.log('Usando datos de respaldo debido a error de API');
-          return this.getBackupPropertyData(address);
+          return this.handleApiFailure(address, 'Error de conexión con API: ' + apiError.message);
         }
       }
       
       // Si llegamos aquí, es porque agotamos los intentos
       console.log('Se agotaron todos los intentos con diferentes URLs base');
-      return this.getBackupPropertyData(address);
+      return this.handleApiFailure(address, 'Se agotaron todos los intentos con diferentes URLs base');
       
     } catch (error: any) {
       console.error('Error general en getPropertyByAddress:', error.message);
-      console.log('Usando datos de respaldo debido a error general');
-      return this.getBackupPropertyData(address);
+      return this.handleApiFailure(address, 'Error general: ' + error.message);
     }
   }
 
@@ -349,7 +325,7 @@ class PropertyService {
       };
     } catch (error: any) {
       console.error('Error extrayendo datos de propiedad:', error.message);
-      return this.getBackupPropertyData(originalAddress);
+      return this.handleApiFailure(originalAddress, 'Error extrayendo datos: ' + error.message);
     }
   }
 
