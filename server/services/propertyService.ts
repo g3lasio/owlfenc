@@ -32,6 +32,11 @@ export interface FullPropertyData {
 class PropertyService {
   private consumerKey: string;
   private consumerSecret: string;
+  private baseUrls: string[] = [
+    'https://sandbox-api.corelogic.com',
+    'https://api-sandbox.corelogic.com',
+    'https://api.corelogic.com'
+  ];
   private baseUrl: string = 'https://sandbox-api.corelogic.com';
   private coreLogicClient: AxiosInstance;
   private accessToken: string = '';
@@ -187,6 +192,30 @@ class PropertyService {
   }
 
   /**
+   * Intenta cambiar a una URL base diferente para la API de CoreLogic
+   */
+  private tryAlternativeBaseUrl(): boolean {
+    const currentIndex = this.baseUrls.indexOf(this.baseUrl);
+    if (currentIndex < this.baseUrls.length - 1) {
+      // Hay otra URL para probar
+      this.baseUrl = this.baseUrls[currentIndex + 1];
+      console.log(`Cambiando a URL base alternativa: ${this.baseUrl}`);
+      
+      // Actualizar cliente
+      this.coreLogicClient.defaults.baseURL = this.baseUrl;
+      
+      // Invalidar token actual
+      this.accessToken = '';
+      this.tokenExpiration = 0;
+      
+      return true;
+    }
+    
+    console.log('No hay más URLs alternativas para probar');
+    return false;
+  }
+  
+  /**
    * Método principal: Obtiene información de la propiedad por dirección
    */
   async getPropertyByAddress(address: string): Promise<FullPropertyData | null> {
@@ -209,38 +238,70 @@ class PropertyService {
         return this.getBackupPropertyData(address);
       }
 
-      // Intentar acceder a la API de CoreLogic
-      try {
-        // Proceso principal de búsqueda
-        const propertyId = await this.findPropertyId(address);
-        if (!propertyId) {
-          console.log('No se pudo encontrar un ID de propiedad para la dirección');
-          console.log('Usando datos de respaldo por falta de ID de propiedad');
+      // Intentar acceder a la API de CoreLogic con posibles reintentos
+      let attemptsLeft = this.baseUrls.length;
+      
+      while (attemptsLeft > 0) {
+        try {
+          // Proceso principal de búsqueda
+          const propertyId = await this.findPropertyId(address);
+          if (!propertyId) {
+            console.log('No se pudo encontrar un ID de propiedad para la dirección');
+            
+            // Si es un error de conexión, intentar con otra URL base
+            if (attemptsLeft > 1 && this.tryAlternativeBaseUrl()) {
+              attemptsLeft--;
+              console.log(`Reintentando con nueva URL base. Intentos restantes: ${attemptsLeft}`);
+              continue;
+            }
+            
+            console.log('Usando datos de respaldo por falta de ID de propiedad');
+            return this.getBackupPropertyData(address);
+          }
+
+          // Obtener detalles de la propiedad
+          const propertyDetails = await this.getPropertyDetailsById(propertyId);
+          if (!propertyDetails) {
+            console.log('No se pudieron obtener detalles de la propiedad');
+            console.log('Usando datos de respaldo por falta de detalles');
+            return this.getBackupPropertyData(address);
+          }
+
+          // Extraer información relevante
+          const fullPropertyData = this.extractPropertyData(propertyDetails, address);
+          
+          // Guardar en caché
+          global.propertyCache = global.propertyCache || {};
+          global.propertyCache[cacheKey] = { data: fullPropertyData, timestamp: Date.now() };
+          
+          console.log('Retornando datos verificados de CoreLogic');
+          return fullPropertyData;
+          
+        } catch (apiError: any) {
+          console.error('Error accediendo a la API de CoreLogic:', apiError.message);
+          
+          // Si hay un error de conexión y tenemos más URLs para probar
+          if (attemptsLeft > 1 && 
+             (apiError.message.includes('ENOTFOUND') || 
+              apiError.message.includes('ECONNREFUSED') ||
+              apiError.message.includes('404'))) {
+            
+            if (this.tryAlternativeBaseUrl()) {
+              attemptsLeft--;
+              console.log(`Reintentando con nueva URL base. Intentos restantes: ${attemptsLeft}`);
+              continue;
+            }
+          }
+          
+          console.log('Usando datos de respaldo debido a error de API');
           return this.getBackupPropertyData(address);
         }
-
-        // Obtener detalles de la propiedad
-        const propertyDetails = await this.getPropertyDetailsById(propertyId);
-        if (!propertyDetails) {
-          console.log('No se pudieron obtener detalles de la propiedad');
-          console.log('Usando datos de respaldo por falta de detalles');
-          return this.getBackupPropertyData(address);
-        }
-
-        // Extraer información relevante
-        const fullPropertyData = this.extractPropertyData(propertyDetails, address);
-        
-        // Guardar en caché
-        global.propertyCache = global.propertyCache || {};
-        global.propertyCache[cacheKey] = { data: fullPropertyData, timestamp: Date.now() };
-        
-        console.log('Retornando datos verificados de CoreLogic');
-        return fullPropertyData;
-      } catch (apiError: any) {
-        console.error('Error accediendo a la API de CoreLogic:', apiError.message);
-        console.log('Usando datos de respaldo debido a error de API');
-        return this.getBackupPropertyData(address);
       }
+      
+      // Si llegamos aquí, es porque agotamos los intentos
+      console.log('Se agotaron todos los intentos con diferentes URLs base');
+      return this.getBackupPropertyData(address);
+      
     } catch (error: any) {
       console.error('Error general en getPropertyByAddress:', error.message);
       console.log('Usando datos de respaldo debido a error general');
