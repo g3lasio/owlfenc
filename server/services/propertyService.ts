@@ -397,34 +397,64 @@ class PropertyService {
     let owner = 'No disponible';
     let mailingAddress = '';
     let ownerOccupied = false;
+    let ownershipVerified = false;
 
     try {
-      // Lógica de extracción según la estructura de respuesta de CoreLogic
       if (propertyData.owner) {
-        // Nombre del propietario
+        // Extraer y validar nombre del propietario
         if (propertyData.owner.name) {
-          owner = propertyData.owner.name;
+          // Limpiar y normalizar el nombre
+          owner = propertyData.owner.name
+            .replace(/[^\w\s&'-]/g, '') // Mantener solo caracteres válidos
+            .replace(/\s+/g, ' ')       // Normalizar espacios
+            .trim();
+          
+          // Verificar si es una entidad corporativa
+          const isCorporate = /LLC|INC|CORP|LTD|LP|LLP/i.test(owner);
+          
+          // Verificar si hay múltiples propietarios
+          const hasMultipleOwners = owner.includes('&') || owner.includes(' AND ');
+          
+          ownershipVerified = owner.length > 0;
         }
         
-        // Dirección postal
+        // Extraer y validar dirección postal
         if (propertyData.owner.mailingAddress) {
           mailingAddress = this.formatAddress(propertyData.owner.mailingAddress);
+          
+          // Verificar si la dirección postal es válida
+          ownershipVerified = ownershipVerified && mailingAddress.length > 10;
         }
         
-        // Determinar si el propietario ocupa la propiedad
-        if (propertyData.address) {
+        // Determinar ocupación del propietario con lógica mejorada
+        if (propertyData.address && mailingAddress) {
           const propertyAddress = this.formatAddress(propertyData.address);
-          ownerOccupied = propertyAddress.toLowerCase() === mailingAddress.toLowerCase();
+          const normalizedPropertyAddr = propertyAddress.toLowerCase().replace(/[^\w\s]/g, '');
+          const normalizedMailingAddr = mailingAddress.toLowerCase().replace(/[^\w\s]/g, '');
+          
+          // Comparación más flexible para considerar pequeñas diferencias
+          ownerOccupied = normalizedPropertyAddr.includes(normalizedMailingAddr) || 
+                         normalizedMailingAddr.includes(normalizedPropertyAddr);
         }
+
+        // Log detallado para diagnóstico
+        console.log('Datos de propietario extraídos:', {
+          owner,
+          mailingAddress,
+          ownerOccupied,
+          ownershipVerified
+        });
       }
     } catch (error: any) {
       console.error('Error extrayendo datos de propietario:', error.message);
+      console.error('Datos recibidos:', JSON.stringify(propertyData, null, 2));
     }
 
     return {
       owner,
       mailingAddress,
-      ownerOccupied
+      ownerOccupied,
+      ownershipVerified
     };
   }
 
