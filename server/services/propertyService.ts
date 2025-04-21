@@ -33,11 +33,10 @@ class PropertyService {
   private consumerKey: string;
   private consumerSecret: string;
   private baseUrls: string[] = [
-    'https://sandbox-api.corelogic.com',
-    'https://api-sandbox.corelogic.com',
-    'https://api.corelogic.com'
+    'https://api.corelogic.com',
+    'https://api-sandbox.corelogic.com' 
   ];
-  private baseUrl: string = 'https://sandbox-api.corelogic.com';
+  private baseUrl: string = 'https://api.corelogic.com';
   private coreLogicClient: AxiosInstance;
   private accessToken: string = '';
   private tokenExpiration: number = 0;
@@ -73,13 +72,17 @@ class PropertyService {
     try {
       console.log('Obteniendo nuevo token de acceso de CoreLogic...');
       
+      console.log(`Intentando autenticación con CoreLogic: ${this.baseUrl}/access/oauth/token`);
+      
       const response = await axios.post(`${this.baseUrl}/access/oauth/token`, 
         'grant_type=client_credentials', 
         {
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
-            'Authorization': `Basic ${Buffer.from(`${this.consumerKey}:${this.consumerSecret}`).toString('base64')}`
-          }
+            'Authorization': `Basic ${Buffer.from(`${this.consumerKey}:${this.consumerSecret}`).toString('base64')}`,
+            'Accept': 'application/json'
+          },
+          timeout: 15000 // 15 segundos de timeout para la autenticación
         }
       );
 
@@ -119,11 +122,16 @@ class PropertyService {
       console.log('Buscando propiedad por dirección:', address);
       const headers = await this.getAuthHeaders();
       
-      const response = await this.coreLogicClient.get('/property/v2/properties/search', {
+      const searchEndpoint = '/property/v2/properties/search';
+      console.log(`Buscando propiedad en: ${this.baseUrl}${searchEndpoint}`);
+      
+      const response = await this.coreLogicClient.get(searchEndpoint, {
         headers,
         params: {
-          address: address
-        }
+          address: address,
+          includeDetails: true
+        },
+        timeout: 15000 // 15 segundos de timeout para la búsqueda
       });
 
       console.log('Respuesta de búsqueda de propiedad:', JSON.stringify(response.data, null, 2));
@@ -150,8 +158,12 @@ class PropertyService {
       console.log('Obteniendo detalles de propiedad por ID:', propertyId);
       const headers = await this.getAuthHeaders();
       
-      const response = await this.coreLogicClient.get(`/property/v2/properties/${propertyId}`, {
-        headers
+      const detailsEndpoint = `/property/v2/properties/${propertyId}`;
+      console.log(`Obteniendo detalles de: ${this.baseUrl}${detailsEndpoint}`);
+      
+      const response = await this.coreLogicClient.get(detailsEndpoint, {
+        headers,
+        timeout: 15000 // 15 segundos de timeout
       });
 
       console.log('Detalles de propiedad recibidos');
