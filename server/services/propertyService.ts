@@ -502,13 +502,31 @@ class PropertyService {
 
   /**
    * Función de prueba para verificar la API de CoreLogic
+   * Intenta tanto la conexión directa como a través del servicio proxy
    */
   async testApiConnection(): Promise<boolean> {
     try {
+      console.log('Verificando conexión a la API de CoreLogic...');
+      
+      // Primero intentar con el servicio proxy
+      try {
+        console.log('Probando conexión a través del servicio proxy...');
+        const proxySuccess = await proxyService.testConnection();
+        if (proxySuccess) {
+          console.log('✅ Conexión exitosa mediante servicio proxy');
+          return true;
+        }
+      } catch (proxyError: any) {
+        console.log('❌ Error con proxy durante prueba de conexión:', proxyError.message);
+      }
+      
+      // Si falla, intentar con método directo
+      console.log('Probando conexión directa como respaldo...');
       await this.getAccessToken();
+      console.log('✅ Conexión directa exitosa');
       return true;
     } catch (error) {
-      console.error('Error en prueba de conexión con CoreLogic:', error);
+      console.error('❌ Error en todas las pruebas de conexión con CoreLogic:', error);
       return false;
     }
   }
