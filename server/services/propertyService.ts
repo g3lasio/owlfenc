@@ -185,7 +185,7 @@ class PropertyService {
    * Retornar null cuando no se puede obtener información de la API
    * Se ha eliminado la generación de datos sintéticos o de respaldo
    */
-  private handleApiFailure(address: string, reason: string): null {
+  private handleApiFailure(address: string, reason: string): null | FullPropertyData {
     console.log(`ERROR: No se pudieron obtener datos de propiedad para ${address}`);
     console.log(`Motivo: ${reason}`);
     return null;
@@ -267,9 +267,11 @@ class PropertyService {
           // Extraer información relevante
           const fullPropertyData = this.extractPropertyData(propertyDetails, address);
           
-          // Guardar en caché
-          global.propertyCache = global.propertyCache || {};
-          global.propertyCache[cacheKey] = { data: fullPropertyData, timestamp: Date.now() };
+          // Guardar en caché solo si hay datos válidos
+          if (fullPropertyData && fullPropertyData.verified) {
+            global.propertyCache = global.propertyCache || {};
+            global.propertyCache[cacheKey] = { data: fullPropertyData, timestamp: Date.now() };
+          }
           
           console.log('Retornando datos verificados de CoreLogic');
           return fullPropertyData;
@@ -325,7 +327,10 @@ class PropertyService {
       };
     } catch (error: any) {
       console.error('Error extrayendo datos de propiedad:', error.message);
-      return this.handleApiFailure(originalAddress, 'Error extrayendo datos: ' + error.message);
+      this.handleApiFailure(originalAddress, 'Error extrayendo datos: ' + error.message);
+      // Crear un objeto básico para evitar error de tipos, este objeto nunca se usará
+      // ya que el manejador de errores lanza una excepción que será capturada
+      throw new Error('Error procesando datos de propiedad');
     }
   }
 
