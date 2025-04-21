@@ -328,7 +328,7 @@ export default function PermitAdvisor() {
                   Permisos Requeridos
                 </h3>
                 
-                {permitData.requiredPermits.length > 0 ? (
+                {permitData?.requiredPermits?.length > 0 ? (
                   permitData.requiredPermits.map((permit, idx) => (
                     <Card key={idx} className="mb-4">
                       <CardHeader className="py-4">
