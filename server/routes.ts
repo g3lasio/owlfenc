@@ -17,6 +17,7 @@ import { propertyService } from './services/propertyService';
 import { documentService } from './services/documentService';
 import { memoryService } from './services/memoryService';
 import { stripeService } from './services/stripeService';
+import { permitService } from './services/permitService';
 import express from 'express'; // Import express to use express.raw
 
 // Initialize OpenAI API
@@ -695,6 +696,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(500).json({ 
         message: 'Error al obtener detalles de la propiedad',
+        error: error.message
+      });
+    }
+  });
+
+  // Endpoint para Mervin DeepSearch - Permite consultar permisos y regulaciones para proyectos de construcción
+  app.post('/api/permit/check', async (req: Request, res: Response) => {
+    try {
+      console.log('===== INICIO DE SOLICITUD MERVIN DEEPSEARCH =====');
+      
+      // Validar el esquema de la solicitud
+      const permitSchema = z.object({
+        address: z.string().min(5, "La dirección es demasiado corta"),
+        projectType: z.string().min(3, "El tipo de proyecto es demasiado corto")
+      });
+      
+      const validationResult = permitSchema.safeParse(req.body);
+      
+      if (!validationResult.success) {
+        console.error('Error de validación en solicitud de permisos:', validationResult.error);
+        return res.status(400).json({ 
+          message: 'Datos de solicitud inválidos',
+          errors: validationResult.error.format() 
+        });
+      }
+      
+      const { address, projectType } = validationResult.data;
+      console.log(`Consultando permisos para proyecto de ${projectType} en ${address}`);
+      
+      // Verificar que tenemos API key de OpenAI configurada
+      if (!process.env.OPENAI_API_KEY) {
+        console.error('Error: OpenAI API Key no configurada');
+        return res.status(500).json({
+          message: 'Error de configuración del servicio',
+          error: 'No se ha configurado la API de OpenAI'
+        });
+      }
+      
+      // Obtener información de permisos
+      const startTime = Date.now();
+      const permitData = await permitService.checkPermits(address, projectType);
+      const endTime = Date.now();
+      
+      console.log(`Solicitud completada en ${endTime - startTime}ms`);
+      console.log('Información de permisos obtenida correctamente');
+      console.log('===== FIN DE SOLICITUD MERVIN DEEPSEARCH =====');
+      
+      res.json(permitData);
+    } catch (error: any) {
+      console.error('ERROR EN VERIFICACIÓN DE PERMISOS:');
+      console.error('Mensaje:', error.message);
+      
+      res.status(500).json({ 
+        message: 'Error al obtener información de permisos y regulaciones',
         error: error.message
       });
     }

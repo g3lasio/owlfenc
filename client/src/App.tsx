@@ -10,6 +10,7 @@ import Clients from "@/pages/Clients";
 import Settings from "@/pages/Settings";
 import Profile from "@/pages/Profile";
 import PropertyOwnershipVerifier from "@/pages/PropertyOwnershipVerifier";
+import PermitAdvisor from "@/pages/PermitAdvisor";
 import AIProjectManager from "@/pages/AIProjectManager";
 import ARFenceEstimator from "@/pages/ARFenceEstimator";
 import AboutOwlFence from "@/pages/AboutOwlFence";
@@ -90,6 +91,9 @@ function Router() {
       </Route>
       <Route path="/property-verifier">
         {() => <ProtectedRoute component={PropertyOwnershipVerifier} />}
+      </Route>
+      <Route path="/permit-advisor">
+        {() => <ProtectedRoute component={PermitAdvisor} />}
       </Route>
       <Route path="/ai-project-manager">
         {() => <ProtectedRoute component={AIProjectManager} />}
