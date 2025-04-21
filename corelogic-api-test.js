@@ -35,7 +35,7 @@ const agent = new https.Agent({
 });
 
 // Base URL de la API de CoreLogic
-const baseUrl = 'https://sandbox-api.corelogic.com';
+const baseUrl = 'https://api-sandbox.corelogic.com';
 
 // Paso 1: Obtener token de acceso
 async function getAccessToken() {
@@ -44,11 +44,11 @@ async function getAccessToken() {
     
     const startTime = Date.now();
     const response = await axios.post(`${baseUrl}/access/oauth/token`, 
-      'grant_type=client_credentials', 
+      `grant_type=client_credentials&client_id=${encodeURIComponent(consumerKey)}&client_secret=${encodeURIComponent(consumerSecret)}`, 
       {
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Authorization': `Basic ${Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64')}`
+          'Content-Type': 'application/x-www-form-urlencoded'
+          // Eliminada la autenticación básica, enviando credenciales en el cuerpo
         },
         httpsAgent: agent,
         timeout: 10000
