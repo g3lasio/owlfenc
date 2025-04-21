@@ -1,5 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import https from 'https';
+import { proxyService } from './proxyService';
 
 interface PropertyOwnerData {
   owner: string;
@@ -72,7 +73,21 @@ class PropertyService {
     try {
       console.log('Obteniendo nuevo token de acceso de CoreLogic...');
       
-      console.log(`Intentando autenticación con CoreLogic: ${this.baseUrl}/access/oauth/token`);
+      // Primer intento: usar el servicio proxy
+      try {
+        console.log('Intentando obtener token a través del servicio proxy...');
+        const token = await proxyService.getAccessToken();
+        this.accessToken = token;
+        this.tokenExpiration = Date.now() + 3600000 - 60000; // 1 hora - 1 minuto
+        console.log('Token de acceso obtenido mediante servicio proxy');
+        return token;
+      } catch (proxyError: any) {
+        console.log('Error con proxy:', proxyError.message);
+        console.log('Intentando conexión directa como respaldo...');
+      }
+      
+      // Segundo intento: conexión directa (respaldo)
+      console.log(`Intentando autenticación directa con CoreLogic: ${this.baseUrl}/access/oauth/token`);
       
       // Usar el método recomendado: parámetros en el cuerpo en vez de Authorization Basic 
       const params = new URLSearchParams();
@@ -98,13 +113,13 @@ class PropertyService {
         this.accessToken = token;
         // Establecemos la expiración un poco antes del tiempo real para tener margen
         this.tokenExpiration = Date.now() + (response.data.expires_in * 1000) - 60000;
-        console.log('Token de acceso obtenido correctamente');
+        console.log('Token de acceso obtenido correctamente mediante conexión directa');
         return token;
       } else {
         throw new Error('No se pudo obtener el token de acceso');
       }
     } catch (error: any) {
-      console.error('Error obteniendo token de acceso:', error.message);
+      console.error('Error obteniendo token de acceso (todos los métodos fallaron):', error.message);
       throw new Error(`Error de autenticación con CoreLogic: ${error.message}`);
     }
   }
@@ -132,6 +147,25 @@ class PropertyService {
       const searchEndpoint = '/property/v2/properties/search';
       console.log(`Buscando propiedad en: ${this.baseUrl}${searchEndpoint}`);
       
+      // Primero intentar con el servicio proxy
+      try {
+        console.log('Intentando búsqueda a través del servicio proxy...');
+        const data = await proxyService.get(searchEndpoint, {
+          address: address,
+          includeDetails: true
+        });
+        
+        if (data && data.properties && data.properties.length > 0) {
+          const propertyId = data.properties[0].propertyId;
+          console.log('ID de propiedad encontrado mediante proxy:', propertyId);
+          return propertyId;
+        }
+      } catch (proxyError: any) {
+        console.log('Error con proxy durante búsqueda:', proxyError.message);
+        console.log('Intentando conexión directa como respaldo...');
+      }
+      
+      // Si falla, intentar con el cliente directo (como respaldo)
       const response = await this.coreLogicClient.get(searchEndpoint, {
         headers,
         params: {
@@ -145,7 +179,7 @@ class PropertyService {
 
       if (response.data && response.data.properties && response.data.properties.length > 0) {
         const propertyId = response.data.properties[0].propertyId;
-        console.log('ID de propiedad encontrado:', propertyId);
+        console.log('ID de propiedad encontrado mediante conexión directa:', propertyId);
         return propertyId;
       } else {
         console.log('No se encontró ninguna propiedad para la dirección proporcionada');
@@ -168,12 +202,24 @@ class PropertyService {
       const detailsEndpoint = `/property/v2/properties/${propertyId}`;
       console.log(`Obteniendo detalles de: ${this.baseUrl}${detailsEndpoint}`);
       
+      // Primero intentar con el servicio proxy
+      try {
+        console.log('Intentando obtener detalles a través del servicio proxy...');
+        const data = await proxyService.get(detailsEndpoint);
+        console.log('Detalles de propiedad recibidos mediante proxy');
+        return data;
+      } catch (proxyError: any) {
+        console.log('Error con proxy durante obtención de detalles:', proxyError.message);
+        console.log('Intentando conexión directa como respaldo...');
+      }
+      
+      // Si falla, intentar con el cliente directo (como respaldo)
       const response = await this.coreLogicClient.get(detailsEndpoint, {
         headers,
         timeout: 15000 // 15 segundos de timeout
       });
 
-      console.log('Detalles de propiedad recibidos');
+      console.log('Detalles de propiedad recibidos mediante conexión directa');
       return response.data;
     } catch (error: any) {
       console.error('Error obteniendo detalles de propiedad:', error.message);
