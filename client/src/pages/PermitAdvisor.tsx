@@ -382,7 +382,7 @@ export default function PermitAdvisor() {
                   Licencias de Contratista
                 </h3>
                 
-                {permitData.licenseRequirements.length > 0 ? (
+                {permitData.licenseRequirements && permitData.licenseRequirements.length > 0 ? (
                   permitData.licenseRequirements.map((license, idx) => (
                     <Card key={idx} className="mb-4">
                       <CardHeader className="py-4">
@@ -424,7 +424,7 @@ export default function PermitAdvisor() {
                   Regulaciones y Códigos de Construcción
                 </h3>
                 
-                {permitData.buildingCodeRegulations.length > 0 ? (
+                {permitData.buildingCodeRegulations && permitData.buildingCodeRegulations.length > 0 ? (
                   permitData.buildingCodeRegulations.map((code, idx) => (
                     <Card key={idx} className="mb-4">
                       <CardHeader className="py-4">
@@ -471,7 +471,7 @@ export default function PermitAdvisor() {
                   Requisitos de Inspección
                 </h3>
                 
-                {permitData.inspectionRequirements.length > 0 ? (
+                {permitData.inspectionRequirements && permitData.inspectionRequirements.length > 0 ? (
                   permitData.inspectionRequirements.map((inspection, idx) => (
                     <Card key={idx} className="mb-4">
                       <CardHeader className="py-4">
