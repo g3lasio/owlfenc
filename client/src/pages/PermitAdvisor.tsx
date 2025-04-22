@@ -286,6 +286,7 @@ export default function PermitAdvisor() {
                     styles: {
                       control: (base) => ({
                         ...base,
+                        background: 'white',
                         border: '1px solid hsl(var(--input))',
                         boxShadow: 'none',
                         '&:hover': {
@@ -294,23 +295,31 @@ export default function PermitAdvisor() {
                       }),
                       input: (base) => ({
                         ...base,
-                        color: 'hsl(var(--foreground))',
+                        color: 'rgb(15, 23, 42)',
+                        fontWeight: 500,
                       }),
                       option: (base, state) => ({
                         ...base,
                         backgroundColor: state.isFocused ? 'hsl(var(--primary) / 0.1)' : 'white',
-                        color: 'hsl(var(--foreground))',
+                        color: 'rgb(15, 23, 42)',
+                        fontWeight: 500,
                         '&:hover': {
                           backgroundColor: 'hsl(var(--primary) / 0.15)',
                         },
                       }),
                       singleValue: (base) => ({
                         ...base,
-                        color: 'hsl(var(--foreground))',
+                        color: 'rgb(15, 23, 42)',
+                        fontWeight: 500,
                       }),
                       placeholder: (base) => ({
                         ...base,
-                        color: 'hsl(var(--muted-foreground))',
+                        color: 'rgb(100, 116, 139)',
+                      }),
+                      menu: (base) => ({
+                        ...base,
+                        zIndex: 9999,
+                        background: 'white',
                       }),
                     }
                   }}
@@ -677,8 +686,14 @@ export default function PermitAdvisor() {
                             </div>
                           )}
                         </div>
-                        {permit.description && (
+                        {permit.description && typeof permit.description === 'string' && (
                           <p className="text-sm mt-2">{permit.description}</p>
+                        )}
+                        {permit.requirements && typeof permit.requirements === 'string' && (
+                          <div className="mt-2">
+                            <h4 className="text-sm font-medium">Requisitos:</h4>
+                            <p className="text-sm">{permit.requirements}</p>
+                          </div>
                         )}
                         {permit.url && (
                           <div className="mt-3">

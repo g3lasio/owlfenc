@@ -76,18 +76,29 @@
   /* Google Places Autocomplete customization */
   .react-select__control,
   .react-select__menu {
-    @apply border-input bg-background text-foreground !important;
+    @apply border-input bg-white text-slate-900 !important;
   }
   
   .react-select__input, 
   .react-select__single-value,
   .react-select__option {
-    @apply text-foreground !important;
+    @apply text-slate-900 font-medium !important;
+  }
+  
+  .react-select__placeholder {
+    @apply text-slate-500 !important;
   }
   
   .react-select__option--is-focused,
   .react-select__option:hover {
     @apply bg-primary/10 !important;
+  }
+  
+  /* Aumentar la especificidad para asegurar que los estilos sean aplicados */
+  div.react-select__control div.react-select__value-container div.react-select__input-container,
+  div.react-select__control div.react-select__value-container div.react-select__single-value {
+    @apply text-slate-900 !important;
+    color: rgb(15, 23, 42) !important;
   }
   
   /* Chat message styles */
