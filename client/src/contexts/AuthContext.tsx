@@ -9,7 +9,8 @@ import {
   loginWithApple,
   loginWithMicrosoft,
   sendEmailLink,
-  resetPassword
+  resetPassword,
+  devMode
 } from '../lib/firebase';
 
 type User = {

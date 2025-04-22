@@ -43,6 +43,27 @@ import {
 const isReplitDev = window.location.hostname.includes('.replit.dev') || 
                    window.location.hostname.includes('.id.repl.co');
 
+// Activar modo de desarrollo si estamos en Replit
+export const devMode = isReplitDev;
+
+// Crear un usuario simulado para modo de desarrollo
+export const createDevUser = () => {
+  return {
+    uid: "dev-user-123",
+    email: "dev@example.com",
+    displayName: "Usuario Desarrollo",
+    photoURL: null,
+    phoneNumber: null,
+    emailVerified: true,
+    getIdToken: () => Promise.resolve("dev-token-123"),
+    toJSON: () => ({
+      uid: "dev-user-123",
+      email: "dev@example.com",
+      displayName: "Usuario Desarrollo"
+    })
+  };
+};
+
 // Configuración de Firebase
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
@@ -178,26 +199,7 @@ export const loginUser = async (email: string, password: string) => {
   }
 };
 
-// Modo de desarrollo sin autenticación
-const devMode = isReplitDev && import.meta.env.DEV;
-
-// Crear un usuario simulado para modo de desarrollo
-const createDevUser = () => {
-  return {
-    uid: "dev-user-123",
-    email: "dev@example.com",
-    displayName: "Usuario Desarrollo",
-    photoURL: null,
-    phoneNumber: null,
-    emailVerified: true,
-    getIdToken: () => Promise.resolve("dev-token-123"),
-    toJSON: () => ({
-      uid: "dev-user-123",
-      email: "dev@example.com",
-      displayName: "Usuario Desarrollo"
-    })
-  };
-};
+// Espacio reservado para comentarios
 
 // Iniciar sesión con Google
 export const loginWithGoogle = async () => {
