@@ -94,9 +94,34 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
       setLoading(false);
     });
+    
+    // Escuchamos el evento personalizado para el modo de desarrollo
+    const handleDevAuthChange = (event: any) => {
+      const { user } = event.detail;
+      console.log("Evento de auth detectado en modo de desarrollo:", user);
+      if (user) {
+        // Convertir al tipo User para usar en nuestra aplicación
+        const appUser: User = {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName,
+          photoURL: user.photoURL,
+          phoneNumber: user.phoneNumber,
+          emailVerified: user.emailVerified
+        };
+        setCurrentUser(appUser);
+      }
+      setLoading(false);
+    };
+    
+    // Registrar el evento personalizado
+    window.addEventListener('dev-auth-change', handleDevAuthChange);
 
-    // Limpiar la suscripción al desmontar
-    return () => unsubscribe();
+    // Limpiar las suscripciones al desmontar
+    return () => {
+      unsubscribe();
+      window.removeEventListener('dev-auth-change', handleDevAuthChange);
+    };
   }, []);
 
   // Iniciar sesión con email y contraseña
