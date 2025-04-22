@@ -57,7 +57,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
     >
       <div
         ref={menuPanelRef}
-        className={`bg-card w-[280px] h-full overflow-y-auto transform transition-all duration-500 ease-[cubic-bezier(0.7,0,0.3,1)] shadow-lg backdrop-blur-lg bg-card/90 ${
+        className={`bg-card w-[300px] h-full overflow-y-auto transform transition-all duration-300 shadow-lg ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -66,7 +66,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           <img
             src="https://i.postimg.cc/4yc9M62C/White-logo-no-background.png"
             alt="Owl Fenc"
-            className="h-12 w-auto max-w-[180px] object-contain"
+            className="h-10 w-auto max-w-[180px] object-contain"
           />
           <button
             className="p-1.5 rounded-md hover:bg-accent"
@@ -76,8 +76,19 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           </button>
         </div>
 
-        {/* Navegación usando el componente unificado tipo "main" */}
-        <Navigation variant="drawer" type="main" onClose={onClose} />
+        {/* Navegación Principal */}
+        <div className="p-3">
+          <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Navegación</h2>
+          <Navigation variant="drawer" type="main" onClose={onClose} />
+        </div>
+
+        <div className="h-px bg-border mx-4 my-2"></div>
+
+        {/* Navegación de Usuario */}
+        <div className="p-3">
+          <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Configuración</h2>
+          <Navigation variant="drawer" type="user" onClose={onClose} />
+        </div>
       </div>
     </div>
   );
