@@ -11,16 +11,17 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, AlertTriangle, CheckCircle2, FileText, ListChecks, HardHat, CalendarClock, DollarSign, Building2, Ruler, Scale } from "lucide-react";
+import { Loader2, Search, AlertTriangle, CheckCircle2, FileText, ListChecks, HardHat, CalendarClock, DollarSign, Building2, Clock, Link2, Phone, Mail, MapPin, Clock8, ExternalLink, Ruler, Scale, Info, BookOpen, Landmark } from "lucide-react";
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
 
-// Tipos para los datos de permisos
+// Tipos para los datos de permisos - Versión mejorada
 interface PermitData {
   name: string;
   issuingAuthority: string;
   estimatedTimeline: string;
   averageCost?: string;
   description?: string;
+  requirements?: string;
   url?: string;
 }
 
@@ -29,13 +30,17 @@ interface LicenseRequirement {
   obtainingProcess: string;
   fees: string;
   renewalInfo?: string;
+  bondingInsurance?: string;
+  verificationProcess?: string;
   url?: string;
 }
 
 interface CodeRegulation {
   type: string;
   details: string;
+  codeReference?: string;
   restrictions?: string;
+  measurements?: string;
   applicableAreas?: string[];
 }
 
@@ -43,7 +48,40 @@ interface InspectionRequirement {
   type: string;
   timing: string;
   contactInfo?: string;
+  schedulingProcess?: string;
+  preparationNeeded?: string;
+  commonIssues?: string;
   description?: string;
+}
+
+interface TimelineInfo {
+  totalEstimatedTime: string;
+  criticalPathItems: string[];
+  bestTimeToApply?: string;
+  expirationPeriods?: string;
+}
+
+interface CostAnalysis {
+  totalEstimatedCost: string;
+  variableFactors: string[];
+  feeScheduleUrl?: string;
+  paymentMethods?: string[];
+}
+
+interface ResourceLink {
+  name: string;
+  url: string;
+  description?: string;
+  relevance?: string;
+}
+
+interface OfficialContact {
+  department: string;
+  purpose: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  hours?: string;
 }
 
 interface PermitResponse {
@@ -53,12 +91,17 @@ interface PermitResponse {
   inspectionRequirements: InspectionRequirement[];
   specialConsiderations: string[];
   process: string[];
-  links: { name: string; url: string }[];
+  timeline?: TimelineInfo;
+  costAnalysis?: CostAnalysis;
+  links: ResourceLink[];
+  contactInformation?: OfficialContact[];
   meta: {
     sources: string[];
     generated: string;
     projectType: string;
+    projectTypeDescription?: string;
     location: string;
+    fullAddress?: string;
   };
   [key: string]: any;
 }
@@ -303,9 +346,26 @@ export default function PermitAdvisor() {
             </CardDescription>
           </CardHeader>
           
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-2">
+          <div className="px-6 pt-2">
+            <Alert className="mb-4 bg-primary/5 border-primary/20">
+              <CheckCircle2 className="h-5 w-5 text-primary" />
+              <AlertTitle className="text-primary">Análisis Completo</AlertTitle>
+              <AlertDescription>
+                {permitData.meta.projectTypeDescription ? 
+                  `Información específica para proyecto de ${permitData.meta.projectTypeDescription} en ${permitData.meta.fullAddress || permitData.meta.location}` :
+                  `Información específica para proyecto de ${permitData.meta.projectType} en ${permitData.meta.location}`
+                }
+              </AlertDescription>
+            </Alert>
+          </div>
+          
+          <Tabs value={activeTab || "overview"} onValueChange={setActiveTab} className="mt-2">
             <div className="px-6">
-              <TabsList className="grid grid-cols-2 md:grid-cols-5 mb-4">
+              <TabsList className="grid grid-cols-2 md:grid-cols-9 mb-4 flex-wrap">
+                <TabsTrigger value="overview" className="text-xs md:text-sm">
+                  <Search className="h-4 w-4 mr-1 hidden sm:inline" />
+                  Resumen
+                </TabsTrigger>
                 <TabsTrigger value="permits" className="text-xs md:text-sm">
                   <FileText className="h-4 w-4 mr-1 hidden sm:inline" />
                   Permisos
@@ -322,14 +382,184 @@ export default function PermitAdvisor() {
                   <ListChecks className="h-4 w-4 mr-1 hidden sm:inline" />
                   Inspecciones
                 </TabsTrigger>
-                <TabsTrigger value="process" className="text-xs md:text-sm">
+                <TabsTrigger value="timeline" className="text-xs md:text-sm">
+                  <CalendarClock className="h-4 w-4 mr-1 hidden sm:inline" />
+                  Tiempos
+                </TabsTrigger>
+                <TabsTrigger value="costs" className="text-xs md:text-sm">
+                  <DollarSign className="h-4 w-4 mr-1 hidden sm:inline" />
+                  Costos
+                </TabsTrigger>
+                <TabsTrigger value="contacts" className="text-xs md:text-sm">
                   <HardHat className="h-4 w-4 mr-1 hidden sm:inline" />
-                  Proceso
+                  Contactos
+                </TabsTrigger>
+                <TabsTrigger value="resources" className="text-xs md:text-sm">
+                  <FileText className="h-4 w-4 mr-1 hidden sm:inline" />
+                  Recursos
                 </TabsTrigger>
               </TabsList>
             </div>
             
             <ScrollArea className="h-[500px]">
+              <TabsContent value="overview" className="px-6 py-4 space-y-6">
+                <h3 className="text-lg font-medium flex items-center">
+                  <Search className="mr-2 h-5 w-5 text-primary" />
+                  Resumen General
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  {/* Tarjeta de permisos */}
+                  <Card className="bg-primary/5">
+                    <CardHeader className="py-3">
+                      <CardTitle className="text-md flex items-center">
+                        <FileText className="h-5 w-5 mr-2 text-primary" />
+                        Permisos Requeridos
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="py-2">
+                      <div className="text-sm">
+                        {permitData.requiredPermits && permitData.requiredPermits.length > 0 ? (
+                          <div>
+                            <p className="mb-2">Se requieren {permitData.requiredPermits.length} permisos para este proyecto.</p>
+                            <ul className="list-disc pl-5">
+                              {permitData.requiredPermits.slice(0, 3).map((permit, idx) => (
+                                <li key={idx} className="mb-1">{permit.name}</li>
+                              ))}
+                              {permitData.requiredPermits.length > 3 && (
+                                <li className="text-muted-foreground">y {permitData.requiredPermits.length - 3} más...</li>
+                              )}
+                            </ul>
+                          </div>
+                        ) : (
+                          <p>No se identificaron permisos específicos para este proyecto.</p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Tarjeta de costos */}
+                  <Card className="bg-primary/5">
+                    <CardHeader className="py-3">
+                      <CardTitle className="text-md flex items-center">
+                        <DollarSign className="h-5 w-5 mr-2 text-primary" />
+                        Costos Aproximados
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="py-2">
+                      <div className="text-sm">
+                        {permitData.costAnalysis ? (
+                          <p>{permitData.costAnalysis.totalEstimatedCost}</p>
+                        ) : permitData.requiredPermits && permitData.requiredPermits.some(p => p.averageCost) ? (
+                          <p>Costos variables según los permisos específicos. Ver detalles en la sección de costos.</p>
+                        ) : (
+                          <p>Información de costos no disponible. Se recomienda contactar a la autoridad local.</p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Tarjeta de tiempo estimado */}
+                  <Card className="bg-primary/5">
+                    <CardHeader className="py-3">
+                      <CardTitle className="text-md flex items-center">
+                        <CalendarClock className="h-5 w-5 mr-2 text-primary" />
+                        Tiempo Estimado
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="py-2">
+                      <div className="text-sm">
+                        {permitData.timeline ? (
+                          <p>{permitData.timeline.totalEstimatedTime}</p>
+                        ) : (
+                          <p>El tiempo puede variar según la jurisdicción local. Ver detalles en la sección de tiempos.</p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Tarjeta de consideraciones especiales */}
+                  <Card className="bg-primary/5">
+                    <CardHeader className="py-3">
+                      <CardTitle className="text-md flex items-center">
+                        <Info className="h-5 w-5 mr-2 text-primary" />
+                        Consideraciones Especiales
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="py-2">
+                      <div className="text-sm">
+                        {permitData.specialConsiderations && permitData.specialConsiderations.length > 0 ? (
+                          <ul className="list-disc pl-5">
+                            {permitData.specialConsiderations.slice(0, 3).map((consideration, idx) => (
+                              <li key={idx} className="mb-1">{consideration}</li>
+                            ))}
+                            {permitData.specialConsiderations.length > 3 && (
+                              <li className="text-muted-foreground">y {permitData.specialConsiderations.length - 3} más...</li>
+                            )}
+                          </ul>
+                        ) : (
+                          <p>No se identificaron consideraciones especiales para este proyecto.</p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Proceso resumido */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-md flex items-center">
+                      <HardHat className="h-5 w-5 mr-2 text-primary" />
+                      Proceso Simplificado
+                    </CardTitle>
+                    <CardDescription>
+                      Pasos clave para obtener los permisos necesarios
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {permitData.process && permitData.process.length > 0 ? (
+                      <ol className="relative border-l border-primary/30 ml-3 space-y-6 py-2">
+                        {permitData.process.slice(0, 4).map((step, idx) => (
+                          <li key={idx} className="ml-6 relative">
+                            <div className="absolute -left-3 bg-background rounded-full h-6 w-6 flex items-center justify-center border border-primary text-primary">
+                              {idx + 1}
+                            </div>
+                            <p className="text-sm">{step}</p>
+                          </li>
+                        ))}
+                        {permitData.process.length > 4 && (
+                          <li className="ml-6 text-sm text-muted-foreground">
+                            <div className="absolute -left-3 bg-muted text-muted-foreground rounded-full h-6 w-6 flex items-center justify-center border border-border">
+                              ...
+                            </div>
+                            Ver todos los pasos en la sección de proceso
+                          </li>
+                        )}
+                      </ol>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        Proceso no disponible para este tipo de proyecto.
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Fuentes de información */}
+                <div className="mt-6">
+                  <h4 className="text-sm font-medium mb-2 flex items-center">
+                    <Landmark className="h-4 w-4 mr-2 text-muted-foreground" />
+                    Fuentes de Información
+                  </h4>
+                  <p className="text-xs text-muted-foreground">
+                    Información compilada de {permitData.meta.sources?.length || 0} fuentes oficiales incluyendo departamentos de construcción, 
+                    códigos locales y agencias gubernamentales relevantes para {permitData.meta.location}.
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Última actualización: {new Date(permitData.meta.generated).toLocaleDateString()}
+                  </p>
+                </div>
+              </TabsContent>
+              
               <TabsContent value="permits" className="px-6 py-4 space-y-4">
                 <h3 className="text-lg font-medium flex items-center">
                   <FileText className="mr-2 h-5 w-5 text-primary" />
@@ -518,12 +748,12 @@ export default function PermitAdvisor() {
                 
                 {permitData.process && permitData.process.length > 0 ? (
                   <div className="relative">
-                    <div className="absolute left-3 top-0 bottom-0 w-[1px] bg-border"></div>
-                    <ol className="relative space-y-4">
+                    <div className="absolute left-3 top-0 bottom-0 w-[1px] bg-primary/30"></div>
+                    <ol className="relative space-y-6">
                       {permitData.process.map((step, idx) => (
                         <li key={idx} className="ml-8 relative">
-                          <div className="absolute -left-7 bg-background rounded-full h-6 w-6 flex items-center justify-center border border-border">
-                            <span className="text-xs">{idx + 1}</span>
+                          <div className="absolute -left-7 bg-background rounded-full h-6 w-6 flex items-center justify-center border border-primary text-primary font-medium">
+                            {idx + 1}
                           </div>
                           <p className="text-sm">{step}</p>
                         </li>
@@ -540,58 +770,25 @@ export default function PermitAdvisor() {
                     </AlertDescription>
                   </Alert>
                 )}
-                
-                <Separator />
-                
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">Consideraciones Especiales</h3>
-                  
-                  {permitData.specialConsiderations && permitData.specialConsiderations.length > 0 ? (
-                    <ul className="space-y-2">
-                      {permitData.specialConsiderations.map((consideration, idx) => (
-                        <li key={idx} className="flex">
-                          <AlertTriangle className="h-5 w-5 text-amber-500 mr-2 flex-shrink-0 mt-0.5" />
-                          <p className="text-sm">{consideration}</p>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No se identificaron consideraciones especiales para este proyecto.</p>
-                  )}
-                </div>
-                
-                <Separator />
-                
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">Enlaces Oficiales</h3>
-                  
-                  {permitData.links && permitData.links.length > 0 ? (
-                    <ul className="space-y-2">
-                      {permitData.links.map((link, idx) => (
-                        <li key={idx}>
-                          <Button 
-                            variant="link" 
-                            className="px-0 h-auto text-sm" 
-                            onClick={() => window.open(link.url, '_blank')}
-                          >
-                            {link.name}
-                          </Button>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No se proporcionaron enlaces oficiales.</p>
-                  )}
-                  
-                  <div className="mt-4 pt-2 border-t border-border">
-                    <p className="text-xs text-muted-foreground">
-                      Fuentes consultadas: {permitData.meta.sources.length}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Información generada: {new Date(permitData.meta.generated).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
+
+                {/* Consideraciones especiales */}
+                {permitData.specialConsiderations && permitData.specialConsiderations.length > 0 && (
+                  <Card className="mt-6">
+                    <CardHeader className="py-4">
+                      <CardTitle className="text-md flex items-center">
+                        <Info className="h-5 w-5 mr-2 text-primary" />
+                        Consideraciones Especiales
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="py-2">
+                      <ul className="list-disc pl-5 space-y-2">
+                        {permitData.specialConsiderations.map((consideration, idx) => (
+                          <li key={idx} className="text-sm">{consideration}</li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                )}
               </TabsContent>
             </ScrollArea>
           </Tabs>
