@@ -5,6 +5,9 @@ import Navigation from "./Navigation";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
+import { LogOut } from "lucide-react";
 
 // Definición de tipos para la suscripción y planes
 interface UserSubscription {
@@ -19,7 +22,7 @@ interface Plan {
 }
 
 export default function Sidebar() {
-  const { logout } = useAuth();
+  const { currentUser, logout } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
@@ -62,22 +65,32 @@ export default function Sidebar() {
 
   // Función para obtener el nombre del plan actual
   const getCurrentPlanName = (): string => {
-    if (!userSubscription || !plans) return "El Mero Patrón";
+    if (!userSubscription || !plans) return "Plan Básico";
 
     // Si hay un plan activo, buscamos su nombre
     if (userSubscription.status === "active" && userSubscription.planId) {
       const currentPlan = plans.find((plan) => plan.id === userSubscription.planId);
-      return currentPlan ? currentPlan.name : "El Mero Patrón";
+      return currentPlan ? currentPlan.name : "Plan Básico";
     }
 
-    return "El Mero Patrón";
+    return "Plan Básico";
+  };
+  
+  // Obtener iniciales para el avatar
+  const getUserInitials = () => {
+    if (!currentUser || !currentUser.displayName) return "U";
+    
+    const nameParts = currentUser.displayName.split(" ");
+    if (nameParts.length === 1) return nameParts[0].charAt(0).toUpperCase();
+    
+    return (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase();
   };
 
   return (
-    <aside className="hidden md:flex md:w-64 lg:w-72 flex-col bg-card border-r border-border transition-all duration-500 ease-[cubic-bezier(0.7,0,0.3,1)] transform hover:translate-x-[-90%] group hover:shadow-2xl hover:shadow-primary/20">
-      {/* Sidebar Header */}
+    <aside className="hidden md:flex md:w-72 flex-col bg-card border-r border-border">
+      {/* Sidebar Header con logo */}
       <div className="p-4 border-b border-border">
-        <div className="flex items-center justify-center">
+        <div className="flex items-center justify-between">
           <img 
             src="https://i.postimg.cc/4yc9M62C/White-logo-no-background.png" 
             alt="Owl Fence"
@@ -86,27 +99,71 @@ export default function Sidebar() {
         </div>
       </div>
 
-      
-      
-      {/* Navegación usando el componente unificado */}
-      <Navigation variant="sidebar" />
-
-      {/* Sidebar Footer */}
-      <div className="p-4 border-t border-border mt-auto">
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">{getCurrentPlanName()}</div>
-          <button 
-            onClick={handleLogout} 
-            disabled={loading}
-            className={`p-2 rounded-md hover:bg-destructive/10 hover:text-destructive ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            {loading ? (
-              <i className="ri-loader-2-line animate-spin"></i>
-            ) : (
-              <i className="ri-logout-box-r-line"></i>
-            )}
-          </button>
+      {/* Perfil de Usuario */}
+      <div className="p-4 border-b border-border">
+        <div className="flex items-center mb-3">
+          <Avatar>
+            <AvatarImage src={currentUser?.photoURL || undefined} alt={currentUser?.displayName || "Usuario"} />
+            <AvatarFallback className="bg-primary/20 text-primary">{getUserInitials()}</AvatarFallback>
+          </Avatar>
+          <div className="ml-3">
+            <div className="text-sm font-medium">{currentUser?.displayName || "Usuario"}</div>
+            <div className="text-xs text-muted-foreground">{currentUser?.email}</div>
+          </div>
         </div>
+
+        {/* Banner del plan */}
+        <div className="rounded-md overflow-hidden border border-border">
+          <div className="bg-gradient-to-r from-emerald-500 to-lime-600 py-1.5 px-3">
+            <div className="flex items-center justify-between">
+              <span className="text-white text-xs font-medium">Plan Actual</span>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            </div>
+          </div>
+          <div className="bg-card p-2">
+            <div className="text-sm font-semibold">{getCurrentPlanName()}</div>
+            <div className="mt-2 flex justify-end">
+              <Link href="/subscription">
+                <Button size="sm" variant="outline" className="text-xs h-7">
+                  Actualizar Plan
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Navegación Principal */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-3">
+          <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Navegación Principal</h2>
+          <Navigation variant="sidebar" type="main" />
+        </div>
+
+        <Separator className="my-2" />
+
+        <div className="p-3">
+          <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Configuración</h2>
+          <Navigation variant="sidebar" type="user" />
+        </div>
+      </div>
+      
+      {/* Sidebar Footer */}
+      <div className="p-4 border-t border-border">
+        <Button 
+          variant="ghost" 
+          className="flex items-center w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive"
+          onClick={handleLogout}
+          disabled={loading}
+        >
+          {loading ? 
+            <i className="ri-loader-2-line animate-spin mr-2"></i> :
+            <LogOut className="h-4 w-4 mr-2" />
+          }
+          Cerrar Sesión
+        </Button>
       </div>
     </aside>
   );
