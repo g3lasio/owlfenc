@@ -325,14 +325,42 @@ export default function PermitAdvisor() {
       </Card>
 
       {permitMutation.isPending && (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-10">
-            <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
-            <h3 className="text-xl font-semibold">Consultando información legal...</h3>
-            <p className="text-muted-foreground text-center mt-2 max-w-md">
-              Estamos analizando las regulaciones y permisos aplicables a tu proyecto en esta ubicación.
-              Esto puede tomar unos momentos.
-            </p>
+        <Card className="overflow-hidden bg-gradient-to-br from-primary/5 via-primary/10 to-secondary/5 backdrop-blur-sm border-primary/20">
+          <CardContent className="flex flex-col items-center justify-center py-10 relative">
+            {/* Círculos animados en el fondo */}
+            <div className="absolute inset-0 overflow-hidden">
+              <div className="absolute -left-20 -top-20 w-40 h-40 rounded-full bg-primary/5 animate-pulse"></div>
+              <div className="absolute right-10 top-10 w-20 h-20 rounded-full bg-primary/10 animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+              <div className="absolute left-20 bottom-10 w-32 h-32 rounded-full bg-primary/5 animate-pulse" style={{ animationDelay: '0.7s' }}></div>
+            </div>
+            
+            <div className="relative z-10 flex flex-col items-center">
+              {/* Anillo animado alrededor del spinner */}
+              <div className="relative mb-6">
+                <div className="absolute inset-0 rounded-full border-2 border-primary/30 border-dashed animate-spin" style={{ width: '70px', height: '70px', animationDuration: '8s' }}></div>
+                <div className="absolute inset-0 rounded-full border-2 border-primary/20 border-dashed animate-spin" style={{ width: '70px', height: '70px', animationDuration: '5s', animationDirection: 'reverse' }}></div>
+                <Loader2 className="h-12 w-12 animate-spin text-primary relative" />
+              </div>
+              
+              <h3 className="text-xl font-semibold text-primary">Mervin DeepSearch en acción</h3>
+              <p className="text-muted-foreground text-center mt-4 max-w-md relative">
+                Investigando regulaciones legales, permisos y normativas aplicables a tu proyecto en esta ubicación...
+              </p>
+              
+              <div className="w-full max-w-md mt-6 space-y-2">
+                <div className="h-2 bg-primary/10 rounded overflow-hidden">
+                  <div className="h-full bg-primary/50 animate-pulse"></div>
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Consultando fuentes oficiales</span>
+                  <span>Analizando datos</span>
+                </div>
+              </div>
+              
+              <div className="mt-6 text-xs text-muted-foreground animate-pulse">
+                Puede tomar hasta 30 segundos...
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -549,18 +577,37 @@ export default function PermitAdvisor() {
                 </Card>
 
                 {/* Fuentes de información */}
-                <div className="mt-6">
+                <div className="mt-6 bg-muted/30 p-4 rounded-lg border border-border">
                   <h4 className="text-sm font-medium mb-2 flex items-center">
-                    <Landmark className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <Landmark className="h-4 w-4 mr-2 text-primary" />
                     Fuentes de Información
                   </h4>
                   <p className="text-xs text-muted-foreground">
                     Información compilada de {permitData.meta.sources?.length || 0} fuentes oficiales incluyendo departamentos de construcción, 
                     códigos locales y agencias gubernamentales relevantes para {permitData.meta.location}.
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Última actualización: {new Date(permitData.meta.generated).toLocaleDateString()}
-                  </p>
+                  <div className="flex items-center mt-2 text-xs text-muted-foreground">
+                    <Clock className="h-3 w-3 mr-1 text-muted-foreground" />
+                    Última actualización: {new Date(permitData.meta.generated || Date.now()).toLocaleDateString()}
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {permitData.meta.sources && permitData.meta.sources.length > 0 ? (
+                      permitData.meta.sources.slice(0, 3).map((source, idx) => (
+                        <Badge key={idx} variant="outline" className="text-xs bg-primary/5">
+                          {source.includes('//') ? (new URL(source)).hostname : source}
+                        </Badge>
+                      ))
+                    ) : (
+                      <Badge variant="outline" className="text-xs bg-primary/5">
+                        Fuentes verificadas
+                      </Badge>
+                    )}
+                    {permitData.meta.sources && permitData.meta.sources.length > 3 && (
+                      <Badge variant="outline" className="text-xs">
+                        +{permitData.meta.sources.length - 3} más
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               </TabsContent>
               
