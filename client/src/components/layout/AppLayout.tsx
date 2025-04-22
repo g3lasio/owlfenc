@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Header from "./Header";
 import MobileMenu from "./MobileMenu";
 import Sidebar from "./Sidebar";
-import UserMenu from "./UserMenu";
+// import UserMenu from "./UserMenu"; // Removed UserMenu import
 import { Route, Switch, useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 
