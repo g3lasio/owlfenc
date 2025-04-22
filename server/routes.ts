@@ -466,14 +466,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/subscription/payment-history', async (req: Request, res: Response) => {
     try {
-      // En una app real, obtendríamos el userId de la sesión
-      const userId = 1;
-      const paymentHistory = await storage.getPaymentHistoryByUserId(userId);
-
-      res.json(paymentHistory);
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+      
+      const userId = req.user.id;
+      
+      // Obtenemos la suscripción del usuario para conseguir el customerId
+      const subscription = await storage.getUserSubscriptionByUserId(userId);
+      
+      if (!subscription || !subscription.stripeCustomerId) {
+        return res.json([]);
+      }
+      
+      // Usar Stripe para obtener las facturas
+      const invoices = await stripeService.getCustomerInvoices(subscription.stripeCustomerId);
+      
+      res.json(invoices);
     } catch (error) {
       console.error('Error al obtener historial de pagos:', error);
       res.status(500).json({ message: 'Error al obtener historial de pagos' });
+    }
+  });
+  
+  app.get('/api/subscription/payment-methods', async (req: Request, res: Response) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+      
+      const userId = req.user.id;
+      
+      // Obtenemos la suscripción del usuario para conseguir el customerId
+      const subscription = await storage.getUserSubscriptionByUserId(userId);
+      
+      if (!subscription || !subscription.stripeCustomerId) {
+        return res.json([]);
+      }
+      
+      // Usar Stripe para obtener los métodos de pago
+      const paymentMethods = await stripeService.getCustomerPaymentMethods(subscription.stripeCustomerId);
+      
+      res.json(paymentMethods);
+    } catch (error) {
+      console.error('Error al obtener métodos de pago:', error);
+      res.status(500).json({ message: 'Error al obtener métodos de pago' });
+    }
+  });
+  
+  app.post('/api/subscription/update-payment-method', async (req: Request, res: Response) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+      
+      const userId = req.user.id;
+      const returnUrl = req.body.returnUrl || `${req.protocol}://${req.get('host')}/billing?success=true`;
+      
+      // Obtenemos la suscripción del usuario para conseguir el customerId
+      const subscription = await storage.getUserSubscriptionByUserId(userId);
+      
+      if (!subscription || !subscription.stripeCustomerId) {
+        return res.status(400).json({ message: 'No se encontró información de suscripción' });
+      }
+      
+      // Crear sesión de configuración de método de pago
+      const session = await stripeService.createSetupSession({
+        customerId: subscription.stripeCustomerId,
+        returnUrl
+      });
+      
+      res.json({ url: session.url });
+    } catch (error) {
+      console.error('Error al crear sesión de actualización de método de pago:', error);
+      res.status(500).json({ message: 'Error al crear sesión de actualización' });
     }
   });
 

@@ -567,6 +567,97 @@ class StripeService {
       throw error;
     }
   }
+
+  /**
+   * Obtiene los métodos de pago de un cliente en Stripe
+   */
+  async getCustomerPaymentMethods(customerId: string): Promise<any[]> {
+    try {
+      console.log(`[${new Date().toISOString()}] Obteniendo métodos de pago para cliente ID: ${customerId}`);
+      
+      // Verificar primero que la conexión a Stripe funciona
+      const isConnected = await this.verifyStripeConnection();
+      if (!isConnected) {
+        throw new Error('No se pudo establecer conexión con Stripe. Verifique las credenciales API.');
+      }
+
+      // Obtener métodos de pago de tipo tarjeta
+      const paymentMethods = await stripe.paymentMethods.list({
+        customer: customerId,
+        type: 'card',
+      });
+
+      console.log(`[${new Date().toISOString()}] Se encontraron ${paymentMethods.data.length} métodos de pago`);
+      return paymentMethods.data;
+    } catch (error) {
+      console.error(`[${new Date().toISOString()}] Error al obtener métodos de pago:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene el historial de facturas de un cliente en Stripe
+   */
+  async getCustomerInvoices(customerId: string): Promise<any[]> {
+    try {
+      console.log(`[${new Date().toISOString()}] Obteniendo facturas para cliente ID: ${customerId}`);
+      
+      // Verificar primero que la conexión a Stripe funciona
+      const isConnected = await this.verifyStripeConnection();
+      if (!isConnected) {
+        throw new Error('No se pudo establecer conexión con Stripe. Verifique las credenciales API.');
+      }
+
+      // Obtener facturas
+      const invoices = await stripe.invoices.list({
+        customer: customerId,
+        limit: 100,
+      });
+
+      console.log(`[${new Date().toISOString()}] Se encontraron ${invoices.data.length} facturas`);
+      return invoices.data;
+    } catch (error) {
+      console.error(`[${new Date().toISOString()}] Error al obtener facturas:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Crea una sesión de configuración de método de pago
+   */
+  async createSetupSession(options: {
+    customerId: string;
+    returnUrl: string;
+  }): Promise<any> {
+    try {
+      console.log(`[${new Date().toISOString()}] Creando sesión de configuración para cliente ID: ${options.customerId}`);
+      
+      // Verificar primero que la conexión a Stripe funciona
+      const isConnected = await this.verifyStripeConnection();
+      if (!isConnected) {
+        throw new Error('No se pudo establecer conexión con Stripe. Verifique las credenciales API.');
+      }
+
+      // Crear sesión
+      const session = await stripe.checkout.sessions.create({
+        customer: options.customerId,
+        payment_method_types: ['card'],
+        mode: 'setup',
+        success_url: options.returnUrl,
+        cancel_url: options.returnUrl.replace('success=true', 'canceled=true'),
+      });
+
+      if (!session || !session.url) {
+        throw new Error('No se pudo crear la sesión de configuración');
+      }
+
+      console.log(`[${new Date().toISOString()}] Sesión de configuración creada correctamente con URL:`, session.url.substring(0, 60) + '...');
+      return session;
+    } catch (error) {
+      console.error(`[${new Date().toISOString()}] Error al crear sesión de configuración:`, error);
+      throw error;
+    }
+  }
 }
 
 export const stripeService = new StripeService();
