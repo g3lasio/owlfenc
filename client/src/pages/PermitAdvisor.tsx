@@ -691,10 +691,10 @@ export default function PermitAdvisor() {
                               </ul>
                             </div>
                           )}
-                          {code.applicableAreas && !Array.isArray(code.applicableAreas) && (
+                          {code.applicableAreas && typeof code.applicableAreas === 'string' && (
                             <div className="mt-2">
                               <h4 className="text-sm font-medium">Áreas aplicables:</h4>
-                              <p className="text-sm">{code.applicableAreas.toString()}</p>
+                              <p className="text-sm">{code.applicableAreas}</p>
                             </div>
                           )}
                         </div>
