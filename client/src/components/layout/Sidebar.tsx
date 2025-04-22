@@ -77,13 +77,13 @@ export default function Sidebar() {
     <aside className="hidden md:flex md:w-64 lg:w-72 flex-col bg-card border-r border-border">
       {/* Sidebar Header */}
       <div className="p-4 border-b border-border">
-        <div className="flex items-center">
-          <div className="w-10 h-10 rounded-md bg-primary flex items-center justify-center">
-            <i className="ri-fence-line text-white text-xl"></i>
-          </div>
-          <h1 className="ml-2 text-xl font-bold">FenceQuote Pro</h1>
+        <div className="flex items-center justify-center">
+          <img 
+            src="https://i.postimg.cc/4yc9M62C/White-logo-no-background.png" 
+            alt="Owl Fence"
+            className="h-12 w-auto object-contain"
+          />
         </div>
-        <p className="text-sm text-muted-foreground mt-1">Estimate & Contract Generator</p>
       </div>
 
       {/* Botón de Upgrade Plan destacado */}
@@ -101,18 +101,12 @@ export default function Sidebar() {
 
       {/* Sidebar Footer */}
       <div className="p-4 border-t border-border mt-auto">
-        <div className="flex items-center hover:bg-accent/10 rounded-md p-2">
-          <div className="w-9 h-9 rounded-full bg-primary/20 text-primary flex items-center justify-center">
-            <span className="font-medium text-sm">JC</span>
-          </div>
-          <div className="ml-2">
-            <div className="text-sm font-medium">John Contractor</div>
-            <div className="text-xs text-muted-foreground">{getCurrentPlanName()}</div>
-          </div>
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">{getCurrentPlanName()}</div>
           <button 
             onClick={handleLogout} 
             disabled={loading}
-            className={`ml-auto p-1.5 rounded-md hover:bg-destructive/10 hover:text-destructive ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`p-2 rounded-md hover:bg-destructive/10 hover:text-destructive ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             {loading ? (
               <i className="ri-loader-2-line animate-spin"></i>
