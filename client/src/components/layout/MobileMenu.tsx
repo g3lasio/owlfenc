@@ -83,7 +83,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
     >
       <div
         ref={menuPanelRef}
-        className={`bg-card w-[300px] h-full overflow-y-auto transform transition-all duration-300 shadow-lg ${
+        className={`bg-card w-[300px] h-full flex flex-col transform transition-all duration-300 shadow-lg ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -103,118 +103,140 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           </button>
         </div>
 
-        {/* Navegación Principal */}
-        <div className="p-3">
-          <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Herramientas</h2>
-          <div className="space-y-1.5 mb-4">
-            <Link href="/" onClick={onClose}>
-              <div className="flex items-center p-2 rounded-md hover:bg-accent">
-                <i className="ri-dashboard-line text-lg mr-3"></i>
-                <span>Dashboard</span>
-              </div>
-            </Link>
-            <Link href="/projects" onClick={onClose}>
-              <div className="flex items-center p-2 rounded-md hover:bg-accent">
-                <i className="ri-briefcase-4-line text-lg mr-3"></i>
-                <span>Proyectos</span>
-              </div>
-            </Link>
-            <Link href="/clients" onClick={onClose}>
-              <div className="flex items-center p-2 rounded-md hover:bg-accent">
-                <i className="ri-user-star-line text-lg mr-3"></i>
-                <span>Clientes</span>
-              </div>
-            </Link>
-            <Link href="/history" onClick={onClose}>
-              <div className="flex items-center p-2 rounded-md hover:bg-accent">
-                <i className="ri-time-line text-lg mr-3"></i>
-                <span>Historial</span>
+        {/* Contenedor con scroll para toda la navegación */}
+        <div className="flex-1 overflow-y-auto">
+          {/* Botón de acción principal */}
+          <div className="p-4">
+            <Link href="/new-estimate" onClick={onClose}>
+              <div className="flex items-center justify-center bg-primary text-white p-3 rounded-md hover:bg-primary/90">
+                <i className="ri-add-line mr-2"></i>
+                <span>Nuevo Estimado</span>
               </div>
             </Link>
           </div>
-          
-          <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Funcionalidades</h2>
-          <div className="space-y-1.5 mb-4">
-            <Link href="/property-verifier" onClick={onClose}>
-              <div className="flex items-center p-2 rounded-md hover:bg-accent">
-                <i className="ri-shield-keyhole-line text-lg mr-3"></i>
-                <span>Verificación de Propiedad</span>
-              </div>
-            </Link>
-            <Link href="/permit-advisor" onClick={onClose}>
-              <div className="flex items-center p-2 rounded-md hover:bg-accent">
-                <i className="ri-robot-2-line text-lg mr-3"></i>
-                <span>Mervin DeepSearch</span>
-              </div>
-            </Link>
-            <Link href="/ai-project-manager" onClick={onClose}>
-              <div className="flex items-center p-2 rounded-md hover:bg-accent">
-                <i className="ri-brain-line text-lg mr-3"></i>
-                <span>Gestión Inteligente</span>
-              </div>
-            </Link>
+
+          {/* Navegación Principal */}
+          <div className="p-3">
+            <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Herramientas</h2>
+            <div className="space-y-1.5 mb-4">
+              <Link href="/" onClick={onClose}>
+                <div className="flex items-center p-2 rounded-md hover:bg-accent">
+                  <i className="ri-dashboard-line text-lg mr-3"></i>
+                  <span>Dashboard</span>
+                </div>
+              </Link>
+              <Link href="/projects" onClick={onClose}>
+                <div className="flex items-center p-2 rounded-md hover:bg-accent">
+                  <i className="ri-briefcase-4-line text-lg mr-3"></i>
+                  <span>Proyectos</span>
+                </div>
+              </Link>
+              <Link href="/clients" onClick={onClose}>
+                <div className="flex items-center p-2 rounded-md hover:bg-accent">
+                  <i className="ri-user-star-line text-lg mr-3"></i>
+                  <span>Clientes</span>
+                </div>
+              </Link>
+              <Link href="/history" onClick={onClose}>
+                <div className="flex items-center p-2 rounded-md hover:bg-accent">
+                  <i className="ri-time-line text-lg mr-3"></i>
+                  <span>Historial</span>
+                </div>
+              </Link>
+            </div>
+            
+            <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Funcionalidades</h2>
+            <div className="space-y-1.5 mb-4">
+              <Link href="/property-verifier" onClick={onClose}>
+                <div className="flex items-center p-2 rounded-md hover:bg-accent">
+                  <i className="ri-shield-keyhole-line text-lg mr-3"></i>
+                  <span>Verificación de Propiedad</span>
+                </div>
+              </Link>
+              <Link href="/permit-advisor" onClick={onClose}>
+                <div className="flex items-center p-2 rounded-md hover:bg-accent">
+                  <i className="ri-robot-2-line text-lg mr-3"></i>
+                  <span>Mervin DeepSearch</span>
+                </div>
+              </Link>
+              <Link href="/ai-project-manager" onClick={onClose}>
+                <div className="flex items-center p-2 rounded-md hover:bg-accent">
+                  <i className="ri-brain-line text-lg mr-3"></i>
+                  <span>Gestión Inteligente</span>
+                </div>
+              </Link>
+            </div>
+          </div>
+
+          <div className="h-px bg-border mx-4 my-2"></div>
+
+          {/* Configuración de Usuario */}
+          <div className="p-3">
+            <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Mi Perfil</h2>
+            <div className="space-y-1.5 mb-4">
+              <Link href="/account" onClick={onClose}>
+                <div className="flex items-center p-2 rounded-md hover:bg-accent">
+                  <i className="ri-user-settings-line text-lg mr-3"></i>
+                  <span>Perfil Personal</span>
+                </div>
+              </Link>
+              <Link href="/billing" onClick={onClose}>
+                <div className="flex items-center p-2 rounded-md hover:bg-accent">
+                  <i className="ri-bank-card-line text-lg mr-3"></i>
+                  <span>Facturación</span>
+                </div>
+              </Link>
+              <Link href="/subscription" onClick={onClose}>
+                <div className="flex items-center p-2 rounded-md hover:bg-accent">
+                  <i className="ri-vip-crown-line text-lg mr-3"></i>
+                  <span>Mi Suscripción</span>
+                </div>
+              </Link>
+            </div>
+            
+            <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Empresa</h2>
+            <div className="space-y-1.5 mb-4">
+              <Link href="/profile" onClick={onClose}>
+                <div className="flex items-center p-2 rounded-md hover:bg-accent">
+                  <i className="ri-building-4-line text-lg mr-3"></i>
+                  <span>Perfil de Empresa</span>
+                </div>
+              </Link>
+              <Link href="/settings/employees" onClick={onClose}>
+                <div className="flex items-center p-2 rounded-md hover:bg-accent">
+                  <i className="ri-team-line text-lg mr-3"></i>
+                  <span>Empleados</span>
+                </div>
+              </Link>
+              <Link href="/settings" onClick={onClose}>
+                <div className="flex items-center p-2 rounded-md hover:bg-accent">
+                  <i className="ri-settings-4-line text-lg mr-3"></i>
+                  <span>Preferencias</span>
+                </div>
+              </Link>
+            </div>
           </div>
         </div>
 
-        <div className="h-px bg-border mx-4 my-2"></div>
-
-        {/* Configuración de Usuario */}
-        <div className="p-3">
-          <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Mi Perfil</h2>
-          <div className="space-y-1.5 mb-4">
-            <Link href="/account" onClick={onClose}>
-              <div className="flex items-center p-2 rounded-md hover:bg-accent">
-                <i className="ri-user-settings-line text-lg mr-3"></i>
-                <span>Perfil Personal</span>
-              </div>
-            </Link>
-            <Link href="/billing" onClick={onClose}>
-              <div className="flex items-center p-2 rounded-md hover:bg-accent">
-                <i className="ri-bank-card-line text-lg mr-3"></i>
-                <span>Facturación</span>
-              </div>
-            </Link>
-            <Link href="/subscription" onClick={onClose}>
-              <div className="flex items-center p-2 rounded-md hover:bg-accent">
-                <i className="ri-vip-crown-line text-lg mr-3"></i>
-                <span>Mi Suscripción</span>
-              </div>
-            </Link>
-          </div>
-          
-          <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Empresa</h2>
-          <div className="space-y-1.5 mb-4">
-            <Link href="/profile" onClick={onClose}>
-              <div className="flex items-center p-2 rounded-md hover:bg-accent">
-                <i className="ri-building-4-line text-lg mr-3"></i>
-                <span>Perfil de Empresa</span>
-              </div>
-            </Link>
-            <Link href="/settings/employees" onClick={onClose}>
-              <div className="flex items-center p-2 rounded-md hover:bg-accent">
-                <i className="ri-team-line text-lg mr-3"></i>
-                <span>Empleados</span>
-              </div>
-            </Link>
-            <Link href="/settings" onClick={onClose}>
-              <div className="flex items-center p-2 rounded-md hover:bg-accent">
-                <i className="ri-settings-4-line text-lg mr-3"></i>
-                <span>Preferencias</span>
-              </div>
-            </Link>
+        {/* Pie fijo con soporte y cerrar sesión */}
+        <div className="p-3 border-t border-border">
+          <div className="bg-primary/10 rounded-md p-3 mb-3">
+            <p className="text-sm text-center mb-2">¿Necesitas ayuda?</p>
+            <button className="flex items-center justify-center p-2 w-full bg-card border border-border rounded-md hover:bg-accent">
+              <i className="ri-question-line mr-2"></i>
+              <span>Soporte</span>
+            </button>
           </div>
           
           {/* Botón de Cerrar Sesión */}
-          <div className="border-t border-border mt-4 pt-4 px-2">
-            <button
-              onClick={handleLogout}
-              disabled={loading}
-              className="flex items-center p-2 rounded-md hover:bg-destructive/10 w-full text-destructive"
-            >
-              <i className={`${loading ? 'ri-loader-2-line animate-spin' : 'ri-logout-box-r-line'} text-lg mr-3`}></i>
-              <span>Cerrar Sesión</span>
-            </button>
-          </div>
+          <button
+            onClick={handleLogout}
+            disabled={loading}
+            className="flex items-center p-2 rounded-md hover:bg-destructive/10 w-full text-destructive"
+          >
+            <i className={`${loading ? 'ri-loader-2-line animate-spin' : 'ri-logout-box-r-line'} text-lg mr-3`}></i>
+            <span>Cerrar Sesión</span>
+          </button>
         </div>
       </div>
     </div>

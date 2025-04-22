@@ -86,175 +86,178 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="hidden md:flex md:w-72 flex-col bg-card border-r border-border">
-      {/* Sidebar Header con logo y perfil */}
-      <div className="p-4 border-b border-border">
-        <div className="flex items-center justify-center mb-4">
-          <img 
-            src="https://i.postimg.cc/4yc9M62C/White-logo-no-background.png" 
-            alt="Owl Fence"
-            className="h-12 w-auto object-contain"
-          />
-        </div>
-        
-        {/* Información del usuario */}
-        <div className="flex flex-col space-y-3">
-          <div className="flex items-center">
-            <Avatar>
-              <AvatarImage src={currentUser?.photoURL || undefined} alt={currentUser?.displayName || "Usuario"} />
-              <AvatarFallback className="bg-primary/20 text-primary">{getUserInitials()}</AvatarFallback>
-            </Avatar>
-            <div className="ml-3">
-              <div className="text-sm font-medium">{currentUser?.displayName || "Usuario"}</div>
-              <div className="text-xs text-muted-foreground">{currentUser?.email}</div>
-            </div>
+    <aside className="hidden md:flex md:w-72 flex-col bg-card border-r border-border h-screen overflow-hidden">
+      {/* Todo el contenido en un contenedor con scroll */}
+      <div className="flex flex-col h-full overflow-y-auto">
+        {/* Sidebar Header con logo y perfil */}
+        <div className="p-4 border-b border-border">
+          <div className="flex items-center justify-center mb-4">
+            <img 
+              src="https://i.postimg.cc/4yc9M62C/White-logo-no-background.png" 
+              alt="Owl Fence"
+              className="h-12 w-auto object-contain"
+            />
           </div>
           
-          {/* Botón de actualizar plan */}
-          <div className="mt-1">
+          {/* Información del usuario */}
+          <div className="flex flex-col space-y-3">
+            <div className="flex items-center">
+              <Avatar>
+                <AvatarImage src={currentUser?.photoURL || undefined} alt={currentUser?.displayName || "Usuario"} />
+                <AvatarFallback className="bg-primary/20 text-primary">{getUserInitials()}</AvatarFallback>
+              </Avatar>
+              <div className="ml-3">
+                <div className="text-sm font-medium">{currentUser?.displayName || "Usuario"}</div>
+                <div className="text-xs text-muted-foreground">{currentUser?.email}</div>
+              </div>
+            </div>
+            
+            {/* Botón de actualizar plan */}
+            <div className="mt-1">
+              <Link href="/subscription">
+                <Button size="sm" variant="outline" className="w-full">
+                  <i className="ri-vip-crown-line mr-2"></i>
+                  Ver plan: {getCurrentPlanName()}
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Botón de nuevo estimado o proyecto - Acción principal */}
+        <div className="p-4">
+          <Link href="/new-estimate">
+            <Button className="w-full gap-2 bg-primary hover:bg-primary/90">
+              <i className="ri-add-line"></i>
+              <span>Nuevo Estimado</span>
+            </Button>
+          </Link>
+        </div>
+
+        {/* Navegación principal */}
+        <div className="flex-1 px-3">
+          <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Herramientas</h2>
+          <div className="space-y-1 mb-6">
+            <Link href="/">
+              <Button variant="ghost" className="w-full justify-start">
+                <i className="ri-dashboard-line mr-2 text-lg"></i>
+                Dashboard
+              </Button>
+            </Link>
+            <Link href="/projects">
+              <Button variant="ghost" className="w-full justify-start">
+                <i className="ri-briefcase-4-line mr-2 text-lg"></i>
+                Proyectos
+              </Button>
+            </Link>
+            <Link href="/clients">
+              <Button variant="ghost" className="w-full justify-start">
+                <i className="ri-user-star-line mr-2 text-lg"></i>
+                Clientes
+              </Button>
+            </Link>
+            <Link href="/history">
+              <Button variant="ghost" className="w-full justify-start">
+                <i className="ri-time-line mr-2 text-lg"></i>
+                Historial
+              </Button>
+            </Link>
+          </div>
+
+          <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Funcionalidades</h2>
+          <div className="space-y-1 mb-6">
+            <Link href="/property-verifier">
+              <Button variant="ghost" className="w-full justify-start">
+                <i className="ri-shield-keyhole-line mr-2 text-lg"></i>
+                Verificación de Propiedad
+              </Button>
+            </Link>
+            <Link href="/permit-advisor">
+              <Button variant="ghost" className="w-full justify-start">
+                <i className="ri-robot-2-line mr-2 text-lg"></i>
+                Mervin DeepSearch
+              </Button>
+            </Link>
+            <Link href="/ai-project-manager">
+              <Button variant="ghost" className="w-full justify-start">
+                <i className="ri-brain-line mr-2 text-lg"></i>
+                Gestión Inteligente
+              </Button>
+            </Link>
+          </div>
+
+          <Separator className="my-2" />
+
+          {/* Configuración */}
+          <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Mi Perfil</h2>
+          <div className="space-y-1 mb-6">
+            <Link href="/account">
+              <Button variant="ghost" className="w-full justify-start">
+                <User className="h-4 w-4 mr-2" />
+                Perfil Personal
+              </Button>
+            </Link>
+            <Link href="/billing">
+              <Button variant="ghost" className="w-full justify-start">
+                <CreditCard className="h-4 w-4 mr-2" />
+                Facturación
+              </Button>
+            </Link>
             <Link href="/subscription">
-              <Button size="sm" variant="outline" className="w-full">
+              <Button variant="ghost" className="w-full justify-start">
                 <i className="ri-vip-crown-line mr-2"></i>
-                Ver plan: {getCurrentPlanName()}
+                Mi Suscripción
+              </Button>
+            </Link>
+          </div>
+
+          <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Empresa</h2>
+          <div className="space-y-1 mb-6">
+            <Link href="/profile">
+              <Button variant="ghost" className="w-full justify-start">
+                <Building className="h-4 w-4 mr-2" />
+                Perfil de Empresa
+              </Button>
+            </Link>
+            <Link href="/settings/employees">
+              <Button variant="ghost" className="w-full justify-start">
+                <Users className="h-4 w-4 mr-2" />
+                Empleados
+              </Button>
+            </Link>
+            <Link href="/settings">
+              <Button variant="ghost" className="w-full justify-start">
+                <Settings className="h-4 w-4 mr-2" />
+                Preferencias
               </Button>
             </Link>
           </div>
         </div>
-      </div>
-
-      {/* Botón de nuevo estimado o proyecto - Acción principal */}
-      <div className="p-4">
-        <Link href="/new-estimate">
-          <Button className="w-full gap-2 bg-primary hover:bg-primary/90">
-            <i className="ri-add-line"></i>
-            <span>Nuevo Estimado</span>
-          </Button>
-        </Link>
-      </div>
-
-      {/* Navegación principal */}
-      <div className="flex-1 overflow-y-auto px-3">
-        <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Herramientas</h2>
-        <div className="space-y-1 mb-6">
-          <Link href="/">
-            <Button variant="ghost" className="w-full justify-start">
-              <i className="ri-dashboard-line mr-2 text-lg"></i>
-              Dashboard
-            </Button>
-          </Link>
-          <Link href="/projects">
-            <Button variant="ghost" className="w-full justify-start">
-              <i className="ri-briefcase-4-line mr-2 text-lg"></i>
-              Proyectos
-            </Button>
-          </Link>
-          <Link href="/clients">
-            <Button variant="ghost" className="w-full justify-start">
-              <i className="ri-user-star-line mr-2 text-lg"></i>
-              Clientes
-            </Button>
-          </Link>
-          <Link href="/history">
-            <Button variant="ghost" className="w-full justify-start">
-              <i className="ri-time-line mr-2 text-lg"></i>
-              Historial
-            </Button>
-          </Link>
-        </div>
-
-        <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Funcionalidades</h2>
-        <div className="space-y-1 mb-6">
-          <Link href="/property-verifier">
-            <Button variant="ghost" className="w-full justify-start">
-              <i className="ri-shield-keyhole-line mr-2 text-lg"></i>
-              Verificación de Propiedad
-            </Button>
-          </Link>
-          <Link href="/permit-advisor">
-            <Button variant="ghost" className="w-full justify-start">
-              <i className="ri-robot-2-line mr-2 text-lg"></i>
-              Mervin DeepSearch
-            </Button>
-          </Link>
-          <Link href="/ai-project-manager">
-            <Button variant="ghost" className="w-full justify-start">
-              <i className="ri-brain-line mr-2 text-lg"></i>
-              Gestión Inteligente
-            </Button>
-          </Link>
-        </div>
-
-        <Separator className="my-2" />
-
-        {/* Configuración */}
-        <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Mi Perfil</h2>
-        <div className="space-y-1 mb-6">
-          <Link href="/account">
-            <Button variant="ghost" className="w-full justify-start">
-              <User className="h-4 w-4 mr-2" />
-              Perfil Personal
-            </Button>
-          </Link>
-          <Link href="/billing">
-            <Button variant="ghost" className="w-full justify-start">
-              <CreditCard className="h-4 w-4 mr-2" />
-              Facturación
-            </Button>
-          </Link>
-          <Link href="/subscription">
-            <Button variant="ghost" className="w-full justify-start">
-              <i className="ri-vip-crown-line mr-2"></i>
-              Mi Suscripción
-            </Button>
-          </Link>
-        </div>
-
-        <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Empresa</h2>
-        <div className="space-y-1 mb-6">
-          <Link href="/profile">
-            <Button variant="ghost" className="w-full justify-start">
-              <Building className="h-4 w-4 mr-2" />
-              Perfil de Empresa
-            </Button>
-          </Link>
-          <Link href="/settings/employees">
-            <Button variant="ghost" className="w-full justify-start">
-              <Users className="h-4 w-4 mr-2" />
-              Empleados
-            </Button>
-          </Link>
-          <Link href="/settings">
-            <Button variant="ghost" className="w-full justify-start">
-              <Settings className="h-4 w-4 mr-2" />
-              Preferencias
-            </Button>
-          </Link>
-        </div>
-      </div>
-      
-      {/* Footer con soporte y cerrar sesión */}
-      <div className="p-4 border-t border-border">
-        <div className="rounded-md bg-primary/10 p-3 text-center mb-3">
-          <p className="text-sm mb-2">¿Necesitas ayuda?</p>
-          <Button size="sm" variant="outline" className="w-full">
-            <i className="ri-question-line mr-2"></i>
-            Soporte
-          </Button>
-        </div>
         
-        <Button 
-          variant="ghost" 
-          className="flex items-center w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive"
-          onClick={handleLogout}
-          disabled={loading}
-        >
-          {loading ? (
-            <i className="ri-loader-2-line animate-spin mr-2"></i>
-          ) : (
-            <LogOut className="h-4 w-4 mr-2" />
-          )}
-          Cerrar Sesión
-        </Button>
+        {/* Footer con soporte y cerrar sesión */}
+        <div className="p-4 border-t border-border mt-auto">
+          <div className="rounded-md bg-primary/10 p-3 text-center mb-3">
+            <p className="text-sm mb-2">¿Necesitas ayuda?</p>
+            <Button size="sm" variant="outline" className="w-full">
+              <i className="ri-question-line mr-2"></i>
+              Soporte
+            </Button>
+          </div>
+          
+          <Button 
+            variant="ghost" 
+            className="flex items-center w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive"
+            onClick={handleLogout}
+            disabled={loading}
+          >
+            {loading ? (
+              <i className="ri-loader-2-line animate-spin mr-2"></i>
+            ) : (
+              <LogOut className="h-4 w-4 mr-2" />
+            )}
+            Cerrar Sesión
+          </Button>
+        </div>
       </div>
     </aside>
   );
