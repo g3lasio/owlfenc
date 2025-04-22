@@ -8,15 +8,7 @@ interface MobileMenuProps {
 }
 
 export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
-  const [location] = useLocation();
   const menuPanelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (location && location !== "/") {
-      console.log("Location changed, closing menu");
-      onClose();
-    }
-  }, [location, onClose]);
 
   useEffect(() => {
     console.log("Menu state changed:", isOpen);

@@ -11,26 +11,26 @@ interface NavigationProps {
   onClose?: () => void;
 }
 
-export function Navigation({ variant, type = "main", onClose }: NavigationProps) {
+export function Navigation({ variant, type = "main" }: NavigationProps) {
   const [location] = useLocation();
-  
+
   // Seleccionar la configuración adecuada según el tipo
   const navigationConfig = type === "main" ? mainNavigationConfig : userNavigationConfig;
-  
+
   const isActive = (path: string) => {
     if (path === "/") return location === "/";
     return location.startsWith(path);
   };
-  
+
   const isMail = (path: string) => path.startsWith("mailto:");
-  
+
   // Clase base para los elementos de navegación
   const itemBaseClass = "flex items-center p-2 rounded-md transition-colors";
-  
+
   // Clase para los elementos activos según la variante
   const getItemClass = (path: string) => {
     const active = isActive(path);
-    
+
     if (variant === "sidebar") {
       return `${itemBaseClass} ${active ? "bg-primary/15 text-primary" : "hover:bg-accent"}`;
     } else {
@@ -41,19 +41,19 @@ export function Navigation({ variant, type = "main", onClose }: NavigationProps)
   // Renderizado de enlaces de navegación
   const renderNavItem = (item: { path: string; icon: string; label: string }) => {
     const itemClass = getItemClass(item.path);
-    
+
     const handleClick = (e: React.MouseEvent) => {
       // Si es un enlace de correo, esperamos un poco antes de cerrar
       if (isMail(item.path)) {
         setTimeout(() => {
-          onClose?.();
+          //onClose?.();
         }, 300);
       } else {
         // Para navegación normal, cerramos inmediatamente
-        onClose?.();
+        //onClose?.();
       }
     };
-    
+
     if (isMail(item.path)) {
       return (
         <a 
@@ -67,7 +67,7 @@ export function Navigation({ variant, type = "main", onClose }: NavigationProps)
         </a>
       );
     }
-    
+
     return (
       <Link
         key={item.path}
