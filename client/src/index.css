@@ -73,6 +73,24 @@
 }
 
 @layer components {
+  /* Google Places Autocomplete customization */
+  .react-select__control,
+  .react-select__menu {
+    @apply border-input bg-background text-foreground !important;
+  }
+  
+  .react-select__input, 
+  .react-select__single-value,
+  .react-select__option {
+    @apply text-foreground !important;
+  }
+  
+  .react-select__option--is-focused,
+  .react-select__option:hover {
+    @apply bg-primary/10 !important;
+  }
+  
+  /* Chat message styles */
   .chat-message {
     @apply max-w-[85%] rounded-2xl mb-3 py-3 px-4 break-words border border-accent;
   }

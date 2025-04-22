@@ -281,7 +281,38 @@ export default function PermitAdvisor() {
                     placeholder: "Ingresa la dirección completa del proyecto",
                     noOptionsMessage: () => "No se encontraron resultados",
                     loadingMessage: () => "Cargando resultados...",
-                    className: "rounded-md border border-input z-100"
+                    className: "rounded-md border border-input z-100",
+                    classNamePrefix: "react-select",
+                    styles: {
+                      control: (base) => ({
+                        ...base,
+                        border: '1px solid hsl(var(--input))',
+                        boxShadow: 'none',
+                        '&:hover': {
+                          border: '1px solid hsl(var(--primary))',
+                        },
+                      }),
+                      input: (base) => ({
+                        ...base,
+                        color: 'hsl(var(--foreground))',
+                      }),
+                      option: (base, state) => ({
+                        ...base,
+                        backgroundColor: state.isFocused ? 'hsl(var(--primary) / 0.1)' : 'white',
+                        color: 'hsl(var(--foreground))',
+                        '&:hover': {
+                          backgroundColor: 'hsl(var(--primary) / 0.15)',
+                        },
+                      }),
+                      singleValue: (base) => ({
+                        ...base,
+                        color: 'hsl(var(--foreground))',
+                      }),
+                      placeholder: (base) => ({
+                        ...base,
+                        color: 'hsl(var(--muted-foreground))',
+                      }),
+                    }
                   }}
                 />
               </div>
