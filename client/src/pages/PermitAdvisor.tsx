@@ -390,12 +390,16 @@ export default function PermitAdvisor() {
                   <DollarSign className="h-4 w-4 mr-1 hidden sm:inline" />
                   Costos
                 </TabsTrigger>
-                <TabsTrigger value="contacts" className="text-xs md:text-sm">
+                <TabsTrigger value="process" className="text-xs md:text-sm">
                   <HardHat className="h-4 w-4 mr-1 hidden sm:inline" />
+                  Proceso
+                </TabsTrigger>
+                <TabsTrigger value="contacts" className="text-xs md:text-sm">
+                  <Phone className="h-4 w-4 mr-1 hidden sm:inline" />
                   Contactos
                 </TabsTrigger>
                 <TabsTrigger value="resources" className="text-xs md:text-sm">
-                  <FileText className="h-4 w-4 mr-1 hidden sm:inline" />
+                  <BookOpen className="h-4 w-4 mr-1 hidden sm:inline" />
                   Recursos
                 </TabsTrigger>
               </TabsList>
@@ -677,7 +681,7 @@ export default function PermitAdvisor() {
                               <p className="text-sm">{code.restrictions}</p>
                             </div>
                           )}
-                          {code.applicableAreas && code.applicableAreas.length > 0 && (
+                          {code.applicableAreas && Array.isArray(code.applicableAreas) && code.applicableAreas.length > 0 && (
                             <div className="mt-2">
                               <h4 className="text-sm font-medium">Áreas aplicables:</h4>
                               <ul className="list-disc pl-5 text-sm">
@@ -685,6 +689,12 @@ export default function PermitAdvisor() {
                                   <li key={i}>{area}</li>
                                 ))}
                               </ul>
+                            </div>
+                          )}
+                          {code.applicableAreas && !Array.isArray(code.applicableAreas) && (
+                            <div className="mt-2">
+                              <h4 className="text-sm font-medium">Áreas aplicables:</h4>
+                              <p className="text-sm">{code.applicableAreas.toString()}</p>
                             </div>
                           )}
                         </div>
