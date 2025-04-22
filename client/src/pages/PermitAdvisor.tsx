@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Search, AlertTriangle, CheckCircle2, FileText, ListChecks, HardHat, CalendarClock, DollarSign, Building2, Clock, Link2, Phone, Mail, MapPin, Clock8, ExternalLink, Ruler, Scale, Info, BookOpen, Landmark } from "lucide-react";
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
@@ -593,19 +594,26 @@ export default function PermitAdvisor() {
                   <div className="mt-3 flex flex-wrap gap-2">
                     {permitData.meta.sources && permitData.meta.sources.length > 0 ? (
                       permitData.meta.sources.slice(0, 3).map((source, idx) => (
-                        <Badge key={idx} variant="outline" className="text-xs bg-primary/5">
-                          {source.includes('//') ? (new URL(source)).hostname : source}
-                        </Badge>
+                        <span key={idx} className="text-xs px-2 py-1 rounded-full bg-primary/5 border border-border">
+                          {source.includes('//') ? 
+                            (function() {
+                              try {
+                                return new URL(source).hostname;
+                              } catch {
+                                return source;
+                              }
+                            })() : source}
+                        </span>
                       ))
                     ) : (
-                      <Badge variant="outline" className="text-xs bg-primary/5">
+                      <span className="text-xs px-2 py-1 rounded-full bg-primary/5 border border-border">
                         Fuentes verificadas
-                      </Badge>
+                      </span>
                     )}
                     {permitData.meta.sources && permitData.meta.sources.length > 3 && (
-                      <Badge variant="outline" className="text-xs">
+                      <span className="text-xs px-2 py-1 rounded-full bg-gray-100 border border-border">
                         +{permitData.meta.sources.length - 3} más
-                      </Badge>
+                      </span>
                     )}
                   </div>
                 </div>
