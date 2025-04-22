@@ -10,7 +10,6 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Search, AlertTriangle, CheckCircle2, FileText, ListChecks, HardHat, CalendarClock, DollarSign, Building2, Clock, Link2, Phone, Mail, MapPin, Clock8, ExternalLink, Ruler, Scale, Info, BookOpen, Landmark } from "lucide-react";
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
@@ -202,9 +201,9 @@ export default function PermitAdvisor() {
       <div className="flex flex-col space-y-2">
         <div className="flex items-center gap-3">
           <div className="relative w-10 h-10 flex items-center justify-center bg-primary/10 rounded-lg">
-            <i className="ri-search-eye-line text-2xl text-primary"></i>
+            <Search className="h-6 w-6 text-primary" />
             <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-primary/20 rounded-full flex items-center justify-center">
-              <i className="ri-settings-4-line text-sm text-primary"></i>
+              <FileText className="h-3 w-3 text-primary" />
             </div>
           </div>
           <h1 className="text-3xl font-bold">Mervin DeepSearch</h1>
