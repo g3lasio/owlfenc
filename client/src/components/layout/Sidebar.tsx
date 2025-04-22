@@ -110,26 +110,14 @@ export default function Sidebar() {
             </div>
           </div>
           
-          {/* Plan de suscripción en un banner destacado */}
-          <div className="rounded-md overflow-hidden border border-border">
-            <div className="bg-gradient-to-r from-emerald-500 to-lime-600 py-1.5 px-3">
-              <div className="flex items-center justify-between">
-                <span className="text-white text-xs font-medium">Plan Actual</span>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-              </div>
-            </div>
-            <div className="bg-card p-2">
-              <div className="text-sm font-semibold">{getCurrentPlanName()}</div>
-              <div className="mt-2 flex justify-end">
-                <Link href="/subscription">
-                  <Button size="sm" variant="outline" className="text-xs h-7">
-                    Actualizar Plan
-                  </Button>
-                </Link>
-              </div>
-            </div>
+          {/* Botón de actualizar plan */}
+          <div className="mt-1">
+            <Link href="/subscription">
+              <Button size="sm" variant="outline" className="w-full">
+                <i className="ri-vip-crown-line mr-2"></i>
+                Ver plan: {getCurrentPlanName()}
+              </Button>
+            </Link>
           </div>
         </div>
       </div>

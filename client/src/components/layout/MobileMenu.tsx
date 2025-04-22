@@ -1,6 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
-import Navigation from "./Navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -9,6 +10,31 @@ interface MobileMenuProps {
 
 export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   const menuPanelRef = useRef<HTMLDivElement>(null);
+  const { logout } = useAuth();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+
+  // Manejar cierre de sesión
+  const handleLogout = async () => {
+    try {
+      setLoading(true);
+      await logout();
+      toast({
+        title: "Sesión cerrada",
+        description: "Has cerrado sesión correctamente.",
+      });
+      window.location.href = '/login';
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo cerrar la sesión. Intenta de nuevo.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     console.log("Menu state changed:", isOpen);
@@ -65,12 +91,13 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
         <div className="flex justify-between items-center p-4 border-b border-border">
           <img
             src="https://i.postimg.cc/4yc9M62C/White-logo-no-background.png"
-            alt="Owl Fenc"
+            alt="Owl Fence"
             className="h-10 w-auto max-w-[180px] object-contain"
           />
           <button
             className="p-1.5 rounded-md hover:bg-accent"
             onClick={onClose}
+            aria-label="Cerrar menú"
           >
             <i className="ri-close-line text-xl"></i>
           </button>
@@ -175,6 +202,18 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                 <span>Preferencias</span>
               </div>
             </Link>
+          </div>
+          
+          {/* Botón de Cerrar Sesión */}
+          <div className="border-t border-border mt-4 pt-4 px-2">
+            <button
+              onClick={handleLogout}
+              disabled={loading}
+              className="flex items-center p-2 rounded-md hover:bg-destructive/10 w-full text-destructive"
+            >
+              <i className={`${loading ? 'ri-loader-2-line animate-spin' : 'ri-logout-box-r-line'} text-lg mr-3`}></i>
+              <span>Cerrar Sesión</span>
+            </button>
           </div>
         </div>
       </div>
