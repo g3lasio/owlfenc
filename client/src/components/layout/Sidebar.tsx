@@ -101,7 +101,7 @@ export default function Sidebar() {
 
       {/* Sidebar Footer */}
       <div className="p-4 border-t border-border mt-auto">
-        <div className="flex items-center mb-4 hover:bg-accent/10 rounded-md p-2">
+        <div className="flex items-center hover:bg-accent/10 rounded-md p-2">
           <div className="w-9 h-9 rounded-full bg-primary/20 text-primary flex items-center justify-center">
             <span className="font-medium text-sm">JC</span>
           </div>
@@ -120,24 +120,6 @@ export default function Sidebar() {
               <i className="ri-logout-box-r-line"></i>
             )}
           </button>
-        </div>
-
-        <div className="mt-4 bg-accent/5 rounded-md p-3 text-xs border border-border">
-          <div className="flex items-center mb-2">
-            <i className="ri-rocket-line mr-2 text-primary"></i>
-            <span className="font-medium">Próximas Funciones</span>
-          </div>
-          <div className="flex flex-col mt-1 space-y-2.5 text-muted-foreground">
-            <span className="flex items-center">
-              <i className="ri-augmented-reality-line mr-2"></i> Integración AR
-            </span>
-            <span className="flex items-center">
-              <i className="ri-robot-line mr-2"></i> Gestor de Proyectos IA
-            </span>
-            <span className="flex items-center">
-              <i className="ri-shield-check-line mr-2"></i> Verificador de Propiedad
-            </span>
-          </div>
         </div>
       </div>
     </aside>

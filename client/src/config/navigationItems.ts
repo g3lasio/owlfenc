@@ -10,8 +10,13 @@ export const mainNavigationConfig: NavigationSection[] = [
         path: "/",
         icon: "ri-layout-grid-line",
       },
+    ],
+  },
+  {
+    title: "Herramientas",
+    items: [
       {
-        label: "Ownership Verifier",
+        label: "Verificador de Propiedad",
         path: "/property-verifier",
         icon: "ri-shield-keyhole-line",
       },
@@ -21,14 +26,9 @@ export const mainNavigationConfig: NavigationSection[] = [
         icon: "ri-robot-2-line",
       },
       {
-        label: "AI Project Manager",
+        label: "Gestor de Proyectos IA",
         path: "/ai-project-manager",
         icon: "ri-brain-line",
-      },
-      {
-        label: "AR Fence Estimator",
-        path: "/ar-fence-estimator", 
-        icon: "ri-camera-lens-line",
       },
     ],
   },
@@ -45,7 +45,6 @@ export const mainNavigationConfig: NavigationSection[] = [
         path: "/clients",
         icon: "ri-user-star-line",
       },
-      
       {
         label: "Historial",
         path: "/history",
@@ -73,7 +72,7 @@ export const userNavigationConfig: NavigationSection[] = [
     ],
   },
   {
-    title: "Configuración de Empresa",
+    title: "Configuración",
     items: [
       {
         label: "Perfil de Empresa",
@@ -88,7 +87,7 @@ export const userNavigationConfig: NavigationSection[] = [
     ],
   },
   {
-    title: "Soporte",
+    title: "Ayuda y Soporte",
     items: [
       {
         label: "Contactar Soporte",
@@ -96,24 +95,14 @@ export const userNavigationConfig: NavigationSection[] = [
         icon: "ri-customer-service-2-line",
       },
       {
-        label: "Acerca de Owl Fence App",
+        label: "Acerca de Owl Fence",
         path: "/about-owlfenc",
         icon: "ri-store-3-line",
       },
       {
-        label: "Acerca de Mervin AI",
-        path: "/about-mervin",
-        icon: "ri-openai-line",
-      },
-      {
-        label: "Políticas Legales",
+        label: "Política Legal",
         path: "/legal-policy",
         icon: "ri-file-shield-2-line",
-      },
-      {
-        label: "Política de Privacidad",
-        path: "/privacy-policy",
-        icon: "ri-shield-check-line",
       },
     ],
   },

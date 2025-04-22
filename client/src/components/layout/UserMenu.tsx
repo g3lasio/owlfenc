@@ -129,24 +129,8 @@ export default function UserMenu() {
       {/* Navegación usando el componente unificado con tipo "user" */}
       <Navigation variant="sidebar" type="user" />
       
-      {/* Menú de usuario y acciones */}
-      <div className="mt-auto p-3 space-y-1">
-        <Link href="/profile">
-          <Button variant="ghost" className="w-full justify-start">
-            <User className="h-4 w-4 mr-2" />
-            Mi Perfil
-          </Button>
-        </Link>
-        <Link href="/settings">
-          <Button variant="ghost" className="w-full justify-start">
-            <Settings className="h-4 w-4 mr-2" />
-            Configuración
-          </Button>
-        </Link>
-      </div>
-      
       {/* User Menu Footer */}
-      <div className="p-4 border-t border-border">
+      <div className="mt-auto p-4 border-t border-border">
         <Button 
           variant="ghost" 
           className="flex items-center w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive"
