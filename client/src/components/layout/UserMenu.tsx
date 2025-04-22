@@ -1,16 +1,16 @@
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import Navigation from "./Navigation";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogOut, Settings, User } from "lucide-react";
+import { LogOut, Settings, User, CreditCard, Building, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function UserMenu() {
   const { currentUser, logout } = useAuth();
-  const [, navigate] = useLocation();
   const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
 
   // Definimos interfaces para los tipos de datos
   interface UserSubscription {
@@ -51,7 +51,7 @@ export default function UserMenu() {
   // Manejar cierre de sesión
   const handleLogout = async () => {
     try {
-      setIsLoading(true);
+      setLoading(true);
       await logout();
       toast({
         title: "Sesión cerrada",
@@ -67,7 +67,7 @@ export default function UserMenu() {
         description: "No se pudo cerrar la sesión. Intenta de nuevo.",
       });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
@@ -126,8 +126,56 @@ export default function UserMenu() {
         </div>
       </div>
       
-      {/* Navegación usando el componente unificado con tipo "user" */}
-      <Navigation variant="sidebar" type="user" />
+      {/* Sección Mi Perfil */}
+      <div className="px-3 pt-4">
+        <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Mi Perfil</h2>
+        <div className="space-y-1.5">
+          <Link href="/settings/account">
+            <Button variant="ghost" className="w-full justify-start">
+              <User className="h-4 w-4 mr-2" />
+              Perfil Personal
+            </Button>
+          </Link>
+          <Link href="/subscription">
+            <Button variant="ghost" className="w-full justify-start">
+              <CreditCard className="h-4 w-4 mr-2" />
+              Mi Suscripción
+            </Button>
+          </Link>
+        </div>
+      </div>
+      
+      {/* Sección Empresa */}
+      <div className="px-3 pt-4">
+        <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Empresa</h2>
+        <div className="space-y-1.5">
+          <Link href="/profile">
+            <Button variant="ghost" className="w-full justify-start">
+              <Building className="h-4 w-4 mr-2" />
+              Perfil de Empresa
+            </Button>
+          </Link>
+          <Link href="/settings/employees">
+            <Button variant="ghost" className="w-full justify-start">
+              <Users className="h-4 w-4 mr-2" />
+              Empleados
+            </Button>
+          </Link>
+        </div>
+      </div>
+      
+      {/* Sección Configuración */}
+      <div className="px-3 pt-4">
+        <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Configuración</h2>
+        <div className="space-y-1.5">
+          <Link href="/settings">
+            <Button variant="ghost" className="w-full justify-start">
+              <Settings className="h-4 w-4 mr-2" />
+              Preferencias
+            </Button>
+          </Link>
+        </div>
+      </div>
       
       {/* User Menu Footer */}
       <div className="mt-auto p-4 border-t border-border">
@@ -135,8 +183,13 @@ export default function UserMenu() {
           variant="ghost" 
           className="flex items-center w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive"
           onClick={handleLogout}
+          disabled={loading}
         >
-          <LogOut className="h-4 w-4 mr-2" />
+          {loading ? (
+            <i className="ri-loader-2-line animate-spin mr-2"></i>
+          ) : (
+            <LogOut className="h-4 w-4 mr-2" />
+          )}
           Cerrar Sesión
         </Button>
       </div>

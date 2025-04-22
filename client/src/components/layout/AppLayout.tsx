@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import Header from "./Header";
 import MobileMenu from "./MobileMenu";
 import Sidebar from "./Sidebar";
+import UserMenu from "./UserMenu";
 import { Route, Switch, useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -95,7 +96,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   // Para el resto de las páginas (protegidas), mostrar el layout completo
   return (
     <div className="flex h-screen">
-      {/* Sidebar unificado (solo visible en desktop) */}
+      {/* Sidebar izquierdo - Funcionalidades de la aplicación */}
       <Sidebar />
 
       {/* Contenido principal */}
@@ -108,6 +109,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
           </Switch>
         </div>
       </main>
+
+      {/* UserMenu derecho - Configuración y perfil del usuario */}
+      <UserMenu />
 
       {/* Menú móvil (solo visible en mobile cuando se activa) */}
       <MobileMenu 

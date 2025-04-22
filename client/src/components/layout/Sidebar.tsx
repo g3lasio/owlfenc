@@ -87,10 +87,10 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="hidden md:flex md:w-72 flex-col bg-card border-r border-border">
+    <aside className="hidden md:flex md:w-64 flex-col bg-card border-r border-border">
       {/* Sidebar Header con logo */}
       <div className="p-4 border-b border-border">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-center">
           <img 
             src="https://i.postimg.cc/4yc9M62C/White-logo-no-background.png" 
             alt="Owl Fence"
@@ -99,71 +99,78 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Perfil de Usuario */}
-      <div className="p-4 border-b border-border">
-        <div className="flex items-center mb-3">
-          <Avatar>
-            <AvatarImage src={currentUser?.photoURL || undefined} alt={currentUser?.displayName || "Usuario"} />
-            <AvatarFallback className="bg-primary/20 text-primary">{getUserInitials()}</AvatarFallback>
-          </Avatar>
-          <div className="ml-3">
-            <div className="text-sm font-medium">{currentUser?.displayName || "Usuario"}</div>
-            <div className="text-xs text-muted-foreground">{currentUser?.email}</div>
-          </div>
-        </div>
-
-        {/* Banner del plan */}
-        <div className="rounded-md overflow-hidden border border-border">
-          <div className="bg-gradient-to-r from-emerald-500 to-lime-600 py-1.5 px-3">
-            <div className="flex items-center justify-between">
-              <span className="text-white text-xs font-medium">Plan Actual</span>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-            </div>
-          </div>
-          <div className="bg-card p-2">
-            <div className="text-sm font-semibold">{getCurrentPlanName()}</div>
-            <div className="mt-2 flex justify-end">
-              <Link href="/subscription">
-                <Button size="sm" variant="outline" className="text-xs h-7">
-                  Actualizar Plan
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
+      {/* Botón de nuevo estimado o proyecto - Acción principal */}
+      <div className="p-4">
+        <Link href="/new-estimate">
+          <Button className="w-full gap-2 bg-primary hover:bg-primary/90">
+            <i className="ri-add-line"></i>
+            <span>Nuevo Estimado</span>
+          </Button>
+        </Link>
       </div>
 
-      {/* Navegación Principal */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="p-3">
-          <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Navegación Principal</h2>
-          <Navigation variant="sidebar" type="main" />
+      {/* Navegación de la aplicación */}
+      <div className="flex-1 overflow-y-auto px-3">
+        <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Herramientas</h2>
+        <div className="space-y-1 mb-6">
+          <Link href="/">
+            <Button variant="ghost" className="w-full justify-start">
+              <i className="ri-dashboard-line mr-2 text-lg"></i>
+              Dashboard
+            </Button>
+          </Link>
+          <Link href="/projects">
+            <Button variant="ghost" className="w-full justify-start">
+              <i className="ri-briefcase-4-line mr-2 text-lg"></i>
+              Proyectos
+            </Button>
+          </Link>
+          <Link href="/clients">
+            <Button variant="ghost" className="w-full justify-start">
+              <i className="ri-user-star-line mr-2 text-lg"></i>
+              Clientes
+            </Button>
+          </Link>
+          <Link href="/history">
+            <Button variant="ghost" className="w-full justify-start">
+              <i className="ri-time-line mr-2 text-lg"></i>
+              Historial
+            </Button>
+          </Link>
         </div>
 
-        <Separator className="my-2" />
-
-        <div className="p-3">
-          <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Configuración</h2>
-          <Navigation variant="sidebar" type="user" />
+        <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Funcionalidades</h2>
+        <div className="space-y-1">
+          <Link href="/property-verifier">
+            <Button variant="ghost" className="w-full justify-start">
+              <i className="ri-shield-keyhole-line mr-2 text-lg"></i>
+              Verificación de Propiedad
+            </Button>
+          </Link>
+          <Link href="/permit-advisor">
+            <Button variant="ghost" className="w-full justify-start">
+              <i className="ri-robot-2-line mr-2 text-lg"></i>
+              Mervin DeepSearch
+            </Button>
+          </Link>
+          <Link href="/ai-project-manager">
+            <Button variant="ghost" className="w-full justify-start">
+              <i className="ri-brain-line mr-2 text-lg"></i>
+              Gestión Inteligente
+            </Button>
+          </Link>
         </div>
       </div>
       
-      {/* Sidebar Footer */}
+      {/* Ayuda en el Footer */}
       <div className="p-4 border-t border-border">
-        <Button 
-          variant="ghost" 
-          className="flex items-center w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive"
-          onClick={handleLogout}
-          disabled={loading}
-        >
-          {loading ? 
-            <i className="ri-loader-2-line animate-spin mr-2"></i> :
-            <LogOut className="h-4 w-4 mr-2" />
-          }
-          Cerrar Sesión
-        </Button>
+        <div className="rounded-md bg-primary/10 p-3 text-center">
+          <p className="text-sm mb-2">¿Necesitas ayuda?</p>
+          <Button size="sm" variant="outline" className="w-full">
+            <i className="ri-question-line mr-2"></i>
+            Soporte
+          </Button>
+        </div>
       </div>
     </aside>
   );
