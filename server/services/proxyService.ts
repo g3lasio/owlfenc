@@ -9,6 +9,12 @@ class ProxyService {
   private client: AxiosInstance;
   private accessToken: string = '';
   private tokenExpiration: number = 0;
+  private apiBaseUrls: string[] = [
+    'https://api-sandbox.corelogic.com',
+    'https://api.corelogic.com',
+    'https://sandbox.api.corelogic.com',
+    'https://api.corelogic.net'
+  ];
   private apiBaseUrl: string = 'https://api-sandbox.corelogic.com';
 
   constructor(private consumerKey: string, private consumerSecret: string) {
@@ -39,30 +45,64 @@ class ProxyService {
         return this.accessToken;
       }
       
-      // Construir parámetros
+      // Preparar parámetros para la autenticación
       const params = new URLSearchParams();
       params.append('grant_type', 'client_credentials');
       params.append('client_id', this.consumerKey);
       params.append('client_secret', this.consumerSecret);
       
-      // Realizar petición
-      const tokenEndpoint = `${this.apiBaseUrl}/access/oauth/token`;
-      console.log(`ProxyService: Conectando a ${tokenEndpoint}`);
+      // Guardar los errores para diagnóstico
+      const errors: Record<string, string> = {};
       
-      const response = await this.client.post(tokenEndpoint, params, {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Accept': 'application/json'
+      // Probar con cada una de las URLs base
+      for (const baseUrl of this.apiBaseUrls) {
+        try {
+          console.log(`ProxyService: Probando conexión con ${baseUrl}`);
+          
+          const tokenEndpoint = `${baseUrl}/access/oauth/token`;
+          console.log(`ProxyService: Conectando a ${tokenEndpoint}`);
+          
+          const response = await this.client.post(tokenEndpoint, params, {
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'Accept': 'application/json'
+            },
+            timeout: 20000 // Aumentar el timeout para dar más tiempo
+          });
+          
+          if (response.data && response.data.access_token) {
+            // Si esta URL funcionó, la guardamos como preferida
+            if (baseUrl !== this.apiBaseUrl) {
+              console.log(`ProxyService: Cambiando la URL base por defecto a ${baseUrl}`);
+              this.apiBaseUrl = baseUrl;
+            }
+            
+            // Guardar el token y su expiración
+            this.accessToken = response.data.access_token;
+            this.tokenExpiration = Date.now() + (response.data.expires_in * 1000) - 60000;
+            console.log(`ProxyService: Token obtenido correctamente de ${baseUrl}`);
+            return this.accessToken;
+          } else {
+            console.log(`ProxyService: La respuesta de ${baseUrl} no contiene un token válido`);
+            errors[baseUrl] = 'No contiene token válido';
+          }
+        } catch (urlError: any) {
+          console.log(`ProxyService: Error al conectar con ${baseUrl}: ${urlError.message}`);
+          errors[baseUrl] = urlError.message;
+          
+          // Si es un error fatal (no de conectividad), podría ser problema de credenciales
+          if (!urlError.message.includes('ENOTFOUND') && 
+              !urlError.message.includes('ECONNREFUSED') &&
+              !urlError.message.includes('ETIMEDOUT') &&
+              !urlError.message.includes('404')) {
+            console.log(`ProxyService: Error crítico con ${baseUrl}, podría ser problema de credenciales`);
+          }
         }
-      });
-      
-      if (response.data && response.data.access_token) {
-        this.accessToken = response.data.access_token;
-        this.tokenExpiration = Date.now() + (response.data.expires_in * 1000) - 60000;
-        return this.accessToken;
-      } else {
-        throw new Error('No se recibió token de acceso válido');
       }
+      
+      // Si llegamos aquí, ninguna URL funcionó
+      console.error('ProxyService: Todas las URLs fallaron:', JSON.stringify(errors, null, 2));
+      throw new Error(`No se pudo obtener token con ninguna URL base. Error principal: ${Object.values(errors)[0]}`);
     } catch (error: any) {
       console.error('ProxyService - Error al obtener token:', error.message);
       throw error;

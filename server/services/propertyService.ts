@@ -35,9 +35,12 @@ export interface FullPropertyData {
 class PropertyService {
   private consumerKey: string;
   private consumerSecret: string;
-  // Usar solo la URL de sandbox para las credenciales de demostración
+  // URLs de la API de CoreLogic (productiva y sandbox)
   private baseUrls: string[] = [
-    'https://api-sandbox.corelogic.com' 
+    'https://api-sandbox.corelogic.com',
+    'https://api.corelogic.com',
+    'https://sandbox.api.corelogic.com',
+    'https://api.corelogic.net'
   ];
   private baseUrl: string = 'https://api-sandbox.corelogic.com';
   private coreLogicClient: AxiosInstance;
@@ -88,38 +91,64 @@ class PropertyService {
         console.log('Intentando conexión directa como respaldo...');
       }
       
-      // Segundo intento: conexión directa (respaldo)
-      console.log(`Intentando autenticación directa con CoreLogic: ${this.baseUrl}/access/oauth/token`);
-      
-      // Usar el método recomendado: parámetros en el cuerpo en vez de Authorization Basic 
+      // Segundo intento: probar todas las URLs base disponibles
       const params = new URLSearchParams();
       params.append('grant_type', 'client_credentials');
       params.append('client_id', this.consumerKey);
       params.append('client_secret', this.consumerSecret);
       
-      console.log('Enviando parámetros de autenticación como se recomienda en la documentación');
+      // Guardar errores para diagnóstico
+      const errors: Record<string, string> = {};
       
-      const response = await axios.post(`${this.baseUrl}/access/oauth/token`, 
-        params,
-        {
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Accept': 'application/json'
-          },
-          timeout: 15000 // 15 segundos de timeout para la autenticación
+      // Intentar con cada URL base hasta encontrar una que funcione
+      for (const url of this.baseUrls) {
+        try {
+          console.log(`Probando autenticación con: ${url}/access/oauth/token`);
+          
+          const response = await axios.post(`${url}/access/oauth/token`, 
+            params,
+            {
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Accept': 'application/json'
+              },
+              timeout: 20000 // 20 segundos de timeout para la autenticación
+            }
+          );
+    
+          if (response.data && response.data.access_token) {
+            // Si esta URL funcionó, actualizamos la URL base
+            if (url !== this.baseUrl) {
+              console.log(`Cambiando URL base de ${this.baseUrl} a ${url} porque funcionó`);
+              this.baseUrl = url;
+              this.coreLogicClient.defaults.baseURL = url;
+            }
+            
+            const token = response.data.access_token;
+            this.accessToken = token;
+            // Establecemos la expiración un poco antes del tiempo real para tener margen
+            this.tokenExpiration = Date.now() + (response.data.expires_in * 1000) - 60000;
+            console.log(`Token de acceso obtenido correctamente mediante ${url}`);
+            return token;
+          } else {
+            console.log(`Respuesta de ${url} no contiene token de acceso`);
+            errors[url] = 'Respuesta sin token de acceso';
+          }
+        } catch (urlError: any) {
+          console.log(`Error con ${url}: ${urlError.message}`);
+          errors[url] = urlError.message;
+          
+          // Si no es error de DNS o conectividad, no tiene sentido probar otras URLs
+          if (!urlError.message.includes('ENOTFOUND') && !urlError.message.includes('ETIMEDOUT') && 
+              !urlError.message.includes('ECONNREFUSED') && !urlError.message.includes('404')) {
+            console.log(`Error crítico con ${url}, podría ser problema de credenciales.`);
+          }
         }
-      );
-
-      if (response.data && response.data.access_token) {
-        const token = response.data.access_token;
-        this.accessToken = token;
-        // Establecemos la expiración un poco antes del tiempo real para tener margen
-        this.tokenExpiration = Date.now() + (response.data.expires_in * 1000) - 60000;
-        console.log('Token de acceso obtenido correctamente mediante conexión directa');
-        return token;
-      } else {
-        throw new Error('No se pudo obtener el token de acceso');
       }
+      
+      // Si llegamos aquí, ninguna URL funcionó
+      console.error('Todas las URLs fallaron:', JSON.stringify(errors, null, 2));
+      throw new Error(`No se pudo obtener token de acceso con ninguna URL: ${Object.values(errors)[0]}`);
     } catch (error: any) {
       console.error('Error obteniendo token de acceso (todos los métodos fallaron):', error.message);
       throw new Error(`Error de autenticación con CoreLogic: ${error.message}`);
