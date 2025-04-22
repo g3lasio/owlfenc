@@ -71,7 +71,7 @@ export default function Header({
   return (
     <header className="h-16 flex items-center justify-between px-4 border-b border-border bg-card">
       <button
-        className="p-2 rounded-md hover:bg-accent transition-colors z-[10000]"
+        className="p-2 rounded-md hover:bg-accent/20 transition-all duration-300 z-[10000] relative overflow-hidden group"
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -81,7 +81,8 @@ export default function Header({
         aria-expanded={isMobileMenuOpen}
         type="button"
       >
-        <i className="ri-menu-line text-xl"></i>
+        <i className="ri-menu-line text-xl relative z-10 transition-transform duration-300 group-hover:rotate-180"></i>
+        <div className="absolute inset-0 bg-primary/10 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
       </button>
 
       <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center justify-center">

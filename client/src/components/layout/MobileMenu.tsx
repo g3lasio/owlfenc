@@ -65,7 +65,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
     >
       <div
         ref={menuPanelRef}
-        className={`bg-card w-[280px] h-full overflow-y-auto transform transition-transform duration-300 shadow-lg ${
+        className={`bg-card w-[280px] h-full overflow-y-auto transform transition-all duration-500 ease-[cubic-bezier(0.7,0,0.3,1)] shadow-lg backdrop-blur-lg bg-card/90 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >

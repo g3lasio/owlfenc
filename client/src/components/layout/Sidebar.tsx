@@ -74,7 +74,7 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="hidden md:flex md:w-64 lg:w-72 flex-col bg-card border-r border-border">
+    <aside className="hidden md:flex md:w-64 lg:w-72 flex-col bg-card border-r border-border transition-all duration-500 ease-[cubic-bezier(0.7,0,0.3,1)] transform hover:translate-x-[-90%] group hover:shadow-2xl hover:shadow-primary/20">
       {/* Sidebar Header */}
       <div className="p-4 border-b border-border">
         <div className="flex items-center justify-center">
@@ -86,15 +86,7 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Botón de Upgrade Plan destacado */}
-      <div className="mx-4 mt-4">
-        <Link href="/subscription" className="w-full">
-          <Button size="default" className="w-full gap-2 bg-gradient-to-r from-primary to-amber-500 hover:from-primary/90 hover:to-amber-500/90">
-            <i className="ri-vip-crown-line text-lg"></i>
-            <span>Upgrade Plan</span>
-          </Button>
-        </Link>
-      </div>
+      
       
       {/* Navegación usando el componente unificado */}
       <Navigation variant="sidebar" />
