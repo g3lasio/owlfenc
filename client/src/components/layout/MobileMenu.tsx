@@ -133,7 +133,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
 
         {/* Configuración de Usuario */}
         <div className="p-3">
-          <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Mi Cuenta</h2>
+          <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Mi Perfil</h2>
           <div className="space-y-1.5 mb-4">
             <Link href="/account" onClick={onClose}>
               <div className="flex items-center p-2 rounded-md hover:bg-accent">
@@ -153,10 +153,26 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                 <span>Mi Suscripción</span>
               </div>
             </Link>
+          </div>
+          
+          <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Empresa</h2>
+          <div className="space-y-1.5 mb-4">
             <Link href="/profile" onClick={onClose}>
               <div className="flex items-center p-2 rounded-md hover:bg-accent">
                 <i className="ri-building-4-line text-lg mr-3"></i>
                 <span>Perfil de Empresa</span>
+              </div>
+            </Link>
+            <Link href="/settings/employees" onClick={onClose}>
+              <div className="flex items-center p-2 rounded-md hover:bg-accent">
+                <i className="ri-team-line text-lg mr-3"></i>
+                <span>Empleados</span>
+              </div>
+            </Link>
+            <Link href="/settings" onClick={onClose}>
+              <div className="flex items-center p-2 rounded-md hover:bg-accent">
+                <i className="ri-settings-4-line text-lg mr-3"></i>
+                <span>Preferencias</span>
               </div>
             </Link>
           </div>

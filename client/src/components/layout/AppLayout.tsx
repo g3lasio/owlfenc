@@ -96,7 +96,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   // Para el resto de las páginas (protegidas), mostrar el layout completo
   return (
     <div className="flex h-screen">
-      {/* Sidebar izquierdo - Funcionalidades de la aplicación */}
+      {/* Sidebar único con todas las funcionalidades */}
       <Sidebar />
 
       {/* Contenido principal */}
@@ -109,9 +109,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
           </Switch>
         </div>
       </main>
-
-      {/* UserMenu derecho - Configuración y perfil del usuario */}
-      <UserMenu />
 
       {/* Menú móvil (solo visible en mobile cuando se activa) */}
       <MobileMenu 
