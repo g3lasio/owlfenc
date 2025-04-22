@@ -135,10 +135,16 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
         <div className="p-3">
           <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Mi Cuenta</h2>
           <div className="space-y-1.5 mb-4">
-            <Link href="/settings/account" onClick={onClose}>
+            <Link href="/account" onClick={onClose}>
               <div className="flex items-center p-2 rounded-md hover:bg-accent">
                 <i className="ri-user-settings-line text-lg mr-3"></i>
                 <span>Perfil Personal</span>
+              </div>
+            </Link>
+            <Link href="/billing" onClick={onClose}>
+              <div className="flex items-center p-2 rounded-md hover:bg-accent">
+                <i className="ri-bank-card-line text-lg mr-3"></i>
+                <span>Facturación</span>
               </div>
             </Link>
             <Link href="/subscription" onClick={onClose}>

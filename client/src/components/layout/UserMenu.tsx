@@ -130,15 +130,21 @@ export default function UserMenu() {
       <div className="px-3 pt-4">
         <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Mi Perfil</h2>
         <div className="space-y-1.5">
-          <Link href="/settings/account">
+          <Link href="/account">
             <Button variant="ghost" className="w-full justify-start">
               <User className="h-4 w-4 mr-2" />
               Perfil Personal
             </Button>
           </Link>
-          <Link href="/subscription">
+          <Link href="/billing">
             <Button variant="ghost" className="w-full justify-start">
               <CreditCard className="h-4 w-4 mr-2" />
+              Facturación
+            </Button>
+          </Link>
+          <Link href="/subscription">
+            <Button variant="ghost" className="w-full justify-start">
+              <i className="ri-vip-crown-line h-4 w-4 mr-2"></i>
               Mi Suscripción
             </Button>
           </Link>

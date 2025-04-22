@@ -20,6 +20,7 @@ import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import PricingSettings from "@/pages/PricingSettings";
 import Subscription from "@/pages/Subscription";
 import Account from "./pages/Account";
+import Billing from "./pages/Billing";
 import History from "@/pages/History";
 import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
@@ -109,6 +110,9 @@ function Router() {
       </Route>
       <Route path="/account">
         {() => <ProtectedRoute component={Account} />}
+      </Route>
+      <Route path="/billing">
+        {() => <ProtectedRoute component={Billing} />}
       </Route>
       <Route path="/history">
         {() => <ProtectedRoute component={History} />}
