@@ -158,7 +158,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           >
             <Link href="/new-estimate" onClick={onClose}>
               <motion.div 
-                whileHover={{ scale: 1.03, boxShadow: "0 0 15px rgba(0, 200, 255, 0.5)" }}
+                whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
                 className="flex items-center justify-center bg-primary text-white p-3 rounded-md hover:bg-primary/90"
               >
@@ -192,7 +192,6 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                   >
                     <motion.div 
                       whileHover={{ 
-                        backgroundColor: "rgba(0, 200, 255, 0.1)",
                         scale: 1.02,
                         x: 5
                       }}
@@ -234,7 +233,6 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                   <Link href={item.path} onClick={onClose}>
                     <motion.div 
                       whileHover={{ 
-                        backgroundColor: "rgba(0, 200, 255, 0.1)",
                         scale: 1.02,
                         x: 5
                       }}
@@ -281,7 +279,6 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                   <Link href={item.path} onClick={onClose}>
                     <motion.div 
                       whileHover={{ 
-                        backgroundColor: "rgba(0, 200, 255, 0.1)",
                         scale: 1.02,
                         x: 5
                       }}
@@ -318,7 +315,6 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                   <Link href={item.path} onClick={onClose}>
                     <motion.div 
                       whileHover={{ 
-                        backgroundColor: "rgba(0, 200, 255, 0.1)",
                         scale: 1.02,
                         x: 5
                       }}
@@ -342,7 +338,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           className="p-3 border-t border-border"
         >
           <motion.div
-            whileHover={{ boxShadow: "0 0 15px rgba(0, 200, 255, 0.3)" }}
+            whileHover={{ scale: 1.02 }}
             className="bg-primary/10 rounded-md p-3 mb-3"
           >
             <p className="text-sm text-center mb-2">¿Necesitas ayuda?</p>
@@ -358,7 +354,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           
           {/* Botón de Cerrar Sesión */}
           <motion.button
-            whileHover={{ scale: 1.03, backgroundColor: "rgba(220, 38, 38, 0.1)" }}
+            whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
             onClick={handleLogout}
             disabled={loading}
