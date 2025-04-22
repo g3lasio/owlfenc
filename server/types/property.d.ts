@@ -13,6 +13,8 @@ declare global {
       timestamp: number;
     };
   };
+  
+  var lastApiErrorMessage: string;
 }
 
 export { PropertyOwnerData };

@@ -6,6 +6,7 @@ interface PropertyOwnerData {
   owner: string;
   mailingAddress: string;
   ownerOccupied: boolean;
+  ownershipVerified: boolean;
 }
 
 interface PropertyDetailsData {
@@ -27,6 +28,7 @@ export interface FullPropertyData {
   yearBuilt: number;
   propertyType: string;
   ownerOccupied: boolean;
+  ownershipVerified: boolean;
   verified: boolean;
 }
 
@@ -235,13 +237,36 @@ class PropertyService {
     console.log(`ERROR: No se pudieron obtener datos de propiedad para ${address}`);
     console.log(`Motivo: ${reason}`);
     
-    // Si es un error de conectividad DNS, agregar información adicional para diagnóstico
-    if (reason.includes('ENOTFOUND')) {
+    // Guardar el último mensaje de error para referencia global
+    global.lastApiErrorMessage = reason;
+    
+    // Categorizar el tipo de error para facilitar diagnóstico
+    if (reason.includes('ENOTFOUND') || reason.includes('getaddrinfo')) {
       console.log('DIAGNÓSTICO: Problema de resolución DNS detectado');
+      console.log('CATEGORÍA: ERROR_DNS');
       console.log('RECOMENDACIÓN: Este es un problema de conectividad específico del entorno.');
       console.log('- Verificar la configuración de red del entorno');
-      console.log('- Considerar usar un servicio de proxy HTTP externo');
-      console.log('- Contactar al soporte de CoreLogic para opciones alternativas de acceso');
+      console.log('- Verificar si el dominio api-sandbox.corelogic.com es accesible');
+      console.log('- Ejecutar el script test-dns-connectivity.js para diagnóstico detallado');
+      console.log('- Considerar usar una API alternativa o una VPN para acceder al servicio');
+    } else if (reason.includes('ETIMEDOUT') || reason.includes('timeout')) {
+      console.log('DIAGNÓSTICO: Timeout en la conexión');
+      console.log('CATEGORÍA: ERROR_TIMEOUT');
+      console.log('RECOMENDACIÓN: Problemas de latencia o firewall.');
+      console.log('- Verificar si hay restricciones de firewall que bloquean la conexión');
+      console.log('- Aumentar los tiempos de timeout en la configuración');
+    } else if (reason.includes('401') || reason.includes('unauthorized') || reason.includes('authentication')) {
+      console.log('DIAGNÓSTICO: Error de autenticación');
+      console.log('CATEGORÍA: ERROR_AUTH');
+      console.log('RECOMENDACIÓN: Problemas con las credenciales o permisos.');
+      console.log('- Verificar que las credenciales CORELOGIC_CONSUMER_KEY y CORELOGIC_CONSUMER_SECRET sean correctas');
+      console.log('- Contactar a soporte de CoreLogic para verificar el estado de la cuenta');
+    } else if (reason.includes('404') || reason.includes('not found')) {
+      console.log('DIAGNÓSTICO: Recurso no encontrado');
+      console.log('CATEGORÍA: ERROR_NOT_FOUND');
+      console.log('RECOMENDACIÓN: La dirección proporcionada no fue encontrada.');
+      console.log('- Verificar el formato de la dirección');
+      console.log('- Probar con una dirección diferente');
     }
     
     return null;
@@ -379,7 +404,8 @@ class PropertyService {
         ...propertyDetails,
         ...ownerData,
         address: originalAddress,
-        verified: true
+        verified: true,
+        ownershipVerified: ownerData.ownershipVerified
       };
     } catch (error: any) {
       console.error('Error extrayendo datos de propiedad:', error.message);
