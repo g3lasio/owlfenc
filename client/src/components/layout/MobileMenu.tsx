@@ -179,15 +179,20 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
               Herramientas
             </motion.h2>
             <div className="space-y-1.5 mb-4">
-              {["Dashboard", "Proyectos", "Clientes", "Historial"].map((item, index) => (
+              {[
+                { name: "Dashboard", path: "/", icon: "ri-dashboard-line" },
+                { name: "Proyectos", path: "/projects", icon: "ri-briefcase-4-line" },
+                { name: "Clientes", path: "/clients", icon: "ri-user-star-line" },
+                { name: "Historial", path: "/history", icon: "ri-time-line" }
+              ].map((item, index) => (
                 <motion.div
-                  key={item}
+                  key={item.name}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.4 + (index * 0.1), duration: 0.3 }}
                 >
                   <Link 
-                    href={index === 0 ? "/" : `/${item.toLowerCase()}`} 
+                    href={item.path} 
                     onClick={onClose}
                   >
                     <motion.div 
@@ -197,13 +202,8 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                       }}
                       className="flex items-center p-2 rounded-md hover:bg-accent"
                     >
-                      <i className={`${
-                        index === 0 ? "ri-dashboard-line" : 
-                        index === 1 ? "ri-briefcase-4-line" :
-                        index === 2 ? "ri-user-star-line" :
-                        "ri-time-line"
-                      } text-lg mr-3`}></i>
-                      <span>{item}</span>
+                      <i className={`${item.icon} text-lg mr-3`}></i>
+                      <span>{item.name}</span>
                     </motion.div>
                   </Link>
                 </motion.div>
