@@ -249,7 +249,7 @@ export default function Sidebar() {
 
           <Button 
             variant="ghost" 
-            className="flex items-center w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive"
+            className="flex items-center w-full justify-center text-destructive hover:bg-destructive/10 hover:text-destructive"
             onClick={handleLogout}
             disabled={loading}
           >
