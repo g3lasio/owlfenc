@@ -74,14 +74,14 @@ export default function Sidebar() {
 
     return "Plan Básico";
   };
-  
+
   // Obtener iniciales para el avatar
   const getUserInitials = () => {
     if (!currentUser || !currentUser.displayName) return "U";
-    
+
     const nameParts = currentUser.displayName.split(" ");
     if (nameParts.length === 1) return nameParts[0].charAt(0).toUpperCase();
-    
+
     return (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase();
   };
 
@@ -98,7 +98,7 @@ export default function Sidebar() {
               className="h-12 w-auto object-contain"
             />
           </div>
-          
+
           {/* Información del usuario */}
           <div className="flex flex-col space-y-3">
             <div className="flex items-center">
@@ -111,7 +111,7 @@ export default function Sidebar() {
                 <div className="text-xs text-muted-foreground">{currentUser?.email}</div>
               </div>
             </div>
-            
+
             {/* Botón de actualizar plan */}
             <div className="mt-1">
               <Link href="/subscription">
@@ -233,7 +233,7 @@ export default function Sidebar() {
             </Link>
           </div>
         </div>
-        
+
         {/* Footer con soporte y cerrar sesión */}
         <div className="p-4 border-t border-border mt-auto">
           <div className="rounded-md bg-primary/10 p-1.5 text-center mb-3">
@@ -248,7 +248,7 @@ export default function Sidebar() {
               Soporte
             </Button>
           </div>
-          
+
           <Button 
             variant="ghost" 
             className="flex items-center w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive"
