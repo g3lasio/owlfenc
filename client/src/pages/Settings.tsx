@@ -9,137 +9,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Settings() {
-  const [companyName, setCompanyName] = useState("Your Company Name");
-  const [email, setEmail] = useState("email@example.com");
-  const [phone, setPhone] = useState("(123) 456-7890");
-  const [address, setAddress] = useState("123 Main St, City, State 12345");
-  const [license, setLicense] = useState("CCB #123456");
   const [saveLoading, setSaveLoading] = useState(false);
-  
   const { toast } = useToast();
-  
-  const handleSaveCompanyInfo = async () => {
-    setSaveLoading(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    toast({
-      title: "Settings Saved",
-      description: "Your company information has been updated.",
-    });
-    
-    setSaveLoading(false);
-  };
   
   return (
     <div className="flex-1 p-6 overflow-auto">
       <h1 className="text-2xl font-bold mb-6">Settings</h1>
       
-      <Tabs defaultValue="company" className="space-y-6">
+      <Tabs defaultValue="pricing" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="company">Company</TabsTrigger>
           <TabsTrigger value="pricing">Pricing</TabsTrigger>
           <TabsTrigger value="templates">Templates</TabsTrigger>
           <TabsTrigger value="account">Account</TabsTrigger>
         </TabsList>
-        
-        <TabsContent value="company" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Company Information</CardTitle>
-              <CardDescription>
-                This information will appear on all your estimates and contracts.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="company-name">Company Name</Label>
-                  <Input 
-                    id="company-name" 
-                    placeholder="Your Company Name" 
-                    value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    placeholder="email@example.com" 
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input 
-                    id="phone" 
-                    placeholder="(123) 456-7890" 
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="license">License Number</Label>
-                  <Input 
-                    id="license" 
-                    placeholder="CCB #123456" 
-                    value={license}
-                    onChange={(e) => setLicense(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="address">Address</Label>
-                  <Input 
-                    id="address" 
-                    placeholder="123 Main St, City, State 12345" 
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end">
-                <Button onClick={handleSaveCompanyInfo} disabled={saveLoading}>
-                  {saveLoading ? (
-                    <>
-                      <i className="ri-loader-4-line animate-spin mr-2"></i>
-                      Saving...
-                    </>
-                  ) : (
-                    "Save Changes"
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Logo & Branding</CardTitle>
-              <CardDescription>
-                Add your company logo and customize branding.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center space-x-4">
-                <div className="w-20 h-20 rounded-md bg-accent flex items-center justify-center">
-                  <i className="ri-image-line text-3xl text-muted-foreground"></i>
-                </div>
-                <div className="space-y-2">
-                  <Button variant="outline" size="sm">
-                    <i className="ri-upload-line mr-2"></i> Upload Logo
-                  </Button>
-                  <p className="text-xs text-muted-foreground">
-                    Recommended size: 200x200px, PNG or JPEG
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
         
         <TabsContent value="pricing" className="space-y-6">
           <Card>
