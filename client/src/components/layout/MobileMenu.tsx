@@ -339,17 +339,19 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
         >
           <motion.div
             whileHover={{ scale: 1.02 }}
-            className="bg-primary/10 rounded-md p-3 mb-3"
+            className="bg-primary/10 rounded-md p-2 mb-3"
+            style={{ height: "auto", minHeight: "70px" }}
           >
-            <p className="text-sm text-center mb-2">¿Necesitas ayuda?</p>
-            <motion.button 
+            <p className="text-xs text-center mb-1">¿Necesitas ayuda?</p>
+            <motion.a 
+              href="mailto:mervin@owlfenc.com?subject=Soporte%20Owl%20Fence"
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
-              className="flex items-center justify-center p-2 w-full bg-card border border-border rounded-md hover:bg-accent"
+              className="flex items-center justify-center py-1 px-2 w-full bg-card border border-border rounded-md hover:bg-accent text-sm"
             >
-              <i className="ri-question-line mr-2"></i>
+              <i className="ri-question-line mr-1"></i>
               <span>Soporte</span>
-            </motion.button>
+            </motion.a>
           </motion.div>
           
           {/* Botón de Cerrar Sesión */}
