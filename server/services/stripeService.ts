@@ -542,6 +542,64 @@ class StripeService {
       return false;
     }
   }
+  
+  /**
+   * Crea un cliente en Stripe
+   */
+  async createCustomer(customerData: {
+    email?: string;
+    name: string;
+  }): Promise<Stripe.Customer> {
+    try {
+      console.log(`[${new Date().toISOString()}] Creando cliente en Stripe - Email: ${customerData.email}, Nombre: ${customerData.name}`);
+      
+      // Verificar primero que la conexión a Stripe funciona
+      const isConnected = await this.verifyStripeConnection();
+      if (!isConnected) {
+        throw new Error('No se pudo establecer conexión con Stripe. Verifique las credenciales API.');
+      }
+      
+      // Crear cliente en Stripe
+      const customer = await stripe.customers.create({
+        email: customerData.email,
+        name: customerData.name
+      });
+      
+      console.log(`[${new Date().toISOString()}] Cliente creado en Stripe - ID: ${customer.id}`);
+      return customer;
+    } catch (error) {
+      console.error(`[${new Date().toISOString()}] Error al crear cliente en Stripe:`, error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Crea un Setup Intent para registrar una tarjeta
+   */
+  async createSetupIntent(customerId: string): Promise<Stripe.SetupIntent> {
+    try {
+      console.log(`[${new Date().toISOString()}] Creando Setup Intent para cliente ID: ${customerId}`);
+      
+      // Verificar primero que la conexión a Stripe funciona
+      const isConnected = await this.verifyStripeConnection();
+      if (!isConnected) {
+        throw new Error('No se pudo establecer conexión con Stripe. Verifique las credenciales API.');
+      }
+      
+      // Crear un setup intent en Stripe
+      const setupIntent = await stripe.setupIntents.create({
+        customer: customerId,
+        payment_method_types: ['card'],
+        usage: 'off_session'
+      });
+      
+      console.log(`[${new Date().toISOString()}] Setup Intent creado - ID: ${setupIntent.id}`);
+      return setupIntent;
+    } catch (error) {
+      console.error(`[${new Date().toISOString()}] Error al crear Setup Intent:`, error);
+      throw error;
+    }
+  }
 
   /**
    * Sincroniza todos los planes de suscripción con Stripe

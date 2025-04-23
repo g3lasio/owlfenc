@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, CreditCard, Info, AlertCircle } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { CardForm } from "@/components/payments/CardForm";
 
 // Interfaces para tipos de datos
 interface PaymentMethod {
@@ -259,13 +260,26 @@ export default function Billing() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-10 border rounded-lg">
+                <div className="text-center py-6 border rounded-lg">
                   <div className="mb-2 flex justify-center">
                     <AlertCircle className="h-8 w-8 text-muted-foreground" />
                   </div>
                   <p className="text-muted-foreground mb-4">
                     No tienes métodos de pago registrados
                   </p>
+                  
+                  <div className="mx-auto max-w-md px-4">
+                    <h3 className="text-lg font-semibold mb-2">Agregar tarjeta de crédito o débito</h3>
+                    <div className="mt-4">
+                      <div id="payment-form">
+                        <CardForm 
+                          onSuccess={() => {
+                            queryClient.invalidateQueries({ queryKey: ["/api/subscription/payment-methods"] });
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </CardContent>

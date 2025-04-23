@@ -544,6 +544,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint para crear un Setup Intent para tarjetas
+  app.post('/api/subscription/setup-intent', async (req: Request, res: Response) => {
+    try {
+      // En un entorno real, usaríamos req.isAuthenticated() desde passport
+      // Para desarrollo, asumiremos que estamos autenticados
+      // if (!req.isAuthenticated()) {
+      //   return res.status(401).json({ message: "No autenticado" });
+      // }
+      
+      // Usar un ID de usuario fijo para desarrollo
+      const userId = 1; // En producción: req.user.id
+      
+      // Obtenemos la suscripción del usuario para conseguir el customerId
+      let subscription = await storage.getUserSubscriptionByUserId(userId);
+      
+      // Si no existe una suscripción con customerId, creamos un cliente
+      if (!subscription || !subscription.stripeCustomerId) {
+        // Primero, verificamos si existe el usuario
+        const user = await storage.getUser(userId);
+        if (!user) {
+          return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+        
+        // Crear un cliente en Stripe
+        const customer = await stripeService.createCustomer({
+          email: user.email || undefined,
+          name: user.username
+        });
+        
+        // Si no hay suscripción, la creamos
+        if (!subscription) {
+          subscription = await storage.createUserSubscription({
+            userId,
+            planId: null,
+            status: 'inactive',
+            stripeCustomerId: customer.id,
+            stripeSubscriptionId: null,
+            currentPeriodStart: new Date(), // Usamos campos correctos del schema
+            currentPeriodEnd: null,
+            cancelAtPeriodEnd: false,
+            billingCycle: 'monthly',
+            nextBillingDate: null
+          });
+        } else {
+          // Actualizar la suscripción existente con el customerId
+          subscription = await storage.updateUserSubscription(subscription.id, {
+            stripeCustomerId: customer.id
+          });
+        }
+      }
+      
+      // Crear un setup intent usando el servicio de Stripe
+      const setupIntent = await stripeService.createSetupIntent(subscription.stripeCustomerId);
+      
+      res.json({ clientSecret: setupIntent.client_secret });
+    } catch (error) {
+      console.error('Error al crear setup intent:', error);
+      res.status(500).json({ message: 'Error al procesar la solicitud' });
+    }
+  });
+
   // Ruta para sincronizar planes con Stripe (solo para administradores)
   app.post('/api/admin/sync-plans', async (req: Request, res: Response) => {
     try {
