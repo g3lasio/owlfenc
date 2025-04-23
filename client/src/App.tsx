@@ -6,7 +6,7 @@ import NotFound from "@/pages/not-found";
 import AppLayout from "@/components/layout/AppLayout";
 import Home from "@/pages/Home";
 import Projects from "@/pages/Projects";
-import Clients from "@/pages/Clients";
+import Clients from "./pages/Clients";
 import Settings from "@/pages/Settings";
 import Profile from "@/pages/Profile";
 import PropertyOwnershipVerifier from "@/pages/PropertyOwnershipVerifier";
@@ -81,9 +81,7 @@ function Router() {
       <Route path="/projects">
         {() => <ProtectedRoute component={Projects} />}
       </Route>
-      <Route path="/clients">
-        {() => <ProtectedRoute component={Clients} />}
-      </Route>
+      <Route path="/clients" component={() => <ProtectedRoute component={Clients} />} />
       <Route path="/settings">
         {() => <ProtectedRoute component={Settings} />}
       </Route>
