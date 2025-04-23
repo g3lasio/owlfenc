@@ -236,9 +236,14 @@ export default function Sidebar() {
         
         {/* Footer con soporte y cerrar sesión */}
         <div className="p-4 border-t border-border mt-auto">
-          <div className="rounded-md bg-primary/10 p-3 text-center mb-3">
-            <p className="text-sm mb-2">¿Necesitas ayuda?</p>
-            <Button size="sm" variant="outline" className="w-full">
+          <div className="rounded-md bg-primary/10 p-1.5 text-center mb-3">
+            <p className="text-sm mb-1">¿Necesitas ayuda?</p>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="w-full"
+              onClick={() => window.location.href = 'mailto:mervin@owlfenc.com'}
+            >
               <i className="ri-question-line mr-2"></i>
               Soporte
             </Button>
