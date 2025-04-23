@@ -180,7 +180,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             </motion.h2>
             <div className="space-y-1.5 mb-4">
               {[
-                { name: "Dashboard", path: "/", icon: "ri-dashboard-line" },
+                
                 { name: "Proyectos", path: "/projects", icon: "ri-briefcase-4-line" },
                 { name: "Clientes", path: "/clients", icon: "ri-user-star-line" },
                 { name: "Historial", path: "/history", icon: "ri-time-line" }

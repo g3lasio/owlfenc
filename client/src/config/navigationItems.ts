@@ -2,16 +2,7 @@ import { NavigationItem, NavigationSection } from "@/types/navigation";
 
 // Configuración para el menú principal (izquierdo)
 export const mainNavigationConfig: NavigationSection[] = [
-  {
-    title: "Principal",
-    items: [
-      {
-        label: "Dashboard",
-        path: "/",
-        icon: "ri-layout-grid-line",
-      },
-    ],
-  },
+  
   {
     title: "Herramientas",
     items: [
