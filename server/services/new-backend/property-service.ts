@@ -17,7 +17,17 @@ function parseAddress(fullAddress: string): {
   zip: string;
 } {
   console.log('Parseando dirección:', fullAddress);
-  const parts = fullAddress.split(',').map(part => part.trim());
+  if (!fullAddress) {
+    throw new Error('Dirección vacía');
+  }
+  
+  // Normalizar la dirección
+  const cleanAddress = fullAddress.replace(/\s+/g, ' ').trim();
+  const parts = cleanAddress.split(',').map(part => part.trim());
+  
+  if (parts.length < 3) {
+    throw new Error('Formato de dirección inválido. Se requiere: Calle, Ciudad, Estado ZIP');
+  }
 
   // Extraer el código postal si está presente
   let zip = '';
@@ -99,15 +109,23 @@ class NewBackendPropertyService {
       // Parsear la dirección para obtener sus componentes
       const { address1, city, state, zip } = parseAddress(address);
       
-      // 1. Intento: usar parámetros separados
+      // 1. Intento: usar parámetros separados con validación
       console.log('Intento 1: Parámetros separados con formato address1, city, state, zip');
       try {
+        if (!address1 || !city || !state || !zip) {
+          console.log('Datos de dirección incompletos:', { address1, city, state, zip });
+          throw new Error('Dirección incompleta');
+        }
+        
+        // Asegurar que state sea un código de 2 letras
+        const stateCode = state.trim().substring(0, 2).toUpperCase();
+        
         response = await axios.get(`${ATTOM_WRAPPER_URL}/api/property/details`, {
           params: { 
-            address1,
-            city,
-            state,
-            zip
+            address1: address1.trim(),
+            city: city.trim(),
+            state: stateCode,
+            zip: zip.trim()
           }
         });
         console.log('Intento 1 exitoso!');
