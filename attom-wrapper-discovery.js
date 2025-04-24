@@ -5,7 +5,7 @@
  * combinaciones de parámetros y formatos para determinar el formato correcto.
  */
 
-const axios = require('axios');
+import axios from 'axios';
 
 // URL del wrapper ATTOM
 const ATTOM_WRAPPER_URL = 'https://attom-wrapper.replit.app';
