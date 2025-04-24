@@ -7,7 +7,21 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Home, Check, User, Calendar, MapPin, AlertTriangle, CheckCircle, ArrowRight, Ruler } from "lucide-react";
+import { 
+  Home, 
+  Check, 
+  User, 
+  Calendar, 
+  MapPin, 
+  AlertTriangle, 
+  CheckCircle, 
+  ArrowRight, 
+  Ruler,
+  Clock as HistoryIcon,
+  DollarSign,
+  Info
+} from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -509,7 +523,7 @@ export default function PropertyOwnershipVerifier() {
               {propertyDetails.purchaseDate && (
                 <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 mt-4">
                   <h3 className="text-md font-semibold mb-2 text-blue-800 flex items-center">
-                    <History className="mr-2" size={18} />
+                    <HistoryIcon className="mr-2" size={18} />
                     Historial de propiedad
                   </h3>
                   <div className="space-y-2">
