@@ -1,0 +1,380 @@
+import { 
+  User, 
+  InsertUser, 
+  Project, 
+  InsertProject, 
+  Template, 
+  InsertTemplate, 
+  Settings, 
+  InsertSettings, 
+  ChatLog, 
+  InsertChatLog,
+  Client,
+  InsertClient,
+  SubscriptionPlan,
+  InsertSubscriptionPlan,
+  UserSubscription,
+  InsertUserSubscription,
+  PaymentHistory,
+  InsertPaymentHistory,
+  users,
+  projects,
+  templates,
+  settings,
+  chatLogs,
+  clients,
+  subscriptionPlans,
+  userSubscriptions,
+  paymentHistory
+} from "@shared/schema";
+
+import { db } from './db';
+import { eq, and, desc, asc, isNull, isNotNull } from 'drizzle-orm';
+import { IStorage } from './storage';
+
+export class DatabaseStorage implements IStorage {
+  constructor() {
+    // Ninguna inicialización necesaria, usamos la conexión de db.ts
+  }
+  
+  // User methods
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
+  }
+
+  async updateUser(id: number, userData: Partial<User>): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set(userData)
+      .where(eq(users.id, id))
+      .returning();
+    
+    if (!user) {
+      throw new Error(`User with ID ${id} not found`);
+    }
+    
+    return user;
+  }
+
+  // Project methods
+  async getProject(id: number): Promise<Project | undefined> {
+    const [project] = await db.select().from(projects).where(eq(projects.id, id));
+    return project;
+  }
+
+  async getProjectByProjectId(projectId: string): Promise<Project | undefined> {
+    const [project] = await db.select().from(projects).where(eq(projects.projectId, projectId));
+    return project;
+  }
+
+  async getProjectsByUserId(userId: number): Promise<Project[]> {
+    return db.select()
+      .from(projects)
+      .where(eq(projects.userId, userId))
+      .orderBy(desc(projects.createdAt));
+  }
+
+  async createProject(insertProject: InsertProject): Promise<Project> {
+    const [project] = await db.insert(projects).values(insertProject).returning();
+    return project;
+  }
+
+  async updateProject(id: number, projectData: Partial<Project>): Promise<Project> {
+    const [project] = await db
+      .update(projects)
+      .set({
+        ...projectData,
+        updatedAt: new Date()
+      })
+      .where(eq(projects.id, id))
+      .returning();
+    
+    if (!project) {
+      throw new Error(`Project with ID ${id} not found`);
+    }
+    
+    return project;
+  }
+
+  // Template methods
+  async getTemplate(id: number): Promise<Template | undefined> {
+    const [template] = await db.select().from(templates).where(eq(templates.id, id));
+    return template;
+  }
+
+  async getTemplatesByType(userId: number, type: string): Promise<Template[]> {
+    return db.select()
+      .from(templates)
+      .where(and(
+        eq(templates.userId, userId),
+        eq(templates.type, type)
+      ));
+  }
+
+  async getDefaultTemplate(userId: number, type: string): Promise<Template | undefined> {
+    const [template] = await db.select()
+      .from(templates)
+      .where(and(
+        eq(templates.userId, userId),
+        eq(templates.type, type),
+        eq(templates.isDefault, true)
+      ));
+    return template;
+  }
+
+  async createTemplate(insertTemplate: InsertTemplate): Promise<Template> {
+    const [template] = await db.insert(templates).values(insertTemplate).returning();
+    return template;
+  }
+
+  async updateTemplate(id: number, templateData: Partial<Template>): Promise<Template> {
+    const [template] = await db
+      .update(templates)
+      .set(templateData)
+      .where(eq(templates.id, id))
+      .returning();
+    
+    if (!template) {
+      throw new Error(`Template with ID ${id} not found`);
+    }
+    
+    return template;
+  }
+
+  // Settings methods
+  async getSettings(userId: number): Promise<Settings | undefined> {
+    const [userSettings] = await db.select()
+      .from(settings)
+      .where(eq(settings.userId, userId));
+    return userSettings;
+  }
+
+  async createSettings(insertSettings: InsertSettings): Promise<Settings> {
+    const [userSettings] = await db.insert(settings).values(insertSettings).returning();
+    return userSettings;
+  }
+
+  async updateSettings(userId: number, settingsData: Partial<Settings>): Promise<Settings> {
+    // Primero verificamos si existen configuraciones para este usuario
+    const existingSettings = await this.getSettings(userId);
+    
+    if (!existingSettings) {
+      // Si no existen, las creamos con los datos proporcionados
+      return this.createSettings({
+        userId,
+        ...settingsData,
+      } as InsertSettings);
+    }
+
+    // Si existen, las actualizamos
+    const [updatedSettings] = await db
+      .update(settings)
+      .set({
+        ...settingsData,
+        updatedAt: new Date()
+      })
+      .where(eq(settings.userId, userId))
+      .returning();
+    
+    if (!updatedSettings) {
+      throw new Error(`Settings for user ${userId} not found`);
+    }
+    
+    return updatedSettings;
+  }
+
+  // Chat log methods
+  async getChatLog(projectId: number): Promise<ChatLog | undefined> {
+    const [log] = await db.select()
+      .from(chatLogs)
+      .where(eq(chatLogs.projectId, projectId));
+    return log;
+  }
+
+  async createChatLog(insertChatLog: InsertChatLog): Promise<ChatLog> {
+    const [chatLog] = await db.insert(chatLogs).values(insertChatLog).returning();
+    return chatLog;
+  }
+
+  async updateChatLog(id: number, messages: any): Promise<ChatLog> {
+    const [chatLog] = await db
+      .update(chatLogs)
+      .set({
+        messages,
+        updatedAt: new Date()
+      })
+      .where(eq(chatLogs.id, id))
+      .returning();
+    
+    if (!chatLog) {
+      throw new Error(`Chat log with ID ${id} not found`);
+    }
+    
+    return chatLog;
+  }
+
+  // Client methods
+  async getClient(id: number): Promise<Client | undefined> {
+    const [client] = await db.select().from(clients).where(eq(clients.id, id));
+    return client;
+  }
+
+  async getClientByClientId(clientId: string): Promise<Client | undefined> {
+    const [client] = await db.select().from(clients).where(eq(clients.clientId, clientId));
+    return client;
+  }
+
+  async getClientsByUserId(userId: number): Promise<Client[]> {
+    return db.select()
+      .from(clients)
+      .where(eq(clients.userId, userId))
+      .orderBy(desc(clients.createdAt));
+  }
+
+  async createClient(insertClient: InsertClient): Promise<Client> {
+    const [client] = await db.insert(clients).values(insertClient).returning();
+    return client;
+  }
+
+  async updateClient(id: number, clientData: Partial<Client>): Promise<Client> {
+    const [client] = await db
+      .update(clients)
+      .set({
+        ...clientData,
+        updatedAt: new Date()
+      })
+      .where(eq(clients.id, id))
+      .returning();
+    
+    if (!client) {
+      throw new Error(`Client with ID ${id} not found`);
+    }
+    
+    return client;
+  }
+
+  async deleteClient(id: number): Promise<boolean> {
+    const result = await db
+      .delete(clients)
+      .where(eq(clients.id, id));
+    
+    return true; // Si llegamos aquí, es que la operación fue exitosa
+  }
+
+  // Subscription Plan methods
+  async getSubscriptionPlan(id: number): Promise<SubscriptionPlan | undefined> {
+    const [plan] = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.id, id));
+    return plan;
+  }
+
+  async getSubscriptionPlanByCode(code: string): Promise<SubscriptionPlan | undefined> {
+    const [plan] = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.code, code));
+    return plan;
+  }
+
+  async getAllSubscriptionPlans(): Promise<SubscriptionPlan[]> {
+    return db.select()
+      .from(subscriptionPlans)
+      .where(eq(subscriptionPlans.isActive, true))
+      .orderBy(asc(subscriptionPlans.price));
+  }
+
+  async createSubscriptionPlan(insertPlan: InsertSubscriptionPlan): Promise<SubscriptionPlan> {
+    const [plan] = await db.insert(subscriptionPlans).values(insertPlan).returning();
+    return plan;
+  }
+
+  async updateSubscriptionPlan(id: number, planData: Partial<SubscriptionPlan>): Promise<SubscriptionPlan> {
+    const [plan] = await db
+      .update(subscriptionPlans)
+      .set({
+        ...planData,
+        updatedAt: new Date()
+      })
+      .where(eq(subscriptionPlans.id, id))
+      .returning();
+    
+    if (!plan) {
+      throw new Error(`Subscription plan with ID ${id} not found`);
+    }
+    
+    return plan;
+  }
+
+  // User Subscription methods
+  async getUserSubscription(id: number): Promise<UserSubscription | undefined> {
+    const [subscription] = await db
+      .select()
+      .from(userSubscriptions)
+      .where(eq(userSubscriptions.id, id));
+    return subscription;
+  }
+
+  async getUserSubscriptionByUserId(userId: number): Promise<UserSubscription | undefined> {
+    const [subscription] = await db
+      .select()
+      .from(userSubscriptions)
+      .where(eq(userSubscriptions.userId, userId));
+    return subscription;
+  }
+
+  async createUserSubscription(insertSubscription: InsertUserSubscription): Promise<UserSubscription> {
+    const [subscription] = await db
+      .insert(userSubscriptions)
+      .values(insertSubscription)
+      .returning();
+    return subscription;
+  }
+
+  async updateUserSubscription(id: number, subscriptionData: Partial<UserSubscription>): Promise<UserSubscription> {
+    const [subscription] = await db
+      .update(userSubscriptions)
+      .set({
+        ...subscriptionData,
+        updatedAt: new Date()
+      })
+      .where(eq(userSubscriptions.id, id))
+      .returning();
+    
+    if (!subscription) {
+      throw new Error(`User subscription with ID ${id} not found`);
+    }
+    
+    return subscription;
+  }
+
+  // Payment History methods
+  async getPaymentHistory(id: number): Promise<PaymentHistory | undefined> {
+    const [payment] = await db
+      .select()
+      .from(paymentHistory)
+      .where(eq(paymentHistory.id, id));
+    return payment;
+  }
+
+  async getPaymentHistoryByUserId(userId: number): Promise<PaymentHistory[]> {
+    return db.select()
+      .from(paymentHistory)
+      .where(eq(paymentHistory.userId, userId))
+      .orderBy(desc(paymentHistory.createdAt));
+  }
+
+  async createPaymentHistory(insertPayment: InsertPaymentHistory): Promise<PaymentHistory> {
+    const [payment] = await db
+      .insert(paymentHistory)
+      .values(insertPayment)
+      .returning();
+    return payment;
+  }
+}

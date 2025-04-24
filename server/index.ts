@@ -4,6 +4,9 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { stripeService } from './services/stripeService';
 
+// Importamos la conexión a la base de datos para asegurar su inicialización
+import './db';
+
 dotenv.config();
 
 // Inicializar el caché global para propiedades
