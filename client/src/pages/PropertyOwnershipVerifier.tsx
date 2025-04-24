@@ -13,6 +13,14 @@ import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import GooglePlacesAutocomplete, { geocodeByAddress, getLatLng } from 'react-google-places-autocomplete';
 
+interface OwnerHistoryEntry {
+  owner: string;
+  purchaseDate?: string;
+  purchasePrice?: number;
+  saleDate?: string;
+  salePrice?: number;
+}
+
 interface PropertyDetails {
   owner: string;
   address: string;
@@ -20,10 +28,17 @@ interface PropertyDetails {
   bedrooms: number;
   bathrooms: number;
   lotSize: string;
+  landSqft?: number;
   yearBuilt: number;
   propertyType: string;
   verified: boolean;
   ownerOccupied?: boolean;
+  ownershipVerified?: boolean;
+  // Información adicional de historial de propiedad
+  purchaseDate?: string;
+  purchasePrice?: number;
+  previousOwner?: string;
+  ownerHistory?: OwnerHistoryEntry[];
 }
 
 export default function PropertyOwnershipVerifier() {
@@ -425,46 +440,147 @@ export default function PropertyOwnershipVerifier() {
                 </div>
               </div>
 
-              <div className="p-3 rounded-lg border">
-                <div className="flex items-start">
-                  <svg className="text-primary mr-3 mt-1" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="2" y="2" width="20" height="20" rx="2" stroke="currentColor" strokeWidth="2" />
-                    <path d="M2 7h20" stroke="currentColor" strokeWidth="2" />
-                  </svg>
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Área habitable</h3>
-                    <p className="text-lg font-medium">{propertyDetails.sqft?.toLocaleString() || 'N/A'} pie² / m²</p>
+              {/* Dos columnas para características principales */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Columna 1 */}
+                <div>
+                  <div className="p-3 rounded-lg border mb-4">
+                    <div className="flex items-start">
+                      <svg className="text-primary mr-3 mt-1" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="2" y="2" width="20" height="20" rx="2" stroke="currentColor" strokeWidth="2" />
+                        <path d="M2 7h20" stroke="currentColor" strokeWidth="2" />
+                      </svg>
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground mb-1">Área habitable</h3>
+                        <p className="text-lg font-medium">{propertyDetails.sqft?.toLocaleString() || 'N/A'} pie²</p>
+                      </div>
+                    </div>
+                  </div>
+                
+                  <div className="p-3 rounded-lg border">
+                    <div className="flex items-start">
+                      <svg className="text-primary mr-3 mt-1" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7" stroke="currentColor" strokeWidth="2" />
+                        <path d="M12 14v-7" stroke="currentColor" strokeWidth="2" />
+                        <path d="M8 11v-4" stroke="currentColor" strokeWidth="2" />
+                        <path d="M16 11v-4" stroke="currentColor" strokeWidth="2" />
+                      </svg>
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground mb-1">Habitaciones / Baños</h3>
+                        <p className="text-lg font-medium">{propertyDetails.bedrooms || 'N/A'} hab / {propertyDetails.bathrooms || 'N/A'} baños</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Columna 2 */}
+                <div>
+                  <div className="p-3 rounded-lg border mb-4">
+                    <div className="flex items-start">
+                      <svg className="text-primary mr-3 mt-1" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5z" stroke="currentColor" strokeWidth="2" />
+                        <path d="M7 12h10" stroke="currentColor" strokeWidth="2" />
+                      </svg>
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground mb-1">Tamaño del terreno</h3>
+                        <p className="text-lg font-medium">{propertyDetails.lotSize || 'N/A'}</p>
+                        {propertyDetails.landSqft && propertyDetails.landSqft > 0 && (
+                          <p className="text-sm text-muted-foreground">
+                            ({propertyDetails.landSqft.toLocaleString()} pie²)
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="p-3 rounded-lg border">
+                    <div className="flex items-start">
+                      <Calendar className="text-primary mr-3 mt-1" size={20} />
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground mb-1">Año de construcción</h3>
+                        <p className="text-lg font-medium">{propertyDetails.yearBuilt || 'No disponible'}</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-
-              <div className="p-3 rounded-lg border">
-                <div className="flex items-start">
-                  <svg className="text-primary mr-3 mt-1" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5z" stroke="currentColor" strokeWidth="2" />
-                    <path d="M7 12h10" stroke="currentColor" strokeWidth="2" />
-                  </svg>
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Tamaño del terreno</h3>
-                    <p className="text-lg font-medium">{propertyDetails.lotSize}</p>
+              
+              {/* Información de compra y propietario anterior si está disponible */}
+              {propertyDetails.purchaseDate && (
+                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 mt-4">
+                  <h3 className="text-md font-semibold mb-2 text-blue-800 flex items-center">
+                    <History className="mr-2" size={18} />
+                    Historial de propiedad
+                  </h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center">
+                      <Calendar className="text-blue-600 mr-2" size={16} />
+                      <span className="text-sm text-blue-800">
+                        <strong>Fecha de compra:</strong> {new Date(propertyDetails.purchaseDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                    
+                    {propertyDetails.purchasePrice && (
+                      <div className="flex items-center">
+                        <DollarSign className="text-blue-600 mr-2" size={16} />
+                        <span className="text-sm text-blue-800">
+                          <strong>Precio de compra:</strong> ${propertyDetails.purchasePrice.toLocaleString()}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {propertyDetails.previousOwner && (
+                      <div className="flex items-center">
+                        <User className="text-blue-600 mr-2" size={16} />
+                        <span className="text-sm text-blue-800">
+                          <strong>Propietario anterior:</strong> {propertyDetails.previousOwner}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
-
-              <div className="p-3 rounded-lg border">
-                <div className="flex items-start">
-                  <svg className="text-primary mr-3 mt-1" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7" stroke="currentColor" strokeWidth="2" />
-                    <path d="M12 14v-7" stroke="currentColor" strokeWidth="2" />
-                    <path d="M8 11v-4" stroke="currentColor" strokeWidth="2" />
-                    <path d="M16 11v-4" stroke="currentColor" strokeWidth="2" />
-                  </svg>
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Habitaciones / Baños</h3>
-                    <p className="text-lg font-medium">{propertyDetails.bedrooms} hab / {propertyDetails.bathrooms} baños</p>
-                  </div>
+              )}
+              
+              {/* Historial completo de propietarios si está disponible */}
+              {propertyDetails.ownerHistory && propertyDetails.ownerHistory.length > 0 && (
+                <div className="mt-4">
+                  <Tabs defaultValue="history">
+                    <TabsList className="w-full">
+                      <TabsTrigger value="history" className="flex-1">Historial Completo de Propietarios</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="history" className="mt-4">
+                      <div className="rounded-md border">
+                        <table className="w-full">
+                          <thead className="bg-muted/50">
+                            <tr className="border-b">
+                              <th className="h-10 px-4 text-left text-xs font-medium text-muted-foreground">Propietario</th>
+                              <th className="h-10 px-4 text-left text-xs font-medium text-muted-foreground">Fecha Compra</th>
+                              <th className="h-10 px-4 text-left text-xs font-medium text-muted-foreground">Precio Compra</th>
+                              <th className="h-10 px-4 text-left text-xs font-medium text-muted-foreground">Fecha Venta</th>
+                              <th className="h-10 px-4 text-left text-xs font-medium text-muted-foreground">Precio Venta</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {propertyDetails.ownerHistory.map((entry, index) => (
+                              <tr key={index} className={index % 2 === 1 ? 'bg-muted/30' : ''}>
+                                <td className="p-2 px-4 text-sm">{entry.owner}</td>
+                                <td className="p-2 px-4 text-sm">{entry.purchaseDate ? new Date(entry.purchaseDate).toLocaleDateString() : '-'}</td>
+                                <td className="p-2 px-4 text-sm">{entry.purchasePrice ? `$${entry.purchasePrice.toLocaleString()}` : '-'}</td>
+                                <td className="p-2 px-4 text-sm">{entry.saleDate ? new Date(entry.saleDate).toLocaleDateString() : '-'}</td>
+                                <td className="p-2 px-4 text-sm">{entry.salePrice ? `$${entry.salePrice.toLocaleString()}` : '-'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        <Info className="inline-block mr-1" size={12} />
+                        Historial de propietarios basado en registros públicos del condado
+                      </div>
+                    </TabsContent>
+                  </Tabs>
                 </div>
-              </div>
+              )}
             </div>
 
             <div className="mt-6 pt-4 border-t">
