@@ -270,8 +270,8 @@ export default function PropertyOwnershipVerifier() {
       <div className="mb-8">
         <Card>
           <CardHeader>
-            <CardTitle>Verificar Propiedad</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-center">Verificar Propiedad</CardTitle>
+            <CardDescription className="text-center">
               Ingresa la dirección de la propiedad para verificar sus detalles
               de propiedad
             </CardDescription>
@@ -436,14 +436,14 @@ export default function PropertyOwnershipVerifier() {
       ) : propertyDetails ? (
         <Card>
           <CardHeader>
-            <div className="flex justify-between items-start">
-              <div>
-                <CardTitle>{propertyDetails.address}</CardTitle>
-                <CardDescription>
+            <div className="flex flex-col items-center text-center">
+              <div className="mb-2">
+                <CardTitle className="text-center">{propertyDetails.address}</CardTitle>
+                <CardDescription className="text-center">
                   {propertyDetails.propertyType}
                 </CardDescription>
               </div>
-              <div>
+              <div className="mt-2">
                 {propertyDetails.verified ? (
                   <Badge variant="default" className="bg-green-500">
                     <CheckCircle className="mr-1 h-3 w-3" /> Verificado
