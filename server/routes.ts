@@ -766,58 +766,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log('Solicitando datos de propiedad para dirección:', address);
     
     try {
-      console.log('Credenciales CoreLogic disponibles:', 
-        process.env.CORELOGIC_CONSUMER_KEY ? 'Sí' : 'No',
-        process.env.CORELOGIC_CONSUMER_SECRET ? 'Sí' : 'No'
-      );
+      console.log('Iniciando solicitud al wrapper de ATTOM API...');
       
-      console.log('Iniciando solicitud a CoreLogic API...');
-      
+      // Usar el nuevo método con diagnósticos para obtener información más detallada
       const startTime = Date.now();
-      const propertyData = await propertyService.getPropertyByAddress(address);
+      const result = await propertyService.getPropertyDetailsWithDiagnostics(address);
       const endTime = Date.now();
       
-      console.log(`Solicitud completada en ${endTime - startTime}ms`);
+      console.log(`Solicitud completada en ${endTime - startTime}ms con estado: ${result.status}`);
       
-      // Si no hay datos, devolver error con información detallada
-      if (!propertyData) {
-        console.log('Error crítico: No se obtuvo ningún dato de propiedad');
-        
-        // Verificar si hubo un problema de DNS que se registró en los logs
-        const logOutput = global.lastApiErrorMessage || '';
-        const isDnsError = logOutput.includes('ENOTFOUND') || logOutput.includes('getaddrinfo');
-        
-        if (isDnsError) {
+      // Incluir información diagnóstica en logs para depuración
+      console.log('Diagnóstico de la solicitud:', JSON.stringify({
+        status: result.status,
+        parsedAddress: result.diagnostics?.parsedAddress ? 'disponible' : 'no disponible',
+        errorType: result.error?.code || 'ninguno',
+        processingTime: endTime - startTime
+      }));
+      
+      // Manejar los diferentes casos según el estado de la respuesta
+      switch (result.status) {
+        case 'SUCCESS':
+          // Tenemos datos válidos
+          console.log('ÉXITO: Datos verificados obtenidos de ATTOM API');
+          console.log('Datos de propietario:', result.data?.owner);
+          console.log('Propiedad ocupada por el propietario:', result.data?.ownerOccupied);
+          
+          console.log('Enviando respuesta al cliente...');
+          console.log('===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====\n');
+          
+          return res.json(result.data);
+          
+        case 'NOT_FOUND':
+          console.log('No se encontró información para la dirección proporcionada');
+          console.log('===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====\n');
+          
+          return res.status(404).json({ 
+            message: 'No se encontró información para la dirección proporcionada',
+            details: 'Verifica que la dirección esté correctamente escrita e incluya ciudad, estado y código postal'
+          });
+          
+        case 'CONNECTION_ERROR':
+          console.log('Error de conectividad con el servicio de ATTOM');
+          console.log('===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====\n');
+          
           return res.status(502).json({
             message: 'Error de conectividad con el servicio de datos de propiedades',
             errorCode: 'CONNECTIVITY_ERROR',
-            details: 'No se pudo establecer conexión con el servicio de CoreLogic. Este es un problema de infraestructura, no de la dirección proporcionada.'
+            details: 'No se pudo establecer conexión con el servicio de ATTOM. Este es un problema de infraestructura, no de la dirección proporcionada.'
           });
-        } else {
-          return res.status(404).json({ 
-            message: 'No se encontró información para la dirección proporcionada' 
+          
+        case 'AUTHENTICATION_ERROR':
+          console.log('Error de autenticación con el servicio de ATTOM');
+          console.log('===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====\n');
+          
+          return res.status(401).json({
+            message: 'Error de autenticación con el servicio de datos de propiedades',
+            errorCode: 'AUTHENTICATION_ERROR',
+            details: 'Las credenciales de acceso al servicio de ATTOM no son válidas o han expirado.'
           });
-        }
-      }
-      
-      // Verificar si los datos son auténticos
-      if (propertyData.verified) {
-        console.log('ÉXITO: Datos verificados obtenidos de CoreLogic API');
-        console.log('Datos de propietario:', propertyData.owner);
-        console.log('Propiedad ocupada por el propietario:', propertyData.ownerOccupied);
-        
-        console.log('Enviando respuesta al cliente...');
-        console.log('===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====\n');
-        
-        res.json(propertyData);
-      } else {
-        // Si los datos no están verificados, devolver un error en lugar de datos no verificados
-        console.log('ALERTA: No se pudieron obtener datos verificados');
-        console.log('===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====\n');
-        
-        return res.status(503).json({ 
-          message: 'No se pudieron verificar los datos de la propiedad. Por favor, intenta de nuevo más tarde o contacta al soporte.' 
-        });
+          
+        case 'VALIDATION_ERROR':
+          console.log('Error de validación en los parámetros de búsqueda');
+          console.log('===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====\n');
+          
+          return res.status(400).json({
+            message: 'Error en el formato de la dirección proporcionada',
+            errorCode: 'VALIDATION_ERROR',
+            details: 'El formato de la dirección no es válido. Asegúrate de incluir calle, ciudad, estado y código postal.'
+          });
+          
+        default:
+          console.log('Error desconocido al consultar datos de propiedad');
+          console.log('===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====\n');
+          
+          return res.status(500).json({
+            message: 'Error al obtener detalles de la propiedad',
+            errorCode: 'UNKNOWN_ERROR',
+            details: result.error?.message || 'Error desconocido'
+          });
       }
     } catch (error: any) {
       console.error('ERROR EN VERIFICACIÓN DE PROPIEDAD:');

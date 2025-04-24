@@ -426,16 +426,24 @@ class NewBackendPropertyService {
     data: FullPropertyData | null;
     status: string;
     error?: any;
-    diagnostics: any;
+    diagnostics: {
+      attempts: number;
+      lastError: any;
+      timestamp: number;
+      parsedAddress: any;
+      parseError?: string;
+    };
   }> {
     const result = {
       data: null as FullPropertyData | null,
       status: 'UNKNOWN',
+      error: undefined as any,
       diagnostics: {
         attempts: 0,
-        lastError: null,
+        lastError: null as any,
         timestamp: Date.now(),
-        parsedAddress: null
+        parsedAddress: null as any,
+        parseError: undefined
       }
     };
     

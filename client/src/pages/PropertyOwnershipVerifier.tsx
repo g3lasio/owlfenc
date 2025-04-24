@@ -1,13 +1,16 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Home, Check, User, Calendar, MapPin, AlertTriangle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Home, Check, User, Calendar, MapPin, AlertTriangle, CheckCircle, ArrowRight, Ruler } from "lucide-react";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 import GooglePlacesAutocomplete, { geocodeByAddress, getLatLng } from 'react-google-places-autocomplete';
 
 interface PropertyDetails {
