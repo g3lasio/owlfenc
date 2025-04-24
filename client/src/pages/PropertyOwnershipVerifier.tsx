@@ -363,14 +363,26 @@ export default function PropertyOwnershipVerifier() {
       ) : propertyDetails ? (
         <Card>
           <CardHeader>
-            <CardTitle>Detalles de la Propiedad</CardTitle>
-            <CardDescription>
-              Información verificada sobre la propiedad
-            </CardDescription>
+            <div className="flex justify-between items-start">
+              <div>
+                <CardTitle>{propertyDetails.address}</CardTitle>
+                <CardDescription>{propertyDetails.propertyType}</CardDescription>
+              </div>
+              <div>
+                {propertyDetails.verified ? (
+                  <Badge variant="default" className="bg-green-500">
+                    <CheckCircle className="mr-1 h-3 w-3" /> Verificado
+                  </Badge>
+                ) : (
+                  <Badge variant="outline">No verificado</Badge>
+                )}
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div className="col-span-1 sm:col-span-2 p-3 bg-green-50 rounded-lg border border-green-100 mb-2">
+            <div className="space-y-6">
+              {/* Sección de propietario */}
+              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
                 <div className="flex items-start">
                   <User className="text-green-600 mr-3 mt-1" size={20} />
                   <div>
