@@ -6,6 +6,20 @@ interface PropertyOwnerData {
   ownershipVerified: boolean;
 }
 
+interface FullPropertyData {
+  owner: string;
+  address: string;
+  sqft: number;
+  bedrooms: number;
+  bathrooms: number;
+  lotSize: string;
+  yearBuilt: number;
+  propertyType: string;
+  ownerOccupied: boolean;
+  verified: boolean;
+  ownershipVerified: boolean;
+}
+
 declare global {
   var propertyCache: {
     [key: string]: {
@@ -17,4 +31,4 @@ declare global {
   var lastApiErrorMessage: string;
 }
 
-export { PropertyOwnerData };
+export { PropertyOwnerData, FullPropertyData };

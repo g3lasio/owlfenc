@@ -6,6 +6,10 @@ import { stripeService } from './services/stripeService';
 
 dotenv.config();
 
+// Inicializar el caché global para propiedades
+global.propertyCache = {};
+global.lastApiErrorMessage = "";
+
 if (!process.env.FIREBASE_API_KEY || !process.env.FIREBASE_PROJECT_ID) {
   console.error("Missing Firebase configuration. Please check your environment variables.");
   process.exit(1);
