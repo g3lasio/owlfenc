@@ -136,10 +136,37 @@ function parseAddress(fullAddress: string): any {
   
   zip = zip.trim();
   
+  // Dividir la calle en ADDRESS1 y ADDRESS2 como requiere ATTOM
+  // ADDRESS1 suele ser el número de casa y calle principal
+  // ADDRESS2 suele ser apartamento, suite, unidad, etc.
+  let address1 = street;
+  let address2 = '';
+  
+  // Patrones comunes para address2: Apt, Unit, #, Suite, etc.
+  const address2Patterns = [
+    /(?:Apt|Apartment|Unit|#|Suite|Ste)\.?\s*[a-zA-Z0-9-]+/i,
+    /(?:Floor|Fl)\.?\s*[a-zA-Z0-9-]+/i,
+    /(?:Building|Bldg)\.?\s*[a-zA-Z0-9-]+/i
+  ];
+  
+  // Buscar patrones de ADDRESS2 en la calle
+  for (const pattern of address2Patterns) {
+    const match = street.match(pattern);
+    if (match && match[0]) {
+      // Extraer ADDRESS2
+      address2 = match[0];
+      // Quitar ADDRESS2 de ADDRESS1
+      address1 = street.replace(match[0], '').trim();
+      // No buscar más patrones si ya encontramos uno
+      break;
+    }
+  }
+  
   // Crear un objeto con múltiples variantes de los parámetros para aumentar compatibilidad
   const result = {
-    // Parámetros estándar
-    address1: street,
+    // Parámetros estándar de ATTOM
+    address1: address1,
+    address2: address2,
     city,
     state,
     zip,
@@ -148,8 +175,10 @@ function parseAddress(fullAddress: string): any {
     street,
     street_address: street,
     streetAddress: street,
-    addressline1: street,
-    addressLine1: street,
+    addressline1: address1,
+    addressline2: address2,
+    addressLine1: address1,
+    addressLine2: address2,
     
     // Variantes de ciudad
     city_name: city,
@@ -177,7 +206,14 @@ function parseAddress(fullAddress: string): any {
     cityStateZip: `${city}, ${state} ${zip}`.trim()
   };
   
-  console.log('Dirección parseada:', { street, city, state, zip });
+  console.log('Dirección parseada:', { 
+    address1, 
+    address2, 
+    city, 
+    state, 
+    zip,
+    fullAddress 
+  });
   return result;
 }
 
@@ -256,7 +292,19 @@ class NewBackendPropertyService {
       if (lastSuccessfulFormat) {
         console.log(`Intentando primero con formato previo exitoso: ${lastSuccessfulFormat}`);
         try {
-          if (lastSuccessfulFormat.includes('Parámetros completos')) {
+          if (lastSuccessfulFormat.includes('address1, address2')) {
+            response = await this.makeApiRequest(
+              `${ATTOM_WRAPPER_URL}/api/property/details`, 
+              { 
+                address1: parsedAddress.address1,
+                address2: parsedAddress.address2 || '',
+                city: parsedAddress.city,
+                state: parsedAddress.state,
+                zip: parsedAddress.zip
+              },
+              'Formato previo exitoso (address1, address2)'
+            );
+          } else if (lastSuccessfulFormat.includes('Parámetros completos')) {
             response = await this.makeApiRequest(
               `${ATTOM_WRAPPER_URL}/api/property/details`, 
               parsedAddress,
@@ -277,16 +325,17 @@ class NewBackendPropertyService {
       // Si no hay formato exitoso previo o falló, intentar nuevos formatos
       if (!response) {
         const attemptSequence = [
-          // 1. Intento: usar parámetros básicos
+          // 1. Intento: usar address1 y address2 como requiere ATTOM
           {
             url: `${ATTOM_WRAPPER_URL}/api/property/details`,
             params: { 
               address1: parsedAddress.address1,
+              address2: parsedAddress.address2 || '',
               city: parsedAddress.city,
               state: parsedAddress.state,
               zip: parsedAddress.zip
             },
-            description: 'Parámetros básicos (address1, city, state, zip)'
+            description: 'Parámetros ATTOM (address1, address2, city, state, zip)'
           },
           
           // 2. Intento: dirección completa
@@ -296,7 +345,20 @@ class NewBackendPropertyService {
             description: 'Dirección completa (address)'
           },
           
-          // 3. Intento: street en lugar de address1
+          // 3. Intento: addressLine1 y addressLine2
+          {
+            url: `${ATTOM_WRAPPER_URL}/api/property/details`,
+            params: { 
+              addressLine1: parsedAddress.addressLine1,
+              addressLine2: parsedAddress.addressLine2 || '',
+              city: parsedAddress.city,
+              state: parsedAddress.state,
+              postal: parsedAddress.zip
+            },
+            description: 'Usando addressLine1/2 y postal'
+          },
+          
+          // 4. Intento: parámetros sin address2 (por si el formato antiguo sigue funcionando)
           {
             url: `${ATTOM_WRAPPER_URL}/api/property/details`,
             params: { 
@@ -308,33 +370,35 @@ class NewBackendPropertyService {
             description: 'Usando street en lugar de address1'
           },
           
-          // 4. Intento: addressLine1
-          {
-            url: `${ATTOM_WRAPPER_URL}/api/property/details`,
-            params: { 
-              addressLine1: parsedAddress.street,
-              city: parsedAddress.city,
-              state: parsedAddress.state,
-              postal: parsedAddress.zip
-            },
-            description: 'Usando addressLine1 y postal'
-          },
-          
           // 5. Intento: citystatezip combinados
           {
             url: `${ATTOM_WRAPPER_URL}/api/property/details`,
             params: { 
-              address: parsedAddress.street,
+              address: parsedAddress.address1,
+              address2: parsedAddress.address2 || '',
               citystatezip: parsedAddress.citystatezip
             },
-            description: 'Parámetro citystatezip combinado'
+            description: 'Usando address + address2 + citystatezip'
           },
           
           // 6. Intento: Endpoint alternativo
           {
             url: `${ATTOM_WRAPPER_URL}/api/property`,
+            params: { 
+              address1: parsedAddress.address1,
+              address2: parsedAddress.address2 || '',
+              city: parsedAddress.city,
+              state: parsedAddress.state,
+              zip: parsedAddress.zip
+            },
+            description: 'Endpoint alternativo /api/property con address1/2'
+          },
+          
+          // 7. Intento: Último recurso - solo pasar dirección completa al endpoint alternativo
+          {
+            url: `${ATTOM_WRAPPER_URL}/api/property`,
             params: { address },
-            description: 'Endpoint alternativo /api/property'
+            description: 'Endpoint alternativo /api/property con dirección completa'
           }
         ];
         
