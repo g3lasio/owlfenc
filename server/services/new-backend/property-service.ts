@@ -434,16 +434,34 @@ class NewBackendPropertyService {
         const propertyData: FullPropertyData = {
           owner: response.data.owner || 'No disponible',
           address: response.data.address || address,
-          sqft: response.data.buildingAreaSqFt || 0,
-          bedrooms: response.data.rooms?.bedrooms || 0,
-          bathrooms: response.data.rooms?.bathrooms || 0,
-          lotSize: response.data.lotSizeAcres ? `${response.data.lotSizeAcres} acres` : 'No disponible',
+          sqft: response.data.buildingAreaSqFt || response.data.sqft || 0,
+          bedrooms: response.data.rooms?.bedrooms || response.data.bedrooms || 0,
+          bathrooms: response.data.rooms?.bathrooms || response.data.bathrooms || 0,
+          lotSize: response.data.lotSizeAcres 
+            ? `${response.data.lotSizeAcres} acres` 
+            : response.data.lotSize || 'No disponible',
+          landSqft: response.data.lotSizeSqFt || 0,
           yearBuilt: response.data.yearBuilt || 0,
           propertyType: response.data.propertyType || 'Residencial',
           ownerOccupied: !!response.data.ownerOccupied,
           verified: true, // Los datos de ATTOM se consideran verificados
-          ownershipVerified: !!response.data.owner
+          ownershipVerified: !!response.data.owner,
+          // Información adicional de historial de propiedad
+          purchaseDate: response.data.saleTransHistory?.[0]?.saleTransDate || undefined,
+          purchasePrice: response.data.saleTransHistory?.[0]?.saleTransAmount || undefined,
+          previousOwner: response.data.saleTransHistory?.[1]?.seller || undefined
         };
+        
+        // Agregar historial de propietarios si está disponible
+        if (response.data.saleTransHistory && response.data.saleTransHistory.length > 0) {
+          propertyData.ownerHistory = response.data.saleTransHistory.map((entry: any) => ({
+            owner: entry.buyer || 'Desconocido',
+            purchaseDate: entry.saleTransDate,
+            purchasePrice: entry.saleTransAmount,
+            saleDate: entry.recordingDate,
+            salePrice: entry.saleTransAmount
+          }));
+        }
         
         console.log('Datos transformados:', JSON.stringify(propertyData, null, 2));
         
