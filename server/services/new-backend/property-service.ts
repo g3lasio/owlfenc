@@ -31,7 +31,9 @@ class NewBackendPropertyService {
       }
       
       // Realizamos la petición al wrapper
-      const response = await axios.get(`${ATTOM_WRAPPER_URL}/api/property`, {
+      console.log(`Conectando con ${ATTOM_WRAPPER_URL}/api/property-details?address=${encodeURIComponent(address)}`);
+      
+      const response = await axios.get(`${ATTOM_WRAPPER_URL}/api/property-details`, {
         params: { address }
       });
       
@@ -52,6 +54,9 @@ class NewBackendPropertyService {
           verified: true, // Los datos de ATTOM se consideran verificados
           ownershipVerified: !!response.data.owner
         };
+        
+        console.log('Datos recibidos del API:', JSON.stringify(response.data, null, 2));
+        console.log('Datos transformados:', JSON.stringify(propertyData, null, 2));
         
         // Guardar en caché
         if (!global.propertyCache) {
