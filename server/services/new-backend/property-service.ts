@@ -4,19 +4,29 @@ import { FullPropertyData } from '../../types/property';
 // URL del wrapper de ATTOM API
 const ATTOM_WRAPPER_URL = 'https://attom-wrapper.replit.app';
 
+// Constantes para tipos de errores
+const ERROR_TYPES = {
+  CONNECTION: 'CONNECTION_ERROR',
+  NOT_FOUND: 'PROPERTY_NOT_FOUND',
+  AUTH: 'AUTHENTICATION_ERROR',
+  VALIDATION: 'VALIDATION_ERROR',
+  UNKNOWN: 'UNKNOWN_ERROR'
+};
+
+// Variables para seguimiento de estado
+let lastSuccessfulFormat: string | null = null;
+let consecutiveErrors = 0;
+const MAX_CONSECUTIVE_ERRORS = 5;
+
 /**
  * Parsea una dirección completa en sus componentes
  * 
  * @param fullAddress Dirección completa (ej: "123 Main St, San Francisco, CA 94105")
  * @returns Objeto con los componentes de la dirección
  */
-function parseAddress(fullAddress: string): {
-  address1: string;
-  city: string;
-  state: string;
-  zip: string;
-} {
+function parseAddress(fullAddress: string): any {
   console.log('Parseando dirección:', fullAddress);
+  
   if (!fullAddress) {
     throw new Error('Dirección vacía');
   }
@@ -25,61 +35,189 @@ function parseAddress(fullAddress: string): {
   const cleanAddress = fullAddress.replace(/\s+/g, ' ').trim();
   const parts = cleanAddress.split(',').map(part => part.trim());
   
-  if (parts.length < 3) {
-    throw new Error('Formato de dirección inválido. Se requiere: Calle, Ciudad, Estado ZIP');
-  }
-
-  // Extraer el código postal si está presente
-  let zip = '';
+  // Extraer los componentes según las partes disponibles
+  let street = parts[0] || '';
+  let city = '';
   let state = '';
-  if (parts.length > 1) {
-    const lastPart = parts[parts.length - 1];
-    // Buscar código postal al final (formato "TX 12345" o sólo "12345")
-    const zipMatch = lastPart.match(/(\d{5}(-\d{4})?)/);
-    if (zipMatch) {
-      zip = zipMatch[0];
-      // Si hay código postal, el estado podría estar en la misma parte
-      const stateMatch = lastPart.match(/([A-Z]{2})/);
-      if (stateMatch) {
-        state = stateMatch[0];
+  let zip = '';
+  
+  // Procesar según el número de partes
+  if (parts.length === 1) {
+    // Solo hay calle
+    console.log('ALERTA: Solo se proporcionó la calle sin ciudad ni estado');
+  }
+  else if (parts.length === 2) {
+    // Formato: "Calle, Ciudad Estado ZIP" o "Calle, Ciudad"
+    const lastPart = parts[1].split(' ');
+    
+    if (lastPart.length >= 2) {
+      // Verificar si el último elemento es un código postal
+      const lastElement = lastPart[lastPart.length - 1];
+      if (/^\d{5}(-\d{4})?$/.test(lastElement)) {
+        zip = lastElement;
+        
+        // Si el penúltimo es un estado de 2 letras
+        if (lastPart.length > 1 && /^[A-Z]{2}$/.test(lastPart[lastPart.length - 2])) {
+          state = lastPart[lastPart.length - 2];
+          city = lastPart.slice(0, lastPart.length - 2).join(' ');
+        } else {
+          // No hay estado, todo lo demás es ciudad
+          city = lastPart.slice(0, lastPart.length - 1).join(' ');
+        }
+      } else {
+        // No hay código postal
+        // Verificar si el último elemento parece un estado
+        if (/^[A-Z]{2}$/.test(lastElement)) {
+          state = lastElement;
+          city = lastPart.slice(0, lastPart.length - 1).join(' ');
+        } else {
+          // Todo es ciudad
+          city = parts[1];
+        }
       }
     } else {
-      // Si no hay código postal, el último podría ser el estado
-      if (lastPart.length <= 3) {
-        state = lastPart;
+      // Solo hay ciudad
+      city = parts[1];
+    }
+  }
+  else {
+    // 3 o más partes: "Calle, Ciudad, Estado ZIP" o variantes
+    city = parts[1];
+    
+    // La última parte puede tener estado y código postal
+    const lastPart = parts[parts.length - 1].split(' ');
+    
+    if (lastPart.length >= 2) {
+      // El último elemento puede ser un código postal
+      const lastElement = lastPart[lastPart.length - 1];
+      if (/^\d{5}(-\d{4})?$/.test(lastElement)) {
+        zip = lastElement;
+        state = lastPart[0]; // Asumimos que el estado está antes del ZIP
+      } else {
+        // No hay ZIP identificable, asumimos que todo es estado
+        state = parts[parts.length - 1];
+      }
+    } else {
+      // Solo estado
+      state = parts[parts.length - 1];
+    }
+  }
+  
+  // Limpiar y asegurar el formato correcto para cada componente
+  street = street.trim();
+  city = city.trim();
+  
+  // Normalizar estado a 2 letras si es posible
+  if (state) {
+    state = state.trim().toUpperCase();
+    if (state.length > 2) {
+      // Intentar convertir nombres completos de estados a abreviaciones
+      const stateMap: {[key: string]: string} = {
+        'ALABAMA': 'AL', 'ALASKA': 'AK', 'ARIZONA': 'AZ', 'ARKANSAS': 'AR', 'CALIFORNIA': 'CA',
+        'COLORADO': 'CO', 'CONNECTICUT': 'CT', 'DELAWARE': 'DE', 'FLORIDA': 'FL', 'GEORGIA': 'GA',
+        'HAWAII': 'HI', 'IDAHO': 'ID', 'ILLINOIS': 'IL', 'INDIANA': 'IN', 'IOWA': 'IA',
+        'KANSAS': 'KS', 'KENTUCKY': 'KY', 'LOUISIANA': 'LA', 'MAINE': 'ME', 'MARYLAND': 'MD',
+        'MASSACHUSETTS': 'MA', 'MICHIGAN': 'MI', 'MINNESOTA': 'MN', 'MISSISSIPPI': 'MS', 'MISSOURI': 'MO',
+        'MONTANA': 'MT', 'NEBRASKA': 'NE', 'NEVADA': 'NV', 'NEW HAMPSHIRE': 'NH', 'NEW JERSEY': 'NJ',
+        'NEW MEXICO': 'NM', 'NEW YORK': 'NY', 'NORTH CAROLINA': 'NC', 'NORTH DAKOTA': 'ND', 'OHIO': 'OH',
+        'OKLAHOMA': 'OK', 'OREGON': 'OR', 'PENNSYLVANIA': 'PA', 'RHODE ISLAND': 'RI', 'SOUTH CAROLINA': 'SC',
+        'SOUTH DAKOTA': 'SD', 'TENNESSEE': 'TN', 'TEXAS': 'TX', 'UTAH': 'UT', 'VERMONT': 'VT',
+        'VIRGINIA': 'VA', 'WASHINGTON': 'WA', 'WEST VIRGINIA': 'WV', 'WISCONSIN': 'WI', 'WYOMING': 'WY'
+      };
+      
+      if (stateMap[state]) {
+        state = stateMap[state];
+      } else {
+        // Si no podemos convertirlo, mantenemos solo las primeras 2 letras
+        state = state.substring(0, 2);
       }
     }
   }
   
-  // Si no se encontró el estado por el método anterior, buscar en la penúltima parte
-  if (!state && parts.length > 2) {
-    const statePart = parts[parts.length - 2];
-    const stateMatch = statePart.match(/([A-Z]{2})/);
-    if (stateMatch) {
-      state = stateMatch[0];
-    } else if (statePart.length <= 3) {
-      state = statePart;
-    }
-  }
-
-  // La ciudad suele estar en la penúltima parte o antepenúltima si hay código postal separado
-  let city = parts.length > 2 ? parts[parts.length - 2] : '';
-  // Limpiar el estado de la parte de la ciudad si están juntos
-  if (city.includes(state)) {
-    city = city.replace(state, '').trim();
-  }
-
-  // La dirección de calle es la primera parte
-  const address1 = parts[0];
-
-  console.log('Dirección parseada:', { address1, city, state, zip });
-  return { address1, city, state, zip };
+  zip = zip.trim();
+  
+  // Crear un objeto con múltiples variantes de los parámetros para aumentar compatibilidad
+  const result = {
+    // Parámetros estándar
+    address1: street,
+    city,
+    state,
+    zip,
+    
+    // Alternativas comunes 
+    street,
+    street_address: street,
+    streetAddress: street,
+    addressline1: street,
+    addressLine1: street,
+    
+    // Variantes de ciudad
+    city_name: city,
+    cityname: city,
+    
+    // Variantes de estado
+    state_code: state,
+    statecode: state,
+    stateCode: state,
+    
+    // Variantes de código postal 
+    postal: zip,
+    postalcode: zip,
+    postalCode: zip,
+    zipcode: zip,
+    zipCode: zip,
+    
+    // Dirección completa 
+    address: fullAddress,
+    fullAddress,
+    full_address: fullAddress,
+    
+    // Combinación ciudad+estado+código
+    citystatezip: `${city}, ${state} ${zip}`.trim(),
+    cityStateZip: `${city}, ${state} ${zip}`.trim()
+  };
+  
+  console.log('Dirección parseada:', { street, city, state, zip });
+  return result;
 }
 
 /**
  * Servicio para obtener detalles de propiedad utilizando el wrapper de ATTOM API
  */
 class NewBackendPropertyService {
+  private async makeApiRequest(url: string, params: any, description: string): Promise<any> {
+    try {
+      console.log(`Intento ${description}:`, JSON.stringify(params));
+      
+      const response = await axios.get(url, { 
+        params,
+        timeout: 10000,  // 10 segundos
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log(`✅ ${description} exitoso!`);
+      
+      // Registrar el formato exitoso para futuros intentos
+      lastSuccessfulFormat = description;
+      consecutiveErrors = 0;
+      
+      return response;
+    } catch (error: any) {
+      console.log(`❌ ${description} falló:`, error.message);
+      
+      if (error.response?.data) {
+        console.log('Detalles del error:', JSON.stringify(error.response.data));
+      }
+      
+      // Incrementar contador de errores consecutivos
+      consecutiveErrors++;
+      
+      throw error;
+    }
+  }
   
   /**
    * Obtiene detalles de una propiedad a partir de su dirección
@@ -102,64 +240,129 @@ class NewBackendPropertyService {
         }
       }
       
-      // Intentamos diferentes formatos para la llamada al API
+      // Si tenemos demasiados errores consecutivos, implementar un retraso para evitar sobrecarga
+      if (consecutiveErrors > MAX_CONSECUTIVE_ERRORS) {
+        console.log(`⚠️ Se detectaron ${consecutiveErrors} errores consecutivos, implementando retraso...`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+      
+      // Parsear la dirección para obtener sus componentes
+      const parsedAddress = parseAddress(address);
+      
       let response = null;
       let error = null;
       
-      // Parsear la dirección para obtener sus componentes
-      const { address1, city, state, zip } = parseAddress(address);
-      
-      // 1. Intento: usar parámetros separados con validación
-      console.log('Intento 1: Parámetros separados con formato address1, city, state, zip');
-      try {
-        if (!address1 || !city || !state || !zip) {
-          console.log('Datos de dirección incompletos:', { address1, city, state, zip });
-          throw new Error('Dirección incompleta');
-        }
-        
-        // Asegurar que state sea un código de 2 letras
-        const stateCode = state.trim().substring(0, 2).toUpperCase();
-        
-        response = await axios.get(`${ATTOM_WRAPPER_URL}/api/property/details`, {
-          params: { 
-            address1: address1.trim(),
-            city: city.trim(),
-            state: stateCode,
-            zip: zip.trim()
-          }
-        });
-        console.log('Intento 1 exitoso!');
-      } catch (err: any) {
-        error = err;
-        console.log('Intento 1 falló:', err.message);
-        
-        // 2. Intento: usar sólo la dirección completa como "address" 
-        console.log('Intento 2: Parámetro completo "address"');
+      // Si ya tenemos un formato exitoso previo, intentarlo primero
+      if (lastSuccessfulFormat) {
+        console.log(`Intentando primero con formato previo exitoso: ${lastSuccessfulFormat}`);
         try {
-          response = await axios.get(`${ATTOM_WRAPPER_URL}/api/property/details`, {
-            params: { address }
-          });
-          console.log('Intento 2 exitoso!');
-        } catch (err2: any) {
-          console.log('Intento 2 falló:', err2.message);
+          if (lastSuccessfulFormat.includes('Parámetros completos')) {
+            response = await this.makeApiRequest(
+              `${ATTOM_WRAPPER_URL}/api/property/details`, 
+              parsedAddress,
+              'Formato previo exitoso (completo)'
+            );
+          } else if (lastSuccessfulFormat.includes('address')) {
+            response = await this.makeApiRequest(
+              `${ATTOM_WRAPPER_URL}/api/property/details`, 
+              { address },
+              'Formato previo exitoso (address)'
+            );
+          }
+        } catch (err) {
+          console.log('El formato previo exitoso ya no funciona, probando alternativas...');
+        }
+      }
+      
+      // Si no hay formato exitoso previo o falló, intentar nuevos formatos
+      if (!response) {
+        const attemptSequence = [
+          // 1. Intento: usar parámetros básicos
+          {
+            url: `${ATTOM_WRAPPER_URL}/api/property/details`,
+            params: { 
+              address1: parsedAddress.address1,
+              city: parsedAddress.city,
+              state: parsedAddress.state,
+              zip: parsedAddress.zip
+            },
+            description: 'Parámetros básicos (address1, city, state, zip)'
+          },
           
-          // 3. Intento: Probar con el endpoint raíz como último recurso
-          console.log('Intento 3: Endpoint raíz y parámetro address');
+          // 2. Intento: dirección completa
+          {
+            url: `${ATTOM_WRAPPER_URL}/api/property/details`,
+            params: { address },
+            description: 'Dirección completa (address)'
+          },
+          
+          // 3. Intento: street en lugar de address1
+          {
+            url: `${ATTOM_WRAPPER_URL}/api/property/details`,
+            params: { 
+              street: parsedAddress.street,
+              city: parsedAddress.city,
+              state: parsedAddress.state,
+              zip: parsedAddress.zip
+            },
+            description: 'Usando street en lugar de address1'
+          },
+          
+          // 4. Intento: addressLine1
+          {
+            url: `${ATTOM_WRAPPER_URL}/api/property/details`,
+            params: { 
+              addressLine1: parsedAddress.street,
+              city: parsedAddress.city,
+              state: parsedAddress.state,
+              postal: parsedAddress.zip
+            },
+            description: 'Usando addressLine1 y postal'
+          },
+          
+          // 5. Intento: citystatezip combinados
+          {
+            url: `${ATTOM_WRAPPER_URL}/api/property/details`,
+            params: { 
+              address: parsedAddress.street,
+              citystatezip: parsedAddress.citystatezip
+            },
+            description: 'Parámetro citystatezip combinado'
+          },
+          
+          // 6. Intento: Endpoint alternativo
+          {
+            url: `${ATTOM_WRAPPER_URL}/api/property`,
+            params: { address },
+            description: 'Endpoint alternativo /api/property'
+          }
+        ];
+        
+        // Intentar cada formato en secuencia
+        for (const attempt of attemptSequence) {
           try {
-            response = await axios.get(`${ATTOM_WRAPPER_URL}/api/property`, {
-              params: { address }
-            });
-            console.log('Intento 3 exitoso!');
-          } catch (err3: any) {
-            console.log('Intento 3 falló:', err3.message);
-            // Si todos los intentos fallaron, usamos el error original
-            throw error;
+            response = await this.makeApiRequest(
+              attempt.url, 
+              attempt.params, 
+              attempt.description
+            );
+            
+            // Si tuvimos éxito, salir del bucle
+            if (response) break;
+          } catch (err: any) {
+            error = err;
+            // Continuar con el siguiente intento
           }
         }
       }
       
-      console.log('Respuesta del wrapper de ATTOM:', response?.status);
+      // Si ningún intento funcionó, lanzar el último error
+      if (!response && error) {
+        console.error('Todos los intentos de conexión fallaron');
+        throw error;
+      }
       
+      // Procesar la respuesta exitosa si la hay
       if (response?.status === 200 && response?.data) {
         console.log('Datos recibidos del API:', JSON.stringify(response.data, null, 2));
         
@@ -212,6 +415,77 @@ class NewBackendPropertyService {
       // Re-lanzamos el error para que sea manejado por el llamador
       throw error;
     }
+  }
+  
+  /**
+   * Método para obtener detalles de propiedad con manejo mejorado de errores.
+   * Intenta con la API, pero incluye log detallado de errores y estado para
+   * ayudar en la depuración y optimización.
+   */
+  async getPropertyDetailsWithDiagnostics(address: string): Promise<{
+    data: FullPropertyData | null;
+    status: string;
+    error?: any;
+    diagnostics: any;
+  }> {
+    const result = {
+      data: null as FullPropertyData | null,
+      status: 'UNKNOWN',
+      diagnostics: {
+        attempts: 0,
+        lastError: null,
+        timestamp: Date.now(),
+        parsedAddress: null
+      }
+    };
+    
+    try {
+      console.log('Iniciando búsqueda con diagnósticos para:', address);
+      
+      // Parsear la dirección (para diagnóstico)
+      try {
+        result.diagnostics.parsedAddress = parseAddress(address);
+      } catch (e: any) {
+        result.diagnostics.parseError = e.message;
+      }
+      
+      // Intentar obtener los datos
+      result.data = await this.getPropertyByAddress(address);
+      
+      if (result.data) {
+        result.status = 'SUCCESS';
+      } else {
+        result.status = 'NOT_FOUND';
+      }
+    } catch (error: any) {
+      // Registrar información detallada del error
+      result.status = 'ERROR';
+      result.error = {
+        message: error.message,
+        code: error.response?.status,
+        details: error.response?.data
+      };
+      
+      result.diagnostics.lastError = {
+        message: error.message,
+        stack: error.stack,
+        apiErrorCode: error.response?.status,
+        responseData: error.response?.data
+      };
+      
+      // Determinar categoría de error para mejor diagnóstico
+      if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+        result.status = 'CONNECTION_ERROR';
+      } else if (error.response?.status === 401 || error.response?.status === 403) {
+        result.status = 'AUTHENTICATION_ERROR';
+      } else if (error.response?.status === 400) {
+        result.status = 'VALIDATION_ERROR';
+      } else if (error.response?.status === 404) {
+        result.status = 'NOT_FOUND';
+      }
+    }
+    
+    return result;
   }
 }
 
