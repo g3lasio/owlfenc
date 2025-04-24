@@ -261,8 +261,8 @@ export default function PropertyOwnershipVerifier() {
 
   return (
     <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-2">Verificador de Propiedad</h1>
-      <p className="text-muted-foreground mb-6">
+      <h1 className="text-3xl font-bold mb-2 text-center">Verificador de Propiedad</h1>
+      <p className="text-muted-foreground mb-6 text-center">
         Verifica la propiedad para evitar estafas y asegurarte de que estás
         tratando con el propietario legítimo.
       </p>
