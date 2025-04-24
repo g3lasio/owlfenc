@@ -77,6 +77,7 @@ export interface IStorage {
   createPaymentHistory(payment: InsertPaymentHistory): Promise<PaymentHistory>;
 }
 
+// MemStorage se mantiene para compatibilidad, pero ya no se usa
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private projects: Map<number, Project>;
@@ -122,9 +123,16 @@ export class MemStorage implements IStorage {
       userSubscriptions: 1,
       paymentHistory: 1
     };
+  }
+}
 
-    // Add some default data
-    this.seedData();
+// Implementación de almacenamiento en base de datos
+import { db } from './db';
+import { eq, and, desc } from 'drizzle-orm';
+
+export class DatabaseStorage implements IStorage {
+  constructor() {
+    // Ninguna inicialización necesaria, usamos la conexión de db.ts
   }
 
   async updateUser(id: number, userData: Partial<User>): Promise<User> {
