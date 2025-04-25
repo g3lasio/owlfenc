@@ -16,6 +16,7 @@ import { HiMail, HiPhone } from "react-icons/hi";
 import { useAuth } from "@/contexts/AuthContext";
 import PhoneAuth from "@/components/auth/PhoneAuth";
 import EmailLinkAuth from "@/components/auth/EmailLinkAuth";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Esquema de validación para el formulario
 const loginSchema = z.object({
