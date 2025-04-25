@@ -197,6 +197,12 @@ export default function Sidebar() {
                 Perfil Personal
               </Button>
             </Link>
+            <Link href="/security">
+              <Button variant="ghost" className="w-full justify-start">
+                <i className="ri-shield-keyhole-line mr-2"></i>
+                Seguridad
+              </Button>
+            </Link>
             <Link href="/billing">
               <Button variant="ghost" className="w-full justify-start">
                 <CreditCard className="h-4 w-4 mr-2" />

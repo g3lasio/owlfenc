@@ -267,6 +267,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             <div className="space-y-1.5 mb-4">
               {[
                 { name: "Perfil Personal", icon: "ri-user-settings-line", path: "/account" },
+                { name: "Seguridad", icon: "ri-shield-keyhole-line", path: "/security" },
                 { name: "Facturación", icon: "ri-bank-card-line", path: "/billing" },
                 { name: "Mi Suscripción", icon: "ri-vip-crown-line", path: "/subscription" }
               ].map((item, index) => (

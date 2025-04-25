@@ -28,6 +28,7 @@ import RecuperarPassword from "@/pages/RecuperarPassword";
 import ResetPassword from "@/pages/ResetPassword";
 import EmailLinkCallback from "@/pages/EmailLinkCallback";
 import AppleCallback from "@/pages/AppleCallback";
+import SecuritySettings from "@/pages/SecuritySettings";
 import { AuthProvider } from "@/contexts/AuthContext";
 
 // Componente para páginas protegidas
@@ -114,6 +115,9 @@ function Router() {
       </Route>
       <Route path="/history">
         {() => <ProtectedRoute component={History} />}
+      </Route>
+      <Route path="/security">
+        {() => <ProtectedRoute component={SecuritySettings} />}
       </Route>
 
       {/* Página no encontrada */}
