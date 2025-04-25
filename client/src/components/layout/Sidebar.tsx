@@ -181,7 +181,7 @@ export default function Sidebar() {
             <Link href="/ai-project-manager">
               <Button variant="ghost" className="w-full justify-start">
                 <i className="ri-brain-line mr-2 text-lg"></i>
-                Gestión Inteligente
+                AI Project Manager
               </Button>
             </Link>
           </div>

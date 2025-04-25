@@ -222,7 +222,8 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
               {[
                 { name: "Verificación de Propiedad", icon: "ri-shield-keyhole-line", path: "/property-verifier" },
                 { name: "Mervin DeepSearch", icon: "ri-robot-2-line", path: "/permit-advisor" },
-                { name: "Gestión Inteligente", icon: "ri-brain-line", path: "/ai-project-manager" }
+                { name: "AI Project Manager", icon: "ri-brain-line", path: "/ai-project-manager" },
+                { name: "AR Fence Estimator", icon: "ri-3d-cube-sphere-line", path: "/ar-fence-estimator" }
               ].map((item, index) => (
                 <motion.div
                   key={item.name}
