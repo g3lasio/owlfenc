@@ -17,9 +17,14 @@ export const mainNavigationConfig: NavigationSection[] = [
         icon: "ri-robot-2-line",
       },
       {
-        label: "Gestor de Proyectos IA",
+        label: "AI Project Manager",
         path: "/ai-project-manager",
         icon: "ri-brain-line",
+      },
+      {
+        label: "AR Fence Estimator",
+        path: "/ar-fence-estimator",
+        icon: "ri-3d-cube-sphere-line",
       },
     ],
   },
