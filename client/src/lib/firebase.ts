@@ -36,7 +36,10 @@ import {
   updateEmail,
   linkWithPopup,
   unlink,
-  deleteUser
+  deleteUser,
+  multiFactor,
+  PhoneAuthProvider,
+  PhoneMultiFactorGenerator
 } from "firebase/auth";
 
 // Verificamos si estamos en modo de desarrollo en Replit
@@ -587,41 +590,182 @@ export const unlinkProvider = async (providerId: string) => {
 };
 
 // Login con teléfono
+/**
+ * Función para iniciar el proceso de login con número de teléfono
+ * @param phoneNumber Número de teléfono en formato internacional (e.j. +1234567890)
+ * @param recaptchaContainerId ID del elemento HTML que contendrá el reCAPTCHA
+ * @returns Objeto ConfirmationResult para verificar el código SMS
+ */
 export const initPhoneLogin = async (phoneNumber: string, recaptchaContainerId: string) => {
   try {
-    // Configurar recaptcha
+    // Si estamos en modo de desarrollo, simular el proceso
+    if (devMode) {
+      console.log("Usando autenticación por teléfono en modo desarrollo");
+      // Crear un objeto simulado para confirmationResult
+      return {
+        confirm: (code: string) => {
+          console.log(`Verificando código ${code} en modo desarrollo`);
+          return Promise.resolve({ user: createDevUser() });
+        }
+      };
+    }
+
+    // Configurar reCAPTCHA
     const recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainerId, {
       size: 'normal',
       callback: () => {
         // reCAPTCHA resuelto, permitir al usuario continuar
+        console.log("reCAPTCHA resuelto correctamente");
       },
       'expired-callback': () => {
-        // Respuesta de reCAPTCHA expirada, pedirle al usuario que resuelva de nuevo
+        // Respuesta de reCAPTCHA expirada
+        console.log("reCAPTCHA ha expirado, por favor intenta de nuevo");
       }
     });
 
+    console.log("reCAPTCHA inicializado correctamente");
+
     // Enviar código SMS
+    console.log(`Enviando SMS al número ${phoneNumber}`);
     const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
+    console.log("Código SMS enviado correctamente");
 
     // Destruir el reCAPTCHA para evitar duplicados
     if (recaptchaVerifier) {
       recaptchaVerifier.clear();
+      console.log("reCAPTCHA eliminado para evitar duplicados");
     }
 
     return confirmationResult;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error iniciando sesión con teléfono:", error);
+    console.error("Código de error:", error.code);
+    console.error("Mensaje de error:", error.message);
+    
+    // Si estamos en modo de desarrollo y hay un error, simular el proceso
+    if (devMode) {
+      console.log("Error en modo de desarrollo, simulando autenticación");
+      return {
+        confirm: (code: string) => {
+          console.log(`Verificando código ${code} en modo desarrollo (después de error)`);
+          return Promise.resolve({ user: createDevUser() });
+        }
+      };
+    }
+    
     throw error;
   }
 };
 
-// Verificar código SMS
+/**
+ * Función para verificar el código SMS recibido
+ * @param confirmationResult Objeto ConfirmationResult devuelto por initPhoneLogin
+ * @param code Código SMS ingresado por el usuario
+ * @returns Usuario autenticado
+ */
 export const verifyPhoneCode = async (confirmationResult: any, code: string) => {
   try {
+    console.log(`Verificando código SMS: ${code}`);
     const result = await confirmationResult.confirm(code);
+    console.log("Código SMS verificado correctamente");
     return result.user;
-  } catch (error) {
-    console.error("Error verificando código:", error);
+  } catch (error: any) {
+    console.error("Error verificando código SMS:", error);
+    console.error("Código de error:", error.code);
+    console.error("Mensaje de error:", error.message);
+    throw error;
+  }
+};
+
+/**
+ * Función para configurar autenticación multi-factor con SMS
+ * @param user Usuario para el que se configurará MFA
+ * @param phoneNumber Número de teléfono en formato internacional
+ * @param recaptchaContainerId ID del elemento HTML que contendrá el reCAPTCHA
+ * @returns Promise que resuelve cuando la configuración está completa
+ */
+export const enrollMfaPhone = async (user: any, phoneNumber: string, recaptchaContainerId: string) => {
+  try {
+    // Si estamos en modo desarrollo, simular el proceso
+    if (devMode) {
+      console.log("Simulando inscripción MFA en modo desarrollo");
+      return true;
+    }
+    
+    // Obtener instancia multiFactor para el usuario
+    const multiFactorUser = multiFactor(user);
+    
+    // Configurar reCAPTCHA para la verificación
+    const recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainerId, {
+      size: 'normal',
+      callback: () => console.log("reCAPTCHA resuelto para MFA"),
+      'expired-callback': () => console.log("reCAPTCHA expirado para MFA"),
+    });
+    
+    // Iniciar la inscripción con teléfono
+    const phoneInfoOptions = {
+      phoneNumber: phoneNumber,
+      session: await multiFactorUser.getSession()
+    };
+    
+    // Enviar código de verificación
+    const phoneAuthProvider = new PhoneAuthProvider(auth);
+    const verificationId = await phoneAuthProvider.verifyPhoneNumber(
+      phoneInfoOptions, 
+      recaptchaVerifier
+    );
+    
+    // Limpiar reCAPTCHA
+    recaptchaVerifier.clear();
+    
+    return verificationId;
+  } catch (error: any) {
+    console.error("Error en inscripción MFA:", error);
+    console.error("Código:", error.code);
+    console.error("Mensaje:", error.message);
+    throw error;
+  }
+};
+
+/**
+ * Completa la inscripción MFA verificando el código SMS
+ * @param user Usuario actual
+ * @param verificationId ID de verificación obtenido de enrollMfaPhone
+ * @param verificationCode Código SMS ingresado por el usuario
+ * @param displayName Nombre a mostrar para este factor (opcional)
+ */
+export const completeMfaEnrollment = async (
+  user: any, 
+  verificationId: string, 
+  verificationCode: string, 
+  displayName: string = "Mi teléfono"
+) => {
+  try {
+    // Si estamos en modo desarrollo, simular el proceso
+    if (devMode) {
+      console.log(`Simulando completar MFA con código ${verificationCode} en modo desarrollo`);
+      return true;
+    }
+    
+    // Crear credenciales con el código verificado
+    const phoneAuthCredential = PhoneAuthProvider.credential(
+      verificationId, 
+      verificationCode
+    );
+    
+    // Crear sesión multi-factor
+    const multiFactorAssertion = PhoneMultiFactorGenerator.assertion(phoneAuthCredential);
+    
+    // Completar inscripción en multi-factor
+    const multiFactorUser = multiFactor(user);
+    await multiFactorUser.enroll(multiFactorAssertion, displayName);
+    
+    console.log("Inscripción MFA completada exitosamente");
+    return true;
+  } catch (error: any) {
+    console.error("Error completando inscripción MFA:", error);
+    console.error("Código:", error.code);
+    console.error("Mensaje:", error.message);
     throw error;
   }
 };

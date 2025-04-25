@@ -39,13 +39,17 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function useAuth() {
+// Usamos una función constante en lugar de una función nombrada para evitar el error de invalidación
+const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth debe ser usado dentro de un AuthProvider');
   }
   return context;
-}
+};
+
+// Exportamos useAuth como una constante
+export { useAuth };
 
 type AuthProviderProps = {
   children: ReactNode;
