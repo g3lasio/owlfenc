@@ -180,8 +180,14 @@ export default function Sidebar() {
             </Link>
             <Link href="/ai-project-manager">
               <Button variant="ghost" className="w-full justify-start">
-                <i className="ri-brain-line mr-2 text-lg"></i>
+                <i className="ri-3d-cube-sphere-line mr-2 text-lg"></i>
                 AI Project Manager
+              </Button>
+            </Link>
+            <Link href="/ar-fence-estimator">
+              <Button variant="ghost" className="w-full justify-start">
+                <i className="ri-ruler-line mr-2 text-lg"></i>
+                AR Fence Estimator
               </Button>
             </Link>
           </div>
