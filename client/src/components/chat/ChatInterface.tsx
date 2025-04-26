@@ -5,6 +5,7 @@ import ChatFooter from "./ChatFooter";
 import TypingIndicator from "./TypingIndicator";
 import EstimatePreview from "../templates/EstimatePreview";
 import ContractPreview from "../templates/ContractPreview";
+import ManualEstimateForm from "../estimates/ManualEstimateForm";
 import { processChatMessage } from "@/lib/openai";
 import { downloadEstimatePDF, downloadContractPDF } from "@/lib/pdf";
 import { Button } from "@/components/ui/button";
@@ -93,17 +94,35 @@ export default function ChatInterface() {
     }
   };
   
+  const [showManualForm, setShowManualForm] = useState(false);
+  
   const activateManualEstimate = () => {
-    // Here we'll implement the manual estimate creation in the future
-    // For now, we just set up the initial state to show we're in manual mode
     setIsChatActive(true);
+    setShowManualForm(true);
     setMessages([
       {
         id: "manual-welcome",
-        content: "Bienvenido al modo de estimación manual. Aquí podrás crear tu estimado paso a paso.",
+        content: "Bienvenido al modo de estimación manual. Usa el formulario a continuación para crear tu estimado paso a paso.",
         sender: "assistant",
       },
     ]);
+  };
+  
+  const handleManualEstimateGenerated = (html: string) => {
+    setShowManualForm(false);
+    
+    // Add template message with the generated estimate
+    const templateMessage: Message = {
+      id: `template-${Date.now()}`,
+      content: "Aquí está el estimado que has creado:",
+      sender: "assistant",
+      template: {
+        type: "estimate",
+        html: html,
+      },
+    };
+    
+    setMessages((prev) => [...prev, templateMessage]);
   };
 
   // Auto-scroll to bottom when messages change
@@ -387,12 +406,19 @@ export default function ChatInterface() {
                   />
                 );
               })}
+              
+              {/* Mostrar el formulario de estimación manual si estamos en modo manual */}
+              {showManualForm && (
+                <div className="mt-6 p-4 bg-card rounded-lg border">
+                  <ManualEstimateForm onEstimateGenerated={handleManualEstimateGenerated} />
+                </div>
+              )}
             </>
           )}
         </div>
 
         {/* Chat Input */}
-        {isChatActive && ( // Only render ChatInput if chat is active
+        {isChatActive && !showManualForm && ( // Solo mostrar el input si chat está activo y no estamos en modo manual
           <ChatInput onSendMessage={handleSendMessage} isDisabled={isProcessing} />
         )}
         {/* Footer with legal links */}
