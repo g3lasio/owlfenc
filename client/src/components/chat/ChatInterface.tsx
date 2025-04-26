@@ -8,6 +8,8 @@ import ContractPreview from "../templates/ContractPreview";
 import { processChatMessage } from "@/lib/openai";
 import { downloadEstimatePDF, downloadContractPDF } from "@/lib/pdf";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
 export interface Message {
@@ -27,7 +29,8 @@ export default function ChatInterface() {
   const [context, setContext] = useState<Record<string, any>>({});
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [isChatActive, setIsChatActive] = useState(false); // Added state variable
+  const [isChatActive, setIsChatActive] = useState(false);
+  const [isAIMode, setIsAIMode] = useState(true); // Toggle between AI (Mervin) and manual modes
 
   const ProgressBar = () => (
     <div className="fixed top-16 left-0 right-0 z-50 px-4 py-2 bg-background/80 backdrop-blur-sm border-b">
@@ -88,6 +91,19 @@ export default function ChatInterface() {
     } finally {
       setIsProcessing(false);
     }
+  };
+  
+  const activateManualEstimate = () => {
+    // Here we'll implement the manual estimate creation in the future
+    // For now, we just set up the initial state to show we're in manual mode
+    setIsChatActive(true);
+    setMessages([
+      {
+        id: "manual-welcome",
+        content: "Bienvenido al modo de estimación manual. Aquí podrás crear tu estimado paso a paso.",
+        sender: "assistant",
+      },
+    ]);
   };
 
   // Auto-scroll to bottom when messages change
@@ -247,27 +263,70 @@ export default function ChatInterface() {
         >
           {!isChatActive ? (
             <div className="flex-1 flex items-center justify-center">
-              <div className="text-center">
+              <div className="text-center max-w-xl mx-auto">
                 <h2 className="text-2xl font-bold mb-4">¿Necesitas ayuda con un estimado?</h2>
-                <p className="text-muted-foreground mb-6">Mervin está listo para asistirte cuando lo necesites</p>
-                <Button
-                  size="lg"
-                  onClick={activateChat}
-                  disabled={isProcessing}
-                  className="gap-2"
-                >
-                  {isProcessing ? (
+                <p className="text-muted-foreground mb-8">Elige cómo quieres crear tu estimado</p>
+                
+                <div className="flex items-center justify-center space-x-2 mb-6">
+                  <Label htmlFor="estimate-mode" className={`text-sm ${!isAIMode ? 'font-bold' : ''}`}>
+                    Modo Manual
+                  </Label>
+                  <Switch
+                    id="estimate-mode"
+                    checked={isAIMode}
+                    onCheckedChange={setIsAIMode}
+                  />
+                  <Label htmlFor="estimate-mode" className={`text-sm ${isAIMode ? 'font-bold' : ''}`}>
+                    Modo Mervin IA
+                  </Label>
+                </div>
+                
+                <div className="bg-muted/50 rounded-lg p-5 mb-8">
+                  {isAIMode ? (
                     <>
-                      <i className="ri-loader-4-line animate-spin"></i>
-                      Activando Mervin...
+                      <h3 className="text-lg font-semibold mb-2">Modo Mervin IA</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Mervin te guiará con preguntas para generar un estimado completo. 
+                        Ideal para quienes quieren un proceso rápido y asistido.
+                      </p>
+                      <Button
+                        size="lg"
+                        onClick={activateChat}
+                        disabled={isProcessing}
+                        className="gap-2 w-full"
+                      >
+                        {isProcessing ? (
+                          <>
+                            <i className="ri-loader-4-line animate-spin"></i>
+                            Activando Mervin...
+                          </>
+                        ) : (
+                          <>
+                            <i className="ri-robot-line"></i>
+                            Chatear con Mervin
+                          </>
+                        )}
+                      </Button>
                     </>
                   ) : (
                     <>
-                      <i className="ri-robot-line"></i>
-                      Chatear con Mervin
+                      <h3 className="text-lg font-semibold mb-2">Modo Manual</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Crea tu estimado paso a paso con opciones predefinidas.
+                        Ideal para quienes prefieren mayor control sobre el proceso.
+                      </p>
+                      <Button
+                        size="lg"
+                        onClick={activateManualEstimate}
+                        disabled={isProcessing}
+                        className="gap-2 w-full"
+                      >
+                        <i className="ri-file-list-3-line"></i>
+                        Crear Estimado Manual
+                      </Button>
                     </>
                   )}
-                </Button>
+                </div>
               </div>
             </div>
           ) : (
