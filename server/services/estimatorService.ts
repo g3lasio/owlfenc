@@ -565,12 +565,15 @@ Responde con un objeto JSON que tenga la siguiente estructura:
     };
     
     // Save the estimate data in the database
+    // Deshabilitado temporalmente para pruebas
+    /*
     try {
       await this.saveEstimate(input, result);
     } catch (error) {
       console.error("Error al guardar el estimado:", error);
       // Continue even if saving fails
     }
+    */
     
     return result;
   }
