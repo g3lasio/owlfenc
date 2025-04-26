@@ -4,7 +4,8 @@ import { storage } from "./storage";
 import { 
   insertProjectSchema, 
   insertTemplateSchema, 
-  insertChatLogSchema
+  insertChatLogSchema,
+  InsertProject
 } from "@shared/schema";
 import OpenAI from "openai";
 import { z } from "zod";
@@ -20,6 +21,7 @@ import { stripeService } from './services/stripeService';
 import { permitService } from './services/permitService';
 import { searchService } from './services/searchService';
 import { sendSupportEmail } from './services/emailService';
+import { estimatorService, validateProjectInput } from './services/estimatorService';
 import express from 'express'; // Import express to use express.raw
 
 // Initialize OpenAI API
@@ -230,6 +232,199 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error generating estimate:', error);
       res.status(400).json({ message: 'Failed to generate estimate' });
+    }
+  });
+  
+  // ** Nuevos endpoints para el generador de estimados **
+  
+  // Endpoint para validar datos de entrada
+  app.post('/api/estimate/validate', async (req: Request, res: Response) => {
+    try {
+      // In a real app, we would get the user ID from the session
+      const userId = 1; // Default user ID
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Validate input data
+      const inputData = {
+        ...req.body,
+        contractorId: userId,
+        contractorName: user.company || user.username,
+        contractorAddress: user.address || '',
+        contractorPhone: user.phone || '',
+        contractorEmail: user.email || '',
+        contractorLicense: user.license || '',
+      };
+      
+      const validationErrors = validateProjectInput(inputData);
+      
+      if (Object.keys(validationErrors).length > 0) {
+        return res.status(400).json({ 
+          valid: false,
+          errors: validationErrors
+        });
+      }
+      
+      res.json({ valid: true });
+    } catch (error) {
+      console.error('Error validating project data:', error);
+      res.status(400).json({ message: 'Failed to validate project data' });
+    }
+  });
+  
+  // Endpoint para calcular estimado basado en reglas o IA
+  app.post('/api/estimate/calculate', async (req: Request, res: Response) => {
+    try {
+      // Validar schema de entrada
+      const inputSchema = z.object({
+        // Client Information
+        clientName: z.string().min(1, "Cliente obligatorio"),
+        clientEmail: z.string().email().optional(),
+        clientPhone: z.string().optional(),
+        projectAddress: z.string().min(1, "Dirección del proyecto obligatoria"),
+        clientCity: z.string().optional(),
+        clientState: z.string().optional(),
+        clientZip: z.string().optional(),
+        
+        // Project Details
+        projectType: z.string().min(1, "Tipo de proyecto obligatorio"),
+        projectSubtype: z.string().min(1, "Subtipo de proyecto obligatorio"),
+        projectDimensions: z.object({
+          length: z.number().min(1),
+          height: z.number().optional(),
+          width: z.number().optional(),
+          area: z.number().optional()
+        }),
+        additionalFeatures: z.record(z.any()).optional(),
+        
+        // Generation options
+        useAI: z.boolean().optional(),
+        customPrompt: z.string().optional()
+      });
+      
+      const validatedInput = inputSchema.parse(req.body);
+      
+      // In a real app, we would get the user ID from the session
+      const userId = 1; // Default user ID
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Prepare data for the estimator service
+      const estimateInput = {
+        ...validatedInput,
+        contractorId: userId,
+        contractorName: user.company || user.username,
+        contractorAddress: user.address || '',
+        contractorPhone: user.phone || '',
+        contractorEmail: user.email || '',
+        contractorLicense: user.license || '',
+      };
+      
+      // Generate estimate
+      const estimateResult = await estimatorService.generateEstimate(estimateInput);
+      
+      res.json(estimateResult);
+    } catch (error) {
+      console.error('Error calculating estimate:', error);
+      
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: 'Datos de entrada inválidos',
+          errors: error.errors
+        });
+      }
+      
+      res.status(500).json({ message: 'Error generando estimado' });
+    }
+  });
+  
+  // Endpoint para generar HTML personalizado del estimado
+  app.post('/api/estimate/html', async (req: Request, res: Response) => {
+    try {
+      const schema = z.object({
+        estimateData: z.record(z.any())
+      });
+      
+      const { estimateData } = schema.parse(req.body);
+      
+      // Generate HTML
+      const html = await estimatorService.generateEstimateHtml(estimateData);
+      
+      res.json({ html });
+    } catch (error) {
+      console.error('Error generating estimate HTML:', error);
+      res.status(500).json({ message: 'Error generando HTML del estimado' });
+    }
+  });
+  
+  // Endpoint para guardar el estimado como proyecto
+  app.post('/api/estimate/save', async (req: Request, res: Response) => {
+    try {
+      const schema = z.object({
+        estimateData: z.record(z.any()),
+        status: z.string().optional()
+      });
+      
+      const { estimateData, status = 'draft' } = schema.parse(req.body);
+      
+      // In a real app, we would get the user ID from the session
+      const userId = 1; // Default user ID
+      
+      // Generate HTML for the estimate
+      const estimateHtml = await estimatorService.generateEstimateHtml(estimateData);
+      
+      // Prepare project data
+      const projectData: InsertProject = {
+        userId: userId,
+        projectId: estimateData.projectId || `proj_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+        clientName: estimateData.client?.name || 'Cliente',
+        clientEmail: estimateData.client?.email || '',
+        clientPhone: estimateData.client?.phone || '',
+        address: estimateData.client?.address || '',
+        fenceType: estimateData.project?.subtype || '',
+        length: estimateData.project?.dimensions?.length || 0,
+        height: estimateData.project?.dimensions?.height || 0,
+        gates: estimateData.project?.additionalFeatures?.gates || [],
+        additionalDetails: estimateData.project?.notes || '',
+        estimateHtml: estimateHtml,
+        status: status
+      };
+      
+      // Add total price if available
+      if (estimateData.rulesBasedEstimate?.totals?.total) {
+        projectData.totalPrice = Math.round(estimateData.rulesBasedEstimate.totals.total * 100);
+      }
+      
+      // Save to database
+      const project = await storage.createProject(projectData);
+      
+      res.json({
+        success: true,
+        project
+      });
+    } catch (error) {
+      console.error('Error saving estimate:', error);
+      res.status(500).json({ message: 'Error guardando el estimado' });
+    }
+  });
+  
+  // Endpoint para obtener todos los materiales para un tipo específico
+  app.get('/api/materials/:category', async (req: Request, res: Response) => {
+    try {
+      const { category } = req.params;
+      
+      // En una implementación real, esto buscaría en la base de datos
+      const materialPrices = await estimatorService.getMaterialPrices(category);
+      
+      res.json(materialPrices);
+    } catch (error) {
+      console.error('Error fetching materials:', error);
+      res.status(500).json({ message: 'Error obteniendo materiales' });
     }
   });
 
