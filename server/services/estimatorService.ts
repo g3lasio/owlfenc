@@ -147,39 +147,26 @@ export class EstimatorService {
   // Get material prices from the database or use default values
   async getMaterialPrices(materialType: string): Promise<Record<string, number>> {
     try {
-      // Mock implementation - in a real app this would fetch from database
-      // This is a placeholder until we implement getMaterialsByCategory in storage
-      const mockMaterials = {
-        'wood': [
-          { name: '4x4x8', price: 1495 },
-          { name: '6x6x8', price: 2999 },
-          { name: '2x4x8', price: 888 },
-          { name: 'picket', price: 758 }
-        ],
-        'concrete': [
-          { name: '80lb', price: 962 }
-        ],
-        'hardware': [
-          { name: 'hanger', price: 312 },
-          { name: 'screws', price: 1600 }
-        ]
-      };
+      // Obtener materiales desde la base de datos
+      const materials = await storage.getMaterialsByCategory(materialType);
       
-      // Return default materials for the given type
-      const materials = mockMaterials[materialType as keyof typeof mockMaterials] || [];
+      // Convertir materiales a un objeto de precios (key-value)
+      const prices: Record<string, number> = {};
       
       if (materials && materials.length > 0) {
-        return materials.reduce((acc: Record<string, number>, material: {name: string, price: number}) => {
-          acc[material.name] = material.price / 100; // price is stored in cents
-          return acc;
-        }, {});
+        // Convertir precio de centavos a dólares para el cálculo
+        materials.forEach(material => {
+          prices[material.name] = material.price / 100;
+        });
+        return prices;
       }
       
-      // If no materials found, return empty object (will use defaults)
+      // Si no se encuentran materiales, devolver objeto vacío (se usarán valores predeterminados)
+      console.log(`No se encontraron materiales para la categoría: ${materialType}`);
       return {};
     } catch (error) {
-      console.error("Error fetching material prices:", error);
-      return {};
+      console.error(`Error al obtener precios de materiales para categoría '${materialType}':`, error);
+      return {}; // Devolver objeto vacío en caso de error
     }
   }
 
