@@ -17,6 +17,8 @@ import {
   InsertUserSubscription,
   PaymentHistory,
   InsertPaymentHistory,
+  Material,
+  InsertMaterial,
   users,
   projects,
   templates,
@@ -25,7 +27,8 @@ import {
   clients,
   subscriptionPlans,
   userSubscriptions,
-  paymentHistory
+  paymentHistory,
+  materials
 } from "@shared/schema";
 
 import { db } from './db';
@@ -376,5 +379,32 @@ export class DatabaseStorage implements IStorage {
       .values(insertPayment)
       .returning();
     return payment;
+  }
+
+  // Material methods
+  async getMaterialsByCategory(category: string): Promise<Material[]> {
+    return db.select()
+      .from(materials)
+      .where(eq(materials.category, category))
+      .orderBy(asc(materials.name));
+  }
+  
+  async createMaterial(insertMaterial: InsertMaterial): Promise<Material> {
+    const [material] = await db.insert(materials).values(insertMaterial).returning();
+    return material;
+  }
+  
+  async updateMaterial(id: number, materialData: Partial<Material>): Promise<Material> {
+    const [material] = await db
+      .update(materials)
+      .set(materialData)
+      .where(eq(materials.id, id))
+      .returning();
+    
+    if (!material) {
+      throw new Error(`Material with ID ${id} not found`);
+    }
+    
+    return material;
   }
 }

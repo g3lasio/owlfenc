@@ -16,10 +16,12 @@ import {
   UserSubscription,
   InsertUserSubscription,
   PaymentHistory,
-  InsertPaymentHistory
+  InsertPaymentHistory,
+  Material,
+  InsertMaterial
 } from "@shared/schema";
 
-// import { DatabaseStorage } from './DatabaseStorage';
+import { DatabaseStorage } from './DatabaseStorage';
 import { FirebaseStorage } from './FirebaseStorage';
 
 export interface IStorage {
@@ -78,7 +80,12 @@ export interface IStorage {
   getPaymentHistory(id: number): Promise<PaymentHistory | undefined>;
   getPaymentHistoryByUserId(userId: number): Promise<PaymentHistory[]>;
   createPaymentHistory(payment: InsertPaymentHistory): Promise<PaymentHistory>;
+  
+  // Material methods
+  getMaterialsByCategory(category: string): Promise<Material[]>;
+  createMaterial(material: InsertMaterial): Promise<Material>;
+  updateMaterial(id: number, material: Partial<Material>): Promise<Material>;
 }
 
-// Creamos y exportamos una instancia de FirebaseStorage para usar en toda la aplicación
-export const storage = new FirebaseStorage();
+// Usamos DatabaseStorage para conectar con PostgreSQL
+export const storage = new DatabaseStorage();
