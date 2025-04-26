@@ -306,23 +306,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const validatedInput = inputSchema.parse(req.body);
       
-      // In a real app, we would get the user ID from the session
-      const userId = 1; // Default user ID
-      const user = await storage.getUser(userId);
-      
-      if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-      }
+      // Para modo de prueba, creamos datos de contratista mock
+      const mockContractor = {
+        id: 1,
+        name: "Contractor Test",
+        address: "123 Contractor St, San Diego, CA",
+        phone: "555-987-6543",
+        email: "contractor@example.com",
+        license: "LIC-12345",
+      };
       
       // Prepare data for the estimator service
       const estimateInput = {
         ...validatedInput,
-        contractorId: userId,
-        contractorName: user.company || user.username,
-        contractorAddress: user.address || '',
-        contractorPhone: user.phone || '',
-        contractorEmail: user.email || '',
-        contractorLicense: user.license || '',
+        contractorId: mockContractor.id,
+        contractorName: mockContractor.name,
+        contractorAddress: mockContractor.address,
+        contractorPhone: mockContractor.phone,
+        contractorEmail: mockContractor.email,
+        contractorLicense: mockContractor.license,
       };
       
       // Generate estimate
