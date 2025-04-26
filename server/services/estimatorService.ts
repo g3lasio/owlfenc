@@ -41,7 +41,7 @@ export interface ProjectInput {
   projectType: string;              // Required: "fencing", "roofing", etc.
   projectSubtype: string;           // Required: "wood fence", "chain link", etc.
   projectDimensions: {
-    length: number;                 // Required
+    length?: number;                // Required for fencing
     height?: number;                // Required for fencing
     width?: number;
     area?: number;                  // Required for roofing
@@ -110,16 +110,22 @@ export function validateProjectInput(input: Partial<ProjectInput>): ValidationEr
   if (!input.projectDimensions) {
     errors.projectDimensions = "Se requieren dimensiones del proyecto.";
   } else {
-    if (!input.projectDimensions.length || input.projectDimensions.length <= 0) {
-      errors.projectDimensions = "La longitud debe ser mayor que cero.";
+    // Para cercas, verificar longitud
+    if (input.projectType === "fencing") {
+      if (!input.projectDimensions.length || input.projectDimensions.length <= 0) {
+        errors.projectDimensions = "La longitud debe ser mayor que cero para proyectos de cercas.";
+      }
+      
+      if (!input.projectDimensions.height || input.projectDimensions.height <= 0) {
+        errors.projectDimensions = "La altura es requerida para proyectos de cercas.";
+      }
     }
-
-    if (input.projectType === "fencing" && (!input.projectDimensions.height || input.projectDimensions.height <= 0)) {
-      errors.projectDimensions = "La altura es requerida para proyectos de cercas.";
-    }
-
-    if (input.projectType === "roofing" && (!input.projectDimensions.area || input.projectDimensions.area <= 0)) {
-      errors.projectDimensions = "El área es requerida para proyectos de techos.";
+    
+    // Para techados, verificar área
+    if (input.projectType === "roofing") {
+      if (!input.projectDimensions.area || input.projectDimensions.area <= 0) {
+        errors.projectDimensions = "El área es requerida para proyectos de techos.";
+      }
     }
   }
 

@@ -292,10 +292,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         projectType: z.string().min(1, "Tipo de proyecto obligatorio"),
         projectSubtype: z.string().min(1, "Subtipo de proyecto obligatorio"),
         projectDimensions: z.object({
-          length: z.number().min(1),
+          length: z.number().optional(),
           height: z.number().optional(),
           width: z.number().optional(),
           area: z.number().optional()
+        }).refine(data => {
+          // Si es un proyecto de cerca, longitud es obligatoria
+          if (data.length && data.length > 0) return true;
+          
+          // Si es un proyecto de techado, área es obligatoria
+          if (data.area && data.area > 0) return true;
+          
+          return false;
+        }, {
+          message: "Se requiere longitud para cercas o área para techados"
         }),
         additionalFeatures: z.record(z.any()).optional(),
         
