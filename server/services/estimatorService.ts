@@ -348,7 +348,7 @@ export class EstimatorService {
     }
   }
 
-  // Calculate roofing estimate (simplified approach)
+  // Calculate roofing estimate using material prices from database
   async calculateRoofingEstimateWithRules(input: ProjectInput): Promise<any> {
     try {
       const { 
@@ -361,35 +361,57 @@ export class EstimatorService {
       const area = projectDimensions.area || 0;
       const state = clientState || "California";
       
-      // Base rates per square foot
-      const roofingRates = {
-        "asphalt": 4.5,
-        "metal": 7.5,
-        "tile": 9.0,
-        "slate": 14.0,
-        "flat": 6.0
+      // Obtener precios de materiales desde la base de datos
+      const materialPrices = await this.getMaterialPrices("roofing");
+      
+      // Mapeo entre tipos de techo y los materiales correspondientes
+      const roofingMaterialMap: Record<string, string> = {
+        "asphalt shingles": "asphalt_standard",
+        "asphalt premium": "asphalt_premium",
+        "metal": "metal_standard",
+        "metal premium": "metal_premium",
+        "clay tile": "clay_standard",
+        "clay tile premium": "clay_premium",
+        "slate": "slate",
+        "flat": "flat_membrane"
       };
       
-      // Find appropriate base rate
-      let baseRate = 5.0; // Default
-      for (const [key, rate] of Object.entries(roofingRates)) {
+      // Determinar el material principal a utilizar
+      let mainMaterial = "asphalt_standard"; // Default
+      for (const [key, material] of Object.entries(roofingMaterialMap)) {
         if (projectSubtype.toLowerCase().includes(key)) {
-          baseRate = rate;
+          mainMaterial = material;
           break;
         }
       }
       
-      // State cost factors
+      // Obtener precio base por pie cuadrado
+      let baseRate = materialPrices[mainMaterial] || 4.5;
+      
+      // Factores de costo por estado
       const stateFactor = (state === "California") ? 1.2 : 
                          (state === "New York") ? 1.3 : 1.0;
       
-      // Calculate costs
-      const demolitionCost = additionalFeatures.demolition ? (area * 1.5) : 0;
-      const materialsCost = area * baseRate * stateFactor;
-      const laborCost = area * baseRate * 0.8 * stateFactor; // Labor is ~80% of material cost
+      // Costos adicionales
+      const underlaymentCost = area * (materialPrices.underlayment || 1.0);
+      const flashingCost = (materialPrices.flashing || 15.0) * (Math.ceil(area / 500)); // Una unidad por cada 500 pies cuadrados
+      const nailsCost = (materialPrices.nails || 12.0) * (Math.ceil(area / 250)); // Una caja por cada 250 pies cuadrados
+      const ventCost = (materialPrices.vent || 35.0) * (Math.ceil(area / 300)); // Una ventilación por cada 300 pies cuadrados
       
-      const subtotal = materialsCost + laborCost + demolitionCost;
-      const tax = materialsCost * 0.0875; // Tax only on materials
+      // Costo de demolición si aplica
+      const demolitionCost = additionalFeatures.demolition ? (area * 1.5) : 0;
+      
+      // Cálculo de costos principales
+      const mainMaterialCost = area * baseRate;
+      const totalMaterialCost = mainMaterialCost + underlaymentCost + flashingCost + nailsCost + ventCost;
+      const adjustedMaterialCost = totalMaterialCost * stateFactor;
+      
+      // Costo de mano de obra (generalmente entre 70-80% del costo de materiales)
+      const laborCost = area * baseRate * 0.8 * stateFactor;
+      
+      // Totalización
+      const subtotal = adjustedMaterialCost + laborCost + demolitionCost;
+      const tax = adjustedMaterialCost * 0.0875; // Impuesto solo a materiales
       const total = subtotal + tax;
       
       return {
@@ -398,7 +420,21 @@ export class EstimatorService {
           area: area
         },
         materials: {
-          totalCost: materialsCost
+          mainMaterial: {
+            type: mainMaterial,
+            pricePerSqFt: baseRate,
+            totalCost: mainMaterialCost
+          },
+          underlayment: {
+            pricePerSqFt: materialPrices.underlayment || 1.0,
+            totalCost: underlaymentCost
+          },
+          accessories: {
+            flashing: flashingCost,
+            nails: nailsCost,
+            vents: ventCost
+          },
+          totalCost: adjustedMaterialCost
         },
         labor: {
           totalCost: laborCost
@@ -407,7 +443,7 @@ export class EstimatorService {
           demolition: demolitionCost
         },
         totals: {
-          materialsSubtotal: materialsCost,
+          materialsSubtotal: adjustedMaterialCost,
           laborCost: laborCost,
           demolitionCost: demolitionCost,
           subtotal: subtotal,
