@@ -18,7 +18,7 @@ export interface PropertyDetails {
 class PropertyVerifierService {
   async verifyProperty(address: string): Promise<PropertyDetails> {
     try {
-      const response = await axios.get('/api/property/details', {
+      const response = await axios.get('/api/property/ownership', {
         params: { address: address.trim() }
       });
       

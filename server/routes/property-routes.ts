@@ -7,7 +7,8 @@ import { propertyService } from "../services/propertyService";
  */
 export function registerPropertyRoutes(app: Express): void {
   // Endpoint para obtener detalles de una propiedad por dirección
-  app.get('/api/property/details', async (req: Request, res: Response) => {
+  // Ruta temporalmente deshabilitada
+  /* app.get('/api/property/details', async (req: Request, res: Response) => {
     const address = req.query.address as string;
     const useMock = req.query.mock === 'true' || false;
     
@@ -88,5 +89,5 @@ export function registerPropertyRoutes(app: Express): void {
         });
       }
     }
-  });
+  }); */
 }
