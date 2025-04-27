@@ -1,69 +1,42 @@
-import { Request, Response } from 'express';
-import { z } from 'zod';
-import { promptGeneratorService } from '../services/promptGeneratorService';
-import { insertPromptTemplateSchema } from '@shared/schema';
+import { Express, Request, Response } from "express";
+import { z } from "zod";
+import { storage } from "../storage";
+import { promptGeneratorService } from "../services/promptGeneratorService";
+import { InsertPromptTemplate } from "@shared/schema";
 
-export function registerPromptTemplateRoutes(app: any) {
-  // GET: Obtener todas las plantillas de prompts del usuario
+export function registerPromptTemplateRoutes(app: Express): void {
+  // Obtener todas las plantillas de prompts
   app.get('/api/prompt-templates', async (req: Request, res: Response) => {
     try {
-      // En una aplicación real, obtendríamos el ID del usuario de la sesión
-      const userId = req.query.userId ? parseInt(req.query.userId as string) : 1;
+      const userId = req.query.userId ? parseInt(req.query.userId.toString()) : 1;
       
-      const templates = await promptGeneratorService.getPromptTemplates(userId);
+      // Obtener todas las plantillas de prompts del usuario
+      const templates = await promptGeneratorService.getPromptTemplatesByCategory(userId, 'all');
+      
       res.json(templates);
     } catch (error) {
-      console.error('Error fetching prompt templates:', error);
-      res.status(500).json({ message: 'Error obteniendo plantillas de prompts' });
+      console.error('Error al obtener plantillas de prompts:', error);
+      res.status(500).json({ message: 'Error al obtener plantillas de prompts' });
     }
   });
   
-  // GET: Obtener plantillas de prompts por categoría
+  // Obtener plantillas de prompts por categoría
   app.get('/api/prompt-templates/category/:category', async (req: Request, res: Response) => {
     try {
-      // En una aplicación real, obtendríamos el ID del usuario de la sesión
-      const userId = req.query.userId ? parseInt(req.query.userId as string) : 1;
-      const category = req.params.category;
+      const { category } = req.params;
+      const userId = req.query.userId ? parseInt(req.query.userId.toString()) : 1;
       
-      // Validar la categoría
-      if (!category) {
-        return res.status(400).json({ message: 'Categoría no especificada' });
-      }
-      
+      // Obtener plantillas de la categoría especificada
       const templates = await promptGeneratorService.getPromptTemplatesByCategory(userId, category);
+      
       res.json(templates);
     } catch (error) {
-      console.error('Error fetching prompt templates by category:', error);
-      res.status(500).json({ message: 'Error obteniendo plantillas de prompts' });
+      console.error(`Error al obtener plantillas de prompts para categoría ${req.params.category}:`, error);
+      res.status(500).json({ message: 'Error al obtener plantillas de prompts' });
     }
   });
   
-  // GET: Obtener plantilla predeterminada por categoría
-  app.get('/api/prompt-templates/default/:category', async (req: Request, res: Response) => {
-    try {
-      // En una aplicación real, obtendríamos el ID del usuario de la sesión
-      const userId = req.query.userId ? parseInt(req.query.userId as string) : 1;
-      const category = req.params.category;
-      
-      // Validar la categoría
-      if (!category) {
-        return res.status(400).json({ message: 'Categoría no especificada' });
-      }
-      
-      const template = await promptGeneratorService.getDefaultPromptTemplate(userId, category);
-      
-      if (template) {
-        res.json(template);
-      } else {
-        res.status(404).json({ message: 'No se encontró una plantilla predeterminada para esta categoría' });
-      }
-    } catch (error) {
-      console.error('Error fetching default prompt template:', error);
-      res.status(500).json({ message: 'Error obteniendo plantilla predeterminada' });
-    }
-  });
-  
-  // GET: Obtener una plantilla específica por ID
+  // Obtener una plantilla de prompt por ID
   app.get('/api/prompt-templates/:id', async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
@@ -72,48 +45,86 @@ export function registerPromptTemplateRoutes(app: any) {
         return res.status(400).json({ message: 'ID inválido' });
       }
       
+      // Obtener plantilla
       const template = await promptGeneratorService.getPromptTemplate(id);
       
-      if (template) {
-        res.json(template);
-      } else {
-        res.status(404).json({ message: 'Plantilla no encontrada' });
+      if (!template) {
+        return res.status(404).json({ message: 'Plantilla no encontrada' });
       }
+      
+      res.json(template);
     } catch (error) {
-      console.error('Error fetching prompt template:', error);
-      res.status(500).json({ message: 'Error obteniendo plantilla de prompt' });
+      console.error(`Error al obtener plantilla de prompt ${req.params.id}:`, error);
+      res.status(500).json({ message: 'Error al obtener plantilla de prompt' });
     }
   });
   
-  // POST: Crear una nueva plantilla
+  // Obtener plantilla predeterminada por categoría
+  app.get('/api/prompt-templates/default/:category', async (req: Request, res: Response) => {
+    try {
+      const { category } = req.params;
+      const userId = req.query.userId ? parseInt(req.query.userId.toString()) : 1;
+      
+      // Obtener plantilla predeterminada
+      const template = await promptGeneratorService.getDefaultPromptTemplate(userId, category);
+      
+      if (!template) {
+        return res.status(404).json({ message: 'No se encontró plantilla predeterminada para esta categoría' });
+      }
+      
+      res.json(template);
+    } catch (error) {
+      console.error(`Error al obtener plantilla predeterminada para categoría ${req.params.category}:`, error);
+      res.status(500).json({ message: 'Error al obtener plantilla predeterminada' });
+    }
+  });
+  
+  // Crear una nueva plantilla de prompt
   app.post('/api/prompt-templates', async (req: Request, res: Response) => {
     try {
-      // Validar los datos de entrada
-      const validationSchema = insertPromptTemplateSchema.extend({
-        isDefault: z.boolean().optional().default(false)
+      const schema = z.object({
+        userId: z.number().optional(),
+        name: z.string().min(1, "Se requiere un nombre"),
+        category: z.string().min(1, "Se requiere una categoría"),
+        promptText: z.string().min(1, "Se requiere contenido del prompt"),
+        description: z.string().optional(),
+        isDefault: z.boolean().optional(),
+        variables: z.array(z.string()).optional()
       });
       
-      const validatedData = validationSchema.parse(req.body);
+      // Validar datos
+      const validatedData = schema.parse(req.body);
       
-      // Crear la plantilla
-      const newTemplate = await promptGeneratorService.createPromptTemplate(validatedData);
+      // Crear objeto para inserción
+      const insertData: InsertPromptTemplate = {
+        userId: validatedData.userId || 1,
+        name: validatedData.name,
+        category: validatedData.category,
+        promptText: validatedData.promptText,
+        description: validatedData.description || null,
+        isDefault: validatedData.isDefault || false,
+        variables: validatedData.variables || []
+      };
+      
+      // Crear plantilla
+      const newTemplate = await promptGeneratorService.createPromptTemplate(insertData);
       
       res.status(201).json(newTemplate);
     } catch (error) {
-      console.error('Error creating prompt template:', error);
+      console.error('Error al crear plantilla de prompt:', error);
       
       if (error instanceof z.ZodError) {
         return res.status(400).json({ 
-          message: 'Datos de entrada inválidos',
+          message: 'Datos inválidos',
           errors: error.errors
         });
       }
       
-      res.status(500).json({ message: 'Error creando plantilla de prompt' });
+      res.status(500).json({ message: 'Error al crear plantilla de prompt' });
     }
   });
   
-  // PUT: Actualizar una plantilla existente
+  // Actualizar una plantilla de prompt
   app.put('/api/prompt-templates/:id', async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
@@ -122,32 +133,44 @@ export function registerPromptTemplateRoutes(app: any) {
         return res.status(400).json({ message: 'ID inválido' });
       }
       
-      // Verificar que la plantilla existe
+      const schema = z.object({
+        name: z.string().min(1, "Se requiere un nombre").optional(),
+        category: z.string().min(1, "Se requiere una categoría").optional(),
+        promptText: z.string().min(1, "Se requiere contenido del prompt").optional(),
+        description: z.string().optional(),
+        isDefault: z.boolean().optional(),
+        variables: z.array(z.string()).optional()
+      });
+      
+      // Validar datos
+      const validatedData = schema.parse(req.body);
+      
+      // Obtener la plantilla existente
       const existingTemplate = await promptGeneratorService.getPromptTemplate(id);
       
       if (!existingTemplate) {
         return res.status(404).json({ message: 'Plantilla no encontrada' });
       }
       
-      // Actualizar la plantilla
-      const updatedTemplate = await promptGeneratorService.updatePromptTemplate(id, req.body);
+      // Actualizar plantilla
+      const updatedTemplate = await promptGeneratorService.updatePromptTemplate(id, validatedData);
       
       res.json(updatedTemplate);
     } catch (error) {
-      console.error('Error updating prompt template:', error);
+      console.error(`Error al actualizar plantilla de prompt ${req.params.id}:`, error);
       
       if (error instanceof z.ZodError) {
         return res.status(400).json({ 
-          message: 'Datos de entrada inválidos',
+          message: 'Datos inválidos',
           errors: error.errors
         });
       }
       
-      res.status(500).json({ message: 'Error actualizando plantilla de prompt' });
+      res.status(500).json({ message: 'Error al actualizar plantilla de prompt' });
     }
   });
   
-  // DELETE: Eliminar una plantilla
+  // Eliminar una plantilla de prompt
   app.delete('/api/prompt-templates/:id', async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
@@ -157,89 +180,82 @@ export function registerPromptTemplateRoutes(app: any) {
       }
       
       // Verificar que la plantilla existe
-      const existingTemplate = await promptGeneratorService.getPromptTemplate(id);
+      const template = await promptGeneratorService.getPromptTemplate(id);
       
-      if (!existingTemplate) {
+      if (!template) {
         return res.status(404).json({ message: 'Plantilla no encontrada' });
       }
       
-      // Eliminar la plantilla
-      await promptGeneratorService.deletePromptTemplate(id);
+      // Eliminar plantilla
+      const success = await promptGeneratorService.deletePromptTemplate(id);
       
-      res.status(204).send();
+      if (success) {
+        res.json({ success: true });
+      } else {
+        res.status(500).json({ message: 'Error al eliminar plantilla' });
+      }
     } catch (error) {
-      console.error('Error deleting prompt template:', error);
-      res.status(500).json({ message: 'Error eliminando plantilla de prompt' });
+      console.error(`Error al eliminar plantilla de prompt ${req.params.id}:`, error);
+      res.status(500).json({ message: 'Error al eliminar plantilla de prompt' });
     }
   });
-
-  // POST: Generar un prompt completo para un proyecto
+  
+  // Generar un prompt completo a partir de datos del proyecto
   app.post('/api/prompt-templates/generate', async (req: Request, res: Response) => {
     try {
-      // Validar los datos de entrada
       const schema = z.object({
+        userId: z.number().optional(),
         projectData: z.record(z.any()),
-        userId: z.number().default(1),
-        basePromptId: z.number().optional(),
-        customInstructions: z.string().optional()
+        category: z.string()
       });
       
-      const validatedData = schema.parse(req.body);
+      // Validar datos
+      const { userId = 1, projectData, category } = schema.parse(req.body);
       
-      // Generar el prompt completo
-      const prompt = await promptGeneratorService.generateCompletedPrompt(
-        validatedData.projectData,
-        {
-          userId: validatedData.userId,
-          basePromptId: validatedData.basePromptId,
-          customInstructions: validatedData.customInstructions
-        }
-      );
+      // Generar prompt
+      const prompt = await promptGeneratorService.generatePromptForProject(userId, projectData, category);
       
       res.json({ prompt });
     } catch (error) {
-      console.error('Error generating prompt:', error);
+      console.error('Error al generar prompt:', error);
       
       if (error instanceof z.ZodError) {
         return res.status(400).json({ 
-          message: 'Datos de entrada inválidos',
+          message: 'Datos inválidos',
           errors: error.errors
         });
       }
       
-      res.status(500).json({ message: 'Error generando prompt' });
+      res.status(500).json({ message: 'Error al generar prompt' });
     }
   });
-
-  // POST: Generar un estimado usando el prompt
-  app.post('/api/prompt-templates/estimate', async (req: Request, res: Response) => {
+  
+  // Procesar un prompt con OpenAI para obtener una estimación
+  app.post('/api/prompt-templates/process', async (req: Request, res: Response) => {
     try {
-      // Validar los datos de entrada
       const schema = z.object({
-        prompt: z.string(),
-        format: z.enum(['json', 'text']).default('json')
+        prompt: z.string().min(1, "Se requiere un prompt"),
+        systemInstructions: z.string().optional()
       });
       
-      const validatedData = schema.parse(req.body);
+      // Validar datos
+      const { prompt, systemInstructions } = schema.parse(req.body);
       
-      // Generar el estimado
-      const estimate = await promptGeneratorService.generateEstimateWithPrompt(
-        validatedData.prompt,
-        validatedData.format
-      );
+      // Procesar prompt con IA
+      const result = await promptGeneratorService.processPromptWithAI(prompt, systemInstructions);
       
-      res.json(estimate);
+      res.json(result);
     } catch (error) {
-      console.error('Error generating estimate:', error);
+      console.error('Error al procesar prompt con IA:', error);
       
       if (error instanceof z.ZodError) {
         return res.status(400).json({ 
-          message: 'Datos de entrada inválidos',
+          message: 'Datos inválidos',
           errors: error.errors
         });
       }
       
-      res.status(500).json({ message: 'Error generando estimado' });
+      res.status(500).json({ message: 'Error al procesar prompt con IA' });
     }
   });
 }

@@ -20,10 +20,11 @@ import { memoryService } from './services/memoryService';
 import { stripeService } from './services/stripeService';
 import { permitService } from './services/permitService';
 import { searchService } from './services/searchService';
-import { sendSupportEmail } from './services/emailService';
+import { emailService } from './services/emailService';
 import { estimatorService, validateProjectInput } from './services/estimatorService';
 import { promptGeneratorService } from './services/promptGeneratorService';
 import { registerPromptTemplateRoutes } from './routes/prompt-templates';
+import { registerEstimateRoutes } from './routes/estimate-routes';
 import express from 'express'; // Import express to use express.raw
 
 // Initialize OpenAI API
@@ -77,8 +78,9 @@ function calculateCompletionTime(length: number): string {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Registrar rutas de plantillas de prompts
+  // Registrar rutas específicas
   registerPromptTemplateRoutes(app);
+  registerEstimateRoutes(app);
   
   // Add API routes
   app.get('/api/projects', async (req: Request, res: Response) => {
@@ -431,17 +433,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Endpoint para obtener todos los materiales para un tipo específico
-  app.get('/api/materials/:category', async (req: Request, res: Response) => {
+  app.get('/api/materials', async (req: Request, res: Response) => {
     try {
-      const { category } = req.params;
+      const { category } = req.query;
       
-      // En una implementación real, esto buscaría en la base de datos
-      const materialPrices = await estimatorService.getMaterialPrices(category);
+      if (!category || typeof category !== 'string') {
+        return res.status(400).json({ message: 'Se requiere categoría de materiales' });
+      }
       
-      res.json(materialPrices);
+      // Obtener materiales de la base de datos
+      const materials = await storage.getMaterialsByCategory(category);
+      
+      res.json(materials);
     } catch (error) {
       console.error('Error fetching materials:', error);
       res.status(500).json({ message: 'Error obteniendo materiales' });
+    }
+  });
+  
+  // Endpoint para generar un prompt y obtener estimado asistido por IA
+  app.post('/api/estimate/generate-prompt', async (req: Request, res: Response) => {
+    try {
+      const schema = z.object({
+        userId: z.number().optional(),
+        projectData: z.record(z.any()),
+        category: z.string()
+      });
+      
+      const { userId = 1, projectData, category } = schema.parse(req.body);
+      
+      // Generar el prompt
+      const prompt = await promptGeneratorService.generatePromptForProject(userId, projectData, category);
+      
+      res.json({ prompt });
+    } catch (error) {
+      console.error('Error generating prompt:', error);
+      res.status(500).json({ message: 'Error generando prompt' });
+    }
+  });
+  
+  // Endpoint para procesar un prompt con IA y obtener un estimado estructurado
+  app.post('/api/estimate/process-prompt', async (req: Request, res: Response) => {
+    try {
+      const schema = z.object({
+        prompt: z.string(),
+        systemInstructions: z.string().optional()
+      });
+      
+      const { prompt, systemInstructions } = schema.parse(req.body);
+      
+      // Procesar el prompt con OpenAI
+      const result = await promptGeneratorService.processPromptWithAI(prompt, systemInstructions);
+      
+      res.json(result);
+    } catch (error) {
+      console.error('Error processing prompt with AI:', error);
+      res.status(500).json({ message: 'Error procesando prompt con IA' });
+    }
+  });
+  
+  // Endpoint para enviar estimado por email
+  app.post('/api/estimate/send-email', async (req: Request, res: Response) => {
+    try {
+      const schema = z.object({
+        estimate: z.record(z.any()),
+        templateId: z.number().optional().nullable(),
+        email: z.string().email(),
+        subject: z.string(),
+        message: z.string()
+      });
+      
+      const { estimate, templateId, email, subject, message } = schema.parse(req.body);
+      
+      // Enviar email
+      const result = await emailService.sendEstimateByEmail(
+        estimate,
+        templateId || null,
+        email,
+        subject,
+        message
+      );
+      
+      if (result) {
+        res.json({ success: true, message: 'Email enviado correctamente' });
+      } else {
+        res.status(500).json({ success: false, message: 'Error al enviar email' });
+      }
+    } catch (error) {
+      console.error('Error sending email:', error);
+      res.status(500).json({ message: 'Error enviando email' });
     }
   });
 
