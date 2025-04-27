@@ -303,3 +303,30 @@ export type InsertUserSubscription = z.infer<typeof insertUserSubscriptionSchema
 
 export type PaymentHistory = typeof paymentHistory.$inferSelect;
 export type InsertPaymentHistory = z.infer<typeof insertPaymentHistorySchema>;
+
+// Prompt Templates table
+export const promptTemplates = pgTable("prompt_templates", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  name: text("name").notNull(),
+  description: text("description"),
+  category: text("category").notNull(), // "estimate", "contract", "email", etc.
+  promptText: text("prompt_text").notNull(),
+  variables: jsonb("variables"), // Array of variable placeholders used in the template
+  isDefault: boolean("is_default").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertPromptTemplateSchema = createInsertSchema(promptTemplates).pick({
+  userId: true,
+  name: true,
+  description: true,
+  category: true,
+  promptText: true,
+  variables: true,
+  isDefault: true,
+});
+
+export type PromptTemplate = typeof promptTemplates.$inferSelect;
+export type InsertPromptTemplate = z.infer<typeof insertPromptTemplateSchema>;
