@@ -482,31 +482,92 @@ export default function PropertyOwnershipVerifier() {
                 </div>
               </div>
 
-              <div className="p-3 rounded-lg border">
-                <div className="flex items-start">
-                  <Home className="text-primary mr-3 mt-1" size={20} />
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">
-                      Tipo de propiedad
-                    </h3>
-                    <p className="text-lg font-medium">
-                      {propertyDetails.propertyType}
-                    </p>
+              {/* Tarjeta única compacta para características principales */}
+              <div className="p-4 rounded-lg border bg-gray-50 dark:bg-gray-800">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {/* Tipo de propiedad */}
+                  <div className="flex flex-col items-center text-center">
+                    <Home className="text-primary mb-1" size={22} />
+                    <p className="text-xs font-medium text-muted-foreground">Tipo</p>
+                    <p className="text-sm font-bold">{propertyDetails.propertyType.split('/')[0].trim()}</p>
                   </div>
-                </div>
-              </div>
-
-              <div className="p-3 rounded-lg border">
-                <div className="flex items-start">
-                  <Calendar className="text-primary mr-3 mt-1" size={20} />
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">
-                      Año de construcción
-                    </h3>
-                    <p className="text-lg font-medium">
-                      {propertyDetails.yearBuilt}
-                    </p>
+                  
+                  {/* Año de construcción */}
+                  <div className="flex flex-col items-center text-center">
+                    <Calendar className="text-primary mb-1" size={22} />
+                    <p className="text-xs font-medium text-muted-foreground">Año</p>
+                    <p className="text-sm font-bold">{propertyDetails.yearBuilt || "N/A"}</p>
                   </div>
+                  
+                  {/* Área habitable */}
+                  <div className="flex flex-col items-center text-center">
+                    <Ruler className="text-primary mb-1" size={22} />
+                    <p className="text-xs font-medium text-muted-foreground">Área</p>
+                    <p className="text-sm font-bold">{propertyDetails.sqft?.toLocaleString() || "N/A"} pie²</p>
+                  </div>
+                  
+                  {/* Habitaciones/Baños */}
+                  <div className="flex flex-col items-center text-center">
+                    <svg
+                      className="text-primary mb-1"
+                      width="22"
+                      height="22"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      />
+                      <path
+                        d="M12 14v-7"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      />
+                      <path
+                        d="M8 11v-4"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      />
+                      <path
+                        d="M16 11v-4"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      />
+                    </svg>
+                    <p className="text-xs font-medium text-muted-foreground">Hab/Baños</p>
+                    <p className="text-sm font-bold">{propertyDetails.bedrooms || "N/A"}/{propertyDetails.bathrooms || "N/A"}</p>
+                  </div>
+                  
+                  {/* Tamaño del terreno - Se muestra si hay espacio suficiente */}
+                  {propertyDetails.lotSize && (
+                    <div className="flex flex-col items-center text-center col-span-2 md:col-span-4 mt-1 pt-1 border-t">
+                      <div className="flex items-center justify-center">
+                        <svg
+                          className="text-primary mr-2"
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5z"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          />
+                          <path
+                            d="M7 12h10"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          />
+                        </svg>
+                        <span className="text-sm font-medium">Terreno: {propertyDetails.lotSize}{propertyDetails.landSqft && propertyDetails.landSqft > 0 ? ` (${propertyDetails.landSqft.toLocaleString()} pie²)` : ""}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
