@@ -27,6 +27,8 @@ import {
   Clock as HistoryIcon,
   DollarSign,
   Info,
+  BedDouble,
+  Trees,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import axios from "axios";
@@ -456,199 +458,81 @@ export default function PropertyOwnershipVerifier() {
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
-              {/* Sección de propietario */}
-              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-                <div className="flex items-start">
-                  <User className="text-green-600 mr-3 mt-1" size={20} />
-                  <div>
-                    <h3 className="text-sm font-medium text-green-800 mb-1">
-                      Propiedad verificada de:
-                    </h3>
-                    <p className="text-lg font-bold text-green-900 flex items-center">
-                      {propertyDetails.owner}
-                      {propertyDetails.verified && (
-                        <span className="ml-2 bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full flex items-center">
-                          <Check className="mr-1" size={12} />
-                          Propietario Verificado
+              {/* Header con propietario */}
+              <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 p-4 rounded-lg mb-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <User className="text-green-600 mr-2" size={24} />
+                    <div>
+                      <p className="text-lg font-bold text-green-900 dark:text-green-100">
+                        {propertyDetails.owner}
+                      </p>
+                      <div className="flex gap-2 mt-1">
+                        {propertyDetails.verified && (
+                          <Badge variant="secondary" className="bg-green-100 text-green-800">
+                            <Check className="mr-1" size={12} />
+                            Verificado
+                          </Badge>
+                        )}
+                        {propertyDetails.ownerOccupied && (
+                          <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                            <Home className="mr-1" size={12} />
+                            Residente
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Grid de características */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                {/* Tipo de propiedad */}
+                <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border flex flex-col items-center text-center">
+                  <Home className="text-primary mb-1" size={20} />
+                  <p className="text-xs text-muted-foreground">Tipo</p>
+                  <p className="text-sm font-semibold">{propertyDetails.propertyType.split('/')[0]}</p>
+                </div>
+
+                {/* Área */}
+                <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border flex flex-col items-center text-center">
+                  <Ruler className="text-primary mb-1" size={20} />
+                  <p className="text-xs text-muted-foreground">Área</p>
+                  <p className="text-sm font-semibold">{propertyDetails.sqft?.toLocaleString() || "N/A"} pie²</p>
+                </div>
+
+                {/* Habitaciones */}
+                <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border flex flex-col items-center text-center">
+                  <BedDouble className="text-primary mb-1" size={20} />
+                  <p className="text-xs text-muted-foreground">Hab/Baños</p>
+                  <p className="text-sm font-semibold">{propertyDetails.bedrooms || "N/A"}/{propertyDetails.bathrooms || "N/A"}</p>
+                </div>
+
+                {/* Año */}
+                <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border flex flex-col items-center text-center">
+                  <Calendar className="text-primary mb-1" size={20} />
+                  <p className="text-xs text-muted-foreground">Año</p>
+                  <p className="text-sm font-semibold">{propertyDetails.yearBuilt}</p>
+                </div>
+              </div>
+
+              {/* Terreno - Si está disponible */}
+              {propertyDetails.lotSize && (
+                <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border flex items-center justify-center mb-4">
+                  <Trees className="text-primary mr-2" size={18} />
+                  <div className="text-sm">
+                    <span className="font-semibold">Terreno:</span>
+                    <span className="ml-1">{propertyDetails.lotSize}
+                      {propertyDetails.landSqft && propertyDetails.landSqft > 0 && 
+                        <span className="text-muted-foreground ml-1">
+                          ({propertyDetails.landSqft.toLocaleString()} pie²)
                         </span>
-                      )}
-                      {propertyDetails.ownerOccupied && (
-                        <span className="ml-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-                          Vive en la propiedad
-                        </span>
-                      )}
-                    </p>
+                      }
+                    </span>
                   </div>
                 </div>
-              </div>
-
-              <div className="p-3 rounded-lg border">
-                <div className="flex items-start">
-                  <Home className="text-primary mr-3 mt-1" size={20} />
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">
-                      Tipo de propiedad
-                    </h3>
-                    <p className="text-lg font-medium">
-                      {propertyDetails.propertyType}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-3 rounded-lg border">
-                <div className="flex items-start">
-                  <Calendar className="text-primary mr-3 mt-1" size={20} />
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">
-                      Año de construcción
-                    </h3>
-                    <p className="text-lg font-medium">
-                      {propertyDetails.yearBuilt}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Dos columnas para características principales */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Columna 1 */}
-                <div>
-                  <div className="p-3 rounded-lg border mb-4">
-                    <div className="flex items-start">
-                      <svg
-                        className="text-primary mr-3 mt-1"
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <rect
-                          x="2"
-                          y="2"
-                          width="20"
-                          height="20"
-                          rx="2"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        />
-                        <path
-                          d="M2 7h20"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        />
-                      </svg>
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground mb-1">
-                          Área habitable
-                        </h3>
-                        <p className="text-lg font-medium">
-                          {propertyDetails.sqft?.toLocaleString() || "N/A"} pie²
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-3 rounded-lg border">
-                    <div className="flex items-start">
-                      <svg
-                        className="text-primary mr-3 mt-1"
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        />
-                        <path
-                          d="M12 14v-7"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        />
-                        <path
-                          d="M8 11v-4"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        />
-                        <path
-                          d="M16 11v-4"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        />
-                      </svg>
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground mb-1">
-                          Habitaciones / Baños
-                        </h3>
-                        <p className="text-lg font-medium">
-                          {propertyDetails.bedrooms || "N/A"} hab /{" "}
-                          {propertyDetails.bathrooms || "N/A"} baños
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Columna 2 */}
-                <div>
-                  <div className="p-3 rounded-lg border mb-4">
-                    <div className="flex items-start">
-                      <svg
-                        className="text-primary mr-3 mt-1"
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5z"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        />
-                        <path
-                          d="M7 12h10"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        />
-                      </svg>
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground mb-1">
-                          Tamaño del terreno
-                        </h3>
-                        <p className="text-lg font-medium">
-                          {propertyDetails.lotSize || "N/A"}
-                        </p>
-                        {propertyDetails.landSqft &&
-                          propertyDetails.landSqft > 0 && (
-                            <p className="text-sm text-muted-foreground">
-                              ({propertyDetails.landSqft.toLocaleString()} pie²)
-                            </p>
-                          )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-3 rounded-lg border">
-                    <div className="flex items-start">
-                      <Calendar className="text-primary mr-3 mt-1" size={20} />
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground mb-1">
-                          Año de construcción
-                        </h3>
-                        <p className="text-lg font-medium">
-                          {propertyDetails.yearBuilt || "No disponible"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              )}
 
               {/* Información de compra y propietario anterior si está disponible */}
               {propertyDetails.purchaseDate && (
