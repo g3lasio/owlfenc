@@ -18,7 +18,9 @@ import {
   PaymentHistory,
   InsertPaymentHistory,
   Material,
-  InsertMaterial
+  InsertMaterial,
+  PromptTemplate,
+  InsertPromptTemplate
 } from "@shared/schema";
 
 import { DatabaseStorage } from './DatabaseStorage';
@@ -85,6 +87,15 @@ export interface IStorage {
   getMaterialsByCategory(category: string): Promise<Material[]>;
   createMaterial(material: InsertMaterial): Promise<Material>;
   updateMaterial(id: number, material: Partial<Material>): Promise<Material>;
+  
+  // Prompt Template methods
+  getPromptTemplate(id: number): Promise<PromptTemplate | undefined>;
+  getPromptTemplatesByUserId(userId: number): Promise<PromptTemplate[]>;
+  getPromptTemplatesByCategory(userId: number, category: string): Promise<PromptTemplate[]>;
+  getDefaultPromptTemplate(userId: number, category: string): Promise<PromptTemplate | undefined>;
+  createPromptTemplate(template: InsertPromptTemplate): Promise<PromptTemplate>;
+  updatePromptTemplate(id: number, template: Partial<PromptTemplate>): Promise<PromptTemplate>;
+  deletePromptTemplate(id: number): Promise<boolean>;
 }
 
 // Usamos DatabaseStorage para conectar con PostgreSQL

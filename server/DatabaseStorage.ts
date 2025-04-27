@@ -19,6 +19,8 @@ import {
   InsertPaymentHistory,
   Material,
   InsertMaterial,
+  PromptTemplate,
+  InsertPromptTemplate,
   users,
   projects,
   templates,
@@ -28,7 +30,8 @@ import {
   subscriptionPlans,
   userSubscriptions,
   paymentHistory,
-  materials
+  materials,
+  promptTemplates
 } from "@shared/schema";
 
 import { db } from './db';
@@ -406,5 +409,99 @@ export class DatabaseStorage implements IStorage {
     }
     
     return material;
+  }
+
+  // Prompt Template methods
+  async getPromptTemplate(id: number): Promise<PromptTemplate | undefined> {
+    const [template] = await db.select().from(promptTemplates).where(eq(promptTemplates.id, id));
+    return template;
+  }
+
+  async getPromptTemplatesByUserId(userId: number): Promise<PromptTemplate[]> {
+    return db.select()
+      .from(promptTemplates)
+      .where(eq(promptTemplates.userId, userId))
+      .orderBy(desc(promptTemplates.createdAt));
+  }
+
+  async getPromptTemplatesByCategory(userId: number, category: string): Promise<PromptTemplate[]> {
+    return db.select()
+      .from(promptTemplates)
+      .where(and(
+        eq(promptTemplates.userId, userId),
+        eq(promptTemplates.category, category)
+      ))
+      .orderBy(desc(promptTemplates.createdAt));
+  }
+
+  async getDefaultPromptTemplate(userId: number, category: string): Promise<PromptTemplate | undefined> {
+    const [template] = await db.select()
+      .from(promptTemplates)
+      .where(and(
+        eq(promptTemplates.userId, userId),
+        eq(promptTemplates.category, category),
+        eq(promptTemplates.isDefault, true)
+      ));
+    return template;
+  }
+
+  async createPromptTemplate(insertTemplate: InsertPromptTemplate): Promise<PromptTemplate> {
+    // Si esta plantilla está marcada como predeterminada, desmarcar cualquier otra que pueda ser predeterminada
+    if (insertTemplate.isDefault) {
+      await db
+        .update(promptTemplates)
+        .set({ isDefault: false })
+        .where(and(
+          eq(promptTemplates.userId, insertTemplate.userId),
+          eq(promptTemplates.category, insertTemplate.category),
+          eq(promptTemplates.isDefault, true)
+        ));
+    }
+    
+    const [template] = await db.insert(promptTemplates).values(insertTemplate).returning();
+    return template;
+  }
+
+  async updatePromptTemplate(id: number, templateData: Partial<PromptTemplate>): Promise<PromptTemplate> {
+    // Si esta plantilla se está marcando como predeterminada, desmarcar cualquier otra
+    if (templateData.isDefault) {
+      const [currentTemplate] = await db.select().from(promptTemplates).where(eq(promptTemplates.id, id));
+      
+      if (currentTemplate) {
+        // Actualizar todos los otros templates excepto el actual
+        await db
+          .update(promptTemplates)
+          .set({ isDefault: false })
+          .where(and(
+            eq(promptTemplates.userId, currentTemplate.userId),
+            eq(promptTemplates.category, currentTemplate.category),
+            eq(promptTemplates.isDefault, true)
+          ))
+          .where(eq(promptTemplates.id, id, { not: true }));
+      }
+    }
+    
+    const [template] = await db
+      .update(promptTemplates)
+      .set({
+        ...templateData,
+        updatedAt: new Date()
+      })
+      .where(eq(promptTemplates.id, id))
+      .returning();
+    
+    if (!template) {
+      throw new Error(`Prompt template with ID ${id} not found`);
+    }
+    
+    return template;
+  }
+
+  async deletePromptTemplate(id: number): Promise<boolean> {
+    const result = await db
+      .delete(promptTemplates)
+      .where(eq(promptTemplates.id, id));
+    
+    return true; // Si llegamos aquí, es que la operación fue exitosa
   }
 }

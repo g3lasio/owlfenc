@@ -16,7 +16,11 @@ import {
   UserSubscription,
   InsertUserSubscription,
   PaymentHistory,
-  InsertPaymentHistory
+  InsertPaymentHistory,
+  Material,
+  InsertMaterial,
+  PromptTemplate,
+  InsertPromptTemplate
 } from "@shared/schema";
 
 import { IStorage } from './storage';
