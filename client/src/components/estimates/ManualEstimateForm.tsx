@@ -1,4 +1,7 @@
 import { useState, useEffect } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -12,6 +15,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { ClientValidator } from "@/components/client/ClientValidator";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 interface Client {
   id: number;
@@ -60,6 +66,50 @@ interface ManualEstimateFormProps {
   onEstimateGenerated: (html: string) => void;
 }
 
+// Definir esquema de validación para el formulario de estimación
+const estimateFormSchema = z.object({
+  // Datos del proyecto
+  projectType: z.string({
+    required_error: "Selecciona el tipo de proyecto",
+  }),
+  projectSubtype: z.string({
+    required_error: "Selecciona el subtipo de proyecto",
+  }),
+  
+  // Dimensiones según el tipo de proyecto
+  dimensions: z.object({
+    length: z.string().optional(),
+    width: z.string().optional(),
+    height: z.string().optional(),
+    area: z.string().optional(),
+  }),
+  
+  // Opciones adicionales
+  additionalFeatures: z.object({
+    demolition: z.boolean().default(false),
+    painting: z.boolean().default(false),
+    lattice: z.boolean().default(false),
+    gates: z.array(
+      z.object({
+        type: z.string(),
+        width: z.number(),
+        quantity: z.number(),
+      })
+    ).default([]),
+  }),
+  
+  notes: z.string().optional(),
+  
+  // Opciones de generación
+  useAI: z.boolean().default(false),
+  customPrompt: z.string().optional(),
+  
+  // Template
+  templateId: z.number().optional(),
+});
+
+type EstimateFormValues = z.infer<typeof estimateFormSchema>;
+
 export default function ManualEstimateForm({ onEstimateGenerated }: ManualEstimateFormProps) {
   // Estado para datos del contratista
   const [contractor, setContractor] = useState<Contractor | null>(null);
@@ -67,32 +117,35 @@ export default function ManualEstimateForm({ onEstimateGenerated }: ManualEstima
   
   // Estado para clientes y cliente seleccionado
   const [clients, setClients] = useState<Client[]>([]);
-  const [selectedClientId, setSelectedClientId] = useState<string>("");
-  const [isNewClient, setIsNewClient] = useState(false);
   const [isLoadingClients, setIsLoadingClients] = useState(true);
   
-  // Datos del cliente
-  const [clientName, setClientName] = useState("");
-  const [clientEmail, setClientEmail] = useState("");
-  const [clientPhone, setClientPhone] = useState("");
-  const [clientAddress, setClientAddress] = useState("");
-  const [clientCity, setClientCity] = useState("");
-  const [clientState, setClientState] = useState("");
-  const [clientZip, setClientZip] = useState("");
+  // Cliente validado
+  const [validatedClient, setValidatedClient] = useState<any>(null);
+  const [propertyDetails, setPropertyDetails] = useState<any>(null);
   
-  // Datos del proyecto
-  const [projectType, setProjectType] = useState("fencing");
-  const [projectSubtype, setProjectSubtype] = useState("");
-  const [projectLength, setProjectLength] = useState("");
-  const [projectHeight, setProjectHeight] = useState("");
-  const [projectArea, setProjectArea] = useState(""); // Para techos, en pies cuadrados
-  const [additionalNotes, setAdditionalNotes] = useState("");
-  
-  // Características adicionales
-  const [includeDemolition, setIncludeDemolition] = useState(false);
-  const [includePainting, setIncludePainting] = useState(false);
-  const [includeLattice, setIncludeLattice] = useState(false);
-  const [gates, setGates] = useState<{type: string; width: number; quantity: number}[]>([]);
+  // Datos del proyecto y formulario
+  const form = useForm<EstimateFormValues>({
+    resolver: zodResolver(estimateFormSchema),
+    defaultValues: {
+      projectType: "fence",
+      projectSubtype: "wood",
+      dimensions: {
+        length: "",
+        width: "",
+        height: "",
+        area: "",
+      },
+      additionalFeatures: {
+        demolition: false,
+        painting: false,
+        lattice: false,
+        gates: [],
+      },
+      notes: "",
+      useAI: false,
+      customPrompt: "",
+    },
+  });
   
   // Estado para materiales, templates y precios
   const [templates, setTemplates] = useState<Template[]>([]);

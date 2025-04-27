@@ -1,34 +1,32 @@
 import { Express, Request, Response } from "express";
 import { z } from "zod";
 import { storage } from "../storage";
-import { estimatorService, validateProjectInput } from "../services/estimatorService";
-import { promptGeneratorService } from "../services/promptGeneratorService";
+import { estimatorService, ProjectInput } from "../services/estimatorService";
 import { emailService } from "../services/emailService";
-import { InsertProject } from "@shared/schema";
 
 export function registerEstimateRoutes(app: Express): void {
   // Endpoint para validar datos de entrada
-  app.post('/api/estimates/validate', async (req: Request, res: Response) => {
+  app.post('/api/estimate/validate', async (req: Request, res: Response) => {
     try {
-      // In a real app, we would get the user ID from the session
-      const userId = 1; // Default user ID
+      // En una aplicación real, obtendríamos el ID del usuario de la sesión
+      const userId = 1; // ID por defecto para pruebas
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: 'Usuario no encontrado' });
       }
       
-      // Validate input data
+      // Validar datos de entrada
       const inputData = {
         ...req.body,
         contractorId: userId,
         contractorName: user.company || user.username,
-        contractorAddress: user.address || '',
-        contractorPhone: user.phone || '',
-        contractorEmail: user.email || '',
-        contractorLicense: user.license || '',
+        contractorAddress: user.address || "",
+        contractorPhone: user.phone || "",
+        contractorEmail: user.email || "",
+        contractorLicense: user.license || "",
       };
       
-      const validationErrors = validateProjectInput(inputData);
+      const validationErrors = estimatorService.validateProjectInput(inputData);
       
       if (Object.keys(validationErrors).length > 0) {
         return res.status(400).json({ 
@@ -40,7 +38,7 @@ export function registerEstimateRoutes(app: Express): void {
       res.json({ valid: true });
     } catch (error) {
       console.error('Error validando datos del proyecto:', error);
-      res.status(400).json({ message: 'Error validando datos del proyecto' });
+      res.status(400).json({ message: 'Error al validar datos del proyecto' });
     }
   });
   
@@ -49,15 +47,6 @@ export function registerEstimateRoutes(app: Express): void {
     try {
       // Validar schema de entrada
       const inputSchema = z.object({
-        contractorId: z.number().optional(),
-        contractorName: z.string().optional(),
-        contractorCompany: z.string().optional(),
-        contractorAddress: z.string().optional(),
-        contractorPhone: z.string().optional(),
-        contractorEmail: z.string().optional(),
-        contractorLicense: z.string().optional(),
-        contractorLogo: z.string().optional(),
-        
         // Client Information
         clientName: z.string().min(1, "Cliente obligatorio"),
         clientEmail: z.string().email().optional(),
@@ -76,44 +65,70 @@ export function registerEstimateRoutes(app: Express): void {
           width: z.number().optional(),
           area: z.number().optional()
         }).refine(data => {
-          // Si es un proyecto de cerca, longitud es obligatoria
-          if (data.length && data.length > 0) return true;
-          
-          // Si es un proyecto de techado, área es obligatoria
-          if (data.area && data.area > 0) return true;
-          
-          return false;
+          return data.length > 0 || data.area > 0 || (data.width > 0 && data.height > 0);
         }, {
-          message: "Se requiere longitud para cercas o área para techados"
+          message: "Se requiere al menos una dimensión válida (longitud, área, o ancho y altura)"
         }),
         additionalFeatures: z.record(z.any()).optional(),
         notes: z.string().optional(),
         
         // Generation options
         useAI: z.boolean().optional(),
-        customPrompt: z.string().optional()
+        customPrompt: z.string().optional(),
+        
+        // Contractor Info (opcional desde el frontend, requerido para el servicio)
+        contractorId: z.number().optional(),
+        contractorName: z.string().optional(),
+        contractorCompany: z.string().optional(),
+        contractorAddress: z.string().optional(),
+        contractorPhone: z.string().optional(),
+        contractorEmail: z.string().optional(),
+        contractorLicense: z.string().optional(),
+        contractorLogo: z.string().optional()
       });
       
+      // Validar datos
       const validatedInput = inputSchema.parse(req.body);
       
-      // Para modo de prueba, utilizar datos del contractista proporcionados
-      const contractorId = validatedInput.contractorId || 1;
+      // En una aplicación real, obtendríamos el ID del usuario de la sesión
+      const userId = 1; // ID por defecto para pruebas
+      const user = await storage.getUser(userId);
       
-      // Si no se proporcionan datos del contratista, obtenerlos de la BD
-      if (!validatedInput.contractorName) {
-        const contractor = await storage.getUser(contractorId);
-        if (contractor) {
-          validatedInput.contractorName = contractor.company || contractor.username;
-          validatedInput.contractorCompany = contractor.company;
-          validatedInput.contractorAddress = contractor.address;
-          validatedInput.contractorPhone = contractor.phone;
-          validatedInput.contractorEmail = contractor.email;
-          validatedInput.contractorLicense = contractor.license;
-        }
-      }
+      // Preparar datos para el servicio estimador
+      const estimateInput: ProjectInput = {
+        // Usar datos del contratista proporcionados o del usuario autenticado
+        contractorId: validatedInput.contractorId || userId,
+        contractorName: validatedInput.contractorName || user?.username || "",
+        contractorCompany: validatedInput.contractorCompany || user?.company || "",
+        contractorAddress: validatedInput.contractorAddress || user?.address || "",
+        contractorPhone: validatedInput.contractorPhone || user?.phone || "",
+        contractorEmail: validatedInput.contractorEmail || user?.email || "",
+        contractorLicense: validatedInput.contractorLicense || user?.license || "",
+        contractorLogo: validatedInput.contractorLogo,
+        
+        // Datos del cliente
+        clientName: validatedInput.clientName,
+        clientEmail: validatedInput.clientEmail,
+        clientPhone: validatedInput.clientPhone,
+        projectAddress: validatedInput.projectAddress,
+        clientCity: validatedInput.clientCity,
+        clientState: validatedInput.clientState,
+        clientZip: validatedInput.clientZip,
+        
+        // Detalles del proyecto
+        projectType: validatedInput.projectType,
+        projectSubtype: validatedInput.projectSubtype,
+        projectDimensions: validatedInput.projectDimensions,
+        additionalFeatures: validatedInput.additionalFeatures,
+        notes: validatedInput.notes,
+        
+        // Opciones de generación
+        useAI: validatedInput.useAI,
+        customPrompt: validatedInput.customPrompt
+      };
       
-      // Generate estimate
-      const estimateResult = await estimatorService.generateEstimate(validatedInput);
+      // Generar estimado
+      const estimateResult = await estimatorService.generateEstimate(estimateInput);
       
       res.json(estimateResult);
     } catch (error) {
@@ -131,17 +146,16 @@ export function registerEstimateRoutes(app: Express): void {
   });
   
   // Endpoint para generar HTML personalizado del estimado
-  app.post('/api/estimates/generate-html', async (req: Request, res: Response) => {
+  app.post('/api/estimates/html', async (req: Request, res: Response) => {
     try {
       const schema = z.object({
-        estimate: z.record(z.any()),
-        templateId: z.number().optional()
+        estimateData: z.record(z.any())
       });
       
-      const { estimate, templateId } = schema.parse(req.body);
+      const { estimateData } = schema.parse(req.body);
       
-      // Generate HTML
-      const html = await estimatorService.generateEstimateHtml(estimate);
+      // Generar HTML
+      const html = await estimatorService.generateEstimateHtml(estimateData);
       
       res.json({ html });
     } catch (error) {
@@ -160,137 +174,109 @@ export function registerEstimateRoutes(app: Express): void {
       
       const { estimateData, status = 'draft' } = schema.parse(req.body);
       
-      // In a real app, we would get the user ID from the session
-      const userId = estimateData.contractor?.id || 1; // Default user ID
+      // En una aplicación real, obtendríamos el ID del usuario de la sesión
+      const userId = 1; // ID por defecto para pruebas
       
-      // Generate HTML for the estimate
+      // Generar ID único para el proyecto
+      const projectId = estimateData.projectId || `proj_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+      
+      // Generar HTML para el estimado
       const estimateHtml = await estimatorService.generateEstimateHtml(estimateData);
       
-      // Prepare project data
-      const projectData: InsertProject = {
+      // Preparar datos del proyecto
+      const projectData = {
         userId: userId,
-        projectId: estimateData.projectId || `proj_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+        projectId: projectId,
         clientName: estimateData.client?.name || 'Cliente',
-        clientEmail: estimateData.client?.email || '',
-        clientPhone: estimateData.client?.phone || '',
+        clientEmail: estimateData.client?.email || null,
+        clientPhone: estimateData.client?.phone || null,
         address: estimateData.client?.address || '',
-        fenceType: estimateData.project?.subtype || '',
-        length: estimateData.project?.dimensions?.length || 0,
-        height: estimateData.project?.dimensions?.height || 0,
-        gates: estimateData.project?.additionalFeatures?.gates || [],
-        additionalDetails: estimateData.project?.notes || '',
+        city: estimateData.client?.city || null,
+        state: estimateData.client?.state || null,
+        zip: estimateData.client?.zip || null,
+        fenceType: estimateData.project?.subtype || 'Wood Fence',
+        status: status,
         estimateHtml: estimateHtml,
-        status: status
+        details: JSON.stringify(estimateData),
+        createdAt: new Date(),
+        updatedAt: new Date()
       };
       
-      // Add total price if available
-      if (estimateData.rulesBasedEstimate?.totals?.total) {
-        projectData.totalPrice = Math.round(estimateData.rulesBasedEstimate.totals.total * 100);
-      }
-      
-      // Save to database
+      // Guardar proyecto
       const project = await storage.createProject(projectData);
       
-      res.json({
+      res.status(201).json({
         success: true,
-        project
+        projectId: project.projectId,
+        project: project
       });
     } catch (error) {
       console.error('Error guardando estimado:', error);
-      res.status(500).json({ message: 'Error guardando el estimado' });
+      res.status(500).json({ message: 'Error guardando estimado' });
     }
   });
   
-  // Endpoint para obtener todos los materiales para un tipo específico
-  app.get('/api/materials', async (req: Request, res: Response) => {
-    try {
-      const { category } = req.query;
-      
-      if (!category || typeof category !== 'string') {
-        return res.status(400).json({ message: 'Se requiere categoría de materiales' });
-      }
-      
-      // Obtener materiales de la base de datos
-      const materials = await storage.getMaterialsByCategory(category);
-      
-      res.json(materials);
-    } catch (error) {
-      console.error('Error obteniendo materiales:', error);
-      res.status(500).json({ message: 'Error obteniendo materiales' });
-    }
-  });
-  
-  // Endpoint para generar un prompt y obtener estimado asistido por IA
-  app.post('/api/estimates/generate-prompt', async (req: Request, res: Response) => {
+  // Endpoint para enviar el estimado por email
+  app.post('/api/estimates/email', async (req: Request, res: Response) => {
     try {
       const schema = z.object({
-        userId: z.number().optional(),
-        projectData: z.record(z.any()),
-        category: z.string()
-      });
-      
-      const { userId = 1, projectData, category } = schema.parse(req.body);
-      
-      // Generar el prompt
-      const prompt = await promptGeneratorService.generatePromptForProject(userId, projectData, category);
-      
-      res.json({ prompt });
-    } catch (error) {
-      console.error('Error generando prompt:', error);
-      res.status(500).json({ message: 'Error generando prompt' });
-    }
-  });
-  
-  // Endpoint para procesar un prompt con IA y obtener un estimado estructurado
-  app.post('/api/estimates/process-prompt', async (req: Request, res: Response) => {
-    try {
-      const schema = z.object({
-        prompt: z.string(),
-        systemInstructions: z.string().optional()
-      });
-      
-      const { prompt, systemInstructions } = schema.parse(req.body);
-      
-      // Procesar el prompt con OpenAI
-      const result = await promptGeneratorService.processPromptWithAI(prompt, systemInstructions);
-      
-      res.json(result);
-    } catch (error) {
-      console.error('Error procesando prompt con IA:', error);
-      res.status(500).json({ message: 'Error procesando prompt con IA' });
-    }
-  });
-  
-  // Endpoint para enviar estimado por email
-  app.post('/api/estimates/send-email', async (req: Request, res: Response) => {
-    try {
-      const schema = z.object({
-        estimate: z.record(z.any()),
-        templateId: z.number().optional().nullable(),
+        estimateData: z.record(z.any()),
         email: z.string().email(),
-        subject: z.string(),
-        message: z.string()
+        subject: z.string().optional(),
+        message: z.string().optional(),
+        templateId: z.number().optional()
       });
       
-      const { estimate, templateId, email, subject, message } = schema.parse(req.body);
+      const { estimateData, email, subject, message, templateId } = schema.parse(req.body);
+      
+      // En una aplicación real, obtendríamos el ID del usuario de la sesión
+      const userId = 1; // ID por defecto para pruebas
+      
+      // Generar HTML para el estimado
+      const estimateHtml = await estimatorService.generateEstimateHtml(estimateData);
+      
+      // Preparar datos para el email
+      const emailData = {
+        to: email,
+        subject: subject || `Estimado para ${estimateData.client?.name || 'su proyecto'}`,
+        html: estimateHtml,
+        message: message,
+        userId: userId,
+        templateId: templateId,
+        attachments: [{
+          content: Buffer.from(estimateHtml).toString('base64'),
+          filename: 'estimado.pdf',
+          type: 'application/pdf',
+          disposition: 'attachment'
+        }]
+      };
       
       // Enviar email
-      const result = await emailService.sendEstimateByEmail(
-        estimate,
-        templateId || null,
-        email,
-        subject,
-        message
-      );
+      const emailResult = await emailService.sendEstimateEmail(emailData);
       
-      if (result) {
-        res.json({ success: true, message: 'Email enviado correctamente' });
+      if (emailResult.success) {
+        res.json({
+          success: true,
+          message: 'Email enviado correctamente'
+        });
       } else {
-        res.status(500).json({ success: false, message: 'Error al enviar email' });
+        res.status(500).json({
+          success: false,
+          message: 'Error enviando email',
+          error: emailResult.error
+        });
       }
     } catch (error) {
-      console.error('Error enviando email:', error);
-      res.status(500).json({ message: 'Error enviando email' });
+      console.error('Error enviando estimado por email:', error);
+      
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: 'Datos de entrada inválidos',
+          errors: error.errors
+        });
+      }
+      
+      res.status(500).json({ message: 'Error enviando estimado por email' });
     }
   });
 }
