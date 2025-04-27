@@ -12,6 +12,7 @@ interface AddressAutocompleteProps {
     state?: string;
     zipCode?: string;
   }) => void;
+  onAddressSelected?: (address: any) => void;
   placeholder?: string;
 }
 
@@ -19,6 +20,7 @@ export function AddressAutocomplete({
   label,
   value,
   onChange,
+  onAddressSelected,
   placeholder = "Enter address..."
 }: AddressAutocompleteProps) {
   const handlePlaceSelect = async (place: any) => {
@@ -53,10 +55,20 @@ export function AddressAutocomplete({
           });
 
           onChange(place.value.description, details);
+          
+          // Call the onAddressSelected callback if provided
+          if (onAddressSelected) {
+            onAddressSelected(place);
+          }
         }
       } catch (error) {
         console.error('Error getting address details:', error);
         onChange(place.value.description);
+        
+        // Still call onAddressSelected with the place, even if geocoding failed
+        if (onAddressSelected) {
+          onAddressSelected(place);
+        }
       }
     }
   };
