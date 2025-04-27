@@ -133,16 +133,23 @@ export function ClientValidator({ onClientValidated, existingClients = [] }: Cli
       // Formatear dirección para la petición
       const formattedAddress = [address, city, state, zip].filter(Boolean).join(', ');
       
+      console.log('Enviando solicitud de verificación de propiedad para:', formattedAddress);
+      
       // Hacer petición al API para verificar la propiedad
       const response = await axios.get('/api/property/details', {
-        params: { address: formattedAddress }
+        params: { 
+          address: formattedAddress,
+          mock: process.env.NODE_ENV === 'development' // Usar datos simulados en desarrollo
+        }
       });
+      
+      console.log('Respuesta de la API:', response.data);
       
       if (response.data && response.data.property) {
         setPropertyDetails(response.data.property);
         toast({
           title: 'Propiedad verificada',
-          description: 'Los detalles de la propiedad se han verificado correctamente',
+          description: `Datos ${response.data.source === 'SIMULADO' ? 'simulados' : 'reales'} obtenidos correctamente`,
         });
       } else {
         setPropertyError('No se pudieron encontrar detalles de la propiedad');
@@ -157,9 +164,31 @@ export function ClientValidator({ onClientValidated, existingClients = [] }: Cli
       setPropertyError('Error al verificar la propiedad');
       toast({
         title: 'Error',
-        description: 'Hubo un problema al verificar los detalles de la propiedad',
+        description: 'Hubo un problema al verificar los detalles de la propiedad. Utilizando datos simulados.',
         variant: 'destructive',
       });
+      
+      // Intentar obtener datos simulados en caso de error
+      try {
+        const formattedAddress = [address, city, state, zip].filter(Boolean).join(', ');
+        const fallbackResponse = await axios.get('/api/property/details', {
+          params: { 
+            address: formattedAddress,
+            mock: true
+          }
+        });
+        
+        if (fallbackResponse.data && fallbackResponse.data.property) {
+          setPropertyDetails(fallbackResponse.data.property);
+          setPropertyError(null);
+          toast({
+            title: 'Datos simulados cargados',
+            description: 'Se están utilizando datos de desarrollo para continuar',
+          });
+        }
+      } catch (fallbackError) {
+        console.error('Error también en el fallback:', fallbackError);
+      }
     } finally {
       setIsVerifyingProperty(false);
     }
@@ -357,7 +386,7 @@ export function ClientValidator({ onClientValidated, existingClients = [] }: Cli
                     <div className="pl-7 text-sm space-y-1">
                       <p><strong>Tipo:</strong> {propertyDetails.propertyType || 'No disponible'}</p>
                       <p><strong>Año de Construcción:</strong> {propertyDetails.yearBuilt || 'No disponible'}</p>
-                      <p><strong>Superficie (pies²):</strong> {propertyDetails.buildingArea || 'No disponible'}</p>
+                      <p><strong>Superficie (pies²):</strong> {propertyDetails.totalArea || 'No disponible'}</p>
                       <p><strong>Terreno (pies²):</strong> {propertyDetails.lotSize || 'No disponible'}</p>
                     </div>
                   </div>
@@ -454,7 +483,7 @@ export function ClientValidator({ onClientValidated, existingClients = [] }: Cli
                         <div className="pl-7 text-sm space-y-1">
                           <p><strong>Tipo:</strong> {propertyDetails.propertyType || 'No disponible'}</p>
                           <p><strong>Año de Construcción:</strong> {propertyDetails.yearBuilt || 'No disponible'}</p>
-                          <p><strong>Superficie (pies²):</strong> {propertyDetails.buildingArea || 'No disponible'}</p>
+                          <p><strong>Superficie (pies²):</strong> {propertyDetails.totalArea || 'No disponible'}</p>
                           <p><strong>Terreno (pies²):</strong> {propertyDetails.lotSize || 'No disponible'}</p>
                         </div>
                       </div>
