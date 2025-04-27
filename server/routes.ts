@@ -22,6 +22,8 @@ import { permitService } from './services/permitService';
 import { searchService } from './services/searchService';
 import { sendSupportEmail } from './services/emailService';
 import { estimatorService, validateProjectInput } from './services/estimatorService';
+import { promptGeneratorService } from './services/promptGeneratorService';
+import { registerPromptTemplateRoutes } from './routes/prompt-templates';
 import express from 'express'; // Import express to use express.raw
 
 // Initialize OpenAI API
@@ -75,6 +77,9 @@ function calculateCompletionTime(length: number): string {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Registrar rutas de plantillas de prompts
+  registerPromptTemplateRoutes(app);
+  
   // Add API routes
   app.get('/api/projects', async (req: Request, res: Response) => {
     try {
