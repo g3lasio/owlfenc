@@ -127,7 +127,7 @@ export class PromptGeneratorService {
       ].filter(Boolean).join(", ");
       
       completedPrompt = completedPrompt.replace(/\[dirección\]/g, location);
-      completedPrompt = completedPrompt.replace(/\[ubicación\]/g, projectData.clientState || "California");
+      completedPrompt = completedPrompt.replace(/\[ubicación\]/g, projectData.clientState ? projectData.clientState : "California");
 
       // Additional details
       let detailsText = "";
@@ -176,8 +176,13 @@ export class PromptGeneratorService {
       // Return the result
       if (format === "json") {
         try {
-          // Parse the response if json format was requested
-          return JSON.parse(response.choices[0].message.content);
+          // Parse the response if json format was requested and content is not null
+          const content = response.choices[0].message.content;
+          if (content) {
+            return JSON.parse(content);
+          } else {
+            return { error: "Empty response from OpenAI" };
+          }
         } catch (parseError) {
           console.error("Error parsing OpenAI JSON response:", parseError);
           // Return raw text if parsing fails

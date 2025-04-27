@@ -446,7 +446,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createPromptTemplate(insertTemplate: InsertPromptTemplate): Promise<PromptTemplate> {
-    // Si esta plantilla está marcada como predeterminada, desmarcar cualquier otra que pueda ser predeterminada
+    // Si esta plantilla está marcada como predeterminada, desmarcar cualquier otra del mismo tipo
     if (insertTemplate.isDefault) {
       await db
         .update(promptTemplates)
@@ -468,16 +468,16 @@ export class DatabaseStorage implements IStorage {
       const [currentTemplate] = await db.select().from(promptTemplates).where(eq(promptTemplates.id, id));
       
       if (currentTemplate) {
-        // Actualizar todos los otros templates excepto el actual
+        // Desmarcar las otras plantillas predeterminadas de la misma categoría
         await db
           .update(promptTemplates)
           .set({ isDefault: false })
           .where(and(
             eq(promptTemplates.userId, currentTemplate.userId),
             eq(promptTemplates.category, currentTemplate.category),
-            eq(promptTemplates.isDefault, true)
-          ))
-          .where(eq(promptTemplates.id, id, { not: true }));
+            eq(promptTemplates.isDefault, true),
+            eq(promptTemplates.id, id).not()
+          ));
       }
     }
     
@@ -498,7 +498,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deletePromptTemplate(id: number): Promise<boolean> {
-    const result = await db
+    await db
       .delete(promptTemplates)
       .where(eq(promptTemplates.id, id));
     
