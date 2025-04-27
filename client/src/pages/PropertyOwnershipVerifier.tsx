@@ -486,58 +486,74 @@ export default function PropertyOwnershipVerifier() {
                 </div>
               </div>
 
-              {/* Detalles de propiedad compactos */}
-              <div className="bg-gradient-to-r from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 p-4 rounded-lg border shadow-sm">
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Columna izquierda */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Home className="text-primary" size={16} />
-                      <span className="text-sm">
-                        <span className="text-muted-foreground">Tipo:</span>{" "}
-                        <span className="font-medium">{propertyDetails.propertyType.split('/')[0]}</span>
+              {/* Detalles de propiedad en un solo card */}
+              <div className="p-4 rounded-lg border bg-white dark:bg-gray-800">
+                <div className="mb-3 pb-2 border-b">
+                  <h3 className="text-md font-semibold flex items-center">
+                    <Home className="text-primary mr-2" size={18} />
+                    Información de la propiedad
+                  </h3>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="flex flex-col">
+                    <div className="flex items-center mb-2">
+                      <span className="bg-primary/10 p-1 rounded mr-2">
+                        <Home className="text-primary" size={15} />
                       </span>
+                      <span className="text-sm font-medium">Tipo de propiedad</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="text-primary" size={16} />
-                      <span className="text-sm">
-                        <span className="text-muted-foreground">Año:</span>{" "}
-                        <span className="font-medium">{propertyDetails.yearBuilt}</span>
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <BedDouble className="text-primary" size={16} />
-                      <span className="text-sm">
-                        <span className="text-muted-foreground">Hab/Baños:</span>{" "}
-                        <span className="font-medium">{propertyDetails.bedrooms || "N/A"}/{propertyDetails.bathrooms || "N/A"}</span>
-                      </span>
-                    </div>
+                    <p className="text-sm pl-7">{propertyDetails.propertyType}</p>
                   </div>
-                  
-                  {/* Columna derecha */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Ruler className="text-primary" size={16} />
-                      <span className="text-sm">
-                        <span className="text-muted-foreground">Área:</span>{" "}
-                        <span className="font-medium">{propertyDetails.sqft?.toLocaleString() || "N/A"} pie²</span>
+
+                  <div className="flex flex-col">
+                    <div className="flex items-center mb-2">
+                      <span className="bg-primary/10 p-1 rounded mr-2">
+                        <Calendar className="text-primary" size={15} />
                       </span>
+                      <span className="text-sm font-medium">Año de construcción</span>
                     </div>
-                    {propertyDetails.lotSize && (
-                      <div className="flex items-center gap-2">
-                        <Trees className="text-primary" size={16} />
-                        <span className="text-sm">
-                          <span className="text-muted-foreground">Terreno:</span>{" "}
-                          <span className="font-medium">{propertyDetails.lotSize}</span>
-                          {propertyDetails.landSqft && propertyDetails.landSqft > 0 && (
-                            <span className="text-muted-foreground text-xs ml-1">
-                              ({propertyDetails.landSqft.toLocaleString()} pie²)
-                            </span>
-                          )}
+                    <p className="text-sm pl-7">{propertyDetails.yearBuilt || "No disponible"}</p>
+                  </div>
+
+                  <div className="flex flex-col">
+                    <div className="flex items-center mb-2">
+                      <span className="bg-primary/10 p-1 rounded mr-2">
+                        <BedDouble className="text-primary" size={15} />
+                      </span>
+                      <span className="text-sm font-medium">Habitaciones / Baños</span>
+                    </div>
+                    <p className="text-sm pl-7">{propertyDetails.bedrooms || "N/A"} hab / {propertyDetails.bathrooms || "N/A"} baños</p>
+                  </div>
+
+                  <div className="flex flex-col">
+                    <div className="flex items-center mb-2">
+                      <span className="bg-primary/10 p-1 rounded mr-2">
+                        <Ruler className="text-primary" size={15} />
+                      </span>
+                      <span className="text-sm font-medium">Área habitable</span>
+                    </div>
+                    <p className="text-sm pl-7">{propertyDetails.sqft?.toLocaleString() || "N/A"} pie²</p>
+                  </div>
+
+                  {propertyDetails.lotSize && (
+                    <div className="flex flex-col sm:col-span-2">
+                      <div className="flex items-center mb-2">
+                        <span className="bg-primary/10 p-1 rounded mr-2">
+                          <Trees className="text-primary" size={15} />
                         </span>
+                        <span className="text-sm font-medium">Tamaño del terreno</span>
                       </div>
-                    )}
-                  </div>
+                      <p className="text-sm pl-7">
+                        {propertyDetails.lotSize}
+                        {propertyDetails.landSqft && propertyDetails.landSqft > 0 && (
+                          <span className="text-muted-foreground text-xs ml-1">
+                            ({propertyDetails.landSqft.toLocaleString()} pie²)
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
