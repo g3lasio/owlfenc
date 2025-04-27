@@ -10,6 +10,8 @@ import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Client {
   id: number;
@@ -24,11 +26,45 @@ interface Client {
   notes: string | null;
 }
 
+interface Template {
+  id: number;
+  name: string;
+  type: string;
+  html: string;
+  isDefault: boolean;
+}
+
+interface Material {
+  id: number;
+  category: string;
+  name: string;
+  description: string | null;
+  price: number; // Cents
+  unit: string;
+  supplier: string | null;
+  notes: string | null;
+}
+
+interface Contractor {
+  id: number;
+  name: string;
+  company: string | null;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
+  license: string | null;
+  logo?: string;
+}
+
 interface ManualEstimateFormProps {
   onEstimateGenerated: (html: string) => void;
 }
 
 export default function ManualEstimateForm({ onEstimateGenerated }: ManualEstimateFormProps) {
+  // Estado para datos del contratista
+  const [contractor, setContractor] = useState<Contractor | null>(null);
+  const [isLoadingContractor, setIsLoadingContractor] = useState(true);
+  
   // Estado para clientes y cliente seleccionado
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<string>("");
@@ -45,11 +81,31 @@ export default function ManualEstimateForm({ onEstimateGenerated }: ManualEstima
   const [clientZip, setClientZip] = useState("");
   
   // Datos del proyecto
-  const [projectType, setProjectType] = useState("residential");
-  const [fenceType, setFenceType] = useState("");
-  const [fenceLength, setFenceLength] = useState("");
-  const [fenceHeight, setFenceHeight] = useState("");
+  const [projectType, setProjectType] = useState("fencing");
+  const [projectSubtype, setProjectSubtype] = useState("");
+  const [projectLength, setProjectLength] = useState("");
+  const [projectHeight, setProjectHeight] = useState("");
+  const [projectArea, setProjectArea] = useState(""); // Para techos, en pies cuadrados
   const [additionalNotes, setAdditionalNotes] = useState("");
+  
+  // Características adicionales
+  const [includeDemolition, setIncludeDemolition] = useState(false);
+  const [includePainting, setIncludePainting] = useState(false);
+  const [includeLattice, setIncludeLattice] = useState(false);
+  const [gates, setGates] = useState<{type: string; width: number; quantity: number}[]>([]);
+  
+  // Estado para materiales, templates y precios
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
+  const [materials, setMaterials] = useState<Material[]>([]);
+  const [isLoadingMaterials, setIsLoadingMaterials] = useState(true);
+  
+  // Opciones de generación
+  const [useAI, setUseAI] = useState(false);
+  const [customPrompt, setCustomPrompt] = useState("");
+  const [estimateResult, setEstimateResult] = useState<any>(null);
+  const [adjustedLaborRate, setAdjustedLaborRate] = useState<number | null>(null);
+  const [isCalculating, setIsCalculating] = useState(false);
   
   // Estado de navegación
   const [currentStep, setCurrentStep] = useState(1);
@@ -206,63 +262,334 @@ export default function ManualEstimateForm({ onEstimateGenerated }: ManualEstima
     setCurrentStep(currentStep - 1);
   };
   
-  // Función para generar el estimado básico
-  const generateEstimate = () => {
-    // En una implementación real, esto generaría un HTML más complejo
-    // basado en todos los datos recopilados
-    const estimateHtml = `
-      <div class="estimate-container">
-        <h1>Estimado para: ${clientName}</h1>
-        <p><strong>Dirección:</strong> ${clientAddress}</p>
-        <p><strong>Ciudad:</strong> ${clientCity}, ${clientState} ${clientZip}</p>
-        <p><strong>Tipo de proyecto:</strong> ${projectType === 'residential' ? 'Residencial' : 'Comercial'}</p>
-        <p><strong>Tipo de cerca:</strong> ${fenceType}</p>
-        <p><strong>Longitud:</strong> ${fenceLength} pies</p>
-        <p><strong>Altura:</strong> ${fenceHeight} pies</p>
-        <p><strong>Notas adicionales:</strong> ${additionalNotes}</p>
-        
-        <h2>Desglose de costos</h2>
-        <table style="width:100%; border-collapse: collapse;">
-          <tr>
-            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Ítem</th>
-            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Costo</th>
-          </tr>
-          <tr>
-            <td style="border: 1px solid #ddd; padding: 8px;">Materiales</td>
-            <td style="border: 1px solid #ddd; padding: 8px;">$${calculateMaterialCost()}</td>
-          </tr>
-          <tr>
-            <td style="border: 1px solid #ddd; padding: 8px;">Mano de obra</td>
-            <td style="border: 1px solid #ddd; padding: 8px;">$${calculateLaborCost()}</td>
-          </tr>
-          <tr>
-            <td style="border: 1px solid #ddd; padding: 8px;"><strong>Total</strong></td>
-            <td style="border: 1px solid #ddd; padding: 8px;"><strong>$${calculateTotalCost()}</strong></td>
-          </tr>
-        </table>
-        
-        <p style="margin-top: 20px; font-style: italic;">Este estimado es válido por 30 días desde la fecha de emisión.</p>
-      </div>
-    `;
+  // Cargar datos del contratista
+  useEffect(() => {
+    async function fetchContractorData() {
+      try {
+        const response = await fetch('/api/contractor/profile');
+        if (!response.ok) {
+          throw new Error('Error al obtener datos del contratista');
+        }
+        const data = await response.json();
+        setContractor(data);
+        setIsLoadingContractor(false);
+      } catch (error) {
+        console.error('Error cargando datos del contratista:', error);
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los datos del contratista. Por favor verifica tu perfil.",
+          variant: "destructive"
+        });
+        setIsLoadingContractor(false);
+      }
+    }
     
-    onEstimateGenerated(estimateHtml);
+    fetchContractorData();
+  }, [toast]);
+  
+  // Cargar materiales
+  useEffect(() => {
+    async function fetchMaterials() {
+      try {
+        // Determinar la categoría de materiales basada en el tipo de proyecto
+        let category = "";
+        if (projectType === "fencing") {
+          category = "fencing";
+        } else if (projectType === "roofing") {
+          category = "roofing";
+        } else {
+          category = "general";
+        }
+        
+        const response = await fetch(`/api/materials?category=${category}`);
+        if (!response.ok) {
+          throw new Error('Error al obtener materiales');
+        }
+        
+        const data = await response.json();
+        setMaterials(data);
+        setIsLoadingMaterials(false);
+      } catch (error) {
+        console.error('Error cargando materiales:', error);
+        setIsLoadingMaterials(false);
+      }
+    }
+    
+    fetchMaterials();
+  }, [projectType]);
+  
+  // Cargar templates
+  useEffect(() => {
+    async function fetchTemplates() {
+      try {
+        const response = await fetch('/api/templates?type=estimate');
+        if (!response.ok) {
+          throw new Error('Error al obtener plantillas');
+        }
+        
+        const data = await response.json();
+        setTemplates(data);
+        
+        // Seleccionar la plantilla por defecto si existe
+        const defaultTemplate = data.find(t => t.isDefault);
+        if (defaultTemplate) {
+          setSelectedTemplateId(defaultTemplate.id);
+        } else if (data.length > 0) {
+          setSelectedTemplateId(data[0].id);
+        }
+      } catch (error) {
+        console.error('Error cargando templates:', error);
+      }
+    }
+    
+    fetchTemplates();
+  }, []);
+  
+  // Función para preparar los datos del estimado
+  const prepareEstimateData = (): any => {
+    // Características adicionales
+    const additionalFeatures: any = {
+      demolition: includeDemolition,
+      painting: includePainting,
+      lattice: includeLattice
+    };
+    
+    // Agregar puertas si se han definido
+    if (gates.length > 0) {
+      additionalFeatures.gates = gates;
+    }
+
+    const contractorId = contractor?.id || 1; // ID por defecto para pruebas
+
+    // Datos básicos del proyecto
+    return {
+      contractorId,
+      contractorName: contractor?.name || "Mi Empresa",
+      contractorCompany: contractor?.company || "",
+      contractorAddress: contractor?.address || "",
+      contractorPhone: contractor?.phone || "",
+      contractorEmail: contractor?.email || "",
+      contractorLicense: contractor?.license || "",
+      contractorLogo: contractor?.logo || "",
+      
+      // Datos del cliente
+      clientName,
+      clientEmail,
+      clientPhone,
+      projectAddress: clientAddress,
+      clientCity,
+      clientState,
+      clientZip,
+      
+      // Detalles del proyecto
+      projectType,
+      projectSubtype,
+      projectDimensions: {
+        length: projectLength ? parseFloat(projectLength) : undefined,
+        height: projectHeight ? parseFloat(projectHeight) : undefined,
+        area: projectArea ? parseFloat(projectArea) : undefined
+      },
+      additionalFeatures,
+      notes: additionalNotes,
+      
+      // Opciones de generación
+      useAI,
+      customPrompt
+    };
+  };
+
+  // Función para calcular el estimado
+  const calculateEstimate = async () => {
+    try {
+      setIsCalculating(true);
+      
+      const estimateData = prepareEstimateData();
+      
+      // Validar datos mínimos
+      if (!estimateData.clientName || !estimateData.projectAddress) {
+        toast({
+          title: "Datos incompletos",
+          description: "Se requiere nombre del cliente y dirección del proyecto",
+          variant: "destructive"
+        });
+        setIsCalculating(false);
+        return;
+      }
+      
+      // Validar dimensiones según el tipo de proyecto
+      if (projectType === "fencing") {
+        if (!estimateData.projectDimensions.length || !estimateData.projectDimensions.height) {
+          toast({
+            title: "Dimensiones incompletas",
+            description: "Para proyectos de cerca se requiere longitud y altura",
+            variant: "destructive"
+          });
+          setIsCalculating(false);
+          return;
+        }
+      } else if (projectType === "roofing") {
+        if (!estimateData.projectDimensions.area) {
+          toast({
+            title: "Dimensiones incompletas",
+            description: "Para proyectos de techo se requiere el área",
+            variant: "destructive"
+          });
+          setIsCalculating(false);
+          return;
+        }
+      }
+      
+      // Enviar datos al backend para cálculo
+      const response = await fetch('/api/estimates/calculate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(estimateData),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error calculando el estimado');
+      }
+      
+      const result = await response.json();
+      setEstimateResult(result);
+      
+      // Avanzar al siguiente paso (revisión)
+      setCurrentStep(4);
+      
+    } catch (error) {
+      console.error('Error calculando estimado:', error);
+      toast({
+        title: "Error en cálculo",
+        description: "No se pudo generar el estimado. Por favor intenta de nuevo.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsCalculating(false);
+    }
   };
   
-  // Funciones de cálculo simples (en una implementación real serían más complejas)
-  const calculateMaterialCost = () => {
-    // Cálculo simple basado en longitud y tipo
-    const baseRate = fenceType === 'wood' ? 15 : fenceType === 'chain' ? 12 : fenceType === 'vinyl' ? 25 : 20;
-    return Math.round(parseFloat(fenceLength || "0") * baseRate);
+  // Función para ajustar la tasa de mano de obra
+  const handleLaborRateAdjustment = (newRate: number) => {
+    if (!estimateResult) return;
+    
+    setAdjustedLaborRate(newRate);
+    
+    // En una implementación completa, esto recalcularía todos los costos
+    // basados en la nueva tasa de mano de obra
   };
   
-  const calculateLaborCost = () => {
-    // Cálculo simple basado en longitud y altura
-    const baseRate = 10;
-    return Math.round(parseFloat(fenceLength || "0") * parseFloat(fenceHeight || "0") * baseRate / 10);
+  // Función para generar el HTML del estimado
+  const generateEstimateHTML = async () => {
+    try {
+      // Si no hay estimado calculado, mostrar error
+      if (!estimateResult) {
+        toast({
+          title: "Error",
+          description: "Primero debes calcular un estimado",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Si hay una tasa de mano de obra ajustada, actualizarla en el resultado
+      let finalEstimate = estimateResult;
+      if (adjustedLaborRate !== null) {
+        // Crear una copia del estimado con la tasa ajustada
+        // En una implementación real, esto sería más complejo y
+        // recalcularía todos los valores afectados
+        finalEstimate = {
+          ...estimateResult,
+          adjustedLaborRate
+        };
+      }
+      
+      // Obtener HTML usando el template seleccionado
+      const response = await fetch('/api/estimates/generate-html', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          estimate: finalEstimate,
+          templateId: selectedTemplateId
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error generando HTML del estimado');
+      }
+      
+      const { html } = await response.json();
+      
+      // Enviar el HTML al componente padre
+      onEstimateGenerated(html);
+      
+    } catch (error) {
+      console.error('Error generando HTML del estimado:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo generar el estimado. Por favor intenta de nuevo.",
+        variant: "destructive"
+      });
+    }
   };
   
-  const calculateTotalCost = () => {
-    return calculateMaterialCost() + calculateLaborCost();
+  // Función para enviar el estimado por email
+  const sendEstimateByEmail = async () => {
+    try {
+      if (!estimateResult || !clientEmail) {
+        toast({
+          title: "Error",
+          description: "Se requiere un estimado calculado y email del cliente",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Verificar formato de email
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientEmail)) {
+        toast({
+          title: "Email inválido",
+          description: "Por favor ingresa un email válido para el cliente",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Enviar email con el estimado
+      const response = await fetch('/api/estimates/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          estimate: estimateResult,
+          templateId: selectedTemplateId,
+          email: clientEmail,
+          subject: `Estimado de proyecto para ${clientName}`,
+          message: `Estimado ${clientName}, adjunto encontrará el estimado solicitado para su proyecto. Por favor no dude en contactarnos si tiene alguna pregunta.`
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error enviando email');
+      }
+      
+      toast({
+        title: "Email enviado",
+        description: `El estimado ha sido enviado a ${clientEmail}`,
+      });
+      
+    } catch (error) {
+      console.error('Error enviando email:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo enviar el email. Por favor intenta de nuevo.",
+        variant: "destructive"
+      });
+    }
   };
   
   return (
