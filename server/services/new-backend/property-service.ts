@@ -265,13 +265,41 @@ class NewBackendPropertyService {
     try {
       console.log(`Consultando dirección en ATTOM wrapper: ${address}`);
       
-      // Verificamos si hay datos en caché
-      const cacheKey = `property:${address.toLowerCase().trim()}`;
+      // Verificamos si hay datos en Firebase
+      const normalizedAddress = address.toLowerCase().trim();
+      
+      try {
+        // Importar el servicio de almacenamiento (importación dinámica para evitar problemas de dependencia circular)
+        const { propertyStorageService } = await import('../../services/propertyStorageService');
+        
+        // Buscar la propiedad en Firebase
+        const storedProperty = await propertyStorageService.getPropertyByAddress(normalizedAddress);
+        
+        if (storedProperty) {
+          // Verificar si los datos almacenados tienen menos de 24 horas
+          const storedDate = storedProperty.updatedAt instanceof Date 
+            ? storedProperty.updatedAt 
+            : new Date(storedProperty.updatedAt);
+            
+          if (Date.now() - storedDate.getTime() < 24 * 60 * 60 * 1000) {
+            console.log('Usando datos de Firebase para la dirección:', address);
+            return storedProperty;
+          } else {
+            console.log('Datos de Firebase encontrados pero han expirado, actualizando...');
+          }
+        }
+      } catch (error) {
+        console.error('Error al verificar datos en Firebase:', error);
+        // Continuamos con la solicitud a la API
+      }
+      
+      // También verificamos la caché en memoria como respaldo
+      const cacheKey = `property:${normalizedAddress}`;
       if (global.propertyCache && global.propertyCache[cacheKey]) {
         const cacheEntry = global.propertyCache[cacheKey];
         // Si los datos en caché tienen menos de 24 horas, los usamos
         if (Date.now() - cacheEntry.timestamp < 24 * 60 * 60 * 1000) {
-          console.log('Usando datos de caché para la dirección:', address);
+          console.log('Usando datos de caché en memoria para la dirección:', address);
           return cacheEntry.data;
         }
       }
@@ -465,7 +493,7 @@ class NewBackendPropertyService {
         
         console.log('Datos transformados:', JSON.stringify(propertyData, null, 2));
         
-        // Guardar en caché
+        // Guardar en caché en memoria
         if (!global.propertyCache) {
           global.propertyCache = {};
         }
@@ -473,6 +501,24 @@ class NewBackendPropertyService {
           data: propertyData,
           timestamp: Date.now()
         };
+        
+        // Guardar en Firebase para persistencia
+        try {
+          const { propertyStorageService } = await import('../../services/propertyStorageService');
+          
+          // Obtener el ID de usuario de la sesión si está disponible
+          let userId = null;
+          if (global.session && global.session.user) {
+            userId = global.session.user.id;
+          }
+          
+          // Guardar datos en Firebase
+          await propertyStorageService.saveProperty(propertyData, userId);
+          console.log('Datos de propiedad guardados en Firebase correctamente');
+        } catch (saveError) {
+          console.error('Error al guardar datos en Firebase:', saveError);
+          // No interrumpimos el flujo si falla el guardado en Firebase
+        }
         
         return propertyData;
       }
