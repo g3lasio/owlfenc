@@ -486,53 +486,60 @@ export default function PropertyOwnershipVerifier() {
                 </div>
               </div>
 
-              {/* Grid de características */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                {/* Tipo de propiedad */}
-                <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border flex flex-col items-center text-center">
-                  <Home className="text-primary mb-1" size={20} />
-                  <p className="text-xs text-muted-foreground">Tipo</p>
-                  <p className="text-sm font-semibold">{propertyDetails.propertyType.split('/')[0]}</p>
-                </div>
-
-                {/* Área */}
-                <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border flex flex-col items-center text-center">
-                  <Ruler className="text-primary mb-1" size={20} />
-                  <p className="text-xs text-muted-foreground">Área</p>
-                  <p className="text-sm font-semibold">{propertyDetails.sqft?.toLocaleString() || "N/A"} pie²</p>
-                </div>
-
-                {/* Habitaciones */}
-                <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border flex flex-col items-center text-center">
-                  <BedDouble className="text-primary mb-1" size={20} />
-                  <p className="text-xs text-muted-foreground">Hab/Baños</p>
-                  <p className="text-sm font-semibold">{propertyDetails.bedrooms || "N/A"}/{propertyDetails.bathrooms || "N/A"}</p>
-                </div>
-
-                {/* Año */}
-                <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border flex flex-col items-center text-center">
-                  <Calendar className="text-primary mb-1" size={20} />
-                  <p className="text-xs text-muted-foreground">Año</p>
-                  <p className="text-sm font-semibold">{propertyDetails.yearBuilt}</p>
-                </div>
-              </div>
-
-              {/* Terreno - Si está disponible */}
-              {propertyDetails.lotSize && (
-                <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border flex items-center justify-center mb-4">
-                  <Trees className="text-primary mr-2" size={18} />
-                  <div className="text-sm">
-                    <span className="font-semibold">Terreno:</span>
-                    <span className="ml-1">{propertyDetails.lotSize}
-                      {propertyDetails.landSqft && propertyDetails.landSqft > 0 && 
-                        <span className="text-muted-foreground ml-1">
-                          ({propertyDetails.landSqft.toLocaleString()} pie²)
+              {/* Detalles de propiedad compactos */}
+              <div className="bg-gradient-to-r from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 p-4 rounded-lg border shadow-sm">
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Columna izquierda */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Home className="text-primary" size={16} />
+                      <span className="text-sm">
+                        <span className="text-muted-foreground">Tipo:</span>{" "}
+                        <span className="font-medium">{propertyDetails.propertyType.split('/')[0]}</span>
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="text-primary" size={16} />
+                      <span className="text-sm">
+                        <span className="text-muted-foreground">Año:</span>{" "}
+                        <span className="font-medium">{propertyDetails.yearBuilt}</span>
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <BedDouble className="text-primary" size={16} />
+                      <span className="text-sm">
+                        <span className="text-muted-foreground">Hab/Baños:</span>{" "}
+                        <span className="font-medium">{propertyDetails.bedrooms || "N/A"}/{propertyDetails.bathrooms || "N/A"}</span>
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* Columna derecha */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Ruler className="text-primary" size={16} />
+                      <span className="text-sm">
+                        <span className="text-muted-foreground">Área:</span>{" "}
+                        <span className="font-medium">{propertyDetails.sqft?.toLocaleString() || "N/A"} pie²</span>
+                      </span>
+                    </div>
+                    {propertyDetails.lotSize && (
+                      <div className="flex items-center gap-2">
+                        <Trees className="text-primary" size={16} />
+                        <span className="text-sm">
+                          <span className="text-muted-foreground">Terreno:</span>{" "}
+                          <span className="font-medium">{propertyDetails.lotSize}</span>
+                          {propertyDetails.landSqft && propertyDetails.landSqft > 0 && (
+                            <span className="text-muted-foreground text-xs ml-1">
+                              ({propertyDetails.landSqft.toLocaleString()} pie²)
+                            </span>
+                          )}
                         </span>
-                      }
-                    </span>
+                      </div>
+                    )}
                   </div>
                 </div>
-              )}
+              </div>
 
               {/* Información de compra y propietario anterior si está disponible */}
               {propertyDetails.purchaseDate && (
