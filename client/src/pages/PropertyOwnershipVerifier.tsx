@@ -332,7 +332,7 @@ export default function PropertyOwnershipVerifier() {
                             handlePlaceSelect(value);
                           },
                           placeholder:
-                            "Ingresa la dirección completa de la propiedad",
+                            "type the address",
                           noOptionsMessage: () =>
                             "No se encontraron resultados",
                           loadingMessage: () => "Buscando direcciones...",
@@ -486,72 +486,43 @@ export default function PropertyOwnershipVerifier() {
                 </div>
               </div>
 
-              {/* Detalles de propiedad en un solo card */}
-              <div className="p-4 rounded-lg border bg-white dark:bg-gray-800">
-                <div className="mb-3 pb-2 border-b">
-                  <h3 className="text-md font-semibold flex items-center">
-                    <Home className="text-primary mr-2" size={18} />
-                    Información de la propiedad
-                  </h3>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="flex flex-col">
-                    <div className="flex items-center mb-2">
-                      <span className="bg-primary/10 p-1 rounded mr-2">
-                        <Home className="text-primary" size={15} />
-                      </span>
-                      <span className="text-sm font-medium">Tipo de propiedad</span>
-                    </div>
-                    <p className="text-sm pl-7">{propertyDetails.propertyType}</p>
+              {/* Detalles de propiedad simplificados con fondo azul oscuro */}
+              <div className="p-3 rounded-lg border bg-blue-900 text-white">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center">
+                    <Home className="text-cyan-400 mr-2" size={16} />
+                    <span className="text-xs">
+                      {propertyDetails.propertyType.split('/')[0]}
+                    </span>
                   </div>
-
-                  <div className="flex flex-col">
-                    <div className="flex items-center mb-2">
-                      <span className="bg-primary/10 p-1 rounded mr-2">
-                        <Calendar className="text-primary" size={15} />
-                      </span>
-                      <span className="text-sm font-medium">Año de construcción</span>
-                    </div>
-                    <p className="text-sm pl-7">{propertyDetails.yearBuilt || "No disponible"}</p>
+                  
+                  <div className="flex items-center">
+                    <Calendar className="text-cyan-400 mr-2" size={16} />
+                    <span className="text-xs">
+                      {propertyDetails.yearBuilt || "N/A"}
+                    </span>
                   </div>
-
-                  <div className="flex flex-col">
-                    <div className="flex items-center mb-2">
-                      <span className="bg-primary/10 p-1 rounded mr-2">
-                        <BedDouble className="text-primary" size={15} />
-                      </span>
-                      <span className="text-sm font-medium">Habitaciones / Baños</span>
-                    </div>
-                    <p className="text-sm pl-7">{propertyDetails.bedrooms || "N/A"} hab / {propertyDetails.bathrooms || "N/A"} baños</p>
+                  
+                  <div className="flex items-center">
+                    <BedDouble className="text-cyan-400 mr-2" size={16} />
+                    <span className="text-xs">
+                      {propertyDetails.bedrooms || "N/A"}/{propertyDetails.bathrooms || "N/A"}
+                    </span>
                   </div>
-
-                  <div className="flex flex-col">
-                    <div className="flex items-center mb-2">
-                      <span className="bg-primary/10 p-1 rounded mr-2">
-                        <Ruler className="text-primary" size={15} />
-                      </span>
-                      <span className="text-sm font-medium">Área habitable</span>
-                    </div>
-                    <p className="text-sm pl-7">{propertyDetails.sqft?.toLocaleString() || "N/A"} pie²</p>
+                  
+                  <div className="flex items-center">
+                    <Ruler className="text-cyan-400 mr-2" size={16} />
+                    <span className="text-xs">
+                      {propertyDetails.sqft?.toLocaleString() || "N/A"} pie²
+                    </span>
                   </div>
-
+                  
                   {propertyDetails.lotSize && (
-                    <div className="flex flex-col sm:col-span-2">
-                      <div className="flex items-center mb-2">
-                        <span className="bg-primary/10 p-1 rounded mr-2">
-                          <Trees className="text-primary" size={15} />
-                        </span>
-                        <span className="text-sm font-medium">Tamaño del terreno</span>
-                      </div>
-                      <p className="text-sm pl-7">
+                    <div className="flex items-center col-span-2">
+                      <Trees className="text-cyan-400 mr-2" size={16} />
+                      <span className="text-xs">
                         {propertyDetails.lotSize}
-                        {propertyDetails.landSqft && propertyDetails.landSqft > 0 && (
-                          <span className="text-muted-foreground text-xs ml-1">
-                            ({propertyDetails.landSqft.toLocaleString()} pie²)
-                          </span>
-                        )}
-                      </p>
+                      </span>
                     </div>
                   )}
                 </div>
