@@ -282,31 +282,18 @@ export default function ManualEstimateForm({ onEstimateGenerated }: ManualEstima
     }
   };
   
+  // Función para manejar la validación del cliente
+  const handleClientValidated = (client: any, property?: any) => {
+    setValidatedClient(client);
+    if (property) {
+      setPropertyDetails(property);
+    }
+    // Avanzar al siguiente paso
+    setCurrentStep(currentStep + 1);
+  };
+  
   // Función para manejar la navegación de pasos
   const goToNextStep = () => {
-    // Validaciones según el paso actual
-    if (currentStep === 1) {
-      // Si estamos creando un nuevo cliente, validar campos obligatorios
-      if (isNewClient && !clientName) {
-        toast({
-          title: "Campo requerido",
-          description: "Por favor ingresa el nombre del cliente",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      // Si es un cliente existente, verificar que haya seleccionado uno
-      if (!isNewClient && !selectedClientId) {
-        toast({
-          title: "Selección requerida",
-          description: "Por favor selecciona un cliente existente o crea uno nuevo",
-          variant: "destructive"
-        });
-        return;
-      }
-    }
-    
     // Avanzar al siguiente paso
     setCurrentStep(currentStep + 1);
   };
