@@ -1,16 +1,16 @@
 
-# Flujo de Generación de Estimados
-Este documento detalla el flujo completo del sistema de generación de estimados, tanto para el modo manual como para el asistido por IA (Mervin).
+# Estimate Generation Flow
+This document details the complete flow of the estimate generation system, both for manual mode and AI-assisted mode (Mervin).
 
-## 1. Arquitectura General
+## 1. General Architecture
 
-### 1.1 Servicios Principales
-- `EstimatorService`: Maneja la lógica central de estimación
-- `PromptGeneratorService`: Genera y procesa prompts para Mervin
-- `DatabaseStorage`: Acceso a datos y persistencia
-- `MaterialService`: Gestión de precios y materiales
+### 1.1 Main Services
+- `EstimatorService`: Handles central estimation logic
+- `PromptGeneratorService`: Generates and processes prompts for Mervin
+- `DatabaseStorage`: Data access and persistence
+- `MaterialService`: Price and materials management
 
-### 1.2 Endpoints API
+### 1.2 API Endpoints
 ```
 POST /api/estimates/calculate
 POST /api/estimates/validate  
@@ -19,48 +19,48 @@ POST /api/estimates/save
 POST /api/estimates/email
 ```
 
-## 2. Flujo de Datos
+## 2. Data Flow
 
-### 2.1 Obtención de Datos del Contratista
-1. Verificar sesión activa del contratista
-2. Cargar perfil desde `storage.getUser(userId)`
-3. Datos requeridos:
-   - ID del contratista
-   - Nombre/Empresa
-   - Dirección
-   - Teléfono
+### 2.1 Contractor Data Collection
+1. Verify active contractor session
+2. Load profile from `storage.getUser(userId)`
+3. Required data:
+   - Contractor ID
+   - Name/Company
+   - Address
+   - Phone
    - Email
-   - Licencia
+   - License
    - Logo
 
-### 2.2 Validación del Cliente
-1. Buscar cliente existente o crear nuevo
-2. Datos requeridos:
-   - Nombre completo
+### 2.2 Client Validation
+1. Search for existing client or create new
+2. Required data:
+   - Full name
    - Email
-   - Teléfono
-   - Dirección del proyecto
-   - Ciudad
-   - Estado
-   - Código postal
+   - Phone
+   - Project address
+   - City
+   - State
+   - Zip code
 
-### 2.3 Información del Proyecto
-1. Tipo de proyecto (cerca, techo, etc.)
-2. Subtipo (material específico)
-3. Dimensiones según tipo:
-   - Cerca: longitud y altura
-   - Techo: área
-   - Deck: área o longitud/ancho
-4. Características adicionales:
-   - Demolición
-   - Acabados
-   - Características especiales
+### 2.3 Project Information
+1. Project type (fence, roof, etc.)
+2. Subtype (specific material)
+3. Dimensions by type:
+   - Fence: length and height
+   - Roof: area
+   - Deck: area or length/width
+4. Additional features:
+   - Demolition
+   - Finishes
+   - Special features
 
-## 3. Proceso de Estimación Manual
+## 3. Manual Estimation Process
 
-### 3.1 Cálculo de Materiales
-1. Consultar `materialParameters.json` para reglas base
-2. Calcular cantidades según tipo:
+### 3.1 Materials Calculation
+1. Consult `materialParameters.json` for base rules
+2. Calculate quantities by type:
    ```typescript
    const materials = {
      posts: calculatePosts(length, height),
@@ -71,38 +71,38 @@ POST /api/estimates/email
    };
    ```
 
-### 3.2 Consulta de Precios
-1. Cargar precios base de la DB
-2. Aplicar factores de ajuste:
-   - Estado/región
-   - Altura
-   - Características especiales
-3. Calcular subtotales por categoría
+### 3.2 Price Consultation
+1. Load base prices from DB
+2. Apply adjustment factors:
+   - State/region
+   - Height
+   - Special features
+3. Calculate subtotals by category
 
-### 3.3 Cálculo de Mano de Obra
-1. Consultar tasas base por estado
-2. Aplicar multiplicadores:
-   - Complejidad del proyecto
-   - Altura
-   - Demolición
-3. Calcular horas estimadas y costo total
+### 3.3 Labor Cost Calculation
+1. Consult base rates by state
+2. Apply multipliers:
+   - Project complexity
+   - Height
+   - Demolition
+3. Calculate estimated hours and total cost
 
-## 4. Proceso con Mervin (IA)
+## 4. Process with Mervin (AI)
 
-### 4.1 Generación del Prompt
-1. Obtener template base según tipo de proyecto
-2. Incorporar datos específicos:
-   - Dimensiones
-   - Materiales
-   - Requisitos especiales
-3. Incluir contexto local:
-   - Precios actuales
-   - Regulaciones
-   - Factores climáticos
+### 4.1 Prompt Generation
+1. Get base template by project type
+2. Incorporate specific data:
+   - Dimensions
+   - Materials
+   - Special requirements
+3. Include local context:
+   - Current prices
+   - Regulations
+   - Climate factors
 
-### 4.2 Procesamiento IA
-1. Enviar prompt a OpenAI
-2. Procesar respuesta estructurada:
+### 4.2 AI Processing
+1. Send prompt to OpenAI
+2. Process structured response:
    ```json
    {
      "materials": [
@@ -118,24 +118,24 @@ POST /api/estimates/email
    }
    ```
 
-### 4.3 Validación y Ajuste
-1. Verificar rangos razonables
-2. Aplicar reglas de negocio
-3. Ajustar según feedback histórico
+### 4.3 Validation and Adjustment
+1. Verify reasonable ranges
+2. Apply business rules
+3. Adjust based on historical feedback
 
-## 5. Generación del Estimado Final
+## 5. Final Estimate Generation
 
-### 5.1 Estructura del Documento
-1. Información del contratista
-2. Datos del cliente
-3. Detalles del proyecto
-4. Desglose de materiales
-5. Costos de mano de obra
-6. Características adicionales
-7. Totales y términos
+### 5.1 Document Structure
+1. Contractor information
+2. Client data
+3. Project details
+4. Materials breakdown
+5. Labor costs
+6. Additional features
+7. Totals and terms
 
-### 5.2 Persistencia
-1. Guardar en DB:
+### 5.2 Persistence
+1. Save to DB:
    ```typescript
    const projectData = {
      projectId: generateId(),
@@ -147,15 +147,15 @@ POST /api/estimates/email
    };
    ```
 
-### 5.3 Acciones Post-Generación
-1. Generar PDF
-2. Enviar por email (opcional)
-3. Actualizar historial
-4. Notificar al contratista
+### 5.3 Post-Generation Actions
+1. Generate PDF
+2. Send email (optional)
+3. Update history
+4. Notify contractor
 
-## 6. Integración con Base de Datos
+## 6. Database Integration
 
-### 6.1 Tablas Principales
+### 6.1 Main Tables
 ```sql
 CREATE TABLE estimates (
   id SERIAL PRIMARY KEY,
@@ -184,61 +184,60 @@ CREATE TABLE labor_rates (
 );
 ```
 
-### 6.2 Consultas Principales
-1. Precios de materiales actuales
-2. Tasas de mano de obra por región
-3. Historial de estimados similares
-4. Factores de ajuste locales
+### 6.2 Main Queries
+1. Current material prices
+2. Labor rates by region
+3. Similar estimates history
+4. Local adjustment factors
 
-## 7. Manejo de Errores
+## 7. Error Handling
 
-### 7.1 Validaciones
-1. Datos de entrada completos
-2. Rangos válidos para dimensiones
-3. Disponibilidad de materiales
-4. Permisos del usuario
+### 7.1 Validations
+1. Complete input data
+2. Valid dimension ranges
+3. Material availability
+4. User permissions
 
-### 7.2 Recuperación
-1. Guardado automático de borradores
-2. Registro de errores
-3. Notificaciones al administrador
-4. Reintentos automáticos
+### 7.2 Recovery
+1. Automatic draft saving
+2. Error logging
+3. Administrator notifications
+4. Automatic retries
 
-## 8. Métricas y Monitoreo
+## 8. Metrics and Monitoring
 
 ### 8.1 KPIs
-1. Tiempo de generación
-2. Tasa de conversión
-3. Precisión vs. costos reales
-4. Uso de cada modo (manual vs. IA)
+1. Generation time
+2. Conversion rate
+3. Accuracy vs. actual costs
+4. Usage of each mode (manual vs. AI)
 
 ### 8.2 Logs
-1. Errores y excepciones
-2. Tiempos de respuesta
-3. Uso de recursos
-4. Patrones de uso
+1. Errors and exceptions
+2. Response times
+3. Resource usage
+4. Usage patterns
 
-## 9. Consideraciones de Seguridad
+## 9. Security Considerations
 
-### 9.1 Autenticación
-1. Verificar sesión activa
-2. Validar permisos
-3. Registrar accesos
+### 9.1 Authentication
+1. Verify active session
+2. Validate permissions
+3. Log accesses
 
-### 9.2 Datos Sensibles
-1. Encriptar información del cliente
-2. Proteger precios y márgenes
-3. Limitar acceso a estimados
+### 9.2 Sensitive Data
+1. Encrypt client information
+2. Protect prices and margins
+3. Limit estimate access
 
-## 10. Optimizaciones
+## 10. Optimizations
 
-### 10.1 Caché
-1. Precios de materiales
-2. Tasas regionales
-3. Templates frecuentes
+### 10.1 Cache
+1. Material prices
+2. Regional rates
+3. Frequent templates
 
-### 10.2 Rendimiento
-1. Queries optimizadas
-2. Procesamiento en background
-3. Compresión de datos
-
+### 10.2 Performance
+1. Optimized queries
+2. Background processing
+3. Data compression
