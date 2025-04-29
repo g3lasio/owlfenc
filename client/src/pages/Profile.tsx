@@ -868,7 +868,7 @@ export default function Profile() {
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base">Beneficios de Suscripción</CardTitle>
                   </CardHeader>
-                  <CardContent>>
+                  <CardContent>
                     <ul className="space-y-2 text-sm">
                       <li className="flex items-start">
                         <span className="text-primary mr-2">✓</span>
