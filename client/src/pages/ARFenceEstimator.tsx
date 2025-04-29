@@ -165,24 +165,19 @@ export default function ARFenceEstimator() {
             value={note}
             onChange={(e) => setNote(e.target.value)}
           />
-          <div className="flex gap-2">
+          <div className="space-y-4">
+            <Input
+              placeholder="Título/Nota para esta medida..."
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              className="mb-2"
+            />
             <Button 
               onClick={() => handleMeasurement('length')} 
               disabled={isScanning}
+              className="w-full"
             >
-              {isScanning ? 'Midiendo...' : 'Medir Longitud'}
-            </Button>
-            <Button 
-              onClick={() => handleMeasurement('height')} 
-              disabled={isScanning}
-            >
-              {isScanning ? 'Midiendo...' : 'Medir Altura'}
-            </Button>
-            <Button 
-              onClick={() => handleMeasurement('area')} 
-              disabled={isScanning}
-            >
-              {isScanning ? 'Midiendo...' : 'Medir Área'}
+              {isScanning ? 'Midiendo...' : 'Tomar Medida'}
             </Button>
           </div>
         </CardContent>
@@ -200,17 +195,16 @@ export default function ARFenceEstimator() {
           ) : (
             <div className="space-y-4">
               {measurements.map((m) => (
-                <div key={m.id} className="border p-4 rounded-lg">
+                <div key={m.id} className="border p-4 rounded-lg bg-card">
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="font-semibold">
-                        {m.type === 'length' ? 'Longitud' : 
-                         m.type === 'height' ? 'Altura' : 'Área'}: {m.value.toFixed(2)} {m.unit}
+                      <p className="font-semibold text-lg mb-1">
+                        {m.notes || 'Medida sin título'}
                       </p>
-                      {m.notes && (
-                        <p className="text-sm text-muted-foreground mt-1">{m.notes}</p>
-                      )}
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-md text-primary">
+                        {m.value.toFixed(2)} {m.unit}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-2">
                         {new Date(m.timestamp).toLocaleString()}
                       </p>
                     </div>
