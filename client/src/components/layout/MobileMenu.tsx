@@ -149,25 +149,6 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
 
         {/* Contenedor con scroll para toda la navegación */}
         <div className="flex-1 overflow-y-auto">
-          {/* Botón de acción principal */}
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.3, duration: 0.3 }}
-            className="p-4"
-          >
-            <Link href="/new-estimate" onClick={onClose}>
-              <motion.div 
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                className="flex items-center justify-center bg-primary text-white p-3 rounded-md hover:bg-primary/90"
-              >
-                <i className="ri-add-line mr-2"></i>
-                <span>Nuevo Estimado</span>
-              </motion.div>
-            </Link>
-          </motion.div>
-
           {/* Navegación Principal */}
           <div className="p-3">
             <motion.h2 

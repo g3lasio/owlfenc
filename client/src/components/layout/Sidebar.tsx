@@ -124,16 +124,6 @@ export default function Sidebar() {
           </div>
         </div>
 
-        {/* Botón de nuevo estimado o proyecto - Acción principal */}
-        <div className="p-4">
-          <Link href="/new-estimate">
-            <Button className="w-full gap-2 bg-primary hover:bg-primary/90">
-              <i className="ri-add-line"></i>
-              <span>Nuevo Estimado</span>
-            </Button>
-          </Link>
-        </div>
-
         {/* Navegación principal */}
         <div className="flex-1 px-3">
           <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Herramientas</h2>
