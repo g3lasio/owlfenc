@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,121 +8,167 @@ interface Measurement {
   timestamp: string;
 }
 
+interface Point {
+  x: number;
+  y: number;
+}
+
 export default function ARFenceEstimator() {
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
-  const [isSupported, setIsSupported] = useState(false);
   const [isMeasuring, setIsMeasuring] = useState(false);
-  const arSessionRef = useRef<any>(null);
-  const startPointRef = useRef<any>(null);
+  const [hasCamera, setHasCamera] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [points, setPoints] = useState<Point[]>([]);
+  const [calibrationFactor, setCalibrationFactor] = useState(1);
 
   useEffect(() => {
-    checkSupport();
+    checkCamera();
   }, []);
 
-  const checkSupport = async () => {
-    // Detectar si es iOS
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    
-    if (isIOS) {
-      // En iOS, verificar si el navegador es Safari
-      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-      if (!isSafari) {
-        alert('Por favor abre esta página en Safari para usar AR en iOS');
-        setIsSupported(false);
-        return;
-      }
-      
-      // Verificar soporte de ARKit
-      if ('ARKit' in window || 'WebXRViewer' in window) {
-        setIsSupported(true);
-        return;
-      }
-    }
-    
-    // Para otros dispositivos, intentar WebXR
-    const webXRSupported = navigator.xr && await navigator.xr.isSessionSupported('immersive-ar');
-    setIsSupported(webXRSupported);
-  };
-
-  const startMeasurement = async () => {
-    setIsMeasuring(true);
+  const checkCamera = async () => {
     try {
-      if ('measurementAPI' in window) {
-        const measurement = await (window as any).measurementAPI.start();
-        if (measurement) {
-          addMeasurement(measurement.distance);
-        }
-      } else if (navigator.xr) {
-        const session = await navigator.xr.requestSession('immersive-ar', {
-          requiredFeatures: ['hit-test'],
-        });
-        arSessionRef.current = session;
-        session.addEventListener('end', () => setIsMeasuring(false));
-
-        session.addEventListener('select', (event: any) => {
-          if (!startPointRef.current) {
-            startPointRef.current = event.frame.getPose(event.inputSource.targetRaySpace, event.referenceSpace);
-          } else {
-            const endPoint = event.frame.getPose(event.inputSource.targetRaySpace, event.referenceSpace);
-            const distance = calculateDistance(startPointRef.current.transform.position, endPoint.transform.position);
-            addMeasurement(distance);
-            startPointRef.current = null;
-          }
-        });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      setHasCamera(true);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
       }
-    } catch (error) {
-      console.error('Error iniciando medición AR:', error);
-      setIsMeasuring(false);
+    } catch (err) {
+      console.error('Error accediendo a la cámara:', err);
+      setHasCamera(false);
     }
   };
 
-  const calculateDistance = (point1: any, point2: any) => {
-    const dx = point2.x - point1.x;
-    const dy = point2.y - point1.y;
-    const dz = point2.z - point1.z;
-    return Math.sqrt(dx * dx + dy * dy + dz * dz);
-  };
-
-  const addMeasurement = (distance: number) => {
-    const measurement = {
-      distance: distance,
-      timestamp: new Date().toISOString()
-    };
-    setMeasurements(prev => [...prev, measurement]);
-    setIsMeasuring(false);
+  const startMeasurement = () => {
+    setIsMeasuring(true);
+    setPoints([]);
   };
 
   const stopMeasurement = () => {
-    if (arSessionRef.current) {
-      arSessionRef.current.end();
-      arSessionRef.current = null;
-    }
     setIsMeasuring(false);
-    startPointRef.current = null;
+    setPoints([]);
+    if (videoRef.current?.srcObject) {
+      const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
+      tracks.forEach(track => track.stop());
+    }
   };
+
+  const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isMeasuring || points.length >= 2) return;
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    
+    const newPoints = [...points, { x, y }];
+    setPoints(newPoints);
+
+    if (newPoints.length === 2) {
+      const distance = calculateDistance(newPoints[0], newPoints[1]);
+      addMeasurement(distance * calibrationFactor);
+      setPoints([]);
+    }
+
+    drawPoints();
+  };
+
+  const calculateDistance = (point1: Point, point2: Point) => {
+    const dx = point2.x - point1.x;
+    const dy = point2.y - point1.y;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  const drawPoints = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx || !videoRef.current) return;
+
+    canvas.width = videoRef.current.videoWidth;
+    canvas.height = videoRef.current.videoHeight;
+
+    // Dibujar la imagen de la cámara
+    ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+
+    // Dibujar puntos y línea
+    ctx.strokeStyle = '#97fb00';
+    ctx.lineWidth = 2;
+
+    points.forEach((point, index) => {
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);
+      ctx.fillStyle = index === 0 ? '#97fb00' : '#97fb00';
+      ctx.fill();
+    });
+
+    if (points.length === 2) {
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+      ctx.lineTo(points[1].x, points[1].y);
+      ctx.stroke();
+    }
+  };
+
+  const addMeasurement = (pixels: number) => {
+    // Convertir píxeles a pies (esto requerirá calibración)
+    const feet = pixels / 100; // Factor de conversión aproximado
+    const measurement = {
+      distance: feet,
+      timestamp: new Date().toISOString()
+    };
+    setMeasurements(prev => [...prev, measurement]);
+  };
+
+  useEffect(() => {
+    if (isMeasuring) {
+      const interval = setInterval(() => {
+        drawPoints();
+      }, 1000 / 30); // 30 FPS
+      return () => clearInterval(interval);
+    }
+  }, [isMeasuring, points]);
 
   return (
     <div className="container mx-auto p-6">
       <Card className="w-full mb-6">
         <CardHeader>
-          <CardTitle>Medición AR</CardTitle>
+          <CardTitle>Medición con Cámara</CardTitle>
           <CardDescription>
-            {isSupported
-              ? "Utiliza la cámara para medir distancias con precisión"
-              : "Tu dispositivo no soporta medición AR"}
+            {hasCamera 
+              ? "Toca para marcar los puntos de medición" 
+              : "No se pudo acceder a la cámara"}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {isSupported ? (
-            <Button
-              onClick={isMeasuring ? stopMeasurement : startMeasurement}
-              className="w-full"
-            >
-              {isMeasuring ? "Detener Medición" : "Iniciar Medición"}
-            </Button>
+          {hasCamera ? (
+            <>
+              <div className="relative aspect-video">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  className="absolute inset-0 w-full h-full"
+                  style={{ display: isMeasuring ? 'none' : 'block' }}
+                />
+                <canvas
+                  ref={canvasRef}
+                  onClick={handleCanvasClick}
+                  className="absolute inset-0 w-full h-full"
+                  style={{ display: isMeasuring ? 'block' : 'none' }}
+                />
+              </div>
+              <Button
+                onClick={isMeasuring ? stopMeasurement : startMeasurement}
+                className="w-full"
+              >
+                {isMeasuring ? "Detener Medición" : "Iniciar Medición"}
+              </Button>
+            </>
           ) : (
             <div className="text-center text-muted-foreground">
-              Por favor, usa un dispositivo compatible con AR
+              Por favor, permite el acceso a la cámara
             </div>
           )}
 
