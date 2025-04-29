@@ -1,110 +1,37 @@
+
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import * as THREE from 'three';
 
-interface Point {
-  id: string;
-  position: THREE.Vector3;
-  worldPosition: THREE.Vector3;
-  screenX: number;
-  screenY: number;
-}
-
 interface Measurement {
   id: string;
-  points: Point[];
-  value: number;
+  distance: number;
   unit: string;
-  type: 'linear' | 'area';
-  notes?: string;
   timestamp: string;
+  notes?: string;
+}
+
+interface CalibrationMarker {
+  x: number;
+  y: number;
+  size: number; // tamaño real en pulgadas
 }
 
 export default function ARFenceEstimator() {
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
-  const [currentPoints, setCurrentPoints] = useState<Point[]>([]);
+  const [calibrationMode, setCalibrationMode] = useState(false);
+  const [referenceMarker, setReferenceMarker] = useState<CalibrationMarker | null>(null);
+  const [measurementInProgress, setMeasurementInProgress] = useState(false);
+  const [startPoint, setStartPoint] = useState<{x: number, y: number} | null>(null);
   const [note, setNote] = useState('');
-  const [measurementType, setMeasurementType] = useState<'linear' | 'area'>('linear');
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const xrSessionRef = useRef<XRSession | null>(null);
-  const [isARSupported, setIsARSupported] = useState(false);
-  const [isScanning, setIsScanning] = useState(false);
 
   useEffect(() => {
-    checkARSupport();
-    initCamera(); // Keep the original camera initialization for fallback
+    initCamera();
   }, []);
-
-  const checkARSupport = async () => {
-    if ('xr' in navigator) {
-      try {
-        const isSupported = await navigator.xr.isSessionSupported('immersive-ar');
-        setIsARSupported(isSupported);
-      } catch (err) {
-        console.error('Error checking AR support:', err);
-        setIsARSupported(false);
-      }
-    }
-  };
-
-  const startARSession = async () => {
-    if (!isARSupported) return;
-
-    try {
-      const session = await navigator.xr.requestSession('immersive-ar', {
-        requiredFeatures: ['hit-test', 'local-floor', 'anchors'],
-        optionalFeatures: ['dom-overlay'],
-        domOverlay: { root: document.getElementById('ar-overlay')! }
-      });
-
-      xrSessionRef.current = session;
-      setIsScanning(true);
-
-      session.addEventListener('end', () => {
-        xrSessionRef.current = null;
-        setIsScanning(false);
-      });
-
-      // Configurar sistema de referencia XR
-      const referenceSpace = await session.requestReferenceSpace('local-floor');
-      const viewerSpace = await session.requestReferenceSpace('viewer');
-
-      session.addEventListener('select', (event) => {
-        const frame = event.frame;
-        const pose = frame.getPose(viewerSpace, referenceSpace);
-
-        if (pose) {
-          const point: Point = {
-            id: `p-${Date.now()}`,
-            position: new THREE.Vector3().fromArray(pose.transform.position),
-            worldPosition: new THREE.Vector3().fromArray(pose.transform.position),
-            screenX: event.inputSource.gamepad?.axes[0] || 0,
-            screenY: event.inputSource.gamepad?.axes[1] || 0
-          };
-
-          handlePointPlacement(point);
-        }
-      });
-
-    } catch (err) {
-      console.error('Error starting AR session:', err);
-      alert('No se pudo iniciar la sesión AR. Por favor, verifica los permisos y compatibilidad.');
-    }
-  };
-
-  const handlePointPlacement = (point: Point) => {
-    if (!isDrawing) {
-      setStartPoint(point);
-      setIsDrawing(true);
-      drawPoint(point, 'A');
-    } else {
-      finalizeMeasurement([startPoint!, point]);
-      setIsDrawing(false);
-    }
-  };
 
   const initCamera = async () => {
     try {
@@ -118,6 +45,12 @@ export default function ARFenceEstimator() {
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        videoRef.current.onloadedmetadata = () => {
+          if (canvasRef.current) {
+            canvasRef.current.width = videoRef.current!.videoWidth;
+            canvasRef.current.height = videoRef.current!.videoHeight;
+          }
+        };
       }
     } catch (err) {
       console.error('Error accediendo a la cámara:', err);
@@ -125,48 +58,133 @@ export default function ARFenceEstimator() {
     }
   };
 
-
-  const calculateRealWorldDistance = (point1: Point, point2: Point): number => {
-    return point1.worldPosition.distanceTo(point2.worldPosition);
+  const startCalibration = () => {
+    setCalibrationMode(true);
+    setReferenceMarker(null);
+    clearCanvas();
   };
 
-  const drawPoint = (point: Point, label: string) => {
+  const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current) return;
-    const ctx = canvasRef.current.getContext('2d');
-    if (ctx) {
-      ctx.fillStyle = '#00ff00';
-      ctx.beginPath();
-      ctx.arc(point.screenX, point.screenY, 5, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.fillText(label, point.screenX + 10, point.screenY);
+    
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    if (calibrationMode) {
+      // Modo calibración: establecer marcador de referencia
+      setReferenceMarker({
+        x,
+        y,
+        size: 12 // Una hoja de papel estándar (11 pulgadas)
+      });
+      setCalibrationMode(false);
+      drawCalibrationMarker(x, y);
+    } else if (!measurementInProgress) {
+      // Iniciar medición
+      setStartPoint({ x, y });
+      setMeasurementInProgress(true);
+      drawPoint(x, y, 'A');
+    } else {
+      // Finalizar medición
+      finalizeMeasurement(x, y);
     }
   };
 
-  const finalizeMeasurement = (points: Point[]) => {
-    if (points.length < 2) return;
+  const handleCanvasMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!measurementInProgress || !startPoint || !canvasRef.current) return;
 
-    const value = calculateRealWorldDistance(points[0], points[1]);
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
 
+    const ctx = canvasRef.current.getContext('2d');
+    if (ctx) {
+      clearCanvas();
+      if (referenceMarker) drawCalibrationMarker(referenceMarker.x, referenceMarker.y);
+      drawPoint(startPoint.x, startPoint.y, 'A');
+      drawLine(startPoint.x, startPoint.y, x, y);
+      const distance = calculateDistance(startPoint.x, startPoint.y, x, y);
+      drawMeasurement(distance, (startPoint.x + x) / 2, (startPoint.y + y) / 2);
+    }
+  };
+
+  const calculateDistance = (x1: number, y1: number, x2: number, y2: number): number => {
+    if (!referenceMarker) return 0;
+
+    const pixelDistance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+    const scale = referenceMarker.size / 30; // Factor de escala basado en el marcador de referencia
+    return (pixelDistance * scale) / 12; // Convertir a pies
+  };
+
+  const finalizeMeasurement = (endX: number, endY: number) => {
+    if (!startPoint) return;
+
+    const distance = calculateDistance(startPoint.x, startPoint.y, endX, endY);
     const measurement: Measurement = {
       id: `m-${Date.now()}`,
-      points: points,
-      value: Math.round(value * 100) / 100,
+      distance: Math.round(distance * 100) / 100,
       unit: 'ft',
-      type: measurementType,
-      notes: note,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      notes: note
     };
 
     setMeasurements(prev => [...prev, measurement]);
-    clearCanvas();
-    setCurrentPoints([]);
+    setMeasurementInProgress(false);
+    setStartPoint(null);
     setNote('');
+    clearCanvas();
+    if (referenceMarker) drawCalibrationMarker(referenceMarker.x, referenceMarker.y);
+  };
+
+  const drawPoint = (x: number, y: number, label: string) => {
+    const ctx = canvasRef.current?.getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = '#00ff00';
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.fillText(label, x + 10, y);
+    }
+  };
+
+  const drawLine = (x1: number, y1: number, x2: number, y2: number) => {
+    const ctx = canvasRef.current?.getContext('2d');
+    if (ctx) {
+      ctx.strokeStyle = '#00ff00';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    }
+  };
+
+  const drawCalibrationMarker = (x: number, y: number) => {
+    const ctx = canvasRef.current?.getContext('2d');
+    if (ctx) {
+      ctx.strokeStyle = '#ff0000';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.rect(x - 15, y - 15, 30, 30);
+      ctx.stroke();
+      ctx.fillStyle = '#ff0000';
+      ctx.fillText('Referencia', x + 20, y);
+    }
+  };
+
+  const drawMeasurement = (distance: number, x: number, y: number) => {
+    const ctx = canvasRef.current?.getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '14px Arial';
+      ctx.fillText(`${distance.toFixed(2)} ft`, x, y - 10);
+    }
   };
 
   const clearCanvas = () => {
-    if (!canvasRef.current) return;
-    const ctx = canvasRef.current.getContext('2d');
-    if (ctx) {
+    const ctx = canvasRef.current?.getContext('2d');
+    if (ctx && canvasRef.current) {
       ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
     }
   };
@@ -181,30 +199,37 @@ export default function ARFenceEstimator() {
         <div className="p-2 bg-primary/10 rounded-lg">
           <i className="ri-ruler-line text-3xl text-primary"></i>
         </div>
-        <h1 className="text-3xl font-bold">Medición AR Precisa</h1>
+        <h1 className="text-3xl font-bold">Medición con Referencia</h1>
       </div>
 
       <Card className="w-full mb-6">
         <CardHeader>
           <CardTitle>Nueva Medición</CardTitle>
           <CardDescription>
-            {isARSupported
-              ? 'Utiliza AR para mediciones precisas'
-              : 'Tu dispositivo no soporta AR'}
+            Use un objeto de referencia (ej: hoja de papel) para calibrar
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <Button
-            onClick={startARSession}
-            disabled={!isARSupported || isScanning}
-            className="w-full"
+            onClick={startCalibration}
+            disabled={measurementInProgress}
+            className="w-full mb-4"
           >
-            {isScanning ? 'Midiendo...' : 'Iniciar Medición AR'}
+            {calibrationMode ? 'Coloque el marcador de referencia' : 'Calibrar Medición'}
           </Button>
 
-          <div id="ar-overlay" className="relative aspect-video bg-black rounded-lg overflow-hidden">
+          <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="absolute inset-0 w-full h-full object-cover"
+            />
             <canvas
               ref={canvasRef}
+              onClick={handleCanvasClick}
+              onMouseMove={handleCanvasMouseMove}
               className="absolute inset-0 w-full h-full"
             />
           </div>
@@ -236,7 +261,7 @@ export default function ARFenceEstimator() {
                         {m.notes || `Medición ${m.id}`}
                       </p>
                       <p className="text-md text-primary">
-                        {m.value.toFixed(2)} {m.unit}
+                        {m.distance.toFixed(2)} {m.unit}
                       </p>
                       <p className="text-xs text-muted-foreground mt-2">
                         {new Date(m.timestamp).toLocaleString()}
