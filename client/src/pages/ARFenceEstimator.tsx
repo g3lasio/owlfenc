@@ -54,6 +54,9 @@ export default function ARFenceEstimator() {
     }
   };
 
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [startPoint, setStartPoint] = useState<Point | null>(null);
+
   const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current) return;
 
@@ -68,27 +71,64 @@ export default function ARFenceEstimator() {
       screenY: y
     };
 
-    setCurrentPoints(prev => [...prev, point]);
+    if (!isDrawing) {
+      // Primer punto (A)
+      setStartPoint(point);
+      setIsDrawing(true);
+      clearCanvas();
+      const ctx = canvasRef.current.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = '#00ff00';
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillText('A', x + 10, y);
+      }
+    } else {
+      // Segundo punto (B) y finalizar medición
+      setIsDrawing(false);
+      setCurrentPoints([startPoint!, point]);
+      finalizeMeasurement();
+    }
+  };
 
-    // Dibujar el punto en el canvas
+  const handleCanvasMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDrawing || !startPoint || !canvasRef.current) return;
+
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    // Redibujar la línea en tiempo real
     const ctx = canvasRef.current.getContext('2d');
     if (ctx) {
+      clearCanvas();
+      
+      // Redibujar punto A
       ctx.fillStyle = '#00ff00';
       ctx.beginPath();
-      ctx.arc(x, y, 5, 0, 2 * Math.PI);
+      ctx.arc(startPoint.screenX, startPoint.screenY, 5, 0, 2 * Math.PI);
       ctx.fill();
-      
-      // Dibujar línea si hay punto anterior
-      if (currentPoints.length > 0) {
-        const prevPoint = currentPoints[currentPoints.length - 1];
-        ctx.strokeStyle = '#00ff00';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(prevPoint.screenX, prevPoint.screenY);
-        ctx.lineTo(x, y);
-        ctx.stroke();
-      }
+      ctx.fillText('A', startPoint.screenX + 10, startPoint.screenY);
+
+      // Dibujar línea temporal
+      ctx.strokeStyle = '#00ff00';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(startPoint.screenX, startPoint.screenY);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+
+      // Mostrar distancia en tiempo real
+      const distance = calculateDistance(startPoint, { 
+        id: 'temp', 
+        position: new THREE.Vector3(x, y, 0),
+        screenX: x,
+        screenY: y 
+      });
+      ctx.fillText(`${distance.toFixed(2)} ft`, (startPoint.screenX + x) / 2, (startPoint.screenY + y) / 2);
     }
+  };
 
     // Completar medición si tenemos suficientes puntos
     if (measurementType === 'linear' && currentPoints.length >= 1) {
@@ -205,6 +245,7 @@ export default function ARFenceEstimator() {
             <canvas
               ref={canvasRef}
               onClick={handleCanvasClick}
+              onMouseMove={handleCanvasMouseMove}
               className="absolute inset-0 w-full h-full"
             />
           </div>
