@@ -1,14 +1,13 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import * as THREE from 'three';
 
 interface Measurement {
   id: string;
-  type: 'length' | 'height' | 'area';
   value: number;
-  unit: 'ft' | 'in' | 'sqft';
+  unit: string;
   notes?: string;
   timestamp: string;
 }
@@ -17,128 +16,66 @@ export default function ARFenceEstimator() {
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
   const [note, setNote] = useState('');
   const [isScanning, setIsScanning] = useState(false);
-  const [xrSession, setXRSession] = useState<XRSession | null>(null);
-  const [hitTestSource, setHitTestSource] = useState<XRHitTestSource | null>(null);
-  const [measurePoints, setMeasurePoints] = useState<DOMPoint[]>([]);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [measurePoints, setMeasurePoints] = useState<THREE.Vector3[]>([]);
 
-  const requestCameraPermission = async () => {
+  useEffect(() => {
+    initCamera();
+  }, []);
+
+  const initCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      stream.getTracks().forEach(track => track.stop()); // Liberar la cámara después de obtener permiso
-      return true;
-    } catch (err) {
-      console.error('Error al solicitar permisos de cámara:', err);
-      return false;
-    }
-  };
-
-  const checkARSupport = async () => {
-    if (!navigator.xr) {
-      alert('Tu navegador no soporta realidad aumentada (WebXR). Por favor, usa Chrome o Safari en un dispositivo móvil compatible con AR.');
-      return false;
-    }
-    
-    try {
-      const isSupported = await navigator.xr.isSessionSupported('immersive-ar');
-      if (!isSupported) {
-        alert('Tu dispositivo no soporta realidad aumentada. Asegúrate de usar un dispositivo móvil compatible con AR.');
-        return false;
-      }
-      return true;
-    } catch (err) {
-      console.error('Error verificando soporte AR:', err);
-      alert('Hubo un error verificando la compatibilidad con AR. Por favor, asegúrate de usar un dispositivo móvil compatible.');
-      return false;
-    }
-  };
-
-  const startARSession = async () => {
-    const arSupported = await checkARSupport();
-    if (!arSupported) {
-      return;
-    }
-
-    const hasCameraPermission = await requestCameraPermission();
-    if (!hasCameraPermission) {
-      alert('Se necesitan permisos de cámara para usar AR');
-      return;
-    }
-
-    try {
-      const session = await navigator.xr.requestSession('immersive-ar', {
-        requiredFeatures: ['hit-test', 'dom-overlay'],
-        domOverlay: { root: document.getElementById('ar-overlay')! }
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment' }
       });
 
-      setXRSession(session);
-      setupHitTesting(session);
-    } catch (err) {
-      console.error('Error iniciando sesión AR:', err);
-    }
-  };
-
-  const setupHitTesting = async (session: XRSession) => {
-    const referenceSpace = await session.requestReferenceSpace('local');
-    const hitTestSource = await session.requestHitTestSource({
-      space: referenceSpace
-    });
-    setHitTestSource(hitTestSource);
-  };
-
-  const handleMeasurement = async (type: 'length' | 'height' | 'area') => {
-    setIsScanning(true);
-    
-    if (!xrSession) {
-      await startARSession();
-      return;
-    }
-
-    const frame = await new Promise<XRFrame>(resolve => {
-      xrSession.requestAnimationFrame((frame) => resolve(frame));
-    });
-
-    if (hitTestSource) {
-      const hitTestResults = frame.getHitTestResults(hitTestSource);
-      
-      if (hitTestResults.length > 0) {
-        const hitPose = hitTestResults[0].getPose(frame.getViewerPose(referenceSpace)?.transform);
-        
-        if (hitPose) {
-          const point = new DOMPoint(
-            hitPose.transform.position.x,
-            hitPose.transform.position.y,
-            hitPose.transform.position.z
-          );
-          
-          setMeasurePoints(prev => [...prev, point]);
-
-          // Calcular distancia cuando tengamos dos puntos
-          if (measurePoints.length >= 1) {
-            const distance = calculateDistance(measurePoints[0], point);
-            const measurement: Measurement = {
-              id: `m-${Date.now()}`,
-              type,
-              value: Math.round(distance * 3.28084 * 100) / 100, // Convertir metros a pies
-              unit: type === 'area' ? 'sqft' : 'ft',
-              notes: note,
-              timestamp: new Date().toISOString()
-            };
-
-            setMeasurements(prev => [...prev, measurement]);
-            setMeasurePoints([]);
-            setNote('');
-            setIsScanning(false);
-          }
-        }
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
       }
+    } catch (err) {
+      console.error('Error accediendo a la cámara:', err);
+      alert('No se pudo acceder a la cámara. Por favor, verifica los permisos.');
     }
   };
 
-  const calculateDistance = (point1: DOMPoint, point2: DOMPoint): number => {
-    const dx = point2.x - point1.x;
-    const dy = point2.y - point1.y;
-    const dz = point2.z - point1.z;
-    return Math.sqrt(dx * dx + dy * dy + dz * dz);
+  const handleMeasurement = () => {
+    setIsScanning(true);
+    if (measurePoints.length >= 2) {
+      const distance = calculateDistance(measurePoints[0], measurePoints[1]);
+      const measurement: Measurement = {
+        id: `m-${Date.now()}`,
+        value: Math.round(distance * 100) / 100,
+        unit: 'ft',
+        notes: note,
+        timestamp: new Date().toISOString()
+      };
+
+      setMeasurements(prev => [...prev, measurement]);
+      setMeasurePoints([]);
+      setNote('');
+    }
+    setIsScanning(false);
+  };
+
+  const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!canvasRef.current) return;
+
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    // Crear un punto 3D (simplificado para demo)
+    const point = new THREE.Vector3(x, y, 0);
+    setMeasurePoints(prev => [...prev, point]);
+
+    if (measurePoints.length >= 1) {
+      handleMeasurement();
+    }
+  };
+
+  const calculateDistance = (point1: THREE.Vector3, point2: THREE.Vector3): number => {
+    return point1.distanceTo(point2) * 0.1; // Factor de escala aproximado a pies
   };
 
   const deleteMeasurement = (id: string) => {
@@ -151,35 +88,41 @@ export default function ARFenceEstimator() {
         <div className="p-2 bg-primary/10 rounded-lg">
           <i className="ri-ruler-line text-3xl text-primary"></i>
         </div>
-        <h1 className="text-3xl font-bold">Medición AR</h1>
+        <h1 className="text-3xl font-bold">Medición con Cámara</h1>
       </div>
 
       <Card className="w-full mb-6">
         <CardHeader>
           <CardTitle>Nueva Medición</CardTitle>
-          <CardDescription>Toca dos puntos en el espacio para medir</CardDescription>
+          <CardDescription>Toca dos puntos en la imagen para medir</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            <canvas
+              ref={canvasRef}
+              onClick={handleCanvasClick}
+              className="absolute inset-0 w-full h-full"
+            />
+          </div>
           <Input
-            placeholder="Añade notas sobre esta medición..."
+            placeholder="Título/Nota para esta medida..."
             value={note}
             onChange={(e) => setNote(e.target.value)}
+            className="mb-2"
           />
-          <div className="space-y-4">
-            <Input
-              placeholder="Título/Nota para esta medida..."
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              className="mb-2"
-            />
-            <Button 
-              onClick={() => handleMeasurement('length')} 
-              disabled={isScanning}
-              className="w-full"
-            >
-              {isScanning ? 'Midiendo...' : 'Tomar Medida'}
-            </Button>
-          </div>
+          <Button 
+            onClick={handleMeasurement}
+            disabled={isScanning}
+            className="w-full"
+          >
+            {isScanning ? 'Midiendo...' : 'Tomar Medida'}
+          </Button>
         </CardContent>
       </Card>
 
@@ -222,10 +165,6 @@ export default function ARFenceEstimator() {
           )}
         </CardContent>
       </Card>
-
-      <div id="ar-overlay" className="fixed inset-0 pointer-events-none">
-        {/* Aquí se mostrarán los elementos AR superpuestos */}
-      </div>
     </div>
   );
 }
