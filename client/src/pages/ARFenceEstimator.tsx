@@ -1,24 +1,35 @@
+
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import * as THREE from 'three';
 
+interface Point {
+  id: string;
+  position: THREE.Vector3;
+  screenX: number;
+  screenY: number;
+}
+
 interface Measurement {
   id: string;
+  points: Point[];
   value: number;
   unit: string;
+  type: 'linear' | 'area';
   notes?: string;
   timestamp: string;
 }
 
 export default function ARFenceEstimator() {
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
+  const [currentPoints, setCurrentPoints] = useState<Point[]>([]);
   const [note, setNote] = useState('');
-  const [isScanning, setIsScanning] = useState(false);
+  const [measurementType, setMeasurementType] = useState<'linear' | 'area'>('linear');
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [measurePoints, setMeasurePoints] = useState<THREE.Vector3[]>([]);
+  const [isScanning, setIsScanning] = useState(false);
 
   useEffect(() => {
     initCamera();
@@ -27,7 +38,11 @@ export default function ARFenceEstimator() {
   const initCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' }
+        video: { 
+          facingMode: 'environment',
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        }
       });
 
       if (videoRef.current) {
@@ -39,25 +54,6 @@ export default function ARFenceEstimator() {
     }
   };
 
-  const handleMeasurement = () => {
-    setIsScanning(true);
-    if (measurePoints.length >= 2) {
-      const distance = calculateDistance(measurePoints[0], measurePoints[1]);
-      const measurement: Measurement = {
-        id: `m-${Date.now()}`,
-        value: Math.round(distance * 100) / 100,
-        unit: 'ft',
-        notes: note,
-        timestamp: new Date().toISOString()
-      };
-
-      setMeasurements(prev => [...prev, measurement]);
-      setMeasurePoints([]);
-      setNote('');
-    }
-    setIsScanning(false);
-  };
-
   const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current) return;
 
@@ -65,17 +61,92 @@ export default function ARFenceEstimator() {
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
 
-    // Crear un punto 3D (simplificado para demo)
-    const point = new THREE.Vector3(x, y, 0);
-    setMeasurePoints(prev => [...prev, point]);
+    const point: Point = {
+      id: `p-${Date.now()}`,
+      position: new THREE.Vector3(x, y, 0),
+      screenX: x,
+      screenY: y
+    };
 
-    if (measurePoints.length >= 1) {
-      handleMeasurement();
+    setCurrentPoints(prev => [...prev, point]);
+
+    // Dibujar el punto en el canvas
+    const ctx = canvasRef.current.getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = '#00ff00';
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, 2 * Math.PI);
+      ctx.fill();
+      
+      // Dibujar línea si hay punto anterior
+      if (currentPoints.length > 0) {
+        const prevPoint = currentPoints[currentPoints.length - 1];
+        ctx.strokeStyle = '#00ff00';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(prevPoint.screenX, prevPoint.screenY);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+      }
+    }
+
+    // Completar medición si tenemos suficientes puntos
+    if (measurementType === 'linear' && currentPoints.length >= 1) {
+      finalizeMeasurement();
+    } else if (measurementType === 'area' && currentPoints.length >= 2) {
+      finalizeMeasurement();
     }
   };
 
-  const calculateDistance = (point1: THREE.Vector3, point2: THREE.Vector3): number => {
-    return point1.distanceTo(point2) * 0.1; // Factor de escala aproximado a pies
+  const calculateDistance = (point1: Point, point2: Point): number => {
+    const dx = point2.screenX - point1.screenX;
+    const dy = point2.screenY - point1.screenY;
+    // Factor de escala aproximado basado en la resolución de la cámara
+    const scaleFactor = 0.01; // Ajustar según calibración
+    return Math.sqrt(dx * dx + dy * dy) * scaleFactor;
+  };
+
+  const calculateArea = (points: Point[]): number => {
+    if (points.length < 3) return 0;
+    let area = 0;
+    for (let i = 0; i < points.length; i++) {
+      const j = (i + 1) % points.length;
+      area += points[i].screenX * points[j].screenY;
+      area -= points[j].screenX * points[i].screenY;
+    }
+    const scaleFactor = 0.0001; // Ajustar según calibración
+    return Math.abs(area / 2) * scaleFactor;
+  };
+
+  const finalizeMeasurement = () => {
+    if (currentPoints.length < 2) return;
+
+    const value = measurementType === 'linear' 
+      ? calculateDistance(currentPoints[0], currentPoints[currentPoints.length - 1])
+      : calculateArea(currentPoints);
+
+    const measurement: Measurement = {
+      id: `m-${Date.now()}`,
+      points: currentPoints,
+      value: Math.round(value * 100) / 100,
+      unit: measurementType === 'linear' ? 'ft' : 'sq ft',
+      type: measurementType,
+      notes: note,
+      timestamp: new Date().toISOString()
+    };
+
+    setMeasurements(prev => [...prev, measurement]);
+    clearCanvas();
+    setCurrentPoints([]);
+    setNote('');
+  };
+
+  const clearCanvas = () => {
+    if (!canvasRef.current) return;
+    const ctx = canvasRef.current.getContext('2d');
+    if (ctx) {
+      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    }
   };
 
   const deleteMeasurement = (id: string) => {
@@ -94,9 +165,36 @@ export default function ARFenceEstimator() {
       <Card className="w-full mb-6">
         <CardHeader>
           <CardTitle>Nueva Medición</CardTitle>
-          <CardDescription>Toca dos puntos en la imagen para medir</CardDescription>
+          <CardDescription>
+            {measurementType === 'linear' 
+              ? 'Toca dos puntos para medir distancia' 
+              : 'Toca tres o más puntos para medir área'}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="flex gap-2 mb-4">
+            <Button
+              onClick={() => {
+                setMeasurementType('linear');
+                clearCanvas();
+                setCurrentPoints([]);
+              }}
+              variant={measurementType === 'linear' ? 'default' : 'outline'}
+            >
+              Distancia
+            </Button>
+            <Button
+              onClick={() => {
+                setMeasurementType('area');
+                clearCanvas();
+                setCurrentPoints([]);
+              }}
+              variant={measurementType === 'area' ? 'default' : 'outline'}
+            >
+              Área
+            </Button>
+          </div>
+
           <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
             <video
               ref={videoRef}
@@ -110,19 +208,31 @@ export default function ARFenceEstimator() {
               className="absolute inset-0 w-full h-full"
             />
           </div>
+
           <Input
             placeholder="Título/Nota para esta medida..."
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            className="mb-2"
           />
-          <Button 
-            onClick={handleMeasurement}
-            disabled={isScanning}
-            className="w-full"
-          >
-            {isScanning ? 'Midiendo...' : 'Tomar Medida'}
-          </Button>
+
+          <div className="flex gap-2">
+            <Button 
+              onClick={finalizeMeasurement}
+              disabled={currentPoints.length < 2}
+              className="flex-1"
+            >
+              Finalizar Medición
+            </Button>
+            <Button 
+              onClick={() => {
+                clearCanvas();
+                setCurrentPoints([]);
+              }}
+              variant="outline"
+            >
+              Limpiar
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -142,7 +252,7 @@ export default function ARFenceEstimator() {
                   <div className="flex justify-between items-start">
                     <div>
                       <p className="font-semibold text-lg mb-1">
-                        {m.notes || 'Medida sin título'}
+                        {m.notes || `${m.type === 'linear' ? 'Distancia' : 'Área'} sin título`}
                       </p>
                       <p className="text-md text-primary">
                         {m.value.toFixed(2)} {m.unit}
