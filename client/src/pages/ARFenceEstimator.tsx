@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -103,7 +102,7 @@ export default function ARFenceEstimator() {
     const ctx = canvasRef.current.getContext('2d');
     if (ctx) {
       clearCanvas();
-      
+
       // Redibujar punto A
       ctx.fillStyle = '#00ff00';
       ctx.beginPath();
@@ -127,14 +126,6 @@ export default function ARFenceEstimator() {
         screenY: y 
       });
       ctx.fillText(`${distance.toFixed(2)} ft`, (startPoint.screenX + x) / 2, (startPoint.screenY + y) / 2);
-    }
-  };
-
-    // Completar medición si tenemos suficientes puntos
-    if (measurementType === 'linear' && currentPoints.length >= 1) {
-      finalizeMeasurement();
-    } else if (measurementType === 'area' && currentPoints.length >= 2) {
-      finalizeMeasurement();
     }
   };
 
