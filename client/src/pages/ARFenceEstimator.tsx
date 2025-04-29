@@ -1,9 +1,9 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import * as THREE from 'three';
+import * as tf from '@tensorflow/tfjs';
+import * as cocoSsd from '@tensorflow-models/coco-ssd';
 
 interface Measurement {
   id: string;
@@ -13,25 +13,28 @@ interface Measurement {
   notes?: string;
 }
 
-interface CalibrationMarker {
-  x: number;
-  y: number;
-  size: number; // tamaño real en pulgadas
-}
-
 export default function ARFenceEstimator() {
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
-  const [calibrationMode, setCalibrationMode] = useState(false);
-  const [referenceMarker, setReferenceMarker] = useState<CalibrationMarker | null>(null);
-  const [measurementInProgress, setMeasurementInProgress] = useState(false);
-  const [startPoint, setStartPoint] = useState<{x: number, y: number} | null>(null);
+  const [isModelLoading, setIsModelLoading] = useState(true);
+  const [model, setModel] = useState<cocoSsd.ObjectDetection | null>(null);
   const [note, setNote] = useState('');
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     initCamera();
+    loadModel();
   }, []);
+
+  const loadModel = async () => {
+    try {
+      const loadedModel = await cocoSsd.load();
+      setModel(loadedModel);
+      setIsModelLoading(false);
+    } catch (err) {
+      console.error('Error cargando el modelo:', err);
+    }
+  };
 
   const initCamera = async () => {
     try {
@@ -58,136 +61,84 @@ export default function ARFenceEstimator() {
     }
   };
 
-  const startCalibration = () => {
-    setCalibrationMode(true);
-    setReferenceMarker(null);
-    clearCanvas();
-  };
+  const detectObjects = async () => {
+    if (!model || !videoRef.current || !canvasRef.current) return;
 
-  const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!canvasRef.current) return;
-    
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-
-    if (calibrationMode) {
-      // Modo calibración: establecer marcador de referencia
-      setReferenceMarker({
-        x,
-        y,
-        size: 12 // Una hoja de papel estándar (11 pulgadas)
-      });
-      setCalibrationMode(false);
-      drawCalibrationMarker(x, y);
-    } else if (!measurementInProgress) {
-      // Iniciar medición
-      setStartPoint({ x, y });
-      setMeasurementInProgress(true);
-      drawPoint(x, y, 'A');
-    } else {
-      // Finalizar medición
-      finalizeMeasurement(x, y);
-    }
-  };
-
-  const handleCanvasMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!measurementInProgress || !startPoint || !canvasRef.current) return;
-
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-
+    const predictions = await model.detect(videoRef.current);
     const ctx = canvasRef.current.getContext('2d');
-    if (ctx) {
-      clearCanvas();
-      if (referenceMarker) drawCalibrationMarker(referenceMarker.x, referenceMarker.y);
-      drawPoint(startPoint.x, startPoint.y, 'A');
-      drawLine(startPoint.x, startPoint.y, x, y);
-      const distance = calculateDistance(startPoint.x, startPoint.y, x, y);
-      drawMeasurement(distance, (startPoint.x + x) / 2, (startPoint.y + y) / 2);
-    }
-  };
+    if (!ctx) return;
 
-  const calculateDistance = (x1: number, y1: number, x2: number, y2: number): number => {
-    if (!referenceMarker) return 0;
+    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
 
-    const pixelDistance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-    const scale = referenceMarker.size / 30; // Factor de escala basado en el marcador de referencia
-    return (pixelDistance * scale) / 12; // Convertir a pies
-  };
+    predictions.forEach(prediction => {
+      const [x, y, width, height] = prediction.bbox;
 
-  const finalizeMeasurement = (endX: number, endY: number) => {
-    if (!startPoint) return;
-
-    const distance = calculateDistance(startPoint.x, startPoint.y, endX, endY);
-    const measurement: Measurement = {
-      id: `m-${Date.now()}`,
-      distance: Math.round(distance * 100) / 100,
-      unit: 'ft',
-      timestamp: new Date().toISOString(),
-      notes: note
-    };
-
-    setMeasurements(prev => [...prev, measurement]);
-    setMeasurementInProgress(false);
-    setStartPoint(null);
-    setNote('');
-    clearCanvas();
-    if (referenceMarker) drawCalibrationMarker(referenceMarker.x, referenceMarker.y);
-  };
-
-  const drawPoint = (x: number, y: number, label: string) => {
-    const ctx = canvasRef.current?.getContext('2d');
-    if (ctx) {
-      ctx.fillStyle = '#00ff00';
-      ctx.beginPath();
-      ctx.arc(x, y, 5, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.fillText(label, x + 10, y);
-    }
-  };
-
-  const drawLine = (x1: number, y1: number, x2: number, y2: number) => {
-    const ctx = canvasRef.current?.getContext('2d');
-    if (ctx) {
+      // Dibujar el rectángulo de detección
       ctx.strokeStyle = '#00ff00';
       ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
-    }
-  };
+      ctx.strokeRect(x, y, width, height);
 
-  const drawCalibrationMarker = (x: number, y: number) => {
-    const ctx = canvasRef.current?.getContext('2d');
-    if (ctx) {
-      ctx.strokeStyle = '#ff0000';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.rect(x - 15, y - 15, 30, 30);
-      ctx.stroke();
-      ctx.fillStyle = '#ff0000';
-      ctx.fillText('Referencia', x + 20, y);
-    }
-  };
+      // Calcular medidas reales aproximadas (asumiendo una distancia promedio)
+      const realWorldWidth = calculateRealWorldDimension(width);
+      const realWorldHeight = calculateRealWorldDimension(height);
 
-  const drawMeasurement = (distance: number, x: number, y: number) => {
-    const ctx = canvasRef.current?.getContext('2d');
-    if (ctx) {
+      // Mostrar medidas
       ctx.fillStyle = '#ffffff';
-      ctx.font = '14px Arial';
-      ctx.fillText(`${distance.toFixed(2)} ft`, x, y - 10);
+      ctx.font = '16px Arial';
+      ctx.fillText(`${realWorldWidth.toFixed(2)} ft x ${realWorldHeight.toFixed(2)} ft`, x, y - 5);
+    });
+  };
+
+  const calculateRealWorldDimension = (pixels: number): number => {
+    // Factor de conversión aproximado (ajustar según necesidad)
+    const PIXELS_PER_FOOT = 50;
+    return pixels / PIXELS_PER_FOOT;
+  };
+
+  const captureMeasurement = async () => {
+    if (!model || !videoRef.current) return;
+
+    const predictions = await model.detect(videoRef.current);
+    if (predictions.length > 0) {
+      const largestObject = predictions.reduce((prev, current) => 
+        (current.bbox[2] * current.bbox[3]) > (prev.bbox[2] * prev.bbox[3]) ? current : prev
+      );
+
+      const [, , width, height] = largestObject.bbox;
+      const realWorldWidth = calculateRealWorldDimension(width);
+      const realWorldHeight = calculateRealWorldDimension(height);
+
+      const measurement: Measurement = {
+        id: `m-${Date.now()}`,
+        distance: realWorldWidth,
+        unit: 'ft',
+        timestamp: new Date().toISOString(),
+        notes: `${note || 'Medición automática'} (${realWorldWidth.toFixed(2)} x ${realWorldHeight.toFixed(2)} ft)`
+      };
+
+      setMeasurements(prev => [...prev, measurement]);
+      setNote('');
     }
   };
 
-  const clearCanvas = () => {
-    const ctx = canvasRef.current?.getContext('2d');
-    if (ctx && canvasRef.current) {
-      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+  useEffect(() => {
+    let animationFrame: number;
+
+    const detectLoop = () => {
+      detectObjects();
+      animationFrame = requestAnimationFrame(detectLoop);
+    };
+
+    if (!isModelLoading) {
+      detectLoop();
     }
-  };
+
+    return () => {
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+      }
+    };
+  }, [isModelLoading, model]);
 
   const deleteMeasurement = (id: string) => {
     setMeasurements(prev => prev.filter(m => m.id !== id));
@@ -199,25 +150,17 @@ export default function ARFenceEstimator() {
         <div className="p-2 bg-primary/10 rounded-lg">
           <i className="ri-ruler-line text-3xl text-primary"></i>
         </div>
-        <h1 className="text-3xl font-bold">Medición con Referencia</h1>
+        <h1 className="text-3xl font-bold">Medición Automática</h1>
       </div>
 
       <Card className="w-full mb-6">
         <CardHeader>
           <CardTitle>Nueva Medición</CardTitle>
           <CardDescription>
-            Use un objeto de referencia (ej: hoja de papel) para calibrar
+            Apunte la cámara al objeto a medir
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Button
-            onClick={startCalibration}
-            disabled={measurementInProgress}
-            className="w-full mb-4"
-          >
-            {calibrationMode ? 'Coloque el marcador de referencia' : 'Calibrar Medición'}
-          </Button>
-
           <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
             <video
               ref={videoRef}
@@ -228,10 +171,13 @@ export default function ARFenceEstimator() {
             />
             <canvas
               ref={canvasRef}
-              onClick={handleCanvasClick}
-              onMouseMove={handleCanvasMouseMove}
               className="absolute inset-0 w-full h-full"
             />
+            {isModelLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                <p className="text-white">Cargando modelo...</p>
+              </div>
+            )}
           </div>
 
           <Input
@@ -239,6 +185,14 @@ export default function ARFenceEstimator() {
             value={note}
             onChange={(e) => setNote(e.target.value)}
           />
+
+          <Button
+            onClick={captureMeasurement}
+            disabled={isModelLoading}
+            className="w-full"
+          >
+            Capturar Medición
+          </Button>
         </CardContent>
       </Card>
 
