@@ -56,24 +56,45 @@ export default function ARFenceEstimator() {
       return;
     }
 
-    // Calcular distancia entre puntos en el mundo real
-    if (measurePoints.length >= 2) {
-      const distance = calculateDistance(measurePoints[0], measurePoints[1]);
-      const measurement: Measurement = {
-        id: `m-${Date.now()}`,
-        type,
-        value: distance,
-        unit: type === 'area' ? 'sqft' : 'ft',
-        notes: note,
-        timestamp: new Date().toISOString()
-      };
+    const frame = await new Promise<XRFrame>(resolve => {
+      xrSession.requestAnimationFrame((frame) => resolve(frame));
+    });
 
-      setMeasurements(prev => [...prev, measurement]);
-      setMeasurePoints([]);
-      setNote('');
+    if (hitTestSource) {
+      const hitTestResults = frame.getHitTestResults(hitTestSource);
+      
+      if (hitTestResults.length > 0) {
+        const hitPose = hitTestResults[0].getPose(frame.getViewerPose(referenceSpace)?.transform);
+        
+        if (hitPose) {
+          const point = new DOMPoint(
+            hitPose.transform.position.x,
+            hitPose.transform.position.y,
+            hitPose.transform.position.z
+          );
+          
+          setMeasurePoints(prev => [...prev, point]);
+
+          // Calcular distancia cuando tengamos dos puntos
+          if (measurePoints.length >= 1) {
+            const distance = calculateDistance(measurePoints[0], point);
+            const measurement: Measurement = {
+              id: `m-${Date.now()}`,
+              type,
+              value: Math.round(distance * 3.28084 * 100) / 100, // Convertir metros a pies
+              unit: type === 'area' ? 'sqft' : 'ft',
+              notes: note,
+              timestamp: new Date().toISOString()
+            };
+
+            setMeasurements(prev => [...prev, measurement]);
+            setMeasurePoints([]);
+            setNote('');
+            setIsScanning(false);
+          }
+        }
+      }
     }
-    
-    setIsScanning(false);
   };
 
   const calculateDistance = (point1: DOMPoint, point2: DOMPoint): number => {
