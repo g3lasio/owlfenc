@@ -21,9 +21,26 @@ export default function ARFenceEstimator() {
   const [hitTestSource, setHitTestSource] = useState<XRHitTestSource | null>(null);
   const [measurePoints, setMeasurePoints] = useState<DOMPoint[]>([]);
 
+  const requestCameraPermission = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      stream.getTracks().forEach(track => track.stop()); // Liberar la cámara después de obtener permiso
+      return true;
+    } catch (err) {
+      console.error('Error al solicitar permisos de cámara:', err);
+      return false;
+    }
+  };
+
   const startARSession = async () => {
     if (!navigator.xr) {
       alert('WebXR no está soportado en este dispositivo');
+      return;
+    }
+
+    const hasCameraPermission = await requestCameraPermission();
+    if (!hasCameraPermission) {
+      alert('Se necesitan permisos de cámara para usar AR');
       return;
     }
 
