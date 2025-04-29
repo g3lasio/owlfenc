@@ -19,9 +19,28 @@ export default function ARFenceEstimator() {
   }, []);
 
   const checkSupport = async () => {
+    // Detectar si es iOS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    
+    if (isIOS) {
+      // En iOS, verificar si el navegador es Safari
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      if (!isSafari) {
+        alert('Por favor abre esta página en Safari para usar AR en iOS');
+        setIsSupported(false);
+        return;
+      }
+      
+      // Verificar soporte de ARKit
+      if ('ARKit' in window || 'WebXRViewer' in window) {
+        setIsSupported(true);
+        return;
+      }
+    }
+    
+    // Para otros dispositivos, intentar WebXR
     const webXRSupported = navigator.xr && await navigator.xr.isSessionSupported('immersive-ar');
-    const arKitSupported = 'measurementAPI' in window;
-    setIsSupported(webXRSupported || arKitSupported);
+    setIsSupported(webXRSupported);
   };
 
   const startMeasurement = async () => {
