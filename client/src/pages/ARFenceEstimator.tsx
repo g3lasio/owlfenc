@@ -28,10 +28,19 @@ export default function ARFenceEstimator() {
 
   const checkCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: 'environment',
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        }
+      });
       setHasCamera(true);
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current?.play();
+        };
       }
     } catch (err) {
       console.error('Error accediendo a la cámara:', err);
@@ -149,14 +158,13 @@ export default function ARFenceEstimator() {
                   ref={videoRef}
                   autoPlay
                   playsInline
-                  className="absolute inset-0 w-full h-full"
-                  style={{ display: isMeasuring ? 'none' : 'block' }}
+                  muted
+                  className="absolute inset-0 w-full h-full object-cover"
                 />
                 <canvas
                   ref={canvasRef}
                   onClick={handleCanvasClick}
                   className="absolute inset-0 w-full h-full"
-                  style={{ display: isMeasuring ? 'block' : 'none' }}
                 />
               </div>
               <Button
