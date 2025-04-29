@@ -231,12 +231,6 @@ export default function Sidebar() {
                 Perfil de Empresa
               </Button>
             </Link>
-            <Link href="/settings/employees">
-              <Button variant="ghost" className="w-full justify-start">
-                <Users className="h-4 w-4 mr-2" />
-                Empleados
-              </Button>
-            </Link>
             <Link href="/settings">
               <Button variant="ghost" className="w-full justify-start">
                 <Settings className="h-4 w-4 mr-2" />

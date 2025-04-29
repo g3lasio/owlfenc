@@ -305,7 +305,6 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             <div className="space-y-1.5 mb-4">
               {[
                 { name: "Perfil de Empresa", icon: "ri-building-4-line", path: "/profile" },
-                { name: "Empleados", icon: "ri-team-line", path: "/settings/employees" },
                 { name: "Preferencias", icon: "ri-settings-4-line", path: "/settings" }
               ].map((item, index) => (
                 <motion.div
