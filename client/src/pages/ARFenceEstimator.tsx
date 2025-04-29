@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 interface Point {
   x: number;
@@ -20,8 +21,9 @@ interface Measurement {
 export default function ARFenceEstimator() {
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
   const [currentPoints, setCurrentPoints] = useState<Point[]>([]);
+  const [referenceLength, setReferenceLength] = useState<number>(0);
   const [isCalibrating, setIsCalibrating] = useState(true);
-  const [calibrationFactor, setCalibrationFactor] = useState(0);
+  const [pixelsPerFoot, setPixelsPerFoot] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -54,11 +56,19 @@ export default function ARFenceEstimator() {
     }
   };
 
-  const calibrate = () => {
-    // Usar un objeto de referencia conocido (por ejemplo, una hoja de papel tamaño carta)
-    const knownLength = 11; // pulgadas
-    setCalibrationFactor(knownLength / 100); // Asumiendo 100px como referencia inicial
+  const handleCalibration = () => {
+    if (currentPoints.length !== 2 || !referenceLength) return;
+
+    const pixelDistance = calculatePixelDistance(currentPoints[0], currentPoints[1]);
+    const calculatedPixelsPerFoot = pixelDistance / referenceLength;
+    setPixelsPerFoot(calculatedPixelsPerFoot);
     setIsCalibrating(false);
+    setCurrentPoints([]);
+    clearCanvas();
+  };
+
+  const calculatePixelDistance = (p1: Point, p2: Point): number => {
+    return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
   };
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -71,35 +81,28 @@ export default function ARFenceEstimator() {
     const newPoint: Point = {
       x,
       y,
-      label: String.fromCharCode(65 + currentPoints.length) // A, B, C, etc.
+      label: String.fromCharCode(65 + currentPoints.length)
     };
 
-    setCurrentPoints(prev => [...prev, newPoint]);
-    drawMeasurement([...currentPoints, newPoint]);
+    const updatedPoints = [...currentPoints, newPoint];
+    setCurrentPoints(updatedPoints);
+    drawPoints(updatedPoints);
   };
 
-  const calculateDistance = (p1: Point, p2: Point): number => {
-    const pixelDistance = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
-    return pixelDistance * calibrationFactor;
+  const clearCanvas = () => {
+    if (!canvasRef.current) return;
+    const ctx = canvasRef.current.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
   };
 
-  const calculateArea = (points: Point[]): number => {
-    if (points.length < 3) return 0;
-    const [p1, p2, p3] = points;
-    const base = calculateDistance(p1, p2);
-    const height = calculateDistance(p2, p3);
-    return base * height;
-  };
-
-  const drawMeasurement = (points: Point[]) => {
+  const drawPoints = (points: Point[]) => {
     if (!canvasRef.current) return;
     const ctx = canvasRef.current.getContext('2d');
     if (!ctx) return;
 
-    // Limpiar canvas
-    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    clearCanvas();
 
-    // Dibujar líneas y puntos
     ctx.strokeStyle = '#00ff00';
     ctx.lineWidth = 2;
     ctx.fillStyle = '#00ff00';
@@ -110,8 +113,6 @@ export default function ARFenceEstimator() {
       ctx.beginPath();
       ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);
       ctx.fill();
-
-      // Dibujar etiqueta
       ctx.fillText(point.label, point.x + 10, point.y - 10);
 
       // Dibujar línea al punto anterior
@@ -121,23 +122,32 @@ export default function ARFenceEstimator() {
         ctx.lineTo(point.x, point.y);
         ctx.stroke();
 
-        // Mostrar medida en la línea
         const distance = calculateDistance(points[i - 1], point);
         const midX = (points[i - 1].x + point.x) / 2;
         const midY = (points[i - 1].y + point.y) / 2;
-        const feet = Math.floor(distance);
-        const inches = Math.round((distance % 1) * 12);
-        ctx.fillText(`${feet}'${inches}"`, midX, midY - 10);
+        ctx.fillText(`${distance.toFixed(2)} ft`, midX, midY - 10);
       }
     });
 
-    // Si tenemos 3 puntos, mostrar área
+    // Calcular y mostrar área si hay 3 puntos
     if (points.length === 3) {
       const area = calculateArea(points);
-      const sqft = Math.round(area);
       ctx.fillStyle = '#ffffff';
-      ctx.fillText(`${sqft} sq ft`, points[1].x + 20, points[1].y + 20);
+      ctx.fillText(`${area.toFixed(2)} sq ft`, points[1].x + 20, points[1].y + 20);
     }
+  };
+
+  const calculateDistance = (p1: Point, p2: Point): number => {
+    const pixelDistance = calculatePixelDistance(p1, p2);
+    return pixelDistance / pixelsPerFoot;
+  };
+
+  const calculateArea = (points: Point[]): number => {
+    if (points.length < 3) return 0;
+    const [p1, p2, p3] = points;
+    const base = calculateDistance(p1, p2);
+    const height = calculateDistance(p2, p3);
+    return base * height;
   };
 
   const finalizeMeasurement = () => {
@@ -153,10 +163,7 @@ export default function ARFenceEstimator() {
 
     setMeasurements(prev => [...prev, measurement]);
     setCurrentPoints([]);
-    if (canvasRef.current) {
-      const ctx = canvasRef.current.getContext('2d');
-      ctx?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-    }
+    clearCanvas();
   };
 
   return (
@@ -173,7 +180,7 @@ export default function ARFenceEstimator() {
           <CardTitle>Nueva Medición</CardTitle>
           <CardDescription>
             {isCalibrating 
-              ? "Calibra usando una hoja de papel tamaño carta como referencia"
+              ? "Marca dos puntos y especifica la distancia real entre ellos para calibrar"
               : "Toca la pantalla para marcar puntos de medición"}
           </CardDescription>
         </CardHeader>
@@ -195,9 +202,22 @@ export default function ARFenceEstimator() {
 
           <div className="flex gap-2">
             {isCalibrating ? (
-              <Button onClick={calibrate} className="w-full">
-                Calibrar con Referencia
-              </Button>
+              <>
+                <Input
+                  type="number"
+                  placeholder="Distancia en pies"
+                  value={referenceLength || ''}
+                  onChange={(e) => setReferenceLength(parseFloat(e.target.value))}
+                  className="w-full"
+                />
+                <Button 
+                  onClick={handleCalibration}
+                  disabled={currentPoints.length !== 2 || !referenceLength}
+                  className="whitespace-nowrap"
+                >
+                  Calibrar
+                </Button>
+              </>
             ) : (
               <>
                 <Button 
@@ -209,7 +229,10 @@ export default function ARFenceEstimator() {
                 </Button>
                 <Button 
                   variant="outline"
-                  onClick={() => setCurrentPoints([])}
+                  onClick={() => {
+                    setCurrentPoints([]);
+                    clearCanvas();
+                  }}
                   className="w-full"
                 >
                   Limpiar
@@ -239,12 +262,11 @@ export default function ARFenceEstimator() {
                         Medición {m.points.map(p => p.label).join(' → ')}
                       </p>
                       <p className="text-md text-primary">
-                        {Math.floor(m.distance)}'
-                        {Math.round((m.distance % 1) * 12)}"
+                        {m.distance.toFixed(2)} ft
                       </p>
                       {m.area && (
                         <p className="text-sm text-primary mt-1">
-                          Área: {Math.round(m.area)} sq ft
+                          Área: {m.area.toFixed(2)} sq ft
                         </p>
                       )}
                       <p className="text-xs text-muted-foreground mt-2">
