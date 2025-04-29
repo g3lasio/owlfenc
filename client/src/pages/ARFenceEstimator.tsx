@@ -28,11 +28,16 @@ export default function ARFenceEstimator() {
 
   const loadModel = async () => {
     try {
-      const loadedModel = await cocoSsd.load();
+      const loadedModel = await cocoSsd.load({
+        base: 'lite_mobilenet_v2',  // Usar versión más ligera del modelo
+        modelUrl: 'https://storage.googleapis.com/tfjs-models/tfjs/coco-ssd/lite_mobilenet_v2/model.json'
+      });
       setModel(loadedModel);
       setIsModelLoading(false);
     } catch (err) {
       console.error('Error cargando el modelo:', err);
+      alert('Error al cargar el modelo de detección. Por favor, recarga la página.');
+      setIsModelLoading(false);
     }
   };
 
@@ -174,8 +179,10 @@ export default function ARFenceEstimator() {
               className="absolute inset-0 w-full h-full"
             />
             {isModelLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                <p className="text-white">Cargando modelo...</p>
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mb-2"></div>
+                <p className="text-white">Cargando modelo de medición...</p>
+                <p className="text-white/70 text-sm mt-2">Esto puede tomar unos segundos</p>
               </div>
             )}
           </div>
