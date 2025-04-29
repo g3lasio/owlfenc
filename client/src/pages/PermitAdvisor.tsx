@@ -115,14 +115,14 @@ export default function PermitAdvisor() {
   const [permitData, setPermitData] = useState<PermitResponse | null>(null);
   const [activeTab, setActiveTab] = useState("permits");
   const [useManualInput, setUseManualInput] = useState(false);
-  
+
   // Estado para controlar el valor de Google Places Autocomplete
   const [placeValue, setPlaceValue] = useState<any>(null);
-  
+
   // Verificar si la API key de Google Maps está configurada
   const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   const [apiError, setApiError] = useState(!googleMapsApiKey);
-  
+
   // Solicitud de permisos
   const permitMutation = useMutation({
     mutationFn: async ({ address, projectType }: { address: string; projectType: string }) => {
@@ -130,12 +130,12 @@ export default function PermitAdvisor() {
         address,
         projectType
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Error al consultar permisos");
       }
-      
+
       return response.json();
     },
     onSuccess: (data: PermitResponse) => {
@@ -165,7 +165,7 @@ export default function PermitAdvisor() {
   const handleSearch = () => {
     // Determinar qué dirección usar según el modo de entrada
     const finalAddress = useManualInput ? manualAddress : address;
-    
+
     if (!finalAddress) {
       toast({
         variant: "destructive",
@@ -174,26 +174,26 @@ export default function PermitAdvisor() {
       });
       return;
     }
-    
+
     permitMutation.mutate({ address: finalAddress, projectType });
   };
 
   // Tipos de proyectos disponibles
   const projectTypes = [
-    { value: "fence", label: "Cerca o Vallado" },
-    { value: "deck", label: "Terraza / Deck" },
-    { value: "remodel", label: "Remodelación Interior" },
-    { value: "addition", label: "Ampliación" },
-    { value: "newConstruction", label: "Nueva Construcción" },
-    { value: "pool", label: "Piscina" },
-    { value: "garage", label: "Garaje" },
-    { value: "solarPanel", label: "Paneles Solares" },
-    { value: "roofing", label: "Tejado" },
-    { value: "plumbing", label: "Plomería" },
-    { value: "electrical", label: "Instalación Eléctrica" },
-    { value: "hvac", label: "HVAC (Climatización)" },
-    { value: "driveway", label: "Entrada de Vehículos" },
-    { value: "landscaping", label: "Paisajismo" }
+    { value: "fence", label: "Fence or Gate" },
+    { value: "deck", label: "Deck" },
+    { value: "remodel", label: "Interior Remodel" },
+    { value: "addition", label: "Home Addition" },
+    { value: "newConstruction", label: "New Construction" },
+    { value: "pool", label: "Swimming Pool" },
+    { value: "garage", label: "Garage" },
+    { value: "solarPanel", label: "Solar Panels" },
+    { value: "roofing", label: "Roofing" },
+    { value: "plumbing", label: "Plumbing" },
+    { value: "electrical", label: "Electrical Installation" },
+    { value: "hvac", label: "HVAC System" },
+    { value: "driveway", label: "Driveway" },
+    { value: "landscaping", label: "Landscaping" }
   ];
 
   return (
@@ -228,7 +228,7 @@ export default function PermitAdvisor() {
               onValueChange={(value) => setProjectType(value)}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Selecciona el tipo de proyecto" />
+                <SelectValue placeholder="Select project type" />
               </SelectTrigger>
               <SelectContent>
                 {projectTypes.map((type) => (
@@ -252,7 +252,7 @@ export default function PermitAdvisor() {
                 {useManualInput ? "Usar autocompletado" : "Ingresar manualmente"}
               </Button>
             </div>
-            
+
             {useManualInput ? (
               <Input
                 placeholder="Ingresa la dirección completa (incluye ciudad, estado y código postal)"
@@ -278,7 +278,7 @@ export default function PermitAdvisor() {
                       setPlaceValue(value);
                       handlePlaceSelect(value);
                     },
-                    placeholder: "Ingresa la dirección completa del proyecto",
+                    placeholder: "Type Address Project",
                     noOptionsMessage: () => "No se encontraron resultados",
                     loadingMessage: () => "Cargando resultados...",
                     className: "rounded-md border border-input z-100",
@@ -373,7 +373,7 @@ export default function PermitAdvisor() {
               <div className="absolute right-10 top-10 w-20 h-20 rounded-full bg-primary/10 animate-pulse" style={{ animationDelay: '0.5s' }}></div>
               <div className="absolute left-20 bottom-10 w-32 h-32 rounded-full bg-primary/5 animate-pulse" style={{ animationDelay: '0.7s' }}></div>
             </div>
-            
+
             <div className="relative z-10 flex flex-col items-center">
               {/* Anillo animado alrededor del spinner */}
               <div className="relative mb-6">
@@ -381,12 +381,12 @@ export default function PermitAdvisor() {
                 <div className="absolute inset-0 rounded-full border-2 border-primary/20 border-dashed animate-spin" style={{ width: '70px', height: '70px', animationDuration: '5s', animationDirection: 'reverse' }}></div>
                 <Loader2 className="h-12 w-12 animate-spin text-primary relative" />
               </div>
-              
+
               <h3 className="text-xl font-semibold text-primary">Mervin DeepSearch en acción</h3>
               <p className="text-muted-foreground text-center mt-4 max-w-md relative">
                 Investigando regulaciones legales, permisos y normativas aplicables a tu proyecto en esta ubicación...
               </p>
-              
+
               <div className="w-full max-w-md mt-6 space-y-2">
                 <div className="h-2 bg-primary/10 rounded overflow-hidden">
                   <div className="h-full bg-primary/50 animate-pulse"></div>
@@ -396,7 +396,7 @@ export default function PermitAdvisor() {
                   <span>Analizando datos</span>
                 </div>
               </div>
-              
+
               <div className="mt-6 text-xs text-muted-foreground animate-pulse">
                 Puede tomar hasta 30 segundos...
               </div>
@@ -413,7 +413,7 @@ export default function PermitAdvisor() {
               Información actualizada sobre requisitos legales para tu proyecto
             </CardDescription>
           </CardHeader>
-          
+
           <div className="px-6 pt-2">
             <Alert className="mb-4 bg-primary/5 border-primary/20">
               <CheckCircle2 className="h-5 w-5 text-primary" />
@@ -426,7 +426,7 @@ export default function PermitAdvisor() {
               </AlertDescription>
             </Alert>
           </div>
-          
+
           <Tabs value={activeTab || "overview"} onValueChange={setActiveTab} className="mt-2">
             <div className="px-6">
               <TabsList className="grid grid-cols-2 md:grid-cols-9 mb-4 flex-wrap">
@@ -472,7 +472,7 @@ export default function PermitAdvisor() {
                 </TabsTrigger>
               </TabsList>
             </div>
-            
+
             <ScrollArea className="h-[500px]">
               <TabsContent value="overview" className="px-6 py-4 space-y-6">
                 <h3 className="text-lg font-medium flex items-center">
@@ -657,13 +657,13 @@ export default function PermitAdvisor() {
                   </div>
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="permits" className="px-6 py-4 space-y-4">
                 <h3 className="text-lg font-medium flex items-center">
                   <FileText className="mr-2 h-5 w-5 text-primary" />
                   Permisos Requeridos
                 </h3>
-                
+
                 {permitData?.requiredPermits?.length > 0 ? (
                   permitData.requiredPermits.map((permit, idx) => (
                     <Card key={idx} className="mb-4">
@@ -717,13 +717,13 @@ export default function PermitAdvisor() {
                   </Alert>
                 )}
               </TabsContent>
-              
+
               <TabsContent value="licenses" className="px-6 py-4 space-y-4">
                 <h3 className="text-lg font-medium flex items-center">
                   <CheckCircle2 className="mr-2 h-5 w-5 text-primary" />
                   Licencias de Contratista
                 </h3>
-                
+
                 {permitData.licenseRequirements && permitData.licenseRequirements.length > 0 ? (
                   permitData.licenseRequirements.map((license, idx) => (
                     <Card key={idx} className="mb-4">
@@ -759,13 +759,13 @@ export default function PermitAdvisor() {
                   </Alert>
                 )}
               </TabsContent>
-              
+
               <TabsContent value="codes" className="px-6 py-4 space-y-4">
                 <h3 className="text-lg font-medium flex items-center">
                   <Building2 className="mr-2 h-5 w-5 text-primary" />
                   Regulaciones y Códigos de Construcción
                 </h3>
-                
+
                 {permitData.buildingCodeRegulations && permitData.buildingCodeRegulations.length > 0 ? (
                   permitData.buildingCodeRegulations.map((code, idx) => (
                     <Card key={idx} className="mb-4">
@@ -812,13 +812,13 @@ export default function PermitAdvisor() {
                   </Alert>
                 )}
               </TabsContent>
-              
+
               <TabsContent value="inspections" className="px-6 py-4 space-y-4">
                 <h3 className="text-lg font-medium flex items-center">
                   <ListChecks className="mr-2 h-5 w-5 text-primary" />
                   Requisitos de Inspección
                 </h3>
-                
+
                 {permitData.inspectionRequirements && permitData.inspectionRequirements.length > 0 ? (
                   permitData.inspectionRequirements.map((inspection, idx) => (
                     <Card key={idx} className="mb-4">
@@ -849,13 +849,13 @@ export default function PermitAdvisor() {
                   </Alert>
                 )}
               </TabsContent>
-              
+
               <TabsContent value="process" className="px-6 py-4 space-y-6">
                 <h3 className="text-lg font-medium flex items-center">
                   <HardHat className="mr-2 h-5 w-5 text-primary" />
                   Proceso Paso a Paso
                 </h3>
-                
+
                 {permitData.process && permitData.process.length > 0 ? (
                   <div className="relative">
                     <div className="absolute left-3 top-0 bottom-0 w-[1px] bg-primary/30"></div>
