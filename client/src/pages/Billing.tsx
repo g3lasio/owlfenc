@@ -439,12 +439,11 @@ export default function Billing() {
                     <>Gestionar Suscripción</>
                   )}
                 </Button>
-                <Button 
-                  variant="default"
-                  onClick={() => window.location.href = '/subscription'}
-                >
-                  Cambiar Plan
-                </Button>
+                <Link href="/subscription">
+                  <Button variant="default">
+                    Ver Planes Disponibles
+                  </Button>
+                </Link>
               </div>
             </CardFooter>
           </Card>

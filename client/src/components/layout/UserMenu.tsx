@@ -116,8 +116,8 @@ export default function UserMenu() {
               <div className="text-sm font-semibold">{getCurrentPlanName()}</div>
               <div className="mt-2 flex justify-end">
                 <Link href="/subscription">
-                  <Button size="sm" variant="outline" className="text-xs h-7">
-                    Actualizar Plan
+                  <Button size="sm" variant="outline" className="text-xs h-7 w-full">
+                    Ver Planes
                   </Button>
                 </Link>
               </div>

@@ -179,15 +179,14 @@ export function SubscriptionInfo({
         </div>
       </CardContent>
       <CardFooter>
-        <Button 
-          onClick={createCustomerPortal} 
-          disabled={isLoading}
-          variant="outline"
-          className="w-full"
-        >
-          {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-          Administrar suscripción
-        </Button>
+        <Link href="/subscription">
+          <Button 
+            variant="outline"
+            className="w-full"
+          >
+            Ver planes disponibles
+          </Button>
+        </Link>
       </CardFooter>
     </Card>
   );
