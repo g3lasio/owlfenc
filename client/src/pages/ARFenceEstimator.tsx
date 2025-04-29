@@ -32,9 +32,29 @@ export default function ARFenceEstimator() {
     }
   };
 
-  const startARSession = async () => {
+  const checkARSupport = async () => {
     if (!navigator.xr) {
-      alert('WebXR no está soportado en este dispositivo');
+      alert('Tu navegador no soporta realidad aumentada (WebXR). Por favor, usa Chrome o Safari en un dispositivo móvil compatible con AR.');
+      return false;
+    }
+    
+    try {
+      const isSupported = await navigator.xr.isSessionSupported('immersive-ar');
+      if (!isSupported) {
+        alert('Tu dispositivo no soporta realidad aumentada. Asegúrate de usar un dispositivo móvil compatible con AR.');
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error('Error verificando soporte AR:', err);
+      alert('Hubo un error verificando la compatibilidad con AR. Por favor, asegúrate de usar un dispositivo móvil compatible.');
+      return false;
+    }
+  };
+
+  const startARSession = async () => {
+    const arSupported = await checkARSupport();
+    if (!arSupported) {
       return;
     }
 
