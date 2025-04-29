@@ -84,7 +84,7 @@ export default function Profile() {
     documents: {},
     logo: ""
   });
-  
+
   const [newSpecialty, setNewSpecialty] = useState("");
   const [loading, setLoading] = useState(false);
   const [activeDocumentSection, setActiveDocumentSection] = useState<string | null>(null);
@@ -138,14 +138,14 @@ export default function Profile() {
 
   const addSpecialty = () => {
     if (newSpecialty.trim() === "") return;
-    
+
     if (!companyInfo.specialties.includes(newSpecialty)) {
       setCompanyInfo(prev => ({
         ...prev,
         specialties: [...prev.specialties, newSpecialty]
       }));
     }
-    
+
     setNewSpecialty("");
   };
 
@@ -164,7 +164,7 @@ export default function Profile() {
 
     // Simulamos la subida creando una URL para previsualizar
     const fileUrl = URL.createObjectURL(file);
-    
+
     if (type === 'logo') {
       setCompanyInfo(prev => ({
         ...prev,
@@ -205,6 +205,13 @@ export default function Profile() {
       setLoading(false);
     }
   };
+
+  const handleChangePassword = () => {
+    // Add your password change logic here
+    console.log("Change password clicked!");
+    //Example:  You would typically make an API call here to update the password.
+  };
+
 
   return (
     <div className="flex-1 p-4 md:p-6 space-y-6">
@@ -296,7 +303,7 @@ export default function Profile() {
           {loading ? "Saving..." : "Save Changes"}
         </Button>
       </div>
-      
+
       <Tabs defaultValue="info" className="space-y-6">
         <TabsList className="w-full border-b flex flex-wrap justify-start md:justify-center p-0 h-auto">
           <TabsTrigger value="info" className="flex-grow md:flex-grow-0">General Information</TabsTrigger>
@@ -626,7 +633,7 @@ export default function Profile() {
                     }
                   }}
                 />
-                
+
                 <Accordion type="single" collapsible className="w-full">
                   <AccordionItem value="licenses">
                     <AccordionTrigger>Licenses and Permits</AccordionTrigger>
@@ -654,7 +661,7 @@ export default function Profile() {
                             Upload
                           </Button>
                         </div>
-                        
+
                         <div className="border rounded-md p-4 flex justify-between items-center">
                           <div className="flex items-center gap-3">
                             <FileText className="text-blue-500" />
@@ -680,7 +687,7 @@ export default function Profile() {
                       </div>
                     </AccordionContent>
                   </AccordionItem>
-                  
+
                   <AccordionItem value="contracts">
                     <AccordionTrigger>Contracts and Agreements</AccordionTrigger>
                     <AccordionContent>
@@ -707,7 +714,7 @@ export default function Profile() {
                             Upload
                           </Button>
                         </div>
-                        
+
                         <div className="border rounded-md p-4 flex justify-between items-center">
                           <div className="flex items-center gap-3">
                             <FileText className="text-green-500" />
@@ -733,7 +740,7 @@ export default function Profile() {
                       </div>
                     </AccordionContent>
                   </AccordionItem>
-                  
+
                   <AccordionItem value="other">
                     <AccordionTrigger>Other Documents</AccordionTrigger>
                     <AccordionContent>
@@ -760,7 +767,7 @@ export default function Profile() {
                             Upload
                           </Button>
                         </div>
-                        
+
                         <div className="border rounded-md p-4 flex justify-between items-center">
                           <div className="flex items-center gap-3">
                             <FileText className="text-purple-500" />
@@ -819,7 +826,7 @@ export default function Profile() {
                   <p className="text-muted-foreground text-sm">No specialties added.</p>
                 )}
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <Input
                   value={newSpecialty}
@@ -861,7 +868,7 @@ export default function Profile() {
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base">Beneficios de Suscripción</CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent>>
                     <ul className="space-y-2 text-sm">
                       <li className="flex items-start">
                         <span className="text-primary mr-2">✓</span>
@@ -916,6 +923,7 @@ export default function Profile() {
                     name="userEmail"
                     type="email"
                     placeholder="user@gmail.com"
+                    onChange={handleChange}
                   />
                 </div>
                 <div className="space-y-2">
@@ -925,6 +933,7 @@ export default function Profile() {
                     name="userPhone"
                     type="tel"
                     placeholder="(123) 456-7890"
+                    onChange={handleChange}
                   />
                 </div>
                 <div className="space-y-2">
@@ -933,10 +942,11 @@ export default function Profile() {
                     id="userPosition"
                     name="userPosition"
                     placeholder="Operations Director, Manager, etc."
+                    onChange={handleChange}
                   />
                 </div>
               </div>
-              
+
               <div className="border-t pt-4 mt-4">
                 <h3 className="text-lg font-medium mb-4">Change Password</h3>
                 <div className="grid grid-cols-1 gap-4">
@@ -947,6 +957,7 @@ export default function Profile() {
                       name="currentPassword"
                       type="password"
                       placeholder="••••••••"
+                      onChange={handleChange}
                     />
                   </div>
                   <div className="space-y-2">
@@ -956,6 +967,7 @@ export default function Profile() {
                       name="newPassword"
                       type="password"
                       placeholder="••••••••"
+                      onChange={handleChange}
                     />
                   </div>
                   <div className="space-y-2">
@@ -965,9 +977,17 @@ export default function Profile() {
                       name="confirmPassword"
                       type="password"
                       placeholder="••••••••"
+                      onChange={handleChange}
                     />
                   </div>
-                  <Button className="w-full md:w-auto" variant="outline">Update Password</Button>
+                  <div className="flex justify-end gap-4 mt-4">
+                    <Button onClick={handleSave} disabled={loading} className="w-full md:w-auto">
+                      {loading ? "Guardando..." : "Guardar Cambios"}
+                    </Button>
+                    <Button onClick={() => handleChangePassword()} variant="outline" className="w-full md:w-auto">
+                      Actualizar Contraseña
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardContent>
