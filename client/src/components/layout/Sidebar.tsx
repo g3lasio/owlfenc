@@ -156,7 +156,7 @@ export default function Sidebar() {
 
           <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Funcionalidades</h2>
           <div className="space-y-1 mb-6">
-            <Link href="/property-verifier">
+            <Link href="/property-ownership-verifier">
               <Button variant="ghost" className="w-full justify-start">
                 <i className="ri-shield-keyhole-line mr-2 text-lg"></i>
                 Verificación de Propiedad
@@ -193,7 +193,7 @@ export default function Sidebar() {
                 Perfil Personal
               </Button>
             </Link>
-            <Link href="/security">
+            <Link href="/security-settings">
               <Button variant="ghost" className="w-full justify-start">
                 <i className="ri-shield-keyhole-line mr-2"></i>
                 Seguridad
