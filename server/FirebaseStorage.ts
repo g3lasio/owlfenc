@@ -130,29 +130,69 @@ export class FirebaseStorage implements IStorage {
     }
   }
 
-  async updateUser(id: number, userData: Partial<User>): Promise<User> {
+  private async checkFirebaseConnection(): Promise<boolean> {
     try {
-      const userRef = doc(db, 'users', id.toString());
-      const userSnap = await getDoc(userRef);
-      
-      if (!userSnap.exists()) {
-        throw new Error(`User with ID ${id} not found`);
-      }
-      
-      // Actualizar los datos del usuario
-      await updateDoc(userRef, userData);
-      
-      // Obtener los datos actualizados
-      const updatedUserSnap = await getDoc(userRef);
-      
-      return {
-        ...convertTimestampToDate(updatedUserSnap.data()),
-        id
-      } as User;
+      const testRef = doc(db, '_connection_test', 'test');
+      await setDoc(testRef, { timestamp: serverTimestamp() });
+      await deleteDoc(testRef);
+      return true;
     } catch (error) {
-      console.error('Error updating user:', error);
-      throw error;
+      console.error('Firebase connection check failed:', error);
+      return false;
     }
+  }
+
+  async updateUser(id: number, userData: Partial<User>): Promise<User> {
+    const maxRetries = 3;
+    let retryCount = 0;
+
+    while (retryCount < maxRetries) {
+      try {
+        // Verificar conexión
+        const isConnected = await this.checkFirebaseConnection();
+        if (!isConnected) {
+          throw new Error('No hay conexión con Firebase');
+        }
+
+        const userRef = doc(db, 'users', id.toString());
+        const userSnap = await getDoc(userRef);
+        
+        if (!userSnap.exists()) {
+          throw new Error(`Usuario con ID ${id} no encontrado`);
+        }
+        
+        // Actualizar los datos del usuario
+        await updateDoc(userRef, {
+          ...userData,
+          updatedAt: serverTimestamp()
+        });
+        
+        // Verificar que los datos se actualizaron correctamente
+        const updatedUserSnap = await getDoc(userRef);
+        const updatedData = updatedUserSnap.data();
+        
+        if (!updatedData) {
+          throw new Error('Error al verificar la actualización');
+        }
+        
+        return {
+          ...convertTimestampToDate(updatedData),
+          id
+        } as User;
+      } catch (error: any) {
+        console.error(`Error updating user (attempt ${retryCount + 1}/${maxRetries}):`, error);
+        
+        if (retryCount === maxRetries - 1) {
+          throw new Error(`Error al actualizar usuario: ${error.message}`);
+        }
+        
+        retryCount++;
+        // Esperar antes de reintentar
+        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+      }
+    }
+
+    throw new Error('Error inesperado al actualizar usuario');
   }
 
   // Project methods

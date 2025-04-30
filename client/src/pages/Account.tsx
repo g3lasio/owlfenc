@@ -50,16 +50,33 @@ export default function Account() {
   const handleSaveChanges = async () => {
     setLoading(true);
     try {
-      // Aquí iría la llamada a la API para guardar los cambios
-      await apiRequest("POST", "/api/user-profile", formData);
+      // Validar que los campos requeridos no estén vacíos
+      if (!formData.firstName.trim()) {
+        throw new Error("El nombre es requerido");
+      }
+
+      // Intentar guardar en Firebase
+      const response = await apiRequest("POST", "/api/user-profile", formData);
+      
+      if (!response.ok) {
+        throw new Error("Error en la conexión con el servidor");
+      }
+
+      // Verificar la respuesta
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.message || "Error al guardar los cambios");
+      }
+
       toast({
         title: "Cambios guardados",
         description: "La información personal ha sido actualizada exitosamente.",
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Error saving profile:", error);
       toast({
         title: "Error",
-        description: "No se pudieron guardar los cambios.",
+        description: error.message || "No se pudieron guardar los cambios. Por favor intenta nuevamente.",
         variant: "destructive"
       });
     } finally {
