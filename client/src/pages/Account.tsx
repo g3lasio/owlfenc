@@ -29,11 +29,54 @@ export default function Account() {
     }
   };
 
+  const [formData, setFormData] = useState({
+    firstName: "",
+    paternalLastName: "",
+    maternalLastName: "",
+    nickname: "",
+    userEmail: "",
+    userPhone: "",
+    userPosition: ""
+  });
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSaveChanges = async () => {
+    setLoading(true);
+    try {
+      // Aquí iría la llamada a la API para guardar los cambios
+      await apiRequest("POST", "/api/user-profile", formData);
+      toast({
+        title: "Cambios guardados",
+        description: "La información personal ha sido actualizada exitosamente.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudieron guardar los cambios.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="container max-w-4xl py-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Mi Cuenta</h1>
-        <p className="text-muted-foreground">Administra tu información personal y credenciales</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold">Mi Cuenta</h1>
+          <p className="text-muted-foreground">Administra tu información personal y credenciales</p>
+        </div>
+        <Button onClick={handleSaveChanges} disabled={loading}>
+          {loading ? "Guardando..." : "Guardar Cambios"}
+        </Button>
       </div>
 
       <Card>
@@ -60,6 +103,8 @@ export default function Account() {
               <Input
                 id="firstName"
                 name="firstName"
+                value={formData.firstName}
+                onChange={handleInputChange}
                 placeholder="Ej: Juan Antonio"
               />
             </div>
