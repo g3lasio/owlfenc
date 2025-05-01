@@ -11,12 +11,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Separator } from "@/components/ui/separator";
 import { FcGoogle } from "react-icons/fc";
 import { FaApple } from "react-icons/fa";
+import { HiMail } from "react-icons/hi";
 import { RiSendPlaneFill } from "react-icons/ri";
-import { HiMail, HiPhone } from "react-icons/hi";
 import { useAuth } from "@/contexts/AuthContext";
-import PhoneAuth from "@/components/auth/PhoneAuth";
-import EmailLinkAuth from "@/components/auth/EmailLinkAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import EmailLinkAuth from "@/components/auth/EmailLinkAuth";
 
 // Esquema de validación para el formulario
 const loginSchema = z.object({
@@ -32,7 +31,7 @@ export default function Login() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [loginMethod, setLoginMethod] = useState<"email" | "emailLink" | "phone">("email");
+  const [loginMethod, setLoginMethod] = useState<"email" | "emailLink">("email");
 
   // Configurar el formulario
   const form = useForm<LoginFormValues>({
@@ -195,10 +194,10 @@ export default function Login() {
             {/* Tabs para seleccionar método de inicio de sesión */}
             <Tabs 
               value={loginMethod} 
-              onValueChange={(value) => setLoginMethod(value as "email" | "emailLink" | "phone")}
+              onValueChange={(value) => setLoginMethod(value as "email" | "emailLink")}
               className="w-full"
             >
-              <TabsList className="grid grid-cols-3 mb-4">
+              <TabsList className="grid grid-cols-2 mb-4">
                 <TabsTrigger value="email" className="flex items-center gap-1">
                   <HiMail className="h-4 w-4" />
                   <span className="hidden sm:inline">Email y contraseña</span>
@@ -208,11 +207,6 @@ export default function Login() {
                   <RiSendPlaneFill className="h-4 w-4" />
                   <span className="hidden sm:inline">Sin contraseña</span>
                   <span className="sm:hidden">Link</span>
-                </TabsTrigger>
-                <TabsTrigger value="phone" className="flex items-center gap-1">
-                  <HiPhone className="h-4 w-4" />
-                  <span className="hidden sm:inline">Teléfono (OTP)</span>
-                  <span className="sm:hidden">SMS</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -293,12 +287,6 @@ export default function Login() {
                       description: "Se ha enviado un enlace a tu correo electrónico. Por favor, revisa tu bandeja de entrada."
                     });
                   }}
-                />
-              </TabsContent>
-
-              <TabsContent value="phone">
-                <PhoneAuth 
-                  onSuccess={() => navigate("/")}
                 />
               </TabsContent>
             </Tabs>
