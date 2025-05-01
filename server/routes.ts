@@ -888,7 +888,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Primero, verificamos si existe el usuario
         const user = await storage.getUser(userId);
         if (!user) {
-          return res.status(404).json{ message: 'Usuario no encontrado' });
+          return res.status(404).json({ message: 'Usuario no encontrado' });
         }
 
         // Crear un cliente en Stripe
