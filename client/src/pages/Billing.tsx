@@ -440,8 +440,8 @@ export default function Billing() {
                     <>Gestionar Suscripción</>
                   )}
                 </Button>
-                <Link href="/subscription"> {/*Corrected Link usage*/}
-                  <Button variant="default">
+                <Link href="/subscription">
+                  <Button variant="default" className="w-full">
                     Ver Planes Disponibles
                   </Button>
                 </Link>
