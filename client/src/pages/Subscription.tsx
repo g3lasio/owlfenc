@@ -26,17 +26,25 @@ export default function Subscription() {
   // Obtenemos los planes disponibles
   const { data: plans, isLoading: isLoadingPlans, error: plansError } = useQuery<SubscriptionPlan[]>({
     queryKey: ["/api/subscription/plans"],
-    throwOnError: true,
+    throwOnError: false,
     staleTime: 1000 * 60 * 5, // Cache por 5 minutos
     retry: 3,
+    refetchOnWindowFocus: false,
     onSuccess: (data) => {
-      console.log("Planes cargados exitosamente:", data);
+      if (!data || data.length === 0) {
+        console.warn("No se encontraron planes disponibles");
+        toast({
+          title: "Planes no disponibles",
+          description: "No hay planes de suscripción disponibles en este momento.",
+          variant: "destructive"
+        });
+      }
     },
     onError: (error) => {
       console.error("Error cargando planes:", error);
       toast({
         title: "Error al cargar planes",
-        description: "No se pudieron cargar los planes de suscripción. Por favor, intente de nuevo.",
+        description: "Por favor, actualice la página o contacte a soporte si el problema persiste.",
         variant: "destructive"
       });
     }
@@ -227,7 +235,7 @@ export default function Subscription() {
   const getIsMostPopular = (planCode: string) => planCode === "mero_patron";
 
   const isLoadingData = isLoadingPlans || isLoadingUserSubscription;
-  const hasError = !plans || plans.length === 0;
+  const hasError = plansError || (!isLoadingPlans && (!plans || plans.length === 0));
 
   if (isLoadingData) {
     return (
@@ -256,7 +264,9 @@ export default function Subscription() {
 
   // Comprobar si el usuario ya tiene una suscripción activa
   const hasActiveSubscription = userSubscription && 
-    ["active", "trialing"].includes(userSubscription.status);
+    userSubscription.status && 
+    ["active", "trialing"].includes(userSubscription.status) &&
+    userSubscription.planId;
 
   return (
     <div className="container max-w-6xl py-12">
