@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { FcGoogle } from "react-icons/fc";
-import { FaApple, FaMicrosoft } from "react-icons/fa";
+import { FaApple } from "react-icons/fa";
 import { useAuth } from "@/contexts/AuthContext";
 import { RiEyeLine, RiEyeOffLine } from "react-icons/ri"; // Added import
 
@@ -112,24 +112,7 @@ export default function Signup() {
     }
   };
 
-  // Manejar registro con Microsoft
-  const handleMicrosoftSignup = async () => {
-    setIsLoading(true);
-    try {
-      clearError();
-      await loginWithMicrosoft();
-      navigate("/");
-    } catch (err: any) {
-      console.error("Error de registro con Microsoft:", err);
-      toast({
-        variant: "destructive",
-        title: "Error de registro",
-        description: err.message || "Ocurrió un error al registrarte con Microsoft. Intenta de nuevo.",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Método Microsoft removido intencionalmente
 
   return (
     <div className="container mx-auto max-w-md py-12">

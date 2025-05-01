@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { FcGoogle } from "react-icons/fc";
 import { FaApple } from "react-icons/fa";
 import { HiMail } from "react-icons/hi";
-import { RiSendPlaneFill } from "react-icons/ri";
+import { RiMailSendLine, RiEyeLine, RiEyeOffLine } from "react-icons/ri";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import EmailLinkAuth from "@/components/auth/EmailLinkAuth";
@@ -204,7 +204,7 @@ export default function Login() {
                   <span className="sm:hidden">Email</span>
                 </TabsTrigger>
                 <TabsTrigger value="emailLink" className="flex items-center gap-1">
-                  <RiSendPlaneFill className="h-4 w-4" />
+                  <RiMailSendLine className="h-4 w-4" />
                   <span className="hidden sm:inline">Sin contraseña</span>
                   <span className="sm:hidden">Link</span>
                 </TabsTrigger>
@@ -246,9 +246,9 @@ export default function Login() {
                                 className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                               >
                                 {showPassword ? (
-                                  <i className="ri-eye-off-line" />
+                                  <RiEyeOffLine className="h-4 w-4" />
                                 ) : (
-                                  <i className="ri-eye-line" />
+                                  <RiEyeLine className="h-4 w-4" />
                                 )}
                               </button>
                             </div>
