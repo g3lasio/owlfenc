@@ -24,9 +24,9 @@ export default function Subscription() {
   const queryClient = useQueryClient();
 
   // Obtenemos los planes disponibles
-  const { data: plans, isLoading: isLoadingPlans } = useQuery<SubscriptionPlan[]>({
+  const { data: plans, isLoading: isLoadingPlans, error: plansError } = useQuery<SubscriptionPlan[]>({
     queryKey: ["/api/subscription/plans"],
-    throwOnError: false,
+    throwOnError: true,
     staleTime: 1000 * 60 * 5, // Cache por 5 minutos
     retry: 3,
     onSuccess: (data) => {
@@ -34,6 +34,11 @@ export default function Subscription() {
     },
     onError: (error) => {
       console.error("Error cargando planes:", error);
+      toast({
+        title: "Error al cargar planes",
+        description: "No se pudieron cargar los planes de suscripción. Por favor, intente de nuevo.",
+        variant: "destructive"
+      });
     }
   });
 

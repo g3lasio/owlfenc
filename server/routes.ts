@@ -83,7 +83,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerPromptTemplateRoutes(app);
   registerEstimateRoutes(app);
   registerPropertyRoutes(app);
-  
+
   // Add API routes
   app.get('/api/projects', async (req: Request, res: Response) => {
     try {
@@ -243,9 +243,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ message: 'Failed to generate estimate' });
     }
   });
-  
+
   // ** Nuevos endpoints para el generador de estimados **
-  
+
   // Endpoint para validar datos de entrada
   app.post('/api/estimate/validate', async (req: Request, res: Response) => {
     try {
@@ -255,7 +255,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
-      
+
       // Validate input data
       const inputData = {
         ...req.body,
@@ -266,23 +266,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         contractorEmail: user.email || '',
         contractorLicense: user.license || '',
       };
-      
+
       const validationErrors = validateProjectInput(inputData);
-      
+
       if (Object.keys(validationErrors).length > 0) {
         return res.status(400).json({ 
           valid: false,
           errors: validationErrors
         });
       }
-      
+
       res.json({ valid: true });
     } catch (error) {
       console.error('Error validating project data:', error);
       res.status(400).json({ message: 'Failed to validate project data' });
     }
   });
-  
+
   // Endpoint para calcular estimado basado en reglas o IA
   app.post('/api/estimate/calculate', async (req: Request, res: Response) => {
     try {
@@ -296,7 +296,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         clientCity: z.string().optional(),
         clientState: z.string().optional(),
         clientZip: z.string().optional(),
-        
+
         // Project Details
         projectType: z.string().min(1, "Tipo de proyecto obligatorio"),
         projectSubtype: z.string().min(1, "Subtipo de proyecto obligatorio"),
@@ -308,23 +308,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }).refine(data => {
           // Si es un proyecto de cerca, longitud es obligatoria
           if (data.length && data.length > 0) return true;
-          
+
           // Si es un proyecto de techado, área es obligatoria
           if (data.area && data.area > 0) return true;
-          
+
           return false;
         }, {
           message: "Se requiere longitud para cercas o área para techados"
         }),
         additionalFeatures: z.record(z.any()).optional(),
-        
+
         // Generation options
         useAI: z.boolean().optional(),
         customPrompt: z.string().optional()
       });
-      
+
       const validatedInput = inputSchema.parse(req.body);
-      
+
       // Para modo de prueba, creamos datos de contratista mock
       const mockContractor = {
         id: 1,
@@ -334,7 +334,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email: "contractor@example.com",
         license: "LIC-12345",
       };
-      
+
       // Prepare data for the estimator service
       const estimateInput = {
         ...validatedInput,
@@ -345,44 +345,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         contractorEmail: mockContractor.email,
         contractorLicense: mockContractor.license,
       };
-      
+
       // Generate estimate
       const estimateResult = await estimatorService.generateEstimate(estimateInput);
-      
+
       res.json(estimateResult);
     } catch (error) {
       console.error('Error calculating estimate:', error);
-      
+
       if (error instanceof z.ZodError) {
         return res.status(400).json({ 
           message: 'Datos de entrada inválidos',
           errors: error.errors
         });
       }
-      
+
       res.status(500).json({ message: 'Error generando estimado' });
     }
   });
-  
+
   // Endpoint para generar HTML personalizado del estimado
   app.post('/api/estimate/html', async (req: Request, res: Response) => {
     try {
       const schema = z.object({
         estimateData: z.record(z.any())
       });
-      
+
       const { estimateData } = schema.parse(req.body);
-      
+
       // Generate HTML
       const html = await estimatorService.generateEstimateHtml(estimateData);
-      
+
       res.json({ html });
     } catch (error) {
       console.error('Error generating estimate HTML:', error);
       res.status(500).json({ message: 'Error generando HTML del estimado' });
     }
   });
-  
+
   // Endpoint para guardar el estimado como proyecto
   app.post('/api/estimate/save', async (req: Request, res: Response) => {
     try {
@@ -390,15 +390,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         estimateData: z.record(z.any()),
         status: z.string().optional()
       });
-      
+
       const { estimateData, status = 'draft' } = schema.parse(req.body);
-      
+
       // In a real app, we would get the user ID from the session
       const userId = 1; // Default user ID
-      
+
       // Generate HTML for the estimate
       const estimateHtml = await estimatorService.generateEstimateHtml(estimateData);
-      
+
       // Prepare project data
       const projectData: InsertProject = {
         userId: userId,
@@ -415,15 +415,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         estimateHtml: estimateHtml,
         status: status
       };
-      
+
       // Add total price if available
       if (estimateData.rulesBasedEstimate?.totals?.total) {
         projectData.totalPrice = Math.round(estimateData.rulesBasedEstimate.totals.total * 100);
       }
-      
+
       // Save to database
       const project = await storage.createProject(projectData);
-      
+
       res.json({
         success: true,
         project
@@ -433,26 +433,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Error guardando el estimado' });
     }
   });
-  
+
   // Endpoint para obtener todos los materiales para un tipo específico
   app.get('/api/materials', async (req: Request, res: Response) => {
     try {
       const { category } = req.query;
-      
+
       if (!category || typeof category !== 'string') {
         return res.status(400).json({ message: 'Se requiere categoría de materiales' });
       }
-      
+
       // Obtener materiales de la base de datos
       const materials = await storage.getMaterialsByCategory(category);
-      
+
       res.json(materials);
     } catch (error) {
       console.error('Error fetching materials:', error);
       res.status(500).json({ message: 'Error obteniendo materiales' });
     }
   });
-  
+
   // Endpoint para generar un prompt y obtener estimado asistido por IA
   app.post('/api/estimate/generate-prompt', async (req: Request, res: Response) => {
     try {
@@ -461,19 +461,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         projectData: z.record(z.any()),
         category: z.string()
       });
-      
+
       const { userId = 1, projectData, category } = schema.parse(req.body);
-      
+
       // Generar el prompt
       const prompt = await promptGeneratorService.generatePromptForProject(userId, projectData, category);
-      
+
       res.json({ prompt });
     } catch (error) {
       console.error('Error generating prompt:', error);
       res.status(500).json({ message: 'Error generando prompt' });
     }
   });
-  
+
   // Endpoint para procesar un prompt con IA y obtener un estimado estructurado
   app.post('/api/estimate/process-prompt', async (req: Request, res: Response) => {
     try {
@@ -481,19 +481,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         prompt: z.string(),
         systemInstructions: z.string().optional()
       });
-      
+
       const { prompt, systemInstructions } = schema.parse(req.body);
-      
+
       // Procesar el prompt con OpenAI
       const result = await promptGeneratorService.processPromptWithAI(prompt, systemInstructions);
-      
+
       res.json(result);
     } catch (error) {
       console.error('Error processing prompt with AI:', error);
       res.status(500).json({ message: 'Error procesando prompt con IA' });
     }
   });
-  
+
   // Endpoint para enviar estimado por email
   app.post('/api/estimate/send-email', async (req: Request, res: Response) => {
     try {
@@ -504,9 +504,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subject: z.string(),
         message: z.string()
       });
-      
+
       const { estimate, templateId, email, subject, message } = schema.parse(req.body);
-      
+
       // Enviar email
       const result = await emailService.sendEstimateByEmail(
         estimate,
@@ -515,7 +515,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subject,
         message
       );
-      
+
       if (result) {
         res.json({ success: true, message: 'Email enviado correctamente' });
       } else {
@@ -578,6 +578,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/subscription/plans', async (req: Request, res: Response) => {
     try {
       const plans = await storage.getAllSubscriptionPlans();
+
+      // Si no hay planes, devolver planes por defecto para desarrollo
+      if (!plans || plans.length === 0) {
+        const defaultPlans = [
+          {
+            id: 1,
+            name: "Plan Básico",
+            description: "Para contratistas individuales",
+            price: 29.99,
+            yearlyPrice: 299.99,
+            features: ["Estimados ilimitados", "Verificación de propiedad", "Chat con Mervin"],
+            motto: "Comienza tu negocio",
+            code: "basic",
+            isActive: true
+          },
+          {
+            id: 2,
+            name: "Plan Profesional",
+            description: "Para equipos pequeños",
+            price: 49.99,
+            yearlyPrice: 499.99,
+            features: ["Todo del Plan Básico", "Gestión de proyectos AI", "Permisos automáticos"],
+            motto: "Crece tu negocio",
+            code: "pro",
+            isActive: true
+          }
+        ];
+        return res.json(defaultPlans);
+      }
+
       res.json(plans);
     } catch (error) {
       console.error('Error al obtener planes de suscripción:', error);
@@ -764,73 +794,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "No autenticado" });
       }
-      
+
       const userId = req.user.id;
-      
+
       // Obtenemos la suscripción del usuario para conseguir el customerId
       const subscription = await storage.getUserSubscriptionByUserId(userId);
-      
+
       if (!subscription || !subscription.stripeCustomerId) {
         return res.json([]);
       }
-      
+
       // Usar Stripe para obtener las facturas
       const invoices = await stripeService.getCustomerInvoices(subscription.stripeCustomerId);
-      
+
       res.json(invoices);
     } catch (error) {
       console.error('Error al obtener historial de pagos:', error);
       res.status(500).json({ message: 'Error al obtener historial de pagos' });
     }
   });
-  
+
   app.get('/api/subscription/payment-methods', async (req: Request, res: Response) => {
     try {
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "No autenticado" });
       }
-      
+
       const userId = req.user.id;
-      
+
       // Obtenemos la suscripción del usuario para conseguir el customerId
       const subscription = await storage.getUserSubscriptionByUserId(userId);
-      
+
       if (!subscription || !subscription.stripeCustomerId) {
         return res.json([]);
       }
-      
+
       // Usar Stripe para obtener los métodos de pago
       const paymentMethods = await stripeService.getCustomerPaymentMethods(subscription.stripeCustomerId);
-      
+
       res.json(paymentMethods);
     } catch (error) {
       console.error('Error al obtener métodos de pago:', error);
       res.status(500).json({ message: 'Error al obtener métodos de pago' });
     }
   });
-  
+
   app.post('/api/subscription/update-payment-method', async (req: Request, res: Response) => {
     try {
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "No autenticado" });
       }
-      
+
       const userId = req.user.id;
       const returnUrl = req.body.returnUrl || `${req.protocol}://${req.get('host')}/billing?success=true`;
-      
+
       // Obtenemos la suscripción del usuario para conseguir el customerId
       const subscription = await storage.getUserSubscriptionByUserId(userId);
-      
+
       if (!subscription || !subscription.stripeCustomerId) {
         return res.status(400).json({ message: 'No se encontró información de suscripción' });
       }
-      
+
       // Crear sesión de configuración de método de pago
       const session = await stripeService.createSetupSession({
         customerId: subscription.stripeCustomerId,
         returnUrl
       });
-      
+
       res.json({ url: session.url });
     } catch (error) {
       console.error('Error al crear sesión de actualización de método de pago:', error);
@@ -846,27 +876,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // if (!req.isAuthenticated()) {
       //   return res.status(401).json({ message: "No autenticado" });
       // }
-      
+
       // Usar un ID de usuario fijo para desarrollo
       const userId = 1; // En producción: req.user.id
-      
+
       // Obtenemos la suscripción del usuario para conseguir el customerId
       let subscription = await storage.getUserSubscriptionByUserId(userId);
-      
+
       // Si no existe una suscripción con customerId, creamos un cliente
       if (!subscription || !subscription.stripeCustomerId) {
         // Primero, verificamos si existe el usuario
         const user = await storage.getUser(userId);
         if (!user) {
-          return res.status(404).json({ message: 'Usuario no encontrado' });
+          return res.status(404).json{ message: 'Usuario no encontrado' });
         }
-        
+
         // Crear un cliente en Stripe
         const customer = await stripeService.createCustomer({
           email: user.email || undefined,
           name: user.username
         });
-        
+
         // Si no hay suscripción, la creamos
         if (!subscription) {
           subscription = await storage.createUserSubscription({
@@ -888,10 +918,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       }
-      
+
       // Crear un setup intent usando el servicio de Stripe
       const setupIntent = await stripeService.createSetupIntent(subscription.stripeCustomerId);
-      
+
       res.json({ clientSecret: setupIntent.client_secret });
     } catch (error) {
       console.error('Error al crear setup intent:', error);
@@ -934,7 +964,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdAt: new Date(),
         updatedAt: new Date()
       };
-      
+
       const newClient = await storage.createClient(clientData);
       res.status(201).json(newClient);
     } catch (error) {
@@ -947,11 +977,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = 1; // En producción, obtener del token de autenticación
       const { csvData } = req.body;
-      
+
       // Procesar el CSV y crear los clientes
       const rows = csvData.split('\n').slice(1); // Ignorar encabezados
       const clients = [];
-      
+
       for (const row of rows) {
         const [name, email, phone, address] = row.split(',');
         if (name) {
@@ -965,12 +995,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             createdAt: new Date(),
             updatedAt: new Date()
           };
-          
+
           const newClient = await storage.createClient(clientData);
           clients.push(newClient);
         }
       }
-      
+
       res.status(201).json({
         message: `${clients.length} clientes importados exitosamente`,
         clients
@@ -1045,30 +1075,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: 'Error fetching suggestions' });
     }
   });
-  
+
   // Endpoint para obtener detalles de una propiedad por dirección
   app.get('/api/property/details', async (req: Request, res: Response) => {
     const address = req.query.address as string;
-    
+
     if (!address) {
       return res.status(400).json({ 
         message: 'Se requiere el parámetro "address"' 
       });
     }
-    
+
     console.log('===== INICIO DE SOLICITUD DE DETALLES DE PROPIEDAD =====');
     console.log('Solicitando datos de propiedad para dirección:', address);
-    
+
     try {
       console.log('Iniciando solicitud al wrapper de ATTOM API...');
-      
+
       // Usar el nuevo método con diagnósticos para obtener información más detallada
       const startTime = Date.now();
       const result = await propertyService.getPropertyDetailsWithDiagnostics(address);
       const endTime = Date.now();
-      
+
       console.log(`Solicitud completada en ${endTime - startTime}ms con estado: ${result.status}`);
-      
+
       // Incluir información diagnóstica en logs para depuración
       console.log('Diagnóstico de la solicitud:', JSON.stringify({
         status: result.status,
@@ -1076,7 +1106,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         errorType: result.error?.code || 'ninguno',
         processingTime: endTime - startTime
       }));
-      
+
       // Manejar los diferentes casos según el estado de la respuesta
       switch (result.status) {
         case 'SUCCESS':
@@ -1084,55 +1114,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log('ÉXITO: Datos verificados obtenidos de ATTOM API');
           console.log('Datos de propietario:', result.data?.owner);
           console.log('Propiedad ocupada por el propietario:', result.data?.ownerOccupied);
-          
+
           console.log('Enviando respuesta al cliente...');
           console.log('===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====\n');
-          
+
           return res.json(result.data);
-          
+
         case 'NOT_FOUND':
           console.log('No se encontró información para la dirección proporcionada');
           console.log('===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====\n');
-          
+
           return res.status(404).json({ 
             message: 'No se encontró información para la dirección proporcionada',
             details: 'Verifica que la dirección esté correctamente escrita e incluya ciudad, estado y código postal'
           });
-          
+
         case 'CONNECTION_ERROR':
           console.log('Error de conectividad con el servicio de ATTOM');
           console.log('===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====\n');
-          
+
           return res.status(502).json({
             message: 'Error de conectividad con el servicio de datos de propiedades',
             errorCode: 'CONNECTIVITY_ERROR',
             details: 'No se pudo establecer conexión con el servicio de ATTOM. Este es un problema de infraestructura, no de la dirección proporcionada.'
           });
-          
+
         case 'AUTHENTICATION_ERROR':
           console.log('Error de autenticación con el servicio de ATTOM');
           console.log('===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====\n');
-          
+
           return res.status(401).json({
             message: 'Error de autenticación con el servicio de datos de propiedades',
             errorCode: 'AUTHENTICATION_ERROR',
             details: 'Las credenciales de acceso al servicio de ATTOM no son válidas o han expirado.'
           });
-          
+
         case 'VALIDATION_ERROR':
           console.log('Error de validación en los parámetros de búsqueda');
           console.log('===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====\n');
-          
+
           return res.status(400).json({
             message: 'Error en el formato de la dirección proporcionada',
             errorCode: 'VALIDATION_ERROR',
             details: 'El formato de la dirección no es válido. Asegúrate de incluir calle, ciudad, estado y código postal.'
           });
-          
+
         default:
           console.log('Error desconocido al consultar datos de propiedad');
           console.log('===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====\n');
-          
+
           return res.status(500).json({
             message: 'Error al obtener detalles de la propiedad',
             errorCode: 'UNKNOWN_ERROR',
@@ -1142,7 +1172,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('ERROR EN VERIFICACIÓN DE PROPIEDAD:');
       console.error('Mensaje:', error.message);
-      
+
       res.status(500).json({ 
         message: 'Error al obtener detalles de la propiedad',
         error: error.message
@@ -1154,15 +1184,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/permit/check', async (req: Request, res: Response) => {
     try {
       console.log('===== INICIO DE SOLICITUD MERVIN DEEPSEARCH =====');
-      
+
       // Validar el esquema de la solicitud
       const permitSchema = z.object({
         address: z.string().min(5, "La dirección es demasiado corta"),
         projectType: z.string().min(3, "El tipo de proyecto es demasiado corto")
       });
-      
+
       const validationResult = permitSchema.safeParse(req.body);
-      
+
       if (!validationResult.success) {
         console.error('Error de validación en solicitud de permisos:', validationResult.error);
         return res.status(400).json({ 
@@ -1170,10 +1200,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           errors: validationResult.error.format() 
         });
       }
-      
+
       const { address, projectType } = validationResult.data;
       console.log(`Consultando permisos para proyecto de ${projectType} en ${address}`);
-      
+
       // Verificar que tenemos API key de OpenAI configurada
       if (!process.env.OPENAI_API_KEY) {
         console.error('Error: OpenAI API Key no configurada');
@@ -1182,33 +1212,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
           error: 'No se ha configurado la API de OpenAI'
         });
       }
-      
+
       // Obtener información de permisos
       const startTime = Date.now();
       const permitData = await permitService.checkPermits(address, projectType);
       const endTime = Date.now();
-      
+
       console.log(`Solicitud completada en ${endTime - startTime}ms`);
       console.log('Información de permisos obtenida correctamente');
       console.log('===== FIN DE SOLICITUD MERVIN DEEPSEARCH =====');
-      
+
       res.json(permitData);
     } catch (error: any) {
       console.error('ERROR EN VERIFICACIÓN DE PERMISOS:');
       console.error('Mensaje:', error.message);
-      
+
       res.status(500).json({ 
         message: 'Error al obtener información de permisos y regulaciones',
         error: error.message
       });
     }
   });
-  
+
   // Endpoint para probar la funcionalidad de búsqueda web de Mervin DeepSearch
   app.get('/api/permit/test/search', async (req: Request, res: Response) => {
     try {
       console.log('===== PRUEBA DE BÚSQUEDA WEB MERVIN DEEPSEARCH =====');
-      
+
       // Verificar que tenemos API key de OpenAI configurada
       if (!process.env.OPENAI_API_KEY) {
         console.error('Error: OpenAI API Key no configurada');
@@ -1217,17 +1247,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           error: 'No se ha configurado la API de OpenAI'
         });
       }
-      
+
       const query = String(req.query.query || 'fence permit requirements in Seattle, WA');
       console.log(`Realizando búsqueda para: ${query}`);
-      
+
       const startTime = Date.now();
       const searchResults = await searchService.webSearch(query);
       const endTime = Date.now();
-      
+
       console.log(`Búsqueda completada en ${endTime - startTime}ms. Se encontraron ${searchResults.length} resultados.`);
       console.log('===== FIN DE PRUEBA DE BÚSQUEDA WEB =====');
-      
+
       res.json({
         query,
         results: searchResults,
@@ -1236,36 +1266,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('ERROR EN PRUEBA DE BÚSQUEDA WEB:');
       console.error('Mensaje:', error.message);
-      
+
       res.status(500).json({ 
         message: 'Error al realizar la búsqueda web',
         error: error.message
       });
     }
   });
-  
+
   // Endpoint para probar la extracción de contenido web de Mervin DeepSearch
   app.get('/api/permit/test/fetch', async (req: Request, res: Response) => {
     try {
       console.log('===== PRUEBA DE EXTRACCIÓN DE CONTENIDO MERVIN DEEPSEARCH =====');
-      
+
       const url = String(req.query.url);
-      
+
       if (!url) {
         return res.status(400).json({ 
           message: 'Se requiere el parámetro "url"'
         });
       }
-      
+
       console.log(`Extrayendo contenido de: ${url}`);
-      
+
       const startTime = Date.now();
       const content = await searchService.fetchPage(url);
       const endTime = Date.now();
-      
+
       console.log(`Extracción completada en ${endTime - startTime}ms. Longitud del contenido: ${content.length} caracteres.`);
       console.log('===== FIN DE PRUEBA DE EXTRACCIÓN DE CONTENIDO =====');
-      
+
       res.json({
         url,
         contentLength: content.length,
@@ -1275,7 +1305,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('ERROR EN PRUEBA DE EXTRACCIÓN DE CONTENIDO:');
       console.error('Mensaje:', error.message);
-      
+
       res.status(500).json({ 
         message: 'Error al extraer el contenido web',
         error: error.message
