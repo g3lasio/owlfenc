@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, CreditCard, Info, AlertCircle } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { CardForm } from "@/components/payments/CardForm";
-import { Link } from "wouter"; // Added import
+import { Link } from "wouter";
 
 // Interfaces para tipos de datos
 interface PaymentMethod {
