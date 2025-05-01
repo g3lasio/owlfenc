@@ -326,13 +326,13 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           >
             <p className="text-xs text-center mb-1">¿Necesitas ayuda?</p>
             <motion.a 
-              href="mailto:mervin@owlfenc.com?subject=Soporte%20Owl%20Fence"
+              href="mailto:mervin@owlfenc.com"
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
               className="flex items-center justify-center py-1 px-2 w-full bg-card border border-border rounded-md hover:bg-accent text-sm"
             >
-              <i className="ri-question-line mr-1"></i>
-              <span>Soporte</span>
+              <i className="ri-mail-line mr-1"></i>
+              <span>Contactar Soporte</span>
             </motion.a>
           </motion.div>
           
