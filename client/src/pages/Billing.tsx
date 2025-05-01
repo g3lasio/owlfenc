@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"; 
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, CreditCard, Info, AlertCircle } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { CardForm } from "@/components/payments/CardForm";
+import { Link } from "wouter"; // Added import
 
 // Interfaces para tipos de datos
 interface PaymentMethod {
@@ -141,12 +142,12 @@ export default function Billing() {
     if (!userSubscription || !plans || !Array.isArray(plans)) {
       return "Plan Básico";
     }
-    
+
     if (userSubscription.status === "active" && userSubscription.planId) {
       const currentPlan = plans.find(plan => plan.id === userSubscription.planId);
       return currentPlan ? currentPlan.name : "Plan Básico";
     }
-    
+
     return "Plan Básico";
   };
 
@@ -155,7 +156,7 @@ export default function Billing() {
     if (!userSubscription || !userSubscription.nextBillingDate) {
       return "No disponible";
     }
-    
+
     const date = new Date(userSubscription.nextBillingDate);
     return new Intl.DateTimeFormat('es-MX', { 
       year: 'numeric', 
@@ -178,16 +179,16 @@ export default function Billing() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const isSuccess = urlParams.get("success") === "true";
-    
+
     if (isSuccess) {
       // Limpiar URL
       window.history.replaceState({}, document.title, window.location.pathname);
-      
+
       // Invalidar consultas para refrescar datos
       queryClient.invalidateQueries({ queryKey: ["/api/subscription/payment-methods"] });
       queryClient.invalidateQueries({ queryKey: ["/api/subscription/payment-history"] });
       queryClient.invalidateQueries({ queryKey: ["/api/subscription/user-subscription"] });
-      
+
       toast({
         title: "Actualización exitosa",
         description: "Tu información de pago ha sido actualizada correctamente."
@@ -267,7 +268,7 @@ export default function Billing() {
                   <p className="text-muted-foreground mb-4">
                     No tienes métodos de pago registrados
                   </p>
-                  
+
                   <div className="mx-auto max-w-md px-4">
                     <h3 className="text-lg font-semibold mb-2">Agregar tarjeta de crédito o débito</h3>
                     <div className="mt-4">
@@ -439,7 +440,7 @@ export default function Billing() {
                     <>Gestionar Suscripción</>
                   )}
                 </Button>
-                <Link href="/subscription">
+                <Link href="/subscription"> {/*Corrected Link usage*/}
                   <Button variant="default">
                     Ver Planes Disponibles
                   </Button>
