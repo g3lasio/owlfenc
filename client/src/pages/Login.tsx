@@ -27,7 +27,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function Login() {
   const [, navigate] = useLocation();
-  const { login, loginWithGoogle, loginWithApple, loginWithMicrosoft, sendEmailLoginLink, error, clearError } = useAuth();
+  const { login, loginWithGoogle, loginWithApple, sendEmailLoginLink, error, clearError } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);

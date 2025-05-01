@@ -7,7 +7,6 @@ import {
   logoutUser,
   loginWithGoogle,
   loginWithApple,
-  loginWithMicrosoft,
   sendEmailLink,
   resetPassword,
   devMode
@@ -31,7 +30,6 @@ interface AuthContextType {
   logout: () => Promise<boolean>;
   loginWithGoogle: () => Promise<User | null>; // Puede ser null en caso de redirección
   loginWithApple: () => Promise<User | null>; // Puede ser null en caso de redirección
-  loginWithMicrosoft: () => Promise<User | null>; // Puede ser null en caso de redirección
   sendPasswordResetEmail: (email: string) => Promise<boolean>;
   sendEmailLoginLink: (email: string) => Promise<boolean>;
   clearError: () => void;
@@ -263,37 +261,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  // Login con Microsoft
-  const microsoftLogin = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const user = await loginWithMicrosoft();
-      
-      // Si el usuario es null (redirección), retornar null
-      if (!user) {
-        console.log("Redirección iniciada con Microsoft");
-        return null;
-      }
-
-      // Si llegamos aquí, tenemos un usuario válido
-      const appUser: User = {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-        phoneNumber: user.phoneNumber,
-        emailVerified: user.emailVerified
-      };
-
-      return appUser;
-    } catch (err: any) {
-      setError(err.message || 'Error al iniciar sesión con Microsoft');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Método de Microsoft eliminado intencionalmente
 
   // Enviar correo para resetear contraseña
   const sendPasswordResetEmail = async (email: string) => {
@@ -338,7 +306,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     logout,
     loginWithGoogle: googleLogin,
     loginWithApple: appleLogin,
-    loginWithMicrosoft: microsoftLogin,
     sendPasswordResetEmail,
     sendEmailLoginLink,
     clearError

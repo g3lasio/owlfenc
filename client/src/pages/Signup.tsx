@@ -31,7 +31,7 @@ type SignupFormValues = z.infer<typeof signupSchema>;
 
 export default function Signup() {
   const [, navigate] = useLocation();
-  const { register, loginWithGoogle, loginWithApple, loginWithMicrosoft, error, clearError } = useAuth();
+  const { register, loginWithGoogle, loginWithApple, error, clearError } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false); // Added state variable

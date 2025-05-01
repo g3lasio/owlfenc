@@ -84,7 +84,6 @@ export const auth = getAuth(app);
 // Proveedores de autenticación
 const googleProvider = new GoogleAuthProvider();
 const appleProvider = new OAuthProvider('apple.com');
-const microsoftProvider = new OAuthProvider('microsoft.com');
 
 // Projects collection
 export const saveProject = async (projectData: any) => {
