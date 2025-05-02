@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, AlertCircle, ShieldAlert, Smartphone, Info } from "lucide-react";
 import PhoneAuth from "@/components/auth/PhoneAuth";
 import { useToast } from "@/hooks/use-toast";
-import { multiFactor } from "firebase/auth";
+import { multiFactor, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
 export default function SecuritySettings() {
@@ -64,6 +64,75 @@ export default function SecuritySettings() {
     });
   };
   
+  // Función para desactivar MFA
+  const handleDisableMfa = async () => {
+    if (!currentUser || !auth.currentUser) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Debes iniciar sesión para realizar esta acción."
+      });
+      return;
+    }
+    
+    try {
+      const multiFactorUser = multiFactor(auth.currentUser);
+      
+      // Verificar si hay factores enrollados
+      if (multiFactorUser.enrolledFactors.length === 0) {
+        setMfaEnabled(false);
+        return;
+      }
+      
+      // Obtener el ID del primer factor (normalmente el único)
+      const factorId = multiFactorUser.enrolledFactors[0].uid;
+      
+      // Proceso para desactivar MFA
+      // En modo de desarrollo, simular la desactivación
+      if (window.location.hostname.includes('.replit.dev') || 
+          window.location.hostname.includes('.id.repl.co')) {
+        console.log("Simulando desactivación MFA en entorno de desarrollo");
+        setMfaEnabled(false);
+        
+        toast({
+          title: "MFA desactivado",
+          description: "La autenticación de dos factores ha sido desactivada."
+        });
+        
+        return;
+      }
+      
+      // En producción, realmente desactivar el MFA
+      await multiFactorUser.unenroll(factorId);
+      setMfaEnabled(false);
+      
+      toast({
+        title: "MFA desactivado",
+        description: "La autenticación de dos factores ha sido desactivada correctamente."
+      });
+    } catch (error: any) {
+      console.error("Error al desactivar MFA:", error);
+      setError(error.message || "Ocurrió un error al desactivar la autenticación de dos factores.");
+      
+      // Asegurar que el switch refleja el estado real
+      const checkMfaStatus = async () => {
+        if (currentUser && auth.currentUser) {
+          const multiFactorUser = multiFactor(auth.currentUser);
+          const enrolledFactors = multiFactorUser.enrolledFactors;
+          setMfaEnabled(enrolledFactors.length > 0);
+        }
+      };
+      
+      checkMfaStatus();
+      
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "No se pudo desactivar la autenticación de dos factores."
+      });
+    }
+  };
+  
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -113,11 +182,13 @@ export default function SecuritySettings() {
                   checked={mfaEnabled} 
                   onCheckedChange={(checked) => {
                     if (!checked && mfaEnabled) {
-                      // Lógica para desactivar MFA (se implementará en el futuro)
-                      toast({
-                        title: "Función en desarrollo",
-                        description: "La desactivación de MFA estará disponible próximamente"
-                      });
+                      // Confirmar antes de desactivar MFA
+                      if (confirm("¿Estás seguro de que deseas desactivar la autenticación de dos factores? Esto podría reducir la seguridad de tu cuenta.")) {
+                        handleDisableMfa();
+                      } else {
+                        // Si el usuario cancela, mantener el switch en posición "on"
+                        setTimeout(() => setMfaEnabled(true), 0);
+                      }
                     } else if (checked && !mfaEnabled) {
                       handleStartEnrollment();
                     }
