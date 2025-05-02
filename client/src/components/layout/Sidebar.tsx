@@ -6,7 +6,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { LogOut, User, CreditCard, Building, Users, Settings } from "lucide-react";
+import { LogOut, User, CreditCard, Building, Settings } from "lucide-react";
+import { navigationGroups, NavigationItem } from "@/config/navigation";
 
 // Definición de tipos para la suscripción y planes
 interface UserSubscription {
@@ -85,6 +86,36 @@ export default function Sidebar() {
     return (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase();
   };
 
+  // Renderizar un elemento de navegación
+  const renderNavItem = (item: NavigationItem) => {
+    // Determinar qué tipo de icono renderizar
+    const renderIcon = () => {
+      if (item.icon.startsWith('lucide-')) {
+        // Iconos de Lucide
+        const iconName = item.icon.replace('lucide-', '');
+        switch (iconName) {
+          case 'user': return <User className="h-4 w-4 mr-2" />;
+          case 'credit-card': return <CreditCard className="h-4 w-4 mr-2" />;
+          case 'building': return <Building className="h-4 w-4 mr-2" />;
+          case 'settings': return <Settings className="h-4 w-4 mr-2" />;
+          default: return <i className={`${item.icon} mr-2 text-lg`}></i>;
+        }
+      } else {
+        // Iconos de Remix Icon
+        return <i className={`${item.icon} mr-2 text-lg`}></i>;
+      }
+    };
+
+    return (
+      <Link key={item.id} href={item.path}>
+        <Button variant="ghost" className="w-full justify-start">
+          {renderIcon()}
+          {item.label}
+        </Button>
+      </Link>
+    );
+  };
+
   return (
     <aside className="hidden md:flex md:w-72 flex-col bg-card border-r border-border h-screen overflow-hidden">
       {/* Todo el contenido en un contenedor con scroll */}
@@ -124,110 +155,19 @@ export default function Sidebar() {
           </div>
         </div>
 
-        {/* Navegación principal */}
+        {/* Navegación principal - Generada dinámicamente desde la configuración */}
         <div className="flex-1 px-3">
-          <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Herramientas</h2>
-          <div className="space-y-1 mb-6">
-            <Link href="/">
-              <Button variant="ghost" className="w-full justify-start">
-                <i className="ri-dashboard-line mr-2 text-lg"></i>
-                Dashboard
-              </Button>
-            </Link>
-            <Link href="/projects">
-              <Button variant="ghost" className="w-full justify-start">
-                <i className="ri-briefcase-4-line mr-2 text-lg"></i>
-                Proyectos
-              </Button>
-            </Link>
-            <Link href="/clients">
-              <Button variant="ghost" className="w-full justify-start">
-                <i className="ri-user-star-line mr-2 text-lg"></i>
-                Clientes
-              </Button>
-            </Link>
-            <Link href="/history">
-              <Button variant="ghost" className="w-full justify-start">
-                <i className="ri-time-line mr-2 text-lg"></i>
-                Historial
-              </Button>
-            </Link>
-          </div>
-
-          <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Funcionalidades</h2>
-          <div className="space-y-1 mb-6">
-            <Link href="/property-ownership-verifier">
-              <Button variant="ghost" className="w-full justify-start">
-                <i className="ri-shield-keyhole-line mr-2 text-lg"></i>
-                Verificación de Propiedad
-              </Button>
-            </Link>
-            <Link href="/permit-advisor">
-              <Button variant="ghost" className="w-full justify-start">
-                <i className="ri-robot-2-line mr-2 text-lg"></i>
-                Mervin DeepSearch
-              </Button>
-            </Link>
-            <Link href="/ai-project-manager">
-              <Button variant="ghost" className="w-full justify-start">
-                <i className="ri-3d-cube-sphere-line mr-2 text-lg"></i>
-                AI Project Manager
-              </Button>
-            </Link>
-            <Link href="/ar-fence-estimator">
-              <Button variant="ghost" className="w-full justify-start">
-                <i className="ri-ruler-line mr-2 text-lg"></i>
-                AR Fence Estimator
-              </Button>
-            </Link>
-          </div>
-
-          <Separator className="my-2" />
-
-          {/* Configuración */}
-          <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Mi Perfil</h2>
-          <div className="space-y-1 mb-6">
-            <Link href="/account">
-              <Button variant="ghost" className="w-full justify-start">
-                <User className="h-4 w-4 mr-2" />
-                Perfil Personal
-              </Button>
-            </Link>
-            <Link href="/security-settings">
-              <Button variant="ghost" className="w-full justify-start">
-                <i className="ri-shield-keyhole-line mr-2"></i>
-                Seguridad
-              </Button>
-            </Link>
-            <Link href="/billing">
-              <Button variant="ghost" className="w-full justify-start">
-                <CreditCard className="h-4 w-4 mr-2" />
-                Facturación
-              </Button>
-            </Link>
-            <Link href="/subscription">
-              <Button variant="ghost" className="w-full justify-start">
-                <i className="ri-vip-crown-line mr-2"></i>
-                Mi Suscripción
-              </Button>
-            </Link>
-          </div>
-
-          <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">Empresa</h2>
-          <div className="space-y-1 mb-6">
-            <Link href="/profile">
-              <Button variant="ghost" className="w-full justify-start">
-                <Building className="h-4 w-4 mr-2" />
-                Perfil de Empresa
-              </Button>
-            </Link>
-            <Link href="/settings">
-              <Button variant="ghost" className="w-full justify-start">
-                <Settings className="h-4 w-4 mr-2" />
-                Preferencias
-              </Button>
-            </Link>
-          </div>
+          {navigationGroups.map((group, index) => (
+            <div key={`group-${index}`}>
+              <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">
+                {group.title}
+              </h2>
+              <div className="space-y-1 mb-6">
+                {group.items.map(renderNavItem)}
+              </div>
+              {index < navigationGroups.length - 1 && index === 1 && <Separator className="my-2" />}
+            </div>
+          ))}
         </div>
 
         {/* Footer con soporte y cerrar sesión */}

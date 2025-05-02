@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { AnimatePresence, motion } from "framer-motion";
+import { navigationGroups, NavigationItem, NavigationGroup } from "@/config/navigation";
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -149,167 +150,56 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
 
         {/* Contenedor con scroll para toda la navegación */}
         <div className="flex-1 overflow-y-auto">
-          {/* Navegación Principal */}
+          {/* Navegación Principal - Generada desde la configuración centralizada */}
           <div className="p-3">
-            <motion.h2 
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4, duration: 0.3 }}
-              className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider"
-            >
-              Herramientas
-            </motion.h2>
-            <div className="space-y-1.5 mb-4">
-              {[
-
-                { name: "Dashboard", path: "/", icon: "ri-dashboard-line" },
-                { name: "Proyectos", path: "/projects", icon: "ri-briefcase-4-line" },
-                { name: "Clientes", path: "/clients", icon: "ri-user-star-line" },
-                { name: "Historial", path: "/history", icon: "ri-time-line" }
-              ].map((item, index) => (
-                <motion.div
-                  key={item.name}
+            {navigationGroups.map((group, groupIndex) => (
+              <div key={`mobile-group-${groupIndex}`}>
+                <motion.h2 
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4 + (index * 0.1), duration: 0.3 }}
+                  transition={{ delay: 0.4 + (groupIndex * 0.4), duration: 0.3 }}
+                  className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider"
                 >
-                  <Link 
-                    href={item.path} 
-                    onClick={onClose}
-                  >
-                    <motion.div 
-                      whileHover={{ 
-                        scale: 1.02,
-                        x: 5
-                      }}
-                      className="flex items-center p-2 rounded-md hover:bg-accent"
+                  {group.title}
+                </motion.h2>
+                <div className="space-y-1.5 mb-4">
+                  {group.items.map((item, itemIndex) => (
+                    <motion.div
+                      key={item.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.4 + (groupIndex * 0.4) + (itemIndex * 0.1), duration: 0.3 }}
                     >
-                      <i className={`${item.icon} text-lg mr-3`}></i>
-                      <span>{item.name}</span>
+                      <Link 
+                        href={item.path} 
+                        onClick={onClose}
+                      >
+                        <motion.div 
+                          whileHover={{ 
+                            scale: 1.02,
+                            x: 5
+                          }}
+                          className="flex items-center p-2 rounded-md hover:bg-accent"
+                        >
+                          <i className={`${item.icon} text-lg mr-3`}></i>
+                          <span>{item.label}</span>
+                        </motion.div>
+                      </Link>
                     </motion.div>
-                  </Link>
-                </motion.div>
-              ))}
-            </div>
-
-            <motion.h2 
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.8, duration: 0.3 }}
-              className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider"
-            >
-              Funcionalidades
-            </motion.h2>
-            <div className="space-y-1.5 mb-4">
-              {[
-                { name: "Verificación de Propiedad", icon: "ri-shield-keyhole-line", path: "/property-verifier" },
-                { name: "Mervin DeepSearch", icon: "ri-robot-2-line", path: "/permit-advisor" },
-                { name: "AI Project Manager", icon: "ri-brain-line", path: "/ai-project-manager" },
-                { name: "AR Fence Estimator", icon: "ri-ruler-line", path: "/ar-fence-estimator" }
-              ].map((item, index) => (
-                <motion.div
-                  key={item.name}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.8 + (index * 0.1), duration: 0.3 }}
-                >
-                  <Link href={item.path} onClick={onClose}>
-                    <motion.div 
-                      whileHover={{ 
-                        scale: 1.02,
-                        x: 5
-                      }}
-                      className="flex items-center p-2 rounded-md hover:bg-accent"
-                    >
-                      <i className={`${item.icon} text-lg mr-3`}></i>
-                      <span>{item.name}</span>
-                    </motion.div>
-                  </Link>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.1, duration: 0.3 }}
-            className="h-px bg-border mx-4 my-2"
-          />
-
-          {/* Configuración de Usuario */}
-          <div className="p-3">
-            <motion.h2 
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 1.2, duration: 0.3 }}
-              className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider"
-            >
-              Mi Perfil
-            </motion.h2>
-            <div className="space-y-1.5 mb-4">
-              {[
-                { name: "Perfil Personal", icon: "ri-user-settings-line", path: "/account" },
-                { name: "Seguridad", icon: "ri-shield-keyhole-line", path: "/security" },
-                { name: "Facturación", icon: "ri-bank-card-line", path: "/billing" },
-                { name: "Mi Suscripción", icon: "ri-vip-crown-line", path: "/subscription" }
-              ].map((item, index) => (
-                <motion.div
-                  key={item.name}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 1.2 + (index * 0.1), duration: 0.3 }}
-                >
-                  <Link href={item.path} onClick={onClose}>
-                    <motion.div 
-                      whileHover={{ 
-                        scale: 1.02,
-                        x: 5
-                      }}
-                      className="flex items-center p-2 rounded-md hover:bg-accent"
-                    >
-                      <i className={`${item.icon} text-lg mr-3`}></i>
-                      <span>{item.name}</span>
-                    </motion.div>
-                  </Link>
-                </motion.div>
-              ))}
-            </div>
-
-            <motion.h2 
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 1.5, duration: 0.3 }}
-              className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider"
-            >
-              Empresa
-            </motion.h2>
-            <div className="space-y-1.5 mb-4">
-              {[
-                { name: "Perfil de Empresa", icon: "ri-building-4-line", path: "/profile" },
-                { name: "Preferencias", icon: "ri-settings-4-line", path: "/settings" }
-              ].map((item, index) => (
-                <motion.div
-                  key={item.name}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 1.5 + (index * 0.1), duration: 0.3 }}
-                >
-                  <Link href={item.path} onClick={onClose}>
-                    <motion.div 
-                      whileHover={{ 
-                        scale: 1.02,
-                        x: 5
-                      }}
-                      className="flex items-center p-2 rounded-md hover:bg-accent"
-                    >
-                      <i className={`${item.icon} text-lg mr-3`}></i>
-                      <span>{item.name}</span>
-                    </motion.div>
-                  </Link>
-                </motion.div>
-              ))}
-            </div>
+                  ))}
+                </div>
+                
+                {/* Añadir separador después del segundo grupo (entre Funcionalidades y Mi Perfil) */}
+                {groupIndex === 1 && (
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1.1, duration: 0.3 }}
+                    className="h-px bg-border mx-4 my-2"
+                  />
+                )}
+              </div>
+            ))}
           </div>
         </div>
 
