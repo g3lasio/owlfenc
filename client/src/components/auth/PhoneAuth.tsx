@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle, Smartphone, ShieldCheck } from "lucide-react";
-import { initPhoneLogin, verifyPhoneCode } from "@/lib/firebase";
+import { initPhoneLogin, verifyPhoneCode, enrollMfaPhone, completeMfaEnrollment } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
 
 // Esquema para formulario de número de teléfono
@@ -113,13 +113,20 @@ export default function PhoneAuth({ onSuccess, mode = "login" }: PhoneAuthProps)
           description: `Se ha enviado un código de verificación a ${formattedPhone}`,
         });
       } else if (mode === "enroll" && currentUser) {
-        // Lógica para inscripción MFA (se implementará cuando sea necesario)
-        console.log("Modo de inscripción MFA aún no implementado completamente");
-        toast({
-          title: "Función en desarrollo",
-          description: "La inscripción MFA estará disponible próximamente",
-        });
-        return;
+        // Iniciar la inscripción MFA con teléfono
+        console.log(`Iniciando inscripción MFA con teléfono: ${formattedPhone}`);
+        try {
+          const verificationId = await enrollMfaPhone(currentUser, formattedPhone, "recaptcha-container");
+          // Guardar el ID de verificación para usarlo en el siguiente paso
+          verificationIdRef.current = verificationId;
+          
+          toast({
+            title: "Código enviado",
+            description: `Se ha enviado un código de verificación a ${formattedPhone}`,
+          });
+        } catch (enrollError) {
+          throw enrollError; // Propagar el error para que sea manejado en el bloque catch principal
+        }
       }
       
       // Pasar al siguiente paso
@@ -176,8 +183,26 @@ export default function PhoneAuth({ onSuccess, mode = "login" }: PhoneAuthProps)
           description: "Tu número de teléfono ha sido verificado correctamente",
         });
       } else if (mode === "enroll" && currentUser) {
-        // Lógica para verificación en inscripción MFA (se implementará cuando sea necesario)
-        console.log("Verificación para inscripción MFA no implementada aún");
+        // Verificar para inscripción MFA
+        if (!verificationIdRef.current) {
+          throw new Error("No hay un proceso de verificación MFA activo");
+        }
+
+        // Completar la inscripción MFA con el código ingresado
+        console.log(`Completando inscripción MFA con código: ${data.code}`);
+        await completeMfaEnrollment(
+          currentUser, 
+          verificationIdRef.current, 
+          data.code, 
+          "Mi teléfono" // Nombre que se mostrará para este factor
+        );
+        
+        // Mostrar mensaje de éxito
+        setSuccess(true);
+        toast({
+          title: "Configuración exitosa",
+          description: "La autenticación de dos factores ha sido habilitada correctamente",
+        });
       }
       
       // Llamar al callback de éxito si existe
