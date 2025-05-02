@@ -434,6 +434,16 @@ export default function Clients() {
     setShowDeleteDialog(true);
   };
 
+  // Monitor cambios en los estados de los diálogos
+  useEffect(() => {
+    console.log("Estado del diálogo añadir cliente:", showAddClientDialog);
+  }, [showAddClientDialog]);
+
+  useEffect(() => {
+    console.log("Estado del diálogo importar:", showImportDialog);
+    console.log("Tipo de importación actual:", importType);
+  }, [showImportDialog, importType]);
+
   // Generar una lista de clientes para la visualización
   if (isLoading) {
     return (
