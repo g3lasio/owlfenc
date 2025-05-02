@@ -7,6 +7,14 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { 
+  getClients as getFirebaseClients,
+  saveClient,
+  updateClient as updateFirebaseClient,
+  deleteClient as deleteFirebaseClient,
+  importClientsFromCsv,
+  importClientsFromVcf
+} from "../lib/clientFirebase";
+import { 
   Select, 
   SelectContent, 
   SelectItem, 
@@ -24,31 +32,18 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 
 // Assuming AddressAutocomplete component is defined elsewhere and imported
 // This is a placeholder, replace with your actual implementation
-const AddressAutocomplete = ({ value, onChange, placeholder }) => {
-    return (
-      <Input placeholder={placeholder} value={value} onChange={e => onChange(e.target.value)} />
-    );
-  };
+const AddressAutocomplete = ({ value, onChange, placeholder }: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+}) => {
+  return (
+    <Input placeholder={placeholder} value={value} onChange={e => onChange(e.target.value)} />
+  );
+};
 
-interface Client {
-  id: number;
-  userId: number;
-  clientId: string;
-  name: string;
-  email: string | null;
-  phone: string | null;
-  mobilePhone: string | null;
-  address: string | null;
-  city: string | null;
-  state: string | null;
-  zipCode: string | null;
-  notes: string | null;
-  source: string | null;
-  tags: string[] | null;
-  lastContact: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
+// Usar la interfaz de cliente de Firebase
+import { Client } from "../lib/clientFirebase";
 
 // Schemas para la validación de formularios
 const clientFormSchema = z.object({
@@ -117,17 +112,13 @@ export default function Clients() {
     const fetchClients = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/clients');
-
-        if (!response.ok) {
-          throw new Error('Error al cargar clientes');
-        }
-
-        const data = await response.json();
+        console.log("Cargando clientes desde Firebase...");
+        const data = await getFirebaseClients();
+        console.log("Clientes cargados:", data);
         setClients(data);
         setFilteredClients(data);
       } catch (error) {
-        console.error('Error fetching clients:', error);
+        console.error('Error fetching clients from Firebase:', error);
         toast({
           variant: "destructive",
           title: "Error",
@@ -208,20 +199,9 @@ export default function Clients() {
   const handleClientFormSubmit = async (values: z.infer<typeof clientFormSchema>) => {
     try {
       if (currentClient) {
-        // Actualizar cliente existente
-        const response = await fetch(`/api/clients/${currentClient.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(values),
-        });
-
-        if (!response.ok) {
-          throw new Error('Error al actualizar cliente');
-        }
-
-        const updatedClient = await response.json();
+        // Actualizar cliente existente usando Firebase
+        console.log("Actualizando cliente en Firebase:", currentClient.id, values);
+        const updatedClient = await updateFirebaseClient(currentClient.id, values);
 
         // Actualizar la lista de clientes
         setClients(prevClients => 
@@ -237,20 +217,12 @@ export default function Clients() {
 
         setShowEditClientDialog(false);
       } else {
-        // Crear nuevo cliente
-        const response = await fetch('/api/clients', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(values),
+        // Crear nuevo cliente usando Firebase
+        console.log("Creando nuevo cliente en Firebase:", values);
+        const newClient = await saveClient({
+          clientId: `client_${Date.now()}`,
+          ...values
         });
-
-        if (!response.ok) {
-          throw new Error('Error al crear cliente');
-        }
-
-        const newClient = await response.json();
 
         // Añadir el nuevo cliente a la lista
         setClients(prevClients => [...prevClients, newClient]);
@@ -282,13 +254,9 @@ export default function Clients() {
     if (!currentClient) return;
 
     try {
-      const response = await fetch(`/api/clients/${currentClient.id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al eliminar cliente');
-      }
+      // Eliminar cliente usando Firebase
+      console.log("Eliminando cliente en Firebase:", currentClient.id);
+      await deleteFirebaseClient(currentClient.id);
 
       // Eliminar el cliente de la lista
       setClients(prevClients => 
@@ -331,26 +299,16 @@ export default function Clients() {
         try {
           const csvData = e.target.result;
 
-          const response = await fetch('/api/clients/import/csv', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ csvData }),
-          });
-
-          if (!response.ok) {
-            throw new Error('Error al importar clientes');
-          }
-
-          const result = await response.json();
+          // Usar la función de Firebase para importar CSV
+          console.log("Importando CSV a Firebase");
+          const importedClients = await importClientsFromCsv(csvData);
 
           // Añadir los nuevos clientes a la lista
-          setClients(prevClients => [...prevClients, ...result.clients]);
+          setClients(prevClients => [...prevClients, ...importedClients]);
 
           toast({
             title: "Importación exitosa",
-            description: result.message
+            description: `Se han importado ${importedClients.length} clientes desde CSV.`
           });
 
           setShowImportDialog(false);
@@ -405,27 +363,16 @@ export default function Clients() {
         try {
           const vcfData = e.target.result;
 
-          // Enviar los datos al servidor
-          const response = await fetch('/api/clients/import/vcf', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ vcfData }),
-          });
-
-          if (!response.ok) {
-            throw new Error('Error al importar contactos de Apple');
-          }
-
-          const result = await response.json();
+          // Usar la función de Firebase para importar contactos de Apple
+          console.log("Importando contactos de Apple a Firebase");
+          const importedClients = await importClientsFromVcf(vcfData);
 
           // Añadir los nuevos clientes a la lista
-          setClients(prevClients => [...prevClients, ...result.clients]);
+          setClients(prevClients => [...prevClients, ...importedClients]);
 
           toast({
             title: "Importación exitosa",
-            description: result.message || `Se importaron ${result.clients.length} contactos de Apple.`
+            description: `Se importaron ${importedClients.length} contactos de Apple.`
           });
 
           setShowImportDialog(false);
