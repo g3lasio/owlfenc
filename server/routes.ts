@@ -1011,6 +1011,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/clients/import/vcf', async (req: Request, res: Response) => {
+    try {
+      const userId = 1; // En producción, obtener del token de autenticación
+      const { vcfData } = req.body;
+
+      // Procesar datos vCard (formato .vcf de contactos de Apple)
+      const vCards = vcfData.split('END:VCARD')
+        .filter(card => card.trim().length > 0)
+        .map(card => card + 'END:VCARD');
+      
+      const clients = [];
+
+      for (const vCard of vCards) {
+        try {
+          // Extraer datos básicos del vCard
+          const nameMatch = vCard.match(/FN:(.*?)(?:\r\n|\n)/);
+          const emailMatch = vCard.match(/EMAIL.*?:(.*?)(?:\r\n|\n)/);
+          const phoneMatch = vCard.match(/TEL.*?:(.*?)(?:\r\n|\n)/);
+          const addressMatch = vCard.match(/ADR.*?:(.*?)(?:\r\n|\n)/);
+
+          const name = nameMatch ? nameMatch[1].trim() : null;
+          
+          if (name) {
+            const email = emailMatch ? emailMatch[1].trim() : null;
+            const phone = phoneMatch ? phoneMatch[1].trim() : null;
+            let address = null;
+            
+            if (addressMatch) {
+              const addressParts = addressMatch[1].split(';');
+              // Formato típico: ;;calle;ciudad;estado;código postal;país
+              address = addressParts.slice(2).filter(part => part.trim()).join(', ');
+            }
+
+            const clientData = {
+              userId,
+              clientId: `client_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+              name,
+              email,
+              phone,
+              address,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            };
+
+            const newClient = await storage.createClient(clientData);
+            clients.push(newClient);
+          }
+        } catch (cardError) {
+          console.error('Error processing individual vCard:', cardError);
+          // Continuar con la siguiente tarjeta
+        }
+      }
+
+      res.status(201).json({
+        message: `${clients.length} contactos importados exitosamente`,
+        clients
+      });
+    } catch (error) {
+      console.error('Error importing vCard contacts:', error);
+      res.status(400).json({ message: 'Error al importar contactos de Apple' });
+    }
+  });
+
   app.get('/api/user-profile', async (req: Request, res: Response) => {
     try {
       // En producción, obtener userId del token de autenticación
