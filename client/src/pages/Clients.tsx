@@ -510,20 +510,13 @@ export default function Clients() {
         <h1 className="text-2xl font-bold">Clientes</h1>
         <div className="flex gap-2 mt-4 md:mt-0">
           <Button 
-            onClick={() => {
-              setCurrentClient(null);
-              clientForm.reset();
-              setShowAddClientDialog(true);
-            }}
+            onClick={openAddForm}
           >
             <UserPlus className="mr-2 h-4 w-4" /> Añadir Cliente
           </Button>
           <Button 
             variant="outline" 
-            onClick={() => {
-              setImportType("csv");
-              setShowImportDialog(true);
-            }}
+            onClick={() => setShowImportDialog(true)}
           >
             <Upload className="mr-2 h-4 w-4" /> Importar
           </Button>
