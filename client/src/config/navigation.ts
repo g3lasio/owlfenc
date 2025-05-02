@@ -57,7 +57,7 @@ export const navigationGroups: NavigationGroup[] = [
       {
         id: "property-verifier",
         label: "Verificación de Propiedad",
-        path: "/property-ownership-verifier",
+        path: "/property-verifier",
         icon: "ri-shield-keyhole-line"
       },
       {
@@ -92,7 +92,7 @@ export const navigationGroups: NavigationGroup[] = [
       {
         id: "security",
         label: "Seguridad",
-        path: "/security-settings",
+        path: "/security",
         icon: "ri-shield-keyhole-line"
       },
       {
