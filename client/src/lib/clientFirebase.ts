@@ -30,6 +30,7 @@ export interface Client {
   source?: string | null;
   tags?: string[] | null;
   lastContact?: Date | null;
+  classification?: string | null; // Tipo de contacto: cliente, proveedor, empleado, etc.
   createdAt: Date;
   updatedAt: Date;
 }

@@ -57,6 +57,7 @@ const clientFormSchema = z.object({
   zipCode: z.string().optional().or(z.literal("")),
   notes: z.string().optional().or(z.literal("")),
   source: z.string().optional().or(z.literal("")),
+  classification: z.string().optional().or(z.literal("")),
   tags: z.array(z.string()).optional(),
 });
 
@@ -95,6 +96,7 @@ export default function Clients() {
       zipCode: "",
       notes: "",
       source: "",
+      classification: "cliente", // Valor predeterminado: cliente
       tags: [],
     },
   });
@@ -415,6 +417,7 @@ export default function Clients() {
       zipCode: client.zipCode || "",
       notes: client.notes || "",
       source: client.source || "",
+      classification: client.classification || "cliente", // Usar valor existente o predeterminado
       tags: client.tags || [],
     });
 
