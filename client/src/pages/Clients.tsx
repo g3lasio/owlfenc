@@ -496,14 +496,35 @@ export default function Clients() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
         <h1 className="text-2xl font-bold">Clientes</h1>
         <div className="flex gap-2 mt-4 md:mt-0">
-          <Button onClick={openAddForm}>
+          <Button 
+            onClick={() => {
+              setCurrentClient(null);
+              clientForm.reset();
+              setShowAddClientDialog(true);
+            }}
+          >
             <UserPlus className="mr-2 h-4 w-4" /> Añadir Cliente
           </Button>
-          <Button variant="outline" onClick={() => setShowImportDialog(true)}>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              setImportType("csv");
+              setShowImportDialog(true);
+            }}
+          >
             <Upload className="mr-2 h-4 w-4" /> Importar
           </Button>
           {filteredClients.length > 0 && (
-            <Button variant="ghost" onClick={() => {}}>
+            <Button 
+              variant="ghost" 
+              onClick={() => {
+                // Implementar exportación
+                toast({
+                  title: "Exportar Clientes",
+                  description: "Función de exportación próximamente disponible"
+                });
+              }}
+            >
               <Download className="mr-2 h-4 w-4" /> Exportar
             </Button>
           )}

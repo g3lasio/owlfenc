@@ -161,7 +161,8 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             </motion.h2>
             <div className="space-y-1.5 mb-4">
               {[
-                
+
+                { name: "Dashboard", path: "/", icon: "ri-dashboard-line" },
                 { name: "Proyectos", path: "/projects", icon: "ri-briefcase-4-line" },
                 { name: "Clientes", path: "/clients", icon: "ri-user-star-line" },
                 { name: "Historial", path: "/history", icon: "ri-time-line" }
@@ -190,7 +191,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                 </motion.div>
               ))}
             </div>
-            
+
             <motion.h2 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -274,7 +275,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                 </motion.div>
               ))}
             </div>
-            
+
             <motion.h2 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -335,7 +336,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
               <span>Contactar Soporte</span>
             </motion.a>
           </motion.div>
-          
+
           {/* Botón de Cerrar Sesión */}
           <motion.button
             whileHover={{ scale: 1.03 }}
