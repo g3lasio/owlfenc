@@ -623,14 +623,23 @@ export default function Clients() {
                     </Button>
                   </div>
                 </div>
-                <CardDescription className="flex items-center">
+                <CardDescription className="flex items-center flex-wrap gap-1">
+                  {client.classification && (
+                    <Badge variant="secondary" className="mr-1">
+                      {client.classification === "cliente" ? "Cliente" : 
+                       client.classification === "proveedor" ? "Proveedor" : 
+                       client.classification === "empleado" ? "Empleado" : 
+                       client.classification === "subcontratista" ? "Subcontratista" : 
+                       "Otro"}
+                    </Badge>
+                  )}
                   {client.source ? (
-                    <Badge variant="outline" className="mr-2">
+                    <Badge variant="outline" className="mr-1">
                       {client.source}
                     </Badge>
                   ) : null}
                   <span className="text-xs">
-                    Cliente desde {formatDate(client.createdAt)}
+                    Desde {formatDate(client.createdAt)}
                   </span>
                 </CardDescription>
               </CardHeader>
@@ -849,6 +858,33 @@ export default function Clients() {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={clientForm.control}
+                  name="classification"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Clasificación</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar clasificación" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="cliente">Cliente</SelectItem>
+                          <SelectItem value="proveedor">Proveedor</SelectItem>
+                          <SelectItem value="empleado">Empleado</SelectItem>
+                          <SelectItem value="subcontratista">Subcontratista</SelectItem>
+                          <SelectItem value="otro">Otro</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
               <FormField
                 control={clientForm.control}
@@ -1034,6 +1070,33 @@ export default function Clients() {
                           <SelectItem value="Facebook">Facebook</SelectItem>
                           <SelectItem value="Instagram">Instagram</SelectItem>
                           <SelectItem value="Otro">Otro</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={clientForm.control}
+                  name="classification"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Clasificación</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        defaultValue={field.value || "cliente"}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar clasificación" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="cliente">Cliente</SelectItem>
+                          <SelectItem value="proveedor">Proveedor</SelectItem>
+                          <SelectItem value="empleado">Empleado</SelectItem>
+                          <SelectItem value="subcontratista">Subcontratista</SelectItem>
+                          <SelectItem value="otro">Otro</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

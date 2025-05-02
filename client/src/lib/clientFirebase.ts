@@ -191,6 +191,7 @@ export const importClientsFromCsv = async (csvData: string) => {
           phone: phone?.trim() || "",
           address: address?.trim() || "",
           source: "CSV Import",
+          classification: "cliente", // Clasificación por defecto para clientes importados
           createdAt: Timestamp.now(),
           updatedAt: Timestamp.now()
         };
@@ -250,6 +251,7 @@ export const importClientsFromVcf = async (vcfData: string) => {
             phone,
             address,
             source: "Apple Contacts",
+            classification: "cliente", // Clasificación por defecto para contactos importados
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now()
           };
