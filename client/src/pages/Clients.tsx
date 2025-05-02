@@ -429,6 +429,7 @@ export default function Clients() {
     setCurrentClient(null);
     clientForm.reset();
     setShowAddClientDialog(true);
+    console.log("Abriendo diálogo añadir cliente...");
   };
 
   // Abrir diálogo de eliminación
@@ -493,10 +494,21 @@ export default function Clients() {
           Aún no has agregado ningún cliente. Añade tu primer cliente para comenzar a gestionar tus contactos.
         </p>
         <div className="flex gap-4">
-          <Button onClick={openAddForm}>
+          <Button 
+            onClick={() => {
+              console.log("Botón Añadir Cliente pulsado");
+              openAddForm();
+            }}
+          >
             <UserPlus className="mr-2 h-4 w-4" /> Añadir Cliente
           </Button>
-          <Button variant="outline" onClick={() => setShowImportDialog(true)}>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              console.log("Botón Importar Clientes pulsado");
+              setShowImportDialog(true);
+            }}
+          >
             <Upload className="mr-2 h-4 w-4" /> Importar Clientes
           </Button>
         </div>
@@ -510,13 +522,19 @@ export default function Clients() {
         <h1 className="text-2xl font-bold">Clientes</h1>
         <div className="flex gap-2 mt-4 md:mt-0">
           <Button 
-            onClick={openAddForm}
+            onClick={() => {
+              console.log("Botón Añadir Cliente pulsado (vista principal)");
+              openAddForm();
+            }}
           >
             <UserPlus className="mr-2 h-4 w-4" /> Añadir Cliente
           </Button>
           <Button 
             variant="outline" 
-            onClick={() => setShowImportDialog(true)}
+            onClick={() => {
+              console.log("Botón Importar pulsado (vista principal)");
+              setShowImportDialog(true);
+            }}
           >
             <Upload className="mr-2 h-4 w-4" /> Importar
           </Button>
@@ -695,7 +713,13 @@ export default function Clients() {
       )}
 
       {/* Add Client Dialog */}
-      <Dialog open={showAddClientDialog} onOpenChange={setShowAddClientDialog}>
+      <Dialog 
+        open={showAddClientDialog} 
+        onOpenChange={(open) => {
+          console.log("Dialog addClient está cambiando a:", open);
+          setShowAddClientDialog(open);
+        }}
+      >
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Añadir Cliente</DialogTitle>
