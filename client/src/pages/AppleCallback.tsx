@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAuth, getRedirectResult, OAuthProvider } from "firebase/auth";
+import { getAuth, getRedirectResult, OAuthProvider, signInWithCredential } from "firebase/auth";
 
 export default function AppleCallback() {
   const [, navigate] = useLocation();
@@ -13,6 +13,7 @@ export default function AppleCallback() {
   const [isProcessing, setIsProcessing] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [diagnosticInfo, setDiagnosticInfo] = useState<Record<string, any>>({});
 
   useEffect(() => {
     // Si ya hay un usuario autenticado, redirigir a la página principal
