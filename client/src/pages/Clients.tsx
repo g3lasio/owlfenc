@@ -924,11 +924,19 @@ export default function Clients() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setShowAddClientDialog(false)}
+                  onClick={() => {
+                    console.log("Botón Cancelar pulsado");
+                    setShowAddClientDialog(false);
+                  }}
                 >
                   Cancelar
                 </Button>
-                <Button type="submit">Guardar Cliente</Button>
+                <Button 
+                  type="submit"
+                  onClick={() => console.log("Botón Guardar Cliente pulsado")}
+                >
+                  Guardar Cliente
+                </Button>
               </DialogFooter>
             </form>
           </Form>
@@ -1182,7 +1190,13 @@ export default function Clients() {
       </Dialog>
 
       {/* Import Dialog */}
-      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+      <Dialog 
+        open={showImportDialog} 
+        onOpenChange={(open) => {
+          console.log("Dialog import está cambiando a:", open);
+          setShowImportDialog(open);
+        }}
+      >
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Importar Clientes</DialogTitle>
@@ -1226,13 +1240,17 @@ export default function Clients() {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setShowImportDialog(false)}
+                      onClick={() => {
+                        console.log("Botón Cancelar Import CSV pulsado");
+                        setShowImportDialog(false);
+                      }}
                     >
                       Cancelar
                     </Button>
                     <Button 
                       type="submit" 
                       disabled={!csvFile}
+                      onClick={() => console.log("Botón Importar CSV pulsado")}
                     >
                       Importar Clientes
                     </Button>
@@ -1271,14 +1289,20 @@ export default function Clients() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setShowImportDialog(false)}
+                    onClick={() => {
+                      console.log("Botón Cancelar Import Apple pulsado");
+                      setShowImportDialog(false);
+                    }}
                   >
                     Cancelar
                   </Button>
                   <Button 
                     type="button" 
                     disabled={!appleContactsFile}
-                    onClick={handleAppleContactsImport}
+                    onClick={(e) => {
+                      console.log("Botón Importar Contactos Apple pulsado");
+                      handleAppleContactsImport(e);
+                    }}
                   >
                     Importar Contactos
                   </Button>
