@@ -181,7 +181,16 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                           }}
                           className="flex items-center p-2 rounded-md hover:bg-accent"
                         >
-                          <i className={`${item.icon} text-lg mr-3`}></i>
+                          {item.icon.startsWith('lucide-') ? (
+                            <>
+                              {item.icon === 'lucide-user' && <i className="ri-user-settings-line text-lg mr-3"></i>}
+                              {item.icon === 'lucide-credit-card' && <i className="ri-bank-card-line text-lg mr-3"></i>}
+                              {item.icon === 'lucide-building' && <i className="ri-building-4-line text-lg mr-3"></i>}
+                              {item.icon === 'lucide-settings' && <i className="ri-settings-4-line text-lg mr-3"></i>}
+                            </>
+                          ) : (
+                            <i className={`${item.icon} text-lg mr-3`}></i>
+                          )}
                           <span>{item.label}</span>
                         </motion.div>
                       </Link>
