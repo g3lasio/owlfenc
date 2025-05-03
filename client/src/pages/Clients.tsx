@@ -33,12 +33,16 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 // Assuming AddressAutocomplete component is defined elsewhere and imported
 // This is a placeholder, replace with your actual implementation
 const AddressAutocomplete = ({ value, onChange, placeholder }: {
-  value: string;
-  onChange: (value: string) => void;
+  value: string | undefined;
+  onChange: (value: string, details?: any) => void;
   placeholder: string;
 }) => {
   return (
-    <Input placeholder={placeholder} value={value} onChange={e => onChange(e.target.value)} />
+    <Input 
+      placeholder={placeholder} 
+      value={value || ""} 
+      onChange={e => onChange(e.target.value)} 
+    />
   );
 };
 
@@ -426,11 +430,12 @@ export default function Clients() {
 
   // Abrir formulario para añadir un nuevo cliente
   const openAddForm = () => {
+    console.log("Iniciando apertura del formulario para añadir cliente");
     setCurrentClient(null);
     clientForm.reset();
-    setTimeout(() => {
-      setShowAddClientDialog(true);
-    }, 0);
+    // Eliminar el setTimeout que podría estar causando problemas
+    setShowAddClientDialog(true);
+    console.log("Estado de diálogo actualizado a:", true);
   };
 
   // Abrir diálogo de eliminación
@@ -507,7 +512,9 @@ export default function Clients() {
             variant="outline" 
             onClick={() => {
               console.log("Botón Importar Clientes pulsado");
+              console.log("Estado actual del diálogo de importación:", showImportDialog);
               setShowImportDialog(true);
+              console.log("Nuevo estado del diálogo de importación establecido a:", true);
             }}
           >
             <Upload className="mr-2 h-4 w-4" /> Importar Clientes
@@ -535,6 +542,7 @@ export default function Clients() {
             onClick={() => {
               console.log("Botón Importar pulsado (vista principal)");
               console.log("Estado actual del diálogo de importación:", showImportDialog);
+              // Actualizar directamente sin asincronía
               setShowImportDialog(true);
               console.log("Nuevo estado del diálogo de importación establecido a:", true);
             }}
