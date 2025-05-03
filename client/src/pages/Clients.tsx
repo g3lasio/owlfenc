@@ -428,8 +428,9 @@ export default function Clients() {
   const openAddForm = () => {
     setCurrentClient(null);
     clientForm.reset();
-    setShowAddClientDialog(true);
-    console.log("Abriendo diálogo añadir cliente...");
+    setTimeout(() => {
+      setShowAddClientDialog(true);
+    }, 0);
   };
 
   // Abrir diálogo de eliminación
@@ -718,11 +719,12 @@ export default function Clients() {
       <Dialog 
         open={showAddClientDialog} 
         onOpenChange={(open) => {
-          console.log("Dialog addClient está cambiando a:", open);
-          console.log("Estado actual antes del cambio:", showAddClientDialog);
+          if (!open) {
+            clientForm.reset();
+          }
           setShowAddClientDialog(open);
-          console.log("Estado después del cambio será:", open);
         }}
+        modal={true}
       >
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
@@ -1197,11 +1199,13 @@ export default function Clients() {
       <Dialog 
         open={showImportDialog} 
         onOpenChange={(open) => {
-          console.log("Dialog import está cambiando a:", open);
-          console.log("Estado actual antes del cambio:", showImportDialog);
+          if (!open) {
+            setCsvFile(null);
+            setAppleContactsFile(null);
+          }
           setShowImportDialog(open);
-          console.log("Estado después del cambio será:", open);
         }}
+        modal={true}
       >
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
