@@ -533,7 +533,9 @@ export default function Clients() {
             variant="outline" 
             onClick={() => {
               console.log("Botón Importar pulsado (vista principal)");
+              console.log("Estado actual del diálogo de importación:", showImportDialog);
               setShowImportDialog(true);
+              console.log("Nuevo estado del diálogo de importación establecido a:", true);
             }}
           >
             <Upload className="mr-2 h-4 w-4" /> Importar
@@ -717,7 +719,9 @@ export default function Clients() {
         open={showAddClientDialog} 
         onOpenChange={(open) => {
           console.log("Dialog addClient está cambiando a:", open);
+          console.log("Estado actual antes del cambio:", showAddClientDialog);
           setShowAddClientDialog(open);
+          console.log("Estado después del cambio será:", open);
         }}
       >
         <DialogContent className="sm:max-w-[600px]">
@@ -1194,7 +1198,9 @@ export default function Clients() {
         open={showImportDialog} 
         onOpenChange={(open) => {
           console.log("Dialog import está cambiando a:", open);
+          console.log("Estado actual antes del cambio:", showImportDialog);
           setShowImportDialog(open);
+          console.log("Estado después del cambio será:", open);
         }}
       >
         <DialogContent className="sm:max-w-[500px]">
