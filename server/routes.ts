@@ -26,6 +26,7 @@ import { promptGeneratorService } from './services/promptGeneratorService';
 import { registerPromptTemplateRoutes } from './routes/prompt-templates';
 import { registerEstimateRoutes } from './routes/estimate-routes';
 import { registerPropertyRoutes } from './routes/property-routes';
+import clientRoutes from './routes/clientRoutes';
 import express from 'express'; // Import express to use express.raw
 
 // Initialize OpenAI API
@@ -83,6 +84,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerPromptTemplateRoutes(app);
   registerEstimateRoutes(app);
   registerPropertyRoutes(app);
+  
+  // Registrar rutas de clientes
+  app.use('/api/clients', clientRoutes);
 
   // Add API routes
   app.get('/api/projects', async (req: Request, res: Response) => {

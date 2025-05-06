@@ -7,6 +7,7 @@ import AppLayout from "@/components/layout/AppLayout";
 import Home from "@/pages/Home";
 import Projects from "@/pages/Projects";
 import Clients from "./pages/Clients";
+import NuevoClientes from "./pages/NuevoClientes";
 import Settings from "@/pages/Settings";
 import Profile from "@/pages/Profile";
 import PropertyOwnershipVerifier from "@/pages/PropertyOwnershipVerifier";
@@ -82,7 +83,7 @@ function Router() {
       <Route path="/projects">
         {() => <ProtectedRoute component={Projects} />}
       </Route>
-      <Route path="/clients" component={() => <ProtectedRoute component={Clients} />} />
+      <Route path="/clients" component={() => <ProtectedRoute component={NuevoClientes} />} />
       <Route path="/settings">
         {() => <ProtectedRoute component={Settings} />}
       </Route>
