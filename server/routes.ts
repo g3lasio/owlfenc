@@ -1153,136 +1153,169 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log('Solicitando datos de propiedad para dirección:', address);
 
     try {
-      console.log('Iniciando solicitud al wrapper de ATTOM API...');
-
-      // Usar el nuevo método con diagnósticos para obtener información más detallada
-      const startTime = Date.now();
-      // Primero intenta con el servicio interno
-      let result;
+      // Usar el servicio externo ATTOM directamente
+      const ATTOM_WRAPPER_URL = 'https://attom-wrapper.replit.app';
+      console.log(`Intentando conexión directa con el servicio ATTOM en: ${ATTOM_WRAPPER_URL}`);
       
       try {
-        result = await propertyService.getPropertyDetailsWithDiagnostics(address);
-      } catch (internalError) {
-        console.error('Error con el servicio interno, intentando con servicio externo:', internalError);
-        
-        // Si el servicio interno falla, intenta con el servicio externo
-        try {
-          // Usar axios para conectar con el wrapper externo de ATTOM
-          const ATTOM_WRAPPER_URL = 'https://attom-wrapper.replit.app';
-          
-          const externalResponse = await axios.get(`${ATTOM_WRAPPER_URL}/api/property/details`, {
-            params: { address },
-            timeout: 10000 // 10 segundos
-          });
-          
-          if (externalResponse.data) {
-            // Transformar los datos al formato esperado
-            const propertyData = {
-              owner: externalResponse.data.owner || 'No disponible',
-              address: externalResponse.data.address || address,
-              sqft: externalResponse.data.buildingAreaSqFt || externalResponse.data.sqft || 0,
-              bedrooms: externalResponse.data.rooms?.bedrooms || externalResponse.data.bedrooms || 0,
-              bathrooms: externalResponse.data.rooms?.bathrooms || externalResponse.data.bathrooms || 0,
-              lotSize: externalResponse.data.lotSizeAcres 
-                ? `${externalResponse.data.lotSizeAcres} acres` 
-                : externalResponse.data.lotSize || 'No disponible',
-              landSqft: externalResponse.data.lotSizeSqFt || 0,
-              yearBuilt: externalResponse.data.yearBuilt || 0,
-              propertyType: externalResponse.data.propertyType || 'Residencial',
-              ownerOccupied: !!externalResponse.data.ownerOccupied,
-              verified: true,
-              ownershipVerified: !!externalResponse.data.owner
-            };
-            
-            return res.json(propertyData);
-          }
-          
-          throw new Error('No data from external service');
-        } catch (externalError) {
-          console.error('Error con el servicio externo:', externalError);
-          // Si ambos servicios fallan, continuamos con el flujo normal
-          // y devolvemos un error al cliente
-          return res.status(502).json({ 
-            message: 'Error de servicio conectando con el verificador de propiedades',
-            details: 'Intente nuevamente más tarde o con otra dirección'
-          });
-        }
+        // Probar la conexión con el wrapper
+        const testResponse = await axios.get(`${ATTOM_WRAPPER_URL}/api/health`, { 
+          timeout: 5000 
+        });
+        console.log('Estado del servicio ATTOM:', testResponse.data || 'Sin datos de estado');
+      } catch (healthError) {
+        console.error('Error verificando estado del servicio ATTOM:', healthError.message);
+        // Continuamos aunque falle la verificación de salud
       }
       
-      const endTime = Date.now();
-
-      console.log(`Solicitud completada en ${endTime - startTime}ms con estado: ${result.status}`);
-
-      // Incluir información diagnóstica en logs para depuración
-      console.log('Diagnóstico de la solicitud:', JSON.stringify({
-        status: result.status,
-        parsedAddress: result.diagnostics?.parsedAddress ? 'disponible' : 'no disponible',
-        errorType: result.error?.code || 'ninguno',
-        processingTime: endTime - startTime
-      }));
-
-      // Manejar los diferentes casos según el estado de la respuesta
-      switch (result.status) {
-        case 'SUCCESS':
-          // Tenemos datos válidos
-          console.log('ÉXITO: Datos verificados obtenidos de ATTOM API');
-          console.log('Datos de propietario:', result.data?.owner);
-          console.log('Propiedad ocupada por el propietario:', result.data?.ownerOccupied);
-
+      // Procedemos con múltiples intentos para obtener datos
+      const startTime = Date.now();
+      console.log('Intentos para obtener datos de propiedad:');
+      
+      // Intento 1: Enviar dirección completa
+      console.log('Intento 1 - Dirección completa');
+      try {
+        const response = await axios.get(`${ATTOM_WRAPPER_URL}/api/property/details`, {
+          params: { address },
+          timeout: 15000
+        });
+        
+        console.log('Intento 1 exitoso. Datos recibidos:', response.data ? 'Sí' : 'No');
+        
+        if (response.data) {
+          const propertyData = {
+            owner: response.data.owner || 'No disponible',
+            address: response.data.address || address,
+            sqft: response.data.buildingAreaSqFt || response.data.sqft || 0,
+            bedrooms: response.data.rooms?.bedrooms || response.data.bedrooms || 0,
+            bathrooms: response.data.rooms?.bathrooms || response.data.bathrooms || 0,
+            lotSize: response.data.lotSizeAcres 
+              ? `${response.data.lotSizeAcres} acres` 
+              : response.data.lotSize || 'No disponible',
+            landSqft: response.data.lotSizeSqFt || 0,
+            yearBuilt: response.data.yearBuilt || 0,
+            propertyType: response.data.propertyType || 'Residencial',
+            ownerOccupied: !!response.data.ownerOccupied,
+            verified: true,
+            ownershipVerified: !!response.data.owner,
+            // Info adicional si está disponible
+            purchaseDate: response.data.saleTransHistory?.[0]?.saleTransDate,
+            purchasePrice: response.data.saleTransHistory?.[0]?.saleTransAmount,
+            previousOwner: response.data.saleTransHistory?.[1]?.seller,
+            ownerHistory: response.data.saleTransHistory?.map((entry: any) => ({
+              owner: entry.buyer || 'Desconocido',
+              purchaseDate: entry.saleTransDate,
+              purchasePrice: entry.saleTransAmount,
+              saleDate: entry.recordingDate,
+              salePrice: entry.saleTransAmount
+            }))
+          };
+          
+          const endTime = Date.now();
+          console.log(`Solicitud completada en ${endTime - startTime}ms con estado: SUCCESS`);
           console.log('Enviando respuesta al cliente...');
           console.log('===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====\n');
-
+          
+          return res.json(propertyData);
+        }
+      } catch (error1) {
+        console.log('Intento 1 falló:', error1.message || 'Error desconocido');
+        console.log('Código de estado:', error1.response?.status || 'N/A');
+      }
+      
+      // Intento 2: Usar el formato de componentes
+      console.log('Intento 2 - Formato de componentes de dirección');
+      try {
+        // Parsear dirección en componentes
+        const addressParts = address.split(',').map(part => part.trim());
+        const streetAddress = addressParts[0];
+        const city = addressParts.length > 1 ? addressParts[1] : '';
+        const stateZip = addressParts.length > 2 ? addressParts[2].split(' ') : ['', ''];
+        const state = stateZip[0] || '';
+        const zip = stateZip.length > 1 ? stateZip[1] : '';
+        
+        console.log('Componentes de dirección:', { streetAddress, city, state, zip });
+        
+        const response = await axios.get(`${ATTOM_WRAPPER_URL}/api/property/details`, {
+          params: { 
+            street: streetAddress,
+            city,
+            state,
+            zip
+          },
+          timeout: 15000
+        });
+        
+        if (response.data) {
+          const propertyData = {
+            owner: response.data.owner || 'No disponible',
+            address: response.data.address || address,
+            sqft: response.data.buildingAreaSqFt || response.data.sqft || 0,
+            bedrooms: response.data.rooms?.bedrooms || response.data.bedrooms || 0,
+            bathrooms: response.data.rooms?.bathrooms || response.data.bathrooms || 0,
+            lotSize: response.data.lotSizeAcres 
+              ? `${response.data.lotSizeAcres} acres` 
+              : response.data.lotSize || 'No disponible',
+            landSqft: response.data.lotSizeSqFt || 0,
+            yearBuilt: response.data.yearBuilt || 0,
+            propertyType: response.data.propertyType || 'Residencial',
+            ownerOccupied: !!response.data.ownerOccupied,
+            verified: true,
+            ownershipVerified: !!response.data.owner
+          };
+          
+          const endTime = Date.now();
+          console.log(`Solicitud completada en ${endTime - startTime}ms con estado: SUCCESS`);
+          console.log('Enviando respuesta al cliente...');
+          console.log('===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====\n');
+          
+          return res.json(propertyData);
+        }
+      } catch (error2) {
+        console.log('Intento 2 falló:', error2.message || 'Error desconocido');
+      }
+      
+      // Intento 3: Usar servicio interno
+      console.log('Intento 3 - Servicio interno propertyService');
+      try {
+        const result = await propertyService.getPropertyDetailsWithDiagnostics(address);
+        const endTime = Date.now();
+        
+        console.log(`Solicitud interna completada en ${endTime - startTime}ms con estado: ${result.status}`);
+        console.log('Diagnóstico de la solicitud:', {
+          status: result.status,
+          parsedAddress: result.diagnostics?.parsedAddress ? 'disponible' : 'no disponible',
+          errorType: result.error?.code || 'ninguno',
+          processingTime: endTime - startTime
+        });
+        
+        if (result.status === 'SUCCESS' && result.data) {
+          console.log('ÉXITO: Datos verificados obtenidos de servicio interno');
+          console.log('Enviando respuesta al cliente...');
+          console.log('===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====\n');
+          
           return res.json(result.data);
-
-        case 'NOT_FOUND':
+        }
+        
+        if (result.status === 'NOT_FOUND') {
           console.log('No se encontró información para la dirección proporcionada');
           console.log('===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====\n');
-
+          
           return res.status(404).json({ 
             message: 'No se encontró información para la dirección proporcionada',
             details: 'Verifica que la dirección esté correctamente escrita e incluya ciudad, estado y código postal'
           });
-
-        case 'CONNECTION_ERROR':
-          console.log('Error de conectividad con el servicio de ATTOM');
-          console.log('===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====\n');
-
-          return res.status(502).json({
-            message: 'Error de conectividad con el servicio de datos de propiedades',
-            errorCode: 'CONNECTIVITY_ERROR',
-            details: 'No se pudo establecer conexión con el servicio de ATTOM. Este es un problema de infraestructura, no de la dirección proporcionada.'
-          });
-
-        case 'AUTHENTICATION_ERROR':
-          console.log('Error de autenticación con el servicio de ATTOM');
-          console.log('===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====\n');
-
-          return res.status(401).json({
-            message: 'Error de autenticación con el servicio de datos de propiedades',
-            errorCode: 'AUTHENTICATION_ERROR',
-            details: 'Las credenciales de acceso al servicio de ATTOM no son válidas o han expirado.'
-          });
-
-        case 'VALIDATION_ERROR':
-          console.log('Error de validación en los parámetros de búsqueda');
-          console.log('===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====\n');
-
-          return res.status(400).json({
-            message: 'Error en el formato de la dirección proporcionada',
-            errorCode: 'VALIDATION_ERROR',
-            details: 'El formato de la dirección no es válido. Asegúrate de incluir calle, ciudad, estado y código postal.'
-          });
-
-        default:
-          console.log('Error desconocido al consultar datos de propiedad');
-          console.log('===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====\n');
-
-          return res.status(500).json({
-            message: 'Error al obtener detalles de la propiedad',
-            errorCode: 'UNKNOWN_ERROR',
-            details: result.error?.message || 'Error desconocido'
-          });
+        }
+      } catch (error3) {
+        console.log('Intento 3 falló:', error3.message || 'Error desconocido');
       }
+      
+      // Si llegamos aquí, todos los intentos han fallado
+      console.log('Todos los intentos fallaron. No se pudo obtener información de propiedad.');
+      return res.status(404).json({ 
+        message: 'No se encontró información para la dirección proporcionada',
+        details: 'Verifica que la dirección esté correctamente escrita. Por ejemplo: "123 Main St, Seattle, WA 98101"'
+      });
     } catch (error: any) {
       console.error('ERROR EN VERIFICACIÓN DE PROPIEDAD:');
       console.error('Mensaje:', error.message);

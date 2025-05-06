@@ -37,109 +37,56 @@ class PropertyVerifierService {
     try {
       console.log(`Verificando propiedad con dirección: ${address}`);
       
-      // Primero, intentamos usar el backend de la aplicación
-      try {
-        const internalResponse = await axios.get('/api/property/details', {
-          params: { address: address.trim() }
-        });
-        
-        console.log('Respuesta recibida del backend interno:', internalResponse.status);
-        
-        if (internalResponse.data && internalResponse.status === 200) {
-          return internalResponse.data;
-        }
-      } catch (internalError) {
-        console.log('El backend interno no pudo procesar la solicitud, intentando con servicio externo');
+      // IMPORTANTE: NO usamos la conexión directa al servicio externo desde el frontend
+      // Dejamos que el backend maneje toda la comunicación con ATTOM
+      
+      console.log("Enviando solicitud de verificación al backend de la aplicación");
+      const internalResponse = await axios.get('/api/property/details', {
+        params: { address: address.trim() },
+        timeout: 30000 // Aumentamos el timeout a 30 segundos porque el backend puede tardar en conectar con ATTOM
+      });
+      
+      console.log('Respuesta recibida del backend interno:', internalResponse.status);
+      console.log('Datos recibidos:', internalResponse.data);
+      
+      if (internalResponse.data && internalResponse.status === 200) {
+        return internalResponse.data;
       }
       
-      // Si el backend interno falla, conectar directamente con el wrapper externo
-      try {
-        console.log(`Conectando con servicio externo: ${ATTOM_WRAPPER_URL}`);
-        
-        // Intentamos el endpoint principal
-        const externalResponse = await axios.get(`${ATTOM_WRAPPER_URL}/api/property/details`, {
-          params: { address: address.trim() },
-          timeout: 15000, // 15 segundos
-        });
-        
-        console.log('Respuesta recibida del servicio externo:', externalResponse.status);
-        
-        if (externalResponse.data) {
-          // Transformar los datos al formato que espera nuestra aplicación
-          const data = externalResponse.data;
-          const propertyData: PropertyDetails = {
-            owner: data.owner || 'No disponible',
-            address: data.address || address,
-            sqft: data.buildingAreaSqFt || data.sqft || 0,
-            bedrooms: data.rooms?.bedrooms || data.bedrooms || 0,
-            bathrooms: data.rooms?.bathrooms || data.bathrooms || 0,
-            lotSize: data.lotSizeAcres ? `${data.lotSizeAcres} acres` : data.lotSize || 'No disponible',
-            landSqft: data.lotSizeSqFt || 0,
-            yearBuilt: data.yearBuilt || 0,
-            propertyType: data.propertyType || 'Residencial',
-            ownerOccupied: !!data.ownerOccupied,
-            verified: true,
-            ownershipVerified: !!data.owner,
-            purchaseDate: data.saleTransHistory?.[0]?.saleTransDate,
-            purchasePrice: data.saleTransHistory?.[0]?.saleTransAmount,
-            previousOwner: data.saleTransHistory?.[1]?.seller
-          };
-          
-          // Agregar historial de propietarios si está disponible
-          if (data.saleTransHistory && data.saleTransHistory.length > 0) {
-            propertyData.ownerHistory = data.saleTransHistory.map((entry: any) => ({
-              owner: entry.buyer || 'Desconocido',
-              purchaseDate: entry.saleTransDate,
-              purchasePrice: entry.saleTransAmount,
-              saleDate: entry.recordingDate,
-              salePrice: entry.saleTransAmount
-            }));
-          }
-          
-          return propertyData;
-        }
-        
-        throw new Error('Respuesta externa sin datos');
-      } catch (externalError: any) {
-        console.error('Error conectando con servicio externo:', externalError.message);
-        
-        // Si hay un error con el primer endpoint, intentamos el endpoint alternativo
-        try {
-          console.log('Intentando endpoint alternativo...');
-          const alternativeResponse = await axios.get(`${ATTOM_WRAPPER_URL}/api/property`, {
-            params: { address: address.trim() },
-            timeout: 15000,
-          });
-          
-          if (alternativeResponse.data) {
-            // Transformar la respuesta alternativa
-            const data = alternativeResponse.data;
-            return {
-              owner: data.owner || 'No disponible',
-              address: data.address || address,
-              sqft: data.sqft || 0,
-              bedrooms: data.bedrooms || 0,
-              bathrooms: data.bathrooms || 0,
-              lotSize: data.lotSize || 'No disponible',
-              yearBuilt: data.yearBuilt || 0,
-              propertyType: data.propertyType || 'Residencial',
-              verified: true,
-              ownershipVerified: !!data.owner
-            };
-          }
-        } catch (alternativeError) {
-          console.error('Error con endpoint alternativo:', alternativeError);
-        }
-        
-        throw externalError;
-      }
+      throw new Error('No se recibieron datos válidos del servidor');
     } catch (error: any) {
       console.error('Error en servicio de verificación de propiedad:', error);
       
+      // Mostrar errores detallados en la consola para depuración
+      if (error.response) {
+        // La solicitud fue realizada y el servidor respondió con un código de estado
+        // que está fuera del rango 2xx
+        console.error('Detalles del error de respuesta:', {
+          status: error.response.status,
+          data: error.response.data,
+          headers: error.response.headers
+        });
+        
+        // Si el backend devuelve un mensaje de error específico, lo mostramos al usuario
+        if (error.response.data && error.response.data.message) {
+          throw new Error(error.response.data.message);
+        }
+      } else if (error.request) {
+        // La solicitud fue realizada pero no se recibió respuesta
+        console.error('Error de solicitud (sin respuesta):', error.request);
+        throw new Error('No se pudo conectar con el servidor. Verifica tu conexión a internet.');
+      } else {
+        // Algo sucedió en la configuración de la solicitud que provocó un error
+        console.error('Error de configuración de solicitud:', error.message);
+      }
+      
+      // Manejamos casos específicos
       if (error.response?.status === 404) {
         throw new Error('No se encontró información para la dirección proporcionada');
       } else if (error.response?.status === 502 || error.code === 'ECONNABORTED') {
         throw new Error('Error de conectividad con el servicio de verificación de propiedad');
+      } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
+        throw new Error('La verificación tomó demasiado tiempo. Por favor, intenta nuevamente.');
       } else {
         throw new Error(error.message || 'Error al verificar la propiedad');
       }
