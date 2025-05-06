@@ -605,8 +605,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             id: 2,
             name: "El Mero Patrón",
             description: "Para el patrón que ya factura constante y quiere optimizar cada minuto",
-            price: 49.99,
-            yearlyPrice: 499.99,
+            price: 4999,
+            yearlyPrice: 49999,
             features: [
               "Estimados IA: Ilimitados, sin marca de agua",
               "Contratos: Hasta 50 mensuales con tu logo y datos",
@@ -625,8 +625,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             id: 3,
             name: "El Chingón Mayor",
             description: "Para el chingón que quiere delegar TODO el papeleo y subir su nivel a otra liga",
-            price: 99.99,
-            yearlyPrice: 999.99,
+            price: 9999,
+            yearlyPrice: 99999,
             features: [
               "Todo lo de 'Mero Patrón', más:",
               "Estimados & Contratos IA ilimitados",
