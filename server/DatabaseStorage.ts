@@ -35,12 +35,23 @@ import {
 } from "@shared/schema";
 
 import { db } from './db';
-import { eq, and, desc, asc, isNull, isNotNull } from 'drizzle-orm';
+import { eq, and, desc, asc, isNull, isNotNull, sql } from 'drizzle-orm';
 import { IStorage } from './storage';
 
 export class DatabaseStorage implements IStorage {
   constructor() {
     // Ninguna inicialización necesaria, usamos la conexión de db.ts
+  }
+  
+  async healthCheck(): Promise<boolean> {
+    try {
+      // Realizamos una consulta simple para verificar la conexión
+      await db.execute(sql`SELECT 1`);
+      return true;
+    } catch (error) {
+      console.error('Error en healthCheck de base de datos:', error);
+      return false;
+    }
   }
   
   // User methods

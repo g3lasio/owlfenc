@@ -64,6 +64,10 @@ export class FirebaseStorage implements IStorage {
   constructor() {
     // No necesita inicialización especial
   }
+  
+  async healthCheck(): Promise<boolean> {
+    return this.checkFirebaseConnection();
+  }
 
   // User methods
   async getUser(id: number): Promise<User | undefined> {
