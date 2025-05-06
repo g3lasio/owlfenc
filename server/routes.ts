@@ -584,24 +584,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const defaultPlans = [
           {
             id: 1,
-            name: "Plan Básico",
-            description: "Para contratistas individuales",
-            price: 29.99,
-            yearlyPrice: 299.99,
-            features: ["Estimados ilimitados", "Verificación de propiedad", "Chat con Mervin"],
-            motto: "Comienza tu negocio",
-            code: "basic",
+            name: "Primo Chambeador",
+            description: "Ideal para quien quiere ver la magia de Mervin antes de invertir",
+            price: 0,
+            yearlyPrice: 0,
+            features: [
+              "Estimados IA: Hasta 5 mensuales con marca de agua",
+              "Contratos PDF: Hasta 2 mensuales con marca de agua",
+              "Templates: Sólo básicas, sin personalización",
+              "Property Verifier: 10 búsquedas/mes",
+              "Soporte: Email (respuesta en 72 h)",
+              "Acceso Trial: AR Estimator en modo demo",
+              "Historial: Últimos 2 proyectos"
+            ],
+            motto: "Gratis",
+            code: "primo_chambeador",
             isActive: true
           },
           {
             id: 2,
-            name: "Plan Profesional",
-            description: "Para equipos pequeños",
+            name: "El Mero Patrón",
+            description: "Para el patrón que ya factura constante y quiere optimizar cada minuto",
             price: 49.99,
             yearlyPrice: 499.99,
-            features: ["Todo del Plan Básico", "Gestión de proyectos AI", "Permisos automáticos"],
-            motto: "Crece tu negocio",
-            code: "pro",
+            features: [
+              "Estimados IA: Ilimitados, sin marca de agua",
+              "Contratos: Hasta 50 mensuales con tu logo y datos",
+              "Templates: Avanzados, control de colores y fuentes",
+              "Property Verifier: 50 búsquedas/mes",
+              "Métricas & Reportes: Estadísticas completas",
+              "AR Fence Estimator: Acceso completo",
+              "Soporte: Email prioritario (24 h)",
+              "Historial completo: Todos los proyectos"
+            ],
+            motto: "Para el patrón que quiere optimizar",
+            code: "mero_patron",
+            isActive: true
+          },
+          {
+            id: 3,
+            name: "El Chingón Mayor",
+            description: "Para el chingón que quiere delegar TODO el papeleo y subir su nivel a otra liga",
+            price: 99.99,
+            yearlyPrice: 999.99,
+            features: [
+              "Todo lo de 'Mero Patrón', más:",
+              "Estimados & Contratos IA ilimitados",
+              "Ownership Verifier ilimitado",
+              "IA Personalizada: Mervin aprende tu estilo y forma de cobrar",
+              "Notificaciones Real Time: App + email al aprobar/firmar",
+              "AI Project Manager completo: Seguimiento de hitos y pagos",
+              "PermitAdvisor: Recomendaciones según municipio",
+              "Soporte VIP: Chat en vivo y llamadas programadas",
+              "Capacitación 1:1 mensual personalizada"
+            ],
+            motto: "Para delegar TODO el papeleo",
+            code: "chingon_mayor",
             isActive: true
           }
         ];
