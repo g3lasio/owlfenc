@@ -1157,7 +1157,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Usar el nuevo método con diagnósticos para obtener información más detallada
       const startTime = Date.now();
-      const result = await propertyService.getPropertyDetailsWithDiagnostics(address);
+      // Primero intenta con el servicio interno
+      let result;
+      
+      try {
+        result = await propertyService.getPropertyDetailsWithDiagnostics(address);
+      } catch (internalError) {
+        console.error('Error con el servicio interno, intentando con servicio externo:', internalError);
+        
+        // Si el servicio interno falla, intenta con el servicio externo
+        try {
+          // Usar axios para conectar con el wrapper externo de ATTOM
+          const ATTOM_WRAPPER_URL = 'https://attom-wrapper.replit.app';
+          
+          const externalResponse = await axios.get(`${ATTOM_WRAPPER_URL}/api/property/details`, {
+            params: { address },
+            timeout: 10000 // 10 segundos
+          });
+          
+          if (externalResponse.data) {
+            // Transformar los datos al formato esperado
+            const propertyData = {
+              owner: externalResponse.data.owner || 'No disponible',
+              address: externalResponse.data.address || address,
+              sqft: externalResponse.data.buildingAreaSqFt || externalResponse.data.sqft || 0,
+              bedrooms: externalResponse.data.rooms?.bedrooms || externalResponse.data.bedrooms || 0,
+              bathrooms: externalResponse.data.rooms?.bathrooms || externalResponse.data.bathrooms || 0,
+              lotSize: externalResponse.data.lotSizeAcres 
+                ? `${externalResponse.data.lotSizeAcres} acres` 
+                : externalResponse.data.lotSize || 'No disponible',
+              landSqft: externalResponse.data.lotSizeSqFt || 0,
+              yearBuilt: externalResponse.data.yearBuilt || 0,
+              propertyType: externalResponse.data.propertyType || 'Residencial',
+              ownerOccupied: !!externalResponse.data.ownerOccupied,
+              verified: true,
+              ownershipVerified: !!externalResponse.data.owner
+            };
+            
+            return res.json(propertyData);
+          }
+          
+          throw new Error('No data from external service');
+        } catch (externalError) {
+          console.error('Error con el servicio externo:', externalError);
+          // Si ambos servicios fallan, continuamos con el flujo normal
+          // y devolvemos un error al cliente
+          return res.status(502).json({ 
+            message: 'Error de servicio conectando con el verificador de propiedades',
+            details: 'Intente nuevamente más tarde o con otra dirección'
+          });
+        }
+      }
+      
       const endTime = Date.now();
 
       console.log(`Solicitud completada en ${endTime - startTime}ms con estado: ${result.status}`);

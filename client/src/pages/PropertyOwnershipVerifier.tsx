@@ -38,34 +38,7 @@ import GooglePlacesAutocomplete, {
   geocodeByAddress,
   getLatLng,
 } from "react-google-places-autocomplete";
-
-interface OwnerHistoryEntry {
-  owner: string;
-  purchaseDate?: string;
-  purchasePrice?: number;
-  saleDate?: string;
-  salePrice?: number;
-}
-
-interface PropertyDetails {
-  owner: string;
-  address: string;
-  sqft: number;
-  bedrooms: number;
-  bathrooms: number;
-  lotSize: string;
-  landSqft?: number;
-  yearBuilt: number;
-  propertyType: string;
-  verified: boolean;
-  ownerOccupied?: boolean;
-  ownershipVerified?: boolean;
-  // Información adicional de historial de propiedad
-  purchaseDate?: string;
-  purchasePrice?: number;
-  previousOwner?: string;
-  ownerHistory?: OwnerHistoryEntry[];
-}
+import { propertyVerifierService, PropertyDetails, OwnerHistoryEntry } from "@/services/propertyVerifierService";
 
 export default function PropertyOwnershipVerifier() {
   // Obtener la suscripción del usuario
@@ -204,57 +177,18 @@ export default function PropertyOwnershipVerifier() {
     setError(null);
 
     try {
-      // Primero intentamos obtener datos del API
-      console.log(
-        "Realizando petición a la API con dirección:",
-        address.trim(),
-      );
-      try {
-        const response = await axios.get("/api/property/details", {
-          params: { address: address.trim() },
-        });
-
-        console.log(
-          "Respuesta recibida de la API:",
-          response.status,
-          response.data,
-        );
-
-        if (response.data) {
-          console.log("Datos de propiedad obtenidos:", response.data);
-          setPropertyDetails(response.data);
-          setLoading(false);
-          return;
-        } else {
-          console.log("La API respondió pero sin datos");
-          throw new Error("No se recibieron datos de la propiedad");
-        }
-      } catch (apiError: any) {
-        console.error("Error específico de la API:", {
-          message: apiError.message,
-          status: apiError.response?.status,
-          data: apiError.response?.data,
-        });
-
-        // Mostramos el error al usuario usando el mensaje del servidor si está disponible
-        if (apiError.response?.data?.message) {
-          setError(`Error: ${apiError.response.data.message}`);
-        } else {
-          setError(
-            "Error al conectar con el servicio de verificación de propiedades. Por favor, intenta nuevamente.",
-          );
-        }
-
-        // No generamos datos falsos, simplemente retornamos
-        setPropertyDetails(null);
-        setLoading(false);
-        return;
-      }
+      console.log("Verificando propiedad con dirección:", address.trim());
+      
+      // Usar el servicio actualizado que se conecta al wrapper de ATTOM externo
+      const propertyData = await propertyVerifierService.verifyProperty(address);
+      
+      console.log("Datos de propiedad obtenidos:", propertyData);
+      setPropertyDetails(propertyData);
     } catch (err: any) {
       console.error("Error verificando propiedad:", err);
-      setError(
-        "Error al verificar la propiedad. Por favor, intenta nuevamente.",
-      );
+      
+      // Mostrar mensaje de error específico al usuario
+      setError(err.message || "Error al verificar la propiedad. Por favor, intenta nuevamente.");
       setPropertyDetails(null);
     } finally {
       setLoading(false);
