@@ -23,6 +23,12 @@ export async function apiRequest(
   return res;
 }
 
+// Métodos para facilitar el uso de las llamadas API
+apiRequest.get = (url: string) => apiRequest("GET", url).then(res => res.json());
+apiRequest.post = (url: string, data?: unknown) => apiRequest("POST", url, data).then(res => res.json());
+apiRequest.patch = (url: string, data?: unknown) => apiRequest("PATCH", url, data).then(res => res.json());
+apiRequest.delete = (url: string) => apiRequest("DELETE", url).then(res => res.json());
+
 type UnauthorizedBehavior = "returnNull" | "throw";
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;

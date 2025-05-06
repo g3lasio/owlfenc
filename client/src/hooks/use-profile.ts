@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
 export interface UserProfile {
+  id?: number;
   profilePhoto?: string;
   companyName: string;
   ownerName: string;

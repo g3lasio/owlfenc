@@ -85,6 +85,7 @@ const csvImportSchema = z.object({
 
 export default function NuevoClientes() {
   const { profile } = useProfile();
+  // ID por defecto para pruebas, si no hay perfil disponible
   const userId = profile?.id || 1;
   const queryClient = useQueryClient();
   const { toast } = useToast();
