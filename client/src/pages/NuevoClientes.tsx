@@ -742,18 +742,6 @@ export default function NuevoClientes() {
               Limpiar filtros
             </Button>
           )}
-          {!searchTerm && selectedTags.length === 0 && activeTab === "all" && (
-            <div className="flex justify-center gap-4">
-              <Button onClick={openAddForm}>
-                <UserPlus className="w-4 h-4 mr-2" />
-                Nuevo Cliente
-              </Button>
-              <Button variant="outline" onClick={() => setShowImportDialog(true)}>
-                <Upload className="w-4 h-4 mr-2" />
-                Importar Contactos
-              </Button>
-            </div>
-          )}
         </div>
       ) : viewMode === "grid" ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
