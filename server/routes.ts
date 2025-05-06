@@ -638,7 +638,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               "Soporte VIP: Chat en vivo y llamadas programadas",
               "Capacitación 1:1 mensual personalizada"
             ],
-            motto: "Para delegar TODO el papeleo",
+            motto: "El nivel donde el éxito lleva tu nombre como estandarte.",
             code: "chingon_mayor",
             isActive: true
           }
