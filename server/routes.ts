@@ -592,12 +592,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               "Estimados IA: Hasta 5 mensuales con marca de agua",
               "Contratos PDF: Hasta 2 mensuales con marca de agua",
               "Templates: Sólo básicas, sin personalización",
-              "Property Verifier: 10 búsquedas/mes",
+              "Property Verifier: 5 búsquedas/mes",
               "Soporte: Email (respuesta en 72 h)",
               "Acceso Trial: AR Estimator en modo demo",
               "Historial: Últimos 2 proyectos"
             ],
-            motto: "Gratis",
+            motto: "Empieza rompiendo el suelo, termina construyendo tu legado",
             code: "primo_chambeador",
             isActive: true
           },
@@ -617,7 +617,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               "Soporte: Email prioritario (24 h)",
               "Historial completo: Todos los proyectos"
             ],
-            motto: "Para el patrón que quiere optimizar",
+            motto: "No sigues proyectos… los proyectos te siguen a ti.",
             code: "mero_patron",
             isActive: true
           },

@@ -329,6 +329,7 @@ export default function Subscription() {
             onSelectPlan={createCheckoutSession}
             planId={plan.id}
             isLoading={isLoading}
+            code={plan.code}
           />
         ))}
       </div>

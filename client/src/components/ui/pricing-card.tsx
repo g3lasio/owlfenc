@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check } from "lucide-react";
+import { Check, Hammer, Crown, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface PricingCardProps {
@@ -16,6 +16,7 @@ interface PricingCardProps {
   onSelectPlan: (planId: number) => void;
   planId: number;
   isLoading?: boolean;
+  code?: string;
 }
 
 export function PricingCard({
@@ -30,9 +31,24 @@ export function PricingCard({
   onSelectPlan,
   planId,
   isLoading = false,
+  code = '',
 }: PricingCardProps) {
   const currentPrice = isYearly ? yearlyPrice / 100 : price / 100;
   const period = isYearly ? "/año" : "/mes";
+
+  // Determinar el ícono según el código del plan
+  const renderPlanIcon = () => {
+    switch (code) {
+      case 'primo_chambeador':
+        return <Hammer className="h-6 w-6 text-orange-500" />;
+      case 'mero_patron':
+        return <Crown className="h-6 w-6 text-primary" />;
+      case 'chingon_mayor':
+        return <Trophy className="h-6 w-6 text-amber-500" />;
+      default:
+        return null;
+    }
+  };
 
   return (
     <Card
@@ -52,7 +68,10 @@ export function PricingCard({
       )}
       <div>
         <CardHeader className="pb-2">
-          <CardTitle className="text-xl">{name}</CardTitle>
+          <div className="flex items-center gap-3">
+            {renderPlanIcon()}
+            <CardTitle className="text-xl">{name}</CardTitle>
+          </div>
           <CardDescription className="text-sm pt-1">{description}</CardDescription>
         </CardHeader>
         <CardContent className="pb-2">
