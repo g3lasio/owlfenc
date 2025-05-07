@@ -3,16 +3,57 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, AlertTriangle, CheckCircle2, FileText, ListChecks, HardHat, CalendarClock, DollarSign, Building2, Clock, Link2, Phone, Mail, MapPin, Clock8, ExternalLink, Ruler, Scale, Info, BookOpen, Landmark } from "lucide-react";
-import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
+import {
+  Loader2,
+  Search,
+  AlertTriangle,
+  CheckCircle2,
+  FileText,
+  ListChecks,
+  HardHat,
+  CalendarClock,
+  DollarSign,
+  Building2,
+  Clock,
+  Link2,
+  Phone,
+  Mail,
+  MapPin,
+  Clock8,
+  ExternalLink,
+  Ruler,
+  Scale,
+  Info,
+  BookOpen,
+  Landmark,
+} from "lucide-react";
+import GooglePlacesAutocomplete from "react-google-places-autocomplete";
 
 // Tipos para los datos de permisos - Versión mejorada
 interface PermitData {
@@ -125,10 +166,16 @@ export default function PermitAdvisor() {
 
   // Solicitud de permisos
   const permitMutation = useMutation({
-    mutationFn: async ({ address, projectType }: { address: string; projectType: string }) => {
+    mutationFn: async ({
+      address,
+      projectType,
+    }: {
+      address: string;
+      projectType: string;
+    }) => {
       const response = await apiRequest("POST", "/api/permit/check", {
         address,
-        projectType
+        projectType,
       });
 
       if (!response.ok) {
@@ -140,25 +187,34 @@ export default function PermitAdvisor() {
     },
     onSuccess: (data: PermitResponse) => {
       console.log("Datos recibidos del API:", data);
-      
+
       // Función para procesar recursivamente los datos y convertir objetos a strings
       const processData = (obj: any): any => {
         if (obj === null || obj === undefined) {
           return obj;
         }
-        
-        if (typeof obj === 'object') {
+
+        if (typeof obj === "object") {
           if (Array.isArray(obj)) {
             // Procesar cada elemento del array
-            return obj.map(item => processData(item));
+            return obj.map((item) => processData(item));
           } else {
             // Si es un objeto simple que debería ser un string (en listas de viñetas, etc.)
-            if (Object.keys(obj).some(key => 
-              ['description', 'consideration', 'name', 'applicableArea', 'detail'].includes(key))) {
+            if (
+              Object.keys(obj).some((key) =>
+                [
+                  "description",
+                  "consideration",
+                  "name",
+                  "applicableArea",
+                  "detail",
+                ].includes(key),
+              )
+            ) {
               console.warn("Convirtiendo objeto a string:", obj);
               return JSON.stringify(obj);
             }
-            
+
             // Para objetos complejos, procesar cada propiedad
             const result: any = {};
             for (const key in obj) {
@@ -167,27 +223,27 @@ export default function PermitAdvisor() {
             return result;
           }
         }
-        
+
         // Si es un valor primitivo, devolverlo sin cambios
         return obj;
       };
-      
+
       // Procesar todo el objeto de datos
       const processedData = processData(data);
-      
+
       // Verificar y formatear específicamente la sección de proceso para mostrar quien debe hacer cada paso
       if (processedData.process && Array.isArray(processedData.process)) {
-        processedData.process = processedData.process.map(step => {
+        processedData.process = processedData.process.map((step) => {
           // Si es un objeto, convertirlo a string
-          if (typeof step === 'object' && step !== null) {
+          if (typeof step === "object" && step !== null) {
             return JSON.stringify(step);
           }
           return step;
         });
       }
-      
+
       console.log("Datos procesados:", processedData);
-      
+
       setPermitData(processedData);
       toast({
         title: "Información obtenida correctamente",
@@ -200,7 +256,7 @@ export default function PermitAdvisor() {
         title: "Error al consultar permisos",
         description: error.message || "Ocurrió un error inesperado",
       });
-    }
+    },
   });
 
   // Handler para el autocompletado de Google Places
@@ -242,7 +298,7 @@ export default function PermitAdvisor() {
     { value: "electrical", label: "Electrical Installation" },
     { value: "hvac", label: "HVAC System" },
     { value: "driveway", label: "Driveway" },
-    { value: "landscaping", label: "Landscaping" }
+    { value: "landscaping", label: "Landscaping" },
   ];
 
   return (
@@ -258,7 +314,8 @@ export default function PermitAdvisor() {
           <h1 className="text-3xl font-bold">Mervin Permit Advisor</h1>
         </div>
         <p className="text-muted-foreground">
-          Tu asesor legal instantáneo para permisos y regulaciones de construcción
+          Tu asesor legal instantáneo para permisos y regulaciones de
+          construcción
         </p>
       </div>
 
@@ -266,14 +323,15 @@ export default function PermitAdvisor() {
         <CardHeader>
           <CardTitle>Consultar Requisitos Legales</CardTitle>
           <CardDescription>
-            Ingresa los detalles de tu proyecto para conocer los permisos, licencias y regulaciones aplicables
+            Ingresa los detalles de tu proyecto para conocer los permisos,
+            licencias y regulaciones aplicables
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">Tipo de Proyecto</label>
-            <Select 
-              value={projectType} 
+            <Select
+              value={projectType}
               onValueChange={(value) => setProjectType(value)}
             >
               <SelectTrigger>
@@ -291,14 +349,18 @@ export default function PermitAdvisor() {
 
           <div className="space-y-2">
             <div className="flex justify-between">
-              <label className="text-sm font-medium">Dirección del Proyecto</label>
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <label className="text-sm font-medium">
+                Dirección del Proyecto
+              </label>
+              <Button
+                variant="ghost"
+                size="sm"
                 className="h-7 text-xs"
                 onClick={() => setUseManualInput(!useManualInput)}
               >
-                {useManualInput ? "Usar autocompletado" : "Ingresar manualmente"}
+                {useManualInput
+                  ? "Usar autocompletado"
+                  : "Ingresar manualmente"}
               </Button>
             </div>
 
@@ -312,14 +374,14 @@ export default function PermitAdvisor() {
               <div className="relative z-10">
                 <GooglePlacesAutocomplete
                   apiKey={googleMapsApiKey}
-                  apiOptions={{ 
-                    language: 'es',
-                    region: 'mx',
-                    libraries: ['places']
+                  apiOptions={{
+                    language: "es",
+                    region: "mx",
+                    libraries: ["places"],
                   }}
                   autocompletionRequest={{
-                    componentRestrictions: { country: ['mx', 'us', 'es'] },
-                    types: ['address']
+                    componentRestrictions: { country: ["mx", "us", "es"] },
+                    types: ["address"],
                   }}
                   selectProps={{
                     value: placeValue,
@@ -335,42 +397,44 @@ export default function PermitAdvisor() {
                     styles: {
                       control: (base) => ({
                         ...base,
-                        background: 'white',
-                        border: '1px solid hsl(var(--input))',
-                        boxShadow: 'none',
-                        '&:hover': {
-                          border: '1px solid hsl(var(--primary))',
+                        background: "white",
+                        border: "1px solid hsl(var(--input))",
+                        boxShadow: "none",
+                        "&:hover": {
+                          border: "1px solid hsl(var(--primary))",
                         },
                       }),
                       input: (base) => ({
                         ...base,
-                        color: 'rgb(15, 23, 42)',
+                        color: "rgb(15, 23, 42)",
                         fontWeight: 500,
                       }),
                       option: (base, state) => ({
                         ...base,
-                        backgroundColor: state.isFocused ? 'hsl(var(--primary) / 0.1)' : 'white',
-                        color: 'rgb(15, 23, 42)',
+                        backgroundColor: state.isFocused
+                          ? "hsl(var(--primary) / 0.1)"
+                          : "white",
+                        color: "rgb(15, 23, 42)",
                         fontWeight: 500,
-                        '&:hover': {
-                          backgroundColor: 'hsl(var(--primary) / 0.15)',
+                        "&:hover": {
+                          backgroundColor: "hsl(var(--primary) / 0.15)",
                         },
                       }),
                       singleValue: (base) => ({
                         ...base,
-                        color: 'rgb(15, 23, 42)',
+                        color: "rgb(15, 23, 42)",
                         fontWeight: 500,
                       }),
                       placeholder: (base) => ({
                         ...base,
-                        color: 'rgb(100, 116, 139)',
+                        color: "rgb(100, 116, 139)",
                       }),
                       menu: (base) => ({
                         ...base,
                         zIndex: 9999,
-                        background: 'white',
+                        background: "white",
                       }),
-                    }
+                    },
                   }}
                 />
               </div>
@@ -385,7 +449,8 @@ export default function PermitAdvisor() {
                   <AlertTriangle className="h-4 w-4" />
                   <AlertTitle>Error de configuración</AlertTitle>
                   <AlertDescription>
-                    El autocompletado de direcciones no está disponible. Por favor ingresa la dirección manualmente.
+                    El autocompletado de direcciones no está disponible. Por
+                    favor ingresa la dirección manualmente.
                   </AlertDescription>
                 </Alert>
               </div>
@@ -393,8 +458,8 @@ export default function PermitAdvisor() {
           </div>
         </CardContent>
         <CardFooter>
-          <Button 
-            onClick={handleSearch} 
+          <Button
+            onClick={handleSearch}
             disabled={permitMutation.isPending}
             className="w-full md:w-auto"
           >
@@ -419,21 +484,45 @@ export default function PermitAdvisor() {
             {/* Círculos animados en el fondo */}
             <div className="absolute inset-0 overflow-hidden">
               <div className="absolute -left-20 -top-20 w-40 h-40 rounded-full bg-primary/5 animate-pulse"></div>
-              <div className="absolute right-10 top-10 w-20 h-20 rounded-full bg-primary/10 animate-pulse" style={{ animationDelay: '0.5s' }}></div>
-              <div className="absolute left-20 bottom-10 w-32 h-32 rounded-full bg-primary/5 animate-pulse" style={{ animationDelay: '0.7s' }}></div>
+              <div
+                className="absolute right-10 top-10 w-20 h-20 rounded-full bg-primary/10 animate-pulse"
+                style={{ animationDelay: "0.5s" }}
+              ></div>
+              <div
+                className="absolute left-20 bottom-10 w-32 h-32 rounded-full bg-primary/5 animate-pulse"
+                style={{ animationDelay: "0.7s" }}
+              ></div>
             </div>
 
             <div className="relative z-10 flex flex-col items-center">
               {/* Anillo animado alrededor del spinner */}
               <div className="relative mb-6">
-                <div className="absolute inset-0 rounded-full border-2 border-primary/30 border-dashed animate-spin" style={{ width: '70px', height: '70px', animationDuration: '8s' }}></div>
-                <div className="absolute inset-0 rounded-full border-2 border-primary/20 border-dashed animate-spin" style={{ width: '70px', height: '70px', animationDuration: '5s', animationDirection: 'reverse' }}></div>
+                <div
+                  className="absolute inset-0 rounded-full border-2 border-primary/30 border-dashed animate-spin"
+                  style={{
+                    width: "70px",
+                    height: "70px",
+                    animationDuration: "8s",
+                  }}
+                ></div>
+                <div
+                  className="absolute inset-0 rounded-full border-2 border-primary/20 border-dashed animate-spin"
+                  style={{
+                    width: "70px",
+                    height: "70px",
+                    animationDuration: "5s",
+                    animationDirection: "reverse",
+                  }}
+                ></div>
                 <Loader2 className="h-12 w-12 animate-spin text-primary relative" />
               </div>
 
-              <h3 className="text-xl font-semibold text-primary">Mervin Permit Advisor en acción</h3>
+              <h3 className="text-xl font-semibold text-primary">
+                Mervin Permit Advisor en acción
+              </h3>
               <p className="text-muted-foreground text-center mt-4 max-w-md relative">
-                Investigando regulaciones legales, permisos y normativas aplicables a tu proyecto en esta ubicación...
+                Investigando regulaciones legales, permisos y normativas
+                aplicables a tu proyecto en esta ubicación...
               </p>
 
               <div className="w-full max-w-md mt-6 space-y-2">
@@ -457,7 +546,10 @@ export default function PermitAdvisor() {
       {permitData && !permitMutation.isPending && (
         <Card className="overflow-hidden">
           <CardHeader className="pb-0">
-            <CardTitle>Resultados para {permitData.meta.projectType} en {permitData.meta.location}</CardTitle>
+            <CardTitle>
+              Resultados para {permitData.meta.projectType} en{" "}
+              {permitData.meta.location}
+            </CardTitle>
             <CardDescription>
               Información actualizada sobre requisitos legales para tu proyecto
             </CardDescription>
@@ -466,17 +558,22 @@ export default function PermitAdvisor() {
           <div className="px-6 pt-2">
             <Alert className="mb-4 bg-primary/5 border-primary/20">
               <CheckCircle2 className="h-5 w-5 text-primary" />
-              <AlertTitle className="text-primary">Análisis Completo</AlertTitle>
+              <AlertTitle className="text-primary">
+                Análisis Completo
+              </AlertTitle>
               <AlertDescription>
-                {permitData.meta.projectTypeDescription ? 
-                  `Información específica para proyecto de ${permitData.meta.projectTypeDescription} en ${permitData.meta.fullAddress || permitData.meta.location}` :
-                  `Información específica para proyecto de ${permitData.meta.projectType} en ${permitData.meta.location}`
-                }
+                {permitData.meta.projectTypeDescription
+                  ? `Información específica para proyecto de ${permitData.meta.projectTypeDescription} en ${permitData.meta.fullAddress || permitData.meta.location}`
+                  : `Información específica para proyecto de ${permitData.meta.projectType} en ${permitData.meta.location}`}
               </AlertDescription>
             </Alert>
           </div>
 
-          <Tabs value={activeTab || "overview"} onValueChange={setActiveTab} className="mt-2">
+          <Tabs
+            value={activeTab || "overview"}
+            onValueChange={setActiveTab}
+            className="mt-2"
+          >
             <div className="px-6">
               <TabsList className="grid grid-cols-2 md:grid-cols-6 mb-4 flex-wrap">
                 <TabsTrigger value="permits" className="text-xs md:text-sm">
@@ -520,20 +617,34 @@ export default function PermitAdvisor() {
                     </CardHeader>
                     <CardContent className="py-2">
                       <div className="text-sm">
-                        {permitData.requiredPermits && permitData.requiredPermits.length > 0 ? (
+                        {permitData.requiredPermits &&
+                        permitData.requiredPermits.length > 0 ? (
                           <div>
-                            <p className="mb-2">Se requieren {permitData.requiredPermits.length} permisos para este proyecto.</p>
+                            <p className="mb-2">
+                              Se requieren {permitData.requiredPermits.length}{" "}
+                              permisos para este proyecto.
+                            </p>
                             <ul className="list-disc pl-5">
-                              {permitData.requiredPermits.slice(0, 3).map((permit, idx) => (
-                                <li key={idx} className="mb-1">{permit.name}</li>
-                              ))}
+                              {permitData.requiredPermits
+                                .slice(0, 3)
+                                .map((permit, idx) => (
+                                  <li key={idx} className="mb-1">
+                                    {permit.name}
+                                  </li>
+                                ))}
                               {permitData.requiredPermits.length > 3 && (
-                                <li className="text-muted-foreground">y {permitData.requiredPermits.length - 3} más...</li>
+                                <li className="text-muted-foreground">
+                                  y {permitData.requiredPermits.length - 3}{" "}
+                                  más...
+                                </li>
                               )}
                             </ul>
                           </div>
                         ) : (
-                          <p>No se identificaron permisos específicos para este proyecto.</p>
+                          <p>
+                            No se identificaron permisos específicos para este
+                            proyecto.
+                          </p>
                         )}
                       </div>
                     </CardContent>
@@ -551,10 +662,19 @@ export default function PermitAdvisor() {
                       <div className="text-sm">
                         {permitData.costAnalysis ? (
                           <p>{permitData.costAnalysis.totalEstimatedCost}</p>
-                        ) : permitData.requiredPermits && permitData.requiredPermits.some(p => p.averageCost) ? (
-                          <p>Costos variables según los permisos específicos. Ver detalles en la sección de costos.</p>
+                        ) : permitData.requiredPermits &&
+                          permitData.requiredPermits.some(
+                            (p) => p.averageCost,
+                          ) ? (
+                          <p>
+                            Costos variables según los permisos específicos. Ver
+                            detalles en la sección de costos.
+                          </p>
                         ) : (
-                          <p>Información de costos no disponible. Se recomienda contactar a la autoridad local.</p>
+                          <p>
+                            Información de costos no disponible. Se recomienda
+                            contactar a la autoridad local.
+                          </p>
                         )}
                       </div>
                     </CardContent>
@@ -573,7 +693,10 @@ export default function PermitAdvisor() {
                         {permitData.timeline ? (
                           <p>{permitData.timeline.totalEstimatedTime}</p>
                         ) : (
-                          <p>El tiempo puede variar según la jurisdicción local. Ver detalles en la sección de tiempos.</p>
+                          <p>
+                            El tiempo puede variar según la jurisdicción local.
+                            Ver detalles en la sección de tiempos.
+                          </p>
                         )}
                       </div>
                     </CardContent>
@@ -589,17 +712,28 @@ export default function PermitAdvisor() {
                     </CardHeader>
                     <CardContent className="py-2">
                       <div className="text-sm">
-                        {permitData.specialConsiderations && permitData.specialConsiderations.length > 0 ? (
+                        {permitData.specialConsiderations &&
+                        permitData.specialConsiderations.length > 0 ? (
                           <ul className="list-disc pl-5">
-                            {permitData.specialConsiderations.slice(0, 3).map((consideration, idx) => (
-                              <li key={idx} className="mb-1">{consideration}</li>
-                            ))}
+                            {permitData.specialConsiderations
+                              .slice(0, 3)
+                              .map((consideration, idx) => (
+                                <li key={idx} className="mb-1">
+                                  {consideration}
+                                </li>
+                              ))}
                             {permitData.specialConsiderations.length > 3 && (
-                              <li className="text-muted-foreground">y {permitData.specialConsiderations.length - 3} más...</li>
+                              <li className="text-muted-foreground">
+                                y {permitData.specialConsiderations.length - 3}{" "}
+                                más...
+                              </li>
                             )}
                           </ul>
                         ) : (
-                          <p>No se identificaron consideraciones especiales para este proyecto.</p>
+                          <p>
+                            No se identificaron consideraciones especiales para
+                            este proyecto.
+                          </p>
                         )}
                       </div>
                     </CardContent>
@@ -623,27 +757,30 @@ export default function PermitAdvisor() {
                         {permitData.process.slice(0, 4).map((step, idx) => {
                           // Analyze the step to identify who needs to perform it
                           const stepLower = step.toLowerCase();
-                          const isContractorStep = 
-                            stepLower.includes("contratista") || 
-                            stepLower.includes("contractor") || 
+                          const isContractorStep =
+                            stepLower.includes("contratista") ||
+                            stepLower.includes("contractor") ||
                             stepLower.includes("profesional");
-                          const isOwnerStep = 
-                            stepLower.includes("propietario") || 
-                            stepLower.includes("dueño") || 
+                          const isOwnerStep =
+                            stepLower.includes("propietario") ||
+                            stepLower.includes("dueño") ||
                             stepLower.includes("owner");
-                          
+
                           // Determine badge style based on who performs the step
-                          let badgeText = "Ambos";
-                          let badgeClass = "bg-blue-100 text-blue-800 border-blue-300";
-                          
+                          let badgeText = "Contratista Dueño";
+                          let badgeClass =
+                            "bg-blue-100 text-blue-800 border-blue-300";
+
                           if (isContractorStep && !isOwnerStep) {
                             badgeText = "Contratista";
-                            badgeClass = "bg-amber-100 text-amber-800 border-amber-300";
+                            badgeClass =
+                              "bg-amber-100 text-amber-800 border-amber-300";
                           } else if (isOwnerStep && !isContractorStep) {
                             badgeText = "Propietario";
-                            badgeClass = "bg-green-100 text-green-800 border-green-300";
+                            badgeClass =
+                              "bg-green-100 text-green-800 border-green-300";
                           }
-                          
+
                           return (
                             <li key={idx} className="ml-6 relative">
                               <div className="absolute -left-3 bg-background rounded-full h-6 w-6 flex items-center justify-center border border-primary text-primary">
@@ -651,7 +788,9 @@ export default function PermitAdvisor() {
                               </div>
                               <div className="flex flex-col space-y-1">
                                 <div className="flex items-center gap-2">
-                                  <span className={`text-xs px-2 py-0.5 rounded-full border ${badgeClass}`}>
+                                  <span
+                                    className={`text-xs px-2 py-0.5 rounded-full border ${badgeClass}`}
+                                  >
                                     {badgeText}
                                   </span>
                                 </div>
@@ -684,25 +823,36 @@ export default function PermitAdvisor() {
                     Fuentes de Información
                   </h4>
                   <p className="text-xs text-muted-foreground">
-                    Información compilada de {permitData.meta.sources?.length || 0} fuentes oficiales incluyendo departamentos de construcción, 
-                    códigos locales y agencias gubernamentales relevantes para {permitData.meta.location}.
+                    Información compilada de{" "}
+                    {permitData.meta.sources?.length || 0} fuentes oficiales
+                    incluyendo departamentos de construcción, códigos locales y
+                    agencias gubernamentales relevantes para{" "}
+                    {permitData.meta.location}.
                   </p>
                   <div className="flex items-center mt-2 text-xs text-muted-foreground">
                     <Clock className="h-3 w-3 mr-1 text-muted-foreground" />
-                    Última actualización: {new Date(permitData.meta.generated || Date.now()).toLocaleDateString()}
+                    Última actualización:{" "}
+                    {new Date(
+                      permitData.meta.generated || Date.now(),
+                    ).toLocaleDateString()}
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {permitData.meta.sources && permitData.meta.sources.length > 0 ? (
+                    {permitData.meta.sources &&
+                    permitData.meta.sources.length > 0 ? (
                       permitData.meta.sources.slice(0, 3).map((source, idx) => (
-                        <span key={idx} className="text-xs px-2 py-1 rounded-full bg-primary/5 border border-border">
-                          {source.includes('//') ? 
-                            (function() {
-                              try {
-                                return new URL(source).hostname;
-                              } catch {
-                                return source;
-                              }
-                            })() : source}
+                        <span
+                          key={idx}
+                          className="text-xs px-2 py-1 rounded-full bg-primary/5 border border-border"
+                        >
+                          {source.includes("//")
+                            ? (function () {
+                                try {
+                                  return new URL(source).hostname;
+                                } catch {
+                                  return source;
+                                }
+                              })()
+                            : source}
                         </span>
                       ))
                     ) : (
@@ -710,11 +860,12 @@ export default function PermitAdvisor() {
                         Fuentes verificadas
                       </span>
                     )}
-                    {permitData.meta.sources && permitData.meta.sources.length > 3 && (
-                      <span className="text-xs px-2 py-1 rounded-full bg-gray-100 border border-border">
-                        +{permitData.meta.sources.length - 3} más
-                      </span>
-                    )}
+                    {permitData.meta.sources &&
+                      permitData.meta.sources.length > 3 && (
+                        <span className="text-xs px-2 py-1 rounded-full bg-gray-100 border border-border">
+                          +{permitData.meta.sources.length - 3} más
+                        </span>
+                      )}
                   </div>
                 </div>
               </TabsContent>
@@ -738,27 +889,40 @@ export default function PermitAdvisor() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="flex items-center">
                             <CalendarClock className="h-4 w-4 mr-2 text-muted-foreground" />
-                            <span className="text-sm">Tiempo estimado: {permit.estimatedTimeline}</span>
+                            <span className="text-sm">
+                              Tiempo estimado: {permit.estimatedTimeline}
+                            </span>
                           </div>
                           {permit.averageCost && (
                             <div className="flex items-center">
                               <DollarSign className="h-4 w-4 mr-2 text-muted-foreground" />
-                              <span className="text-sm">Costo aproximado: {permit.averageCost}</span>
+                              <span className="text-sm">
+                                Costo aproximado: {permit.averageCost}
+                              </span>
                             </div>
                           )}
                         </div>
-                        {permit.description && typeof permit.description === 'string' && (
-                          <p className="text-sm mt-2">{permit.description}</p>
-                        )}
-                        {permit.requirements && typeof permit.requirements === 'string' && (
-                          <div className="mt-2">
-                            <h4 className="text-sm font-medium">Requisitos:</h4>
-                            <p className="text-sm">{permit.requirements}</p>
-                          </div>
-                        )}
+                        {permit.description &&
+                          typeof permit.description === "string" && (
+                            <p className="text-sm mt-2">{permit.description}</p>
+                          )}
+                        {permit.requirements &&
+                          typeof permit.requirements === "string" && (
+                            <div className="mt-2">
+                              <h4 className="text-sm font-medium">
+                                Requisitos:
+                              </h4>
+                              <p className="text-sm">{permit.requirements}</p>
+                            </div>
+                          )}
                         {permit.url && (
                           <div className="mt-3">
-                            <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => window.open(permit.url, '_blank')}>
+                            <Button
+                              variant="link"
+                              size="sm"
+                              className="p-0 h-auto"
+                              onClick={() => window.open(permit.url, "_blank")}
+                            >
                               Ver formulario o información
                             </Button>
                           </div>
@@ -771,9 +935,11 @@ export default function PermitAdvisor() {
                     <AlertTriangle className="h-4 w-4" />
                     <AlertTitle>Sin permisos específicos</AlertTitle>
                     <AlertDescription>
-                      No se identificaron permisos específicos para este tipo de proyecto en esta ubicación.
-                      Esto podría significar que no se requieren permisos o que la información no está disponible.
-                      Se recomienda contactar a la autoridad local para confirmar.
+                      No se identificaron permisos específicos para este tipo de
+                      proyecto en esta ubicación. Esto podría significar que no
+                      se requieren permisos o que la información no está
+                      disponible. Se recomienda contactar a la autoridad local
+                      para confirmar.
                     </AlertDescription>
                   </Alert>
                 )}
@@ -785,22 +951,41 @@ export default function PermitAdvisor() {
                   Licencias de Contratista
                 </h3>
 
-                {permitData.licenseRequirements && permitData.licenseRequirements.length > 0 ? (
+                {permitData.licenseRequirements &&
+                permitData.licenseRequirements.length > 0 ? (
                   permitData.licenseRequirements.map((license, idx) => (
                     <Card key={idx} className="mb-4">
                       <CardHeader className="py-4">
-                        <CardTitle className="text-md">{license.type}</CardTitle>
+                        <CardTitle className="text-md">
+                          {license.type}
+                        </CardTitle>
                       </CardHeader>
                       <CardContent className="py-2">
                         <div className="space-y-2">
-                          <p className="text-sm"><span className="font-medium">Proceso:</span> {license.obtainingProcess}</p>
-                          <p className="text-sm"><span className="font-medium">Costos:</span> {license.fees}</p>
+                          <p className="text-sm">
+                            <span className="font-medium">Proceso:</span>{" "}
+                            {license.obtainingProcess}
+                          </p>
+                          <p className="text-sm">
+                            <span className="font-medium">Costos:</span>{" "}
+                            {license.fees}
+                          </p>
                           {license.renewalInfo && (
-                            <p className="text-sm"><span className="font-medium">Renovación:</span> {license.renewalInfo}</p>
+                            <p className="text-sm">
+                              <span className="font-medium">Renovación:</span>{" "}
+                              {license.renewalInfo}
+                            </p>
                           )}
                           {license.url && (
                             <div className="mt-3">
-                              <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => window.open(license.url, '_blank')}>
+                              <Button
+                                variant="link"
+                                size="sm"
+                                className="p-0 h-auto"
+                                onClick={() =>
+                                  window.open(license.url, "_blank")
+                                }
+                              >
                                 Ver más información
                               </Button>
                             </div>
@@ -812,10 +997,14 @@ export default function PermitAdvisor() {
                 ) : (
                   <Alert>
                     <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>Sin requisitos de licencia específicos</AlertTitle>
+                    <AlertTitle>
+                      Sin requisitos de licencia específicos
+                    </AlertTitle>
                     <AlertDescription>
-                      No se identificaron requisitos de licencia específicos para contratistas en esta ubicación.
-                      Recomendamos verificar con la autoridad local si se requiere alguna licencia comercial general.
+                      No se identificaron requisitos de licencia específicos
+                      para contratistas en esta ubicación. Recomendamos
+                      verificar con la autoridad local si se requiere alguna
+                      licencia comercial general.
                     </AlertDescription>
                   </Alert>
                 )}
@@ -827,7 +1016,8 @@ export default function PermitAdvisor() {
                   Regulaciones y Códigos de Construcción
                 </h3>
 
-                {permitData.buildingCodeRegulations && permitData.buildingCodeRegulations.length > 0 ? (
+                {permitData.buildingCodeRegulations &&
+                permitData.buildingCodeRegulations.length > 0 ? (
                   permitData.buildingCodeRegulations.map((code, idx) => (
                     <Card key={idx} className="mb-4">
                       <CardHeader className="py-4">
@@ -838,26 +1028,37 @@ export default function PermitAdvisor() {
                           <p className="text-sm">{code.details}</p>
                           {code.restrictions && (
                             <div className="mt-2">
-                              <h4 className="text-sm font-medium">Restricciones:</h4>
+                              <h4 className="text-sm font-medium">
+                                Restricciones:
+                              </h4>
                               <p className="text-sm">{code.restrictions}</p>
                             </div>
                           )}
-                          {code.applicableAreas && Array.isArray(code.applicableAreas) && code.applicableAreas.length > 0 && (
-                            <div className="mt-2">
-                              <h4 className="text-sm font-medium">Áreas aplicables:</h4>
-                              <ul className="list-disc pl-5 text-sm">
-                                {code.applicableAreas.map((area, i) => (
-                                  <li key={i}>{area}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                          {code.applicableAreas && typeof code.applicableAreas === 'string' && (
-                            <div className="mt-2">
-                              <h4 className="text-sm font-medium">Áreas aplicables:</h4>
-                              <p className="text-sm">{code.applicableAreas}</p>
-                            </div>
-                          )}
+                          {code.applicableAreas &&
+                            Array.isArray(code.applicableAreas) &&
+                            code.applicableAreas.length > 0 && (
+                              <div className="mt-2">
+                                <h4 className="text-sm font-medium">
+                                  Áreas aplicables:
+                                </h4>
+                                <ul className="list-disc pl-5 text-sm">
+                                  {code.applicableAreas.map((area, i) => (
+                                    <li key={i}>{area}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          {code.applicableAreas &&
+                            typeof code.applicableAreas === "string" && (
+                              <div className="mt-2">
+                                <h4 className="text-sm font-medium">
+                                  Áreas aplicables:
+                                </h4>
+                                <p className="text-sm">
+                                  {code.applicableAreas}
+                                </p>
+                              </div>
+                            )}
                         </div>
                       </CardContent>
                     </Card>
@@ -867,8 +1068,9 @@ export default function PermitAdvisor() {
                     <AlertTriangle className="h-4 w-4" />
                     <AlertTitle>Sin regulaciones específicas</AlertTitle>
                     <AlertDescription>
-                      No se identificaron regulaciones específicas para este tipo de proyecto.
-                      Recomendamos verificar con el departamento de planificación local para más información.
+                      No se identificaron regulaciones específicas para este
+                      tipo de proyecto. Recomendamos verificar con el
+                      departamento de planificación local para más información.
                     </AlertDescription>
                   </Alert>
                 )}
@@ -880,20 +1082,31 @@ export default function PermitAdvisor() {
                   Requisitos de Inspección
                 </h3>
 
-                {permitData.inspectionRequirements && permitData.inspectionRequirements.length > 0 ? (
+                {permitData.inspectionRequirements &&
+                permitData.inspectionRequirements.length > 0 ? (
                   permitData.inspectionRequirements.map((inspection, idx) => (
                     <Card key={idx} className="mb-4">
                       <CardHeader className="py-4">
-                        <CardTitle className="text-md">{inspection.type}</CardTitle>
+                        <CardTitle className="text-md">
+                          {inspection.type}
+                        </CardTitle>
                       </CardHeader>
                       <CardContent className="py-2">
                         <div className="space-y-2">
-                          <p className="text-sm"><span className="font-medium">Momento:</span> {inspection.timing}</p>
+                          <p className="text-sm">
+                            <span className="font-medium">Momento:</span>{" "}
+                            {inspection.timing}
+                          </p>
                           {inspection.contactInfo && (
-                            <p className="text-sm"><span className="font-medium">Contacto:</span> {inspection.contactInfo}</p>
+                            <p className="text-sm">
+                              <span className="font-medium">Contacto:</span>{" "}
+                              {inspection.contactInfo}
+                            </p>
                           )}
                           {inspection.description && (
-                            <p className="text-sm mt-2">{inspection.description}</p>
+                            <p className="text-sm mt-2">
+                              {inspection.description}
+                            </p>
                           )}
                         </div>
                       </CardContent>
@@ -904,8 +1117,9 @@ export default function PermitAdvisor() {
                     <AlertTriangle className="h-4 w-4" />
                     <AlertTitle>Sin inspecciones específicas</AlertTitle>
                     <AlertDescription>
-                      No se identificaron requisitos de inspección específicos para este proyecto.
-                      Consulta con la oficina de permisos local si es necesario programar inspecciones.
+                      No se identificaron requisitos de inspección específicos
+                      para este proyecto. Consulta con la oficina de permisos
+                      local si es necesario programar inspecciones.
                     </AlertDescription>
                   </Alert>
                 )}
@@ -923,34 +1137,40 @@ export default function PermitAdvisor() {
                     <ol className="relative space-y-6">
                       {permitData.process.map((step, idx) => {
                         // Asegurarse de que step sea un string
-                        const stepText = typeof step === 'string' ? step : JSON.stringify(step);
+                        const stepText =
+                          typeof step === "string"
+                            ? step
+                            : JSON.stringify(step);
                         const stepLower = stepText.toLowerCase();
-                        
+
                         // Analyze the step to identify who needs to perform it
-                        const isContractorStep = 
-                          stepLower.includes("contratista") || 
-                          stepLower.includes("contractor") || 
+                        const isContractorStep =
+                          stepLower.includes("contratista") ||
+                          stepLower.includes("contractor") ||
                           stepLower.includes("profesional") ||
                           stepLower.includes("licencia");
-                        const isOwnerStep = 
-                          stepLower.includes("propietario") || 
-                          stepLower.includes("dueño") || 
+                        const isOwnerStep =
+                          stepLower.includes("propietario") ||
+                          stepLower.includes("dueño") ||
                           stepLower.includes("owner") ||
                           stepLower.includes("cliente") ||
                           stepLower.includes("homeowner");
-                        
+
                         // Determine badge style based on who performs the step
-                        let badgeText = "Ambos";
-                        let badgeClass = "bg-blue-100 text-blue-800 border-blue-300";
-                        
+                        let badgeText = "Contractor/Owner";
+                        let badgeClass =
+                          "bg-blue-100 text-blue-800 border-blue-300";
+
                         if (isContractorStep && !isOwnerStep) {
                           badgeText = "Contratista";
-                          badgeClass = "bg-amber-100 text-amber-800 border-amber-300";
+                          badgeClass =
+                            "bg-amber-100 text-amber-800 border-amber-300";
                         } else if (isOwnerStep && !isContractorStep) {
                           badgeText = "Propietario";
-                          badgeClass = "bg-green-100 text-green-800 border-green-300";
+                          badgeClass =
+                            "bg-green-100 text-green-800 border-green-300";
                         }
-                        
+
                         return (
                           <li key={idx} className="ml-8 relative">
                             <div className="absolute -left-7 bg-background rounded-full h-6 w-6 flex items-center justify-center border border-primary text-primary font-medium">
@@ -958,7 +1178,9 @@ export default function PermitAdvisor() {
                             </div>
                             <div className="flex flex-col space-y-1">
                               <div className="flex items-center gap-2">
-                                <span className={`text-xs px-2 py-0.5 rounded-full border ${badgeClass}`}>
+                                <span
+                                  className={`text-xs px-2 py-0.5 rounded-full border ${badgeClass}`}
+                                >
                                   {badgeText}
                                 </span>
                               </div>
@@ -974,36 +1196,44 @@ export default function PermitAdvisor() {
                     <AlertTriangle className="h-4 w-4" />
                     <AlertTitle>Proceso no disponible</AlertTitle>
                     <AlertDescription>
-                      No se pudo determinar un proceso específico para este tipo de proyecto.
-                      Recomendamos contactar directamente con las autoridades locales.
+                      No se pudo determinar un proceso específico para este tipo
+                      de proyecto. Recomendamos contactar directamente con las
+                      autoridades locales.
                     </AlertDescription>
                   </Alert>
                 )}
 
                 {/* Consideraciones especiales */}
-                {permitData.specialConsiderations && permitData.specialConsiderations.length > 0 && (
-                  <Card className="mt-6">
-                    <CardHeader className="py-4">
-                      <CardTitle className="text-md flex items-center">
-                        <Info className="h-5 w-5 mr-2 text-primary" />
-                        Consideraciones Especiales
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="py-2">
-                      <ul className="list-disc pl-5 space-y-2">
-                        {permitData.specialConsiderations.map((consideration, idx) => {
-                          // Verificar si es un objeto y convertir a string si es necesario
-                          const considerationText = typeof consideration === 'object' && consideration !== null
-                            ? JSON.stringify(consideration)
-                            : consideration;
-                          return (
-                            <li key={idx} className="text-sm">{considerationText}</li>
-                          );
-                        })}
-                      </ul>
-                    </CardContent>
-                  </Card>
-                )}
+                {permitData.specialConsiderations &&
+                  permitData.specialConsiderations.length > 0 && (
+                    <Card className="mt-6">
+                      <CardHeader className="py-4">
+                        <CardTitle className="text-md flex items-center">
+                          <Info className="h-5 w-5 mr-2 text-primary" />
+                          Consideraciones Especiales
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="py-2">
+                        <ul className="list-disc pl-5 space-y-2">
+                          {permitData.specialConsiderations.map(
+                            (consideration, idx) => {
+                              // Verificar si es un objeto y convertir a string si es necesario
+                              const considerationText =
+                                typeof consideration === "object" &&
+                                consideration !== null
+                                  ? JSON.stringify(consideration)
+                                  : consideration;
+                              return (
+                                <li key={idx} className="text-sm">
+                                  {considerationText}
+                                </li>
+                              );
+                            },
+                          )}
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  )}
               </TabsContent>
             </ScrollArea>
           </Tabs>
@@ -1017,7 +1247,8 @@ export default function PermitAdvisor() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">
-              Conoce todos los permisos necesarios antes de iniciar tu proyecto y evita costosas penalizaciones.
+              Conoce todos los permisos necesarios antes de iniciar tu proyecto
+              y evita costosas penalizaciones.
             </p>
           </CardContent>
         </Card>
@@ -1028,7 +1259,8 @@ export default function PermitAdvisor() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">
-              Accede a información actualizada sobre regulaciones y códigos específicos para tu ubicación.
+              Accede a información actualizada sobre regulaciones y códigos
+              específicos para tu ubicación.
             </p>
           </CardContent>
         </Card>
@@ -1039,7 +1271,8 @@ export default function PermitAdvisor() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">
-              Obtén respuestas inmediatas sobre requisitos legales sin necesidad de consultar múltiples fuentes.
+              Obtén respuestas inmediatas sobre requisitos legales sin necesidad
+              de consultar múltiples fuentes.
             </p>
           </CardContent>
         </Card>
