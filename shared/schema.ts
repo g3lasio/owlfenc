@@ -354,3 +354,33 @@ export const insertPermitSearchHistorySchema = createInsertSchema(permitSearchHi
 
 export type PermitSearchHistory = typeof permitSearchHistory.$inferSelect;
 export type InsertPermitSearchHistory = z.infer<typeof insertPermitSearchHistorySchema>;
+
+// Historial de búsquedas de propiedad
+export const propertySearchHistory = pgTable("property_search_history", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  address: text("address").notNull(),
+  ownerName: text("owner_name"), // Nombre del propietario encontrado
+  parcelNumber: text("parcel_number"), // Número de parcela
+  results: jsonb("results").notNull(), // Almacenar todos los resultados como JSON
+  title: text("title"), // Título opcional para la búsqueda (podría ser generado automáticamente)
+  notes: text("notes"), // Notas adicionales que el usuario pueda agregar
+  tags: jsonb("tags"), // Etiquetas para clasificar búsquedas (opcional)
+  isFavorite: boolean("is_favorite").default(false), // Para marcar búsquedas importantes
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertPropertySearchHistorySchema = createInsertSchema(propertySearchHistory).pick({
+  userId: true,
+  address: true,
+  ownerName: true,
+  parcelNumber: true,
+  results: true,
+  title: true,
+  notes: true,
+  tags: true,
+  isFavorite: true,
+});
+
+export type PropertySearchHistory = typeof propertySearchHistory.$inferSelect;
+export type InsertPropertySearchHistory = z.infer<typeof insertPropertySearchHistorySchema>;

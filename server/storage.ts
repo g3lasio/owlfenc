@@ -22,7 +22,9 @@ import {
   PromptTemplate,
   InsertPromptTemplate,
   PermitSearchHistory,
-  InsertPermitSearchHistory
+  InsertPermitSearchHistory,
+  PropertySearchHistory,
+  InsertPropertySearchHistory
 } from "@shared/schema";
 
 import { DatabaseStorage } from './DatabaseStorage';
@@ -104,6 +106,12 @@ export interface IStorage {
   getPermitSearchHistory(id: number): Promise<PermitSearchHistory | undefined>;
   getPermitSearchHistoryByUserId(userId: number): Promise<PermitSearchHistory[]>;
   createPermitSearchHistory(history: InsertPermitSearchHistory): Promise<PermitSearchHistory>;
+
+  // Property Search History methods
+  getPropertySearchHistory(id: number): Promise<PropertySearchHistory | undefined>;
+  getPropertySearchHistoryByUserId(userId: number): Promise<PropertySearchHistory[]>;
+  createPropertySearchHistory(history: InsertPropertySearchHistory): Promise<PropertySearchHistory>;
+  updatePropertySearchHistory(id: number, data: Partial<PropertySearchHistory>): Promise<PropertySearchHistory>;
   
   // Sistema de salud
   healthCheck(): Promise<boolean>;
