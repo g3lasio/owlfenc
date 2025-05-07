@@ -450,14 +450,6 @@ export default function PermitAdvisor() {
                   <HardHat className="h-4 w-4 mr-1 hidden sm:inline" />
                   Proceso
                 </TabsTrigger>
-                <TabsTrigger value="contacts" className="text-xs md:text-sm">
-                  <Phone className="h-4 w-4 mr-1 hidden sm:inline" />
-                  Contactos
-                </TabsTrigger>
-                <TabsTrigger value="resources" className="text-xs md:text-sm">
-                  <BookOpen className="h-4 w-4 mr-1 hidden sm:inline" />
-                  Recursos
-                </TabsTrigger>
               </TabsList>
             </div>
 
