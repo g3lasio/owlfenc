@@ -429,11 +429,7 @@ export default function PermitAdvisor() {
 
           <Tabs value={activeTab || "overview"} onValueChange={setActiveTab} className="mt-2">
             <div className="px-6">
-              <TabsList className="grid grid-cols-2 md:grid-cols-9 mb-4 flex-wrap">
-                <TabsTrigger value="overview" className="text-xs md:text-sm">
-                  <Search className="h-4 w-4 mr-1 hidden sm:inline" />
-                  Resumen
-                </TabsTrigger>
+              <TabsList className="grid grid-cols-2 md:grid-cols-6 mb-4 flex-wrap">
                 <TabsTrigger value="permits" className="text-xs md:text-sm">
                   <FileText className="h-4 w-4 mr-1 hidden sm:inline" />
                   Permisos
@@ -449,14 +445,6 @@ export default function PermitAdvisor() {
                 <TabsTrigger value="inspections" className="text-xs md:text-sm">
                   <ListChecks className="h-4 w-4 mr-1 hidden sm:inline" />
                   Inspecciones
-                </TabsTrigger>
-                <TabsTrigger value="timeline" className="text-xs md:text-sm">
-                  <CalendarClock className="h-4 w-4 mr-1 hidden sm:inline" />
-                  Tiempos
-                </TabsTrigger>
-                <TabsTrigger value="costs" className="text-xs md:text-sm">
-                  <DollarSign className="h-4 w-4 mr-1 hidden sm:inline" />
-                  Costos
                 </TabsTrigger>
                 <TabsTrigger value="process" className="text-xs md:text-sm">
                   <HardHat className="h-4 w-4 mr-1 hidden sm:inline" />
