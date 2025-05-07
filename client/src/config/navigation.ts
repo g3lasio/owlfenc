@@ -62,7 +62,7 @@ export const navigationGroups: NavigationGroup[] = [
       },
       {
         id: "permit-advisor",
-        label: "Mervin DeepSearch",
+        label: "Mervin Permit Advisor",
         path: "/permit-advisor",
         icon: "ri-robot-2-line"
       },
