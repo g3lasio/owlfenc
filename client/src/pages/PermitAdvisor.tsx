@@ -902,17 +902,29 @@ export default function PermitAdvisor() {
                             </div>
                           )}
                         </div>
-                        {permit.description &&
-                          typeof permit.description === "string" && (
-                            <p className="text-sm mt-2">{permit.description}</p>
+                        {permit.description && (
+                            <p className="text-sm mt-2">
+                              {typeof permit.description === 'object' 
+                                ? JSON.stringify(permit.description) 
+                                : permit.description}
+                            </p>
                           )}
-                        {permit.requirements &&
-                          typeof permit.requirements === "string" && (
+                        {permit.requirements && (
                             <div className="mt-2">
                               <h4 className="text-sm font-medium">
                                 Requisitos:
                               </h4>
-                              <p className="text-sm">{permit.requirements}</p>
+                              {Array.isArray(permit.requirements) ? (
+                                <ul className="list-disc ml-5 text-sm space-y-1">
+                                  {permit.requirements.map((req, reqIdx) => (
+                                    <li key={reqIdx}>{typeof req === 'object' ? JSON.stringify(req) : req}</li>
+                                  ))}
+                                </ul>
+                              ) : typeof permit.requirements === "string" ? (
+                                <p className="text-sm">{permit.requirements}</p>
+                              ) : (
+                                <p className="text-sm">{JSON.stringify(permit.requirements)}</p>
+                              )}
                             </div>
                           )}
                         {permit.url && (
@@ -1100,12 +1112,16 @@ export default function PermitAdvisor() {
                           {inspection.contactInfo && (
                             <p className="text-sm">
                               <span className="font-medium">Contacto:</span>{" "}
-                              {inspection.contactInfo}
+                              {typeof inspection.contactInfo === 'object' 
+                                ? JSON.stringify(inspection.contactInfo) 
+                                : inspection.contactInfo}
                             </p>
                           )}
                           {inspection.description && (
                             <p className="text-sm mt-2">
-                              {inspection.description}
+                              {typeof inspection.description === 'object' 
+                                ? JSON.stringify(inspection.description) 
+                                : inspection.description}
                             </p>
                           )}
                         </div>
