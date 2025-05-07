@@ -139,30 +139,59 @@ export default function PermitAdvisor() {
       return response.json();
     },
     onSuccess: (data: PermitResponse) => {
-      // Inspeccionar los datos para detectar problemas con applicableAreas
       console.log("Datos recibidos del API:", data);
-      if (data.buildingCodeRegulations) {
-        console.log("Sección de códigos:", data.buildingCodeRegulations);
-        // Verificar si hay objetos en lugar de strings dentro de applicableAreas
-        data.buildingCodeRegulations.forEach((code, idx) => {
-          if (code.applicableAreas && !Array.isArray(code.applicableAreas) && typeof code.applicableAreas !== 'string') {
-            console.warn(`Formato incorrecto en applicableAreas (índice ${idx}):`, code.applicableAreas);
-            // Convertir objetos a string para evitar el error
-            code.applicableAreas = JSON.stringify(code.applicableAreas);
+      
+      // Función para procesar recursivamente los datos y convertir objetos a strings
+      const processData = (obj: any): any => {
+        if (obj === null || obj === undefined) {
+          return obj;
+        }
+        
+        if (typeof obj === 'object') {
+          if (Array.isArray(obj)) {
+            // Procesar cada elemento del array
+            return obj.map(item => processData(item));
+          } else {
+            // Si es un objeto simple que debería ser un string (en listas de viñetas, etc.)
+            if (Object.keys(obj).some(key => 
+              ['description', 'consideration', 'name', 'applicableArea', 'detail'].includes(key))) {
+              console.warn("Convirtiendo objeto a string:", obj);
+              return JSON.stringify(obj);
+            }
+            
+            // Para objetos complejos, procesar cada propiedad
+            const result: any = {};
+            for (const key in obj) {
+              result[key] = processData(obj[key]);
+            }
+            return result;
           }
+        }
+        
+        // Si es un valor primitivo, devolverlo sin cambios
+        return obj;
+      };
+      
+      // Procesar todo el objeto de datos
+      const processedData = processData(data);
+      
+      // Verificar y formatear específicamente la sección de proceso para mostrar quien debe hacer cada paso
+      if (processedData.process && Array.isArray(processedData.process)) {
+        processedData.process = processedData.process.map(step => {
+          // Si es un objeto, convertirlo a string
+          if (typeof step === 'object' && step !== null) {
+            return JSON.stringify(step);
+          }
+          return step;
         });
       }
       
-      // También verificar si los pasos del proceso son objetos
-      if (data.process) {
-        console.log("Sección de procesos:", data.process);
-        data.process = data.process.map(step => typeof step === 'object' ? JSON.stringify(step) : step);
-      }
+      console.log("Datos procesados:", processedData);
       
-      setPermitData(data);
+      setPermitData(processedData);
       toast({
         title: "Información obtenida correctamente",
-        description: `Se encontraron ${data.requiredPermits.length} permisos para tu proyecto.`,
+        description: `Se encontraron ${processedData.requiredPermits?.length || 0} permisos para tu proyecto.`,
       });
     },
     onError: (error: Error) => {
@@ -893,16 +922,22 @@ export default function PermitAdvisor() {
                     <div className="absolute left-3 top-0 bottom-0 w-[1px] bg-primary/30"></div>
                     <ol className="relative space-y-6">
                       {permitData.process.map((step, idx) => {
+                        // Asegurarse de que step sea un string
+                        const stepText = typeof step === 'string' ? step : JSON.stringify(step);
+                        const stepLower = stepText.toLowerCase();
+                        
                         // Analyze the step to identify who needs to perform it
-                        const stepLower = step.toLowerCase();
                         const isContractorStep = 
                           stepLower.includes("contratista") || 
                           stepLower.includes("contractor") || 
-                          stepLower.includes("profesional");
+                          stepLower.includes("profesional") ||
+                          stepLower.includes("licencia");
                         const isOwnerStep = 
                           stepLower.includes("propietario") || 
                           stepLower.includes("dueño") || 
-                          stepLower.includes("owner");
+                          stepLower.includes("owner") ||
+                          stepLower.includes("cliente") ||
+                          stepLower.includes("homeowner");
                         
                         // Determine badge style based on who performs the step
                         let badgeText = "Ambos";
@@ -927,7 +962,7 @@ export default function PermitAdvisor() {
                                   {badgeText}
                                 </span>
                               </div>
-                              <p className="text-sm">{step}</p>
+                              <p className="text-sm">{stepText}</p>
                             </div>
                           </li>
                         );
@@ -956,9 +991,15 @@ export default function PermitAdvisor() {
                     </CardHeader>
                     <CardContent className="py-2">
                       <ul className="list-disc pl-5 space-y-2">
-                        {permitData.specialConsiderations.map((consideration, idx) => (
-                          <li key={idx} className="text-sm">{consideration}</li>
-                        ))}
+                        {permitData.specialConsiderations.map((consideration, idx) => {
+                          // Verificar si es un objeto y convertir a string si es necesario
+                          const considerationText = typeof consideration === 'object' && consideration !== null
+                            ? JSON.stringify(consideration)
+                            : consideration;
+                          return (
+                            <li key={idx} className="text-sm">{considerationText}</li>
+                          );
+                        })}
                       </ul>
                     </CardContent>
                   </Card>
