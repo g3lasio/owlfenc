@@ -6,7 +6,8 @@ import {
   insertTemplateSchema, 
   insertChatLogSchema,
   InsertProject,
-  insertPermitSearchHistorySchema
+  insertPermitSearchHistorySchema,
+  insertPropertySearchHistorySchema
 } from "@shared/schema";
 import OpenAI from "openai";
 import { z } from "zod";

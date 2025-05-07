@@ -40,6 +40,7 @@ import GooglePlacesAutocomplete, {
 } from "react-google-places-autocomplete";
 import { propertyVerifierService, PropertyDetails, OwnerHistoryEntry } from "@/services/propertyVerifierService";
 import PropertySearchHistory from "@/components/property/PropertySearchHistory";
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function PropertyOwnershipVerifier() {
   // Obtener la suscripción del usuario
@@ -195,6 +196,8 @@ export default function PropertyOwnershipVerifier() {
     }
   };
 
+  const queryClient = useQueryClient();
+
   const handleSearch = async () => {
     if (!address.trim()) {
       setError("Por favor, ingresa una dirección válida");
@@ -212,6 +215,13 @@ export default function PropertyOwnershipVerifier() {
       
       console.log("Datos de propiedad obtenidos:", propertyData);
       setPropertyDetails(propertyData);
+      
+      // Después de una búsqueda exitosa, invalidamos la caché del historial
+      // para que se actualice automáticamente
+      queryClient.invalidateQueries({
+        queryKey: ['/api/property/history'],
+      });
+      
     } catch (err: any) {
       console.error("Error verificando propiedad:", err);
       

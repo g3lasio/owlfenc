@@ -55,7 +55,7 @@ export default function PropertySearchHistory({
   const { toast } = useToast();
 
   // Obtener el historial de búsquedas
-  const { data: historyItems, isLoading, error } = useQuery({
+  const { data: historyItems = [], isLoading, error, refetch } = useQuery({
     queryKey: ['/api/property/history'],
     staleTime: 30000, // 30 segundos antes de considerar los datos obsoletos
   });
@@ -113,10 +113,22 @@ export default function PropertySearchHistory({
       
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Historial de búsquedas</DialogTitle>
-          <DialogDescription>
-            Consulta y recupera tus búsquedas anteriores de propiedades
-          </DialogDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle>Historial de búsquedas</DialogTitle>
+              <DialogDescription>
+                Consulta y recupera tus búsquedas anteriores de propiedades
+              </DialogDescription>
+            </div>
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={() => refetch()}
+              title="Recargar historial"
+            >
+              <LayoutList className="h-4 w-4" />
+            </Button>
+          </div>
         </DialogHeader>
         
         {isLoading ? (
