@@ -5,7 +5,8 @@ import {
   insertProjectSchema, 
   insertTemplateSchema, 
   insertChatLogSchema,
-  InsertProject
+  InsertProject,
+  insertPermitSearchHistorySchema
 } from "@shared/schema";
 import OpenAI from "openai";
 import { z } from "zod";
@@ -1370,6 +1371,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Endpoint para Mervin DeepSearch - Permite consultar permisos y regulaciones para proyectos de construcción
+  // Endpoints para el historial de búsqueda de permisos
+  app.get('/api/permit/history', async (req: Request, res: Response) => {
+    try {
+      // En una aplicación real, obtendríamos el userId de la sesión
+      const userId = 1; // ID de usuario por defecto
+      
+      const history = await storage.getPermitSearchHistoryByUserId(userId);
+      res.json(history);
+    } catch (error) {
+      console.error('Error al obtener historial de búsqueda de permisos:', error);
+      res.status(500).json({ message: 'Error al obtener historial de búsqueda' });
+    }
+  });
+
+  app.get('/api/permit/history/:id', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const historyItem = await storage.getPermitSearchHistory(parseInt(id));
+      
+      if (!historyItem) {
+        return res.status(404).json({ message: 'Historial de búsqueda no encontrado' });
+      }
+      
+      res.json(historyItem);
+    } catch (error) {
+      console.error('Error al obtener detalle de historial:', error);
+      res.status(500).json({ message: 'Error al obtener detalle de historial' });
+    }
+  });
+
   app.post('/api/permit/check', async (req: Request, res: Response) => {
     try {
       console.log('===== INICIO DE SOLICITUD MERVIN DEEPSEARCH =====');
@@ -1409,6 +1440,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`Solicitud completada en ${endTime - startTime}ms`);
       console.log('Información de permisos obtenida correctamente');
+      
+      // Guardar la búsqueda en el historial
+      try {
+        // En una aplicación real, obtendríamos el userId de la sesión
+        const userId = 1; // ID de usuario por defecto
+        
+        // Crear un título basado en los parámetros de búsqueda
+        const title = `${projectType} en ${address}`;
+        
+        // Obtener la descripción del proyecto si está disponible
+        const projectDescription = req.body.projectDescription || '';
+        
+        // Guardar en el historial
+        const historyData = {
+          userId,
+          address,
+          projectType,
+          projectDescription,
+          results: permitData, // Guardar todos los resultados
+          title
+        };
+        
+        // Validar los datos antes de guardar
+        const validHistoryData = insertPermitSearchHistorySchema.parse(historyData);
+        
+        // Guardar en la base de datos
+        await storage.createPermitSearchHistory(validHistoryData);
+        console.log('Búsqueda guardada en el historial');
+      } catch (historyError) {
+        // En caso de error al guardar el historial, solo lo registramos pero no interrumpimos la respuesta
+        console.error('Error al guardar historial de búsqueda:', historyError);
+      }
+      
       console.log('===== FIN DE SOLICITUD MERVIN DEEPSEARCH =====');
 
       res.json(permitData);
