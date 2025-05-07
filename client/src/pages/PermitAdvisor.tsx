@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -294,6 +294,10 @@ export default function PermitAdvisor() {
       console.log("Datos procesados:", processedData);
 
       setPermitData(processedData);
+      
+      // Invalidar la consulta del historial para volver a cargar los datos más recientes
+      queryClient.invalidateQueries({ queryKey: ['/api/permit/history'] });
+      
       toast({
         title: "Información obtenida correctamente",
         description: `Se encontraron ${processedData.requiredPermits?.length || 0} permisos para tu proyecto.`,
@@ -330,6 +334,8 @@ export default function PermitAdvisor() {
   
   // Handler para abrir el historial de búsquedas
   const handleOpenHistory = () => {
+    // Refrescar los datos del historial antes de abrir el modal
+    queryClient.invalidateQueries({ queryKey: ['/api/permit/history'] });
     setShowHistory(true);
   };
   
