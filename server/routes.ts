@@ -1183,6 +1183,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Endpoint para obtener detalles de una propiedad por dirección
+  // Endpoints para el historial de búsqueda de propiedades
+  app.get('/api/property/history', async (req: Request, res: Response) => {
+    try {
+      // En una aplicación real, obtendríamos el userId de la sesión
+      const userId = 1; // ID de usuario por defecto para pruebas
+      
+      const history = await storage.getPropertySearchHistoryByUserId(userId);
+      res.json(history);
+    } catch (error) {
+      console.error('Error al obtener historial de búsqueda de propiedades:', error);
+      res.status(500).json({ message: 'Error al obtener historial de búsqueda de propiedades' });
+    }
+  });
+
+  app.get('/api/property/history/:id', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const historyItem = await storage.getPropertySearchHistory(parseInt(id));
+      
+      if (!historyItem) {
+        return res.status(404).json({ message: 'Historial de búsqueda no encontrado' });
+      }
+      
+      res.json(historyItem);
+    } catch (error) {
+      console.error('Error al obtener detalle de historial de propiedad:', error);
+      res.status(500).json({ message: 'Error al obtener detalle de historial de propiedad' });
+    }
+  });
+  
+  app.post('/api/property/history/:id/favorite', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { isFavorite } = req.body;
+      
+      // Verificar que el historial existe
+      const historyItem = await storage.getPropertySearchHistory(parseInt(id));
+      if (!historyItem) {
+        return res.status(404).json({ message: 'Historial de búsqueda no encontrado' });
+      }
+      
+      // Actualizar el estado de favorito
+      const updatedHistory = await storage.updatePropertySearchHistory(parseInt(id), {
+        isFavorite: !!isFavorite
+      });
+      
+      res.json(updatedHistory);
+    } catch (error) {
+      console.error('Error al actualizar favorito:', error);
+      res.status(500).json({ message: 'Error al actualizar favorito' });
+    }
+  });
+  
+  app.post('/api/property/history/:id/notes', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { notes } = req.body;
+      
+      // Verificar que el historial existe
+      const historyItem = await storage.getPropertySearchHistory(parseInt(id));
+      if (!historyItem) {
+        return res.status(404).json({ message: 'Historial de búsqueda no encontrado' });
+      }
+      
+      // Actualizar las notas
+      const updatedHistory = await storage.updatePropertySearchHistory(parseInt(id), {
+        notes
+      });
+      
+      res.json(updatedHistory);
+    } catch (error) {
+      console.error('Error al actualizar notas:', error);
+      res.status(500).json({ message: 'Error al actualizar notas' });
+    }
+  });
+
   app.get('/api/property/details', async (req: Request, res: Response) => {
     const address = req.query.address as string;
 
@@ -1259,6 +1335,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log('Enviando respuesta al cliente...');
           console.log('===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====\n');
           
+          // Guardar la búsqueda en el historial
+          try {
+            // En una aplicación real, obtendríamos el userId de la sesión
+            const userId = 1; // ID de usuario por defecto para pruebas
+            
+            // Crear un título basado en la dirección
+            const title = `Propiedad en ${address}`;
+            
+            // Preparar datos para el historial
+            const historyData = {
+              userId,
+              address,
+              ownerName: propertyData.owner,
+              results: propertyData,
+              title,
+              isFavorite: false,
+              parcelNumber: propertyData.parcelNumber || '',
+              tags: [] // Inicialmente sin etiquetas
+            };
+            
+            // Validar los datos antes de guardar
+            const validHistoryData = insertPropertySearchHistorySchema.parse(historyData);
+            
+            // Guardar en la base de datos
+            await storage.createPropertySearchHistory(validHistoryData);
+            console.log('Búsqueda guardada en el historial de propiedades');
+          } catch (historyError) {
+            // En caso de error al guardar el historial, solo lo registramos pero no interrumpimos la respuesta
+            console.error('Error al guardar en historial de propiedades:', historyError);
+          }
+          
           return res.json(propertyData);
         }
       } catch (error1) {
@@ -1311,6 +1418,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Solicitud completada en ${endTime - startTime}ms con estado: SUCCESS`);
           console.log('Enviando respuesta al cliente...');
           console.log('===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====\n');
+          
+          // Guardar la búsqueda en el historial
+          try {
+            // En una aplicación real, obtendríamos el userId de la sesión
+            const userId = 1; // ID de usuario por defecto para pruebas
+            
+            // Crear un título basado en la dirección
+            const title = `Propiedad en ${address}`;
+            
+            // Preparar datos para el historial
+            const historyData = {
+              userId,
+              address,
+              ownerName: propertyData.owner,
+              results: propertyData,
+              title,
+              isFavorite: false,
+              parcelNumber: propertyData.parcelNumber || '',
+              tags: [] // Inicialmente sin etiquetas
+            };
+            
+            // Validar los datos antes de guardar
+            const validHistoryData = insertPropertySearchHistorySchema.parse(historyData);
+            
+            // Guardar en la base de datos
+            await storage.createPropertySearchHistory(validHistoryData);
+            console.log('Búsqueda guardada en el historial de propiedades (intento 2)');
+          } catch (historyError) {
+            // En caso de error al guardar el historial, solo lo registramos pero no interrumpimos la respuesta
+            console.error('Error al guardar en historial de propiedades:', historyError);
+          }
           
           return res.json(propertyData);
         }
