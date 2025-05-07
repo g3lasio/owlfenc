@@ -931,7 +931,7 @@ export default function PermitAdvisor() {
                           {typeof permitObj === 'object' && permitObj.requirements && (
                             <div className="mt-3">
                               <h4 className="text-sm font-medium mb-2 flex items-center">
-                                <CheckSquare className="h-4 w-4 mr-1 text-primary/70" />
+                                <FileText className="h-4 w-4 mr-1 text-primary/70" />
                                 Requisitos:
                               </h4>
                               {Array.isArray(permitObj.requirements) ? (
