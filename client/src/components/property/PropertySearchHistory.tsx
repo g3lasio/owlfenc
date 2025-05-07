@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
 import { 
   Dialog, 
   DialogContent, 
@@ -24,7 +25,8 @@ import {
   CalendarDays,
   Check,
   Trash,
-  LayoutList
+  LayoutList,
+  Filter
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -51,6 +53,8 @@ export default function PropertySearchHistory({
   onSelectHistory: (historyItem: PropertySearchHistoryItem) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -59,6 +63,28 @@ export default function PropertySearchHistory({
     queryKey: ['/api/property/history'],
     staleTime: 30000, // 30 segundos antes de considerar los datos obsoletos
   });
+  
+  // Filtrar elementos del historial basado en términos de búsqueda
+  const filteredHistoryItems = useMemo(() => {
+    if (!historyItems || !Array.isArray(historyItems)) return [];
+    
+    return historyItems.filter((item: PropertySearchHistoryItem) => {
+      // Primero filtrar por favoritos si está activado
+      if (showFavoritesOnly && !item.isFavorite) {
+        return false;
+      }
+      
+      // Luego filtrar por término de búsqueda
+      if (!searchTerm) return true;
+      
+      const searchLower = searchTerm.toLowerCase();
+      const addressMatch = item.address?.toLowerCase().includes(searchLower);
+      const titleMatch = item.title?.toLowerCase().includes(searchLower);
+      const ownerMatch = item.ownerName?.toLowerCase().includes(searchLower);
+      
+      return addressMatch || titleMatch || ownerMatch;
+    });
+  }, [historyItems, searchTerm, showFavoritesOnly]);
 
   // Función para marcar un elemento como favorito
   const toggleFavorite = async (id: number, currentState: boolean) => {
@@ -131,6 +157,27 @@ export default function PropertySearchHistory({
           </div>
         </DialogHeader>
         
+        {/* Barra de búsqueda y filtros */}
+        <div className="flex items-center space-x-2 mb-4">
+          <div className="relative flex-1">
+            <Input
+              placeholder="Buscar dirección o propietario"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9"
+            />
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+          </div>
+          <Button 
+            variant={showFavoritesOnly ? "default" : "outline"} 
+            size="icon"
+            onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+            title={showFavoritesOnly ? "Mostrar todos" : "Mostrar sólo favoritos"}
+          >
+            <Star className="h-4 w-4" fill={showFavoritesOnly ? "currentColor" : "none"} />
+          </Button>
+        </div>
+        
         {isLoading ? (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
@@ -155,10 +202,47 @@ export default function PropertySearchHistory({
               Tus búsquedas de propiedades aparecerán aquí
             </p>
           </div>
+        ) : filteredHistoryItems.length === 0 ? (
+          <div className="text-center p-4 text-muted-foreground">
+            <Filter className="mx-auto h-12 w-12 opacity-20 mb-3" />
+            <p>No se encontraron resultados para tu búsqueda</p>
+            <p className="text-sm mt-1">
+              Intenta con otros términos o quita los filtros
+            </p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => {
+                setSearchTerm('');
+                setShowFavoritesOnly(false);
+              }}
+              className="mt-4"
+            >
+              Limpiar filtros
+            </Button>
+          </div>
         ) : (
           <ScrollArea className="h-[400px]">
+            <div className="p-2 border-b mb-2 flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">
+                {filteredHistoryItems.length} {filteredHistoryItems.length === 1 ? 'resultado' : 'resultados'}
+              </span>
+              {searchTerm || showFavoritesOnly ? (
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => {
+                    setSearchTerm('');
+                    setShowFavoritesOnly(false);
+                  }}
+                  className="h-7 px-2 text-xs"
+                >
+                  Limpiar filtros
+                </Button>
+              ) : null}
+            </div>
             <div className="space-y-4 p-1">
-              {historyItems?.map((item: PropertySearchHistoryItem) => (
+              {filteredHistoryItems.map((item: PropertySearchHistoryItem) => (
                 <div
                   key={item.id}
                   className="relative flex flex-col space-y-2 p-3 border rounded-lg hover:bg-accent transition-colors"
