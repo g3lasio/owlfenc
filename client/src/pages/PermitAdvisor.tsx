@@ -52,6 +52,7 @@ import {
   Info,
   BookOpen,
   Landmark,
+  CheckSquare,
 } from "lucide-react";
 import GooglePlacesAutocomplete from "react-google-places-autocomplete";
 
@@ -877,71 +878,95 @@ export default function PermitAdvisor() {
                 </h3>
 
                 {permitData?.requiredPermits?.length > 0 ? (
-                  permitData.requiredPermits.map((permit, idx) => (
-                    <Card key={idx} className="mb-4">
-                      <CardHeader className="py-4">
-                        <CardTitle className="text-md">{permit.name}</CardTitle>
-                        <CardDescription>
-                          Emitido por: {permit.issuingAuthority}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="py-2">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="flex items-center">
-                            <CalendarClock className="h-4 w-4 mr-2 text-muted-foreground" />
-                            <span className="text-sm">
-                              Tiempo estimado: {permit.estimatedTimeline}
-                            </span>
-                          </div>
-                          {permit.averageCost && (
+                  permitData.requiredPermits.map((permit, idx) => {
+                    // Extraer datos del permiso (podría ser un objeto o un string JSON)
+                    let permitObj = permit;
+                    if (typeof permit === 'string') {
+                      try {
+                        permitObj = JSON.parse(permit);
+                      } catch (e) {
+                        // Si no se puede parsear, mantenerlo como string
+                        console.warn("No se pudo parsear el permiso:", permit);
+                      }
+                    }
+
+                    return (
+                      <Card key={idx} className="mb-4 border-primary/20 shadow-sm">
+                        <CardHeader className="py-4 bg-gradient-to-r from-primary/5 to-transparent">
+                          <CardTitle className="text-md">
+                            {typeof permitObj === 'object' ? permitObj.name : 'Permiso'}
+                          </CardTitle>
+                          <CardDescription>
+                            Emitido por: {typeof permitObj === 'object' ? permitObj.issuingAuthority : 'Autoridad local'}
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="py-3">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
                             <div className="flex items-center">
-                              <DollarSign className="h-4 w-4 mr-2 text-muted-foreground" />
+                              <CalendarClock className="h-4 w-4 mr-2 text-primary/70" />
                               <span className="text-sm">
-                                Costo aproximado: {permit.averageCost}
+                                Tiempo estimado: {typeof permitObj === 'object' ? permitObj.estimatedTimeline : 'Consultar'}
                               </span>
                             </div>
+                            {typeof permitObj === 'object' && permitObj.averageCost && (
+                              <div className="flex items-center">
+                                <DollarSign className="h-4 w-4 mr-2 text-primary/70" />
+                                <span className="text-sm">
+                                  Costo aproximado: {permitObj.averageCost}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {typeof permitObj === 'object' && permitObj.description && (
+                            <div className="mt-3 bg-muted/30 p-3 rounded-md">
+                              <p className="text-sm">
+                                {typeof permitObj.description === 'object' 
+                                  ? JSON.stringify(permitObj.description) 
+                                  : permitObj.description}
+                              </p>
+                            </div>
                           )}
-                        </div>
-                        {permit.description && (
-                            <p className="text-sm mt-2">
-                              {typeof permit.description === 'object' 
-                                ? JSON.stringify(permit.description) 
-                                : permit.description}
-                            </p>
-                          )}
-                        {permit.requirements && (
-                            <div className="mt-2">
-                              <h4 className="text-sm font-medium">
+                          
+                          {typeof permitObj === 'object' && permitObj.requirements && (
+                            <div className="mt-3">
+                              <h4 className="text-sm font-medium mb-2 flex items-center">
+                                <CheckSquare className="h-4 w-4 mr-1 text-primary/70" />
                                 Requisitos:
                               </h4>
-                              {Array.isArray(permit.requirements) ? (
-                                <ul className="list-disc ml-5 text-sm space-y-1">
-                                  {permit.requirements.map((req, reqIdx) => (
-                                    <li key={reqIdx}>{typeof req === 'object' ? JSON.stringify(req) : req}</li>
+                              {Array.isArray(permitObj.requirements) ? (
+                                <ul className="list-disc ml-5 text-sm space-y-1.5 pl-1">
+                                  {permitObj.requirements.map((req, reqIdx) => (
+                                    <li key={reqIdx} className="text-muted-foreground">
+                                      {typeof req === 'object' ? JSON.stringify(req) : req}
+                                    </li>
                                   ))}
                                 </ul>
-                              ) : typeof permit.requirements === "string" ? (
-                                <p className="text-sm">{permit.requirements}</p>
+                              ) : typeof permitObj.requirements === "string" ? (
+                                <p className="text-sm text-muted-foreground">{permitObj.requirements}</p>
                               ) : (
-                                <p className="text-sm">{JSON.stringify(permit.requirements)}</p>
+                                <p className="text-sm text-muted-foreground">{JSON.stringify(permitObj.requirements)}</p>
                               )}
                             </div>
                           )}
-                        {permit.url && (
-                          <div className="mt-3">
-                            <Button
-                              variant="link"
-                              size="sm"
-                              className="p-0 h-auto"
-                              onClick={() => window.open(permit.url, "_blank")}
-                            >
-                              Ver formulario o información
-                            </Button>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))
+                          
+                          {typeof permitObj === 'object' && permitObj.url && (
+                            <div className="mt-4">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-primary hover:bg-primary/5"
+                                onClick={() => window.open(permitObj.url, "_blank")}
+                              >
+                                <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                                Ver formulario o información
+                              </Button>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })
                 ) : (
                   <Alert>
                     <AlertTriangle className="h-4 w-4" />
