@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,6 +55,9 @@ import {
   BookOpen,
   Landmark,
   CheckSquare,
+  History,
+  RotateCcw,
+  RefreshCw,
 } from "lucide-react";
 import GooglePlacesAutocomplete from "react-google-places-autocomplete";
 
@@ -150,6 +153,18 @@ interface PermitResponse {
   [key: string]: any;
 }
 
+// Interfaz para el historial de búsqueda
+interface SearchHistoryItem {
+  id: number;
+  userId: number;
+  address: string;
+  projectType: string;
+  projectDescription?: string;
+  title: string;
+  results: PermitResponse;
+  createdAt: string;
+}
+
 // Componente principal
 export default function PermitAdvisor() {
   const { toast } = useToast();
@@ -159,6 +174,8 @@ export default function PermitAdvisor() {
   const [permitData, setPermitData] = useState<PermitResponse | null>(null);
   const [activeTab, setActiveTab] = useState("permits");
   const [useManualInput, setUseManualInput] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [selectedHistoryItem, setSelectedHistoryItem] = useState<SearchHistoryItem | null>(null);
 
   // Estado para controlar el valor de Google Places Autocomplete
   const [placeValue, setPlaceValue] = useState<any>(null);
@@ -171,6 +188,19 @@ export default function PermitAdvisor() {
   // Verificar si la API key de Google Maps está configurada
   const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   const [apiError, setApiError] = useState(!googleMapsApiKey);
+  
+  // Consulta para obtener el historial de búsquedas
+  const historyQuery = useQuery({
+    queryKey: ['/api/permit/history'],
+    queryFn: async () => {
+      const response = await fetch('/api/permit/history');
+      if (!response.ok) {
+        throw new Error('Error al obtener el historial de búsquedas');
+      }
+      return response.json() as Promise<SearchHistoryItem[]>;
+    },
+    enabled: true, // Siempre habilitado para cargar automáticamente el historial
+  });
 
   // Solicitud de permisos
   const permitMutation = useMutation({
@@ -288,6 +318,42 @@ export default function PermitAdvisor() {
   // Handler para remover un archivo
   const handleRemoveFile = (index: number) => {
     setProjectFiles(prev => prev.filter((_, i) => i !== index));
+  };
+  
+  // Handler para abrir el historial de búsquedas
+  const handleOpenHistory = () => {
+    setShowHistory(true);
+  };
+  
+  // Handler para cargar un elemento del historial
+  const handleLoadHistoryItem = (item: SearchHistoryItem) => {
+    // Procesar los datos de la misma manera que lo hacemos con permitMutation
+    const processedData = item.results;
+    setPermitData(processedData);
+    
+    // También actualizamos los campos del formulario
+    setProjectType(item.projectType);
+    if (item.projectDescription) {
+      setProjectDescription(item.projectDescription);
+    }
+    
+    // Determinar cómo establecer la dirección
+    if (useManualInput) {
+      setManualAddress(item.address);
+    } else {
+      setAddress(item.address);
+      // Restablecer el valor del autocompletado de Google Places
+      setPlaceValue(null);
+    }
+    
+    // Cerrar el modal del historial
+    setShowHistory(false);
+    setSelectedHistoryItem(item);
+    
+    toast({
+      title: "Búsqueda cargada del historial",
+      description: `Se ha cargado la búsqueda: ${item.title}`,
+    });
   };
 
   // Handler para la búsqueda de permisos
