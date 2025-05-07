@@ -187,7 +187,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                               {item.icon === 'lucide-credit-card' && <i className="ri-bank-card-line text-lg mr-3"></i>}
                               {item.icon === 'lucide-building' && <i className="ri-building-4-line text-lg mr-3"></i>}
                               {item.icon === 'lucide-settings' && <i className="ri-settings-4-line text-lg mr-3"></i>}
-                              {item.icon === 'lucide-brain' && <i className="ri-robot-2-line text-lg mr-3"></i>}
+                              {item.icon === 'lucide-brain' && <i className="ri-brain-artificial-line text-lg mr-3"></i>}
                             </>
                           ) : (
                             <i className={`${item.icon} text-lg mr-3`}></i>

@@ -70,7 +70,7 @@ export const navigationGroups: NavigationGroup[] = [
         id: "ai-project-manager",
         label: "AI Project Manager",
         path: "/ai-project-manager",
-        icon: "ri-3d-cube-sphere-line"
+        icon: "lucide-brain"
       },
       {
         id: "ar-fence-estimator",
