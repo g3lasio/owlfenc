@@ -382,7 +382,7 @@ export default function PermitAdvisor() {
                 <Loader2 className="h-12 w-12 animate-spin text-primary relative" />
               </div>
 
-              <h3 className="text-xl font-semibold text-primary">Mervin DeepSearch en acción</h3>
+              <h3 className="text-xl font-semibold text-primary">Mervin Permit Advisor en acción</h3>
               <p className="text-muted-foreground text-center mt-4 max-w-md relative">
                 Investigando regulaciones legales, permisos y normativas aplicables a tu proyecto en esta ubicación...
               </p>
@@ -571,14 +571,46 @@ export default function PermitAdvisor() {
                   <CardContent>
                     {permitData.process && permitData.process.length > 0 ? (
                       <ol className="relative border-l border-primary/30 ml-3 space-y-6 py-2">
-                        {permitData.process.slice(0, 4).map((step, idx) => (
-                          <li key={idx} className="ml-6 relative">
-                            <div className="absolute -left-3 bg-background rounded-full h-6 w-6 flex items-center justify-center border border-primary text-primary">
-                              {idx + 1}
-                            </div>
-                            <p className="text-sm">{step}</p>
-                          </li>
-                        ))}
+                        {permitData.process.slice(0, 4).map((step, idx) => {
+                          // Analyze the step to identify who needs to perform it
+                          const stepLower = step.toLowerCase();
+                          const isContractorStep = 
+                            stepLower.includes("contratista") || 
+                            stepLower.includes("contractor") || 
+                            stepLower.includes("profesional");
+                          const isOwnerStep = 
+                            stepLower.includes("propietario") || 
+                            stepLower.includes("dueño") || 
+                            stepLower.includes("owner");
+                          
+                          // Determine badge style based on who performs the step
+                          let badgeText = "Ambos";
+                          let badgeClass = "bg-blue-100 text-blue-800 border-blue-300";
+                          
+                          if (isContractorStep && !isOwnerStep) {
+                            badgeText = "Contratista";
+                            badgeClass = "bg-amber-100 text-amber-800 border-amber-300";
+                          } else if (isOwnerStep && !isContractorStep) {
+                            badgeText = "Propietario";
+                            badgeClass = "bg-green-100 text-green-800 border-green-300";
+                          }
+                          
+                          return (
+                            <li key={idx} className="ml-6 relative">
+                              <div className="absolute -left-3 bg-background rounded-full h-6 w-6 flex items-center justify-center border border-primary text-primary">
+                                {idx + 1}
+                              </div>
+                              <div className="flex flex-col space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <span className={`text-xs px-2 py-0.5 rounded-full border ${badgeClass}`}>
+                                    {badgeText}
+                                  </span>
+                                </div>
+                                <p className="text-sm">{step}</p>
+                              </div>
+                            </li>
+                          );
+                        })}
                         {permitData.process.length > 4 && (
                           <li className="ml-6 text-sm text-muted-foreground">
                             <div className="absolute -left-3 bg-muted text-muted-foreground rounded-full h-6 w-6 flex items-center justify-center border border-border">
@@ -840,14 +872,46 @@ export default function PermitAdvisor() {
                   <div className="relative">
                     <div className="absolute left-3 top-0 bottom-0 w-[1px] bg-primary/30"></div>
                     <ol className="relative space-y-6">
-                      {permitData.process.map((step, idx) => (
-                        <li key={idx} className="ml-8 relative">
-                          <div className="absolute -left-7 bg-background rounded-full h-6 w-6 flex items-center justify-center border border-primary text-primary font-medium">
-                            {idx + 1}
-                          </div>
-                          <p className="text-sm">{step}</p>
-                        </li>
-                      ))}
+                      {permitData.process.map((step, idx) => {
+                        // Analyze the step to identify who needs to perform it
+                        const stepLower = step.toLowerCase();
+                        const isContractorStep = 
+                          stepLower.includes("contratista") || 
+                          stepLower.includes("contractor") || 
+                          stepLower.includes("profesional");
+                        const isOwnerStep = 
+                          stepLower.includes("propietario") || 
+                          stepLower.includes("dueño") || 
+                          stepLower.includes("owner");
+                        
+                        // Determine badge style based on who performs the step
+                        let badgeText = "Ambos";
+                        let badgeClass = "bg-blue-100 text-blue-800 border-blue-300";
+                        
+                        if (isContractorStep && !isOwnerStep) {
+                          badgeText = "Contratista";
+                          badgeClass = "bg-amber-100 text-amber-800 border-amber-300";
+                        } else if (isOwnerStep && !isContractorStep) {
+                          badgeText = "Propietario";
+                          badgeClass = "bg-green-100 text-green-800 border-green-300";
+                        }
+                        
+                        return (
+                          <li key={idx} className="ml-8 relative">
+                            <div className="absolute -left-7 bg-background rounded-full h-6 w-6 flex items-center justify-center border border-primary text-primary font-medium">
+                              {idx + 1}
+                            </div>
+                            <div className="flex flex-col space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className={`text-xs px-2 py-0.5 rounded-full border ${badgeClass}`}>
+                                  {badgeText}
+                                </span>
+                              </div>
+                              <p className="text-sm">{step}</p>
+                            </div>
+                          </li>
+                        );
+                      })}
                     </ol>
                   </div>
                 ) : (
