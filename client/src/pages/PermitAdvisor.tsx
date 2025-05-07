@@ -1262,7 +1262,7 @@ export default function PermitAdvisor() {
 
                               {regulation.applicableAreas && 
                                 ((Array.isArray(regulation.applicableAreas) && regulation.applicableAreas.length > 0) || 
-                                 (typeof regulation.applicableAreas === 'string' && regulation.applicableAreas.trim() !== '')) && (
+                                 (typeof regulation.applicableAreas === 'string' && regulation.applicableAreas !== '')) && (
                                   <div>
                                     <h4 className="text-sm font-medium">
                                       Áreas aplicables:
@@ -1515,11 +1515,16 @@ export default function PermitAdvisor() {
                                 Elementos críticos:
                               </h4>
                               <ul className="mt-2 space-y-1 list-disc pl-5 text-sm text-muted-foreground">
-                                {permitData.timeline.criticalPathItems.map(
-                                  (item, idx) => (
-                                    <li key={idx}>{item}</li>
-                                  ),
-                                )}
+                                {Array.isArray(permitData.timeline.criticalPathItems) 
+                                  ? permitData.timeline.criticalPathItems.map(
+                                      (item, idx) => (
+                                        <li key={idx}>{item}</li>
+                                      )
+                                    )
+                                  : permitData.timeline.criticalPathItems && typeof permitData.timeline.criticalPathItems === 'string'
+                                    ? <li>{permitData.timeline.criticalPathItems}</li> 
+                                    : <li>Información no disponible</li>
+                                }
                               </ul>
                             </div>
 
@@ -1574,11 +1579,16 @@ export default function PermitAdvisor() {
                                 Factores variables:
                               </h4>
                               <ul className="mt-2 space-y-1 list-disc pl-5 text-sm text-muted-foreground">
-                                {permitData.costAnalysis.variableFactors.map(
-                                  (factor, idx) => (
-                                    <li key={idx}>{factor}</li>
-                                  ),
-                                )}
+                                {Array.isArray(permitData.costAnalysis.variableFactors)
+                                  ? permitData.costAnalysis.variableFactors.map(
+                                      (factor, idx) => (
+                                        <li key={idx}>{factor}</li>
+                                      )
+                                    )
+                                  : permitData.costAnalysis.variableFactors && typeof permitData.costAnalysis.variableFactors === 'string'
+                                    ? <li>{permitData.costAnalysis.variableFactors}</li>
+                                    : <li>Información no disponible</li>
+                                }
                               </ul>
                             </div>
 
@@ -1603,11 +1613,16 @@ export default function PermitAdvisor() {
                                   Métodos de pago aceptados:
                                 </h4>
                                 <ul className="mt-2 space-y-1 list-disc pl-5 text-sm text-muted-foreground">
-                                  {permitData.costAnalysis.paymentMethods.map(
-                                    (method, idx) => (
-                                      <li key={idx}>{method}</li>
-                                    ),
-                                  )}
+                                  {Array.isArray(permitData.costAnalysis.paymentMethods)
+                                    ? permitData.costAnalysis.paymentMethods.map(
+                                        (method, idx) => (
+                                          <li key={idx}>{method}</li>
+                                        )
+                                      )
+                                    : permitData.costAnalysis.paymentMethods && typeof permitData.costAnalysis.paymentMethods === 'string'
+                                      ? <li>{permitData.costAnalysis.paymentMethods}</li>
+                                      : <li>Información no disponible</li>
+                                  }
                                 </ul>
                               </div>
                             )}
