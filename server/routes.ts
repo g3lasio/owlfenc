@@ -1165,6 +1165,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  
+  // Endpoint para actualizar el perfil de usuario
+  app.post('/api/user-profile', async (req: Request, res: Response) => {
+    try {
+      // En producción, obtener userId del token de autenticación
+      const userId = 1; // Por ahora usar ID fijo para desarrollo
+      
+      // Verificar que el usuario existe
+      const existingUser = await storage.getUser(userId);
+      if (!existingUser) {
+        return res.status(404).json({
+          message: "Usuario no encontrado",
+          code: "USER_NOT_FOUND"
+        });
+      }
+      
+      // Actualizar el perfil del usuario
+      const profileData = req.body;
+      
+      // Preparar datos para actualizar, preservando datos existentes
+      const userData: Partial<User> = {
+        ...profileData,
+        updatedAt: new Date()
+      };
+      
+      // Guardar los cambios en la base de datos
+      await storage.updateUser(userId, userData);
+      
+      // Responder con éxito
+      res.json({
+        success: true,
+        message: "Perfil actualizado correctamente"
+      });
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error al actualizar el perfil",
+        code: "INTERNAL_ERROR"
+      });
+    }
+  });
 
 
   // Endpoint para sugerencias de direcciones
