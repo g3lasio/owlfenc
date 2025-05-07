@@ -197,6 +197,21 @@ export default function PermitAdvisor() {
   const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   const [apiError, setApiError] = useState(!googleMapsApiKey);
   
+  // Estado para controlar la visualización del formulario
+  const [showSearchForm, setShowSearchForm] = useState(true);
+  
+  // Al recibir resultados, ocultar el formulario
+  useEffect(() => {
+    if (permitData && !permitMutation.isPending) {
+      setShowSearchForm(false);
+    }
+  }, [permitData, permitMutation.isPending]);
+  
+  // Función para volver al formulario de búsqueda
+  const handleBackToSearch = () => {
+    setShowSearchForm(true);
+  };
+  
   // Consulta para obtener el historial de búsquedas
   const historyQuery = useQuery({
     queryKey: ['/api/permit/history'],
@@ -411,21 +426,6 @@ export default function PermitAdvisor() {
     { value: "landscaping", label: "Landscaping" },
   ];
 
-  // Estado para controlar la visualización del formulario
-  const [showSearchForm, setShowSearchForm] = useState(true);
-  
-  // Al recibir resultados, ocultar el formulario
-  useEffect(() => {
-    if (permitData && !permitMutation.isPending) {
-      setShowSearchForm(false);
-    }
-  }, [permitData, permitMutation.isPending]);
-  
-  // Función para volver al formulario de búsqueda
-  const handleBackToSearch = () => {
-    setShowSearchForm(true);
-  };
-
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex flex-col items-center text-center space-y-2">
@@ -479,320 +479,320 @@ export default function PermitAdvisor() {
               licencias y regulaciones aplicables
             </CardDescription>
           </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Tipo de Proyecto</label>
-            <Select
-              value={projectType}
-              onValueChange={(value) => setProjectType(value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select project type" />
-              </SelectTrigger>
-              <SelectContent>
-                {projectTypes.map((type) => (
-                  <SelectItem key={type.value} value={type.value}>
-                    {type.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <label className="text-sm font-medium">
-                Dirección del Proyecto
-              </label>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() => setUseManualInput(!useManualInput)}
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Tipo de Proyecto</label>
+              <Select
+                value={projectType}
+                onValueChange={(value) => setProjectType(value)}
               >
-                {useManualInput
-                  ? "Usar autocompletado"
-                  : "Ingresar manualmente"}
-              </Button>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select project type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projectTypes.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            {useManualInput ? (
-              <Input
-                placeholder="Ingresa la dirección completa (incluye ciudad, estado y código postal)"
-                value={manualAddress}
-                onChange={(e) => setManualAddress(e.target.value)}
-              />
-            ) : googleMapsApiKey ? (
-              <div className="relative z-10">
-                <GooglePlacesAutocomplete
-                  apiKey={googleMapsApiKey}
-                  apiOptions={{
-                    language: "es",
-                    region: "mx",
-                    libraries: ["places"],
-                  }}
-                  autocompletionRequest={{
-                    componentRestrictions: { country: ["mx", "us", "es"] },
-                    types: ["address"],
-                  }}
-                  selectProps={{
-                    value: placeValue,
-                    onChange: (value) => {
-                      setPlaceValue(value);
-                      handlePlaceSelect(value);
-                    },
-                    placeholder: "Type Address Project",
-                    noOptionsMessage: () => "No se encontraron resultados",
-                    loadingMessage: () => "Cargando resultados...",
-                    className: "rounded-md border border-input z-100",
-                    classNamePrefix: "react-select",
-                    styles: {
-                      control: (base) => ({
-                        ...base,
-                        background: "white",
-                        border: "1px solid hsl(var(--input))",
-                        boxShadow: "none",
-                        "&:hover": {
-                          border: "1px solid hsl(var(--primary))",
-                        },
-                      }),
-                      input: (base) => ({
-                        ...base,
-                        color: "rgb(15, 23, 42)",
-                        fontWeight: 500,
-                      }),
-                      option: (base, state) => ({
-                        ...base,
-                        backgroundColor: state.isFocused
-                          ? "hsl(var(--primary) / 0.1)"
-                          : "white",
-                        color: "rgb(15, 23, 42)",
-                        fontWeight: 500,
-                        "&:hover": {
-                          backgroundColor: "hsl(var(--primary) / 0.15)",
-                        },
-                      }),
-                      singleValue: (base) => ({
-                        ...base,
-                        color: "rgb(15, 23, 42)",
-                        fontWeight: 500,
-                      }),
-                      placeholder: (base) => ({
-                        ...base,
-                        color: "rgb(100, 116, 139)",
-                      }),
-                      menu: (base) => ({
-                        ...base,
-                        zIndex: 9999,
-                        background: "white",
-                      }),
-                    },
-                  }}
-                />
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <label className="text-sm font-medium">
+                  Dirección del Proyecto
+                </label>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => setUseManualInput(!useManualInput)}
+                >
+                  {useManualInput
+                    ? "Usar autocompletado"
+                    : "Ingresar manualmente"}
+                </Button>
               </div>
-            ) : (
-              <div>
+
+              {useManualInput ? (
                 <Input
                   placeholder="Ingresa la dirección completa (incluye ciudad, estado y código postal)"
                   value={manualAddress}
                   onChange={(e) => setManualAddress(e.target.value)}
                 />
-                <Alert variant="destructive" className="mt-2">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertTitle>Error de configuración</AlertTitle>
-                  <AlertDescription>
-                    El autocompletado de direcciones no está disponible. Por
-                    favor ingresa la dirección manualmente.
-                  </AlertDescription>
-                </Alert>
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-2 mt-6 pt-4 border-t border-gray-100">
-            <label className="text-sm font-medium">
-              Descripción del Proyecto
-            </label>
-            <Textarea
-              placeholder="Describe los detalles específicos de tu proyecto (dimensiones, materiales, alcance del trabajo, etc.)"
-              value={projectDescription}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setProjectDescription(e.target.value)}
-              className="min-h-[100px]"
-            />
-            <p className="text-xs text-muted-foreground">
-              Una descripción detallada ayudará a Mervin a proporcionar información más precisa y personalizada sobre los permisos necesarios.
-            </p>
-          </div>
-
-          <div className="space-y-2 mt-4">
-            <label className="text-sm font-medium flex items-center">
-              <FileText className="h-4 w-4 mr-2 text-primary/70" />
-              Archivos Adjuntos (opcional)
-            </label>
-            <div className="border border-dashed border-gray-300 rounded-lg p-4 bg-gray-50">
-              <div className="flex flex-col items-center justify-center gap-2">
-                <p className="text-sm text-muted-foreground text-center">
-                  Adjunta planos, dibujos, diseños o documentos de alcance del trabajo
-                </p>
-                <Input 
-                  type="file" 
-                  multiple 
-                  onChange={handleFileSelect}
-                  className="max-w-xs"
-                  id="project-files"
-                />
-                <Label htmlFor="project-files" className="cursor-pointer text-xs text-primary">
-                  Seleccionar archivos
-                </Label>
-              </div>
-
-              {projectFiles.length > 0 && (
-                <div className="mt-4">
-                  <p className="text-sm font-medium">Archivos seleccionados:</p>
-                  <div className="mt-2 space-y-2">
-                    {projectFiles.map((file, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-2 bg-white rounded border">
-                        <div className="flex items-center">
-                          <FileText className="h-4 w-4 mr-2 text-primary/70" />
-                          <span className="text-sm truncate max-w-[20ch] md:max-w-[30ch]">{file.name}</span>
-                          <span className="text-xs text-muted-foreground ml-2">
-                            ({Math.round(file.size / 1024)} KB)
-                          </span>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6"
-                          onClick={() => handleRemoveFile(idx)}
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                            className="w-4 h-4"
-                          >
-                            <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
-                          </svg>
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Nota: Estos archivos no se cargarán al servidor en esta versión, pero ayudan a documentar el proyecto.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </CardContent>
-        <CardFooter className="flex items-center justify-center">
-          <Button
-            onClick={handleSearch}
-            disabled={permitMutation.isPending}
-            className="w-full md:w-auto"
-          >
-            {permitMutation.isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Consultando...
-              </>
-            ) : (
-              <>
-                <Search className="mr-2 h-4 w-4" />
-                Consultar Permisos
-              </>
-            )}
-          </Button>
-        </CardFooter>
-        
-        {/* Modal de historial de búsquedas */}
-        <Dialog open={showHistory} onOpenChange={setShowHistory}>
-          <DialogContent className="sm:max-w-[625px]">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <History className="h-5 w-5 text-primary" />
-                Historial de Búsquedas
-              </DialogTitle>
-              <DialogDescription>
-                Consulta y carga búsquedas anteriores para evitar realizar la misma búsqueda nuevamente.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="py-4">
-              {historyQuery.isLoading ? (
-                <div className="flex flex-col items-center justify-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-                  <p className="text-sm text-muted-foreground">Cargando historial de búsquedas...</p>
-                </div>
-              ) : historyQuery.isError ? (
-                <div className="text-center p-4 border rounded-md bg-red-50">
-                  <AlertTriangle className="h-8 w-8 text-red-500 mx-auto mb-2" />
-                  <h3 className="font-medium">Error al cargar el historial</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {historyQuery.error instanceof Error ? historyQuery.error.message : 'Error desconocido'}
-                  </p>
-                </div>
-              ) : !historyQuery.data || historyQuery.data.length === 0 ? (
-                <div className="text-center p-8 border rounded-md bg-gray-50">
-                  <Info className="h-10 w-10 text-primary/50 mx-auto mb-2" />
-                  <h3 className="font-medium text-lg">No hay búsquedas previas</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Cuando realices consultas de permisos, se guardarán aquí para facilitar su acceso posterior.
-                  </p>
+              ) : googleMapsApiKey ? (
+                <div className="relative z-10">
+                  <GooglePlacesAutocomplete
+                    apiKey={googleMapsApiKey}
+                    apiOptions={{
+                      language: "es",
+                      region: "mx",
+                      libraries: ["places"],
+                    }}
+                    autocompletionRequest={{
+                      componentRestrictions: { country: ["mx", "us", "es"] },
+                      types: ["address"],
+                    }}
+                    selectProps={{
+                      value: placeValue,
+                      onChange: (value) => {
+                        setPlaceValue(value);
+                        handlePlaceSelect(value);
+                      },
+                      placeholder: "Type Address Project",
+                      noOptionsMessage: () => "No se encontraron resultados",
+                      loadingMessage: () => "Cargando resultados...",
+                      className: "rounded-md border border-input z-100",
+                      classNamePrefix: "react-select",
+                      styles: {
+                        control: (base) => ({
+                          ...base,
+                          background: "white",
+                          border: "1px solid hsl(var(--input))",
+                          boxShadow: "none",
+                          "&:hover": {
+                            border: "1px solid hsl(var(--primary))",
+                          },
+                        }),
+                        input: (base) => ({
+                          ...base,
+                          color: "rgb(15, 23, 42)",
+                          fontWeight: 500,
+                        }),
+                        option: (base, state) => ({
+                          ...base,
+                          backgroundColor: state.isFocused
+                            ? "hsl(var(--primary) / 0.1)"
+                            : "white",
+                          color: "rgb(15, 23, 42)",
+                          fontWeight: 500,
+                          "&:hover": {
+                            backgroundColor: "hsl(var(--primary) / 0.15)",
+                          },
+                        }),
+                        singleValue: (base) => ({
+                          ...base,
+                          color: "rgb(15, 23, 42)",
+                          fontWeight: 500,
+                        }),
+                        placeholder: (base) => ({
+                          ...base,
+                          color: "rgb(100, 116, 139)",
+                        }),
+                        menu: (base) => ({
+                          ...base,
+                          zIndex: 9999,
+                          background: "white",
+                        }),
+                      },
+                    }}
+                  />
                 </div>
               ) : (
-                <ScrollArea className="h-[400px] pr-4">
-                  <div className="space-y-3">
-                    {historyQuery.data.map((item) => (
-                      <Card key={item.id} className="hover:bg-primary/5 transition-colors">
-                        <CardHeader className="p-4 pb-2">
-                          <CardTitle className="text-base">{item.title}</CardTitle>
-                          <CardDescription className="text-xs">
-                            {new Date(item.createdAt).toLocaleDateString()} {new Date(item.createdAt).toLocaleTimeString()}
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent className="p-4 pt-0">
-                          <div className="grid grid-cols-2 gap-2 text-sm">
-                            <div>
-                              <span className="font-medium block text-xs">Dirección:</span>
-                              <span className="text-muted-foreground text-xs">{item.address}</span>
-                            </div>
-                            <div>
-                              <span className="font-medium block text-xs">Tipo de proyecto:</span>
-                              <span className="text-muted-foreground text-xs capitalize">{item.projectType}</span>
-                            </div>
-                            {item.projectDescription && (
-                              <div className="col-span-2 mt-1">
-                                <span className="font-medium block text-xs">Descripción:</span>
-                                <span className="text-muted-foreground text-xs line-clamp-2">{item.projectDescription}</span>
-                              </div>
-                            )}
-                          </div>
-                          
-                          <div className="flex justify-between items-center mt-3">
-                            <div className="text-xs text-primary">
-                              {item.results.requiredPermits.length} permisos encontrados
-                            </div>
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              className="h-8"
-                              onClick={() => handleLoadHistoryItem(item)}
-                            >
-                              <RotateCcw className="h-3.5 w-3.5 mr-1" />
-                              Cargar resultados
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </ScrollArea>
+                <div>
+                  <Input
+                    placeholder="Ingresa la dirección completa (incluye ciudad, estado y código postal)"
+                    value={manualAddress}
+                    onChange={(e) => setManualAddress(e.target.value)}
+                  />
+                  <Alert variant="destructive" className="mt-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Error de configuración</AlertTitle>
+                    <AlertDescription>
+                      El autocompletado de direcciones no está disponible. Por
+                      favor ingresa la dirección manualmente.
+                    </AlertDescription>
+                  </Alert>
+                </div>
               )}
             </div>
-          </DialogContent>
-        </Dialog>
-      </Card>
+
+            <div className="space-y-2 mt-6 pt-4 border-t border-gray-100">
+              <label className="text-sm font-medium">
+                Descripción del Proyecto
+              </label>
+              <Textarea
+                placeholder="Describe los detalles específicos de tu proyecto (dimensiones, materiales, alcance del trabajo, etc.)"
+                value={projectDescription}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setProjectDescription(e.target.value)}
+                className="min-h-[100px]"
+              />
+              <p className="text-xs text-muted-foreground">
+                Una descripción detallada ayudará a Mervin a proporcionar información más precisa y personalizada sobre los permisos necesarios.
+              </p>
+            </div>
+
+            <div className="space-y-2 mt-4">
+              <label className="text-sm font-medium flex items-center">
+                <FileText className="h-4 w-4 mr-2 text-primary/70" />
+                Archivos Adjuntos (opcional)
+              </label>
+              <div className="border border-dashed border-gray-300 rounded-lg p-4 bg-gray-50">
+                <div className="flex flex-col items-center justify-center gap-2">
+                  <p className="text-sm text-muted-foreground text-center">
+                    Adjunta planos, dibujos, diseños o documentos de alcance del trabajo
+                  </p>
+                  <Input 
+                    type="file" 
+                    multiple 
+                    onChange={handleFileSelect}
+                    className="max-w-xs"
+                    id="project-files"
+                  />
+                  <Label htmlFor="project-files" className="cursor-pointer text-xs text-primary">
+                    Seleccionar archivos
+                  </Label>
+                </div>
+
+                {projectFiles.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-sm font-medium">Archivos seleccionados:</p>
+                    <div className="mt-2 space-y-2">
+                      {projectFiles.map((file, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-2 bg-white rounded border">
+                          <div className="flex items-center">
+                            <FileText className="h-4 w-4 mr-2 text-primary/70" />
+                            <span className="text-sm truncate max-w-[20ch] md:max-w-[30ch]">{file.name}</span>
+                            <span className="text-xs text-muted-foreground ml-2">
+                              ({Math.round(file.size / 1024)} KB)
+                            </span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => handleRemoveFile(idx)}
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                              className="w-4 h-4"
+                            >
+                              <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                            </svg>
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Nota: Estos archivos no se cargarán al servidor en esta versión, pero ayudan a documentar el proyecto.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter className="flex items-center justify-center">
+            <Button
+              onClick={handleSearch}
+              disabled={permitMutation.isPending}
+              className="w-full md:w-auto"
+            >
+              {permitMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Consultando...
+                </>
+              ) : (
+                <>
+                  <Search className="mr-2 h-4 w-4" />
+                  Consultar Permisos
+                </>
+              )}
+            </Button>
+          </CardFooter>
+          
+          {/* Modal de historial de búsquedas */}
+          <Dialog open={showHistory} onOpenChange={setShowHistory}>
+            <DialogContent className="sm:max-w-[625px]">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <History className="h-5 w-5 text-primary" />
+                  Historial de Búsquedas
+                </DialogTitle>
+                <DialogDescription>
+                  Consulta y carga búsquedas anteriores para evitar realizar la misma búsqueda nuevamente.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="py-4">
+                {historyQuery.isLoading ? (
+                  <div className="flex flex-col items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+                    <p className="text-sm text-muted-foreground">Cargando historial de búsquedas...</p>
+                  </div>
+                ) : historyQuery.isError ? (
+                  <div className="text-center p-4 border rounded-md bg-red-50">
+                    <AlertTriangle className="h-8 w-8 text-red-500 mx-auto mb-2" />
+                    <h3 className="font-medium">Error al cargar el historial</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {historyQuery.error instanceof Error ? historyQuery.error.message : 'Error desconocido'}
+                    </p>
+                  </div>
+                ) : !historyQuery.data || historyQuery.data.length === 0 ? (
+                  <div className="text-center p-8 border rounded-md bg-gray-50">
+                    <Info className="h-10 w-10 text-primary/50 mx-auto mb-2" />
+                    <h3 className="font-medium text-lg">No hay búsquedas previas</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Cuando realices consultas de permisos, se guardarán aquí para facilitar su acceso posterior.
+                    </p>
+                  </div>
+                ) : (
+                  <ScrollArea className="h-[400px] pr-4">
+                    <div className="space-y-3">
+                      {historyQuery.data.map((item) => (
+                        <Card key={item.id} className="hover:bg-primary/5 transition-colors">
+                          <CardHeader className="p-4 pb-2">
+                            <CardTitle className="text-base">{item.title}</CardTitle>
+                            <CardDescription className="text-xs">
+                              {new Date(item.createdAt).toLocaleDateString()} {new Date(item.createdAt).toLocaleTimeString()}
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent className="p-4 pt-0">
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                              <div>
+                                <span className="font-medium block text-xs">Dirección:</span>
+                                <span className="text-muted-foreground text-xs">{item.address}</span>
+                              </div>
+                              <div>
+                                <span className="font-medium block text-xs">Tipo de proyecto:</span>
+                                <span className="text-muted-foreground text-xs capitalize">{item.projectType}</span>
+                              </div>
+                              {item.projectDescription && (
+                                <div className="col-span-2 mt-1">
+                                  <span className="font-medium block text-xs">Descripción:</span>
+                                  <span className="text-muted-foreground text-xs line-clamp-2">{item.projectDescription}</span>
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div className="flex justify-between items-center mt-3">
+                              <div className="text-xs text-primary">
+                                {item.results.requiredPermits.length} permisos encontrados
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="h-8"
+                                onClick={() => handleLoadHistoryItem(item)}
+                              >
+                                <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                                Cargar resultados
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+        </Card>
       )}
 
       {permitMutation.isPending && (
@@ -1056,584 +1056,834 @@ export default function PermitAdvisor() {
                     </CardContent>
                   </Card>
                 </div>
-
-                {/* Proceso resumido */}
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-md flex items-center">
-                      <HardHat className="h-5 w-5 mr-2 text-primary" />
-                      Proceso Simplificado
-                    </CardTitle>
-                    <CardDescription>
-                      Pasos clave para obtener los permisos necesarios
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {permitData.process && permitData.process.length > 0 ? (
-                      <ol className="relative border-l border-primary/30 ml-3 space-y-6 py-2">
-                        {permitData.process.slice(0, 4).map((step, idx) => {
-                          // Analyze the step to identify who needs to perform it
-                          const stepLower = step.toLowerCase();
-                          const isContractorStep =
-                            stepLower.includes("contratista") ||
-                            stepLower.includes("contractor") ||
-                            stepLower.includes("profesional");
-                          const isOwnerStep =
-                            stepLower.includes("propietario") ||
-                            stepLower.includes("dueño") ||
-                            stepLower.includes("owner");
-
-                          // Determine badge style based on who performs the step
-                          let badgeText = "Contratista Dueño";
-                          let badgeClass =
-                            "bg-blue-100 text-blue-800 border-blue-300";
-
-                          if (isContractorStep && !isOwnerStep) {
-                            badgeText = "Contratista";
-                            badgeClass =
-                              "bg-amber-100 text-amber-800 border-amber-300";
-                          } else if (isOwnerStep && !isContractorStep) {
-                            badgeText = "Propietario";
-                            badgeClass =
-                              "bg-green-100 text-green-800 border-green-300";
-                          }
-
-                          return (
-                            <li key={idx} className="ml-6 relative">
-                              <div className="absolute -left-3 bg-background rounded-full h-6 w-6 flex items-center justify-center border border-primary text-primary">
-                                {idx + 1}
-                              </div>
-                              <div className="flex flex-col space-y-1">
-                                <div className="flex items-center gap-2">
-                                  <span
-                                    className={`text-xs px-2 py-0.5 rounded-full border ${badgeClass}`}
-                                  >
-                                    {badgeText}
-                                  </span>
-                                </div>
-                                <p className="text-sm">{step}</p>
-                              </div>
-                            </li>
-                          );
-                        })}
-                        {permitData.process.length > 4 && (
-                          <li className="ml-6 text-sm text-muted-foreground">
-                            <div className="absolute -left-3 bg-muted text-muted-foreground rounded-full h-6 w-6 flex items-center justify-center border border-border">
-                              ...
-                            </div>
-                            Ver todos los pasos en la sección de proceso
-                          </li>
-                        )}
-                      </ol>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        Proceso no disponible para este tipo de proyecto.
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Fuentes de información */}
-                <div className="mt-6 bg-muted/30 p-4 rounded-lg border border-border">
-                  <h4 className="text-sm font-medium mb-2 flex items-center">
-                    <Landmark className="h-4 w-4 mr-2 text-primary" />
-                    Fuentes de Información
-                  </h4>
-                  <p className="text-xs text-muted-foreground">
-                    Información compilada de{" "}
-                    {permitData.meta.sources?.length || 0} fuentes oficiales
-                    incluyendo departamentos de construcción, códigos locales y
-                    agencias gubernamentales relevantes para{" "}
-                    {permitData.meta.location}.
-                  </p>
-                  <div className="flex items-center mt-2 text-xs text-muted-foreground">
-                    <Clock className="h-3 w-3 mr-1 text-muted-foreground" />
-                    Última actualización:{" "}
-                    {new Date(
-                      permitData.meta.generated || Date.now(),
-                    ).toLocaleDateString()}
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {permitData.meta.sources &&
-                    permitData.meta.sources.length > 0 ? (
-                      permitData.meta.sources.slice(0, 3).map((source, idx) => (
-                        <span
-                          key={idx}
-                          className="text-xs px-2 py-1 rounded-full bg-primary/5 border border-border"
-                        >
-                          {source.includes("//")
-                            ? (function () {
-                                try {
-                                  return new URL(source).hostname;
-                                } catch {
-                                  return source;
-                                }
-                              })()
-                            : source}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="text-xs px-2 py-1 rounded-full bg-primary/5 border border-border">
-                        Fuentes verificadas
-                      </span>
-                    )}
-                    {permitData.meta.sources &&
-                      permitData.meta.sources.length > 3 && (
-                        <span className="text-xs px-2 py-1 rounded-full bg-gray-100 border border-border">
-                          +{permitData.meta.sources.length - 3} más
-                        </span>
-                      )}
-                  </div>
-                </div>
               </TabsContent>
 
-              <TabsContent value="permits" className="px-6 py-4 space-y-4">
-                <h3 className="text-lg font-medium flex items-center">
+              <TabsContent value="permits" className="px-6 py-4">
+                <h3 className="text-lg font-medium flex items-center mb-4">
                   <FileText className="mr-2 h-5 w-5 text-primary" />
                   Permisos Requeridos
                 </h3>
 
-                {permitData?.requiredPermits?.length > 0 ? (
-                  permitData.requiredPermits.map((permit, idx) => {
-                    // Extraer datos del permiso (podría ser un objeto o un string JSON)
-                    let permitObj = permit;
-                    if (typeof permit === 'string') {
-                      try {
-                        permitObj = JSON.parse(permit);
-                      } catch (e) {
-                        // Si no se puede parsear, mantenerlo como string
-                        console.warn("No se pudo parsear el permiso:", permit);
-                      }
-                    }
-
-                    return (
-                      <Card key={idx} className="mb-4 border-primary/20 shadow-sm">
-                        <CardHeader className="py-4 bg-gradient-to-r from-primary/5 to-transparent">
-                          <CardTitle className="text-md">
-                            {typeof permitObj === 'object' ? permitObj.name : 'Permiso'}
+                {permitData.requiredPermits &&
+                permitData.requiredPermits.length > 0 ? (
+                  <div className="space-y-6">
+                    {permitData.requiredPermits.map((permit, idx) => (
+                      <Card key={idx} className="overflow-hidden">
+                        <CardHeader className="bg-primary/5 py-3">
+                          <CardTitle className="text-base">
+                            {permit.name}
                           </CardTitle>
-                          <CardDescription>
-                            Emitido por: {typeof permitObj === 'object' ? permitObj.issuingAuthority : 'Autoridad local'}
+                          <CardDescription className="text-xs">
+                            Emitido por: {permit.issuingAuthority}
                           </CardDescription>
                         </CardHeader>
-                        <CardContent className="py-3">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-                            <div className="flex items-center">
-                              <CalendarClock className="h-4 w-4 mr-2 text-primary/70" />
-                              <span className="text-sm">
-                                Tiempo estimado: {typeof permitObj === 'object' ? permitObj.estimatedTimeline : 'Consultar'}
-                              </span>
+                        <CardContent className="pt-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <h4 className="text-sm font-medium flex items-center">
+                                <Clock className="h-4 w-4 mr-1 text-primary/70" />
+                                Tiempo estimado:
+                              </h4>
+                              <p className="text-sm text-muted-foreground">
+                                {permit.estimatedTimeline}
+                              </p>
                             </div>
-                            {typeof permitObj === 'object' && permitObj.averageCost && (
-                              <div className="flex items-center">
-                                <DollarSign className="h-4 w-4 mr-2 text-primary/70" />
-                                <span className="text-sm">
-                                  Costo aproximado: {permitObj.averageCost}
-                                </span>
+
+                            {permit.averageCost && (
+                              <div>
+                                <h4 className="text-sm font-medium flex items-center">
+                                  <DollarSign className="h-4 w-4 mr-1 text-primary/70" />
+                                  Costo aproximado:
+                                </h4>
+                                <p className="text-sm text-muted-foreground">
+                                  {permit.averageCost}
+                                </p>
                               </div>
                             )}
                           </div>
-                          
-                          {typeof permitObj === 'object' && permitObj.description && (
-                            <div className="mt-3 bg-muted/30 p-3 rounded-md">
-                              <p className="text-sm">
-                                {typeof permitObj.description === 'object' 
-                                  ? JSON.stringify(permitObj.description) 
-                                  : permitObj.description}
+
+                          {permit.description && (
+                            <div className="mt-4">
+                              <h4 className="text-sm font-medium">
+                                Descripción:
+                              </h4>
+                              <p className="text-sm text-muted-foreground">
+                                {permit.description}
                               </p>
                             </div>
                           )}
-                          
-                          {typeof permitObj === 'object' && permitObj.requirements && (
-                            <div className="mt-3">
-                              <h4 className="text-sm font-medium mb-2 flex items-center">
-                                <FileText className="h-4 w-4 mr-1 text-primary/70" />
+
+                          {permit.requirements && (
+                            <div className="mt-4">
+                              <h4 className="text-sm font-medium">
                                 Requisitos:
                               </h4>
-                              {Array.isArray(permitObj.requirements) ? (
-                                <ul className="list-disc ml-5 text-sm space-y-1.5 pl-1">
-                                  {permitObj.requirements.map((req, reqIdx) => (
-                                    <li key={reqIdx} className="text-muted-foreground">
-                                      {typeof req === 'object' ? JSON.stringify(req) : req}
-                                    </li>
+                              {Array.isArray(permit.requirements) ? (
+                                <ul className="mt-2 space-y-1 list-disc pl-5 text-sm text-muted-foreground">
+                                  {permit.requirements.map((req, idx) => (
+                                    <li key={idx}>{req}</li>
                                   ))}
                                 </ul>
-                              ) : typeof permitObj.requirements === "string" ? (
-                                <p className="text-sm text-muted-foreground">{permitObj.requirements}</p>
                               ) : (
-                                <p className="text-sm text-muted-foreground">{JSON.stringify(permitObj.requirements)}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {permit.requirements}
+                                </p>
                               )}
                             </div>
                           )}
-                          
-                          {typeof permitObj === 'object' && permitObj.url && (
-                            <div className="mt-4">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="text-primary hover:bg-primary/5"
-                                onClick={() => window.open(permitObj.url, "_blank")}
+
+                          {permit.url && (
+                            <div className="mt-4 flex items-center text-primary text-sm">
+                              <Link2 className="h-4 w-4 mr-1" />
+                              <a
+                                href={permit.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="hover:underline flex items-center"
                               >
-                                <ExternalLink className="h-3.5 w-3.5 mr-1" />
-                                Ver formulario o información
-                              </Button>
+                                Más información
+                                <ExternalLink className="h-3 w-3 ml-1" />
+                              </a>
                             </div>
                           )}
                         </CardContent>
                       </Card>
-                    );
-                  })
+                    ))}
+                  </div>
                 ) : (
-                  <Alert>
-                    <AlertTriangle className="h-4 w-4" />
+                  <Alert className="bg-muted">
                     <AlertTitle>Sin permisos específicos</AlertTitle>
                     <AlertDescription>
                       No se identificaron permisos específicos para este tipo de
-                      proyecto en esta ubicación. Esto podría significar que no
-                      se requieren permisos o que la información no está
-                      disponible. Se recomienda contactar a la autoridad local
-                      para confirmar.
+                      proyecto en esta ubicación. Aún así, se recomienda
+                      consultar con la autoridad local para confirmar.
                     </AlertDescription>
                   </Alert>
                 )}
               </TabsContent>
 
-              <TabsContent value="licenses" className="px-6 py-4 space-y-4">
-                <h3 className="text-lg font-medium flex items-center">
+              <TabsContent value="licenses" className="px-6 py-4">
+                <h3 className="text-lg font-medium flex items-center mb-4">
                   <CheckCircle2 className="mr-2 h-5 w-5 text-primary" />
-                  Licencias de Contratista
+                  Licencias y Requisitos Profesionales
                 </h3>
 
                 {permitData.licenseRequirements &&
                 permitData.licenseRequirements.length > 0 ? (
-                  permitData.licenseRequirements.map((license, idx) => (
-                    <Card key={idx} className="mb-4">
-                      <CardHeader className="py-4">
-                        <CardTitle className="text-md">
-                          {license.type}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="py-2">
-                        <div className="space-y-2">
-                          <p className="text-sm">
-                            <span className="font-medium">Proceso:</span>{" "}
-                            {license.obtainingProcess}
-                          </p>
-                          <p className="text-sm">
-                            <span className="font-medium">Costos:</span>{" "}
-                            {license.fees}
-                          </p>
-                          {license.renewalInfo && (
-                            <p className="text-sm">
-                              <span className="font-medium">Renovación:</span>{" "}
-                              {license.renewalInfo}
-                            </p>
-                          )}
-                          {license.url && (
-                            <div className="mt-3">
-                              <Button
-                                variant="link"
-                                size="sm"
-                                className="p-0 h-auto"
-                                onClick={() =>
-                                  window.open(license.url, "_blank")
-                                }
-                              >
-                                Ver más información
-                              </Button>
+                  <div className="space-y-6">
+                    {permitData.licenseRequirements.map((license, idx) => (
+                      <Card key={idx} className="overflow-hidden">
+                        <CardHeader className="bg-primary/5 py-3">
+                          <CardTitle className="text-base">
+                            {license.type}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                          <div className="space-y-4">
+                            <div>
+                              <h4 className="text-sm font-medium">
+                                Proceso para obtener:
+                              </h4>
+                              <p className="text-sm text-muted-foreground">
+                                {license.obtainingProcess}
+                              </p>
                             </div>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
+
+                            <div>
+                              <h4 className="text-sm font-medium flex items-center">
+                                <DollarSign className="h-4 w-4 mr-1 text-primary/70" />
+                                Costos y tarifas:
+                              </h4>
+                              <p className="text-sm text-muted-foreground">
+                                {license.fees}
+                              </p>
+                            </div>
+
+                            {license.renewalInfo && (
+                              <div>
+                                <h4 className="text-sm font-medium flex items-center">
+                                  <RefreshCw className="h-4 w-4 mr-1 text-primary/70" />
+                                  Información de renovación:
+                                </h4>
+                                <p className="text-sm text-muted-foreground">
+                                  {license.renewalInfo}
+                                </p>
+                              </div>
+                            )}
+
+                            {license.bondingInsurance && (
+                              <div>
+                                <h4 className="text-sm font-medium">
+                                  Requisitos de fianza y seguro:
+                                </h4>
+                                <p className="text-sm text-muted-foreground">
+                                  {license.bondingInsurance}
+                                </p>
+                              </div>
+                            )}
+
+                            {license.verificationProcess && (
+                              <div>
+                                <h4 className="text-sm font-medium">
+                                  Proceso de verificación:
+                                </h4>
+                                <p className="text-sm text-muted-foreground">
+                                  {license.verificationProcess}
+                                </p>
+                              </div>
+                            )}
+
+                            {license.url && (
+                              <div className="mt-4 flex items-center text-primary text-sm">
+                                <Link2 className="h-4 w-4 mr-1" />
+                                <a
+                                  href={license.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="hover:underline flex items-center"
+                                >
+                                  Más información
+                                  <ExternalLink className="h-3 w-3 ml-1" />
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
                 ) : (
-                  <Alert>
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>
-                      Sin requisitos de licencia específicos
-                    </AlertTitle>
+                  <Alert className="bg-muted">
+                    <AlertTitle>Sin requisitos específicos de licencia</AlertTitle>
                     <AlertDescription>
-                      No se identificaron requisitos de licencia específicos
-                      para contratistas en esta ubicación. Recomendamos
-                      verificar con la autoridad local si se requiere alguna
-                      licencia comercial general.
+                      No se identificaron requisitos específicos de licencia profesional 
+                      para este tipo de proyecto. Se recomienda verificar con la autoridad 
+                      local para confirmar los requisitos específicos de contratistas.
                     </AlertDescription>
                   </Alert>
                 )}
               </TabsContent>
 
-              <TabsContent value="codes" className="px-6 py-4 space-y-4">
-                <h3 className="text-lg font-medium flex items-center">
+              <TabsContent value="codes" className="px-6 py-4">
+                <h3 className="text-lg font-medium flex items-center mb-4">
                   <Building2 className="mr-2 h-5 w-5 text-primary" />
-                  Regulaciones y Códigos de Construcción
+                  Códigos y Regulaciones de Construcción
                 </h3>
 
                 {permitData.buildingCodeRegulations &&
                 permitData.buildingCodeRegulations.length > 0 ? (
-                  permitData.buildingCodeRegulations.map((code, idx) => (
-                    <Card key={idx} className="mb-4">
-                      <CardHeader className="py-4">
-                        <CardTitle className="text-md">{code.type}</CardTitle>
-                      </CardHeader>
-                      <CardContent className="py-2">
-                        <div className="space-y-2">
-                          <p className="text-sm">{code.details}</p>
-                          {code.restrictions && (
-                            <div className="mt-2">
-                              <h4 className="text-sm font-medium">
-                                Restricciones:
-                              </h4>
-                              <p className="text-sm">{code.restrictions}</p>
-                            </div>
-                          )}
-                          {code.applicableAreas &&
-                            Array.isArray(code.applicableAreas) &&
-                            code.applicableAreas.length > 0 && (
-                              <div className="mt-2">
-                                <h4 className="text-sm font-medium">
-                                  Áreas aplicables:
-                                </h4>
-                                <ul className="list-disc pl-5 text-sm">
-                                  {code.applicableAreas.map((area, i) => (
-                                    <li key={i}>{area}</li>
-                                  ))}
-                                </ul>
-                              </div>
+                  <div className="space-y-6">
+                    {permitData.buildingCodeRegulations.map(
+                      (regulation, idx) => (
+                        <Card key={idx} className="overflow-hidden">
+                          <CardHeader className="bg-primary/5 py-3">
+                            <CardTitle className="text-base">
+                              {regulation.type}
+                            </CardTitle>
+                            {regulation.codeReference && (
+                              <CardDescription className="text-xs">
+                                Referencia: {regulation.codeReference}
+                              </CardDescription>
                             )}
-                          {code.applicableAreas &&
-                            typeof code.applicableAreas === "string" && (
-                              <div className="mt-2">
+                          </CardHeader>
+                          <CardContent className="pt-4">
+                            <div className="space-y-4">
+                              <div>
                                 <h4 className="text-sm font-medium">
-                                  Áreas aplicables:
+                                  Detalles:
                                 </h4>
-                                <p className="text-sm">
-                                  {code.applicableAreas}
+                                <p className="text-sm text-muted-foreground">
+                                  {regulation.details}
                                 </p>
                               </div>
-                            )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
+
+                              {regulation.restrictions && (
+                                <div>
+                                  <h4 className="text-sm font-medium">
+                                    Restricciones:
+                                  </h4>
+                                  <p className="text-sm text-muted-foreground">
+                                    {regulation.restrictions}
+                                  </p>
+                                </div>
+                              )}
+
+                              {regulation.measurements && (
+                                <div>
+                                  <h4 className="text-sm font-medium flex items-center">
+                                    <Ruler className="h-4 w-4 mr-1 text-primary/70" />
+                                    Medidas y dimensiones:
+                                  </h4>
+                                  <p className="text-sm text-muted-foreground">
+                                    {regulation.measurements}
+                                  </p>
+                                </div>
+                              )}
+
+                              {regulation.applicableAreas &&
+                                regulation.applicableAreas.length > 0 && (
+                                  <div>
+                                    <h4 className="text-sm font-medium">
+                                      Áreas aplicables:
+                                    </h4>
+                                    <ul className="mt-2 space-y-1 list-disc pl-5 text-sm text-muted-foreground">
+                                      {regulation.applicableAreas.map(
+                                        (area, idx) => (
+                                          <li key={idx}>{area}</li>
+                                        ),
+                                      )}
+                                    </ul>
+                                  </div>
+                                )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ),
+                    )}
+                  </div>
                 ) : (
-                  <Alert>
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>Sin regulaciones específicas</AlertTitle>
+                  <Alert className="bg-muted">
+                    <AlertTitle>Sin códigos específicos</AlertTitle>
                     <AlertDescription>
-                      No se identificaron regulaciones específicas para este
-                      tipo de proyecto. Recomendamos verificar con el
-                      departamento de planificación local para más información.
+                      No se identificaron códigos específicos para este tipo de
+                      proyecto. Se recomienda consultar el código de construcción 
+                      local para verificar requisitos generales.
                     </AlertDescription>
                   </Alert>
                 )}
               </TabsContent>
 
-              <TabsContent value="inspections" className="px-6 py-4 space-y-4">
-                <h3 className="text-lg font-medium flex items-center">
+              <TabsContent value="inspections" className="px-6 py-4">
+                <h3 className="text-lg font-medium flex items-center mb-4">
                   <ListChecks className="mr-2 h-5 w-5 text-primary" />
                   Requisitos de Inspección
                 </h3>
 
                 {permitData.inspectionRequirements &&
                 permitData.inspectionRequirements.length > 0 ? (
-                  permitData.inspectionRequirements.map((inspection, idx) => (
-                    <Card key={idx} className="mb-4">
-                      <CardHeader className="py-4">
-                        <CardTitle className="text-md">
-                          {inspection.type}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="py-2">
-                        <div className="space-y-2">
-                          <p className="text-sm">
-                            <span className="font-medium">Momento:</span>{" "}
-                            {inspection.timing}
-                          </p>
-                          {inspection.contactInfo && (
-                            <p className="text-sm">
-                              <span className="font-medium">Contacto:</span>{" "}
-                              {typeof inspection.contactInfo === 'object' 
-                                ? JSON.stringify(inspection.contactInfo) 
-                                : inspection.contactInfo}
-                            </p>
-                          )}
-                          {inspection.description && (
-                            <p className="text-sm mt-2">
-                              {typeof inspection.description === 'object' 
-                                ? JSON.stringify(inspection.description) 
-                                : inspection.description}
-                            </p>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
+                  <div className="space-y-6">
+                    {permitData.inspectionRequirements.map(
+                      (inspection, idx) => (
+                        <Card key={idx} className="overflow-hidden">
+                          <CardHeader className="bg-primary/5 py-3">
+                            <CardTitle className="text-base">
+                              {inspection.type}
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="pt-4">
+                            <div className="space-y-4">
+                              {inspection.description && (
+                                <div>
+                                  <h4 className="text-sm font-medium">
+                                    Descripción:
+                                  </h4>
+                                  <p className="text-sm text-muted-foreground">
+                                    {inspection.description}
+                                  </p>
+                                </div>
+                              )}
+
+                              <div>
+                                <h4 className="text-sm font-medium flex items-center">
+                                  <Clock8 className="h-4 w-4 mr-1 text-primary/70" />
+                                  Momento de la inspección:
+                                </h4>
+                                <p className="text-sm text-muted-foreground">
+                                  {inspection.timing}
+                                </p>
+                              </div>
+
+                              {inspection.schedulingProcess && (
+                                <div>
+                                  <h4 className="text-sm font-medium">
+                                    Proceso para programar:
+                                  </h4>
+                                  <p className="text-sm text-muted-foreground">
+                                    {inspection.schedulingProcess}
+                                  </p>
+                                </div>
+                              )}
+
+                              {inspection.preparationNeeded && (
+                                <div>
+                                  <h4 className="text-sm font-medium">
+                                    Preparación necesaria:
+                                  </h4>
+                                  <p className="text-sm text-muted-foreground">
+                                    {inspection.preparationNeeded}
+                                  </p>
+                                </div>
+                              )}
+
+                              {inspection.commonIssues && (
+                                <div>
+                                  <h4 className="text-sm font-medium">
+                                    Problemas comunes:
+                                  </h4>
+                                  <p className="text-sm text-muted-foreground">
+                                    {inspection.commonIssues}
+                                  </p>
+                                </div>
+                              )}
+
+                              {inspection.contactInfo && (
+                                <div>
+                                  <h4 className="text-sm font-medium flex items-center">
+                                    <Phone className="h-4 w-4 mr-1 text-primary/70" />
+                                    Información de contacto:
+                                  </h4>
+                                  <p className="text-sm text-muted-foreground">
+                                    {inspection.contactInfo}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ),
+                    )}
+                  </div>
                 ) : (
-                  <Alert>
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>Sin inspecciones específicas</AlertTitle>
+                  <Alert className="bg-muted">
+                    <AlertTitle>Sin requisitos específicos de inspección</AlertTitle>
                     <AlertDescription>
-                      No se identificaron requisitos de inspección específicos
-                      para este proyecto. Consulta con la oficina de permisos
-                      local si es necesario programar inspecciones.
+                      No se identificaron requisitos específicos de inspección para este tipo de
+                      proyecto. Se recomienda consultar con la autoridad local para confirmar
+                      los requisitos de inspección.
                     </AlertDescription>
                   </Alert>
                 )}
               </TabsContent>
 
-              <TabsContent value="process" className="px-6 py-4 space-y-6">
-                <h3 className="text-lg font-medium flex items-center">
+              <TabsContent value="process" className="px-6 py-4">
+                <h3 className="text-lg font-medium flex items-center mb-4">
                   <HardHat className="mr-2 h-5 w-5 text-primary" />
-                  Proceso Paso a Paso
+                  Proceso de Permiso y Aprobación
                 </h3>
 
                 {permitData.process && permitData.process.length > 0 ? (
-                  <div className="relative">
-                    <div className="absolute left-3 top-0 bottom-0 w-[1px] bg-primary/30"></div>
-                    <ol className="relative space-y-6">
-                      {permitData.process.map((step: any, idx) => {
-                        // Asegurarse de que step sea un string
-                        const stepText =
-                          typeof step === "string"
-                            ? step
-                            : JSON.stringify(step);
-                        const stepLower = stepText.toLowerCase();
+                  <div className="space-y-4">
+                    <Alert className="bg-primary/5 border-primary/20">
+                      <HardHat className="h-5 w-5 text-primary" />
+                      <AlertTitle className="text-primary">
+                        Proceso paso a paso
+                      </AlertTitle>
+                      <AlertDescription>
+                        Los siguientes pasos detallan el proceso para la obtención de permisos
+                        y las aprobaciones requeridas para tu proyecto.
+                      </AlertDescription>
+                    </Alert>
 
-                        // Analyze the step to identify who needs to perform it
-                        const isContractorStep =
-                          stepLower.includes("contratista") ||
-                          stepLower.includes("contractor") ||
-                          stepLower.includes("profesional") ||
-                          stepLower.includes("licencia");
-                        const isOwnerStep =
-                          stepLower.includes("propietario") ||
-                          stepLower.includes("dueño") ||
-                          stepLower.includes("owner") ||
-                          stepLower.includes("cliente") ||
-                          stepLower.includes("homeowner");
-
-                        // Determine badge style based on who performs the step
-                        let badgeText = "Contractor/Owner";
-                        let badgeClass =
-                          "bg-blue-100 text-blue-800 border-blue-300";
-
-                        if (isContractorStep && !isOwnerStep) {
-                          badgeText = "Contratista";
-                          badgeClass =
-                            "bg-amber-100 text-amber-800 border-amber-300";
-                        } else if (isOwnerStep && !isContractorStep) {
-                          badgeText = "Propietario";
-                          badgeClass =
-                            "bg-green-100 text-green-800 border-green-300";
+                    <div className="relative border-l-2 border-primary/30 ml-4 pl-8 pb-2 mt-6">
+                      {permitData.process.map((step, idx) => {
+                        // Verificar si el paso contiene información de responsabilidad
+                        let responsibleParty = "Ambos";
+                        let stepText = step;
+                        
+                        if (typeof step === "string") {
+                          if (step.includes("(Propietario)")) {
+                            responsibleParty = "Propietario";
+                            stepText = step.replace("(Propietario)", "").trim();
+                          } else if (step.includes("(Contratista)")) {
+                            responsibleParty = "Contratista";
+                            stepText = step.replace("(Contratista)", "").trim();
+                          } else if (step.includes("(Ambos)")) {
+                            responsibleParty = "Contractor/Owner";
+                            stepText = step.replace("(Ambos)", "").trim();
+                          }
                         }
 
                         return (
-                          <li key={idx} className="ml-8 relative">
-                            <div className="absolute -left-7 bg-background rounded-full h-6 w-6 flex items-center justify-center border border-primary text-primary font-medium">
+                          <li key={idx} className="ml-6 relative">
+                            {/* Indicador de paso (círculo numerado) */}
+                            <div
+                              className={`absolute -left-12 flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
+                                responsibleParty === "Propietario"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : responsibleParty === "Contratista"
+                                  ? "bg-blue-100 text-blue-800"
+                                  : "bg-primary/10 text-primary"
+                              }`}
+                            >
                               {idx + 1}
                             </div>
-                            <div className="flex flex-col space-y-1">
-                              <div className="flex items-center gap-2">
-                                <span
-                                  className={`text-xs px-2 py-0.5 rounded-full border ${badgeClass}`}
-                                >
-                                  {badgeText}
+                            
+                            {/* Línea vertical que conecta los pasos */}
+                            {idx < permitData.process.length - 1 && (
+                              <div
+                                className="absolute -left-9 top-6 w-[1px] bg-dashed bg-primary/20"
+                                style={{ height: "calc(100% - 10px)" }}
+                              ></div>
+                            )}
+                            
+                            {/* Contenido del paso */}
+                            <div className={`rounded-lg border px-4 py-3 mb-5 ${
+                              responsibleParty === "Propietario"
+                                ? "border-yellow-200 bg-yellow-50"
+                                : responsibleParty === "Contratista"
+                                ? "border-blue-200 bg-blue-50"
+                                : "border-primary/20 bg-primary/5"
+                            }`}>
+                              <div className="flex items-start justify-between">
+                                <div className="text-sm">
+                                  <p>{stepText}</p>
+                                </div>
+                                <span className={`text-xs px-2 py-1 rounded-md ml-3 flex-shrink-0 ${
+                                  responsibleParty === "Propietario"
+                                    ? "bg-yellow-100 text-yellow-800"
+                                    : responsibleParty === "Contratista"
+                                    ? "bg-blue-100 text-blue-800"
+                                    : "bg-primary/10 text-primary"
+                                }`}>
+                                  {responsibleParty}
                                 </span>
                               </div>
-                              <p className="text-sm">{stepText}</p>
                             </div>
                           </li>
                         );
                       })}
-                    </ol>
+                    </div>
+
+                    {/* Sección de cronograma */}
+                    {permitData.timeline && (
+                      <Card className="mt-6">
+                        <CardHeader className="bg-primary/5 py-3">
+                          <CardTitle className="text-md flex items-center">
+                            <CalendarClock className="h-5 w-5 mr-2 text-primary" />
+                            Información de Cronograma
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="py-4">
+                          <div className="space-y-4">
+                            <div>
+                              <h4 className="text-sm font-medium">
+                                Tiempo total estimado:
+                              </h4>
+                              <p className="text-sm text-muted-foreground">
+                                {permitData.timeline.totalEstimatedTime}
+                              </p>
+                            </div>
+
+                            <div>
+                              <h4 className="text-sm font-medium">
+                                Elementos críticos:
+                              </h4>
+                              <ul className="mt-2 space-y-1 list-disc pl-5 text-sm text-muted-foreground">
+                                {permitData.timeline.criticalPathItems.map(
+                                  (item, idx) => (
+                                    <li key={idx}>{item}</li>
+                                  ),
+                                )}
+                              </ul>
+                            </div>
+
+                            {permitData.timeline.bestTimeToApply && (
+                              <div>
+                                <h4 className="text-sm font-medium">
+                                  Mejor momento para aplicar:
+                                </h4>
+                                <p className="text-sm text-muted-foreground">
+                                  {permitData.timeline.bestTimeToApply}
+                                </p>
+                              </div>
+                            )}
+
+                            {permitData.timeline.expirationPeriods && (
+                              <div>
+                                <h4 className="text-sm font-medium">
+                                  Períodos de expiración:
+                                </h4>
+                                <p className="text-sm text-muted-foreground">
+                                  {permitData.timeline.expirationPeriods}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Sección de costos */}
+                    {permitData.costAnalysis && (
+                      <Card className="mt-4">
+                        <CardHeader className="bg-primary/5 py-3">
+                          <CardTitle className="text-md flex items-center">
+                            <DollarSign className="h-5 w-5 mr-2 text-primary" />
+                            Análisis de Costos
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="py-4">
+                          <div className="space-y-4">
+                            <div>
+                              <h4 className="text-sm font-medium">
+                                Costo total estimado:
+                              </h4>
+                              <p className="text-sm text-muted-foreground">
+                                {permitData.costAnalysis.totalEstimatedCost}
+                              </p>
+                            </div>
+
+                            <div>
+                              <h4 className="text-sm font-medium">
+                                Factores variables:
+                              </h4>
+                              <ul className="mt-2 space-y-1 list-disc pl-5 text-sm text-muted-foreground">
+                                {permitData.costAnalysis.variableFactors.map(
+                                  (factor, idx) => (
+                                    <li key={idx}>{factor}</li>
+                                  ),
+                                )}
+                              </ul>
+                            </div>
+
+                            {permitData.costAnalysis.feeScheduleUrl && (
+                              <div className="mt-4 flex items-center text-primary text-sm">
+                                <Link2 className="h-4 w-4 mr-1" />
+                                <a
+                                  href={permitData.costAnalysis.feeScheduleUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="hover:underline flex items-center"
+                                >
+                                  Ver tabla de tarifas completa
+                                  <ExternalLink className="h-3 w-3 ml-1" />
+                                </a>
+                              </div>
+                            )}
+
+                            {permitData.costAnalysis.paymentMethods && (
+                              <div>
+                                <h4 className="text-sm font-medium">
+                                  Métodos de pago aceptados:
+                                </h4>
+                                <ul className="mt-2 space-y-1 list-disc pl-5 text-sm text-muted-foreground">
+                                  {permitData.costAnalysis.paymentMethods.map(
+                                    (method, idx) => (
+                                      <li key={idx}>{method}</li>
+                                    ),
+                                  )}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
                   </div>
                 ) : (
-                  <Alert>
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>Proceso no disponible</AlertTitle>
+                  <Alert className="bg-muted">
+                    <AlertTitle>Proceso no especificado</AlertTitle>
                     <AlertDescription>
-                      No se pudo determinar un proceso específico para este tipo
-                      de proyecto. Recomendamos contactar directamente con las
-                      autoridades locales.
+                      No se ha detallado un proceso específico para este tipo de proyecto.
+                      Se recomienda contactar a la oficina de permisos local para obtener
+                      información detallada sobre el proceso de aprobación.
                     </AlertDescription>
                   </Alert>
                 )}
 
-                {/* Consideraciones especiales */}
-                {permitData.specialConsiderations &&
-                  permitData.specialConsiderations.length > 0 && (
-                    <Card className="mt-6">
-                      <CardHeader className="py-4">
-                        <CardTitle className="text-md flex items-center">
-                          <Info className="h-5 w-5 mr-2 text-primary" />
-                          Consideraciones Especiales
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="py-2">
-                        <ul className="list-disc pl-5 space-y-2">
-                          {permitData.specialConsiderations.map(
-                            (consideration: any, idx) => {
-                              // Verificar si es un objeto y convertir a string si es necesario
-                              const considerationText =
-                                typeof consideration === "object" &&
-                                consideration !== null
-                                  ? JSON.stringify(consideration)
-                                  : consideration;
-                              return (
-                                <li key={idx} className="text-sm">
-                                  {considerationText}
-                                </li>
-                              );
-                            },
-                          )}
-                        </ul>
-                      </CardContent>
-                    </Card>
-                  )}
+                {/* Contactos útiles */}
+                {permitData.contactInformation &&
+                permitData.contactInformation.length > 0 && (
+                  <div className="mt-8">
+                    <h3 className="text-lg font-medium flex items-center mb-4">
+                      <Phone className="mr-2 h-5 w-5 text-primary" />
+                      Contactos Importantes
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {permitData.contactInformation.map((contact, idx) => (
+                        <Card key={idx}>
+                          <CardHeader className="py-3">
+                            <CardTitle className="text-sm flex items-center">
+                              {contact.department}
+                            </CardTitle>
+                            <CardDescription className="text-xs">
+                              {contact.purpose}
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent className="py-2">
+                            <div className="text-sm space-y-2">
+                              {contact.phone && (
+                                <div className="flex items-center">
+                                  <Phone className="h-3.5 w-3.5 mr-2 text-primary/70" />
+                                  <span>{contact.phone}</span>
+                                </div>
+                              )}
+                              {contact.email && (
+                                <div className="flex items-center">
+                                  <Mail className="h-3.5 w-3.5 mr-2 text-primary/70" />
+                                  <span>{contact.email}</span>
+                                </div>
+                              )}
+                              {contact.address && (
+                                <div className="flex items-center">
+                                  <MapPin className="h-3.5 w-3.5 mr-2 text-primary/70" />
+                                  <span>{contact.address}</span>
+                                </div>
+                              )}
+                              {contact.hours && (
+                                <div className="flex items-center">
+                                  <Clock className="h-3.5 w-3.5 mr-2 text-primary/70" />
+                                  <span>{contact.hours}</span>
+                                </div>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </TabsContent>
             </ScrollArea>
           </Tabs>
+
+          <div className="px-6 py-4 bg-muted/40 mt-6">
+            <div className="flex flex-col space-y-4">
+              <div>
+                <h3 className="text-sm font-medium flex items-center">
+                  <BookOpen className="h-4 w-4 mr-2 text-primary" />
+                  Enlaces y Recursos Útiles
+                </h3>
+                <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {permitData.links && permitData.links.length > 0 ? (
+                    permitData.links.map((link, idx) => (
+                      <a
+                        key={idx}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-start p-2 bg-white rounded border hover:bg-primary/5 transition-colors"
+                      >
+                        <ExternalLink className="h-4 w-4 mr-2 text-primary flex-shrink-0 mt-0.5" />
+                        <div>
+                          <div className="text-sm font-medium">{link.name}</div>
+                          {link.description && (
+                            <div className="text-xs text-muted-foreground">
+                              {link.description}
+                            </div>
+                          )}
+                        </div>
+                      </a>
+                    ))
+                  ) : (
+                    <div className="text-sm text-muted-foreground col-span-2">
+                      No se han proporcionado enlaces específicos.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <h3 className="text-xs text-muted-foreground">
+                  Información generada en: {permitData.meta.generated}
+                </h3>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <div className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+                    {permitData.meta.projectType}
+                  </div>
+                  <div className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+                    {permitData.meta.location}
+                  </div>
+                </div>
+                <div className="mt-3 text-xs text-muted-foreground">
+                  <span className="font-medium">Fuentes consultadas:</span>{" "}
+                  {permitData.meta.sources.join(", ")}
+                </div>
+              </div>
+            </div>
+          </div>
         </Card>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-gradient-to-br from-primary/10 to-secondary/5 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-lg">Evita Multas y Retrasos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              Conoce todos los permisos necesarios antes de iniciar tu proyecto
-              y evita costosas penalizaciones.
-            </p>
-          </CardContent>
-        </Card>
+      {/* Modal de historial de búsquedas común */}
+      <Dialog open={showHistory} onOpenChange={setShowHistory}>
+        <DialogContent className="sm:max-w-[625px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-5 w-5 text-primary" />
+              Historial de Búsquedas
+            </DialogTitle>
+            <DialogDescription>
+              Consulta y carga búsquedas anteriores para evitar realizar la misma búsqueda nuevamente.
+            </DialogDescription>
+          </DialogHeader>
 
-        <Card className="bg-gradient-to-br from-amber-500/10 to-orange-500/5 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-lg">Normativas Actualizadas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              Accede a información actualizada sobre regulaciones y códigos
-              específicos para tu ubicación.
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-emerald-500/10 to-blue-500/5 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-lg">Asesoría Confiable</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              Obtén respuestas inmediatas sobre requisitos legales sin necesidad
-              de consultar múltiples fuentes.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+          <div className="py-4">
+            {historyQuery.isLoading ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+                <p className="text-sm text-muted-foreground">Cargando historial de búsquedas...</p>
+              </div>
+            ) : historyQuery.isError ? (
+              <div className="text-center p-4 border rounded-md bg-red-50">
+                <AlertTriangle className="h-8 w-8 text-red-500 mx-auto mb-2" />
+                <h3 className="font-medium">Error al cargar el historial</h3>
+                <p className="text-sm text-muted-foreground">
+                  {historyQuery.error instanceof Error ? historyQuery.error.message : 'Error desconocido'}
+                </p>
+              </div>
+            ) : !historyQuery.data || historyQuery.data.length === 0 ? (
+              <div className="text-center p-8 border rounded-md bg-gray-50">
+                <Info className="h-10 w-10 text-primary/50 mx-auto mb-2" />
+                <h3 className="font-medium text-lg">No hay búsquedas previas</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Cuando realices consultas de permisos, se guardarán aquí para facilitar su acceso posterior.
+                </p>
+              </div>
+            ) : (
+              <ScrollArea className="h-[400px] pr-4">
+                <div className="space-y-3">
+                  {historyQuery.data.map((item) => (
+                    <Card key={item.id} className="hover:bg-primary/5 transition-colors">
+                      <CardHeader className="p-4 pb-2">
+                        <CardTitle className="text-base">{item.title}</CardTitle>
+                        <CardDescription className="text-xs">
+                          {new Date(item.createdAt).toLocaleDateString()} {new Date(item.createdAt).toLocaleTimeString()}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="p-4 pt-0">
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div>
+                            <span className="font-medium block text-xs">Dirección:</span>
+                            <span className="text-muted-foreground text-xs">{item.address}</span>
+                          </div>
+                          <div>
+                            <span className="font-medium block text-xs">Tipo de proyecto:</span>
+                            <span className="text-muted-foreground text-xs capitalize">{item.projectType}</span>
+                          </div>
+                          {item.projectDescription && (
+                            <div className="col-span-2 mt-1">
+                              <span className="font-medium block text-xs">Descripción:</span>
+                              <span className="text-muted-foreground text-xs line-clamp-2">{item.projectDescription}</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex justify-between items-center mt-3">
+                          <div className="text-xs text-primary">
+                            {item.results.requiredPermits.length} permisos encontrados
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="h-8"
+                            onClick={() => handleLoadHistoryItem(item)}
+                          >
+                            <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                            Cargar resultados
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
