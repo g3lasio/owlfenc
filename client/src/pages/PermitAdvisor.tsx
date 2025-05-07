@@ -206,7 +206,7 @@ export default function PermitAdvisor() {
               <FileText className="h-3 w-3 text-primary" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold">Mervin DeepSearch</h1>
+          <h1 className="text-3xl font-bold">Mervin Permit Advisor</h1>
         </div>
         <p className="text-muted-foreground">
           Tu asesor legal instantáneo para permisos y regulaciones de construcción
