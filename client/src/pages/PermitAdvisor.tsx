@@ -575,8 +575,8 @@ export default function PermitAdvisor() {
             onValueChange={setActiveTab}
             className="mt-2"
           >
-            <div className="px-6">
-              <TabsList className="grid grid-cols-2 md:grid-cols-6 mb-4 flex-wrap">
+            <div className="px-6 pb-4">
+              <TabsList className="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-4">
                 <TabsTrigger value="permits" className="text-xs md:text-sm">
                   <FileText className="h-4 w-4 mr-1 hidden sm:inline" />
                   Permisos
@@ -600,7 +600,7 @@ export default function PermitAdvisor() {
               </TabsList>
             </div>
 
-            <ScrollArea className="h-[500px]">
+            <ScrollArea className="h-[500px] mt-4">
               <TabsContent value="overview" className="px-6 py-4 space-y-6">
                 <h3 className="text-lg font-medium flex items-center">
                   <Search className="mr-2 h-5 w-5 text-primary" />
