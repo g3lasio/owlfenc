@@ -39,6 +39,7 @@ import GooglePlacesAutocomplete, {
   getLatLng,
 } from "react-google-places-autocomplete";
 import { propertyVerifierService, PropertyDetails, OwnerHistoryEntry } from "@/services/propertyVerifierService";
+import PropertySearchHistory from "@/components/property/PropertySearchHistory";
 
 export default function PropertyOwnershipVerifier() {
   // Obtener la suscripción del usuario
@@ -55,6 +56,7 @@ export default function PropertyOwnershipVerifier() {
   const [placeValue, setPlaceValue] = useState<any>(null);
   const [apiError, setApiError] = useState<boolean>(false);
   const [useManualInput, setUseManualInput] = useState<boolean>(false);
+  const { toast } = useToast();
 
   // Estados que ya no se usan con Google Places Autocomplete
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -167,6 +169,32 @@ export default function PropertyOwnershipVerifier() {
     }
   };
 
+  // Manejar la selección de un elemento del historial
+  const handleSelectHistory = (historyItem: any) => {
+    if (historyItem && historyItem.results) {
+      // Actualizar la dirección visible
+      setAddress(historyItem.address);
+      
+      // Establecer los detalles de la propiedad desde el historial
+      setPropertyDetails(historyItem.results);
+      
+      // Limpiar cualquier error previo
+      setError(null);
+      
+      // Mostrar notificación de éxito
+      toast({
+        title: "Historial cargado",
+        description: `Cargada información de: ${historyItem.address}`,
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Error al cargar",
+        description: "No se pudieron cargar los datos del historial",
+      });
+    }
+  };
+
   const handleSearch = async () => {
     if (!address.trim()) {
       setError("Por favor, ingresa una dirección válida");
@@ -206,11 +234,18 @@ export default function PropertyOwnershipVerifier() {
       <div className="mb-8">
         <Card>
           <CardHeader>
-            <CardTitle className="text-center">Verificar Propiedad</CardTitle>
-            <CardDescription className="text-center">
-              Ingresa la dirección de la propiedad para verificar sus detalles
-              de propiedad
-            </CardDescription>
+            <div className="flex justify-between items-center mb-2">
+              <div className="flex-1">
+                <CardTitle className="text-center">Verificar Propiedad</CardTitle>
+                <CardDescription className="text-center">
+                  Ingresa la dirección de la propiedad para verificar sus detalles
+                  de propiedad
+                </CardDescription>
+              </div>
+              <div className="flex-shrink-0">
+                <PropertySearchHistory onSelectHistory={handleSelectHistory} />
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
