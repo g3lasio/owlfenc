@@ -139,6 +139,26 @@ export default function PermitAdvisor() {
       return response.json();
     },
     onSuccess: (data: PermitResponse) => {
+      // Inspeccionar los datos para detectar problemas con applicableAreas
+      console.log("Datos recibidos del API:", data);
+      if (data.buildingCodeRegulations) {
+        console.log("Sección de códigos:", data.buildingCodeRegulations);
+        // Verificar si hay objetos en lugar de strings dentro de applicableAreas
+        data.buildingCodeRegulations.forEach((code, idx) => {
+          if (code.applicableAreas && !Array.isArray(code.applicableAreas) && typeof code.applicableAreas !== 'string') {
+            console.warn(`Formato incorrecto en applicableAreas (índice ${idx}):`, code.applicableAreas);
+            // Convertir objetos a string para evitar el error
+            code.applicableAreas = JSON.stringify(code.applicableAreas);
+          }
+        });
+      }
+      
+      // También verificar si los pasos del proceso son objetos
+      if (data.process) {
+        console.log("Sección de procesos:", data.process);
+        data.process = data.process.map(step => typeof step === 'object' ? JSON.stringify(step) : step);
+      }
+      
       setPermitData(data);
       toast({
         title: "Información obtenida correctamente",
