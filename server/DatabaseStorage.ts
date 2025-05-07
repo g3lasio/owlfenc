@@ -19,6 +19,8 @@ import {
   InsertPaymentHistory,
   Material,
   InsertMaterial,
+  PropertySearchHistory,
+  InsertPropertySearchHistory,
   PromptTemplate,
   InsertPromptTemplate,
   PermitSearchHistory,
@@ -34,7 +36,8 @@ import {
   paymentHistory,
   materials,
   promptTemplates,
-  permitSearchHistory
+  permitSearchHistory,
+  propertySearchHistory
 } from "@shared/schema";
 
 import { db } from './db';
@@ -540,6 +543,47 @@ export class DatabaseStorage implements IStorage {
       .insert(permitSearchHistory)
       .values(insertHistory)
       .returning();
+    return history;
+  }
+  
+  // Property Search History methods
+  async getPropertySearchHistory(id: number): Promise<PropertySearchHistory | undefined> {
+    const [history] = await db
+      .select()
+      .from(propertySearchHistory)
+      .where(eq(propertySearchHistory.id, id));
+    return history;
+  }
+
+  async getPropertySearchHistoryByUserId(userId: number): Promise<PropertySearchHistory[]> {
+    return db.select()
+      .from(propertySearchHistory)
+      .where(eq(propertySearchHistory.userId, userId))
+      .orderBy(desc(propertySearchHistory.createdAt));
+  }
+
+  async createPropertySearchHistory(insertHistory: InsertPropertySearchHistory): Promise<PropertySearchHistory> {
+    const [history] = await db
+      .insert(propertySearchHistory)
+      .values(insertHistory)
+      .returning();
+    return history;
+  }
+  
+  async updatePropertySearchHistory(id: number, historyData: Partial<PropertySearchHistory>): Promise<PropertySearchHistory> {
+    const [history] = await db
+      .update(propertySearchHistory)
+      .set({
+        ...historyData,
+        updatedAt: new Date()
+      })
+      .where(eq(propertySearchHistory.id, id))
+      .returning();
+    
+    if (!history) {
+      throw new Error(`Property search history with ID ${id} not found`);
+    }
+    
     return history;
   }
 }

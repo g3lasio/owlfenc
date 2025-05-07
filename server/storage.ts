@@ -830,6 +830,49 @@ export class StorageManager implements IStorage {
       `permit_search_history_user_${history.userId}`
     );
   }
+
+  // Property Search History methods
+  async getPropertySearchHistory(id: number): Promise<PropertySearchHistory | undefined> {
+    return this.executeWithFailover<PropertySearchHistory | undefined>(
+      'getPropertySearchHistory',
+      () => this.primaryStorage.getPropertySearchHistory(id),
+      () => this.backupStorage!.getPropertySearchHistory(id),
+      `property_search_history_${id}`,
+      this.CACHE_TTL
+    );
+  }
+
+  async getPropertySearchHistoryByUserId(userId: number): Promise<PropertySearchHistory[]> {
+    return this.executeWithFailover<PropertySearchHistory[]>(
+      'getPropertySearchHistoryByUserId',
+      () => this.primaryStorage.getPropertySearchHistoryByUserId(userId),
+      () => this.backupStorage!.getPropertySearchHistoryByUserId(userId),
+      `property_search_history_user_${userId}`,
+      this.SHORT_CACHE_TTL
+    );
+  }
+
+  async createPropertySearchHistory(history: InsertPropertySearchHistory): Promise<PropertySearchHistory> {
+    return this.executeWithFailover<PropertySearchHistory>(
+      'createPropertySearchHistory',
+      () => this.primaryStorage.createPropertySearchHistory(history),
+      () => this.backupStorage!.createPropertySearchHistory(history),
+      undefined,
+      undefined,
+      `property_search_history_user_${history.userId}`
+    );
+  }
+  
+  async updatePropertySearchHistory(id: number, data: Partial<PropertySearchHistory>): Promise<PropertySearchHistory> {
+    return this.executeWithFailover<PropertySearchHistory>(
+      'updatePropertySearchHistory',
+      () => this.primaryStorage.updatePropertySearchHistory(id, data),
+      () => this.backupStorage!.updatePropertySearchHistory(id, data),
+      undefined,
+      undefined,
+      `property_search_history_`
+    );
+  }
 }
 
 // Por defecto usamos PostgreSQL como almacenamiento principal
