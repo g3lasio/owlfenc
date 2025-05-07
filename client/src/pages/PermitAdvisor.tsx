@@ -233,7 +233,7 @@ export default function PermitAdvisor() {
 
       // Verificar y formatear específicamente la sección de proceso para mostrar quien debe hacer cada paso
       if (processedData.process && Array.isArray(processedData.process)) {
-        processedData.process = processedData.process.map((step) => {
+        processedData.process = processedData.process.map((step: any) => {
           // Si es un objeto, convertirlo a string
           if (typeof step === "object" && step !== null) {
             return JSON.stringify(step);
@@ -1151,7 +1151,7 @@ export default function PermitAdvisor() {
                   <div className="relative">
                     <div className="absolute left-3 top-0 bottom-0 w-[1px] bg-primary/30"></div>
                     <ol className="relative space-y-6">
-                      {permitData.process.map((step, idx) => {
+                      {permitData.process.map((step: any, idx) => {
                         // Asegurarse de que step sea un string
                         const stepText =
                           typeof step === "string"
@@ -1232,7 +1232,7 @@ export default function PermitAdvisor() {
                       <CardContent className="py-2">
                         <ul className="list-disc pl-5 space-y-2">
                           {permitData.specialConsiderations.map(
-                            (consideration, idx) => {
+                            (consideration: any, idx) => {
                               // Verificar si es un objeto y convertir a string si es necesario
                               const considerationText =
                                 typeof consideration === "object" &&
