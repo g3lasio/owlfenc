@@ -21,6 +21,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Accordion,
   AccordionContent,
@@ -160,6 +162,11 @@ export default function PermitAdvisor() {
 
   // Estado para controlar el valor de Google Places Autocomplete
   const [placeValue, setPlaceValue] = useState<any>(null);
+  
+  // Estados para detalles del proyecto
+  const [projectDescription, setProjectDescription] = useState("");
+  const [projectFiles, setProjectFiles] = useState<File[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Verificar si la API key de Google Maps está configurada
   const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
@@ -170,13 +177,16 @@ export default function PermitAdvisor() {
     mutationFn: async ({
       address,
       projectType,
+      projectDescription,
     }: {
       address: string;
       projectType: string;
+      projectDescription?: string;
     }) => {
       const response = await apiRequest("POST", "/api/permit/check", {
         address,
         projectType,
+        projectDescription,
       });
 
       if (!response.ok) {
@@ -267,6 +277,19 @@ export default function PermitAdvisor() {
     }
   };
 
+  // Handler para seleccionar archivos
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const newFiles = Array.from(e.target.files);
+      setProjectFiles(prev => [...prev, ...newFiles]);
+    }
+  };
+
+  // Handler para remover un archivo
+  const handleRemoveFile = (index: number) => {
+    setProjectFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   // Handler para la búsqueda de permisos
   const handleSearch = () => {
     // Determinar qué dirección usar según el modo de entrada
@@ -281,7 +304,13 @@ export default function PermitAdvisor() {
       return;
     }
 
-    permitMutation.mutate({ address: finalAddress, projectType });
+    // Aquí deberíamos cargar archivos al servidor si hubiera, pero por ahora
+    // solo enviamos la información básica incluyendo la descripción del proyecto
+    permitMutation.mutate({ 
+      address: finalAddress, 
+      projectType,
+      projectDescription
+    });
   };
 
   // Tipos de proyectos disponibles
@@ -456,6 +485,82 @@ export default function PermitAdvisor() {
                 </Alert>
               </div>
             )}
+          </div>
+
+          <div className="space-y-2 mt-6 pt-4 border-t border-gray-100">
+            <label className="text-sm font-medium">
+              Descripción del Proyecto
+            </label>
+            <Textarea
+              placeholder="Describe los detalles específicos de tu proyecto (dimensiones, materiales, alcance del trabajo, etc.)"
+              value={projectDescription}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setProjectDescription(e.target.value)}
+              className="min-h-[100px]"
+            />
+            <p className="text-xs text-muted-foreground">
+              Una descripción detallada ayudará a Mervin a proporcionar información más precisa y personalizada sobre los permisos necesarios.
+            </p>
+          </div>
+
+          <div className="space-y-2 mt-4">
+            <label className="text-sm font-medium flex items-center">
+              <FileText className="h-4 w-4 mr-2 text-primary/70" />
+              Archivos Adjuntos (opcional)
+            </label>
+            <div className="border border-dashed border-gray-300 rounded-lg p-4 bg-gray-50">
+              <div className="flex flex-col items-center justify-center gap-2">
+                <p className="text-sm text-muted-foreground text-center">
+                  Adjunta planos, dibujos, diseños o documentos de alcance del trabajo
+                </p>
+                <Input 
+                  type="file" 
+                  multiple 
+                  onChange={handleFileSelect}
+                  className="max-w-xs"
+                  id="project-files"
+                />
+                <Label htmlFor="project-files" className="cursor-pointer text-xs text-primary">
+                  Seleccionar archivos
+                </Label>
+              </div>
+
+              {projectFiles.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-sm font-medium">Archivos seleccionados:</p>
+                  <div className="mt-2 space-y-2">
+                    {projectFiles.map((file, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-2 bg-white rounded border">
+                        <div className="flex items-center">
+                          <FileText className="h-4 w-4 mr-2 text-primary/70" />
+                          <span className="text-sm truncate max-w-[20ch] md:max-w-[30ch]">{file.name}</span>
+                          <span className="text-xs text-muted-foreground ml-2">
+                            ({Math.round(file.size / 1024)} KB)
+                          </span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => handleRemoveFile(idx)}
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                            className="w-4 h-4"
+                          >
+                            <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                          </svg>
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Nota: Estos archivos no se cargarán al servidor en esta versión, pero ayudan a documentar el proyecto.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         </CardContent>
         <CardFooter>
