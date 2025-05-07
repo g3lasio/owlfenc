@@ -20,7 +20,9 @@ import {
   Material,
   InsertMaterial,
   PromptTemplate,
-  InsertPromptTemplate
+  InsertPromptTemplate,
+  PermitSearchHistory,
+  InsertPermitSearchHistory
 } from "@shared/schema";
 
 import { DatabaseStorage } from './DatabaseStorage';
@@ -97,6 +99,11 @@ export interface IStorage {
   createPromptTemplate(template: InsertPromptTemplate): Promise<PromptTemplate>;
   updatePromptTemplate(id: number, template: Partial<PromptTemplate>): Promise<PromptTemplate>;
   deletePromptTemplate(id: number): Promise<boolean>;
+  
+  // Permit Search History methods
+  getPermitSearchHistory(id: number): Promise<PermitSearchHistory | undefined>;
+  getPermitSearchHistoryByUserId(userId: number): Promise<PermitSearchHistory[]>;
+  createPermitSearchHistory(history: InsertPermitSearchHistory): Promise<PermitSearchHistory>;
   
   // Sistema de salud
   healthCheck(): Promise<boolean>;

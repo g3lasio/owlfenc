@@ -330,3 +330,27 @@ export const insertPromptTemplateSchema = createInsertSchema(promptTemplates).pi
 
 export type PromptTemplate = typeof promptTemplates.$inferSelect;
 export type InsertPromptTemplate = z.infer<typeof insertPromptTemplateSchema>;
+
+// Historial de búsquedas de permisos
+export const permitSearchHistory = pgTable("permit_search_history", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  address: text("address").notNull(),
+  projectType: text("project_type").notNull(),
+  projectDescription: text("project_description"),
+  results: jsonb("results").notNull(), // Almacenar todos los resultados como JSON
+  title: text("title"), // Título opcional para la búsqueda
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertPermitSearchHistorySchema = createInsertSchema(permitSearchHistory).pick({
+  userId: true,
+  address: true,
+  projectType: true,
+  projectDescription: true,
+  results: true,
+  title: true,
+});
+
+export type PermitSearchHistory = typeof permitSearchHistory.$inferSelect;
+export type InsertPermitSearchHistory = z.infer<typeof insertPermitSearchHistorySchema>;
