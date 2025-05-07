@@ -411,6 +411,21 @@ export default function PermitAdvisor() {
     { value: "landscaping", label: "Landscaping" },
   ];
 
+  // Estado para controlar la visualización del formulario
+  const [showSearchForm, setShowSearchForm] = useState(true);
+  
+  // Al recibir resultados, ocultar el formulario
+  useEffect(() => {
+    if (permitData && !permitMutation.isPending) {
+      setShowSearchForm(false);
+    }
+  }, [permitData, permitMutation.isPending]);
+  
+  // Función para volver al formulario de búsqueda
+  const handleBackToSearch = () => {
+    setShowSearchForm(true);
+  };
+
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex flex-col items-center text-center space-y-2">
@@ -428,15 +443,42 @@ export default function PermitAdvisor() {
           construcción
         </p>
       </div>
+      
+      {/* Botones de acción principales - Siempre visibles */}
+      <div className="flex items-center justify-center gap-2 mb-4">
+        {!showSearchForm && (
+          <Button 
+            variant="outline" 
+            onClick={handleBackToSearch}
+            className="flex items-center gap-1"
+          >
+            <RotateCcw className="h-4 w-4" />
+            Volver a búsqueda
+          </Button>
+        )}
+        
+        <Button
+          variant="outline"
+          size="icon"
+          className="shrink-0"
+          title="Ver historial de búsquedas"
+          onClick={handleOpenHistory}
+          disabled={historyQuery.isLoading || historyQuery.isError || !historyQuery.data || historyQuery.data.length === 0}
+        >
+          <History className="h-4 w-4" />
+        </Button>
+      </div>
 
-      <Card>
-        <CardHeader className="text-center">
-          <CardTitle>Consultar Requisitos Legales</CardTitle>
-          <CardDescription className="mx-auto max-w-lg">
-            Ingresa los detalles de tu proyecto para conocer los permisos,
-            licencias y regulaciones aplicables
-          </CardDescription>
-        </CardHeader>
+      {/* Formulario de búsqueda - Visible solo cuando showSearchForm es true */}
+      {showSearchForm && (
+        <Card>
+          <CardHeader className="text-center">
+            <CardTitle>Consultar Requisitos Legales</CardTitle>
+            <CardDescription className="mx-auto max-w-lg">
+              Ingresa los detalles de tu proyecto para conocer los permisos,
+              licencias y regulaciones aplicables
+            </CardDescription>
+          </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">Tipo de Proyecto</label>
@@ -643,11 +685,11 @@ export default function PermitAdvisor() {
             </div>
           </div>
         </CardContent>
-        <CardFooter className="flex items-center gap-2 justify-center">
+        <CardFooter className="flex items-center justify-center">
           <Button
             onClick={handleSearch}
             disabled={permitMutation.isPending}
-            className="md:w-auto"
+            className="w-full md:w-auto"
           >
             {permitMutation.isPending ? (
               <>
@@ -660,18 +702,6 @@ export default function PermitAdvisor() {
                 Consultar Permisos
               </>
             )}
-          </Button>
-          
-          {/* Botón de historial */}
-          <Button
-            variant="outline"
-            size="icon"
-            className="shrink-0"
-            title="Ver historial de búsquedas"
-            onClick={handleOpenHistory}
-            disabled={historyQuery.isLoading || historyQuery.isError || !historyQuery.data || historyQuery.data.length === 0}
-          >
-            <History className="h-4 w-4" />
           </Button>
         </CardFooter>
         
@@ -763,6 +793,7 @@ export default function PermitAdvisor() {
           </DialogContent>
         </Dialog>
       </Card>
+      )}
 
       {permitMutation.isPending && (
         <Card className="overflow-hidden bg-gradient-to-br from-primary/5 via-primary/10 to-secondary/5 backdrop-blur-sm border-primary/20">
