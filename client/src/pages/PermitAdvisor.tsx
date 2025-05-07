@@ -304,8 +304,8 @@ export default function PermitAdvisor() {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <div className="flex flex-col space-y-2">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col items-center text-center space-y-2">
+        <div className="flex flex-col items-center gap-3">
           <div className="relative w-10 h-10 flex items-center justify-center bg-primary/10 rounded-lg">
             <Search className="h-6 w-6 text-primary" />
             <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-primary/20 rounded-full flex items-center justify-center">
@@ -314,16 +314,16 @@ export default function PermitAdvisor() {
           </div>
           <h1 className="text-3xl font-bold">Mervin Permit Advisor</h1>
         </div>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground max-w-lg mx-auto">
           Tu asesor legal instantáneo para permisos y regulaciones de
           construcción
         </p>
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="text-center">
           <CardTitle>Consultar Requisitos Legales</CardTitle>
-          <CardDescription>
+          <CardDescription className="mx-auto max-w-lg">
             Ingresa los detalles de tu proyecto para conocer los permisos,
             licencias y regulaciones aplicables
           </CardDescription>
@@ -462,7 +462,7 @@ export default function PermitAdvisor() {
           <Button
             onClick={handleSearch}
             disabled={permitMutation.isPending}
-            className="w-full md:w-auto"
+            className="w-full md:w-auto mx-auto"
           >
             {permitMutation.isPending ? (
               <>
