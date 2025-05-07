@@ -18,6 +18,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -629,11 +637,11 @@ export default function PermitAdvisor() {
             </div>
           </div>
         </CardContent>
-        <CardFooter>
+        <CardFooter className="flex items-center gap-2 justify-center">
           <Button
             onClick={handleSearch}
             disabled={permitMutation.isPending}
-            className="w-full md:w-auto mx-auto"
+            className="md:w-auto"
           >
             {permitMutation.isPending ? (
               <>
@@ -647,7 +655,107 @@ export default function PermitAdvisor() {
               </>
             )}
           </Button>
+          
+          {/* Botón de historial */}
+          <Button
+            variant="outline"
+            size="icon"
+            className="shrink-0"
+            title="Ver historial de búsquedas"
+            onClick={handleOpenHistory}
+            disabled={historyQuery.isLoading || historyQuery.isError || !historyQuery.data || historyQuery.data.length === 0}
+          >
+            <History className="h-4 w-4" />
+          </Button>
         </CardFooter>
+        
+        {/* Modal de historial de búsquedas */}
+        <Dialog open={showHistory} onOpenChange={setShowHistory}>
+          <DialogContent className="sm:max-w-[625px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <History className="h-5 w-5 text-primary" />
+                Historial de Búsquedas
+              </DialogTitle>
+              <DialogDescription>
+                Consulta y carga búsquedas anteriores para evitar realizar la misma búsqueda nuevamente.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="py-4">
+              {historyQuery.isLoading ? (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+                  <p className="text-sm text-muted-foreground">Cargando historial de búsquedas...</p>
+                </div>
+              ) : historyQuery.isError ? (
+                <div className="text-center p-4 border rounded-md bg-red-50">
+                  <AlertTriangle className="h-8 w-8 text-red-500 mx-auto mb-2" />
+                  <h3 className="font-medium">Error al cargar el historial</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {historyQuery.error instanceof Error ? historyQuery.error.message : 'Error desconocido'}
+                  </p>
+                </div>
+              ) : !historyQuery.data || historyQuery.data.length === 0 ? (
+                <div className="text-center p-8 border rounded-md bg-gray-50">
+                  <Info className="h-10 w-10 text-primary/50 mx-auto mb-2" />
+                  <h3 className="font-medium text-lg">No hay búsquedas previas</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Cuando realices consultas de permisos, se guardarán aquí para facilitar su acceso posterior.
+                  </p>
+                </div>
+              ) : (
+                <ScrollArea className="h-[400px] pr-4">
+                  <div className="space-y-3">
+                    {historyQuery.data.map((item) => (
+                      <Card key={item.id} className="hover:bg-primary/5 transition-colors">
+                        <CardHeader className="p-4 pb-2">
+                          <CardTitle className="text-base">{item.title}</CardTitle>
+                          <CardDescription className="text-xs">
+                            {new Date(item.createdAt).toLocaleDateString()} {new Date(item.createdAt).toLocaleTimeString()}
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-4 pt-0">
+                          <div className="grid grid-cols-2 gap-2 text-sm">
+                            <div>
+                              <span className="font-medium block text-xs">Dirección:</span>
+                              <span className="text-muted-foreground text-xs">{item.address}</span>
+                            </div>
+                            <div>
+                              <span className="font-medium block text-xs">Tipo de proyecto:</span>
+                              <span className="text-muted-foreground text-xs capitalize">{item.projectType}</span>
+                            </div>
+                            {item.projectDescription && (
+                              <div className="col-span-2 mt-1">
+                                <span className="font-medium block text-xs">Descripción:</span>
+                                <span className="text-muted-foreground text-xs line-clamp-2">{item.projectDescription}</span>
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="flex justify-between items-center mt-3">
+                            <div className="text-xs text-primary">
+                              {item.results.requiredPermits.length} permisos encontrados
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              className="h-8"
+                              onClick={() => handleLoadHistoryItem(item)}
+                            >
+                              <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                              Cargar resultados
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </Card>
 
       {permitMutation.isPending && (
