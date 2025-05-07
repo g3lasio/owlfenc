@@ -21,6 +21,8 @@ import {
   InsertMaterial,
   PromptTemplate,
   InsertPromptTemplate,
+  PermitSearchHistory,
+  InsertPermitSearchHistory,
   users,
   projects,
   templates,
@@ -31,7 +33,8 @@ import {
   userSubscriptions,
   paymentHistory,
   materials,
-  promptTemplates
+  promptTemplates,
+  permitSearchHistory
 } from "@shared/schema";
 
 import { db } from './db';
@@ -487,7 +490,7 @@ export class DatabaseStorage implements IStorage {
             eq(promptTemplates.userId, currentTemplate.userId),
             eq(promptTemplates.category, currentTemplate.category),
             eq(promptTemplates.isDefault, true),
-            eq(promptTemplates.id, id).not()
+            sql`${promptTemplates.id} != ${id}`
           ));
       }
     }
@@ -514,5 +517,29 @@ export class DatabaseStorage implements IStorage {
       .where(eq(promptTemplates.id, id));
     
     return true; // Si llegamos aquí, es que la operación fue exitosa
+  }
+  
+  // Permit Search History methods
+  async getPermitSearchHistory(id: number): Promise<PermitSearchHistory | undefined> {
+    const [history] = await db
+      .select()
+      .from(permitSearchHistory)
+      .where(eq(permitSearchHistory.id, id));
+    return history;
+  }
+
+  async getPermitSearchHistoryByUserId(userId: number): Promise<PermitSearchHistory[]> {
+    return db.select()
+      .from(permitSearchHistory)
+      .where(eq(permitSearchHistory.userId, userId))
+      .orderBy(desc(permitSearchHistory.createdAt));
+  }
+
+  async createPermitSearchHistory(insertHistory: InsertPermitSearchHistory): Promise<PermitSearchHistory> {
+    const [history] = await db
+      .insert(permitSearchHistory)
+      .values(insertHistory)
+      .returning();
+    return history;
   }
 }

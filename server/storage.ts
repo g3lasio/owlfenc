@@ -790,6 +790,38 @@ export class StorageManager implements IStorage {
       'prompt_template_'
     );
   }
+
+  // Permit Search History methods
+  async getPermitSearchHistory(id: number): Promise<PermitSearchHistory | undefined> {
+    return this.executeWithFailover<PermitSearchHistory | undefined>(
+      'getPermitSearchHistory',
+      () => this.primaryStorage.getPermitSearchHistory(id),
+      () => this.backupStorage!.getPermitSearchHistory(id),
+      `permit_search_history_${id}`,
+      this.CACHE_TTL
+    );
+  }
+
+  async getPermitSearchHistoryByUserId(userId: number): Promise<PermitSearchHistory[]> {
+    return this.executeWithFailover<PermitSearchHistory[]>(
+      'getPermitSearchHistoryByUserId',
+      () => this.primaryStorage.getPermitSearchHistoryByUserId(userId),
+      () => this.backupStorage!.getPermitSearchHistoryByUserId(userId),
+      `permit_search_history_user_${userId}`,
+      this.SHORT_CACHE_TTL
+    );
+  }
+
+  async createPermitSearchHistory(history: InsertPermitSearchHistory): Promise<PermitSearchHistory> {
+    return this.executeWithFailover<PermitSearchHistory>(
+      'createPermitSearchHistory',
+      () => this.primaryStorage.createPermitSearchHistory(history),
+      () => this.backupStorage!.createPermitSearchHistory(history),
+      undefined,
+      undefined,
+      `permit_search_history_user_${history.userId}`
+    );
+  }
 }
 
 // Por defecto usamos PostgreSQL como almacenamiento principal
