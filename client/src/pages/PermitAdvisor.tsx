@@ -200,6 +200,48 @@ export default function PermitAdvisor() {
   // Estado para controlar la visualización del formulario
   const [showSearchForm, setShowSearchForm] = useState(true);
   
+  // Solicitud de permisos
+  const permitMutation = useMutation({
+    mutationFn: async ({
+      address,
+      projectType,
+      projectDescription,
+    }: {
+      address: string;
+      projectType: string;
+      projectDescription?: string;
+    }) => {
+      const response = await apiRequest("POST", "/api/permit/check", {
+        address,
+        projectType,
+        projectDescription,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Error al consultar permisos");
+      }
+
+      return response.json();
+    },
+    onSuccess: (data: PermitResponse) => {
+      console.log("Datos recibidos del API:", data);
+      setPermitData(data);
+      queryClient.invalidateQueries({ queryKey: ['/api/permit/history'] });
+      toast({
+        title: "Información obtenida correctamente",
+        description: `Se encontraron ${data.requiredPermits?.length || 0} permisos para tu proyecto.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Error al consultar permisos",
+        description: error.message || "Ocurrió un error inesperado",
+      });
+    },
+  });
+
   // Al recibir resultados, ocultar el formulario
   useEffect(() => {
     if (permitData && !permitMutation.isPending) {
@@ -224,9 +266,6 @@ export default function PermitAdvisor() {
     },
     enabled: true, // Siempre habilitado para cargar automáticamente el historial
   });
-
-  // Solicitud de permisos
-  const permitMutation = useMutation({
     mutationFn: async ({
       address,
       projectType,
