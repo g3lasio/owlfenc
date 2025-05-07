@@ -1260,18 +1260,24 @@ export default function PermitAdvisor() {
                                 </div>
                               )}
 
-                              {regulation.applicableAreas &&
-                                regulation.applicableAreas.length > 0 && (
+                              {regulation.applicableAreas && 
+                                ((Array.isArray(regulation.applicableAreas) && regulation.applicableAreas.length > 0) || 
+                                 (typeof regulation.applicableAreas === 'string' && regulation.applicableAreas.trim() !== '')) && (
                                   <div>
                                     <h4 className="text-sm font-medium">
                                       Áreas aplicables:
                                     </h4>
                                     <ul className="mt-2 space-y-1 list-disc pl-5 text-sm text-muted-foreground">
-                                      {regulation.applicableAreas.map(
-                                        (area, idx) => (
-                                          <li key={idx}>{area}</li>
-                                        ),
-                                      )}
+                                      {Array.isArray(regulation.applicableAreas) 
+                                        ? regulation.applicableAreas.map(
+                                            (area, idx) => (
+                                              <li key={idx}>{area}</li>
+                                            )
+                                          )
+                                        : regulation.applicableAreas && typeof regulation.applicableAreas === 'string'
+                                          ? <li>{regulation.applicableAreas}</li>
+                                          : <li>Información no disponible</li>
+                                      }
                                     </ul>
                                   </div>
                                 )}
