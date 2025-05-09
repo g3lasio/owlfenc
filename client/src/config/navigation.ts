@@ -123,6 +123,12 @@ export const navigationGroups: NavigationGroup[] = [
         label: "Preferencias",
         path: "/settings",
         icon: "lucide-settings"
+      },
+      {
+        id: "about-mervin",
+        label: "Acerca de Mervin",
+        path: "/about-mervin",
+        icon: "ri-robot-2-line"
       }
     ]
   }
