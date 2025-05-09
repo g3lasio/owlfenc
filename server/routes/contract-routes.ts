@@ -2,7 +2,7 @@ import { Express, Request, Response } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { pdfVisionService } from '../services/pdfVisionService';
+import { mistralService } from '../services/mistralService';
 import { documentService } from '../services/documentService';
 
 // Configurar almacenamiento para multer
@@ -229,9 +229,61 @@ export function registerContractRoutes(app: Express) {
       const filePath = req.file.path;
       console.log(`Procesando PDF: ${filePath}`);
 
-      // Extraer datos del PDF usando GPT-4 Vision
-      const extractedData = await pdfVisionService.extractDataFromPDF(filePath);
-      console.log('Datos extraídos del PDF:', JSON.stringify(extractedData, null, 2));
+      // Añadir logs para mejor diagnóstico
+      console.log(`Procesando PDF con tamaño: ${fs.statSync(filePath).size} bytes`);
+      console.log(`Tipo MIME del archivo: ${req.file.mimetype}`);
+      
+      // Prompt para extracción de datos
+      const extractionPrompt = `
+        Este es un PDF de un estimado de cercas. Por favor, extrae la siguiente información en formato JSON:
+        
+        1. Cliente:
+           - Nombre completo (como "nombre")
+           - Dirección (como "direccion")
+           - Teléfono (como "telefono")
+           - Email (como "email")
+        
+        2. Proyecto:
+           - Tipo de cerca, ej. madera, vinilo, cadena (como "tipoCerca")
+           - Altura en pies (como "altura")
+           - Longitud total en pies (como "longitud")
+           - Características especiales (como "caracteristicas")
+           - Demolición requerida (como "demolicion", valor booleano)
+           - Cantidad y tipo de puertas (como "puertas")
+        
+        3. Presupuesto:
+           - Subtotal (como "subtotal")
+           - Impuestos (como "impuestos")
+           - Total (como "total")
+           - Método de pago sugerido (como "metodoPago")
+           - Forma de pago, ej. depósito inicial, pagos parciales, etc. (como "formaPago")
+        
+        4. Contratista:
+           - Nombre de la empresa (como "nombre")
+           - Licencia/Número de registro (como "licencia")
+           - Dirección (como "direccion")
+           - Teléfono (como "telefono")
+           - Email (como "email")
+        
+        5. Fechas:
+           - Fecha de emisión (como "emision")
+           - Validez del estimado (como "validez")
+           - Tiempo estimado de inicio (como "inicioEstimado")
+           - Tiempo estimado de finalización (como "finalizacionEstimada")
+        
+        Devuelve SOLO un objeto JSON con la estructura:
+        {
+          "cliente": { nombre, direccion, telefono, email },
+          "proyecto": { tipoCerca, altura, longitud, caracteristicas, demolicion, puertas },
+          "presupuesto": { subtotal, impuestos, total, metodoPago, formaPago },
+          "contratista": { nombre, licencia, direccion, telefono, email },
+          "fechas": { emision, validez, inicioEstimado, finalizacionEstimada }
+        }
+      `;
+      
+      // Extraer datos del PDF usando Mistral AI con OCR avanzado
+      const extractedData = await mistralService.extractDataFromPDF(filePath, extractionPrompt);
+      console.log('Datos extraídos del PDF con Mistral:', JSON.stringify(extractedData, null, 2));
 
       // Generar cláusulas personalizadas basadas en la descripción del proyecto
       const projectDescription = `
@@ -243,7 +295,7 @@ export function registerContractRoutes(app: Express) {
         ${extractedData.proyecto?.puertas ? `incluyendo ${extractedData.proyecto.puertas}` : 'sin puertas adicionales'}
       `;
       
-      const customClauses = await pdfVisionService.generateCustomClauses(projectDescription);
+      const customClauses = await mistralService.generateCustomClauses(projectDescription);
       console.log('Cláusulas personalizadas generadas:', customClauses);
 
       // Generar HTML del contrato
@@ -261,10 +313,11 @@ export function registerContractRoutes(app: Express) {
       // Responder con el contrato generado
       res.json({
         success: true,
-        message: 'Contrato generado exitosamente',
+        message: 'Contrato generado exitosamente con Mistral AI',
         contrato_html: contractHTML,
         contrato_pdf_base64: base64PDF,
-        datos_extraidos: extractedData
+        datos_extraidos: extractedData,
+        technology: 'mistral'
       });
     } catch (error: any) {
       console.error('Error generando contrato:', error);

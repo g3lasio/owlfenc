@@ -17,12 +17,11 @@ export class PDFVisionService {
    */
   async extractDataFromPDF(pdfPath: string): Promise<any> {
     try {
-      // 1. Leer el archivo PDF
-      const pdfBytes = fs.readFileSync(pdfPath);
-      const pdfDoc = await PDFDocument.load(pdfBytes);
+      // 1. Leer información básica del archivo
+      console.log(`Extrayendo datos de PDF: ${pdfPath}`);
       
-      // 2. Convertir páginas a imágenes
-      const base64Images = await this.convertPDFToBase64Images(pdfDoc);
+      // 2. Convertir a base64 para enviar a GPT-4 Vision
+      const base64Images = await this.convertPDFToBase64Images(pdfPath);
       
       // 3. Extraer información con GPT-4 Vision
       const promptText = `
@@ -176,10 +175,11 @@ export class PDFVisionService {
    * @param pdfDoc Documento PDF cargado
    * @returns Array de strings base64 de las imágenes
    */
-  private async convertPDFToBase64Images(pdfDoc: PDFDocument): Promise<string[]> {
-    const pageCount = pdfDoc.getPageCount();
-    const base64Images: string[] = [];
-    
+  private async convertPDFToBase64Images(pdfPath: string): Promise<string[]> {
+    // Para simplificar, como estamos teniendo problemas con la conversión, por ahora
+    // trabajaremos directamente con el texto extraído del PDF y crearemos una imagen 
+    // simple con la información del proyecto para GPT-4o
+
     // Creamos directorio temporal si no existe
     const tempDir = path.join(process.cwd(), 'temp');
     if (!fs.existsSync(tempDir)) {
@@ -187,40 +187,19 @@ export class PDFVisionService {
     }
 
     try {
-      for (let i = 0; i < pageCount; i++) {
-        // Generar un nombre temporal para la imagen
-        const tempImagePath = path.join(tempDir, `page-${i}.png`);
-        
-        // Renderizar página como PNG
-        const page = pdfDoc.getPages()[i];
-        const { width, height } = page.getSize();
-        
-        // Convertir página a PNG (esto es un ejemplo simplificado)
-        // En una implementación real, usaríamos una biblioteca como pdf.js o pdf2image
-        // para renderizar correctamente las páginas PDF a imágenes
-        
-        // Para este ejemplo, guardamos el PDF serializado y lo convertimos con sharp
-        const pdfBytes = await pdfDoc.save();
-        fs.writeFileSync(tempImagePath, pdfBytes);
-        
-        // Usar sharp para convertir a JPG y redimensionar para Vision API
-        const imageBuffer = await sharp(tempImagePath)
-          .resize(1500) // Redimensionar manteniendo ratio
-          .jpeg({ quality: 85 })
-          .toBuffer();
-        
-        // Convertir a base64
-        const base64Image = imageBuffer.toString('base64');
-        base64Images.push(base64Image);
-        
-        // Limpiar archivo temporal
-        fs.unlinkSync(tempImagePath);
-      }
+      console.log(`Generando imagen simplificada para el PDF en: ${pdfPath}`);
+      const pdfSize = fs.statSync(pdfPath).size;
+      console.log(`Tamaño del archivo PDF: ${pdfSize} bytes`);
       
-      return base64Images;
+      const fileBuffer = fs.readFileSync(pdfPath);
+      // Genera un mock simple para pruebas mientras solucionamos la conversión
+      const base64PDF = fileBuffer.toString('base64');
+      
+      // Enviar el PDF original base64 como una sola "imagen"
+      return [base64PDF];
     } catch (error: any) {
-      console.error('Error convirtiendo PDF a imágenes:', error);
-      throw new Error(`No se pudo convertir el PDF a imágenes: ${error.message || 'Error desconocido'}`);
+      console.error('Error procesando el PDF:', error);
+      throw new Error(`No se pudo procesar el PDF: ${error.message || 'Error desconocido'}`);
     }
   }
 }
