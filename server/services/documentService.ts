@@ -68,11 +68,12 @@ export class DocumentService {
       .replace(/{{total}}/g, formatCurrency(data.costs.total));
   }
 
-  async generateDocument(data: DocumentData, type: 'estimate' | 'contract'): Promise<Buffer> {
-    const templatePath = type === 'estimate' ? 'template-estimate.html' : 'contract-template.html';
-    const template = await this.loadTemplate(templatePath);
-    const filledTemplate = this.replaceTemplateVariables(template, data);
-
+  /**
+   * Genera un PDF a partir de HTML usando puppeteer
+   * @param html Contenido HTML para convertir a PDF
+   * @returns Buffer con el contenido del PDF
+   */
+  async generatePdfFromHtml(html: string): Promise<Buffer> {
     const browser = await puppeteer.launch({
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
       headless: true
@@ -80,7 +81,7 @@ export class DocumentService {
 
     try {
       const page = await browser.newPage();
-      await page.setContent(filledTemplate, { waitUntil: 'networkidle0' });
+      await page.setContent(html, { waitUntil: 'networkidle0' });
       
       const pdfBuffer = await page.pdf({
         format: 'Letter',
@@ -97,6 +98,14 @@ export class DocumentService {
     } finally {
       await browser.close();
     }
+  }
+
+  async generateDocument(data: DocumentData, type: 'estimate' | 'contract'): Promise<Buffer> {
+    const templatePath = type === 'estimate' ? 'template-estimate.html' : 'contract-template.html';
+    const template = await this.loadTemplate(templatePath);
+    const filledTemplate = this.replaceTemplateVariables(template, data);
+
+    return this.generatePdfFromHtml(filledTemplate);
   }
 }
 

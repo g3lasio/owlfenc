@@ -7,7 +7,7 @@ import EstimatePreview from "../templates/EstimatePreview";
 import ContractPreview from "../templates/ContractPreview";
 import ManualEstimateForm from "../estimates/ManualEstimateForm";
 import { processChatMessage } from "@/lib/openai";
-import { downloadEstimatePDF, downloadContractPDF } from "@/lib/pdf";
+import { downloadEstimatePDF, downloadContractPDF, downloadPDF } from "@/lib/pdf";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -232,9 +232,25 @@ export default function ChatInterface() {
   const handleDownloadPDF = async (
     html: string,
     type: "estimate" | "contract",
+    messageId?: string
   ) => {
     try {
-      if (type === "estimate") {
+      // Si es un contrato generado desde PDF y tenemos el Base64 en el contexto
+      if (type === "contract" && context.contrato_pdf_base64) {
+        // Convertir de Base64 a Blob
+        const byteCharacters = atob(context.contrato_pdf_base64);
+        const byteNumbers = new Array(byteCharacters.length);
+        
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'application/pdf' });
+        
+        // Usar la función ya existente para descargar el blob
+        downloadPDF(blob, `contract-${projectId}.pdf`);
+      } else if (type === "estimate") {
         await downloadEstimatePDF(html, projectId);
       } else {
         await downloadContractPDF(html, projectId);
@@ -275,6 +291,97 @@ export default function ChatInterface() {
         sender: "assistant",
       },
     ]);
+  };
+  
+  // Función para manejar la apertura del modal de contratos
+  const handleOpenContractModal = () => {
+    setIsContractModalOpen(true);
+    setSelectedFile(null);
+  };
+  
+  // Función para manejar el cambio de archivo seleccionado
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
+  
+  // Función para generar contrato desde PDF
+  const handleGenerateContractFromPDF = async () => {
+    if (!selectedFile) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Por favor selecciona un archivo PDF primero.",
+      });
+      return;
+    }
+    
+    setIsUploadingContract(true);
+    
+    try {
+      // Crear un FormData para enviar el archivo
+      const formData = new FormData();
+      formData.append('pdf', selectedFile);
+      
+      // Enviar la petición al backend
+      const response = await fetch('/api/generar-contrato', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al procesar el PDF');
+      }
+      
+      const data = await response.json();
+      
+      // Cerrar el modal
+      setIsContractModalOpen(false);
+      
+      // Mostrar el contrato generado como mensaje en el chat
+      const templateMessage: Message = {
+        id: `template-${Date.now()}`,
+        content: "Aquí está el contrato generado basado en tu PDF:",
+        sender: "assistant",
+        template: {
+          type: "contract",
+          html: data.contrato_html,
+        },
+      };
+      
+      setMessages((prev) => [...prev, templateMessage]);
+      
+      // Guardar el contrato base64 en el contexto para descargarlo después si es necesario
+      setContext((prev) => ({
+        ...prev,
+        contrato_pdf_base64: data.contrato_pdf_base64,
+      }));
+      
+    } catch (error) {
+      console.error("Error generando contrato:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo generar el contrato. Intenta de nuevo.",
+      });
+    } finally {
+      setIsUploadingContract(false);
+    }
+  };
+  
+  // Función para solicitar ajustes a Mervin
+  const handleRequestAdjustments = () => {
+    setIsContractModalOpen(false);
+    
+    // Agregar mensaje automático de Mervin
+    const botMessage: Message = {
+      id: `bot-${Date.now()}`,
+      content: "Entiendo que deseas ajustar tu contrato generado. Por favor, especifícame claramente qué deseas ajustar o añadir en el contrato para proceder con los cambios necesarios.",
+      sender: "assistant",
+    };
+    
+    setMessages((prev) => [...prev, botMessage]);
   };
 
   return (
@@ -424,8 +531,73 @@ export default function ChatInterface() {
 
         {/* Chat Input */}
         {isChatActive && !showManualForm && ( // Solo mostrar el input si chat está activo y no estamos en modo manual
-          <ChatInput onSendMessage={handleSendMessage} isDisabled={isProcessing} />
+          <div className="relative">
+            <ChatInput onSendMessage={handleSendMessage} isDisabled={isProcessing} />
+            <Button
+              variant="outline"
+              size="sm"
+              className="absolute bottom-14 left-1/2 transform -translate-x-1/2 mb-2 border-dashed"
+              onClick={handleOpenContractModal}
+            >
+              <i className="ri-file-pdf-line mr-1"></i> 📄 Generar Contrato desde PDF
+            </Button>
+          </div>
         )}
+        
+        {/* Modal para subir un PDF */}
+        <Dialog open={isContractModalOpen} onOpenChange={setIsContractModalOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Subir PDF para generar contrato</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="flex flex-col gap-4">
+                <p className="text-sm text-muted-foreground">
+                  Sube un PDF con un estimado aprobado por el cliente para generar automáticamente un contrato personalizado.
+                </p>
+                <div className="flex flex-col gap-2">
+                  <Input 
+                    type="file" 
+                    accept=".pdf" 
+                    onChange={handleFileChange}
+                    disabled={isUploadingContract}
+                  />
+                  {selectedFile && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Archivo seleccionado: {selectedFile.name} ({Math.round(selectedFile.size / 1024)} KB)
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+            <DialogFooter className="sm:justify-between">
+              <Button
+                variant="outline"
+                onClick={() => setIsContractModalOpen(false)}
+                disabled={isUploadingContract}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleGenerateContractFromPDF}
+                disabled={!selectedFile || isUploadingContract}
+              >
+                {isUploadingContract ? (
+                  <>
+                    <i className="ri-loader-4-line animate-spin mr-2"></i>
+                    Procesando...
+                  </>
+                ) : (
+                  <>
+                    <i className="ri-file-text-line mr-2"></i>
+                    Generar Contrato
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        
         {/* Footer with legal links */}
         <ChatFooter />
         {isProcessing && <ProgressBar />}
