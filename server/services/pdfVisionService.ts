@@ -63,18 +63,38 @@ export class PDFVisionService {
       `;
 
       // El nuevo modelo de OpenAI es "gpt-4o" que fue lanzado el 13 de mayo de 2024. No cambiar a menos que el usuario lo solicite explícitamente
+      // Define nuestros tipos para la API de OpenAI
+      type ContentImage = {
+        type: "image_url";
+        image_url: { url: string };
+      };
+      
+      type ContentText = {
+        type: "text";
+        text: string;
+      };
+      
+      type ContentPart = ContentText | ContentImage;
+      
+      // Construir el mensaje con la imagen
+      const content: ContentPart[] = [
+        { type: "text", text: promptText }
+      ];
+      
+      // Añadir las imágenes al contenido
+      base64Images.forEach(img => {
+        content.push({
+          type: "image_url",
+          image_url: { url: `data:image/jpeg;base64,${img}` }
+        });
+      });
+      
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
           {
             role: "user",
-            content: [
-              { type: "text", text: promptText },
-              ...base64Images.map(img => ({
-                type: "image_url",
-                image_url: { url: `data:image/jpeg;base64,${img}` }
-              }))
-            ]
+            content: content
           }
         ],
         max_tokens: 1500,
@@ -88,9 +108,9 @@ export class PDFVisionService {
 
       // Parsear respuesta JSON
       return JSON.parse(responseContent);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al extraer datos del PDF:', error);
-      throw new Error(`No se pudieron extraer los datos del PDF: ${error.message}`);
+      throw new Error(`No se pudieron extraer los datos del PDF: ${error.message || 'Error desconocido'}`);
     }
   }
 
@@ -138,8 +158,9 @@ export class PDFVisionService {
       // Parsear respuesta JSON
       const clauses = JSON.parse(responseContent);
       return Array.isArray(clauses) ? clauses : [];
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al generar cláusulas:', error);
+      // En caso de error, devolvemos cláusulas predeterminadas
       return [
         "El contratista garantiza la calidad de los materiales utilizados por un período de 1 año.",
         "El cliente será responsable de marcar correctamente las líneas de propiedad antes de la instalación.",
@@ -197,9 +218,9 @@ export class PDFVisionService {
       }
       
       return base64Images;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error convirtiendo PDF a imágenes:', error);
-      throw new Error('No se pudo convertir el PDF a imágenes');
+      throw new Error(`No se pudo convertir el PDF a imágenes: ${error.message || 'Error desconocido'}`);
     }
   }
 }

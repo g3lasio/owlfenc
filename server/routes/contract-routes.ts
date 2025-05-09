@@ -1,189 +1,276 @@
 import { Express, Request, Response } from 'express';
 import multer from 'multer';
 import path from 'path';
-import fs from 'fs/promises';
+import fs from 'fs';
 import { pdfVisionService } from '../services/pdfVisionService';
-import { storage } from '../storage';
 import { documentService } from '../services/documentService';
 
-// Configuración de multer para subida de archivos PDF
-const upload = multer({
-  dest: 'temp/uploads/',
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'application/pdf') {
-      cb(null, true);
-    } else {
-      cb(new Error('Only PDF files are allowed'));
+// Configurar almacenamiento para multer
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = path.join(process.cwd(), 'temp', 'uploads');
+    // Crear directorio si no existe
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
     }
+    cb(null, uploadDir);
   },
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB límite
-  },
+  filename: function (req, file, cb) {
+    // Generar nombre único para evitar colisiones
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+// Filtro para aceptar solo PDFs
+const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  if (file.mimetype === 'application/pdf') {
+    cb(null, true);
+  } else {
+    cb(new Error('Solo se permiten archivos PDF'));
+  }
+};
+
+// Configurar multer
+const upload = multer({ 
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 } // Límite de 5MB
 });
 
 /**
  * Función para llenar la plantilla de contrato con los datos extraídos y las cláusulas personalizadas
  */
 async function fillContractTemplate(extractedData: any, customClauses: string[]): Promise<string> {
-  try {
-    // Obtener la plantilla de contrato
-    const templatePath = path.join(process.cwd(), 'client/src/components/templates/contract-template.html');
-    let templateHtml = await fs.readFile(templatePath, 'utf-8');
-    
-    // Obtener la fecha actual y estimada de finalización (2 semanas después)
-    const today = new Date();
-    const formattedToday = `${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`;
-    
-    const completionDate = new Date();
-    completionDate.setDate(today.getDate() + 14); // 2 semanas después
-    const formattedCompletionDate = `${completionDate.getDate()}/${completionDate.getMonth() + 1}/${completionDate.getFullYear()}`;
-    
-    // Calcular el monto del depósito (50% del total)
-    const totalCost = typeof extractedData.totalCost === 'number' 
-      ? extractedData.totalCost 
-      : parseFloat(extractedData.totalCost.replace(/[^0-9.]/g, ''));
-    
-    const depositAmount = totalCost * 0.5;
-    const depositPercentage = 50;
-    
-    // Información del contratista (hardcoded por ahora, se podría obtener de la base de datos)
-    const contractorInfo = {
-      name: "Owl Fenc Inc.",
-      address: "123 Builder St., San Diego, CA 92101",
-      phone: "(555) 123-4567",
-      email: "contact@owlfenc.com",
-      license: "LIC-12345-A"
-    };
-    
-    // Reemplazar marcadores de posición en la plantilla
-    templateHtml = templateHtml
-      // Información del contratista
-      .replace(/\[Contractor Name, Address, Phone, Email, License #\]/g, 
-              `${contractorInfo.name}, ${contractorInfo.address}, ${contractorInfo.phone}, ${contractorInfo.email}, License: ${contractorInfo.license}`)
-      
-      // Información del cliente
-      .replace(/\[Client Name, Address, Phone, Email\]/g, 
-              `${extractedData.clientName}, ${extractedData.clientAddress}, ${extractedData.clientPhone}, ${extractedData.clientEmail}`)
-      
-      // Detalles del proyecto
-      .replace(/\[Detailed Project Description\]/g, extractedData.projectDescription)
-      
-      // Términos de pago
-      .replace(/\[Total Amount\]/g, totalCost.toFixed(2))
-      .replace(/\[Deposit Percentage\]%/g, `${depositPercentage}%`)
-      .replace(/\[Deposit Amount\]/g, depositAmount.toFixed(2))
-      .replace(/\[Payment Methods\]/g, extractedData.paymentTerms || "Transferencia bancaria o cheque")
-      
-      // Fechas
-      .replace(/\[Start Date\]/g, formattedToday)
-      .replace(/\[Completion Date\]/g, formattedCompletionDate)
-      
-      // Estado (hardcoded o se podría obtener de la base de datos)
-      .replace(/\[State\]/g, "California")
-      .replace(/\[County\]/g, "San Diego");
-    
-    // Añadir las cláusulas personalizadas
-    // Buscamos la sección "8. Additional Terms and Amendments"
-    const additionalTermsSection = '<div class="section">\n                <div class="section-title">\n                    8. Additional Terms and Amendments\n                </div>';
-    
-    // Crear el HTML para las cláusulas personalizadas
-    let customClausesHtml = '<div class="section">\n                <div class="section-title">\n                    9. Cláusulas Personalizadas\n                </div>\n';
-    
-    // Añadir cada cláusula personalizada
-    customClauses.forEach(clause => {
-      customClausesHtml += `<p class="clause">${clause}</p>\n`;
-    });
-    
-    customClausesHtml += '</div>\n';
-    
-    // Insertar las cláusulas personalizadas después de la sección 8
-    const parts = templateHtml.split(additionalTermsSection);
-    
-    if (parts.length === 2) {
-      // Encontramos la sección
-      const [before, after] = parts;
-      
-      // Encontrar dónde termina la sección 8
-      const sectionEndIndex = after.indexOf('</div>\n\n            <div');
-      
-      if (sectionEndIndex !== -1) {
-        // Insertamos nuestras cláusulas personalizadas después de que termine la sección 8
-        templateHtml = before + additionalTermsSection + after.substring(0, sectionEndIndex + 6) + 
-                      customClausesHtml + after.substring(sectionEndIndex + 6);
-      } else {
-        // Si no podemos encontrar exactamente dónde termina, solo lo agregamos antes de la sección de firmas
-        const signatureSection = '<div class="signature-section">';
-        const signatureParts = templateHtml.split(signatureSection);
-        
-        if (signatureParts.length === 2) {
-          templateHtml = signatureParts[0] + customClausesHtml + signatureSection + signatureParts[1];
+  // Template básico para contrato, se puede mejorar o cargar desde un archivo
+  const templateHTML = `
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Contrato de Servicios</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          line-height: 1.6;
+          color: #333;
+          margin: 0;
+          padding: 20px;
         }
-      }
-    }
-    
-    return templateHtml;
-  } catch (error) {
-    console.error('Error filling contract template:', error);
-    throw new Error('Failed to generate contract');
-  }
+        .header {
+          text-align: center;
+          margin-bottom: 30px;
+        }
+        .header h1 {
+          color: #2c5282;
+          margin-bottom: 5px;
+        }
+        .section {
+          margin-bottom: 20px;
+        }
+        .section h2 {
+          color: #2c5282;
+          border-bottom: 1px solid #ccc;
+          padding-bottom: 5px;
+        }
+        .party-info {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 20px;
+        }
+        .party-box {
+          width: 48%;
+          border: 1px solid #ddd;
+          padding: 15px;
+          border-radius: 5px;
+        }
+        .clause {
+          margin-bottom: 15px;
+        }
+        .clause-title {
+          font-weight: bold;
+        }
+        .signature-area {
+          display: flex;
+          justify-content: space-between;
+          margin-top: 50px;
+        }
+        .signature-box {
+          width: 45%;
+          text-align: center;
+        }
+        .signature-line {
+          border-top: 1px solid #000;
+          margin-top: 40px;
+          margin-bottom: 10px;
+        }
+        footer {
+          margin-top: 50px;
+          text-align: center;
+          font-size: 0.8em;
+          color: #666;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>CONTRATO DE SERVICIOS</h1>
+        <p>Instalación de Cercas</p>
+      </div>
+      
+      <div class="section">
+        <div class="party-info">
+          <div class="party-box">
+            <h3>CONTRATISTA</h3>
+            <p><strong>Nombre:</strong> ${extractedData.contratista?.nombre || 'N/A'}</p>
+            <p><strong>Licencia:</strong> ${extractedData.contratista?.licencia || 'N/A'}</p>
+            <p><strong>Dirección:</strong> ${extractedData.contratista?.direccion || 'N/A'}</p>
+            <p><strong>Teléfono:</strong> ${extractedData.contratista?.telefono || 'N/A'}</p>
+            <p><strong>Email:</strong> ${extractedData.contratista?.email || 'N/A'}</p>
+          </div>
+          
+          <div class="party-box">
+            <h3>CLIENTE</h3>
+            <p><strong>Nombre:</strong> ${extractedData.cliente?.nombre || 'N/A'}</p>
+            <p><strong>Dirección:</strong> ${extractedData.cliente?.direccion || 'N/A'}</p>
+            <p><strong>Teléfono:</strong> ${extractedData.cliente?.telefono || 'N/A'}</p>
+            <p><strong>Email:</strong> ${extractedData.cliente?.email || 'N/A'}</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="section">
+        <h2>PROYECTO</h2>
+        <p><strong>Dirección de la Obra:</strong> ${extractedData.cliente?.direccion || 'N/A'}</p>
+        <p><strong>Tipo de Cerca:</strong> ${extractedData.proyecto?.tipoCerca || 'N/A'}</p>
+        <p><strong>Altura:</strong> ${extractedData.proyecto?.altura || 'N/A'} pies</p>
+        <p><strong>Longitud Total:</strong> ${extractedData.proyecto?.longitud || 'N/A'} pies</p>
+        <p><strong>Características Especiales:</strong> ${extractedData.proyecto?.caracteristicas || 'N/A'}</p>
+        <p><strong>Demolición Requerida:</strong> ${extractedData.proyecto?.demolicion ? 'Sí' : 'No'}</p>
+        <p><strong>Cantidad y Tipo de Puertas:</strong> ${extractedData.proyecto?.puertas || 'N/A'}</p>
+      </div>
+      
+      <div class="section">
+        <h2>PRESUPUESTO</h2>
+        <p><strong>Subtotal:</strong> $${extractedData.presupuesto?.subtotal || 'N/A'}</p>
+        <p><strong>Impuestos:</strong> $${extractedData.presupuesto?.impuestos || 'N/A'}</p>
+        <p><strong>Total:</strong> $${extractedData.presupuesto?.total || 'N/A'}</p>
+        <p><strong>Método de Pago:</strong> ${extractedData.presupuesto?.metodoPago || 'N/A'}</p>
+        <p><strong>Forma de Pago:</strong> ${extractedData.presupuesto?.formaPago || 'N/A'}</p>
+      </div>
+      
+      <div class="section">
+        <h2>FECHAS</h2>
+        <p><strong>Fecha de Emisión:</strong> ${extractedData.fechas?.emision || new Date().toLocaleDateString()}</p>
+        <p><strong>Validez del Contrato:</strong> ${extractedData.fechas?.validez || '30 días'}</p>
+        <p><strong>Tiempo Estimado de Inicio:</strong> ${extractedData.fechas?.inicioEstimado || 'A determinar'}</p>
+        <p><strong>Tiempo Estimado de Finalización:</strong> ${extractedData.fechas?.finalizacionEstimada || 'A determinar'}</p>
+      </div>
+      
+      <div class="section">
+        <h2>CLÁUSULAS ESPECÍFICAS DEL PROYECTO</h2>
+        ${customClauses.map((clause, index) => `
+          <div class="clause">
+            <p class="clause-title">Cláusula ${index + 1}</p>
+            <p>${clause}</p>
+          </div>
+        `).join('')}
+      </div>
+      
+      <div class="section">
+        <h2>CLÁUSULAS GENERALES</h2>
+        <div class="clause">
+          <p class="clause-title">Modificaciones</p>
+          <p>Cualquier modificación a este contrato deberá hacerse por escrito y estar firmada por ambas partes.</p>
+        </div>
+        <div class="clause">
+          <p class="clause-title">Terminación</p>
+          <p>Este contrato puede ser terminado por cualquiera de las partes con previo aviso por escrito de 7 días. En caso de terminación, el cliente deberá pagar por el trabajo ya completado.</p>
+        </div>
+        <div class="clause">
+          <p class="clause-title">Ley Aplicable</p>
+          <p>Este contrato se regirá por las leyes del estado donde se realiza la obra.</p>
+        </div>
+      </div>
+      
+      <div class="signature-area">
+        <div class="signature-box">
+          <div class="signature-line"></div>
+          <p>Firma del Contratista</p>
+          <p>${extractedData.contratista?.nombre || ''}</p>
+        </div>
+        <div class="signature-box">
+          <div class="signature-line"></div>
+          <p>Firma del Cliente</p>
+          <p>${extractedData.cliente?.nombre || ''}</p>
+        </div>
+      </div>
+      
+      <footer>
+        <p>Este documento constituye un acuerdo legal entre el contratista y el cliente.</p>
+      </footer>
+    </body>
+    </html>
+  `;
+
+  return templateHTML;
 }
 
 export function registerContractRoutes(app: Express) {
-  // Endpoint para procesar un PDF y generar un contrato
+  // Ruta para generar contrato a partir de un PDF subido
   app.post('/api/generar-contrato', upload.single('pdf'), async (req: Request, res: Response) => {
     try {
-      // Verificar que se haya subido un archivo
+      // Verificar que se subió un archivo
       if (!req.file) {
-        return res.status(400).json({ error: 'No se subió ningún archivo' });
+        return res.status(400).json({ success: false, message: 'No se subió ningún archivo PDF' });
       }
-      
-      console.log(`PDF recibido: ${req.file.originalname}, tamaño: ${req.file.size} bytes`);
-      
+
+      const filePath = req.file.path;
+      console.log(`Procesando PDF: ${filePath}`);
+
       // Extraer datos del PDF usando GPT-4 Vision
-      const extractedData = await pdfVisionService.extractDataFromPDF(req.file.path);
-      
+      const extractedData = await pdfVisionService.extractDataFromPDF(filePath);
       console.log('Datos extraídos del PDF:', JSON.stringify(extractedData, null, 2));
-      
+
       // Generar cláusulas personalizadas basadas en la descripción del proyecto
-      const customClauses = await pdfVisionService.generateCustomClauses(
-        extractedData.projectDescription
-      );
+      const projectDescription = `
+        Instalación de cerca tipo ${extractedData.proyecto?.tipoCerca || 'estándar'} 
+        de ${extractedData.proyecto?.altura || '6'} pies de altura 
+        y ${extractedData.proyecto?.longitud || '100'} pies de longitud
+        ${extractedData.proyecto?.caracteristicas ? `con ${extractedData.proyecto.caracteristicas}` : ''}
+        ${extractedData.proyecto?.demolicion ? 'con demolición requerida' : 'sin demolición'}
+        ${extractedData.proyecto?.puertas ? `incluyendo ${extractedData.proyecto.puertas}` : 'sin puertas adicionales'}
+      `;
       
+      const customClauses = await pdfVisionService.generateCustomClauses(projectDescription);
       console.log('Cláusulas personalizadas generadas:', customClauses);
-      
-      // Llenar la plantilla de contrato con los datos extraídos
-      const contractHtml = await fillContractTemplate(extractedData, customClauses);
-      
+
+      // Generar HTML del contrato
+      const contractHTML = await fillContractTemplate(extractedData, customClauses);
+
       // Generar PDF a partir del HTML
-      const contractPdfBuffer = await documentService.generatePdfFromHtml(contractHtml);
-      
-      // Convertir el PDF a base64 para enviarlo al frontend
-      const contractPdfBase64 = contractPdfBuffer.toString('base64');
-      
-      // Eliminar el archivo temporal
-      await fs.unlink(req.file.path).catch(err => {
-        console.warn('Error eliminando archivo temporal:', err);
-      });
-      
-      // Enviar respuesta al cliente
+      const pdfBuffer = await documentService.generatePdfFromHtml(contractHTML);
+
+      // Codificar el PDF como base64 para enviarlo al cliente
+      const base64PDF = pdfBuffer.toString('base64');
+
+      // Eliminar archivo temporal
+      fs.unlinkSync(filePath);
+
+      // Responder con el contrato generado
       res.json({
-        contrato_html: contractHtml,
-        contrato_pdf_base64: contractPdfBase64
+        success: true,
+        message: 'Contrato generado exitosamente',
+        contrato_html: contractHTML,
+        contrato_pdf_base64: base64PDF,
+        datos_extraidos: extractedData
       });
-      
-    } catch (error) {
-      console.error('Error procesando PDF:', error);
-      
-      // Intentar eliminar el archivo temporal si existe
-      if (req.file) {
-        fs.unlink(req.file.path).catch(err => {
-          console.warn('Error eliminando archivo temporal después de error:', err);
-        });
-      }
-      
-      res.status(500).json({ 
-        error: 'Error procesando el PDF para generar contrato',
-        details: error instanceof Error ? error.message : String(error)
+    } catch (error: any) {
+      console.error('Error generando contrato:', error);
+      res.status(500).json({
+        success: false,
+        message: `Error generando contrato: ${error.message || 'Error desconocido'}`,
       });
     }
   });
