@@ -96,6 +96,11 @@ export const userNavigationConfig: NavigationSection[] = [
         icon: "ri-store-3-line",
       },
       {
+        label: "Acerca de Mervin",
+        path: "/about-mervin",
+        icon: "ri-robot-2-line",
+      },
+      {
         label: "Política Legal",
         path: "/legal-policy",
         icon: "ri-file-shield-2-line",

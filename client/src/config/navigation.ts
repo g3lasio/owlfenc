@@ -129,6 +129,12 @@ export const navigationGroups: NavigationGroup[] = [
         label: "Acerca de Mervin",
         path: "/about-mervin",
         icon: "ri-robot-2-line"
+      },
+      {
+        id: "about-owlfence",
+        label: "Acerca de Owl Fence",
+        path: "/about-owlfenc",
+        icon: "ri-store-3-line"
       }
     ]
   }
