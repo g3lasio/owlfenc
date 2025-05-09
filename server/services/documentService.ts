@@ -94,7 +94,8 @@ export class DocumentService {
         }
       });
 
-      return pdfBuffer;
+      // Convertir a Buffer de Node.js si no lo es ya
+      return Buffer.from(pdfBuffer);
     } finally {
       await browser.close();
     }

@@ -489,21 +489,30 @@ export default function ChatInterface() {
                             )
                           }
                         >
-                          <i className="ri-download-line mr-1"></i> Download PDF
+                          <i className="ri-download-line mr-1"></i> Descargar PDF
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleEditDetails(message.template!.type)}
                         >
-                          <i className="ri-edit-line mr-1"></i> Edit Details
+                          <i className="ri-edit-line mr-1"></i> Editar Detalles
                         </Button>
+                        {message.template.type === "contract" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleRequestAdjustments}
+                          >
+                            <i className="ri-file-edit-line mr-1"></i> Solicitar Ajustes
+                          </Button>
+                        )}
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleEmailClient(message.template!.type)}
                         >
-                          <i className="ri-mail-send-line mr-1"></i> Email to Client
+                          <i className="ri-mail-send-line mr-1"></i> Enviar por Email
                         </Button>
                       </div>
                     </div>
