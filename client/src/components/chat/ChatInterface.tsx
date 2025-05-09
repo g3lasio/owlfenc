@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 export interface Message {
   id: string;
@@ -32,6 +34,9 @@ export default function ChatInterface() {
   const [progress, setProgress] = useState(0);
   const [isChatActive, setIsChatActive] = useState(false);
   const [isAIMode, setIsAIMode] = useState(true); // Toggle between AI (Mervin) and manual modes
+  const [isContractModalOpen, setIsContractModalOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploadingContract, setIsUploadingContract] = useState(false);
 
   const ProgressBar = () => (
     <div className="fixed top-16 left-0 right-0 z-50 px-4 py-2 bg-background/80 backdrop-blur-sm border-b">
