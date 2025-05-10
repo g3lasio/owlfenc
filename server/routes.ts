@@ -538,26 +538,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/generate-contract', async (req: Request, res: Response) => {
     try {
       const schema = z.object({
-        projectDetails: z.record(z.any())
+        projectDetails: z.record(z.any()),
+        model: z.string().optional(),
+        systemPrompt: z.string().optional()
       });
 
-      const { projectDetails } = schema.parse(req.body);
+      const { projectDetails, model, systemPrompt } = schema.parse(req.body);
 
-      // Get the default contract template
-      const userId = 1; // Default user ID
-      const template = await storage.getDefaultTemplate(userId, "contract");
+      let html: string;
 
-      if (!template) {
-        return res.status(404).json({ message: 'No default contract template found' });
+      try {
+        // Primero, intentar generar el contrato con el servicio de OpenAI
+        const openaiService = require('./services/openaiService');
+        console.log('Generando contrato con OpenAI...');
+        
+        // Formatear los datos del contrato para OpenAI
+        const contractData = {
+          contractor: {
+            name: projectDetails.company || 'Nombre de la Empresa',
+            address: projectDetails.companyAddress || 'Dirección de la Empresa',
+            phone: projectDetails.companyPhone || 'Teléfono de la Empresa',
+            email: projectDetails.companyEmail || 'Email de la Empresa',
+            license: projectDetails.license || 'Licencia #12345'
+          },
+          client: {
+            name: projectDetails.clientName || 'Nombre del Cliente',
+            address: projectDetails.address || 'Dirección del Cliente',
+            phone: projectDetails.phone || 'Teléfono del Cliente',
+            email: projectDetails.email || 'Email del Cliente'
+          },
+          project: {
+            description: `Instalación de cerca de ${projectDetails.fenceType || 'madera'} de ${projectDetails.fenceHeight || '6'} pies`,
+            startDate: projectDetails.startDate || new Date().toLocaleDateString(),
+            completionDate: projectDetails.completionDate || '',
+            fenceType: projectDetails.fenceType || 'madera',
+            fenceHeight: projectDetails.fenceHeight || '6',
+            fenceLength: projectDetails.fenceLength || '100',
+            fenceMaterial: projectDetails.fenceMaterial || 'madera tratada a presión',
+            location: projectDetails.projectLocation || projectDetails.address || 'Ubicación del Proyecto'
+          },
+          compensation: {
+            totalCost: projectDetails.total || '5000',
+            depositAmount: projectDetails.depositAmount || String(Number(projectDetails.total || 5000) * 0.5),
+            paymentMethod: projectDetails.paymentMethod || 'Efectivo o transferencia bancaria'
+          },
+          terms: {
+            warrantyPeriod: projectDetails.warrantyPeriod || '1 año',
+            cancellationPolicy: 'Cancelación con 48 horas de anticipación sin penalización',
+            disputeResolution: 'Mediación seguida de arbitraje vinculante'
+          },
+          contractId: projectDetails.contractId || `CON-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`
+        };
+
+        html = await openaiService.generateContractHTML(contractData);
+        console.log('Contrato generado con OpenAI exitosamente');
+      } catch (openaiError) {
+        console.warn('Error al generar contrato con OpenAI, usando método de respaldo:', openaiError);
+        
+        // Usar el método de respaldo tradicional si OpenAI falla
+        const userId = 1; // Default user ID
+        const template = await storage.getDefaultTemplate(userId, "contract");
+
+        if (!template) {
+          return res.status(404).json({ message: 'No default contract template found' });
+        }
+
+        html = await generateContractHtml(projectDetails);
       }
-
-      // Generate HTML from template
-      const html = await generateContractHtml(projectDetails);
 
       res.json({ html });
     } catch (error) {
       console.error('Error generating contract:', error);
-      res.status(400).json({ message: 'Failed to generate contract' });
+      res.status(400).json({ message: 'Failed to generate contract', error: error.message });
     }
   });
 
