@@ -26,6 +26,10 @@ export interface Message {
     html: string;
   };
   isTyping?: boolean;
+  actions?: {
+    label: string;
+    onClick: () => void;
+  }[];
 }
 
 export default function ChatInterface() {
@@ -638,7 +642,7 @@ Total: ${result.datos_extraidos.presupuesto.total || "No encontrado"}
         actions: [
           {
             label: "Descargar PDF",
-            onClick: () => handleDownload("contract"),
+            onClick: () => handleDownloadPDF(contractHtml, "contract"),
           },
           {
             label: "Enviar por Email",
