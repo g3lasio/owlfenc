@@ -54,11 +54,31 @@ export class MistralService {
       console.log('Iniciando extracción con Mistral AI...');
       console.log(`Tamaño del PDF: ${pdfBuffer.length} bytes`);
       
-      // Convertir el PDF a base64
-      const pdfBase64 = pdfBuffer.toString('base64');
-      console.log(`PDF convertido a base64. Longitud: ${pdfBase64.length} caracteres`);
-      console.log(`Primeros 100 caracteres del base64: ${pdfBase64.substring(0, 100)}...`);
-      console.log('Configurando petición a la API de Mistral...');
+      // Importar la librería de conversión de PDF a imagen
+      const pdfImgConvert = await import('pdf-img-convert');
+      
+      console.log('Convirtiendo PDF a imagen...');
+      
+      // Opciones para la conversión de PDF a imagen
+      const options = {
+        width: 1500,
+        height: 2000,
+        quality: 95,
+        pages: [1] // Sólo convertir la primera página
+      };
+      
+      // Convertir PDF a imagen
+      const outputImages = await pdfImgConvert.convert(pdfBuffer, options);
+      console.log(`PDF convertido a ${outputImages.length} imágenes`);
+      
+      // Tomar la primera imagen (primera página del PDF)
+      const imageBuffer = Buffer.from(outputImages[0]);
+      
+      // Convertir la imagen a base64
+      const imageBase64 = imageBuffer.toString('base64');
+      console.log(`Imagen convertida a base64. Longitud: ${imageBase64.length} caracteres`);
+      console.log(`Primeros 100 caracteres del base64: ${imageBase64.substring(0, 100)}...`);
+      console.log('Configurando petición a la API de Mistral con la imagen...');
       
       const prompt = `
 Eres un asistente especializado en extraer información estructurada de PDFs de estimados de construcción de cercas. 
@@ -111,7 +131,7 @@ Si no encuentras algún dato, deja el campo vacío. NO incluyas explicaciones ad
                 {
                   type: 'image_url',
                   image_url: {
-                    url: `data:application/pdf;base64,${pdfBase64}`,
+                    url: `data:image/png;base64,${imageBase64}`,
                   },
                 },
               ],
