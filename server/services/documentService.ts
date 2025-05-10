@@ -28,6 +28,12 @@ interface DocumentData {
     tax: number;
     total: number;
   };
+  // Campos adicionales para el contrato
+  fenceLength?: number;
+  projectTotal?: number;
+  depositPercent?: number;
+  startDate?: string;
+  completionDate?: string;
   contractorInfo: {
     name: string;
     phone: string;

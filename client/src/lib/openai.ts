@@ -645,8 +645,17 @@ export async function processChatMessage(message: string, context: any): Promise
         // Costo total
         case 17:
           datosActuales.presupuesto.total = message;
+          
+          // Guardar datos en localStorage para respaldo
+          try {
+            localStorage.setItem('mervin_contract_data', JSON.stringify(datosActuales));
+            console.log("Datos guardados en localStorage durante recopilación", datosActuales);
+          } catch (error) {
+            console.error("Error guardando datos en localStorage:", error);
+          }
+          
           return {
-            message: "¿Cuál será el monto del depósito inicial? (ej: $2,500 o 50%)",
+            message: "He actualizado que el costo total del proyecto es " + message + ". ¿Cómo se distribuirá el pago? En la industria es común solicitar un depósito inicial del 50% y el 50% restante después de la aprobación del cliente.",
             context: {
               ...context,
               recopilacionDatos: {
@@ -659,9 +668,34 @@ export async function processChatMessage(message: string, context: any): Promise
           
         // Depósito
         case 18:
-          datosActuales.presupuesto.deposito = message;
+          // Analiza la respuesta del usuario sobre términos de pago
+          let depositoInfo = "";
+          
+          // Busca patrones comunes de distribución de pago
+          if (message.includes("50%") || message.toLowerCase().includes("mitad")) {
+            depositoInfo = "50% upfront, 50% al completar";
+            datosActuales.presupuesto.politicaPago = "50% inicial, 50% después de la aprobación del cliente";
+          } else if (message.includes("30%")) {
+            depositoInfo = "30% upfront, 70% al completar";
+            datosActuales.presupuesto.politicaPago = "30% inicial, 70% después de la aprobación del cliente";
+          } else {
+            // Si el formato no es reconocido, usar la respuesta directa
+            depositoInfo = message;
+            datosActuales.presupuesto.politicaPago = message;
+          }
+          
+          datosActuales.presupuesto.deposito = depositoInfo;
+          
+          // Guardar datos en localStorage para respaldo
+          try {
+            localStorage.setItem('mervin_contract_data', JSON.stringify(datosActuales));
+            console.log("Datos de depósito guardados:", depositoInfo);
+          } catch (error) {
+            console.error("Error guardando datos de depósito:", error);
+          }
+          
           return {
-            message: "¿Cuál será la forma de pago aceptada? (ej: efectivo, cheque, transferencia bancaria)",
+            message: `He registrado que la política de pago será: ${depositoInfo}. ¿Cuál será la forma de pago aceptada? (ej: efectivo, cheque, transferencia bancaria)`,
             context: {
               ...context,
               recopilacionDatos: {
