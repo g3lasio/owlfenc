@@ -1215,14 +1215,14 @@ Total: ${result.datos_extraidos.presupuesto?.total || "No encontrado"}
   };
 
   return (
-    <div className="relative flex-1 flex flex-col bg-background rounded-lg overflow-hidden border shadow-sm">
+    <div className="relative flex-1 flex flex-col bg-background rounded-lg overflow-hidden border shadow-sm chat-interface-container">
       {/* Animación de análisis de documentos */}
       {showAnalysisEffect && <AnalysisEffect isVisible={true} />}
       
-      <div className="flex-1 flex flex-col relative">
+      <div className="flex-1 flex flex-col">
         <div
           ref={chatContainerRef}
-          className="flex-1 overflow-y-auto p-4 pb-24 scrollbar-hide messages-container"
+          className="messages-container p-4"
         >
           {!isChatActive ? (
             <div className="flex-1 flex items-center justify-center">
@@ -1362,7 +1362,7 @@ Total: ${result.datos_extraidos.presupuesto?.total || "No encontrado"}
         </div>
 
         {isChatActive && (
-          <div className="absolute bottom-0 left-0 right-0 bg-background shadow-md">
+          <div className="chat-input-container">
             <ChatInput
               onSendMessage={handleSendMessage}
               isProcessing={isProcessing}

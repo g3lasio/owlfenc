@@ -5,6 +5,36 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Solución para el chat y scrolling */
+.chat-interface-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+}
+
+.messages-container {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 80px !important;
+  scroll-behavior: smooth;
+  max-height: calc(100vh - 140px);
+}
+
+.chat-input-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: hsl(var(--background));
+  padding: 0;
+  border-top: 1px solid hsl(var(--border));
+  z-index: 1000;
+  width: 100%;
+  max-width: 100%;
+  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.05);
+}
+
 /* Efectos futuristas para el análisis AI */
 .analysis-particles {
   position: absolute;
