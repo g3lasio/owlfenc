@@ -8,6 +8,7 @@ import Home from "@/pages/Home";
 import Projects from "@/pages/Projects";
 import Clients from "./pages/Clients";
 import NuevoClientes from "./pages/NuevoClientes";
+import ChatInterface from "@/components/chat/ChatInterface";
 import Settings from "@/pages/Settings";
 import Profile from "@/pages/Profile";
 import PropertyOwnershipVerifier from "@/pages/PropertyOwnershipVerifier";
@@ -79,6 +80,13 @@ function Router() {
       {/* Rutas protegidas */}
       <Route path="/">
         {() => <ProtectedRoute component={Home} />}
+      </Route>
+      <Route path="/mervin">
+        {() => <ProtectedRoute component={() => (
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <ChatInterface />
+          </div>
+        )} />}
       </Route>
       <Route path="/projects">
         {() => <ProtectedRoute component={Projects} />}
