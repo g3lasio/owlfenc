@@ -18,6 +18,7 @@ import ARFenceEstimator from "@/pages/ARFenceEstimator";
 import AboutOwlFence from "@/pages/AboutOwlFence";
 import AboutMervin from "@/pages/AboutMervin";
 import LegalPolicy from "@/pages/LegalPolicy";
+import Mervin from "@/pages/Mervin";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import PricingSettings from "@/pages/PricingSettings";
 import Subscription from "@/pages/Subscription";
@@ -82,11 +83,7 @@ function Router() {
         {() => <ProtectedRoute component={Home} />}
       </Route>
       <Route path="/mervin">
-        {() => <ProtectedRoute component={() => (
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <ChatInterface />
-          </div>
-        )} />}
+        {() => <ProtectedRoute component={Mervin} />}
       </Route>
       <Route path="/projects">
         {() => <ProtectedRoute component={Projects} />}

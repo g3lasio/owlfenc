@@ -32,6 +32,12 @@ export const navigationGroups: NavigationGroup[] = [
         icon: "ri-dashboard-line"
       },
       {
+        id: "mervin",
+        label: "Hablar con Mervin",
+        path: "/mervin",
+        icon: "ri-chat-voice-line"
+      },
+      {
         id: "projects",
         label: "Proyectos",
         path: "/projects",
