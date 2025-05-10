@@ -53,7 +53,7 @@ export default function ChatInput({
   }, [message]);
   
   return (
-    <div className="p-4 chat-input border-t bg-background sticky bottom-0 left-0 right-0 z-10">
+    <div className="p-4 chat-input border-t bg-background">
       <form onSubmit={handleSubmit} className="flex items-end space-x-2">
         <div className="flex-1 bg-muted rounded-lg border border-border p-2 hover:border-primary focus-within:border-primary transition-colors duration-200">
           <textarea

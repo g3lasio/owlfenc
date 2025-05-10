@@ -1219,10 +1219,10 @@ Total: ${result.datos_extraidos.presupuesto?.total || "No encontrado"}
       {/* Animación de análisis de documentos */}
       {showAnalysisEffect && <AnalysisEffect isVisible={true} />}
       
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col relative">
         <div
           ref={chatContainerRef}
-          className="flex-1 overflow-y-auto p-4 pb-20 scrollbar-hide messages-container"
+          className="flex-1 overflow-y-auto p-4 pb-24 scrollbar-hide messages-container"
         >
           {!isChatActive ? (
             <div className="flex-1 flex items-center justify-center">
@@ -1362,12 +1362,14 @@ Total: ${result.datos_extraidos.presupuesto?.total || "No encontrado"}
         </div>
 
         {isChatActive && (
-          <ChatInput
-            onSendMessage={handleSendMessage}
-            isProcessing={isProcessing}
-            onFileUpload={handleFileUpload}
-            showFileUpload={true}
-          />
+          <div className="absolute bottom-0 left-0 right-0 bg-background shadow-md">
+            <ChatInput
+              onSendMessage={handleSendMessage}
+              isProcessing={isProcessing}
+              onFileUpload={handleFileUpload}
+              showFileUpload={true}
+            />
+          </div>
         )}
         
         {/* Diálogo para añadir cláusulas personalizadas */}
