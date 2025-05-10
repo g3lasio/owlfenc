@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
   isDisabled?: boolean;
+  onAttachmentClick?: () => void;
 }
 
-export default function ChatInput({ onSendMessage, isDisabled = false }: ChatInputProps) {
+export default function ChatInput({ onSendMessage, isDisabled = false, onAttachmentClick }: ChatInputProps) {
   const [message, setMessage] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
@@ -56,8 +57,13 @@ export default function ChatInput({ onSendMessage, isDisabled = false }: ChatInp
           ></textarea>
           <div className="flex items-center justify-between px-2">
             <div className="flex items-center space-x-2 text-muted-foreground">
-              <button type="button" className="p-1 hover:text-primary rounded-md">
-                <i className="ri-attachment-2"></i>
+              <button 
+                type="button" 
+                className="p-1 hover:text-primary rounded-md"
+                onClick={onAttachmentClick}
+                title="Adjuntar PDF para generar contrato"
+              >
+                <i className="ri-file-pdf-line"></i>
               </button>
               <button type="button" className="p-1 hover:text-primary rounded-md">
                 <i className="ri-image-line"></i>

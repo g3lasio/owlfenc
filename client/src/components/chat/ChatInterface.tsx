@@ -247,22 +247,17 @@ export default function ChatInterface() {
         };
         setMessages((prev) => [...prev, assistantMessage]);
         
-        // Añadir segundo mensaje con el botón para subir el PDF
+        // Añadir segundo mensaje indicando que usen el icono de clip
         setTimeout(() => {
           const uploadMessage: Message = {
             id: `upload-${Date.now()}`,
-            content: "Por favor, haz clic en el botón a continuación para subir tu PDF:",
+            content: "Por favor, utiliza el icono de PDF 📎 que se encuentra en la barra de chat para subir tu archivo de estimado.",
             sender: "assistant",
-            options: [{ text: "Subir PDF del Estimado", clickable: true }],
           };
           setMessages((prev) => [...prev, uploadMessage]);
         }, 800);
       }, 600);
     } 
-    // Verificar si es la opción para subir PDF
-    else if (option === "Subir PDF del Estimado") {
-      handleOpenContractModal();
-    }
     // Para el resto de opciones, usar el comportamiento predeterminado
     else {
       handleSendMessage(option, option);
@@ -622,7 +617,11 @@ export default function ChatInterface() {
         {/* Chat Input */}
         {isChatActive && !showManualForm && ( // Solo mostrar el input si chat está activo y no estamos en modo manual
           <div className="relative">
-            <ChatInput onSendMessage={handleSendMessage} isDisabled={isProcessing} />
+            <ChatInput 
+              onSendMessage={handleSendMessage} 
+              isDisabled={isProcessing} 
+              onAttachmentClick={handleOpenContractModal}
+            />
           </div>
         )}
         
