@@ -83,6 +83,8 @@ export async function processPDFForContract(pdfFile: File): Promise<{
   }
 }
 
+import { formatContractData, generateContractHTML } from './contractGenerator';
+
 /**
  * Actualiza un contrato con cláusulas personalizadas o datos adicionales
  * @param datos_extraidos Datos originales extraídos del PDF
@@ -101,30 +103,89 @@ export async function actualizarContrato(
   try {
     console.log('Solicitando actualización de contrato con cláusulas adicionales:', clausulas_adicionales);
     
-    // Enviar la petición a la API
-    const response = await fetch('/api/ajustar-contrato', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        datos_extraidos,
-        clausulas_adicionales,
-        informacion_adicional
-      }),
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Error ajustando el contrato');
+    // Primero intentamos generar el contrato localmente para una respuesta más rápida
+    try {
+      // Actualizamos los datos extraídos con la información adicional
+      const datos_actualizados = { ...datos_extraidos };
+      
+      // Actualizar información del cliente si se proporciona
+      if (informacion_adicional?.cliente) {
+        datos_actualizados.cliente = {
+          ...datos_actualizados.cliente,
+          ...informacion_adicional.cliente
+        };
+      }
+      
+      // Actualizar información del contratista si se proporciona
+      if (informacion_adicional?.contratista) {
+        datos_actualizados.contratista = {
+          ...datos_actualizados.contratista,
+          ...informacion_adicional.contratista
+        };
+      }
+      
+      // Actualizar información del proyecto si se proporciona
+      if (informacion_adicional?.proyecto) {
+        datos_actualizados.proyecto = {
+          ...datos_actualizados.proyecto,
+          ...informacion_adicional.proyecto
+        };
+      }
+      
+      // Actualizar información del presupuesto si se proporciona
+      if (informacion_adicional?.presupuesto) {
+        datos_actualizados.presupuesto = {
+          ...datos_actualizados.presupuesto,
+          ...informacion_adicional.presupuesto
+        };
+      }
+      
+      // Añadir cláusulas adicionales si se proporcionan
+      if (clausulas_adicionales && clausulas_adicionales.length > 0) {
+        datos_actualizados.clausulasAdicionales = [
+          ...(datos_actualizados.clausulasAdicionales || []),
+          ...clausulas_adicionales
+        ];
+      }
+      
+      // Formatear los datos para el generador de contratos
+      const contractData = formatContractData(datos_actualizados);
+      
+      // Generar el contrato usando la plantilla local
+      const html = generateContractHTML(contractData);
+      
+      return {
+        contrato_html: html,
+        datos_actualizados: datos_actualizados
+      };
+    } catch (localError) {
+      console.warn('Error generando contrato localmente, usando API como fallback:', localError);
+      
+      // Si falla la generación local, usamos la API como fallback
+      const response = await fetch('/api/ajustar-contrato', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          datos_extraidos,
+          clausulas_adicionales,
+          informacion_adicional
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error ajustando el contrato');
+      }
+      
+      const data = await response.json();
+      
+      return {
+        contrato_html: data.contrato_html,
+        datos_actualizados: data.datos_actualizados
+      };
     }
-    
-    const data = await response.json();
-    
-    return {
-      contrato_html: data.contrato_html,
-      datos_actualizados: data.datos_actualizados
-    };
   } catch (error) {
     console.error("¡Órale! Error actualizando el contrato:", error);
     throw error;

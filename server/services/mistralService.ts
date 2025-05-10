@@ -327,6 +327,16 @@ Si no encuentras algún dato, deja el campo vacío. NO incluyas explicaciones ad
       adicional: informacionAdicional,
     };
     
+    // Importamos y utilizamos el generador de contratos basado en plantilla
+    // En lugar de generar HTML con la API, lo generamos localmente
+    // Esto permite un control más preciso y un contrato más consistente y profesional
+    
+    // Convertimos los datos extraídos al formato esperado por el generador
+    // Nota: Esta línea es solo para referencia. La lógica real se implementará
+    // en el generador de contratos.
+    
+    // La lógica para generar el contrato se traslada al cliente con el nuevo generador de contratos
+    // Este prompt sólo lo conservamos para la API de Mistral en caso de que sea necesario
     const prompt = `
 Eres un abogado especializado en contratos de construcción de cercas.
 Tu tarea es generar un contrato completo y profesional utilizando la siguiente información:
@@ -355,9 +365,8 @@ El contrato debe incluir:
 10. Espacios para firmas de AMBAS PARTES con fecha
 11. Información de contacto del contratista para preguntas o emergencias
 
-Genera el contrato en HTML usando clases de Tailwind para una presentación profesional.
-Usa sections, divs y otros elementos HTML para estructurar adecuadamente el documento.
-NO incluyas elementos que no se renderizarían en un PDF (como scripts o interacciones).
+Genera el contrato en HTML basado en la plantilla que está en 'client/src/components/templates/contract-template.html'.
+Llena los campos con marcadores entre corchetes con la información correcta.
 Mantén un diseño limpio y profesional adecuado para un documento legal.
     `;
     

@@ -13,9 +13,13 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 export interface Message {
   id: string;
@@ -33,6 +37,22 @@ export interface Message {
   }[];
 }
 
+// Esquema de validación para la cláusula personalizada
+const customClauseSchema = z.object({
+  clauseText: z.string().min(10, "La cláusula debe tener al menos 10 caracteres"),
+});
+
+// Esquema de validación para correcciones de información
+const correctionSchema = z.object({
+  fieldType: z.enum(["cliente", "contratista", "proyecto", "presupuesto"]),
+  fieldName: z.string().min(1, "Debe seleccionar un campo para corregir"),
+  fieldValue: z.string().min(1, "Debe proporcionar un valor para la corrección"),
+});
+
+// Tipos para los formularios
+type CustomClauseFormValues = z.infer<typeof customClauseSchema>;
+type CorrectionFormValues = z.infer<typeof correctionSchema>;
+
 export default function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [context, setContext] = useState<Record<string, any>>({});
@@ -44,6 +64,11 @@ export default function ChatInterface() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploadingContract, setIsUploadingContract] = useState(false);
   const [showAnalysisEffect, setShowAnalysisEffect] = useState(false);
+  
+  // Estado para los diálogos
+  const [isCustomClauseDialogOpen, setIsCustomClauseDialogOpen] = useState(false);
+  const [isCorrectionDialogOpen, setIsCorrectionDialogOpen] = useState(false);
+  const [correctionField, setCorrectionField] = useState("");
 
   const ProgressBar = () => (
     <div className="fixed top-16 left-0 right-0 z-50 px-4 py-2 bg-background/80 backdrop-blur-sm border-b">
