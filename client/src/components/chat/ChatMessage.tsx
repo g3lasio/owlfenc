@@ -11,6 +11,7 @@ interface Option {
 interface ChatMessageProps {
   message: Message;
   onOptionClick?: (option: string) => void;
+  onActionClick?: (action: { label: string; onClick: () => void }) => void;
 }
 
 const extractProgress = (content: string): number | null => {
@@ -18,7 +19,7 @@ const extractProgress = (content: string): number | null => {
   return match ? parseInt(match[1]) : null;
 };
 
-export default function ChatMessage({ message, onOptionClick }: ChatMessageProps) {
+export default function ChatMessage({ message, onOptionClick, onActionClick }: ChatMessageProps) {
   const messageClass = message.sender === "user" ? "user-message" : "bot-message";
   
   return (
@@ -67,7 +68,7 @@ export default function ChatMessage({ message, onOptionClick }: ChatMessageProps
                 key={index}
                 variant="default"
                 size="sm"
-                onClick={action.onClick}
+                onClick={() => onActionClick && onActionClick(action)}
               >
                 {action.label}
               </Button>

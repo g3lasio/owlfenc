@@ -293,10 +293,403 @@ export async function processChatMessage(message: string, context: any): Promise
         message.toLowerCase() === "2. generar contrato" ||
         message.toLowerCase() === "generar contrato") {
       
+      // Comprobar si ya tenemos un proceso de recopilación de datos en curso
+      if (context.recopilacionDatos && context.recopilacionDatos.activa) {
+        return {
+          message: "Ya estamos en el proceso de crear un contrato. Por favor, responde a mi última pregunta o escribe 'cancelar' si deseas detener el proceso.",
+          context: context
+        };
+      }
+      
+      // Ofrecer ambas opciones: subir PDF o ingresar datos manualmente
       return {
-        message: "Para generar un contrato, necesito un estimado en formato PDF que contenga la información del proyecto. Por favor, usa el ícono de clip en la barra de chat para cargar tu archivo PDF.",
-        context: context
+        message: "Puedo ayudarte a generar un contrato. Tienes dos opciones:\n\n1. Cargar un estimado en formato PDF y lo procesaré automáticamente (usa el ícono de clip en la barra de chat).\n\n2. O puedo hacerte algunas preguntas para crear el contrato desde cero. ¿Qué prefieres?",
+        options: [
+          "Cargar PDF",
+          "Ingresar datos manualmente"
+        ],
+        context: {
+          ...context,
+          expectingContractMethod: true
+        }
       };
+    }
+    
+    // 5. Detectar selección de método para generar contrato
+    if (context.expectingContractMethod) {
+      if (message.toLowerCase().includes("manual") || 
+          message.toLowerCase() === "ingresar datos manualmente" ||
+          message.toLowerCase() === "2") {
+        
+        // Iniciar proceso de recopilación de datos
+        return {
+          message: "Perfecto, vamos a crear tu contrato paso a paso. Primero, necesito algunos datos básicos del cliente.\n\n¿Cuál es el nombre completo de tu cliente?",
+          context: {
+            ...context,
+            expectingContractMethod: false,
+            recopilacionDatos: {
+              activa: true,
+              paso: 1,
+              datos: {
+                cliente: {},
+                contratista: {},
+                proyecto: {},
+                presupuesto: {}
+              }
+            }
+          }
+        };
+      }
+      
+      if (message.toLowerCase().includes("pdf") || 
+          message.toLowerCase() === "cargar pdf" ||
+          message.toLowerCase() === "1") {
+        
+        return {
+          message: "Por favor, usa el ícono de clip en la barra de chat para cargar tu archivo PDF con el estimado.",
+          context: {
+            ...context,
+            expectingContractMethod: false,
+          }
+        };
+      }
+    }
+    
+    // 6. Procesar respuestas durante la recopilación de datos para el contrato
+    if (context.recopilacionDatos && context.recopilacionDatos.activa) {
+      // Si el usuario quiere cancelar el proceso
+      if (message.toLowerCase() === "cancelar" || 
+          message.toLowerCase() === "detener" || 
+          message.toLowerCase() === "salir") {
+        
+        return {
+          message: "He cancelado el proceso de creación del contrato. ¿En qué más puedo ayudarte?",
+          context: {
+            ...context,
+            recopilacionDatos: {
+              activa: false
+            }
+          }
+        };
+      }
+      
+      // Procesar los datos según el paso actual
+      const paso = context.recopilacionDatos.paso;
+      const datosActuales = context.recopilacionDatos.datos;
+      
+      switch (paso) {
+        // Nombre del cliente
+        case 1:
+          datosActuales.cliente.nombre = message;
+          return {
+            message: `Gracias. ¿Cuál es la dirección completa de ${message}?`,
+            context: {
+              ...context,
+              recopilacionDatos: {
+                activa: true,
+                paso: 2,
+                datos: datosActuales
+              }
+            }
+          };
+          
+        // Dirección del cliente
+        case 2:
+          datosActuales.cliente.direccion = message;
+          return {
+            message: "¿Cuál es el número de teléfono del cliente? (Escribe 'omitir' si no lo tienes)",
+            context: {
+              ...context,
+              recopilacionDatos: {
+                activa: true,
+                paso: 3,
+                datos: datosActuales
+              }
+            }
+          };
+          
+        // Teléfono del cliente
+        case 3:
+          if (message.toLowerCase() !== "omitir") {
+            datosActuales.cliente.telefono = message;
+          }
+          return {
+            message: "¿Cuál es el correo electrónico del cliente? (Escribe 'omitir' si no lo tienes)",
+            context: {
+              ...context,
+              recopilacionDatos: {
+                activa: true,
+                paso: 4,
+                datos: datosActuales
+              }
+            }
+          };
+          
+        // Email del cliente
+        case 4:
+          if (message.toLowerCase() !== "omitir") {
+            datosActuales.cliente.email = message;
+          }
+          return {
+            message: "Ahora necesito información sobre tu empresa. ¿Cuál es el nombre de tu empresa/contratista?",
+            context: {
+              ...context,
+              recopilacionDatos: {
+                activa: true,
+                paso: 5,
+                datos: datosActuales
+              }
+            }
+          };
+          
+        // Nombre del contratista
+        case 5:
+          datosActuales.contratista.nombre = message;
+          return {
+            message: "¿Cuál es la dirección de tu empresa?",
+            context: {
+              ...context,
+              recopilacionDatos: {
+                activa: true,
+                paso: 6,
+                datos: datosActuales
+              }
+            }
+          };
+          
+        // Dirección del contratista
+        case 6:
+          datosActuales.contratista.direccion = message;
+          return {
+            message: "¿Cuál es tu número de teléfono de contacto?",
+            context: {
+              ...context,
+              recopilacionDatos: {
+                activa: true,
+                paso: 7,
+                datos: datosActuales
+              }
+            }
+          };
+          
+        // Teléfono del contratista
+        case 7:
+          datosActuales.contratista.telefono = message;
+          return {
+            message: "¿Cuál es tu correo electrónico de contacto?",
+            context: {
+              ...context,
+              recopilacionDatos: {
+                activa: true,
+                paso: 8,
+                datos: datosActuales
+              }
+            }
+          };
+          
+        // Email del contratista
+        case 8:
+          datosActuales.contratista.email = message;
+          return {
+            message: "¿Cuál es tu número de licencia de contratista? (Escribe 'omitir' si no aplica)",
+            context: {
+              ...context,
+              recopilacionDatos: {
+                activa: true,
+                paso: 9,
+                datos: datosActuales
+              }
+            }
+          };
+          
+        // Licencia del contratista
+        case 9:
+          if (message.toLowerCase() !== "omitir") {
+            datosActuales.contratista.licencia = message;
+          }
+          return {
+            message: "Ahora hablemos del proyecto. ¿Qué tipo de cerca vas a instalar? (ej: madera, vinilo, hierro forjado)",
+            context: {
+              ...context,
+              recopilacionDatos: {
+                activa: true,
+                paso: 10,
+                datos: datosActuales
+              }
+            }
+          };
+          
+        // Tipo de cerca
+        case 10:
+          datosActuales.proyecto.tipoCerca = message;
+          return {
+            message: "¿Cuál es la altura de la cerca? (ej: 6 pies)",
+            context: {
+              ...context,
+              recopilacionDatos: {
+                activa: true,
+                paso: 11,
+                datos: datosActuales
+              }
+            }
+          };
+          
+        // Altura de la cerca
+        case 11:
+          datosActuales.proyecto.altura = message;
+          return {
+            message: "¿Cuál es la longitud total de la cerca? (ej: 100 pies)",
+            context: {
+              ...context,
+              recopilacionDatos: {
+                activa: true,
+                paso: 12,
+                datos: datosActuales
+              }
+            }
+          };
+          
+        // Longitud de la cerca
+        case 12:
+          datosActuales.proyecto.longitud = message;
+          return {
+            message: "¿De qué material será la cerca?",
+            context: {
+              ...context,
+              recopilacionDatos: {
+                activa: true,
+                paso: 13,
+                datos: datosActuales
+              }
+            }
+          };
+          
+        // Material de la cerca
+        case 13:
+          datosActuales.proyecto.material = message;
+          return {
+            message: "¿Cuándo planeas comenzar el proyecto? (ej: 15 de junio de 2025)",
+            context: {
+              ...context,
+              recopilacionDatos: {
+                activa: true,
+                paso: 14,
+                datos: datosActuales
+              }
+            }
+          };
+          
+        // Fecha de inicio
+        case 14:
+          datosActuales.proyecto.fechaInicio = message;
+          return {
+            message: "¿Cuánto tiempo estimas que tardará la instalación? (ej: 2 semanas)",
+            context: {
+              ...context,
+              recopilacionDatos: {
+                activa: true,
+                paso: 15,
+                datos: datosActuales
+              }
+            }
+          };
+          
+        // Duración estimada
+        case 15:
+          datosActuales.proyecto.duracionEstimada = message;
+          return {
+            message: "¿Puedes proporcionar una breve descripción del proyecto? (ubicación específica en la propiedad, detalles especiales, etc.)",
+            context: {
+              ...context,
+              recopilacionDatos: {
+                activa: true,
+                paso: 16,
+                datos: datosActuales
+              }
+            }
+          };
+          
+        // Descripción del proyecto
+        case 16:
+          datosActuales.proyecto.descripcion = message;
+          return {
+            message: "Ahora hablemos del presupuesto. ¿Cuál es el costo total del proyecto? (ej: $5,000)",
+            context: {
+              ...context,
+              recopilacionDatos: {
+                activa: true,
+                paso: 17,
+                datos: datosActuales
+              }
+            }
+          };
+          
+        // Costo total
+        case 17:
+          datosActuales.presupuesto.total = message;
+          return {
+            message: "¿Cuál será el monto del depósito inicial? (ej: $2,500 o 50%)",
+            context: {
+              ...context,
+              recopilacionDatos: {
+                activa: true,
+                paso: 18,
+                datos: datosActuales
+              }
+            }
+          };
+          
+        // Depósito
+        case 18:
+          datosActuales.presupuesto.deposito = message;
+          return {
+            message: "¿Cuál será la forma de pago aceptada? (ej: efectivo, cheque, transferencia bancaria)",
+            context: {
+              ...context,
+              recopilacionDatos: {
+                activa: true,
+                paso: 19,
+                datos: datosActuales
+              }
+            }
+          };
+          
+        // Forma de pago
+        case 19:
+          datosActuales.presupuesto.formaPago = message;
+          
+          // Formatear los datos en el formato esperado
+          const datosFormateados = {
+            cliente: datosActuales.cliente,
+            contratista: datosActuales.contratista,
+            proyecto: datosActuales.proyecto,
+            presupuesto: datosActuales.presupuesto
+          };
+          
+          return {
+            message: "¡Gracias por proporcionar toda la información! Ahora voy a generar tu contrato con estos datos.",
+            context: {
+              ...context,
+              recopilacionDatos: {
+                activa: false
+              },
+              datos_extraidos: datosFormateados
+            },
+            action: "generateContract"
+          };
+          
+        default:
+          // Si algo sale mal, reiniciar el proceso
+          return {
+            message: "Lo siento, parece que hubo un error en el proceso. ¿Quieres intentar nuevamente?",
+            context: {
+              ...context,
+              recopilacionDatos: {
+                activa: false
+              }
+            }
+          };
+      }
     }
     
     // Si no es un mensaje que podemos manejar localmente, enviarlo a la API

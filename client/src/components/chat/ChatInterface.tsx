@@ -286,31 +286,37 @@ export default function ChatInterface() {
       // Update context
       setContext((prev) => ({ ...prev, ...response.context }));
 
-      // Add AI response to messages
-      if (response.message) {
-        const botMessage: Message = {
-          id: `bot-${Date.now()}`,
-          content: response.message,
-          sender: "assistant",
-          options: response.options || undefined,
-        };
+      // Check if we need to generate a contract based on the collected data
+      if (response.action === "generateContract" && response.context.datos_extraidos) {
+        // Handle contract generation with the collected data
+        await handleGenerateContractWithExistingData();
+      } else {
+        // Add AI response to messages
+        if (response.message) {
+          const botMessage: Message = {
+            id: `bot-${Date.now()}`,
+            content: response.message,
+            sender: "assistant",
+            options: response.options || undefined,
+          };
 
-        setMessages((prev) => [...prev, botMessage]);
-      }
+          setMessages((prev) => [...prev, botMessage]);
+        }
 
-      // If there's a template, add it to messages
-      if (response.template) {
-        const templateMessage: Message = {
-          id: `template-${Date.now()}`,
-          content: "Aquí está una vista previa de tu documento:",
-          sender: "assistant",
-          template: {
-            type: response.template.type,
-            html: response.template.html,
-          },
-        };
+        // If there's a template, add it to messages
+        if (response.template) {
+          const templateMessage: Message = {
+            id: `template-${Date.now()}`,
+            content: "Aquí está una vista previa de tu documento:",
+            sender: "assistant",
+            template: {
+              type: response.template.type,
+              html: response.template.html,
+            },
+          };
 
-        setMessages((prev) => [...prev, templateMessage]);
+          setMessages((prev) => [...prev, templateMessage]);
+        }
       }
     } catch (error) {
       console.error("Error processing message:", error);
@@ -1193,7 +1199,7 @@ Total: ${result.datos_extraidos.presupuesto?.total || "No encontrado"}
   return (
     <div className="relative flex-1 flex flex-col bg-background rounded-lg overflow-hidden border shadow-sm">
       {/* Animación de análisis de documentos */}
-      {showAnalysisEffect && <AnalysisEffect />}
+      {showAnalysisEffect && <AnalysisEffect isVisible={true} />}
       
       <div className="flex-1 flex flex-col">
         <div
