@@ -607,28 +607,28 @@ Total: ${result.datos_extraidos.presupuesto.total || "No encontrado"}
     setMessages((prev) => [...prev, generatingMessage]);
     
     try {
-      // Simular tiempo de procesamiento
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Utilizar el endpoint para ajustar contratos con los datos extraídos
+      const response = await fetch('/api/ajustar-contrato', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          datos_extraidos: context.datos_extraidos,
+          informacion_adicional: {
+            fecha_inicio: new Date().toLocaleDateString(),
+            duracion_estimada: "4 semanas"
+          }
+        }),
+      });
       
-      // Crear html ficticio de contrato mientras se implementa la funcionalidad completa
-      const contractHtml = `
-      <div class="p-8 bg-white">
-        <h1 class="text-2xl font-bold mb-6 text-center">CONTRATO DE CONSTRUCCIÓN DE CERCA</h1>
-        <p class="mb-4">Este contrato se celebra entre <strong>Owl Fence Co.</strong> y <strong>${context.datos_extraidos?.cliente?.nombre || 'Cliente'}</strong>.</p>
-        <p class="mb-4"><strong>Dirección del proyecto:</strong> ${context.datos_extraidos?.cliente?.direccion || 'Dirección no especificada'}</p>
-        <p class="mb-4"><strong>Detalles del proyecto:</strong></p>
-        <ul class="list-disc ml-8 mb-4">
-          <li>Tipo de cerca: ${context.datos_extraidos?.proyecto?.tipoCerca || 'No especificado'}</li>
-          <li>Altura: ${context.datos_extraidos?.proyecto?.altura || 'No especificada'}</li>
-          <li>Longitud: ${context.datos_extraidos?.proyecto?.longitud || 'No especificada'}</li>
-        </ul>
-        <p class="mb-4"><strong>Precio total:</strong> $${context.datos_extraidos?.presupuesto?.total || '0.00'}</p>
-        <div class="mt-8 pt-4 border-t border-gray-300">
-          <p class="mb-2">Firma del cliente: _________________________ Fecha: _________</p>
-          <p>Firma del contratista: _________________________ Fecha: _________</p>
-        </div>
-      </div>
-      `;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error ajustando el contrato');
+      }
+      
+      const data = await response.json();
+      const contractHtml = data.contrato_html;
       
       // Mostrar el contrato generado como un mensaje normal con acciones
       const contractMessage: Message = {

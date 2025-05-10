@@ -54,16 +54,22 @@ export class MistralService {
       console.log('Iniciando extracción con Mistral AI...');
       console.log(`Tamaño del PDF: ${pdfBuffer.length} bytes`);
       
-      // Utilizar pdf-parse correctamente
-      // Usar require en lugar de import dinámico para evitar problemas con archivos de test internos
-      const pdfParse = require('pdf-parse');
+      // Utilizar pdf-parse correctamente con ESM
+      // Importar dinámicamente pero inyectar opciones seguras
+      console.log('Importando pdf-parse...');
+      const pdfParseModule = await import('pdf-parse');
+      const pdfParse = pdfParseModule.default;
       
       // Extraer texto del PDF usando opciones seguras
       console.log('Extrayendo texto del PDF con pdf-parse...');
-      const pdfData = await pdfParse(pdfBuffer, {
-        // Deshabilitar carga de archivos de test internos
+      // Configurar opciones para evitar acceso a archivos de test
+      const options = {
         max: 0, // Sin límite máximo de páginas
-      });
+        // No incluimos pagerender custom porque tiene problemas de tipo
+        // y pdf-parse tiene buen manejo de texto por defecto
+      };
+      
+      const pdfData = await pdfParse(pdfBuffer, options);
       const pdfText = pdfData.text;
       
       console.log(`PDF procesado con éxito. Páginas: ${pdfData.numpages}`);
