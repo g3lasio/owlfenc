@@ -16,23 +16,40 @@
 .messages-container {
   flex: 1;
   overflow-y: auto;
-  padding-bottom: 80px !important;
+  padding-bottom: 100px !important; /* Incrementado para dar más espacio */
   scroll-behavior: smooth;
   max-height: calc(100vh - 140px);
 }
 
 .chat-input-container {
-  position: fixed;
-  bottom: 0;
+  position: absolute;
+  bottom: 35px; /* Ajustado para dejar espacio para el footer */
   left: 0;
   right: 0;
   background-color: hsl(var(--background));
   padding: 0;
   border-top: 1px solid hsl(var(--border));
-  z-index: 1000;
+  z-index: 50;
   width: 100%;
   max-width: 100%;
   box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.05);
+}
+
+/* Footer styles */
+.chat-footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  background-color: hsl(var(--background));
+  border-top: 1px solid hsl(var(--border));
+  width: 100%;
+  font-size: 0.7rem;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Efectos futuristas para el análisis AI */
@@ -273,7 +290,7 @@
 
   .chat-input {
     position: absolute;
-    bottom: 28px;
+    bottom: 35px; /* Ajustado para posicionarse justo encima del footer */
     left: 0;
     right: 0;
     background-color: hsl(var(--background));
