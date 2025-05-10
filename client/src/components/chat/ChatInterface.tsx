@@ -162,6 +162,34 @@ export default function ChatInterface() {
     setMessages((prev) => [...prev, userMessage]);
     setIsProcessing(true);
 
+    // Verificar si el mensaje es para actualizar información del contrato
+    const isContractCorrection = 
+      messageText.toLowerCase().includes("nombre del cliente") ||
+      messageText.toLowerCase().includes("dirección del cliente") ||
+      messageText.toLowerCase().includes("direccion del cliente") ||
+      messageText.toLowerCase().includes("teléfono del cliente") ||
+      messageText.toLowerCase().includes("telefono del cliente") ||
+      messageText.toLowerCase().includes("email del cliente") ||
+      messageText.toLowerCase().includes("nombre del contratista") ||
+      messageText.toLowerCase().includes("dirección del contratista") ||
+      messageText.toLowerCase().includes("direccion del contratista") ||
+      messageText.toLowerCase().includes("tipo de cerca") ||
+      messageText.toLowerCase().includes("altura de") ||
+      messageText.toLowerCase().includes("longitud de") ||
+      messageText.toLowerCase().includes("material de") ||
+      messageText.toLowerCase().includes("fecha de inicio") ||
+      messageText.toLowerCase().includes("total es") ||
+      messageText.toLowerCase().includes("depósito es") ||
+      messageText.toLowerCase().includes("deposito es") ||
+      messageText.toLowerCase().includes("forma de pago");
+    
+    // Verificar si el mensaje es para una cláusula adicional
+    const isCustomClause = 
+      messageText.toLowerCase().includes("añadir cláusula") ||
+      messageText.toLowerCase().includes("añadir clausula") ||
+      messageText.toLowerCase().includes("agregar cláusula") ||
+      messageText.toLowerCase().includes("agregar clausula");
+      
     // Add a typing indicator
     setMessages((prev) => [
       ...prev,
@@ -169,7 +197,38 @@ export default function ChatInterface() {
     ]);
 
     try {
-      // Process the message
+      // Si es una corrección al contrato, procesarla directamente
+      if (isContractCorrection && context.datos_extraidos) {
+        // Eliminar indicador de escritura
+        setMessages((prev) => prev.filter((m) => !m.isTyping));
+        
+        // Procesar la corrección
+        await handleProcessCorrection(messageText);
+        setIsProcessing(false);
+        return;
+      }
+      
+      // Si es una solicitud para añadir cláusula personalizada
+      if (isCustomClause) {
+        // Eliminar indicador de escritura
+        setMessages((prev) => prev.filter((m) => !m.isTyping));
+        
+        // Mostrar el diálogo de cláusula personalizada
+        handleAddCustomClause();
+        
+        // Responder al usuario
+        const responseMessage: Message = {
+          id: `response-${Date.now()}`,
+          content: "Por supuesto, puedes añadir una cláusula personalizada a tu contrato. He abierto un formulario donde puedes escribir tu cláusula personalizada.",
+          sender: "assistant",
+        };
+        
+        setMessages((prev) => [...prev, responseMessage]);
+        setIsProcessing(false);
+        return;
+      }
+
+      // Process the message normally for other cases
       const response = await processChatMessage(selectedOption || messageText, {
         ...context,
         messages: messages.map((m) => ({ role: m.sender, content: m.content })),
@@ -197,7 +256,7 @@ export default function ChatInterface() {
       if (response.template) {
         const templateMessage: Message = {
           id: `template-${Date.now()}`,
-          content: "Here's a preview of your document:",
+          content: "Aquí está una vista previa de tu documento:",
           sender: "assistant",
           template: {
             type: response.template.type,
@@ -219,7 +278,7 @@ export default function ChatInterface() {
         {
           id: `error-${Date.now()}`,
           content:
-            "Sorry, there was an error processing your message. Please try again.",
+            "Lo siento, ocurrió un error al procesar tu mensaje. Por favor intenta de nuevo.",
           sender: "assistant",
         },
       ]);
@@ -227,7 +286,7 @@ export default function ChatInterface() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to process your message. Please try again.",
+        description: "Error al procesar tu mensaje. Por favor intenta de nuevo.",
       });
     } finally {
       setIsProcessing(false);
@@ -710,11 +769,237 @@ Total: ${result.datos_extraidos.presupuesto.total || "No encontrado"}
     // Mensaje de Mervin solicitando la información
     const promptMessage: Message = {
       id: `prompt-${Date.now()}`,
-      content: "He detectado que faltan algunos datos importantes en el contrato. Por favor, especifica qué información deseas corregir o agregar (por ejemplo: 'El nombre del cliente es Juan Pérez' o 'El teléfono de contacto es 555-123-4567').",
+      content: "He detectado que faltan algunos datos importantes en el contrato. Por favor, especifica qué información deseas corregir o agregar. Puedes proporcionarme cualquiera de los siguientes datos:",
       sender: "assistant",
     };
     
     setMessages((prev) => [...prev, promptMessage]);
+    
+    // Mostrar opciones de corrección específicas
+    setTimeout(() => {
+      const optionsMessage: Message = {
+        id: `options-${Date.now()}`,
+        content: "• Información del cliente: nombre, dirección, teléfono, email\n• Información del contratista: nombre, dirección, teléfono, email, licencia\n• Detalles del proyecto: tipo de cerca, altura, longitud, material, fecha de inicio\n• Información de pago: total, depósito, forma de pago",
+        sender: "assistant",
+      };
+      
+      setMessages((prev) => [...prev, optionsMessage]);
+      
+      // Mensaje adicional con ejemplos
+      setTimeout(() => {
+        const examplesMessage: Message = {
+          id: `examples-${Date.now()}`,
+          content: "Ejemplos de cómo puedes proporcionarme la información:\n\"El nombre del cliente es Juan Pérez\"\n\"La dirección del contratista es 123 Calle Principal, Ciudad\"\n\"La altura de la cerca será de 6 pies\"\n\"El depósito inicial será del 25%\"",
+          sender: "assistant",
+        };
+        
+        setMessages((prev) => [...prev, examplesMessage]);
+      }, 800);
+    }, 600);
+  };
+  
+  // Función para procesar mensajes de corrección de información
+  const handleProcessCorrection = async (message: string) => {
+    // Verificar que tenemos datos extraídos en el contexto
+    if (!context.datos_extraidos) {
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        content: "Lo siento, no puedo encontrar los datos del contrato original. Por favor, genera un contrato nuevo subiendo el PDF del estimado.",
+        sender: "assistant",
+      };
+      
+      setMessages((prev) => [...prev, errorMessage]);
+      return;
+    }
+    
+    try {
+      // Mensaje de procesamiento
+      const processingMessage: Message = {
+        id: `processing-${Date.now()}`,
+        content: "Estoy procesando tu corrección...",
+        sender: "assistant",
+      };
+      
+      setMessages((prev) => [...prev, processingMessage]);
+      
+      // Analizar el mensaje para determinar qué campo actualizar
+      const infoToUpdate: any = {};
+      
+      // Detección de información del cliente
+      if (message.toLowerCase().includes("nombre del cliente")) {
+        const match = message.match(/nombre del cliente es (.+)/i);
+        if (match && match[1]) {
+          infoToUpdate.cliente = { nombre: match[1].trim() };
+        }
+      }
+      
+      if (message.toLowerCase().includes("dirección del cliente") || message.toLowerCase().includes("direccion del cliente")) {
+        const match = message.match(/direcci[óo]n del cliente es (.+)/i);
+        if (match && match[1]) {
+          infoToUpdate.cliente = { ...(infoToUpdate.cliente || {}), direccion: match[1].trim() };
+        }
+      }
+      
+      if (message.toLowerCase().includes("teléfono del cliente") || message.toLowerCase().includes("telefono del cliente")) {
+        const match = message.match(/tel[ée]fono del cliente es (.+)/i);
+        if (match && match[1]) {
+          infoToUpdate.cliente = { ...(infoToUpdate.cliente || {}), telefono: match[1].trim() };
+        }
+      }
+      
+      if (message.toLowerCase().includes("email del cliente")) {
+        const match = message.match(/email del cliente es (.+)/i);
+        if (match && match[1]) {
+          infoToUpdate.cliente = { ...(infoToUpdate.cliente || {}), email: match[1].trim() };
+        }
+      }
+      
+      // Detección de información del contratista
+      if (message.toLowerCase().includes("nombre del contratista")) {
+        const match = message.match(/nombre del contratista es (.+)/i);
+        if (match && match[1]) {
+          infoToUpdate.contratista = { nombre: match[1].trim() };
+        }
+      }
+      
+      if (message.toLowerCase().includes("dirección del contratista") || message.toLowerCase().includes("direccion del contratista")) {
+        const match = message.match(/direcci[óo]n del contratista es (.+)/i);
+        if (match && match[1]) {
+          infoToUpdate.contratista = { ...(infoToUpdate.contratista || {}), direccion: match[1].trim() };
+        }
+      }
+      
+      // Detección de información del proyecto
+      if (message.toLowerCase().includes("tipo de cerca")) {
+        const match = message.match(/tipo de cerca es (.+)/i);
+        if (match && match[1]) {
+          infoToUpdate.proyecto = { tipoCerca: match[1].trim() };
+        }
+      }
+      
+      if (message.toLowerCase().includes("altura de")) {
+        const match = message.match(/altura de.* es (\d+)/i);
+        if (match && match[1]) {
+          infoToUpdate.proyecto = { ...(infoToUpdate.proyecto || {}), altura: match[1].trim() };
+        }
+      }
+      
+      if (message.toLowerCase().includes("longitud de")) {
+        const match = message.match(/longitud de.* es (\d+)/i);
+        if (match && match[1]) {
+          infoToUpdate.proyecto = { ...(infoToUpdate.proyecto || {}), longitud: match[1].trim() };
+        }
+      }
+      
+      if (message.toLowerCase().includes("material de")) {
+        const match = message.match(/material de.* es (.+)/i);
+        if (match && match[1]) {
+          infoToUpdate.proyecto = { ...(infoToUpdate.proyecto || {}), material: match[1].trim() };
+        }
+      }
+      
+      if (message.toLowerCase().includes("fecha de inicio")) {
+        const match = message.match(/fecha de inicio es (.+)/i);
+        if (match && match[1]) {
+          infoToUpdate.proyecto = { ...(infoToUpdate.proyecto || {}), fechaInicio: match[1].trim() };
+        }
+      }
+      
+      // Detección de información de pago
+      if (message.toLowerCase().includes("total es")) {
+        const match = message.match(/total es (\$?[\d,]+)/i);
+        if (match && match[1]) {
+          infoToUpdate.presupuesto = { total: match[1].trim() };
+        }
+      }
+      
+      if (message.toLowerCase().includes("depósito") || message.toLowerCase().includes("deposito")) {
+        const match = message.match(/(dep[óo]sito|anticipo) es (\$?[\d,]+|[\d]+%)/i);
+        if (match && match[2]) {
+          infoToUpdate.presupuesto = { ...(infoToUpdate.presupuesto || {}), deposito: match[2].trim() };
+        }
+      }
+      
+      if (message.toLowerCase().includes("forma de pago")) {
+        const match = message.match(/forma de pago es (.+)/i);
+        if (match && match[1]) {
+          infoToUpdate.presupuesto = { ...(infoToUpdate.presupuesto || {}), formaPago: match[1].trim() };
+        }
+      }
+      
+      console.log('Información a actualizar:', infoToUpdate);
+      
+      // Si no se detectó ninguna corrección válida
+      if (Object.keys(infoToUpdate).length === 0) {
+        // Mensaje explicando el problema
+        const noDetectionMessage: Message = {
+          id: `no-detection-${Date.now()}`,
+          content: "No pude detectar qué información deseas actualizar. Por favor, intenta nuevamente con un formato como: 'El nombre del cliente es Juan Pérez' o 'La altura de la cerca es 6 pies'.",
+          sender: "assistant",
+        };
+        
+        // Reemplazar el mensaje de procesamiento
+        setMessages((prev) => prev.filter(m => m.id !== processingMessage.id).concat(noDetectionMessage));
+        return;
+      }
+      
+      // Actualizar el contrato con la nueva información
+      const result = await actualizarContrato(
+        context.datos_extraidos,
+        undefined, // Sin cláusulas adicionales
+        infoToUpdate
+      );
+      
+      // Actualizar el contexto con los datos actualizados
+      setContext((prev) => ({
+        ...prev,
+        datos_extraidos: result.datos_actualizados,
+      }));
+      
+      // Confirmación de la actualización
+      let updateDescription = "";
+      
+      if (infoToUpdate.cliente) {
+        updateDescription += "Información del cliente actualizada. ";
+      }
+      
+      if (infoToUpdate.contratista) {
+        updateDescription += "Información del contratista actualizada. ";
+      }
+      
+      if (infoToUpdate.proyecto) {
+        updateDescription += "Detalles del proyecto actualizados. ";
+      }
+      
+      if (infoToUpdate.presupuesto) {
+        updateDescription += "Información de pago actualizada. ";
+      }
+      
+      // Mensaje de confirmación
+      const confirmationMessage: Message = {
+        id: `confirmation-${Date.now()}`,
+        content: `He actualizado la información: ${updateDescription}Aquí está el contrato actualizado:`,
+        sender: "assistant",
+        template: {
+          type: "contract",
+          html: result.contrato_html,
+        },
+      };
+      
+      // Reemplazar el mensaje de procesamiento
+      setMessages((prev) => prev.filter(m => m.id !== processingMessage.id).concat(confirmationMessage));
+      
+    } catch (error) {
+      console.error("Error al actualizar la información del contrato:", error);
+      
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        content: "Lo siento, ocurrió un error al actualizar el contrato. Por favor intenta de nuevo.",
+        sender: "assistant",
+      };
+      
+      setMessages((prev) => [...prev, errorMessage]);
+    }
   };
   
   // Función para generar contrato con los datos ya extraídos
@@ -1045,6 +1330,43 @@ Total: ${result.datos_extraidos.presupuesto.total || "No encontrado"}
                     Generar Contrato
                   </>
                 )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        
+        {/* Diálogo para añadir cláusulas personalizadas */}
+        <Dialog open={customClauseDialogOpen} onOpenChange={setCustomClauseDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Añadir Cláusula Personalizada</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="flex flex-col gap-4">
+                <p className="text-sm text-muted-foreground">
+                  Escribe la cláusula personalizada que deseas añadir a tu contrato. Por ejemplo: "El cliente proporcionará una botella de Pepsi de 2 litros cada viernes durante la duración del proyecto."
+                </p>
+                <Textarea
+                  placeholder="Escribe tu cláusula personalizada aquí..."
+                  value={customClause}
+                  onChange={(e) => setCustomClause(e.target.value)}
+                  className="min-h-[100px]"
+                />
+              </div>
+            </div>
+            <DialogFooter className="sm:justify-between">
+              <Button
+                variant="outline"
+                onClick={() => setCustomClauseDialogOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleAddClauseToContract}
+                disabled={!customClause.trim()}
+              >
+                <i className="ri-add-line mr-2"></i>
+                Añadir al Contrato
               </Button>
             </DialogFooter>
           </DialogContent>
