@@ -32,14 +32,31 @@ export async function generateEstimate(projectDetails: any): Promise<string> {
 
 export async function generateContract(projectDetails: any): Promise<string> {
   try {
-    const response = await apiRequest("POST", "/api/generate-contract", {
-      projectDetails,
-      model: GPT_MODEL,
-      systemPrompt: MEXICAN_STYLE_PROMPT
-    });
-    
-    const data = await response.json();
-    return data.html;
+    // Primero intentamos generar el contrato utilizando contractGenerator local
+    try {
+      console.log("Intentando generar contrato localmente con datos:", projectDetails);
+      
+      // Formatear los datos para el generador de contratos
+      const contractData = formatContractData(projectDetails);
+      
+      // Generar el HTML del contrato utilizando la plantilla local
+      const html = generateContractHTML(contractData);
+      console.log("Contrato generado localmente con éxito");
+      
+      return html;
+    } catch (localError) {
+      console.warn("Error generando contrato localmente, usando API como fallback:", localError);
+      
+      // Si falla la generación local, intentamos con la API
+      const response = await apiRequest("POST", "/api/generate-contract", {
+        projectDetails,
+        model: GPT_MODEL,
+        systemPrompt: MEXICAN_STYLE_PROMPT
+      });
+      
+      const data = await response.json();
+      return data.html;
+    }
   } catch (error) {
     console.error("¡No manches! Error generando el contrato:", error);
     throw error;

@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
   isDisabled?: boolean;
+  isProcessing?: boolean;
+  showFileUpload?: boolean;
   onAttachmentClick?: () => void;
   onFileUpload?: (file: File) => void;
 }
@@ -11,6 +13,8 @@ interface ChatInputProps {
 export default function ChatInput({ 
   onSendMessage, 
   isDisabled = false, 
+  isProcessing = false,
+  showFileUpload = false,
   onAttachmentClick,
   onFileUpload 
 }: ChatInputProps) {
@@ -60,37 +64,42 @@ export default function ChatInput({
             rows={1}
             className="w-full bg-transparent resize-none focus:outline-none py-1 px-2 text-foreground scrollbar-hide"
             placeholder="Type your message here..."
-            disabled={isDisabled}
+            disabled={isDisabled || isProcessing}
           ></textarea>
           <div className="flex items-center justify-between px-2">
             <div className="flex items-center space-x-2 text-muted-foreground">
               {/* Input de archivo oculto */}
-              <input 
-                type="file" 
-                ref={fileInputRef}
-                className="hidden" 
-                accept=".pdf"
-                onChange={(e) => {
-                  if (e.target.files && e.target.files[0] && onFileUpload) {
-                    onFileUpload(e.target.files[0]);
-                    // Limpiar el input para permitir subir el mismo archivo de nuevo
-                    e.target.value = '';
-                  }
-                }}
-              />
+              {showFileUpload && (
+                <input 
+                  type="file" 
+                  ref={fileInputRef}
+                  className="hidden" 
+                  accept=".pdf"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0] && onFileUpload) {
+                      onFileUpload(e.target.files[0]);
+                      // Limpiar el input para permitir subir el mismo archivo de nuevo
+                      e.target.value = '';
+                    }
+                  }}
+                />
+              )}
               {/* Botón que activa el input de archivo */}
-              <button 
-                type="button" 
-                className="p-1 hover:text-primary rounded-md"
-                onClick={() => fileInputRef.current?.click()}
-                title="Adjuntar PDF para generar contrato"
-              >
-                <i className="ri-file-pdf-line"></i>
-              </button>
-              <button type="button" className="p-1 hover:text-primary rounded-md">
+              {showFileUpload && (
+                <button 
+                  type="button" 
+                  className="p-1 hover:text-primary rounded-md"
+                  onClick={() => fileInputRef.current?.click()}
+                  title="Adjuntar PDF para generar contrato"
+                  disabled={isProcessing}
+                >
+                  <i className="ri-file-pdf-line"></i>
+                </button>
+              )}
+              <button type="button" className="p-1 hover:text-primary rounded-md" disabled={isProcessing}>
                 <i className="ri-image-line"></i>
               </button>
-              <button type="button" className="p-1 hover:text-primary rounded-md">
+              <button type="button" className="p-1 hover:text-primary rounded-md" disabled={isProcessing}>
                 <i className="ri-emotion-line"></i>
               </button>
             </div>
@@ -100,7 +109,7 @@ export default function ChatInput({
         <Button 
           type="submit" 
           className="p-3 h-auto aspect-square"
-          disabled={isDisabled || !message.trim()}
+          disabled={isDisabled || isProcessing || !message.trim()}
         >
           <i className="ri-send-plane-fill text-lg"></i>
         </Button>
