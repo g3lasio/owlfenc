@@ -1,0 +1,81 @@
+
+Owl Fence
+Mervin
+¡Hola! Soy Mervin, tu asistente virtual para proyectos de cercas. ¿En qué puedo ayudarte hoy?
+
+
+1. Generar Estimado
+
+2. Generar Contrato
+
+3. Verificador de Propiedad
+
+4. Asesor de Permisos
+
+5. Insights y Análisis
+2. Generar Contrato
+
+Mervin
+Para generar un contrato, necesito que subas el PDF de un estimado existente. Esto me permitirá extraer toda la información relevante como cliente, detalles del proyecto y costos para crear un contrato personalizado.
+
+2. Generar Contrato
+
+Mervin
+Por favor, utiliza el icono de PDF 📎 que se encuentra en la barra de chat para subir tu archivo de estimado.
+
+Mervin
+Para generar un contrato, necesito que subas el PDF de un estimado existente. Esto me permitirá extraer toda la información relevante como cliente, detalles del proyecto y costos para crear un contrato personalizado.
+
+Mervin
+Por favor, utiliza el icono de PDF 📎 que se encuentra en la barra de chat para subir tu archivo de estimado.
+
+Mervin
+Archivo recibido: 263.pdf (46 KB). Procesando...
+
+Type your message here...
+
+
+
+Press Enter to send
+
+Legal Policy
+© 2025 Owl Fenc - Todos los derechos reservados
+Privacy Policy
+Owl Fence
+Herramientas
+Dashboard
+Proyectos
+Clientes
+Historial
+Funcionalidades
+Verificación de Propiedad
+Mervin Permit Advisor
+AI Project Manager
+AR Fence Estimator
+Mi Perfil
+Perfil Personal
+Seguridad
+Facturación
+Mi Suscripción
+Empresa
+Perfil de Empresa
+Preferencias
+Acerca de Mervin
+Acerca de Owl Fence
+¿Necesitas ayuda?
+
+Contactar Soporte
+
+Cerrar Sesión
+[plugin:runtime-error-plugin] Error procesando el PDF con Mistral AI
+/home/runner/workspace/client/src/lib/openai.ts:71:13
+69 |      if (!response.ok) {
+70 |        const errorData = await response.json();
+71 |        throw new Error(errorData.error || 'Error procesando el PDF');
+   |              ^
+72 |      }
+73 |
+    at processPDFForContract /home/runner/workspace/client/src/lib/openai.ts:71:13
+    at async /home/runner/workspace/client/src/components/chat/ChatInterface.tsx:371:31
+Click outside, press Esc key, or fix the code to dismiss.
+You can also disable this overlay by setting server.hmr.overlay to false in vite.config.js.
