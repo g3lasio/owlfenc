@@ -450,6 +450,28 @@ export default function ChatInterface() {
       // Ocultar el efecto de análisis cuando termine
       setShowAnalysisEffect(false);
       
+      // Verificar si se obtuvieron datos extraídos
+      if (!result || !result.datos_extraidos) {
+        console.error("No se obtuvieron datos extraídos del PDF", result);
+        
+        // Mostrar mensaje de error
+        const errorMessage: Message = {
+          id: `error-extraction-${Date.now()}`,
+          content: "Lo siento, no pude extraer información útil del PDF. Por favor, intenta con otro archivo o ingresa los datos manualmente.",
+          sender: "assistant",
+        };
+        
+        setMessages((prev) => {
+          const filteredMessages = prev.filter(m => m.id !== uploadMessage.id);
+          return [...filteredMessages, errorMessage];
+        });
+        
+        return;
+      }
+      
+      console.log("Datos extraídos del PDF:", result.datos_extraidos);
+      console.log("Contrato HTML generado:", result.contrato_html ? "Disponible" : "No disponible");
+      
       // Mostrar mensaje de procesamiento exitoso
       const processingMessage: Message = {
         id: `processing-success-${Date.now()}`,
@@ -463,11 +485,15 @@ export default function ChatInterface() {
         return [...filteredMessages, processingMessage];
       });
       
-      // Guardar los datos extraídos en el contexto
-      setContext((prev) => ({
-        ...prev,
+      // Guardar los datos extraídos en el contexto con estructura completa
+      const updatedContext = {
+        ...context,
         datos_extraidos: result.datos_extraidos,
-      }));
+        contrato_html: result.contrato_html
+      };
+      
+      console.log("Actualizando contexto con datos extraídos:", updatedContext);
+      setContext(updatedContext);
       
       // Mostrar mensaje sobre los datos extraídos
       const extractedDataMessage: Message = {
@@ -503,11 +529,65 @@ Total: ${result.datos_extraidos.presupuesto?.total || "No encontrado"}
       setShowAnalysisEffect(false);
       setIsUploadingContract(false);
       
-      // Mostrar mensaje de error
+      // Mostrar mensaje de error con opciones para el usuario
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
-        content: "Lo siento, ocurrió un error al procesar el PDF. Por favor intenta con otro archivo o contacta a soporte técnico.",
+        content: "Lo siento, ocurrió un error al procesar el PDF. Esto puede deberse a que el formato del archivo no es compatible o a problemas de conexión.",
         sender: "assistant",
+        actions: [
+          {
+            label: "Intentar con otro PDF",
+            onClick: () => {
+              const retryMessage: Message = {
+                id: `retry-${Date.now()}`,
+                content: "Por favor, usa el ícono de clip en la barra de chat para cargar otro archivo PDF.",
+                sender: "assistant",
+              };
+              setMessages((prev) => [...prev, retryMessage]);
+            },
+          },
+          {
+            label: "Ingresar Datos Manualmente",
+            onClick: () => {
+              // Iniciar proceso de recopilación manual
+              const newContext = {
+                ...context,
+                expectingContractMethod: false,
+                recopilacionDatos: {
+                  activa: true,
+                  paso: 1,
+                  datos: {
+                    cliente: {},
+                    contratista: {},
+                    proyecto: {},
+                    presupuesto: {}
+                  }
+                }
+              };
+              
+              setContext(newContext);
+              
+              const manualMessage: Message = {
+                id: `manual-error-${Date.now()}`,
+                content: "Perfecto, vamos a crear tu contrato paso a paso. Primero, necesito algunos datos básicos del cliente.\n\n¿Cuál es el nombre completo de tu cliente?",
+                sender: "assistant",
+              };
+              
+              setMessages((prev) => [...prev, manualMessage]);
+            },
+          },
+          {
+            label: "Contactar Soporte",
+            onClick: () => {
+              const supportMessage: Message = {
+                id: `support-${Date.now()}`,
+                content: "Para contactar a soporte técnico, por favor envía un correo a soporte@owlfence.com con los detalles del problema. Nuestro equipo te ayudará lo antes posible.",
+                sender: "assistant",
+              };
+              setMessages((prev) => [...prev, supportMessage]);
+            },
+          }
+        ],
       };
       
       // Reemplazar el mensaje de carga con el mensaje de error
@@ -518,8 +598,8 @@ Total: ${result.datos_extraidos.presupuesto?.total || "No encontrado"}
       
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "No se pudo procesar el PDF. Por favor intenta con otro archivo.",
+        title: "Error de procesamiento",
+        description: "No se pudo procesar el PDF. Selecciona una de las opciones disponibles.",
       });
     } finally {
       setIsUploadingContract(false);
@@ -543,12 +623,71 @@ Total: ${result.datos_extraidos.presupuesto?.total || "No encontrado"}
   
   // Función para generar contrato con los datos extraídos existentes
   const handleGenerateContractWithExistingData = async () => {
+    console.log("Iniciando generación de contrato con datos existentes:", context);
+    
+    // Verificar si existen datos extraídos en el contexto
     if (!context.datos_extraidos) {
+      console.error("No se encontraron datos extraídos en el contexto:", context);
+      
+      // Mostrar mensaje de error descriptivo
       toast({
         variant: "destructive",
         title: "Error",
         description: "No hay datos extraídos disponibles. Por favor, proporciona la información necesaria.",
       });
+      
+      // Mensaje al usuario explicando el problema
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        content: "Parece que hubo un problema al acceder a los datos extraídos del documento. Por favor, intenta cargar el PDF nuevamente o selecciona 'Ingresar datos manualmente' para crear el contrato paso a paso.",
+        sender: "assistant",
+        actions: [
+          {
+            label: "Cargar PDF Nuevamente",
+            onClick: () => {
+              // Mensaje para cargar PDF nuevamente
+              const newMessage: Message = {
+                id: `reload-${Date.now()}`,
+                content: "Por favor, usa el ícono de clip en la barra de chat para cargar tu archivo PDF nuevamente.",
+                sender: "assistant",
+              };
+              setMessages((prev) => [...prev, newMessage]);
+            },
+          },
+          {
+            label: "Ingresar Datos Manualmente",
+            onClick: () => {
+              // Iniciar proceso de recopilación manual
+              const newContext = {
+                ...context,
+                expectingContractMethod: false,
+                recopilacionDatos: {
+                  activa: true,
+                  paso: 1,
+                  datos: {
+                    cliente: {},
+                    contratista: {},
+                    proyecto: {},
+                    presupuesto: {}
+                  }
+                }
+              };
+              
+              setContext(newContext);
+              
+              const manualMessage: Message = {
+                id: `manual-${Date.now()}`,
+                content: "Perfecto, vamos a crear tu contrato paso a paso. Primero, necesito algunos datos básicos del cliente.\n\n¿Cuál es el nombre completo de tu cliente?",
+                sender: "assistant",
+              };
+              
+              setMessages((prev) => [...prev, manualMessage]);
+            },
+          },
+        ],
+      };
+      
+      setMessages((prev) => [...prev, errorMessage]);
       return;
     }
     
@@ -567,15 +706,18 @@ Total: ${result.datos_extraidos.presupuesto?.total || "No encontrado"}
     try {
       // Formateamos los datos para la API
       const datosFormateados = context.datos_extraidos;
+      console.log("Datos formateados para generar contrato:", datosFormateados);
       
       // Intentamos generar el contrato directamente
       let contractHtml;
       
       if (datosFormateados.contrato_html) {
         // Si ya tenemos un HTML de contrato generado previamente
+        console.log("Usando HTML de contrato existente");
         contractHtml = datosFormateados.contrato_html;
       } else {
         // Generamos uno nuevo con OpenAI
+        console.log("Generando nuevo HTML de contrato");
         contractHtml = await generateContract(datosFormateados);
       }
       
