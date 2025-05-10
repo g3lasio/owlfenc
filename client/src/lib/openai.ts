@@ -210,7 +210,67 @@ export async function actualizarContrato(
   }
 }
 
-// Función para analizar texto en busca de información de la compañía
+/**
+ * Enumeración para identificar el modo/contexto actual del asistente
+ */
+enum MervinMode {
+  CONTRACT = 'contract',      // Modo de generación de contratos
+  ESTIMATE = 'estimate',      // Modo de generación de estimados
+  OWNERSHIP = 'ownership',    // Modo de verificación de propiedad
+  PERMITS = 'permits',        // Modo de asesor de permisos
+  GENERAL = 'general'         // Modo general/conversacional
+}
+
+/**
+ * Función para detectar comandos de cambio de modo/contexto
+ * @param message Mensaje del usuario
+ * @returns El modo detectado o null si no se detecta ningún cambio
+ */
+function detectModeChange(message: string): MervinMode | null {
+  // Normalizar mensaje para facilitar detección
+  const normalizedMsg = message.toLowerCase();
+  
+  // Detectar comandos de cambio a modo contrato
+  if (normalizedMsg.includes('generar contrato') || 
+      normalizedMsg.includes('crear contrato') || 
+      normalizedMsg.includes('hacer contrato') ||
+      normalizedMsg.includes('elaborar contrato')) {
+    return MervinMode.CONTRACT;
+  }
+  
+  // Detectar comandos de cambio a modo estimado
+  if (normalizedMsg.includes('generar estimado') || 
+      normalizedMsg.includes('crear estimado') || 
+      normalizedMsg.includes('hacer estimado') ||
+      normalizedMsg.includes('crear presupuesto')) {
+    return MervinMode.ESTIMATE;
+  }
+  
+  // Detectar comandos de cambio a modo verificación de propiedad
+  if (normalizedMsg.includes('verificar propiedad') || 
+      normalizedMsg.includes('verificar dueño') || 
+      normalizedMsg.includes('verificar propietario') ||
+      normalizedMsg.includes('ownership') ||
+      normalizedMsg.includes('verificación de propiedad')) {
+    return MervinMode.OWNERSHIP;
+  }
+  
+  // Detectar comandos de cambio a modo asesor de permisos
+  if (normalizedMsg.includes('asesor de permisos') || 
+      normalizedMsg.includes('verificar permisos') || 
+      normalizedMsg.includes('consultar permisos') ||
+      normalizedMsg.includes('permisos de construcción')) {
+    return MervinMode.PERMITS;
+  }
+  
+  return null;
+}
+
+/**
+ * Función para analizar el texto en busca de información de la compañía
+ * @param message Mensaje del usuario
+ * @returns Información de la compañía extraída o null
+ */
 function extractCompanyInfo(message: string) {
   let companyInfo: any = {};
   
@@ -233,14 +293,124 @@ function extractCompanyInfo(message: string) {
   return Object.keys(companyInfo).length > 0 ? { contratista: companyInfo } : null;
 }
 
+/**
+ * Función para extraer información sobre los términos de pago
+ * @param message Mensaje del usuario
+ * @returns Información de términos de pago extraída o null
+ */
+function extractPaymentTerms(message: string) {
+  let paymentInfo: any = {};
+  const normalizedMsg = message.toLowerCase();
+  
+  // Patrones específicos para "AGREGAR QUE EL UPFRONT COSTS DEBE SER EL 50%"
+  if (normalizedMsg.includes('upfront') && normalizedMsg.includes('50%') || 
+      normalizedMsg.includes('agregar que el upfront') || 
+      normalizedMsg.includes('cots debe ser el 50')) {
+    paymentInfo.deposito = '50%';
+    paymentInfo.politicaPago = '50% inicial, 50% después de la aprobación del cliente';
+    return { presupuesto: paymentInfo };
+  }
+  
+  // Patrones para español
+  if ((normalizedMsg.includes('pago inicial') || normalizedMsg.includes('anticipo')) && 
+      (normalizedMsg.includes('50%') || normalizedMsg.includes('50 por ciento') || 
+       normalizedMsg.includes('cincuenta por ciento') || normalizedMsg.includes('mitad'))) {
+    paymentInfo.deposito = '50%';
+    paymentInfo.politicaPago = '50% inicial, 50% después de la aprobación del cliente';
+    return { presupuesto: paymentInfo };  
+  }
+  
+  // Buscar patrones para "50% y 50% después de aprobación"
+  if (normalizedMsg.includes('50%') && 
+      (normalizedMsg.includes('aprobacion') || normalizedMsg.includes('aprobación'))) {
+    paymentInfo.deposito = '50%';
+    paymentInfo.politicaPago = '50% inicial, 50% después de la aprobación del cliente';
+    return { presupuesto: paymentInfo };
+  }
+  
+  // Buscar otros patrones de política de pago
+  const upfrontRegex = /(?:upfront|adelanto|inicial|depósito|pago).*?(\d+)%/i;
+  const upfrontMatch = message.match(upfrontRegex);
+  
+  if (upfrontMatch && upfrontMatch[1]) {
+    const percentage = upfrontMatch[1];
+    paymentInfo.deposito = `${percentage}%`;
+    paymentInfo.politicaPago = `${percentage}% inicial, ${100 - parseInt(percentage)}% después de la aprobación del cliente`;
+    return { presupuesto: paymentInfo };
+  }
+  
+  return null;
+}
+
 export async function processChatMessage(message: string, context: any): Promise<any> {
   try {
     console.log('Chat context being used:', context);
     
-    // Detectar mensajes específicos relacionados con contratos y responder localmente
-    // para mejorar el tiempo de respuesta y la coherencia del flujo
+    // Detectar si se solicita un cambio de modo de operación
+    const newMode = detectModeChange(message);
+    if (newMode) {
+      // Actualizar el contexto con el nuevo modo
+      const updatedContext = {
+        ...context,
+        currentMode: newMode
+      };
+      
+      // Mensaje de confirmación según el modo
+      let responseMsg = "";
+      switch (newMode) {
+        case MervinMode.CONTRACT:
+          responseMsg = "Entendido. Estoy listo para ayudarte a generar un contrato. ¿Quieres cargar un PDF de estimado o ingresar los datos manualmente?";
+          break;
+        case MervinMode.ESTIMATE:
+          responseMsg = "Perfecto. Vamos a crear un estimado. ¿Tienes los detalles del proyecto o quieres que te guíe a través del proceso?";
+          break;
+        case MervinMode.OWNERSHIP:
+          responseMsg = "Cambié al modo de verificación de propiedad. Por favor proporciona la dirección que deseas verificar.";
+          break;
+        case MervinMode.PERMITS:
+          responseMsg = "Ahora estoy en modo asesor de permisos. ¿En qué jurisdicción necesitas información sobre permisos de construcción?";
+          break;
+      }
+      
+      return {
+        message: responseMsg,
+        context: updatedContext
+      };
+    }
     
-    // 0. Detectar información de la compañía en el mensaje
+    // Verificar si el mensaje contiene información sobre términos de pago
+    const paymentTerms = extractPaymentTerms(message);
+    if (paymentTerms && context.datos_extraidos) {
+      // Actualizar términos de pago en el contexto
+      const datos_actualizados = {
+        ...context.datos_extraidos,
+        presupuesto: {
+          ...context.datos_extraidos.presupuesto,
+          ...paymentTerms.presupuesto
+        }
+      };
+      
+      console.log("Términos de pago actualizados:", datos_actualizados.presupuesto);
+      
+      // Guardar en localStorage como respaldo
+      try {
+        localStorage.setItem('mervin_extracted_data', JSON.stringify(datos_actualizados));
+        console.log("Datos actualizados guardados en localStorage");
+      } catch (err) {
+        console.error("Error guardando datos actualizados en localStorage:", err);
+      }
+      
+      return {
+        message: `He actualizado los términos de pago: ${paymentTerms.presupuesto.politicaPago}. ¿Hay algún otro detalle que quieras incluir en el contrato?`,
+        context: {
+          ...context,
+          datos_extraidos: datos_actualizados,
+          expectingContractMethod: false // Desactivar espera de método
+        }
+      };
+    }
+    
+    // Detectar información de la compañía en el mensaje
     const companyInfo = extractCompanyInfo(message);
     if (companyInfo && context.datos_extraidos) {
       // Actualizar información de la compañía
@@ -266,7 +436,22 @@ export async function processChatMessage(message: string, context: any): Promise
         message: `He actualizado la información de tu compañía. Nombre: ${companyInfo.contratista.nombre || 'No proporcionado'}, Dirección: ${companyInfo.contratista.direccion || 'No proporcionada'}. ¿Qué más necesitas ajustar?`,
         context: {
           ...context,
-          datos_extraidos: datos_actualizados
+          datos_extraidos: datos_actualizados,
+          expectingContractMethod: false // Desactivar espera de método
+        }
+      };
+    }
+    
+    // Comprobar si estamos en modo recopilación de datos y el usuario quiere cancelar
+    if (context.recopilacionDatos?.activa && 
+        (message.toLowerCase().includes('cancelar') || message.toLowerCase().includes('detener'))) {
+      return {
+        message: "He cancelado el proceso de recopilación de datos. ¿En qué más puedo ayudarte?",
+        context: {
+          ...context,
+          recopilacionDatos: {
+            activa: false
+          }
         }
       };
     }
@@ -445,11 +630,38 @@ export async function processChatMessage(message: string, context: any): Promise
         };
       }
       
-      // Procesar los datos según el paso actual
-      const paso = context.recopilacionDatos.paso;
-      const datosActuales = context.recopilacionDatos.datos;
+      // Primero, verificar si estamos en un modo específico
+    const currentMode = context.currentMode || MervinMode.CONTRACT;
+    
+    // Procesar los datos según el modo actual y el paso
+    const paso = context.recopilacionDatos.paso;
+    const datosActuales = context.recopilacionDatos.datos;
+    
+    // Verificar si hay términos de pago o información de compañía en el mensaje
+    const paymentTerms = extractPaymentTerms(message);
+    const companyInfo = extractCompanyInfo(message);
+    
+    // Si encontramos información relevante, la incorporamos a los datos
+    if (paymentTerms) {
+      datosActuales.presupuesto = {
+        ...datosActuales.presupuesto,
+        ...paymentTerms.presupuesto
+      };
       
-      switch (paso) {
+      console.log("Actualizando términos de pago en paso de recopilación:", datosActuales.presupuesto);
+    }
+    
+    if (companyInfo) {
+      datosActuales.contratista = {
+        ...datosActuales.contratista,
+        ...companyInfo.contratista
+      };
+      
+      console.log("Actualizando información de compañía en paso de recopilación:", datosActuales.contratista);
+    }
+    
+    // Continuar con el flujo normal de recopilación
+    switch (paso) {
         // Nombre del cliente
         case 1:
           datosActuales.cliente.nombre = message;
