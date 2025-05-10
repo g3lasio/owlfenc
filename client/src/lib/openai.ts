@@ -750,6 +750,59 @@ export async function processChatMessage(message: string, context: any): Promise
       };
     }
     
+    // Procesar respuestas usando el servicio especializado de contrato
+    if (context.recopilacionDatos?.activa && context.recopilacionDatos.servicioContrato) {
+      const campoActual = context.recopilacionDatos.preguntaActual;
+      const datosActuales = context.recopilacionDatos.datos || {};
+      
+      console.log('Procesando respuesta para el campo usando servicio de contrato:', campoActual);
+      
+      // Actualizar los datos con la respuesta utilizando el servicio especializado
+      const datosActualizados = contractQuestionService.actualizarDatos(
+        datosActuales, 
+        campoActual, 
+        message
+      );
+      
+      // Obtener la siguiente pregunta basada en los datos actualizados
+      const proximaPregunta = contractQuestionService.obtenerProximaPregunta(datosActualizados);
+      
+      // Si ya no hay más preguntas, mostrar el resumen
+      if (!proximaPregunta || contractQuestionService.datosCompletos(datosActualizados)) {
+        // Finalizar la recopilación de datos
+        const updatedContext = {
+          ...context,
+          datos_extraidos: datosActualizados,
+          recopilacionDatos: {
+            activa: false
+          }
+        };
+        
+        // Generar resumen con el servicio especializado
+        const resumen = contractQuestionService.generarResumen(datosActualizados);
+        
+        return {
+          message: `¡Perfecto! Ya tengo toda la información necesaria:\n\n${resumen}\n\n¿Quieres que genere el contrato ahora o prefieres hacer algún ajuste?`,
+          context: updatedContext
+        };
+      }
+      
+      // Continuar con la siguiente pregunta
+      return {
+        message: proximaPregunta.texto + (proximaPregunta.opciones ? `\nOpciones: ${proximaPregunta.opciones.join(', ')}` : ''),
+        context: {
+          ...context,
+          datos_extraidos: datosActualizados,
+          recopilacionDatos: {
+            activa: true,
+            servicioContrato: true,
+            preguntaActual: proximaPregunta.campo,
+            datos: datosActualizados
+          }
+        }
+      };
+    }
+    
     // 1. Detectar solicitudes relacionadas con cláusulas personalizadas
     if (message.toLowerCase().includes("añadir cláusula") || 
         message.toLowerCase().includes("agregar cláusula") ||
