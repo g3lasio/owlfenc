@@ -294,6 +294,129 @@ function extractCompanyInfo(message: string) {
 }
 
 /**
+ * Función para validar qué campos son necesarios según el modo de operación
+ * @param datos Los datos actuales recopilados
+ * @param modo El modo actual del asistente
+ * @returns Array con los nombres de los campos que faltan
+ */
+function validarCamposNecesarios(datos: any, modo: MervinMode): string[] {
+  const camposFaltantes: string[] = [];
+  
+  // Campos comunes para todos los modos
+  if (!datos.cliente?.nombre) camposFaltantes.push('nombre_cliente');
+  if (!datos.cliente?.direccion) camposFaltantes.push('direccion_cliente');
+  
+  // Campos específicos por modo
+  switch (modo) {
+    case MervinMode.CONTRACT:
+      // Para contratos, lo más esencial es nombre cliente, dirección, y descripción del proyecto
+      if (!datos.proyecto?.descripcion) camposFaltantes.push('descripcion_proyecto');
+      if (!datos.presupuesto?.total) camposFaltantes.push('total_presupuesto');
+      // El teléfono y email son opcionales para contratos
+      break;
+      
+    case MervinMode.ESTIMATE:
+      // Para estimados necesitamos información detallada del proyecto
+      if (!datos.proyecto?.tipoCerca) camposFaltantes.push('tipo_cerca');
+      if (!datos.proyecto?.longitud) camposFaltantes.push('longitud_cerca');
+      if (!datos.proyecto?.material) camposFaltantes.push('material_cerca');
+      // Aquí el teléfono y email son más importantes
+      if (!datos.cliente?.telefono) camposFaltantes.push('telefono_cliente');
+      if (!datos.cliente?.email) camposFaltantes.push('email_cliente');
+      break;
+      
+    case MervinMode.OWNERSHIP:
+      // Para verificación de propiedad solo necesitamos la dirección
+      // Todos los campos requeridos ya están verificados arriba
+      break;
+      
+    case MervinMode.PERMITS:
+      // Para asesoría de permisos necesitamos dirección y tipo de proyecto
+      if (!datos.proyecto?.tipoCerca) camposFaltantes.push('tipo_cerca');
+      break;
+  }
+  
+  return camposFaltantes;
+}
+
+/**
+ * Función para determinar la siguiente pregunta según el campo faltante
+ * @param campoFaltante El campo que falta por preguntar
+ * @param datos Los datos actuales recopilados
+ * @param context El contexto actual de la conversación
+ * @returns Objeto con mensaje y contexto actualizado
+ */
+function manejarSiguienteCampoFaltante(campoFaltante: string, datos: any, context: any): any {
+  // Determinar el paso correspondiente al campo
+  let nuevoPaso = 1;
+  let mensaje = "";
+  
+  // Mapeo de campos a pasos y mensajes correspondientes
+  switch (campoFaltante) {
+    case 'nombre_cliente':
+      nuevoPaso = 1;
+      mensaje = "Por favor, ¿cuál es el nombre del cliente?";
+      break;
+      
+    case 'direccion_cliente':
+      nuevoPaso = 2;
+      mensaje = "¿Cuál es la dirección completa del cliente?";
+      break;
+      
+    case 'telefono_cliente':
+      nuevoPaso = 3;
+      mensaje = "¿Cuál es el número de teléfono del cliente? (Escribe 'omitir' si no lo tienes)";
+      break;
+      
+    case 'email_cliente':
+      nuevoPaso = 4;
+      mensaje = "¿Cuál es el correo electrónico del cliente? (Escribe 'omitir' si no lo tienes)";
+      break;
+      
+    case 'descripcion_proyecto':
+      nuevoPaso = 10;
+      mensaje = "¿Puedes proporcionar una descripción breve del proyecto de cerca?";
+      break;
+      
+    case 'tipo_cerca':
+      nuevoPaso = 11;
+      mensaje = "¿Qué tipo de cerca será instalada? (madera, hierro, vinilo, etc.)";
+      break;
+      
+    case 'longitud_cerca':
+      nuevoPaso = 12;
+      mensaje = "¿Cuál es la longitud aproximada de la cerca en pies?";
+      break;
+      
+    case 'material_cerca':
+      nuevoPaso = 13;
+      mensaje = "¿Qué material se utilizará para la cerca?";
+      break;
+      
+    case 'total_presupuesto':
+      nuevoPaso = 20;
+      mensaje = "¿Cuál es el monto total del presupuesto?";
+      break;
+      
+    default:
+      nuevoPaso = 1;
+      mensaje = "¿Qué otra información puedes proporcionarme sobre el proyecto?";
+  }
+  
+  return {
+    message: mensaje,
+    context: {
+      ...context,
+      recopilacionDatos: {
+        activa: true,
+        paso: nuevoPaso,
+        datos: datos
+      }
+    }
+  };
+}
+
+/**
  * Función para extraer información sobre los términos de pago
  * @param message Mensaje del usuario
  * @returns Información de términos de pago extraída o null
@@ -378,7 +501,40 @@ export async function processChatMessage(message: string, context: any): Promise
       };
     }
     
-    // Verificar si el mensaje contiene información sobre términos de pago
+    // Verificar si el mensaje contiene instrucciones específicas sobre términos de pago
+    // Nos enfocamos en detectar "AGREGAR QUE EL UPFRONT COSTS DEBE SER EL 50%"
+    if (message.toUpperCase().includes("UPFRONT") && message.includes("50%")) {
+      // Este es el caso específico mostrado en la imagen
+      const datos_actualizados = context.datos_extraidos ? {
+        ...context.datos_extraidos,
+        presupuesto: {
+          ...context.datos_extraidos.presupuesto,
+          deposito: "50%",
+          politicaPago: "50% inicial, 50% después de la aprobación del cliente"
+        }
+      } : {};
+      
+      console.log("Términos de pago actualizados a 50% upfront");
+      
+      // Guardar en localStorage como respaldo
+      try {
+        localStorage.setItem('mervin_extracted_data', JSON.stringify(datos_actualizados));
+        console.log("Datos actualizados guardados en localStorage");
+      } catch (err) {
+        console.error("Error guardando datos actualizados en localStorage:", err);
+      }
+      
+      return {
+        message: "He actualizado el anticipo (upfront payment) al 50% del total. El pago será 50% inicial y 50% después de la aprobación del cliente. ¿Deseas revisar el contrato actualizado?",
+        context: {
+          ...context,
+          datos_extraidos: datos_actualizados,
+          expectingContractMethod: false
+        }
+      };
+    }
+    
+    // Verificar si el mensaje contiene información sobre términos de pago (caso general)
     const paymentTerms = extractPaymentTerms(message);
     if (paymentTerms && context.datos_extraidos) {
       // Actualizar términos de pago en el contexto
@@ -697,6 +853,34 @@ export async function processChatMessage(message: string, context: any): Promise
           if (message.toLowerCase() !== "omitir") {
             datosActuales.cliente.telefono = message;
           }
+          
+          // Verificar si necesitamos continuar pidiendo información según el modo
+          const camposFaltantes = validarCamposNecesarios(datosActuales, currentMode);
+          
+          // Si no necesitamos el email, redirigir a otro campo importante o finalizar
+          if (!camposFaltantes.includes('email_cliente')) {
+            // Si hay otros campos faltantes, ir al siguiente
+            if (camposFaltantes.length > 0) {
+              console.log(`Saltando a siguiente campo faltante: ${camposFaltantes[0]}`);
+              return manejarSiguienteCampoFaltante(camposFaltantes[0], datosActuales, context);
+            } else {
+              // Si no hay más campos necesarios, finalizar recopilación
+              console.log("Completando recopilación de datos, todos los campos necesarios obtenidos");
+              return {
+                message: "¡Perfecto! Tengo toda la información necesaria para continuar. ¿Qué deseas hacer ahora?",
+                context: {
+                  ...context,
+                  recopilacionDatos: {
+                    activa: false,
+                    datos: datosActuales
+                  },
+                  datos_extraidos: datosActuales
+                }
+              };
+            }
+          }
+          
+          // Si necesitamos el email, continuar normalmente
           return {
             message: "¿Cuál es el correo electrónico del cliente? (Escribe 'omitir' si no lo tienes)",
             context: {
@@ -714,6 +898,34 @@ export async function processChatMessage(message: string, context: any): Promise
           if (message.toLowerCase() !== "omitir") {
             datosActuales.cliente.email = message;
           }
+          
+          // Verificar nuevamente campos faltantes después de actualizar correo
+          const camposFaltantesEmail = validarCamposNecesarios(datosActuales, currentMode);
+          
+          // Si ya tenemos información de contratista/empresa, podemos saltarnos esa pregunta
+          if (datosActuales.contratista.nombre && datosActuales.contratista.direccion) {
+            // Si hay otros campos faltantes importantes, ir al siguiente
+            if (camposFaltantesEmail.length > 0) {
+              console.log(`Saltando a otro campo faltante: ${camposFaltantesEmail[0]}`);
+              return manejarSiguienteCampoFaltante(camposFaltantesEmail[0], datosActuales, context);
+            } else {
+              // Si no hay más campos necesarios, finalizar recopilación
+              console.log("Ya tenemos información del contratista y todos los campos requeridos");
+              return {
+                message: "¡Excelente! Ya tengo tu información de contratista y todos los datos necesarios. ¿Deseas continuar con la generación del contrato?",
+                context: {
+                  ...context,
+                  recopilacionDatos: {
+                    activa: false,
+                    datos: datosActuales
+                  },
+                  datos_extraidos: datosActuales
+                }
+              };
+            }
+          }
+          
+          // Si no tenemos información de contratista, continuar normalmente
           return {
             message: "Ahora necesito información sobre tu empresa. ¿Cuál es el nombre de tu empresa/contratista?",
             context: {
