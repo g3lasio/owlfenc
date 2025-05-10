@@ -37,20 +37,48 @@
 
 /* Footer styles */
 .chat-footer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 40;
-  background-color: hsl(var(--background));
-  border-top: 1px solid hsl(var(--border));
-  width: 100%;
-  font-size: 0.65rem;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 40;
+    background-color: hsl(var(--background));
+    border-top: 1px solid hsla(var(--border), 0.2);
+    width: 100%;
+    height: 30px;
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .chat-footer .footer-content {
+    width: 100%;
+    max-width: 1200px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 1rem;
+  }
+
+  .chat-footer a {
+    color: hsl(var(--primary));
+    font-size: 0.7rem;
+    text-decoration: none;
+    opacity: 0.8;
+    transition: all 0.2s ease;
+  }
+
+  .chat-footer a:hover {
+    opacity: 1;
+    text-shadow: 0 0 8px hsla(var(--primary), 0.3);
+  }
+
+  .chat-footer span {
+    color: hsl(var(--muted-foreground));
+    font-size: 0.7rem;
+    opacity: 0.8;
+  }
 
 /* Efectos futuristas para el análisis AI */
 .analysis-particles {
