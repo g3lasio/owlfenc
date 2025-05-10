@@ -1222,7 +1222,7 @@ Total: ${result.datos_extraidos.presupuesto?.total || "No encontrado"}
       <div className="flex-1 flex flex-col">
         <div
           ref={chatContainerRef}
-          className="flex-1 overflow-y-auto p-4 scrollbar-hide messages-container"
+          className="flex-1 overflow-y-auto p-4 pb-20 scrollbar-hide messages-container"
         >
           {!isChatActive ? (
             <div className="flex-1 flex items-center justify-center">
