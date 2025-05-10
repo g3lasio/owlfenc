@@ -69,6 +69,26 @@ export default function ChatInterface() {
   const [isCustomClauseDialogOpen, setIsCustomClauseDialogOpen] = useState(false);
   const [isCorrectionDialogOpen, setIsCorrectionDialogOpen] = useState(false);
   const [correctionField, setCorrectionField] = useState("");
+  const [customClause, setCustomClause] = useState("");
+  const [allCustomClauses, setAllCustomClauses] = useState<string[]>([]);
+
+  // Formulario para cláusulas personalizadas
+  const customClauseForm = useForm<CustomClauseFormValues>({
+    resolver: zodResolver(customClauseSchema),
+    defaultValues: {
+      clauseText: "",
+    },
+  });
+
+  // Formulario para correcciones
+  const correctionForm = useForm<CorrectionFormValues>({
+    resolver: zodResolver(correctionSchema),
+    defaultValues: {
+      fieldType: "cliente",
+      fieldName: "",
+      fieldValue: "",
+    },
+  });
 
   const ProgressBar = () => (
     <div className="fixed top-16 left-0 right-0 z-50 px-4 py-2 bg-background/80 backdrop-blur-sm border-b">
@@ -96,6 +116,7 @@ export default function ChatInterface() {
       </div>
     </div>
   );
+  
   const [projectId, setProjectId] = useState<string>(
     `PRJ-${Date.now().toString().slice(-6)}`,
   );
@@ -332,61 +353,25 @@ export default function ChatInterface() {
       // Mostrar respuesta del asistente solicitando un PDF
       setTimeout(() => {
         const assistantMessage: Message = {
-          id: `bot-${Date.now()}`,
-          content: "Para generar un contrato, necesito que subas el PDF de un estimado existente. Esto me permitirá extraer toda la información relevante como cliente, detalles del proyecto y costos para crear un contrato personalizado.",
+          id: `assistant-${Date.now()}`,
+          content: "Para generar un contrato, necesito un estimado en formato PDF que contenga la información del proyecto. Por favor, usa el ícono de clip en la barra de chat para cargar tu archivo PDF.",
           sender: "assistant",
         };
         setMessages((prev) => [...prev, assistantMessage]);
-        
-        // Añadir segundo mensaje indicando que usen el icono de clip
-        setTimeout(() => {
-          const uploadMessage: Message = {
-            id: `upload-${Date.now()}`,
-            content: "Por favor, utiliza el icono de PDF 📎 que se encuentra en la barra de chat para subir tu archivo de estimado.",
-            sender: "assistant",
-          };
-          setMessages((prev) => [...prev, uploadMessage]);
-        }, 800);
-      }, 600);
-    } 
-    // Para el resto de opciones, usar el comportamiento predeterminado
-    else {
+      }, 500);
+    } else {
+      // Para otras opciones, usar el procesamiento normal
       handleSendMessage(option, option);
     }
   };
 
-  const handleDownloadPDF = async (
-    html: string,
-    type: "estimate" | "contract",
-    messageId?: string
-  ) => {
+  const handleDownloadPDF = async (html: string, type: "estimate" | "contract") => {
     try {
-      // Si es un contrato generado desde PDF y tenemos el Base64 en el contexto
-      if (type === "contract" && context.contrato_pdf_base64) {
-        // Convertir de Base64 a Blob
-        const byteCharacters = atob(context.contrato_pdf_base64);
-        const byteNumbers = new Array(byteCharacters.length);
-        
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: 'application/pdf' });
-        
-        // Usar la función ya existente para descargar el blob
-        downloadPDF(blob, `contract-${projectId}.pdf`);
-      } else if (type === "estimate") {
-        await downloadEstimatePDF(html, projectId);
+      if (type === "estimate") {
+        await downloadEstimatePDF(html, `Estimate_${projectId}`);
       } else {
-        await downloadContractPDF(html, projectId);
+        await downloadContractPDF(html, `Contract_${projectId}`);
       }
-
-      toast({
-        title: "Success",
-        description: `Your ${type} has been downloaded as a PDF.`,
-        duration: 3000,
-      });
     } catch (error) {
       console.error(`Error downloading ${type}:`, error);
       toast({
@@ -419,20 +404,14 @@ export default function ChatInterface() {
     ]);
   };
   
-  // Función para manejar la apertura del modal de contratos (ya no se usa, pero se mantiene por compatibilidad)
-  const handleOpenContractModal = () => {
-    setIsContractModalOpen(true);
-    setSelectedFile(null);
-  };
-  
-  // Función para manejar el cambio de archivo seleccionado en el modal (para compatibilidad)
+  // Función para manejar el cambio de archivo seleccionado
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setSelectedFile(e.target.files[0]);
     }
   };
   
-  // Nueva función para manejar la carga directa de archivos desde el icono de la barra de chat
+  // Función para manejar la carga directa de archivos desde el icono de la barra de chat
   const handleDirectFileUpload = async (file: File) => {
     // Mostrar mensaje informativo al usuario
     const uploadMessage: Message = {
@@ -442,10 +421,8 @@ export default function ChatInterface() {
     };
     
     setMessages((prev) => [...prev, uploadMessage]);
-    
-    // Mostrar el efecto de análisis futurista
-    setShowAnalysisEffect(true);
     setIsUploadingContract(true);
+    setShowAnalysisEffect(true);
     
     try {
       // Procesar el PDF después de un breve retraso para que se vea el efecto
@@ -491,12 +468,12 @@ export default function ChatInterface() {
         content: `
 He extraído los siguientes datos del PDF:
 
-Cliente: ${result.datos_extraidos.cliente.nombre || "No encontrado"}
-Dirección: ${result.datos_extraidos.cliente.direccion || "No encontrada"}
-Tipo de cerca: ${result.datos_extraidos.proyecto.tipoCerca || "No encontrado"}
-Altura: ${result.datos_extraidos.proyecto.altura || "No encontrada"}
-Longitud: ${result.datos_extraidos.proyecto.longitud || "No encontrada"}
-Total: ${result.datos_extraidos.presupuesto.total || "No encontrado"}
+Cliente: ${result.datos_extraidos.cliente?.nombre || "No encontrado"}
+Dirección: ${result.datos_extraidos.cliente?.direccion || "No encontrada"}
+Tipo de cerca: ${result.datos_extraidos.proyecto?.tipoCerca || "No encontrado"}
+Altura: ${result.datos_extraidos.proyecto?.altura || "No encontrada"}
+Longitud: ${result.datos_extraidos.proyecto?.longitud || "No encontrada"}
+Total: ${result.datos_extraidos.presupuesto?.total || "No encontrado"}
 
 ¿Quieres que genere un contrato usando estos datos?
         `,
@@ -548,222 +525,55 @@ Total: ${result.datos_extraidos.presupuesto.total || "No encontrado"}
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Por favor selecciona un archivo PDF primero.",
+        description: "Please select a PDF file first.",
       });
       return;
     }
     
-    setIsUploadingContract(true);
-    
-    try {
-      // Cerrar el modal de carga para mostrar el efecto de análisis futurista
-      setIsContractModalOpen(false);
-      
-      // Mostrar el efecto de análisis futurista
-      setShowAnalysisEffect(true);
-      
-      // Procesar el PDF después de un breve retraso para que se vea el efecto
-      const result = await new Promise<Awaited<ReturnType<typeof processPDFForContract>>>(async (resolve) => {
-        // Usamos un setTimeout para permitir que el efecto visual se muestre durante unos segundos
-        // antes de hacer la llamada real a la API
-        setTimeout(async () => {
-          try {
-            const pdfResult = await processPDFForContract(selectedFile!);
-            resolve(pdfResult);
-          } catch (error) {
-            console.error("¡Chale! Error procesando el PDF para el contrato:", error);
-            setShowAnalysisEffect(false);
-            throw error;
-          }
-        }, 6500); // Esperar 6.5 segundos para mostrar el efecto completo
-      });
-      
-      // Ocultar el efecto de análisis cuando termine
-      setShowAnalysisEffect(false);
-      
-      // Mostrar mensaje de procesamiento
-      const processingMessage: Message = {
-        id: `processing-${Date.now()}`,
-        content: "He analizado tu PDF con éxito utilizando tecnología avanzada de IA...",
-        sender: "assistant",
-      };
-      
-      setMessages((prev) => [...prev, processingMessage]);
-      
-      // Guardar los datos extraídos en el contexto
-      setContext((prev) => ({
-        ...prev,
-        datos_extraidos: result.datos_extraidos,
-      }));
-      
-      // Mostrar mensaje sobre los datos extraídos
-      const extractionMessage: Message = {
-        id: `extraction-${Date.now()}`,
-        content: `¡He analizado el PDF y extraído la información principal! Aquí están los detalles que pude identificar:\n\n- Cliente: ${result.datos_extraidos.cliente?.nombre || 'No identificado'}\n- Tipo de cerca: ${result.datos_extraidos.proyecto?.tipoCerca || 'No identificado'}\n- Altura: ${result.datos_extraidos.proyecto?.altura || 'No identificada'} pies\n- Longitud: ${result.datos_extraidos.proyecto?.longitud || 'No identificada'} pies\n- Precio total: $${result.datos_extraidos.presupuesto?.total || 'No identificado'}`,
-        sender: "assistant",
-      };
-      
-      setMessages((prev) => [...prev, extractionMessage]);
-      
-      // Solicitar información adicional
-      setTimeout(() => {
-        const questionMessage: Message = {
-          id: `question-${Date.now()}`,
-          content: "Para completar el contrato, necesito algunos detalles adicionales que no están en el estimado. Por favor, responde a estas preguntas:",
-          sender: "assistant",
-        };
-        
-        setMessages((prev) => [...prev, questionMessage]);
-        
-        // Preguntar por detalles adicionales uno por uno
-        setTimeout(() => {
-          const dateQuestion: Message = {
-            id: `date-question-${Date.now()}`,
-            content: "¿Cuándo planeas iniciar el proyecto? (Por favor, específica una fecha aproximada)",
-            sender: "assistant",
-          };
-          
-          setMessages((prev) => [...prev, dateQuestion]);
-        }, 800);
-      }, 1000);
-      
-      // Añadir mensaje con la vista previa del contrato
-      setTimeout(() => {
-        const templateMessage: Message = {
-          id: `template-${Date.now()}`,
-          content: "Aquí está el borrador inicial del contrato basado en el estimado:",
-          sender: "assistant",
-          template: {
-            type: "contract",
-            html: result.contrato_html,
-          },
-        };
-        
-        setMessages((prev) => [...prev, templateMessage]);
-      }, 3000);
-      
-    } catch (error) {
-      console.error("Error generando contrato:", error);
-      // Cerrar el modal en caso de error
-      setIsContractModalOpen(false);
-      
-      // Mostrar mensaje de error en el chat
-      const errorMessage: Message = {
-        id: `error-${Date.now()}`,
-        content: "Lo siento, tuve problemas procesando el PDF. Por favor, verifica que el archivo sea legible y vuelve a intentarlo.",
-        sender: "assistant",
-      };
-      
-      setMessages((prev) => [...prev, errorMessage]);
-      
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudo generar el contrato. Intenta de nuevo.",
-      });
-    } finally {
-      setIsUploadingContract(false);
-    }
-  };
-  
-  // Función para solicitar ajustes a Mervin
-  const handleRequestAdjustments = () => {
     setIsContractModalOpen(false);
-    
-    // Agregar mensaje automático de Mervin
-    const botMessage: Message = {
-      id: `bot-${Date.now()}`,
-      content: "Entiendo que deseas ajustar tu contrato generado. Por favor, especifícame claramente qué deseas ajustar o añadir en el contrato para proceder con los cambios necesarios.",
-      sender: "assistant",
-      actions: [
-        {
-          label: "Añadir Cláusula Personalizada",
-          onClick: () => handleAddCustomClause(),
-        },
-        {
-          label: "Corregir Información",
-          onClick: () => handleCorrectMissingInfo(),
-        }
-      ],
-    };
-    
-    setMessages((prev) => [...prev, botMessage]);
+    handleDirectFileUpload(selectedFile);
   };
   
-  // Estado para manejar el diálogo de cláusulas personalizadas
-  const [customClauseDialogOpen, setCustomClauseDialogOpen] = useState(false);
-  const [customClause, setCustomClause] = useState("");
-  const [allCustomClauses, setAllCustomClauses] = useState<string[]>([]);
-  
-  // Función para mostrar diálogo de añadir cláusula personalizada
-  const handleAddCustomClause = () => {
-    setCustomClauseDialogOpen(true);
-  };
-  
-  // Función para agregar la cláusula personalizada
-  const handleAddClauseToContract = async () => {
-    if (!customClause.trim()) {
+  // Función para generar contrato con los datos extraídos existentes
+  const handleGenerateContractWithExistingData = async () => {
+    if (!context.datos_extraidos) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Por favor, escribe una cláusula para añadir al contrato.",
+        description: "No hay datos extraídos disponibles. Por favor, carga un estimado primero.",
       });
       return;
     }
     
-    setCustomClauseDialogOpen(false);
+    setIsProcessing(true);
     
-    // Añadir la cláusula a la lista
-    const updatedClauses = [...allCustomClauses, customClause];
-    setAllCustomClauses(updatedClauses);
-    
-    // Mensaje que confirma la recepción de la cláusula
-    const confirmationMessage: Message = {
-      id: `confirmation-${Date.now()}`,
-      content: `He recibido tu cláusula personalizada: "${customClause}". La agregaré al contrato.`,
+    // Mostrar mensaje de procesamiento
+    const processingMessage: Message = {
+      id: `generating-${Date.now()}`,
+      content: "Generando contrato con los datos extraídos...",
       sender: "assistant",
     };
     
-    setMessages((prev) => [...prev, confirmationMessage]);
-    
-    // Verificar si tenemos los datos necesarios en el contexto
-    if (!context.datos_extraidos) {
-      const errorMessage: Message = {
-        id: `error-${Date.now()}`,
-        content: "Lo siento, no puedo encontrar los datos del contrato original. Por favor, genera un contrato nuevo subiendo el PDF del estimado.",
-        sender: "assistant",
-      };
-      
-      setMessages((prev) => [...prev, errorMessage]);
-      return;
-    }
+    setMessages((prev) => [...prev, processingMessage]);
     
     try {
-      // Mensaje de procesamiento
-      const processingMessage: Message = {
-        id: `processing-${Date.now()}`,
-        content: "Estoy actualizando tu contrato con la nueva cláusula personalizada...",
+      // Llamar a la API para generar el contrato usando los datos extraídos
+      const result = await actualizarContrato(context.datos_extraidos);
+      
+      // Mostrar mensaje de éxito
+      const successMessage: Message = {
+        id: `success-${Date.now()}`,
+        content: "¡Listo! He generado un contrato personalizado basado en tu estimado.",
         sender: "assistant",
       };
       
-      setMessages((prev) => [...prev, processingMessage]);
+      // Reemplazar el mensaje de procesamiento con el de éxito
+      setMessages((prev) => prev.filter(m => m.id !== processingMessage.id).concat(successMessage));
       
-      // Actualizar el contrato con la nueva cláusula
-      const result = await actualizarContrato(
-        context.datos_extraidos,
-        updatedClauses
-      );
-      
-      // Actualizar el contexto con los datos actualizados
-      setContext((prev) => ({
-        ...prev,
-        datos_extraidos: result.datos_actualizados,
-      }));
-      
-      // Mostrar el contrato actualizado
-      const contractMessage: Message = {
-        id: `updated-contract-${Date.now()}`,
-        content: "He actualizado el contrato con tu cláusula personalizada. Aquí está la nueva versión:",
+      // Mostrar preview del contrato generado
+      const templateMessage: Message = {
+        id: `template-${Date.now()}`,
+        content: "Aquí está el contrato generado:",
         sender: "assistant",
         template: {
           type: "contract",
@@ -771,182 +581,237 @@ Total: ${result.datos_extraidos.presupuesto.total || "No encontrado"}
         },
       };
       
-      setMessages((prev) => prev.filter(m => m.id !== processingMessage.id).concat(contractMessage));
+      setMessages((prev) => [...prev, templateMessage]);
       
-      // Limpiar la cláusula actual pero mantener la lista completa
-      setCustomClause("");
+      // Preguntar si quiere hacer ajustes al contrato
+      const followUpMessage: Message = {
+        id: `follow-up-${Date.now()}`,
+        content: "¿Te gustaría hacer algún ajuste al contrato? Por ejemplo, añadir cláusulas personalizadas o corregir algún dato.",
+        sender: "assistant",
+        options: [
+          { text: "Añadir cláusula personalizada", clickable: true },
+          { text: "Corregir información", clickable: true },
+          { text: "Descargar contrato", clickable: true },
+        ],
+      };
       
+      setMessages((prev) => [...prev, followUpMessage]);
     } catch (error) {
-      console.error("Error al actualizar el contrato:", error);
+      console.error("Error generando contrato:", error);
       
+      // Mostrar mensaje de error
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
-        content: "Lo siento, ocurrió un error al actualizar el contrato. Por favor intenta de nuevo.",
+        content: "Lo siento, ocurrió un error al generar el contrato. Por favor intenta de nuevo.",
         sender: "assistant",
       };
       
-      setMessages((prev) => [...prev, errorMessage]);
+      // Reemplazar el mensaje de procesamiento con el de error
+      setMessages((prev) => prev.filter(m => m.id !== processingMessage.id).concat(errorMessage));
+      
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Error al generar el contrato.",
+      });
+    } finally {
+      setIsProcessing(false);
     }
   };
   
-  // Función para manejar información faltante o incorrecta
-  const handleCorrectMissingInfo = () => {
-    // Mensaje de Mervin solicitando la información
-    const promptMessage: Message = {
-      id: `prompt-${Date.now()}`,
-      content: "He detectado que faltan algunos datos importantes en el contrato. Por favor, especifica qué información deseas corregir o agregar. Puedes proporcionarme cualquiera de los siguientes datos:",
+  // Función para manejar la solicitud de añadir cláusula personalizada desde las opciones
+  const handleRequestCustomClause = () => {
+    const botMessage: Message = {
+      id: `request-clause-${Date.now()}`,
+      content: "Por favor, escribe la cláusula personalizada que te gustaría añadir al contrato. Puedes ser tan específico como necesites.",
       sender: "assistant",
     };
     
-    setMessages((prev) => [...prev, promptMessage]);
-    
-    // Mostrar opciones de corrección específicas
-    setTimeout(() => {
-      const optionsMessage: Message = {
-        id: `options-${Date.now()}`,
-        content: "• Información del cliente: nombre, dirección, teléfono, email\n• Información del contratista: nombre, dirección, teléfono, email, licencia\n• Detalles del proyecto: tipo de cerca, altura, longitud, material, fecha de inicio\n• Información de pago: total, depósito, forma de pago",
-        sender: "assistant",
-      };
-      
-      setMessages((prev) => [...prev, optionsMessage]);
-      
-      // Mensaje adicional con ejemplos
-      setTimeout(() => {
-        const examplesMessage: Message = {
-          id: `examples-${Date.now()}`,
-          content: "Ejemplos de cómo puedes proporcionarme la información:\n\"El nombre del cliente es Juan Pérez\"\n\"La dirección del contratista es 123 Calle Principal, Ciudad\"\n\"La altura de la cerca será de 6 pies\"\n\"El depósito inicial será del 25%\"",
-          sender: "assistant",
-        };
-        
-        setMessages((prev) => [...prev, examplesMessage]);
-      }, 800);
-    }, 600);
+    setMessages((prev) => [...prev, botMessage]);
   };
   
-  // Función para procesar mensajes de corrección de información
-  const handleProcessCorrection = async (message: string) => {
-    // Verificar que tenemos datos extraídos en el contexto
-    if (!context.datos_extraidos) {
-      const errorMessage: Message = {
-        id: `error-${Date.now()}`,
-        content: "Lo siento, no puedo encontrar los datos del contrato original. Por favor, genera un contrato nuevo subiendo el PDF del estimado.",
-        sender: "assistant",
-      };
-      
-      setMessages((prev) => [...prev, errorMessage]);
-      return;
+  // Función para manejar la solicitud de corregir información desde las opciones
+  const handleRequestCorrectInfo = () => {
+    const botMessage: Message = {
+      id: `request-correction-${Date.now()}`,
+      content: "¿Qué información te gustaría corregir en el contrato? Puedes especificar, por ejemplo, \"El nombre del cliente es Juan Pérez\" o \"La altura de la cerca es 6 pies\".",
+      sender: "assistant",
+      options: [
+        { text: "Información del cliente", clickable: true },
+        { text: "Información del contratista", clickable: true },
+        { text: "Detalles del proyecto", clickable: true },
+        { text: "Información de pago", clickable: true },
+      ],
+    };
+    
+    setMessages((prev) => [...prev, botMessage]);
+  };
+  
+  // Función para manejar la selección de tipo de información a corregir
+  const handleCorrectInfoType = (infoType: string) => {
+    let botMessage: Message;
+    
+    switch (infoType) {
+      case "Información del cliente":
+        botMessage = {
+          id: `correct-client-${Date.now()}`,
+          content: "Por favor, especifica qué información del cliente deseas corregir. Por ejemplo, \"El nombre del cliente es Juan Pérez\" o \"La dirección del cliente es Calle Principal 123\".",
+          sender: "assistant",
+        };
+        break;
+      case "Información del contratista":
+        botMessage = {
+          id: `correct-contractor-${Date.now()}`,
+          content: "Por favor, especifica qué información del contratista deseas corregir. Por ejemplo, \"El nombre del contratista es Cercas ABC\" o \"La licencia del contratista es L-12345\".",
+          sender: "assistant",
+        };
+        break;
+      case "Detalles del proyecto":
+        botMessage = {
+          id: `correct-project-${Date.now()}`,
+          content: "Por favor, especifica qué detalles del proyecto deseas corregir. Por ejemplo, \"El tipo de cerca es residencial\" o \"La altura de la cerca es 8 pies\".",
+          sender: "assistant",
+        };
+        break;
+      case "Información de pago":
+        botMessage = {
+          id: `correct-payment-${Date.now()}`,
+          content: "Por favor, especifica qué información de pago deseas corregir. Por ejemplo, \"El total es $5,000\" o \"El depósito es $2,500\".",
+          sender: "assistant",
+        };
+        break;
+      default:
+        botMessage = {
+          id: `correct-generic-${Date.now()}`,
+          content: "Por favor, especifica qué información deseas corregir en el contrato.",
+          sender: "assistant",
+        };
     }
     
+    setMessages((prev) => [...prev, botMessage]);
+  };
+  
+  // Función para manejar la corrección de información errónea en el contrato
+  const handleCorrectMissingInfo = () => {
+    setIsCorrectionDialogOpen(true);
+  };
+  
+  // Función para procesar correcciones de texto en los mensajes
+  const handleProcessCorrection = async (messageText: string) => {
+    setIsProcessing(true);
+    
+    // Añadir mensaje de procesamiento
+    const processingMessage: Message = {
+      id: `processing-correction-${Date.now()}`,
+      content: "Procesando tu corrección...",
+      sender: "assistant",
+    };
+    
+    setMessages((prev) => [...prev, processingMessage]);
+    
     try {
-      // Mensaje de procesamiento
-      const processingMessage: Message = {
-        id: `processing-${Date.now()}`,
-        content: "Estoy procesando tu corrección...",
-        sender: "assistant",
-      };
+      // Crear objeto para actualizar información
+      const infoToUpdate: Record<string, any> = {};
       
-      setMessages((prev) => [...prev, processingMessage]);
-      
-      // Analizar el mensaje para determinar qué campo actualizar
-      const infoToUpdate: any = {};
+      // Detectar qué campo se está actualizando basado en el mensaje
       
       // Detección de información del cliente
-      if (message.toLowerCase().includes("nombre del cliente")) {
-        const match = message.match(/nombre del cliente es (.+)/i);
+      if (messageText.toLowerCase().includes("nombre del cliente")) {
+        const match = messageText.match(/nombre del cliente es (.+)/i);
         if (match && match[1]) {
           infoToUpdate.cliente = { nombre: match[1].trim() };
         }
       }
       
-      if (message.toLowerCase().includes("dirección del cliente") || message.toLowerCase().includes("direccion del cliente")) {
-        const match = message.match(/direcci[óo]n del cliente es (.+)/i);
-        if (match && match[1]) {
-          infoToUpdate.cliente = { ...(infoToUpdate.cliente || {}), direccion: match[1].trim() };
+      if (messageText.toLowerCase().includes("dirección del cliente") || messageText.toLowerCase().includes("direccion del cliente")) {
+        const match = messageText.match(/(dirección|direccion) del cliente es (.+)/i);
+        if (match && match[2]) {
+          infoToUpdate.cliente = { ...(infoToUpdate.cliente || {}), direccion: match[2].trim() };
         }
       }
       
-      if (message.toLowerCase().includes("teléfono del cliente") || message.toLowerCase().includes("telefono del cliente")) {
-        const match = message.match(/tel[ée]fono del cliente es (.+)/i);
-        if (match && match[1]) {
-          infoToUpdate.cliente = { ...(infoToUpdate.cliente || {}), telefono: match[1].trim() };
+      if (messageText.toLowerCase().includes("teléfono del cliente") || messageText.toLowerCase().includes("telefono del cliente")) {
+        const match = messageText.match(/(teléfono|telefono) del cliente es (.+)/i);
+        if (match && match[2]) {
+          infoToUpdate.cliente = { ...(infoToUpdate.cliente || {}), telefono: match[2].trim() };
         }
       }
       
-      if (message.toLowerCase().includes("email del cliente")) {
-        const match = message.match(/email del cliente es (.+)/i);
+      if (messageText.toLowerCase().includes("email del cliente")) {
+        const match = messageText.match(/email del cliente es (.+)/i);
         if (match && match[1]) {
           infoToUpdate.cliente = { ...(infoToUpdate.cliente || {}), email: match[1].trim() };
         }
       }
       
       // Detección de información del contratista
-      if (message.toLowerCase().includes("nombre del contratista")) {
-        const match = message.match(/nombre del contratista es (.+)/i);
+      if (messageText.toLowerCase().includes("nombre del contratista")) {
+        const match = messageText.match(/nombre del contratista es (.+)/i);
         if (match && match[1]) {
           infoToUpdate.contratista = { nombre: match[1].trim() };
         }
       }
       
-      if (message.toLowerCase().includes("dirección del contratista") || message.toLowerCase().includes("direccion del contratista")) {
-        const match = message.match(/direcci[óo]n del contratista es (.+)/i);
-        if (match && match[1]) {
-          infoToUpdate.contratista = { ...(infoToUpdate.contratista || {}), direccion: match[1].trim() };
+      if (messageText.toLowerCase().includes("dirección del contratista") || messageText.toLowerCase().includes("direccion del contratista")) {
+        const match = messageText.match(/(dirección|direccion) del contratista es (.+)/i);
+        if (match && match[2]) {
+          infoToUpdate.contratista = { ...(infoToUpdate.contratista || {}), direccion: match[2].trim() };
         }
       }
       
       // Detección de información del proyecto
-      if (message.toLowerCase().includes("tipo de cerca")) {
-        const match = message.match(/tipo de cerca es (.+)/i);
+      if (messageText.toLowerCase().includes("tipo de cerca")) {
+        const match = messageText.match(/tipo de cerca es (.+)/i);
         if (match && match[1]) {
           infoToUpdate.proyecto = { tipoCerca: match[1].trim() };
         }
       }
       
-      if (message.toLowerCase().includes("altura de")) {
-        const match = message.match(/altura de.* es (\d+)/i);
+      if (messageText.toLowerCase().includes("altura de")) {
+        const match = messageText.match(/altura de.* es (\d+)/i);
         if (match && match[1]) {
           infoToUpdate.proyecto = { ...(infoToUpdate.proyecto || {}), altura: match[1].trim() };
         }
       }
       
-      if (message.toLowerCase().includes("longitud de")) {
-        const match = message.match(/longitud de.* es (\d+)/i);
+      if (messageText.toLowerCase().includes("longitud de")) {
+        const match = messageText.match(/longitud de.* es (\d+)/i);
         if (match && match[1]) {
           infoToUpdate.proyecto = { ...(infoToUpdate.proyecto || {}), longitud: match[1].trim() };
         }
       }
       
-      if (message.toLowerCase().includes("material de")) {
-        const match = message.match(/material de.* es (.+)/i);
+      if (messageText.toLowerCase().includes("material de")) {
+        const match = messageText.match(/material de.* es (.+)/i);
         if (match && match[1]) {
           infoToUpdate.proyecto = { ...(infoToUpdate.proyecto || {}), material: match[1].trim() };
         }
       }
       
-      if (message.toLowerCase().includes("fecha de inicio")) {
-        const match = message.match(/fecha de inicio es (.+)/i);
+      if (messageText.toLowerCase().includes("fecha de inicio")) {
+        const match = messageText.match(/fecha de inicio es (.+)/i);
         if (match && match[1]) {
           infoToUpdate.proyecto = { ...(infoToUpdate.proyecto || {}), fechaInicio: match[1].trim() };
         }
       }
       
       // Detección de información de pago
-      if (message.toLowerCase().includes("total es")) {
-        const match = message.match(/total es (\$?[\d,]+)/i);
+      if (messageText.toLowerCase().includes("total es")) {
+        const match = messageText.match(/total es (\$?[\d,]+)/i);
         if (match && match[1]) {
           infoToUpdate.presupuesto = { total: match[1].trim() };
         }
       }
       
-      if (message.toLowerCase().includes("depósito") || message.toLowerCase().includes("deposito")) {
-        const match = message.match(/(dep[óo]sito|anticipo) es (\$?[\d,]+|[\d]+%)/i);
+      if (messageText.toLowerCase().includes("depósito") || messageText.toLowerCase().includes("deposito")) {
+        const match = messageText.match(/(dep[óo]sito|anticipo) es (\$?[\d,]+|[\d]+%)/i);
         if (match && match[2]) {
           infoToUpdate.presupuesto = { ...(infoToUpdate.presupuesto || {}), deposito: match[2].trim() };
         }
       }
       
-      if (message.toLowerCase().includes("forma de pago")) {
-        const match = message.match(/forma de pago es (.+)/i);
+      if (messageText.toLowerCase().includes("forma de pago")) {
+        const match = messageText.match(/forma de pago es (.+)/i);
         if (match && match[1]) {
           infoToUpdate.presupuesto = { ...(infoToUpdate.presupuesto || {}), formaPago: match[1].trim() };
         }
@@ -1002,8 +867,18 @@ Total: ${result.datos_extraidos.presupuesto.total || "No encontrado"}
       
       // Mensaje de confirmación
       const confirmationMessage: Message = {
-        id: `confirmation-${Date.now()}`,
-        content: `He actualizado la información: ${updateDescription}Aquí está el contrato actualizado:`,
+        id: `confirm-update-${Date.now()}`,
+        content: `${updateDescription.trim()} Aquí está tu contrato actualizado:`,
+        sender: "assistant",
+      };
+      
+      // Reemplazar el mensaje de procesamiento con el de confirmación
+      setMessages((prev) => prev.filter(m => m.id !== processingMessage.id).concat(confirmationMessage));
+      
+      // Mostrar contrato actualizado
+      const templateMessage: Message = {
+        id: `template-${Date.now()}`,
+        content: "",
         sender: "assistant",
         template: {
           type: "contract",
@@ -1011,140 +886,316 @@ Total: ${result.datos_extraidos.presupuesto.total || "No encontrado"}
         },
       };
       
-      // Reemplazar el mensaje de procesamiento
-      setMessages((prev) => prev.filter(m => m.id !== processingMessage.id).concat(confirmationMessage));
+      setMessages((prev) => [...prev, templateMessage]);
       
-    } catch (error) {
-      console.error("Error al actualizar la información del contrato:", error);
-      
-      const errorMessage: Message = {
-        id: `error-${Date.now()}`,
-        content: "Lo siento, ocurrió un error al actualizar el contrato. Por favor intenta de nuevo.",
+      // Mensaje de seguimiento
+      const followUpMessage: Message = {
+        id: `followup-${Date.now()}`,
+        content: "¿Hay algo más que te gustaría corregir o añadir al contrato?",
         sender: "assistant",
-      };
-      
-      setMessages((prev) => [...prev, errorMessage]);
-    }
-  };
-  
-  // Función para generar contrato con los datos ya extraídos
-  const handleGenerateContractWithExistingData = async () => {
-    // Mostrar mensaje informativo
-    const generatingMessage: Message = {
-      id: `generating-${Date.now()}`,
-      content: "Generando contrato personalizado con los datos extraídos...",
-      sender: "assistant",
-    };
-    
-    setMessages((prev) => [...prev, generatingMessage]);
-    
-    try {
-      // Utilizar el endpoint para ajustar contratos con los datos extraídos
-      const response = await fetch('/api/ajustar-contrato', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          datos_extraidos: context.datos_extraidos,
-          informacion_adicional: {
-            fecha_inicio: new Date().toLocaleDateString(),
-            duracion_estimada: "4 semanas"
-          }
-        }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error ajustando el contrato');
-      }
-      
-      const data = await response.json();
-      const contractHtml = data.contrato_html;
-      
-      // Mostrar el contrato generado como un mensaje normal con acciones
-      const contractMessage: Message = {
-        id: `contract-${Date.now()}`,
-        content: "¡He generado tu contrato! Aquí tienes un resumen con los datos extraídos:\n\n" +
-                "- Cliente: " + (context.datos_extraidos?.cliente?.nombre || 'No especificado') + "\n" +
-                "- Dirección: " + (context.datos_extraidos?.cliente?.direccion || 'No especificada') + "\n" +
-                "- Tipo de cerca: " + (context.datos_extraidos?.proyecto?.tipoCerca || 'No especificado') + "\n" +
-                "- Altura: " + (context.datos_extraidos?.proyecto?.altura || 'No especificada') + "\n" +
-                "- Longitud: " + (context.datos_extraidos?.proyecto?.longitud || 'No especificada') + "\n" +
-                "- Precio total: $" + (context.datos_extraidos?.presupuesto?.total || '0.00'),
-        sender: "assistant",
-        actions: [
-          {
-            label: "Ver Contrato PDF",
-            onClick: () => {
-              // Añadir mensaje de plantilla
-              const templateMessage: Message = {
-                id: `template-contract-${Date.now()}`,
-                content: "Aquí está el contrato generado:",
-                sender: "assistant",
-                template: {
-                  type: "contract",
-                  html: contractHtml,
-                },
-              };
-              setMessages((prev) => [...prev, templateMessage]);
-            }
-          },
-          {
-            label: "Descargar PDF",
-            onClick: () => handleDownloadPDF(contractHtml, "contract"),
-          },
-          {
-            label: "Enviar por Email",
-            onClick: () => handleEmailClient("contract"),
-          },
-          {
-            label: "Solicitar Ajustes",
-            onClick: handleRequestAdjustments,
-          },
+        options: [
+          { text: "Añadir cláusula personalizada", clickable: true },
+          { text: "Corregir más información", clickable: true },
+          { text: "Descargar contrato", clickable: true },
         ],
       };
       
-      // Reemplazar el mensaje de generación con el contrato
-      setMessages((prev) => {
-        const filtered = prev.filter(m => m.id !== generatingMessage.id);
-        return [...filtered, contractMessage];
-      });
-      
+      setMessages((prev) => [...prev, followUpMessage]);
     } catch (error) {
-      console.error("Error generando contrato:", error);
+      console.error("Error al procesar la corrección:", error);
       
-      // Mostrar mensaje de error
+      // Mensaje de error
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
-        content: "Lo siento, ocurrió un error al generar el contrato. Por favor intenta de nuevo más tarde.",
+        content: "Lo siento, ocurrió un error al procesar tu corrección. Por favor intenta de nuevo.",
         sender: "assistant",
       };
       
-      // Reemplazar el mensaje de generación con el error
-      setMessages((prev) => {
-        const filtered = prev.filter(m => m.id !== generatingMessage.id);
-        return [...filtered, errorMessage];
-      });
+      // Reemplazar el mensaje de procesamiento con el de error
+      setMessages((prev) => prev.filter(m => m.id !== processingMessage.id).concat(errorMessage));
       
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se pudo generar el contrato. Por favor intenta de nuevo.",
+        description: "Error al procesar la corrección.",
       });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+  
+  // Función para manejar el envío del formulario de cláusulas personalizadas
+  const onCustomClauseSubmit = async (values: CustomClauseFormValues) => {
+    setIsCustomClauseDialogOpen(false);
+    setIsProcessing(true);
+    
+    try {
+      // Añadir una respuesta de confirmación
+      const confirmationMessage: Message = {
+        id: `confirmation-${Date.now()}`,
+        content: `Añadiendo la cláusula personalizada: "${values.clauseText}"`,
+        sender: "assistant",
+      };
+      
+      setMessages((prev) => [...prev, confirmationMessage]);
+      
+      // Actualizar el contrato con la nueva cláusula
+      if (context.datos_extraidos) {
+        const result = await actualizarContrato(
+          context.datos_extraidos,
+          [values.clauseText]
+        );
+        
+        // Actualizar el contexto con los nuevos datos
+        setContext((prev) => ({
+          ...prev,
+          datos_extraidos: result.datos_actualizados,
+          contrato_actualizado: true,
+        }));
+        
+        // Mostrar el contrato actualizado
+        const templateMessage: Message = {
+          id: `template-${Date.now()}`,
+          content: "Aquí está tu contrato actualizado con la cláusula personalizada:",
+          sender: "assistant",
+          template: {
+            type: "contract",
+            html: result.contrato_html,
+          },
+        };
+        
+        setMessages((prev) => [...prev, templateMessage]);
+        
+        // Mensaje de seguimiento
+        const followUpMessage: Message = {
+          id: `followup-${Date.now()}`,
+          content: "¿Hay algo más que te gustaría agregar o modificar en el contrato?",
+          sender: "assistant",
+        };
+        
+        setMessages((prev) => [...prev, followUpMessage]);
+      } else {
+        // Si no hay datos extraídos, mostrar un error
+        const errorMessage: Message = {
+          id: `error-${Date.now()}`,
+          content: "Lo siento, no tengo datos de un contrato para modificar. Primero debes cargar un estimado para generar un contrato.",
+          sender: "assistant",
+        };
+        
+        setMessages((prev) => [...prev, errorMessage]);
+      }
+    } catch (error) {
+      console.error("Error añadiendo cláusula personalizada:", error);
+      
+      // Mostrar mensaje de error
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        content: "Lo siento, hubo un error al añadir la cláusula personalizada. Por favor intenta de nuevo.",
+        sender: "assistant",
+      };
+      
+      setMessages((prev) => [...prev, errorMessage]);
+      
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo añadir la cláusula personalizada.",
+      });
+    } finally {
+      setIsProcessing(false);
+      customClauseForm.reset();
+    }
+  };
+  
+  // Función para manejar el envío del formulario de corrección
+  const onCorrectionSubmit = async (values: CorrectionFormValues) => {
+    setIsCorrectionDialogOpen(false);
+    setIsProcessing(true);
+    
+    try {
+      // Configurar objeto de corrección
+      const correction: any = {};
+      correction[values.fieldType] = {};
+      correction[values.fieldType][values.fieldName] = values.fieldValue;
+      
+      // Añadir mensaje de confirmación
+      const confirmationMessage: Message = {
+        id: `confirmation-${Date.now()}`,
+        content: `Actualizando el ${values.fieldName} de ${values.fieldType} a: "${values.fieldValue}"`,
+        sender: "assistant",
+      };
+      
+      setMessages((prev) => [...prev, confirmationMessage]);
+      
+      // Actualizar el contrato con la corrección
+      if (context.datos_extraidos) {
+        const result = await actualizarContrato(
+          context.datos_extraidos,
+          [],
+          correction
+        );
+        
+        // Actualizar el contexto con los nuevos datos
+        setContext((prev) => ({
+          ...prev,
+          datos_extraidos: result.datos_actualizados,
+          contrato_actualizado: true,
+        }));
+        
+        // Mostrar el contrato actualizado
+        const templateMessage: Message = {
+          id: `template-${Date.now()}`,
+          content: "Aquí está tu contrato actualizado con la corrección:",
+          sender: "assistant",
+          template: {
+            type: "contract",
+            html: result.contrato_html,
+          },
+        };
+        
+        setMessages((prev) => [...prev, templateMessage]);
+        
+        // Mensaje de seguimiento
+        const followUpMessage: Message = {
+          id: `followup-${Date.now()}`,
+          content: "¿Hay algo más que te gustaría corregir o añadir al contrato?",
+          sender: "assistant",
+        };
+        
+        setMessages((prev) => [...prev, followUpMessage]);
+      } else {
+        // Si no hay datos extraídos, mostrar un error
+        const errorMessage: Message = {
+          id: `error-${Date.now()}`,
+          content: "Lo siento, no tengo datos de un contrato para modificar. Primero debes cargar un estimado para generar un contrato.",
+          sender: "assistant",
+        };
+        
+        setMessages((prev) => [...prev, errorMessage]);
+      }
+    } catch (error) {
+      console.error("Error procesando corrección desde formulario:", error);
+      
+      // Mostrar mensaje de error
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        content: "Lo siento, hubo un error al procesar la corrección. Por favor intenta de nuevo.",
+        sender: "assistant",
+      };
+      
+      setMessages((prev) => [...prev, errorMessage]);
+      
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo procesar la corrección.",
+      });
+    } finally {
+      setIsProcessing(false);
+      correctionForm.reset();
+    }
+  };
+  
+  // Función para manejar la adición de cláusulas al contrato directamente
+  const handleAddClauseToContract = async () => {
+    setIsCustomClauseDialogOpen(false);
+    
+    if (!customClause.trim()) {
+      toast({
+        title: "Error",
+        description: "Por favor ingresa una cláusula personalizada",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsProcessing(true);
+    
+    try {
+      // Actualizar el contrato con la nueva cláusula
+      if (context.datos_extraidos) {
+        const result = await actualizarContrato(
+          context.datos_extraidos,
+          [customClause]
+        );
+        
+        // Actualizar el contexto con los nuevos datos
+        setContext((prev) => ({
+          ...prev,
+          datos_extraidos: result.datos_actualizados,
+          contrato_actualizado: true,
+        }));
+        
+        // Guardar la cláusula en la lista
+        setAllCustomClauses((prev) => [...prev, customClause]);
+        
+        // Mostrar mensaje de confirmación
+        const confirmationMessage: Message = {
+          id: `clauseconfirm-${Date.now()}`,
+          content: `He añadido tu cláusula personalizada al contrato: "${customClause}"`,
+          sender: "assistant",
+        };
+        
+        setMessages((prev) => [...prev, confirmationMessage]);
+        
+        // Mostrar el contrato actualizado
+        const templateMessage: Message = {
+          id: `template-${Date.now()}`,
+          content: "Aquí está tu contrato actualizado:",
+          sender: "assistant",
+          template: {
+            type: "contract",
+            html: result.contrato_html,
+          },
+        };
+        
+        setMessages((prev) => [...prev, templateMessage]);
+      } else {
+        // Si no hay datos extraídos, mostrar un error
+        const errorMessage: Message = {
+          id: `error-${Date.now()}`,
+          content: "Lo siento, no tengo datos de un contrato para modificar. Primero debes cargar un estimado para generar un contrato.",
+          sender: "assistant",
+        };
+        
+        setMessages((prev) => [...prev, errorMessage]);
+      }
+    } catch (error) {
+      console.error("Error añadiendo cláusula personalizada:", error);
+      
+      // Mostrar mensaje de error
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        content: "Lo siento, hubo un error al añadir la cláusula personalizada. Por favor intenta de nuevo.",
+        sender: "assistant",
+      };
+      
+      setMessages((prev) => [...prev, errorMessage]);
+      
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo añadir la cláusula personalizada.",
+      });
+    } finally {
+      setCustomClause("");
+      setIsProcessing(false);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      await handleDirectFileUpload(file);
     }
   };
 
   return (
-    <div className="relative flex flex-col h-full chat-outer-container">
-      {/* Efecto futurista de análisis de Mervin AI */}
-      <AnalysisEffect 
-        isVisible={showAnalysisEffect} 
-        onComplete={() => setShowAnalysisEffect(false)} 
-      />
-
-      <div className="flex flex-col h-full chat-container">
-        {/* Chat Messages */}
+    <div className="relative flex-1 flex flex-col bg-background rounded-lg overflow-hidden border shadow-sm">
+      {/* Animación de análisis de documentos */}
+      {showAnalysisEffect && <AnalysisEffect />}
+      
+      <div className="flex-1 flex flex-col">
         <div
           ref={chatContainerRef}
           className="flex-1 overflow-y-auto p-4 scrollbar-hide messages-container"
@@ -1255,15 +1306,6 @@ Total: ${result.datos_extraidos.presupuesto.total || "No encontrado"}
                         >
                           <i className="ri-edit-line mr-1"></i> Editar Detalles
                         </Button>
-                        {message.template.type === "contract" && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={handleRequestAdjustments}
-                          >
-                            <i className="ri-file-edit-line mr-1"></i> Solicitar Ajustes
-                          </Button>
-                        )}
                         <Button
                           variant="outline"
                           size="sm"
@@ -1281,122 +1323,201 @@ Total: ${result.datos_extraidos.presupuesto.total || "No encontrado"}
                     key={message.id}
                     message={message}
                     onOptionClick={handleOptionClick}
+                    onActionClick={(action) => action.onClick()}
                   />
                 );
               })}
-              
-              {/* Mostrar el formulario de estimación manual si estamos en modo manual */}
+
               {showManualForm && (
-                <div className="mt-6 p-4 bg-card rounded-lg border">
-                  <ManualEstimateForm onEstimateGenerated={handleManualEstimateGenerated} />
+                <div className="mt-4">
+                  <ManualEstimateForm onGenerate={handleManualEstimateGenerated} />
                 </div>
               )}
             </>
           )}
         </div>
 
-        {/* Chat Input */}
-        {isChatActive && !showManualForm && ( // Solo mostrar el input si chat está activo y no estamos en modo manual
-          <div className="relative">
-            <ChatInput 
-              onSendMessage={handleSendMessage} 
-              isDisabled={isProcessing}
-              onFileUpload={handleDirectFileUpload}
-            />
-          </div>
+        {isChatActive && (
+          <ChatInput
+            onSendMessage={handleSendMessage}
+            isProcessing={isProcessing}
+            onFileUpload={handleFileUpload}
+            showFileUpload={true}
+          />
         )}
         
-        {/* Modal para subir un PDF */}
-        <Dialog open={isContractModalOpen} onOpenChange={setIsContractModalOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Subir PDF para generar contrato</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="flex flex-col gap-4">
-                <p className="text-sm text-muted-foreground">
-                  Sube un PDF con un estimado aprobado por el cliente para generar automáticamente un contrato personalizado.
-                </p>
-                <div className="flex flex-col gap-2">
-                  <Input 
-                    type="file" 
-                    accept=".pdf" 
-                    onChange={handleFileChange}
-                    disabled={isUploadingContract}
-                  />
-                  {selectedFile && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Archivo seleccionado: {selectedFile.name} ({Math.round(selectedFile.size / 1024)} KB)
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-            <DialogFooter className="sm:justify-between">
-              <Button
-                variant="outline"
-                onClick={() => setIsContractModalOpen(false)}
-                disabled={isUploadingContract}
-              >
-                Cancelar
-              </Button>
-              <Button 
-                onClick={handleGenerateContractFromPDF}
-                disabled={!selectedFile || isUploadingContract}
-              >
-                {isUploadingContract ? (
-                  <>
-                    <i className="ri-loader-4-line animate-spin mr-2"></i>
-                    Procesando...
-                  </>
-                ) : (
-                  <>
-                    <i className="ri-file-text-line mr-2"></i>
-                    Generar Contrato
-                  </>
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-        
         {/* Diálogo para añadir cláusulas personalizadas */}
-        <Dialog open={customClauseDialogOpen} onOpenChange={setCustomClauseDialogOpen}>
+        <Dialog open={isCustomClauseDialogOpen} onOpenChange={setIsCustomClauseDialogOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Añadir Cláusula Personalizada</DialogTitle>
+              <DialogDescription>
+                Escribe la cláusula personalizada que deseas añadir a tu contrato.
+              </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="flex flex-col gap-4">
-                <p className="text-sm text-muted-foreground">
-                  Escribe la cláusula personalizada que deseas añadir a tu contrato. Por ejemplo: "El cliente proporcionará una botella de Pepsi de 2 litros cada viernes durante la duración del proyecto."
-                </p>
-                <Textarea
-                  placeholder="Escribe tu cláusula personalizada aquí..."
-                  value={customClause}
-                  onChange={(e) => setCustomClause(e.target.value)}
-                  className="min-h-[100px]"
+            <Form {...customClauseForm}>
+              <form onSubmit={customClauseForm.handleSubmit(onCustomClauseSubmit)} className="space-y-4">
+                <FormField
+                  control={customClauseForm.control}
+                  name="clauseText"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Cláusula Personalizada</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Ej: El contratista se compromete a limpiar completamente el área de trabajo al finalizar el proyecto."
+                          className="min-h-[120px]"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-            </div>
-            <DialogFooter className="sm:justify-between">
-              <Button
-                variant="outline"
-                onClick={() => setCustomClauseDialogOpen(false)}
-              >
-                Cancelar
-              </Button>
-              <Button 
-                onClick={handleAddClauseToContract}
-                disabled={!customClause.trim()}
-              >
-                <i className="ri-add-line mr-2"></i>
-                Añadir al Contrato
-              </Button>
-            </DialogFooter>
+                <DialogFooter className="flex justify-between">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsCustomClauseDialogOpen(false)}
+                    type="button"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button type="submit">Añadir al Contrato</Button>
+                </DialogFooter>
+              </form>
+            </Form>
           </DialogContent>
         </Dialog>
-        
+
+        {/* Diálogo para correcciones de información */}
+        <Dialog open={isCorrectionDialogOpen} onOpenChange={setIsCorrectionDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Corregir Información</DialogTitle>
+              <DialogDescription>
+                {correctionField ? 
+                  `Corrección para: ${correctionField}` : 
+                  "Selecciona el tipo de información que deseas corregir."
+                }
+              </DialogDescription>
+            </DialogHeader>
+            <Form {...correctionForm}>
+              <form onSubmit={correctionForm.handleSubmit(onCorrectionSubmit)} className="space-y-4">
+                <FormField
+                  control={correctionForm.control}
+                  name="fieldType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de Campo</FormLabel>
+                      <FormControl>
+                        <select
+                          className="w-full p-2 border rounded"
+                          {...field}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            // Resetear el fieldName cuando cambia el tipo
+                            correctionForm.resetField("fieldName");
+                          }}
+                        >
+                          <option value="cliente">Cliente</option>
+                          <option value="contratista">Contratista</option>
+                          <option value="proyecto">Proyecto</option>
+                          <option value="presupuesto">Presupuesto</option>
+                        </select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={correctionForm.control}
+                  name="fieldName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Campo a Corregir</FormLabel>
+                      <FormControl>
+                        <select
+                          className="w-full p-2 border rounded"
+                          {...field}
+                        >
+                          {correctionForm.getValues("fieldType") === "cliente" && (
+                            <>
+                              <option value="">Selecciona un campo</option>
+                              <option value="nombre">Nombre</option>
+                              <option value="direccion">Dirección</option>
+                              <option value="telefono">Teléfono</option>
+                              <option value="email">Email</option>
+                            </>
+                          )}
+                          {correctionForm.getValues("fieldType") === "contratista" && (
+                            <>
+                              <option value="">Selecciona un campo</option>
+                              <option value="nombre">Nombre</option>
+                              <option value="direccion">Dirección</option>
+                              <option value="telefono">Teléfono</option>
+                              <option value="email">Email</option>
+                              <option value="licencia">Número de Licencia</option>
+                            </>
+                          )}
+                          {correctionForm.getValues("fieldType") === "proyecto" && (
+                            <>
+                              <option value="">Selecciona un campo</option>
+                              <option value="tipoCerca">Tipo de Cerca</option>
+                              <option value="altura">Altura</option>
+                              <option value="longitud">Longitud</option>
+                              <option value="material">Material</option>
+                              <option value="fechaInicio">Fecha de Inicio</option>
+                              <option value="descripcion">Descripción</option>
+                            </>
+                          )}
+                          {correctionForm.getValues("fieldType") === "presupuesto" && (
+                            <>
+                              <option value="">Selecciona un campo</option>
+                              <option value="total">Total</option>
+                              <option value="deposito">Depósito</option>
+                              <option value="formaPago">Forma de Pago</option>
+                            </>
+                          )}
+                        </select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={correctionForm.control}
+                  name="fieldValue"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Valor Correcto</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Ingresa el valor correcto" 
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <DialogFooter className="flex justify-between">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsCorrectionDialogOpen(false)}
+                    type="button"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button type="submit">Aplicar Corrección</Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+
         {/* Footer with legal links */}
         <ChatFooter />
         {isProcessing && <ProgressBar />}

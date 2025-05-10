@@ -195,6 +195,111 @@ export async function actualizarContrato(
 export async function processChatMessage(message: string, context: any): Promise<any> {
   try {
     console.log('Chat context being used:', context);
+    
+    // Detectar mensajes específicos relacionados con contratos y responder localmente
+    // para mejorar el tiempo de respuesta y la coherencia del flujo
+    
+    // 1. Detectar solicitudes relacionadas con cláusulas personalizadas
+    if (message.toLowerCase().includes("añadir cláusula") || 
+        message.toLowerCase().includes("agregar cláusula") ||
+        message.toLowerCase().includes("añadir clausula") ||
+        message.toLowerCase().includes("agregar clausula") ||
+        message.toLowerCase().includes("incluir cláusula") ||
+        message.toLowerCase().includes("incluir clausula") ||
+        message.toLowerCase().includes("cláusula pepsi") ||
+        message.toLowerCase().includes("clausula pepsi")) {
+      
+      // Verificar si hay un contrato generado
+      if (context.datos_extraidos) {
+        return {
+          message: "Por supuesto, puedes añadir una cláusula personalizada a tu contrato. Por favor escribe la cláusula que deseas añadir o pídeme que te sugiera algunas opciones comunes.",
+          context: context
+        };
+      } else {
+        return {
+          message: "Para añadir una cláusula personalizada, primero necesitamos generar un contrato. ¿Te gustaría subir un estimado para crear un contrato?",
+          context: context
+        };
+      }
+    }
+    
+    // 2. Detectar solicitudes de ejemplos de cláusulas
+    if (message.toLowerCase().includes("ejemplo de cláusula") ||
+        message.toLowerCase().includes("ejemplo de clausula") ||
+        message.toLowerCase().includes("ejemplos de cláusulas") ||
+        message.toLowerCase().includes("ejemplos de clausulas") ||
+        message.toLowerCase().includes("sugerir cláusula") ||
+        message.toLowerCase().includes("sugerir clausula")) {
+      
+      return {
+        message: "Aquí tienes algunos ejemplos de cláusulas comunes que podrías añadir a tu contrato:\n\n" +
+                "1. **Cláusula de Limpieza**: \"El contratista se compromete a mantener el área de trabajo limpia y a remover todos los desechos y materiales sobrantes al finalizar el proyecto.\"\n\n" +
+                "2. **Cláusula Pepsi**: \"Si el cliente proporciona bebidas refrescantes durante el trabajo, deben incluir productos de Pepsi y no de la competencia.\"\n\n" +
+                "3. **Cláusula de Garantía Extendida**: \"El contratista ofrece una garantía extendida de 2 años adicionales sobre la mano de obra, que se suma a la garantía estándar de 1 año especificada en el contrato.\"\n\n" +
+                "4. **Cláusula de Mascotas**: \"El cliente debe mantener a las mascotas alejadas del área de trabajo durante toda la duración del proyecto por razones de seguridad.\"\n\n" +
+                "¿Te gustaría añadir alguna de estas cláusulas o tienes una cláusula personalizada en mente?",
+        context: context
+      };
+    }
+    
+    // 3. Detectar preguntas sobre qué se puede corregir en un contrato
+    if (message.toLowerCase().includes("qué puedo corregir") ||
+        message.toLowerCase().includes("que puedo corregir") ||
+        message.toLowerCase().includes("qué puedo modificar") ||
+        message.toLowerCase().includes("que puedo modificar") ||
+        message.toLowerCase().includes("qué información puedo cambiar") ||
+        message.toLowerCase().includes("que información puedo cambiar")) {
+      
+      // Verificar si hay un contrato generado
+      if (context.datos_extraidos) {
+        return {
+          message: "Puedes corregir o modificar diversos aspectos del contrato, incluyendo:\n\n" +
+                  "**Información del Cliente:**\n" +
+                  "- Nombre del cliente\n" +
+                  "- Dirección del cliente\n" +
+                  "- Teléfono del cliente\n" +
+                  "- Email del cliente\n\n" +
+                  "**Información del Contratista:**\n" +
+                  "- Nombre del contratista\n" +
+                  "- Dirección del contratista\n" +
+                  "- Información de contacto\n" +
+                  "- Número de licencia\n\n" +
+                  "**Detalles del Proyecto:**\n" +
+                  "- Tipo de cerca\n" +
+                  "- Altura y longitud\n" +
+                  "- Material utilizado\n" +
+                  "- Fecha de inicio\n" +
+                  "- Descripción del proyecto\n\n" +
+                  "**Información de Pago:**\n" +
+                  "- Costo total\n" +
+                  "- Monto del depósito\n" +
+                  "- Forma de pago\n\n" +
+                  "Para corregir cualquiera de estos campos, simplemente escribe algo como \"El nombre del cliente es [nombre correcto]\" o \"La altura de la cerca es [altura correcta]\".",
+          context: context
+        };
+      } else {
+        return {
+          message: "Para corregir información en un contrato, primero necesitamos generar uno. ¿Te gustaría subir un estimado para crear un contrato?",
+          context: context
+        };
+      }
+    }
+    
+    // 4. Detectar mensajes sobre generación de contratos
+    if (message.toLowerCase().includes("genera un contrato") ||
+        message.toLowerCase().includes("generar contrato") ||
+        message.toLowerCase().includes("crear contrato") ||
+        message.toLowerCase().includes("hacer un contrato") ||
+        message.toLowerCase() === "2. generar contrato" ||
+        message.toLowerCase() === "generar contrato") {
+      
+      return {
+        message: "Para generar un contrato, necesito un estimado en formato PDF que contenga la información del proyecto. Por favor, usa el ícono de clip en la barra de chat para cargar tu archivo PDF.",
+        context: context
+      };
+    }
+    
+    // Si no es un mensaje que podemos manejar localmente, enviarlo a la API
     const response = await apiRequest("POST", "/api/chat", {
       message,
       context,
