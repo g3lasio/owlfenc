@@ -1,145 +1,238 @@
 import axios from 'axios';
-import fs from 'fs';
-import dotenv from 'dotenv';
+import * as fs from 'fs';
 
-dotenv.config();
+// Interfaz para los datos de cliente y proyecto extraídos
+export interface DatosExtraidos {
+  cliente?: {
+    nombre?: string;
+    direccion?: string;
+    telefono?: string;
+    email?: string;
+  };
+  proyecto?: {
+    tipoCerca?: string;
+    altura?: string;
+    longitud?: string;
+    ubicacion?: string;
+    estilo?: string;
+    material?: string;
+  };
+  presupuesto?: {
+    subtotal?: string;
+    impuestos?: string;
+    total?: string;
+    deposito?: string;
+  };
+}
 
-class MistralService {
+/**
+ * Servicio para interactuar con la API de Mistral AI
+ * Reemplaza la funcionalidad de OCR de OpenAI GPT-4 Vision
+ */
+export class MistralService {
+  private baseUrl: string;
   private apiKey: string;
-  private baseURL: string = 'https://api.mistral.ai/v1';
-
+  
   constructor() {
+    this.baseUrl = 'https://api.mistral.ai/v1';
     this.apiKey = process.env.MISTRAL_API_KEY || '';
+    
     if (!this.apiKey) {
-      console.warn('MISTRAL_API_KEY no está configurada. MistralService no funcionará correctamente.');
+      console.error('ADVERTENCIA: MISTRAL_API_KEY no está configurada');
     }
   }
-
+  
   /**
-   * Extrae datos de un PDF usando Mistral AI con capacidades OCR
-   * @param pdfPath Ruta del archivo PDF
-   * @param prompt Instrucción detallada sobre qué datos extraer
-   * @returns Objeto con los datos extraídos del PDF
+   * Extrae información relevante del PDF del estimado
    */
-  async extractDataFromPDF(pdfPath: string, prompt: string): Promise<any> {
+  async extraerInformacionPDF(pdfBuffer: Buffer): Promise<DatosExtraidos> {
+    if (!this.apiKey) {
+      throw new Error('MISTRAL_API_KEY no está configurada');
+    }
+    
     try {
-      if (!this.apiKey) {
-        throw new Error('MISTRAL_API_KEY no está configurada');
-      }
+      console.log('Iniciando extracción con Mistral AI...');
+      
+      // Convertir el PDF a base64
+      const pdfBase64 = pdfBuffer.toString('base64');
+      
+      const prompt = `
+Eres un asistente especializado en extraer información estructurada de PDFs de estimados de construcción de cercas. 
+Tu tarea es extraer la siguiente información del documento:
 
-      // Leer el archivo PDF como base64
-      const fileBuffer = fs.readFileSync(pdfPath);
-      const base64PDF = fileBuffer.toString('base64');
+1. Información del cliente: nombre, dirección, teléfono, email
+2. Detalles del proyecto: tipo de cerca, altura, longitud, ubicación, estilo y material
+3. Información de precios: subtotal, impuestos, total y depósito requerido
 
-      // Llamar a la API de Mistral con el archivo PDF
+Devuelve ÚNICAMENTE un objeto JSON con esta estructura:
+{
+  "cliente": {
+    "nombre": "",
+    "direccion": "",
+    "telefono": "",
+    "email": ""
+  },
+  "proyecto": {
+    "tipoCerca": "",
+    "altura": "",
+    "longitud": "",
+    "ubicacion": "",
+    "estilo": "",
+    "material": ""
+  },
+  "presupuesto": {
+    "subtotal": "",
+    "impuestos": "",
+    "total": "",
+    "deposito": ""
+  }
+}
+
+Si no encuentras algún dato, deja el campo vacío. NO incluyas explicaciones adicionales, solo el JSON.
+      `;
+      
+      // Configurar la petición a la API de Mistral
       const response = await axios.post(
-        `${this.baseURL}/chat/completions`,
+        `${this.baseUrl}/chat/completions`,
         {
-          model: "mistral-large-latest", // Usar el mejor modelo de Mistral para OCR
+          model: 'mistral-large-latest', // Usar el modelo más avanzado para OCR
           messages: [
             {
-              role: "user",
+              role: 'user',
               content: [
                 {
-                  type: "text",
-                  text: prompt
+                  type: 'text',
+                  text: prompt,
                 },
                 {
-                  type: "image",
+                  type: 'image',
                   image: {
-                    data: base64PDF,
-                    // Especificar application/pdf para indicar que es un documento PDF
-                    media_type: "application/pdf"
-                  }
-                }
-              ]
-            }
+                    data: pdfBase64,
+                    mime_type: 'application/pdf',
+                  },
+                },
+              ],
+            },
           ],
-          response_format: { type: "json_object" }
+          temperature: 0.1, // Baja temperatura para respuestas más precisas
+          response_format: { type: 'json_object' },
         },
         {
           headers: {
+            'Content-Type': 'application/json',
             'Authorization': `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json'
-          }
+          },
         }
       );
-
-      // Extraer y devolver la respuesta
-      const result = response.data.choices[0].message.content;
-      console.log('Respuesta de Mistral AI:', result);
       
-      return JSON.parse(result);
+      // Extraer y parsear la respuesta
+      const content = response.data.choices[0].message.content;
+      
+      try {
+        const datosExtraidos = JSON.parse(content);
+        console.log('Datos extraídos correctamente:', datosExtraidos);
+        return datosExtraidos;
+      } catch (parseError) {
+        console.error('Error parseando la respuesta JSON:', parseError);
+        
+        // Intentar extraer JSON de la respuesta en caso de que venga con texto adicional
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          try {
+            const jsonContent = jsonMatch[0];
+            const datosExtraidos = JSON.parse(jsonContent);
+            console.log('Datos extraídos del match:', datosExtraidos);
+            return datosExtraidos;
+          } catch (secondParseError) {
+            console.error('Error en segundo intento de parsing:', secondParseError);
+          }
+        }
+        
+        throw new Error('No se pudo parsear la respuesta del modelo');
+      }
     } catch (error: any) {
-      console.error('Error en MistralService:', error.response?.data || error.message);
-      throw new Error(`Error al procesar el PDF con Mistral AI: ${error.message}`);
+      console.error('Error extrayendo información con Mistral AI:', error);
+      
+      if (error.response) {
+        console.error('Detalles del error:', error.response.data);
+      }
+      
+      throw new Error('Error procesando el PDF con Mistral AI');
     }
   }
-
+  
   /**
-   * Genera cláusulas personalizadas para contratos basadas en una descripción
-   * @param projectDescription Descripción del proyecto
-   * @returns Array de cláusulas generadas
+   * Genera un contrato utilizando los datos extraídos
    */
-  async generateCustomClauses(projectDescription: string): Promise<string[]> {
+  async generarContrato(datos: DatosExtraidos, informacionAdicional: any = {}): Promise<string> {
+    if (!this.apiKey) {
+      throw new Error('MISTRAL_API_KEY no está configurada');
+    }
+    
     try {
-      if (!this.apiKey) {
-        throw new Error('MISTRAL_API_KEY no está configurada');
-      }
-
+      const datosCompletos = {
+        ...datos,
+        adicional: informacionAdicional,
+      };
+      
       const prompt = `
-        Basándote en esta descripción de proyecto de instalación de cerca:
-        
-        "${projectDescription}"
-        
-        Genera 5 cláusulas contractuales específicas que deberían incluirse en un contrato formal. 
-        Considera aspectos como:
-        
-        - Especificaciones técnicas de instalación
-        - Materiales a utilizar
-        - Garantías específicas para este tipo de cerca
-        - Aclaraciones sobre la preparación del terreno
-        - Responsabilidades del cliente
-        - Condiciones climáticas y su impacto en la instalación
-        - Gestión de residuos/escombros
-        
-        Devuelve un array JSON de strings, donde cada string sea una cláusula completa.
-      `;
+Eres un abogado especializado en contratos de construcción de cercas. 
+Tu tarea es generar un contrato completo y profesional utilizando la siguiente información:
 
+${JSON.stringify(datosCompletos, null, 2)}
+
+El contrato debe incluir:
+1. Encabezado con información de la empresa "Owl Fence Co."
+2. Información del cliente y detalles del proyecto
+3. Alcance del trabajo con especificaciones detalladas
+4. Precio total, términos de pago y calendario de pagos
+5. Calendario de proyecto con fecha de inicio y duración estimada
+6. Garantías del trabajo
+7. Términos y condiciones estándar
+8. Espacios para firmas
+
+Genera el contrato en HTML usando clases de Tailwind para una presentación profesional.
+Usa sections, divs y otros elementos HTML para estructurar adecuadamente el documento.
+NO incluyas elementos que no se renderizarían en un PDF (como scripts o interacciones).
+Mantén un diseño limpio y profesional adecuado para un documento legal.
+      `;
+      
+      // Configurar la petición a la API de Mistral
       const response = await axios.post(
-        `${this.baseURL}/chat/completions`,
+        `${this.baseUrl}/chat/completions`,
         {
-          model: "mistral-large-latest",
+          model: 'mistral-large-latest',
           messages: [
-            { role: "user", content: prompt }
+            {
+              role: 'user',
+              content: prompt,
+            },
           ],
-          response_format: { type: "json_object" }
+          temperature: 0.4,
+          max_tokens: 4000,
         },
         {
           headers: {
+            'Content-Type': 'application/json',
             'Authorization': `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json'
-          }
+          },
         }
       );
-
-      const result = response.data.choices[0].message.content;
-      const clauses = JSON.parse(result);
       
-      return Array.isArray(clauses) ? clauses : [];
+      // Extraer y devolver el HTML generado
+      const htmlContrato = response.data.choices[0].message.content;
+      return htmlContrato;
     } catch (error: any) {
-      console.error('Error generando cláusulas con Mistral:', error.response?.data || error.message);
+      console.error('Error generando contrato con Mistral AI:', error);
       
-      // En caso de error, devolvemos cláusulas predeterminadas
-      return [
-        "El contratista garantiza la calidad de los materiales utilizados por un período de 1 año.",
-        "El cliente será responsable de marcar correctamente las líneas de propiedad antes de la instalación.",
-        "Cualquier modificación al diseño original requerirá aprobación por escrito y podría generar costos adicionales.",
-        "El contratista no es responsable por daños a líneas de servicios no marcadas adecuadamente.",
-        "Los tiempos de instalación están sujetos a condiciones climáticas favorables."
-      ];
+      if (error.response) {
+        console.error('Detalles del error:', error.response.data);
+      }
+      
+      throw new Error('Error generando el contrato con Mistral AI');
     }
   }
 }
 
+// Exportar una instancia única del servicio
 export const mistralService = new MistralService();

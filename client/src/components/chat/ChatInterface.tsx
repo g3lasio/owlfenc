@@ -360,6 +360,15 @@ export default function ChatInterface() {
     setIsUploadingContract(true);
     
     try {
+      // Mostrar mensaje de procesamiento
+      const processingMessage: Message = {
+        id: `processing-${Date.now()}`,
+        content: "Estoy procesando tu PDF y extrayendo la información con tecnología OCR de Mistral AI...",
+        sender: "assistant",
+      };
+      
+      setMessages((prev) => [...prev, processingMessage]);
+      
       // Crear un FormData para enviar el archivo
       const formData = new FormData();
       formData.append('pdf', selectedFile);
@@ -379,27 +388,58 @@ export default function ChatInterface() {
       // Cerrar el modal
       setIsContractModalOpen(false);
       
-      // Mostrar el contrato generado como mensaje en el chat
-      const templateMessage: Message = {
-        id: `template-${Date.now()}`,
-        content: "Aquí está el contrato generado basado en tu PDF:",
-        sender: "assistant",
-        template: {
-          type: "contract",
-          html: data.contrato_html,
-        },
-      };
-      
-      setMessages((prev) => [...prev, templateMessage]);
-      
-      // Guardar el contrato base64 en el contexto para descargarlo después si es necesario
+      // Guardar los datos extraídos en el contexto
       setContext((prev) => ({
         ...prev,
+        datos_extraidos: data.datos_extraidos,
         contrato_pdf_base64: data.contrato_pdf_base64,
       }));
       
+      // Mostrar mensaje sobre los datos extraídos
+      const extractionMessage: Message = {
+        id: `extraction-${Date.now()}`,
+        content: `¡He analizado el PDF y extraído la información principal! Aquí están los detalles que pude identificar:\n\n- Cliente: ${data.datos_extraidos.cliente?.nombre || 'No identificado'}\n- Tipo de cerca: ${data.datos_extraidos.proyecto?.tipoCerca || 'No identificado'}\n- Altura: ${data.datos_extraidos.proyecto?.altura || 'No identificada'} pies\n- Longitud: ${data.datos_extraidos.proyecto?.longitud || 'No identificada'} pies\n- Precio total: $${data.datos_extraidos.presupuesto?.total || 'No identificado'}`,
+        sender: "assistant",
+      };
+      
+      setMessages((prev) => [...prev, extractionMessage]);
+      
+      // Solicitar información adicional
+      setTimeout(() => {
+        const questionMessage: Message = {
+          id: `question-${Date.now()}`,
+          content: "Para completar el contrato, necesito algunos detalles adicionales que no están en el estimado. Por favor, responde a estas preguntas:",
+          sender: "assistant",
+        };
+        
+        setMessages((prev) => [...prev, questionMessage]);
+        
+        // Preguntar por detalles adicionales uno por uno
+        setTimeout(() => {
+          const dateQuestion: Message = {
+            id: `date-question-${Date.now()}`,
+            content: "¿Cuándo planeas iniciar el proyecto? (Por favor, específica una fecha aproximada)",
+            sender: "assistant",
+          };
+          
+          setMessages((prev) => [...prev, dateQuestion]);
+        }, 800);
+      }, 1000);
+      
     } catch (error) {
       console.error("Error generando contrato:", error);
+      // Cerrar el modal en caso de error
+      setIsContractModalOpen(false);
+      
+      // Mostrar mensaje de error en el chat
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        content: "Lo siento, tuve problemas procesando el PDF. Por favor, verifica que el archivo sea legible y vuelve a intentarlo.",
+        sender: "assistant",
+      };
+      
+      setMessages((prev) => [...prev, errorMessage]);
+      
       toast({
         variant: "destructive",
         title: "Error",
