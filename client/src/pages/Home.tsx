@@ -98,51 +98,7 @@ export default function Home() {
         </div>
       </div>
       
-      {/* Acciones rápidas simplificadas */}
-      <h2 className="text-2xl font-bold mt-8 mb-4">Accesos Directos</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Link href="/projects/new">
-          <Card className="hover:shadow-md transition-all duration-300 hover:border-primary/50 h-full">
-            <CardContent className="p-6 flex items-center gap-4">
-              <div className="bg-primary/10 p-3 rounded-full">
-                <FileText className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-medium text-lg">Nuevo Contrato</h3>
-                <p className="text-muted-foreground text-sm">Crear contrato manualmente</p>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-        
-        <Link href="/property-verifier">
-          <Card className="hover:shadow-md transition-all duration-300 hover:border-green-500/50 h-full">
-            <CardContent className="p-6 flex items-center gap-4">
-              <div className="bg-green-500/10 p-3 rounded-full">
-                <HomeIcon className="h-6 w-6 text-green-500" />
-              </div>
-              <div>
-                <h3 className="font-medium text-lg">Verificar Propiedad</h3>
-                <p className="text-muted-foreground text-sm">Consultar información catastral</p>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-        
-        <Link href="/clients">
-          <Card className="hover:shadow-md transition-all duration-300 hover:border-amber-500/50 h-full">
-            <CardContent className="p-6 flex items-center gap-4">
-              <div className="bg-amber-500/10 p-3 rounded-full">
-                <Users className="h-6 w-6 text-amber-500" />
-              </div>
-              <div>
-                <h3 className="font-medium text-lg">Clientes</h3>
-                <p className="text-muted-foreground text-sm">Gestionar base de clientes</p>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-      </div>
+      
     </div>
   );
 }
