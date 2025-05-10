@@ -22,8 +22,8 @@
 }
 
 .chat-input-container {
-  position: absolute;
-  bottom: 35px; /* Ajustado para dejar espacio para el footer */
+  position: fixed;
+  bottom: 30px; /* Ajustado para posicionarse justo encima del footer */
   left: 0;
   right: 0;
   background-color: hsl(var(--background));
@@ -37,7 +37,7 @@
 
 /* Footer styles */
 .chat-footer {
-  position: absolute;
+  position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
@@ -45,8 +45,8 @@
   background-color: hsl(var(--background));
   border-top: 1px solid hsl(var(--border));
   width: 100%;
-  font-size: 0.7rem;
-  height: 35px;
+  font-size: 0.65rem;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -278,7 +278,7 @@
     display: flex;
     flex-direction: column;
     position: relative;
-    padding-bottom: 120px;
+    padding-bottom: 100px; /* Ajustado para dar espacio al footer y chat input */
   }
 
   .messages-container {
@@ -289,8 +289,8 @@
   }
 
   .chat-input {
-    position: absolute;
-    bottom: 35px; /* Ajustado para posicionarse justo encima del footer */
+    position: fixed;
+    bottom: 30px; /* Ajustado para posicionarse justo encima del footer */
     left: 0;
     right: 0;
     background-color: hsl(var(--background));
