@@ -34,7 +34,7 @@ export async function generateEstimate(projectDetails: any): Promise<string> {
 // Función para formatear datos del proyecto para la generación de contrato
 // Eliminada para evitar conflicto con la importación de contractGenerator
 
-export async function generateContract(projectDetails: any): Promise<string> {
+export async function generateContract(projectDetails: any): Promise<{success: boolean, html: string}> {
   try {
     console.log("Iniciando generación de contrato con datos:", projectDetails);
     
@@ -53,10 +53,16 @@ export async function generateContract(projectDetails: any): Promise<string> {
     }
     
     console.log("Contrato generado exitosamente");
-    return data.html;
+    return {
+      success: true,
+      html: data.html
+    };
   } catch (error) {
     console.error("¡No manches! Error generando el contrato:", error);
-    throw error;
+    return {
+      success: false,
+      html: ""
+    };
   }
 }
 
