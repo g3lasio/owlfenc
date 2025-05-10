@@ -131,32 +131,32 @@
   :root {
     --background: 0 0% 7%;
     --foreground: 210 40% 98%;
-    
+
     --card: 0 0% 10%;
     --card-foreground: 210 40% 98%;
-    
+
     --popover: 0 0% 7%;
     --popover-foreground: 210 40% 98%;
-    
+
     --primary: 180 100% 50%;
     --primary-foreground: 0 0% 0%;
-    
+
     --secondary: 173 84% 65%;
     --secondary-foreground: 0 0% 7%;
-    
+
     --muted: 0 0% 15%;
     --muted-foreground: 215 16% 65%;
-    
+
     --accent: 180 100% 50%;
     --accent-foreground: 0 0% 0%;
-    
+
     --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
-    
+
     --border: 180 100% 50%;
     --input: 0 0% 15%;
     --ring: 180 100% 50%;
-    
+
     --sidebar-background: 0 0% 10%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 180 100% 50%;
@@ -165,30 +165,30 @@
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 180 100% 50%;
     --sidebar-ring: 180 100% 50%;
-    
+
     --radius: 0.5rem;
   }
-  
+
   * {
     @apply border-border;
   }
-  
+
   body {
     @apply font-dubai antialiased bg-background text-foreground;
   }
-  
+
   h1, h2, h3, h4, h5, h6 {
     @apply font-quantico;
   }
-  
+
   input, textarea, select, .form-input {
     @apply border-accent focus:ring-accent focus:border-accent font-dubai;
   }
-  
+
   button, .btn {
     @apply focus:ring-accent font-quantico;
   }
-  
+
   p, span, div {
     @apply font-dubai;
   }
@@ -200,46 +200,46 @@
   .react-select__menu {
     @apply border-input bg-white text-slate-900 !important;
   }
-  
+
   .react-select__input, 
   .react-select__single-value,
   .react-select__option {
     @apply text-slate-900 font-medium !important;
   }
-  
+
   .react-select__placeholder {
     @apply text-slate-500 !important;
   }
-  
+
   .react-select__option--is-focused,
   .react-select__option:hover {
     @apply bg-primary/10 !important;
   }
-  
+
   /* Aumentar la especificidad para asegurar que los estilos sean aplicados */
   div.react-select__control div.react-select__value-container div.react-select__input-container,
   div.react-select__control div.react-select__value-container div.react-select__single-value {
     @apply text-slate-900 !important;
     color: rgb(15, 23, 42) !important;
   }
-  
+
   /* Chat message styles */
   .chat-message {
     @apply max-w-[85%] rounded-2xl mb-3 py-3 px-4 break-words border border-accent;
   }
-  
+
   .user-message {
     @apply bg-primary text-primary-foreground rounded-tr-sm ml-auto;
   }
-  
+
   .bot-message {
     @apply bg-card text-foreground rounded-tl-sm;
   }
-  
+
   .scrollbar-hide {
     scrollbar-width: none;
   }
-  
+
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
@@ -249,7 +249,7 @@
     flex-direction: column-reverse;
     height: 100%;
   }
-  
+
   .chat-outer-container {
     position: relative;
     height: 100%;
@@ -286,35 +286,42 @@
   .template-preview {
     @apply font-dubai p-8 bg-white text-slate-800 max-h-[400px] overflow-y-auto rounded-lg;
   }
-  
+
   .template-preview h1,
   .template-preview h2 {
     @apply font-quantico text-slate-900;
   }
-  
+
   .template-preview table {
     @apply border-collapse w-full;
   }
-  
+
   .template-preview th,
   .template-preview td {
     @apply border border-slate-300 p-2;
   }
-  
+
   .template-preview th {
     @apply bg-slate-100;
   }
-  
+
   /* Footer styles */
   .chat-footer {
-    position: fixed;
+    position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
+    background-color: hsl(var(--background));
+    border-top: 1px solid hsl(var(--border));
     z-index: 40;
-    padding-bottom: 3px;
+    padding: 4px 0;
   }
-  
+
+  .footer-content {
+    max-width: 100%;
+    margin: 0 auto;
+  }
+
   .footer-gradient {
     background: linear-gradient(90deg, 
       rgba(0, 150, 255, 0.12) 0%, 
@@ -327,7 +334,7 @@
     width: 100%;
     backdrop-filter: blur(5px);
   }
-  
+
   .footer-content {
     display: flex;
     justify-content: space-between;
@@ -339,7 +346,7 @@
     font-size: 0.75rem;
     letter-spacing: 0.02em;
   }
-  
+
   .footer-link {
     color: hsl(var(--primary));
     opacity: 0.75;
@@ -348,27 +355,27 @@
     text-shadow: 0 0 8px hsla(var(--primary), 0.3);
     font-weight: 400;
   }
-  
+
   .footer-link:hover {
     opacity: 1;
     text-decoration: underline;
     text-shadow: 0 0 12px hsla(var(--primary), 0.5);
   }
-  
+
   .footer-copyright {
     color: hsl(var(--muted-foreground));
     font-size: 0.7rem;
     text-align: center;
     opacity: 0.85;
   }
-  
+
   /* Responsive adjustments */
   @media (max-width: 640px) {
     .footer-content {
       padding: 0 0.75rem;
       font-size: 0.7rem;
     }
-    
+
     .footer-copyright {
       font-size: 0.65rem;
       max-width: 150px;
@@ -377,7 +384,7 @@
       text-overflow: ellipsis;
     }
   }
-  
+
   /* Make sure the chat input is repositioned to accommodate the footer */
   .chat-input {
     position: fixed;
@@ -388,7 +395,7 @@
     border-top: 1px solid hsl(var(--border));
     z-index: 50;
   }
-  
+
   /* Adjust the container padding for the repositioned chat input and footer */
   .chat-container {
     height: 100%;
