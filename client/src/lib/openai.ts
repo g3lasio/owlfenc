@@ -1,5 +1,6 @@
 
 import { apiRequest } from "./queryClient";
+import { contractQuestionService } from "./contractQuestionService";
 // Commenting out woodFenceRules import as it's causing type issues and isn't used in this file
 // import { woodFenceRules } from '../data/rules/woodfencerules.js';
 
@@ -588,14 +589,45 @@ export async function processChatMessage(message: string, context: any): Promise
       let responseMsg = "";
       switch (newMode) {
         case MervinMode.CONTRACT:
-          responseMsg = "Entendido. Estoy listo para ayudarte a generar un contrato. ¿Quieres cargar un PDF de estimado o ingresar los datos manualmente?";
+          // Si ya tenemos datos extraídos, analizar qué información falta
+          if (context.datos_extraidos) {
+            // Analizar los datos existentes del PDF
+            const analisis = contractQuestionService.analizarDatos(context.datos_extraidos);
+            
+            if (analisis.porcentajeCompletado >= 90) {
+              // Si ya tenemos suficiente información del PDF, ofrecer generar el contrato
+              responseMsg = `¡Excelente! Ya tengo casi toda la información necesaria del PDF (${analisis.porcentajeCompletado}% completado).\n\n${contractQuestionService.generarResumen(context.datos_extraidos)}\n\n¿Quieres proceder a generar el contrato o ajustar algún dato?`;
+            } else {
+              // Si falta información, obtener la próxima pregunta
+              const proximaPregunta = contractQuestionService.obtenerProximaPregunta(context.datos_extraidos);
+              
+              if (proximaPregunta) {
+                // Activar modo recopilación para manejar las respuestas
+                responseMsg = `He extraído algo de información del PDF (${analisis.porcentajeCompletado}% completado), pero necesito algunos datos adicionales.\n\n${proximaPregunta.texto}`;
+                updatedContext.recopilacionDatos = {
+                  activa: true,
+                  servicioContrato: true,
+                  preguntaActual: proximaPregunta.campo,
+                  datos: context.datos_extraidos
+                };
+              } else {
+                responseMsg = "He analizado los datos del PDF. ¿Quieres generar el contrato ahora?";
+              }
+            }
+          } else {
+            // Si no hay datos previos, preguntar cómo obtenerlos
+            responseMsg = "Entendido. Estoy listo para ayudarte a generar un contrato. ¿Quieres cargar un PDF de estimado o ingresar los datos manualmente?";
+          }
           break;
+          
         case MervinMode.ESTIMATE:
           responseMsg = "Perfecto. Vamos a crear un estimado. ¿Tienes los detalles del proyecto o quieres que te guíe a través del proceso?";
           break;
+          
         case MervinMode.OWNERSHIP:
           responseMsg = "Cambié al modo de verificación de propiedad. Por favor proporciona la dirección que deseas verificar.";
           break;
+          
         case MervinMode.PERMITS:
           responseMsg = "Ahora estoy en modo asesor de permisos. ¿En qué jurisdicción necesitas información sobre permisos de construcción?";
           break;
