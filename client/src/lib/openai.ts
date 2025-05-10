@@ -83,6 +83,54 @@ export async function processPDFForContract(pdfFile: File): Promise<{
   }
 }
 
+/**
+ * Actualiza un contrato con cláusulas personalizadas o datos adicionales
+ * @param datos_extraidos Datos originales extraídos del PDF
+ * @param clausulas_adicionales Lista de cláusulas personalizadas a añadir
+ * @param informacion_adicional Información adicional o correcciones a datos existentes
+ * @returns HTML actualizado del contrato
+ */
+export async function actualizarContrato(
+  datos_extraidos: any, 
+  clausulas_adicionales?: string[],
+  informacion_adicional?: any
+): Promise<{
+  contrato_html: string;
+  datos_actualizados: any;
+}> {
+  try {
+    console.log('Solicitando actualización de contrato con cláusulas adicionales:', clausulas_adicionales);
+    
+    // Enviar la petición a la API
+    const response = await fetch('/api/ajustar-contrato', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        datos_extraidos,
+        clausulas_adicionales,
+        informacion_adicional
+      }),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Error ajustando el contrato');
+    }
+    
+    const data = await response.json();
+    
+    return {
+      contrato_html: data.contrato_html,
+      datos_actualizados: data.datos_actualizados
+    };
+  } catch (error) {
+    console.error("¡Órale! Error actualizando el contrato:", error);
+    throw error;
+  }
+}
+
 export async function processChatMessage(message: string, context: any): Promise<any> {
   try {
     console.log('Chat context being used:', context);

@@ -7,7 +7,7 @@ import EstimatePreview from "../templates/EstimatePreview";
 import ContractPreview from "../templates/ContractPreview";
 import ManualEstimateForm from "../estimates/ManualEstimateForm";
 import { AnalysisEffect } from "../effects/AnalysisEffect";
-import { processChatMessage, processPDFForContract } from "@/lib/openai";
+import { processChatMessage, processPDFForContract, actualizarContrato } from "@/lib/openai";
 import { downloadEstimatePDF, downloadContractPDF, downloadPDF } from "@/lib/pdf";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 export interface Message {
   id: string;
@@ -590,9 +591,130 @@ Total: ${result.datos_extraidos.presupuesto.total || "No encontrado"}
       id: `bot-${Date.now()}`,
       content: "Entiendo que deseas ajustar tu contrato generado. Por favor, especifícame claramente qué deseas ajustar o añadir en el contrato para proceder con los cambios necesarios.",
       sender: "assistant",
+      actions: [
+        {
+          label: "Añadir Cláusula Personalizada",
+          onClick: () => handleAddCustomClause(),
+        },
+        {
+          label: "Corregir Información",
+          onClick: () => handleCorrectMissingInfo(),
+        }
+      ],
     };
     
     setMessages((prev) => [...prev, botMessage]);
+  };
+  
+  // Estado para manejar el diálogo de cláusulas personalizadas
+  const [customClauseDialogOpen, setCustomClauseDialogOpen] = useState(false);
+  const [customClause, setCustomClause] = useState("");
+  const [allCustomClauses, setAllCustomClauses] = useState<string[]>([]);
+  
+  // Función para mostrar diálogo de añadir cláusula personalizada
+  const handleAddCustomClause = () => {
+    setCustomClauseDialogOpen(true);
+  };
+  
+  // Función para agregar la cláusula personalizada
+  const handleAddClauseToContract = async () => {
+    if (!customClause.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Por favor, escribe una cláusula para añadir al contrato.",
+      });
+      return;
+    }
+    
+    setCustomClauseDialogOpen(false);
+    
+    // Añadir la cláusula a la lista
+    const updatedClauses = [...allCustomClauses, customClause];
+    setAllCustomClauses(updatedClauses);
+    
+    // Mensaje que confirma la recepción de la cláusula
+    const confirmationMessage: Message = {
+      id: `confirmation-${Date.now()}`,
+      content: `He recibido tu cláusula personalizada: "${customClause}". La agregaré al contrato.`,
+      sender: "assistant",
+    };
+    
+    setMessages((prev) => [...prev, confirmationMessage]);
+    
+    // Verificar si tenemos los datos necesarios en el contexto
+    if (!context.datos_extraidos) {
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        content: "Lo siento, no puedo encontrar los datos del contrato original. Por favor, genera un contrato nuevo subiendo el PDF del estimado.",
+        sender: "assistant",
+      };
+      
+      setMessages((prev) => [...prev, errorMessage]);
+      return;
+    }
+    
+    try {
+      // Mensaje de procesamiento
+      const processingMessage: Message = {
+        id: `processing-${Date.now()}`,
+        content: "Estoy actualizando tu contrato con la nueva cláusula personalizada...",
+        sender: "assistant",
+      };
+      
+      setMessages((prev) => [...prev, processingMessage]);
+      
+      // Actualizar el contrato con la nueva cláusula
+      const result = await actualizarContrato(
+        context.datos_extraidos,
+        updatedClauses
+      );
+      
+      // Actualizar el contexto con los datos actualizados
+      setContext((prev) => ({
+        ...prev,
+        datos_extraidos: result.datos_actualizados,
+      }));
+      
+      // Mostrar el contrato actualizado
+      const contractMessage: Message = {
+        id: `updated-contract-${Date.now()}`,
+        content: "He actualizado el contrato con tu cláusula personalizada. Aquí está la nueva versión:",
+        sender: "assistant",
+        template: {
+          type: "contract",
+          html: result.contrato_html,
+        },
+      };
+      
+      setMessages((prev) => prev.filter(m => m.id !== processingMessage.id).concat(contractMessage));
+      
+      // Limpiar la cláusula actual pero mantener la lista completa
+      setCustomClause("");
+      
+    } catch (error) {
+      console.error("Error al actualizar el contrato:", error);
+      
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        content: "Lo siento, ocurrió un error al actualizar el contrato. Por favor intenta de nuevo.",
+        sender: "assistant",
+      };
+      
+      setMessages((prev) => [...prev, errorMessage]);
+    }
+  };
+  
+  // Función para manejar información faltante o incorrecta
+  const handleCorrectMissingInfo = () => {
+    // Mensaje de Mervin solicitando la información
+    const promptMessage: Message = {
+      id: `prompt-${Date.now()}`,
+      content: "He detectado que faltan algunos datos importantes en el contrato. Por favor, especifica qué información deseas corregir o agregar (por ejemplo: 'El nombre del cliente es Juan Pérez' o 'El teléfono de contacto es 555-123-4567').",
+      sender: "assistant",
+    };
+    
+    setMessages((prev) => [...prev, promptMessage]);
   };
   
   // Función para generar contrato con los datos ya extraídos
