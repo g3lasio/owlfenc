@@ -14,6 +14,14 @@ export interface DatosExtraidos {
     telefono?: string;
     email?: string;
   };
+  contratista?: {
+    nombre?: string;
+    direccion?: string;
+    telefono?: string;
+    email?: string;
+    licencia?: string;
+    sitioWeb?: string;
+  };
   proyecto?: {
     tipoCerca?: string;
     altura?: string;
@@ -21,13 +29,18 @@ export interface DatosExtraidos {
     ubicacion?: string;
     estilo?: string;
     material?: string;
+    fechaInicio?: string;
+    duracionEstimada?: string;
+    descripcion?: string;
   };
   presupuesto?: {
     subtotal?: string;
     impuestos?: string;
     total?: string;
     deposito?: string;
+    formaPago?: string;
   };
+  clausulasAdicionales?: string[];
 }
 
 /**
@@ -141,12 +154,15 @@ export class MistralService {
       const pdfText = await this.extractTextFromPDF(pdfBuffer);
       
       const prompt = `
-Eres un asistente especializado en extraer información estructurada de PDFs de estimados de construcción de cercas. 
+Eres un asistente especializado en extraer información estructurada de PDFs de estimados de construcción de cercas.
 Tu tarea es extraer la siguiente información del texto extraído del documento:
 
-1. Información del cliente: nombre, dirección, teléfono, email
-2. Detalles del proyecto: tipo de cerca, altura, longitud, ubicación, estilo y material
-3. Información de precios: subtotal, impuestos, total y depósito requerido
+1. Información del cliente: nombre completo, dirección, teléfono, email
+2. Información del contratista: nombre de la empresa, dirección, teléfono, email, número de licencia, sitio web
+3. Detalles del proyecto: tipo de cerca, altura, longitud, ubicación, estilo, material, fecha de inicio (si está disponible), duración estimada, descripción del trabajo
+4. Información de precios: subtotal, impuestos, total y depósito requerido, forma de pago
+
+Es CRÍTICO extraer toda la información del contratista que figure en el documento, ya que será utilizada para un contrato legal.
 
 Devuelve ÚNICAMENTE un objeto JSON con esta estructura:
 {
@@ -156,19 +172,31 @@ Devuelve ÚNICAMENTE un objeto JSON con esta estructura:
     "telefono": "",
     "email": ""
   },
+  "contratista": {
+    "nombre": "",
+    "direccion": "",
+    "telefono": "",
+    "email": "",
+    "licencia": "",
+    "sitioWeb": ""
+  },
   "proyecto": {
     "tipoCerca": "",
     "altura": "",
     "longitud": "",
     "ubicacion": "",
     "estilo": "",
-    "material": ""
+    "material": "",
+    "fechaInicio": "",
+    "duracionEstimada": "",
+    "descripcion": ""
   },
   "presupuesto": {
     "subtotal": "",
     "impuestos": "",
     "total": "",
-    "deposito": ""
+    "deposito": "",
+    "formaPago": ""
   }
 }
 
@@ -252,6 +280,10 @@ Si no encuentras algún dato, deja el campo vacío. NO incluyas explicaciones ad
           model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
           messages: [
             {
+              role: "system",
+              content: "Eres un asistente especializado en extraer información detallada de documentos relacionados con construcción de cercas. Cuando hay información faltante en el documento, déjala en blanco pero NUNCA inventes datos. Es crítico extraer todos los datos disponibles del contratista y cliente para un contrato legal."
+            },
+            {
               role: "user",
               content: prompt
             }
@@ -296,20 +328,32 @@ Si no encuentras algún dato, deja el campo vacío. NO incluyas explicaciones ad
     };
     
     const prompt = `
-Eres un abogado especializado en contratos de construcción de cercas. 
+Eres un abogado especializado en contratos de construcción de cercas.
 Tu tarea es generar un contrato completo y profesional utilizando la siguiente información:
 
 ${JSON.stringify(datosCompletos, null, 2)}
 
+REQUISITOS CRÍTICOS:
+- Si falta la información del contratista, asume que es "Owl Fence Co." con dirección en "2901 Owens Ct, Fairfield, CA 94534 US" y número (202) 549-3519.
+- Si falta alguna información importante del cliente, MARCA CLARAMENTE esos datos faltantes con [FALTA: dato] para que puedan ser completados manualmente.
+- Si existen cláusulas adicionales, debes incluirlas exactamente como se proporcionan sin alterarlas, incluso si parecen inusuales.
+
 El contrato debe incluir:
-1. Encabezado con información de la empresa "Owl Fence Co."
-2. Información del cliente y detalles del proyecto
-3. Alcance del trabajo con especificaciones detalladas
-4. Precio total, términos de pago y calendario de pagos
-5. Calendario de proyecto con fecha de inicio y duración estimada
-6. Garantías del trabajo
-7. Términos y condiciones estándar
-8. Espacios para firmas
+1. Encabezado con información completa del contratista
+2. Información completa del cliente
+3. Detalles del proyecto con todas las especificaciones disponibles
+4. Alcance del trabajo con especificaciones detalladas
+5. Precio total, términos de pago y calendario de pagos
+6. Calendario de proyecto con fecha de inicio y duración estimada
+7. Garantías del trabajo (mínimo 1 año en mano de obra)
+8. Términos y condiciones estándar, incluyendo:
+   - Condiciones de cancelación
+   - Responsabilidades de las partes
+   - Proceso de modificación del contrato
+   - Resolución de disputas
+9. Cláusulas adicionales (si existen)
+10. Espacios para firmas de AMBAS PARTES con fecha
+11. Información de contacto del contratista para preguntas o emergencias
 
 Genera el contrato en HTML usando clases de Tailwind para una presentación profesional.
 Usa sections, divs y otros elementos HTML para estructurar adecuadamente el documento.
@@ -369,6 +413,10 @@ Mantén un diseño limpio y profesional adecuado para un documento legal.
         const openAIResponse = await openai.chat.completions.create({
           model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
           messages: [
+            {
+              role: "system",
+              content: "Eres un abogado experto especializado en contratos de construcción. Tu tarea es generar contratos legalmente vinculantes que incluyan toda la información necesaria. Debes marcar claramente la información faltante como [FALTA: dato] para que pueda ser completada manualmente. Si el contratista no se menciona, asume que es 'Owl Fence Co.' Si se incluyen cláusulas adicionales, agrégalas exactamente como se proporcionan sin juzgarlas."
+            },
             {
               role: "user",
               content: prompt
