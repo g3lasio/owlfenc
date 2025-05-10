@@ -294,12 +294,125 @@ function extractCompanyInfo(message: string) {
 }
 
 /**
+ * Función para analizar los campos requeridos basado en el template del contrato
+ * @param datos Los datos actuales recopilados
+ * @returns Objeto con información sobre los campos requeridos
+ */
+function analizarCamposContrato(datos: any): { 
+  faltantes: string[]; 
+  completos: string[]; 
+  opcional: string[];
+  porcentajeCompletado: number;
+} {
+  const camposFaltantes: string[] = [];
+  const camposCompletos: string[] = [];
+  const camposOpcionales: string[] = ['cliente.telefono', 'cliente.email', 'proyecto.estilo'];
+  
+  // 1. CAMPOS OBLIGATORIOS DEL CLIENTE (Sección Parties)
+  if (!datos.cliente?.nombre) {
+    camposFaltantes.push('cliente.nombre');
+  } else {
+    camposCompletos.push('cliente.nombre');
+  }
+  
+  if (!datos.cliente?.direccion) {
+    camposFaltantes.push('cliente.direccion');
+  } else {
+    camposCompletos.push('cliente.direccion');
+  }
+  
+  // 2. CAMPOS OBLIGATORIOS DEL CONTRATISTA (Sección Parties)
+  // Estos pueden venir pre-llenados desde el PDF o configuración
+  if (!datos.contratista?.nombre) {
+    camposFaltantes.push('contratista.nombre');
+  } else {
+    camposCompletos.push('contratista.nombre');
+  }
+  
+  if (!datos.contratista?.direccion) {
+    camposFaltantes.push('contratista.direccion');
+  } else {
+    camposCompletos.push('contratista.direccion');
+  }
+  
+  // 3. CAMPOS OBLIGATORIOS DEL PROYECTO (Sección Services Provided)
+  if (!datos.proyecto?.descripcion) {
+    camposFaltantes.push('proyecto.descripcion');
+  } else {
+    camposCompletos.push('proyecto.descripcion');
+  }
+  
+  if (!datos.proyecto?.tipoCerca) {
+    camposFaltantes.push('proyecto.tipoCerca');
+  } else {
+    camposCompletos.push('proyecto.tipoCerca');
+  }
+  
+  if (!datos.proyecto?.ubicacion && !datos.cliente?.direccion) {
+    camposFaltantes.push('proyecto.ubicacion');
+  } else {
+    camposCompletos.push('proyecto.ubicacion');
+  }
+  
+  if (!datos.proyecto?.material) {
+    camposFaltantes.push('proyecto.material');
+  } else {
+    camposCompletos.push('proyecto.material');
+  }
+  
+  // 4. CAMPOS OBLIGATORIOS DEL PRESUPUESTO (Sección Compensation)
+  if (!datos.presupuesto?.total) {
+    camposFaltantes.push('presupuesto.total');
+  } else {
+    camposCompletos.push('presupuesto.total');
+  }
+  
+  if (!datos.presupuesto?.deposito) {
+    camposFaltantes.push('presupuesto.deposito');
+  } else {
+    camposCompletos.push('presupuesto.deposito');
+  }
+  
+  // 5. CAMPOS OPCIONALES
+  // Si los campos opcionales están presentes, los marcamos como completos
+  if (datos.cliente?.telefono) {
+    camposCompletos.push('cliente.telefono');
+  }
+  
+  if (datos.cliente?.email) {
+    camposCompletos.push('cliente.email');
+  }
+  
+  // Calcular porcentaje de completitud (excluyendo campos opcionales)
+  const camposObligatorios = 10; // Número total de campos obligatorios analizados
+  const camposObligatoriosCompletos = camposCompletos.filter(
+    campo => !camposOpcionales.includes(campo)
+  ).length;
+  
+  const porcentajeCompletado = Math.round((camposObligatoriosCompletos / camposObligatorios) * 100);
+  
+  return {
+    faltantes: camposFaltantes,
+    completos: camposCompletos,
+    opcional: camposOpcionales,
+    porcentajeCompletado
+  };
+}
+
+/**
  * Función para validar qué campos son necesarios según el modo de operación
  * @param datos Los datos actuales recopilados
  * @param modo El modo actual del asistente
  * @returns Array con los nombres de los campos que faltan
  */
 function validarCamposNecesarios(datos: any, modo: MervinMode): string[] {
+  // Para el modo CONTRATO, usamos el análisis basado en template
+  if (modo === MervinMode.CONTRACT) {
+    const analisis = analizarCamposContrato(datos);
+    return analisis.faltantes;
+  }
+  
+  // Para otros modos, usamos la lógica anterior
   const camposFaltantes: string[] = [];
   
   // Campos comunes para todos los modos
@@ -308,13 +421,6 @@ function validarCamposNecesarios(datos: any, modo: MervinMode): string[] {
   
   // Campos específicos por modo
   switch (modo) {
-    case MervinMode.CONTRACT:
-      // Para contratos, lo más esencial es nombre cliente, dirección, y descripción del proyecto
-      if (!datos.proyecto?.descripcion) camposFaltantes.push('descripcion_proyecto');
-      if (!datos.presupuesto?.total) camposFaltantes.push('total_presupuesto');
-      // El teléfono y email son opcionales para contratos
-      break;
-      
     case MervinMode.ESTIMATE:
       // Para estimados necesitamos información detallada del proyecto
       if (!datos.proyecto?.tipoCerca) camposFaltantes.push('tipo_cerca');
