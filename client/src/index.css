@@ -228,27 +228,29 @@
 
   .chat-container {
     height: 100%;
-    overflow-y: auto;
-    padding-bottom: 100px;
     display: flex;
     flex-direction: column;
+    position: relative;
+    padding-bottom: 120px;
   }
 
   .messages-container {
     flex: 1;
     overflow-y: auto;
-    margin-bottom: 60px;
+    scrollbar-width: thin;
+    padding-bottom: 16px;
   }
 
   .chat-input {
     position: absolute;
-    bottom: 0;
+    bottom: 28px;
     left: 0;
     right: 0;
     background-color: hsl(var(--background));
     border-top: 1px solid hsl(var(--border));
     z-index: 50;
     padding: 8px;
+    margin: 0;
   }
 
   .template-preview {
