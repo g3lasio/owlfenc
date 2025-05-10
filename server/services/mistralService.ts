@@ -54,28 +54,17 @@ export class MistralService {
       console.log('Iniciando extracción con Mistral AI...');
       console.log(`Tamaño del PDF: ${pdfBuffer.length} bytes`);
       
-      // Importar PDF.js
-      const pdfjsLib = await import('pdfjs-dist');
-      // Configurar el worker
-      const pdfjsWorker = await import('pdfjs-dist/build/pdf.worker.js');
-      pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+      // Importar pdf-parse (más simple y confiable para Node.js)
+      const pdfParse = await import('pdf-parse');
       
-      // Cargar el PDF
-      console.log('Cargando PDF con pdf.js...');
-      const loadingTask = pdfjsLib.getDocument({ data: pdfBuffer });
-      const pdf = await loadingTask.promise;
-      console.log(`PDF cargado con ${pdf.numPages} páginas`);
+      // Extraer texto del PDF
+      console.log('Extrayendo texto del PDF con pdf-parse...');
+      const pdfData = await pdfParse.default(pdfBuffer);
+      const pdfText = pdfData.text;
       
-      // Extraer texto de las primeras 3 páginas (o menos si hay menos páginas)
-      let pdfText = '';
-      const pagesToExtract = Math.min(pdf.numPages, 3);
-      
-      for (let i = 1; i <= pagesToExtract; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        const textItems = textContent.items.map((item: any) => item.str).join(' ');
-        pdfText += textItems + ' ';
-      }
+      console.log(`PDF procesado con éxito. Páginas: ${pdfData.numpages}`);
+      console.log(`Texto extraído: ${pdfText.length} caracteres`);
+      console.log(`Muestra: ${pdfText.substring(0, 300)}...`);
       
       console.log(`Texto extraído del PDF (${pdfText.length} caracteres)`);
       console.log(`Muestra del texto: ${pdfText.substring(0, 300)}...`);
