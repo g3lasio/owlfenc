@@ -73,20 +73,22 @@ export default function ChatInterface() {
   const activateChat = async () => {
     setIsProcessing(true);
     try {
-      const response = await processChatMessage("START_CHAT", {
-        isInitialMessage: true,
-      });
-      if (response.message) {
-        setMessages([
-          {
-            id: "welcome",
-            content: response.message,
-            sender: "assistant",
-            options: response.options,
-          },
-        ]);
-        setIsChatActive(true);
-      }
+      // Mostrar opciones iniciales sin necesidad de llamar al API
+      setMessages([
+        {
+          id: "welcome",
+          content: "¡Hola! Soy Mervin, tu asistente virtual para proyectos de cercas. ¿En qué puedo ayudarte hoy?",
+          sender: "assistant",
+          options: [
+            { text: "1. Generar Estimado", clickable: true },
+            { text: "2. Generar Contrato", clickable: true },
+            { text: "3. Verificador de Propiedad", clickable: true },
+            { text: "4. Asesor de Permisos", clickable: true },
+            { text: "5. Insights y Análisis", clickable: true }
+          ],
+        },
+      ]);
+      setIsChatActive(true);
     } catch (error) {
       console.error("Error activating chat:", error);
       toast({
@@ -226,7 +228,45 @@ export default function ChatInterface() {
   };
 
   const handleOptionClick = (option: string) => {
-    handleSendMessage(option, option);
+    // Verificar si la opción seleccionada es para generar contrato
+    if (option === "2. Generar Contrato") {
+      // Mostrar mensaje del usuario
+      const userMessage: Message = {
+        id: `user-${Date.now()}`,
+        content: option,
+        sender: "user",
+      };
+      setMessages((prev) => [...prev, userMessage]);
+      
+      // Mostrar respuesta del asistente solicitando un PDF
+      setTimeout(() => {
+        const assistantMessage: Message = {
+          id: `bot-${Date.now()}`,
+          content: "Para generar un contrato, necesito que subas el PDF de un estimado existente. Esto me permitirá extraer toda la información relevante como cliente, detalles del proyecto y costos para crear un contrato personalizado.",
+          sender: "assistant",
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
+        
+        // Añadir segundo mensaje con el botón para subir el PDF
+        setTimeout(() => {
+          const uploadMessage: Message = {
+            id: `upload-${Date.now()}`,
+            content: "Por favor, haz clic en el botón a continuación para subir tu PDF:",
+            sender: "assistant",
+            options: [{ text: "Subir PDF del Estimado", clickable: true }],
+          };
+          setMessages((prev) => [...prev, uploadMessage]);
+        }, 800);
+      }, 600);
+    } 
+    // Verificar si es la opción para subir PDF
+    else if (option === "Subir PDF del Estimado") {
+      handleOpenContractModal();
+    }
+    // Para el resto de opciones, usar el comportamiento predeterminado
+    else {
+      handleSendMessage(option, option);
+    }
   };
 
   const handleDownloadPDF = async (
