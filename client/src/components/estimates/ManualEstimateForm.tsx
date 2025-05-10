@@ -465,8 +465,14 @@ export default function ManualEstimateForm({ onEstimateGenerated, onGenerate }: 
       
       const { html } = await response.json();
       
-      // Enviar el HTML al componente padre
-      onEstimateGenerated(html);
+      // Enviar el HTML al componente padre a través de cualquiera de los callbacks disponibles
+      if (onEstimateGenerated) {
+        onEstimateGenerated(html);
+      }
+      
+      if (onGenerate) {
+        onGenerate(html);
+      }
       
     } catch (error) {
       console.error('Error generando HTML del estimado:', error);

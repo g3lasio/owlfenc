@@ -1210,11 +1210,8 @@ Total: ${result.datos_extraidos.presupuesto?.total || "No encontrado"}
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      await handleDirectFileUpload(file);
-    }
+  const handleFileUpload = async (file: File) => {
+    await handleDirectFileUpload(file);
   };
 
   return (
