@@ -79,18 +79,18 @@ router.post('/generar-contrato', upload.single('pdf'), async (req, res) => {
         // No incluimos el PDF base64 para evitar respuestas demasiado grandes
         message: 'Contrato generado exitosamente'
       });
-    } catch (mistralError) {
+    } catch (mistralError: any) {
       console.error('Error procesando con Mistral AI:', mistralError);
       res.status(500).json({ 
         error: 'Error procesando el PDF con Mistral AI',
-        details: mistralError.message 
+        details: mistralError.message || 'Error desconocido'
       });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error en la ruta /generar-contrato:', error);
     res.status(500).json({ 
       error: 'Error al generar el contrato',
-      details: error.message
+      details: error.message || 'Error desconocido'
     });
   }
 });
@@ -119,11 +119,11 @@ router.post('/ajustar-contrato', async (req, res) => {
       contrato_html: contratoHTML,
       message: 'Contrato ajustado exitosamente'
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error ajustando el contrato:', error);
     res.status(500).json({ 
       error: 'Error al ajustar el contrato',
-      details: error.message
+      details: error.message || 'Error desconocido'
     });
   }
 });
