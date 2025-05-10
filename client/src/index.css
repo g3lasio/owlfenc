@@ -229,12 +229,13 @@
   .chat-container {
     height: 100%;
     overflow-y: auto;
-    padding-bottom: 120px;
+    padding-bottom: 180px; /* Increased padding to prevent content from being hidden */
   }
 
   .messages-container {
     flex: 1;
     margin-bottom: 0;
+    padding-bottom: 20px; /* Added padding to ensure last message is fully visible */
   }
 
   .chat-input {
@@ -245,6 +246,7 @@
     background-color: hsl(var(--background));
     border-top: 1px solid hsl(var(--border));
     z-index: 50;
+    padding-bottom: env(safe-area-inset-bottom); /* Added for better mobile support */
   }
 
   .template-preview {
