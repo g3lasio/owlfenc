@@ -54,35 +54,35 @@ export class MistralService {
       console.log('Iniciando extracción con Mistral AI...');
       console.log(`Tamaño del PDF: ${pdfBuffer.length} bytes`);
       
-      // Importar la librería de conversión de PDF a imagen
-      const pdfImgConvert = await import('pdf-img-convert');
+      // Importar PDF.js
+      const pdfjsLib = await import('pdfjs-dist');
+      // Configurar el worker
+      const pdfjsWorker = await import('pdfjs-dist/build/pdf.worker.js');
+      pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
       
-      console.log('Convirtiendo PDF a imagen...');
+      // Cargar el PDF
+      console.log('Cargando PDF con pdf.js...');
+      const loadingTask = pdfjsLib.getDocument({ data: pdfBuffer });
+      const pdf = await loadingTask.promise;
+      console.log(`PDF cargado con ${pdf.numPages} páginas`);
       
-      // Opciones para la conversión de PDF a imagen
-      const options = {
-        width: 1500,
-        height: 2000,
-        quality: 95,
-        pages: [1] // Sólo convertir la primera página
-      };
+      // Extraer texto de las primeras 3 páginas (o menos si hay menos páginas)
+      let pdfText = '';
+      const pagesToExtract = Math.min(pdf.numPages, 3);
       
-      // Convertir PDF a imagen
-      const outputImages = await pdfImgConvert.convert(pdfBuffer, options);
-      console.log(`PDF convertido a ${outputImages.length} imágenes`);
+      for (let i = 1; i <= pagesToExtract; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const textItems = textContent.items.map((item: any) => item.str).join(' ');
+        pdfText += textItems + ' ';
+      }
       
-      // Tomar la primera imagen (primera página del PDF)
-      const imageBuffer = Buffer.from(outputImages[0]);
-      
-      // Convertir la imagen a base64
-      const imageBase64 = imageBuffer.toString('base64');
-      console.log(`Imagen convertida a base64. Longitud: ${imageBase64.length} caracteres`);
-      console.log(`Primeros 100 caracteres del base64: ${imageBase64.substring(0, 100)}...`);
-      console.log('Configurando petición a la API de Mistral con la imagen...');
+      console.log(`Texto extraído del PDF (${pdfText.length} caracteres)`);
+      console.log(`Muestra del texto: ${pdfText.substring(0, 300)}...`);
       
       const prompt = `
 Eres un asistente especializado en extraer información estructurada de PDFs de estimados de construcción de cercas. 
-Tu tarea es extraer la siguiente información del documento:
+Tu tarea es extraer la siguiente información del texto extraído del documento:
 
 1. Información del cliente: nombre, dirección, teléfono, email
 2. Detalles del proyecto: tipo de cerca, altura, longitud, ubicación, estilo y material
@@ -112,29 +112,23 @@ Devuelve ÚNICAMENTE un objeto JSON con esta estructura:
   }
 }
 
+Aquí está el texto extraído del PDF:
+${pdfText}
+
 Si no encuentras algún dato, deja el campo vacío. NO incluyas explicaciones adicionales, solo el JSON.
       `;
       
-      // Configurar la petición a la API de Mistral
+      console.log('Enviando texto extraído a Mistral AI para análisis...');
+      
+      // Configurar la petición a la API de Mistral (con texto en lugar de imagen)
       const response = await axios.post(
         `${this.baseUrl}/chat/completions`,
         {
-          model: 'mistral-large-latest', // Usar el modelo más avanzado para OCR
+          model: 'mistral-large-latest',
           messages: [
             {
               role: 'user',
-              content: [
-                {
-                  type: 'text',
-                  text: prompt,
-                },
-                {
-                  type: 'image_url',
-                  image_url: {
-                    url: `data:image/png;base64,${imageBase64}`,
-                  },
-                },
-              ],
+              content: prompt,
             },
           ],
           temperature: 0.1, // Baja temperatura para respuestas más precisas
