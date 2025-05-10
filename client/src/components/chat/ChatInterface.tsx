@@ -410,8 +410,65 @@ export default function ChatInterface() {
         
         // Check if we need to generate a contract based on the collected data
         if (response.action === "generateContract" && response.context.datos_extraidos) {
-          // Handle contract generation with the collected data
-          await handleGenerateContractWithExistingData();
+          try {
+            // Show processing message
+            const processingMessage: Message = {
+              id: `processing-${Date.now()}`,
+              content: "Generando contrato con la información recopilada...",
+              sender: "assistant",
+            };
+            
+            setMessages((prev) => [...prev, processingMessage]);
+            
+            // Generate contract using existing data
+            const result = await generateContract(response.context.datos_extraidos);
+            
+            if (result.success && result.html) {
+              // Update context with contract HTML
+              setContext((prev) => ({
+                ...prev,
+                contrato_html: result.html
+              }));
+              
+              // Show the generated contract
+              const successMessage: Message = {
+                id: `success-${Date.now()}`,
+                content: "¡He generado el contrato basado en la información proporcionada!",
+                sender: "assistant",
+              };
+              
+              const templateMessage: Message = {
+                id: `template-${Date.now()}`,
+                content: "Aquí está tu contrato:",
+                sender: "assistant",
+                template: {
+                  type: "contract",
+                  html: result.html
+                }
+              };
+              
+              setMessages((prev) => 
+                prev.filter(m => m.id !== processingMessage.id)
+                  .concat([successMessage, templateMessage])
+              );
+            } else {
+              throw new Error("No se pudo generar el contrato");
+            }
+          } catch (error) {
+            console.error("Error generando contrato:", error);
+            
+            // Show error message
+            const errorMessage: Message = {
+              id: `error-${Date.now()}`,
+              content: "Lo siento, ocurrió un error al generar el contrato. Por favor, intenta de nuevo.",
+              sender: "assistant",
+            };
+            
+            setMessages((prev) => 
+              prev.filter(m => m.id !== `processing-${Date.now()}`)
+                .concat([errorMessage])
+            );
+          }
         } else {
           // Add AI response to messages
           if (response.message) {
