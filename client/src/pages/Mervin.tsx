@@ -10,9 +10,8 @@ import {
   Camera, 
   Send, 
   MessageSquare,
-  FileCheck,
-  ClipboardCheck,
   HomeIcon,
+  ClipboardCheck,
   Users,
   CircleDollarSign
 } from "lucide-react";
@@ -121,13 +120,37 @@ export default function Mervin() {
     event.target.value = "";
   };
 
-  const handleShowFeatureOptions = () => {
+  const handleServiceSelection = (service: string) => {
+    let message = "";
+    
+    switch(service) {
+      case "contratos":
+        message = "Me gustaría generar un contrato. ¿Qué tipo de contrato necesitas crear?";
+        break;
+      case "propiedades":
+        message = "Puedo ayudarte a verificar información de propiedades. ¿Tienes la dirección de la propiedad que deseas consultar?";
+        break;
+      case "permisos":
+        message = "Te ayudaré con la consulta de permisos. ¿En qué ciudad o condado necesitas verificar los requisitos de permisos?";
+        break;
+      case "clientes":
+        message = "Gestión de clientes. ¿Necesitas añadir un nuevo cliente o consultar información de un cliente existente?";
+        break;
+      case "facturacion":
+        message = "Puedo ayudarte con facturación. ¿Necesitas generar una factura o consultar el estado de pagos?";
+        break;
+      default:
+        message = "¿En qué te puedo ayudar hoy?";
+    }
+    
     const assistantMessage: Message = {
-      id: `assistant-options-${Date.now()}`,
-      content: "¿Qué tipo de contrato te gustaría generar?",
+      id: `assistant-service-${Date.now()}`,
+      content: message,
       sender: "assistant"
     };
+    
     setMessages(prev => [...prev, assistantMessage]);
+    scrollToBottom();
   };
 
   // Scroll to bottom when messages change
@@ -142,48 +165,50 @@ export default function Mervin() {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden p-4">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold">Mervin AI</h1>
-        
-        <div className="flex space-x-2">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => handleShowFeatureOptions()}
-          >
-            <FileText className="h-4 w-4 mr-1" /> 
-            Generar Contrato
-          </Button>
-        </div>
-      </div>
+      <h1 className="text-2xl font-bold mb-4 text-center">Mervin AI</h1>
       
       {/* Tarjetas de opciones rápidas */}
       <div className="grid grid-cols-5 gap-2 mb-4">
-        <Card className="hover:bg-primary/5 cursor-pointer transition-colors">
+        <Card 
+          className="hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer transition-colors border-blue-200 hover:border-blue-400"
+          onClick={() => handleServiceSelection("contratos")}
+        >
           <CardContent className="p-3 flex flex-col items-center justify-center">
             <FileText className="h-5 w-5 mb-1 text-blue-500" />
             <span className="text-xs text-center">Contratos</span>
           </CardContent>
         </Card>
-        <Card className="hover:bg-primary/5 cursor-pointer transition-colors">
+        <Card 
+          className="hover:bg-green-50 dark:hover:bg-green-900/30 cursor-pointer transition-colors border-green-200 hover:border-green-400"
+          onClick={() => handleServiceSelection("propiedades")}
+        >
           <CardContent className="p-3 flex flex-col items-center justify-center">
             <HomeIcon className="h-5 w-5 mb-1 text-green-500" />
             <span className="text-xs text-center">Propiedades</span>
           </CardContent>
         </Card>
-        <Card className="hover:bg-primary/5 cursor-pointer transition-colors">
+        <Card 
+          className="hover:bg-purple-50 dark:hover:bg-purple-900/30 cursor-pointer transition-colors border-purple-200 hover:border-purple-400"
+          onClick={() => handleServiceSelection("permisos")}
+        >
           <CardContent className="p-3 flex flex-col items-center justify-center">
             <ClipboardCheck className="h-5 w-5 mb-1 text-purple-500" />
             <span className="text-xs text-center">Permisos</span>
           </CardContent>
         </Card>
-        <Card className="hover:bg-primary/5 cursor-pointer transition-colors">
+        <Card 
+          className="hover:bg-amber-50 dark:hover:bg-amber-900/30 cursor-pointer transition-colors border-amber-200 hover:border-amber-400"
+          onClick={() => handleServiceSelection("clientes")}
+        >
           <CardContent className="p-3 flex flex-col items-center justify-center">
             <Users className="h-5 w-5 mb-1 text-amber-500" />
             <span className="text-xs text-center">Clientes</span>
           </CardContent>
         </Card>
-        <Card className="hover:bg-primary/5 cursor-pointer transition-colors">
+        <Card 
+          className="hover:bg-emerald-50 dark:hover:bg-emerald-900/30 cursor-pointer transition-colors border-emerald-200 hover:border-emerald-400"
+          onClick={() => handleServiceSelection("facturacion")}
+        >
           <CardContent className="p-3 flex flex-col items-center justify-center">
             <CircleDollarSign className="h-5 w-5 mb-1 text-emerald-500" />
             <span className="text-xs text-center">Facturación</span>
@@ -235,8 +260,8 @@ export default function Mervin() {
         {isLoading && (
           <Card className="bg-muted">
             <CardContent className="pt-4">
-              <div className="flex items-center">
-                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center mr-2">
+              <div className="flex items-start">
+                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center mr-2 flex-shrink-0">
                   <MessageSquare className="h-4 w-4 text-primary" />
                 </div>
                 <p>Pensando...</p>
