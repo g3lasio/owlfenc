@@ -261,7 +261,7 @@ export default function ChatInterface() {
         setMessages((prev) => prev.filter((m) => !m.isTyping));
         
         // Mostrar el diálogo de cláusula personalizada
-        handleAddCustomClause();
+        setShowCustomClauseForm(true);
         
         // Responder al usuario
         const responseMessage: Message = {
@@ -611,7 +611,7 @@ Total: ${result.datos_extraidos.presupuesto?.total || "No encontrado"}
         actions: [
           {
             label: "Descargar PDF",
-            onClick: () => handleDownloadPDF(contractHtml),
+            onClick: () => handleDownloadPDF(contractHtml, "contract"),
           },
           {
             label: "Añadir cláusula personalizada",

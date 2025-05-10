@@ -62,7 +62,8 @@ interface Contractor {
 }
 
 interface ManualEstimateFormProps {
-  onEstimateGenerated: (html: string) => void;
+  onEstimateGenerated?: (html: string) => void;
+  onGenerate?: (html: string) => void;
 }
 
 // Definir esquema de validación para el formulario de estimación
@@ -109,7 +110,7 @@ const estimateFormSchema = z.object({
 
 type EstimateFormValues = z.infer<typeof estimateFormSchema>;
 
-export default function ManualEstimateForm({ onEstimateGenerated }: ManualEstimateFormProps) {
+export default function ManualEstimateForm({ onEstimateGenerated, onGenerate }: ManualEstimateFormProps) {
   // Estado para datos del contratista
   const [contractor, setContractor] = useState<Contractor | null>(null);
   const [isLoadingContractor, setIsLoadingContractor] = useState(true);
