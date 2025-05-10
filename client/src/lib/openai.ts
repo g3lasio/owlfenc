@@ -161,11 +161,16 @@ export async function actualizarContrato(
         ];
       }
       
-      // Formatear los datos para el generador de contratos
-      const contractData = formatContractData(datos_actualizados);
+      // Generar el contrato usando la API del servidor 
+      // que utilizará OpenAI o el mecanismo de respaldo según sea necesario
+      const response = await apiRequest("POST", "/api/generate-contract", {
+        projectDetails: datos_actualizados,
+        model: GPT_MODEL,
+        systemPrompt: MEXICAN_STYLE_PROMPT
+      });
       
-      // Generar el contrato usando la plantilla local
-      const html = generateContractHTML(contractData);
+      const data = await response.json();
+      const html = data.html;
       
       return {
         contrato_html: html,

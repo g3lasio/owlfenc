@@ -71,7 +71,7 @@ export async function generateJSON<T>(
       ? `${systemPrompt}\n\nIMPORTANTE: Responde ÚNICAMENTE con un objeto JSON válido.` 
       : "Responde ÚNICAMENTE con un objeto JSON válido.";
     
-    const messages: Array<{ role: string; content: string }> = [
+    const messages: ChatCompletionMessageParam[] = [
       {
         role: "system",
         content: enhancedSystemPrompt
@@ -93,7 +93,7 @@ export async function generateJSON<T>(
     
     const content = response.choices[0].message.content || "{}";
     return JSON.parse(content) as T;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error en OpenAI generateJSON:", error);
     throw new Error(`Error al generar JSON con OpenAI: ${error.message}`);
   }
@@ -227,19 +227,26 @@ export async function processChatMessage(
     content: userMessage
   });
   
+  // Convertir los mensajes al formato esperado por OpenAI
+  const apiMessages: ChatCompletionMessageParam[] = [
+    {
+      role: "system",
+      content: systemPrompt
+    }
+  ];
+  
+  // Añadir los mensajes del historial
+  messages.forEach((msg: { role: string, content: string }) => {
+    apiMessages.push({
+      role: msg.role as "user" | "assistant" | "system",
+      content: msg.content
+    });
+  });
+  
   // Crear la solicitud a OpenAI
   const response = await openai.chat.completions.create({
     model: DEFAULT_MODEL,
-    messages: [
-      {
-        role: "system",
-        content: systemPrompt
-      },
-      ...messages.map(msg => ({
-        role: msg.role,
-        content: msg.content
-      }))
-    ],
+    messages: apiMessages,
     temperature: 0.8,
     max_tokens: 1000
   });
