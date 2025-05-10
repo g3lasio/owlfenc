@@ -98,25 +98,64 @@ router.post('/generar-contrato', upload.single('pdf'), async (req, res) => {
 // Ruta para solicitar ajustes al contrato
 router.post('/ajustar-contrato', async (req, res) => {
   try {
-    const { datos_extraidos, ajustes, informacion_adicional } = req.body;
+    const { datos_extraidos, ajustes, informacion_adicional, clausulas_adicionales } = req.body;
     
     if (!datos_extraidos) {
       return res.status(400).json({ error: 'Se requieren los datos extraídos del contrato original' });
     }
     
-    // Combinar los datos extraídos con la información adicional y ajustes
-    const datosActualizados = {
-      ...datos_extraidos,
-      ajustes: ajustes || [],
-      adicional: informacion_adicional || {}
-    };
+    // Verificar si hay datos que previamente faltaban y ahora se proporcionan
+    let datosActualizados = { ...datos_extraidos };
+    
+    // Actualizar información del cliente si se proporciona
+    if (informacion_adicional?.cliente) {
+      datosActualizados.cliente = {
+        ...datosActualizados.cliente,
+        ...informacion_adicional.cliente
+      };
+    }
+    
+    // Actualizar información del contratista si se proporciona
+    if (informacion_adicional?.contratista) {
+      datosActualizados.contratista = {
+        ...datosActualizados.contratista,
+        ...informacion_adicional.contratista
+      };
+    }
+    
+    // Actualizar información del proyecto si se proporciona
+    if (informacion_adicional?.proyecto) {
+      datosActualizados.proyecto = {
+        ...datosActualizados.proyecto,
+        ...informacion_adicional.proyecto
+      };
+    }
+    
+    // Actualizar información del presupuesto si se proporciona
+    if (informacion_adicional?.presupuesto) {
+      datosActualizados.presupuesto = {
+        ...datosActualizados.presupuesto,
+        ...informacion_adicional.presupuesto
+      };
+    }
+    
+    // Añadir cláusulas adicionales si se proporcionan
+    if (clausulas_adicionales && Array.isArray(clausulas_adicionales) && clausulas_adicionales.length > 0) {
+      datosActualizados.clausulasAdicionales = clausulas_adicionales;
+    }
+    
+    console.log('Datos actualizados para el contrato:', JSON.stringify(datosActualizados, null, 2));
     
     // Generar un nuevo contrato con los ajustes
-    const contratoHTML = await mistralService.generarContrato(datosActualizados);
+    const contratoHTML = await mistralService.generarContrato(datosActualizados, {
+      ajustes: ajustes || [],
+      ...informacion_adicional
+    });
     
     res.status(200).json({
       success: true,
       contrato_html: contratoHTML,
+      datos_actualizados: datosActualizados,
       message: 'Contrato ajustado exitosamente'
     });
   } catch (error: any) {
