@@ -193,6 +193,34 @@ export default function ChatInterface() {
         chatContainerRef.current.scrollHeight;
     }
   }, [messages]);
+  
+  // Al cargar el componente, intentar recuperar datos del localStorage
+  useEffect(() => {
+    try {
+      const savedData = localStorage.getItem('mervin_extracted_data');
+      const savedHtml = localStorage.getItem('mervin_contract_html');
+      
+      if (savedData) {
+        const extractedData = JSON.parse(savedData);
+        console.log("Datos recuperados del localStorage al iniciar:", extractedData);
+        
+        // Solo actualizar el contexto si no hay datos_extraidos ya presentes
+        setContext(prevContext => {
+          if (!prevContext.datos_extraidos) {
+            console.log("Restaurando datos extraídos al contexto desde localStorage");
+            return {
+              ...prevContext,
+              datos_extraidos: extractedData,
+              contrato_html: savedHtml || ''
+            };
+          }
+          return prevContext;
+        });
+      }
+    } catch (storageError) {
+      console.error("Error recuperando datos del localStorage al iniciar:", storageError);
+    }
+  }, []);
 
   const handleSendMessage = async (
     messageText: string,
@@ -493,7 +521,18 @@ export default function ChatInterface() {
       };
       
       console.log("Actualizando contexto con datos extraídos:", updatedContext);
+      
+      // Primero actualizamos el estado del contexto
       setContext(updatedContext);
+      
+      // También guardamos los datos en localStorage como respaldo para garantizar persistencia
+      try {
+        localStorage.setItem('mervin_extracted_data', JSON.stringify(result.datos_extraidos));
+        localStorage.setItem('mervin_contract_html', result.contrato_html || '');
+        console.log("Datos guardados en localStorage como respaldo");
+      } catch (storageError) {
+        console.error("Error guardando datos en localStorage:", storageError);
+      }
       
       // Mostrar mensaje sobre los datos extraídos
       const extractedDataMessage: Message = {
@@ -625,9 +664,39 @@ Total: ${result.datos_extraidos.presupuesto?.total || "No encontrado"}
   const handleGenerateContractWithExistingData = async () => {
     console.log("Iniciando generación de contrato con datos existentes:", context);
     
+    let extractedData = context.datos_extraidos;
+    let contractHtmlBackup = context.contrato_html;
+    
     // Verificar si existen datos extraídos en el contexto
-    if (!context.datos_extraidos) {
-      console.error("No se encontraron datos extraídos en el contexto:", context);
+    if (!extractedData) {
+      // Intentar recuperar datos del localStorage
+      console.log("No se encontraron datos en el contexto, intentando recuperar del localStorage...");
+      
+      try {
+        const savedData = localStorage.getItem('mervin_extracted_data');
+        const savedHtml = localStorage.getItem('mervin_contract_html');
+        
+        if (savedData) {
+          extractedData = JSON.parse(savedData);
+          contractHtmlBackup = savedHtml || '';
+          
+          console.log("Datos recuperados con éxito desde localStorage:", extractedData);
+          
+          // Restaurar datos en el contexto
+          setContext(prevContext => ({
+            ...prevContext,
+            datos_extraidos: extractedData,
+            contrato_html: contractHtmlBackup
+          }));
+        }
+      } catch (storageError) {
+        console.error("Error recuperando datos del localStorage:", storageError);
+      }
+    }
+    
+    // Si no hay datos extraídos ni en el contexto ni en localStorage
+    if (!extractedData) {
+      console.error("No se encontraron datos extraídos ni en el contexto ni en localStorage:", context);
       
       // Mostrar mensaje de error descriptivo
       toast({
@@ -704,21 +773,20 @@ Total: ${result.datos_extraidos.presupuesto?.total || "No encontrado"}
     setMessages((prev) => [...prev, processingMessage]);
     
     try {
-      // Formateamos los datos para la API
-      const datosFormateados = context.datos_extraidos;
-      console.log("Datos formateados para generar contrato:", datosFormateados);
+      // Usamos la variable extractedData que puede venir del contexto o del localStorage
+      console.log("Datos formateados para generar contrato:", extractedData);
       
       // Intentamos generar el contrato directamente
       let contractHtml;
       
-      if (datosFormateados.contrato_html) {
+      if (contractHtmlBackup) {
         // Si ya tenemos un HTML de contrato generado previamente
         console.log("Usando HTML de contrato existente");
-        contractHtml = datosFormateados.contrato_html;
+        contractHtml = contractHtmlBackup;
       } else {
         // Generamos uno nuevo con OpenAI
         console.log("Generando nuevo HTML de contrato");
-        contractHtml = await generateContract(datosFormateados);
+        contractHtml = await generateContract(extractedData);
       }
       
       // Feedback visual
