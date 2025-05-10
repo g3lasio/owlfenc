@@ -4,18 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import { 
-  FileContract, 
+  FileText, 
   LayoutDashboard, 
   Users, 
   Home as HomeIcon, 
+  CheckSquare, 
   FileCheck, 
-  FileText, 
   ClipboardCheck, 
   CircleDollarSign, 
-  BarChartHorizontal, 
+  BarChart, 
   MessagesSquare,
   CalendarClock,
-  Augmented
+  Code
 } from "lucide-react";
 
 export default function Home() {
@@ -72,7 +72,7 @@ export default function Home() {
         <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-200 dark:border-blue-900">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg flex items-center gap-2">
-              <FileContract className="text-blue-500" />
+              <FileText className="text-blue-500" />
               Contratos Activos
             </CardTitle>
           </CardHeader>
@@ -149,7 +149,7 @@ export default function Home() {
         <Card className="md:col-span-1 hover:shadow-lg transition-all duration-300 hover:border-primary/50 bg-gradient-to-br from-primary/5 to-transparent">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2">
-              <FileContract className="text-primary h-6 w-6" />
+              <FileText className="text-primary h-6 w-6" />
               Gestión de Contratos
             </CardTitle>
             <CardDescription>
@@ -213,7 +213,7 @@ export default function Home() {
         <Card className="md:col-span-1 hover:shadow-lg transition-all duration-300 hover:border-purple-400/50 bg-gradient-to-br from-purple-500/5 to-transparent">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2">
-              <BarChartHorizontal className="text-purple-500 h-6 w-6" />
+              <BarChart className="text-purple-500 h-6 w-6" />
               Herramientas Avanzadas
             </CardTitle>
             <CardDescription>
@@ -230,7 +230,7 @@ export default function Home() {
               </Link>
               <Link href="/ar-fence-estimator">
                 <Button variant="outline" className="w-full justify-start gap-2 py-6">
-                  <Augmented className="h-5 w-5" />
+                  <Code className="h-5 w-5" />
                   AR Fence Estimator
                 </Button>
               </Link>
