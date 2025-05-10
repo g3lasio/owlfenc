@@ -45,6 +45,43 @@ export async function generateContract(projectDetails: any): Promise<string> {
   }
 }
 
+/**
+ * Procesa un PDF para generar un contrato utilizando Mistral AI
+ * @param pdfFile El archivo PDF a procesar
+ * @returns Un objeto con los datos extraídos y el HTML del contrato
+ */
+export async function processPDFForContract(pdfFile: File): Promise<{
+  datos_extraidos: any;
+  contrato_html: string;
+}> {
+  try {
+    // Crear el FormData para enviar el archivo
+    const formData = new FormData();
+    formData.append('pdf', pdfFile);
+    
+    // Enviar la petición a la API
+    const response = await fetch('/api/generar-contrato', {
+      method: 'POST',
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Error procesando el PDF');
+    }
+    
+    const data = await response.json();
+    
+    return {
+      datos_extraidos: data.datos_extraidos,
+      contrato_html: data.contrato_html,
+    };
+  } catch (error) {
+    console.error("¡Chale! Error procesando el PDF para el contrato:", error);
+    throw error;
+  }
+}
+
 export async function processChatMessage(message: string, context: any): Promise<any> {
   try {
     console.log('Chat context being used:', context);

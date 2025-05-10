@@ -6,7 +6,7 @@ import TypingIndicator from "./TypingIndicator";
 import EstimatePreview from "../templates/EstimatePreview";
 import ContractPreview from "../templates/ContractPreview";
 import ManualEstimateForm from "../estimates/ManualEstimateForm";
-import { processChatMessage } from "@/lib/openai";
+import { processChatMessage, processPDFForContract } from "@/lib/openai";
 import { downloadEstimatePDF, downloadContractPDF, downloadPDF } from "@/lib/pdf";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -369,21 +369,8 @@ export default function ChatInterface() {
       
       setMessages((prev) => [...prev, processingMessage]);
       
-      // Crear un FormData para enviar el archivo
-      const formData = new FormData();
-      formData.append('pdf', selectedFile);
-      
-      // Enviar la petición al backend
-      const response = await fetch('/api/generar-contrato', {
-        method: 'POST',
-        body: formData,
-      });
-      
-      if (!response.ok) {
-        throw new Error('Error al procesar el PDF');
-      }
-      
-      const data = await response.json();
+      // Usar la nueva función para procesar el PDF
+      const result = await processPDFForContract(selectedFile);
       
       // Cerrar el modal
       setIsContractModalOpen(false);
@@ -391,14 +378,13 @@ export default function ChatInterface() {
       // Guardar los datos extraídos en el contexto
       setContext((prev) => ({
         ...prev,
-        datos_extraidos: data.datos_extraidos,
-        contrato_pdf_base64: data.contrato_pdf_base64,
+        datos_extraidos: result.datos_extraidos,
       }));
       
       // Mostrar mensaje sobre los datos extraídos
       const extractionMessage: Message = {
         id: `extraction-${Date.now()}`,
-        content: `¡He analizado el PDF y extraído la información principal! Aquí están los detalles que pude identificar:\n\n- Cliente: ${data.datos_extraidos.cliente?.nombre || 'No identificado'}\n- Tipo de cerca: ${data.datos_extraidos.proyecto?.tipoCerca || 'No identificado'}\n- Altura: ${data.datos_extraidos.proyecto?.altura || 'No identificada'} pies\n- Longitud: ${data.datos_extraidos.proyecto?.longitud || 'No identificada'} pies\n- Precio total: $${data.datos_extraidos.presupuesto?.total || 'No identificado'}`,
+        content: `¡He analizado el PDF y extraído la información principal! Aquí están los detalles que pude identificar:\n\n- Cliente: ${result.datos_extraidos.cliente?.nombre || 'No identificado'}\n- Tipo de cerca: ${result.datos_extraidos.proyecto?.tipoCerca || 'No identificado'}\n- Altura: ${result.datos_extraidos.proyecto?.altura || 'No identificada'} pies\n- Longitud: ${result.datos_extraidos.proyecto?.longitud || 'No identificada'} pies\n- Precio total: $${result.datos_extraidos.presupuesto?.total || 'No identificado'}`,
         sender: "assistant",
       };
       
@@ -425,6 +411,21 @@ export default function ChatInterface() {
           setMessages((prev) => [...prev, dateQuestion]);
         }, 800);
       }, 1000);
+      
+      // Añadir mensaje con la vista previa del contrato
+      setTimeout(() => {
+        const templateMessage: Message = {
+          id: `template-${Date.now()}`,
+          content: "Aquí está el borrador inicial del contrato basado en el estimado:",
+          sender: "assistant",
+          template: {
+            type: "contract",
+            html: result.contrato_html,
+          },
+        };
+        
+        setMessages((prev) => [...prev, templateMessage]);
+      }, 3000);
       
     } catch (error) {
       console.error("Error generando contrato:", error);
