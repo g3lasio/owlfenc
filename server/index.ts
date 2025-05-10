@@ -93,5 +93,16 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+  }).on('error', (e: any) => {
+    if (e.code === 'EADDRINUSE') {
+      log(`Port ${port} busy, trying backup port...`);
+      server.listen({
+        port: 5001,
+        host: "0.0.0.0",
+        reusePort: true,
+      }, () => {
+        log(`serving on backup port 5001`);
+      });
+    }
   });
 })();
