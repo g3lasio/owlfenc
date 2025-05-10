@@ -630,16 +630,34 @@ Total: ${result.datos_extraidos.presupuesto.total || "No encontrado"}
       </div>
       `;
       
-      // Mostrar el contrato generado
+      // Mostrar el contrato generado como un mensaje normal con acciones
       const contractMessage: Message = {
         id: `contract-${Date.now()}`,
-        content: "¡He generado tu contrato! Aquí está el documento finalizado:",
+        content: "¡He generado tu contrato! Aquí tienes un resumen con los datos extraídos:\n\n" +
+                "- Cliente: " + (context.datos_extraidos?.cliente?.nombre || 'No especificado') + "\n" +
+                "- Dirección: " + (context.datos_extraidos?.cliente?.direccion || 'No especificada') + "\n" +
+                "- Tipo de cerca: " + (context.datos_extraidos?.proyecto?.tipoCerca || 'No especificado') + "\n" +
+                "- Altura: " + (context.datos_extraidos?.proyecto?.altura || 'No especificada') + "\n" +
+                "- Longitud: " + (context.datos_extraidos?.proyecto?.longitud || 'No especificada') + "\n" +
+                "- Precio total: $" + (context.datos_extraidos?.presupuesto?.total || '0.00'),
         sender: "assistant",
-        template: {
-          type: "contract",
-          html: contractHtml,
-        },
         actions: [
+          {
+            label: "Ver Contrato PDF",
+            onClick: () => {
+              // Añadir mensaje de plantilla
+              const templateMessage: Message = {
+                id: `template-contract-${Date.now()}`,
+                content: "Aquí está el contrato generado:",
+                sender: "assistant",
+                template: {
+                  type: "contract",
+                  html: contractHtml,
+                },
+              };
+              setMessages((prev) => [...prev, templateMessage]);
+            }
+          },
           {
             label: "Descargar PDF",
             onClick: () => handleDownloadPDF(contractHtml, "contract"),

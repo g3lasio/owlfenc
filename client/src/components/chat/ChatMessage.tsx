@@ -58,6 +58,22 @@ export default function ChatMessage({ message, onOptionClick }: ChatMessageProps
             })}
           </div>
         )}
+        
+        {/* Soporte para botones de acción */}
+        {message.actions && message.actions.length > 0 && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {message.actions.map((action, index) => (
+              <Button
+                key={index}
+                variant="default"
+                size="sm"
+                onClick={action.onClick}
+              >
+                {action.label}
+              </Button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
