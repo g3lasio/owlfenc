@@ -88,14 +88,14 @@ export class DocumentService {
       .replace(/{{clientAddress}}/g, safeData.clientAddress)
       .replace(/{{fenceDetails.type}}/g, safeData.fenceType)
       .replace(/{{fenceDetails.height}}/g, safeData.fenceHeight.toString())
-      .replace(/{{fenceDetails.length}}/g, data.linearFeet.toString())
-      .replace(/{{breakdown.posts}}/g, formatCurrency(data.breakdown.posts))
-      .replace(/{{breakdown.concrete}}/g, formatCurrency(data.breakdown.concrete))
-      .replace(/{{breakdown.rails}}/g, formatCurrency(data.breakdown.rails))
-      .replace(/{{breakdown.pickets}}/g, formatCurrency(data.breakdown.pickets))
-      .replace(/{{breakdown.hardware}}/g, formatCurrency(data.breakdown.hardware))
-      .replace(/{{subtotal}}/g, formatCurrency(data.costs.subtotal))
-      .replace(/{{total}}/g, formatCurrency(data.costs.total));
+      .replace(/{{fenceDetails.length}}/g, (safeData.fenceLength || 0).toString())
+      .replace(/{{breakdown.posts}}/g, formatCurrency(data.breakdown?.posts || 0))
+      .replace(/{{breakdown.concrete}}/g, formatCurrency(data.breakdown?.concrete || 0))
+      .replace(/{{breakdown.rails}}/g, formatCurrency(data.breakdown?.rails || 0))
+      .replace(/{{breakdown.pickets}}/g, formatCurrency(data.breakdown?.pickets || 0))
+      .replace(/{{breakdown.hardware}}/g, formatCurrency(data.breakdown?.hardware || 0))
+      .replace(/{{subtotal}}/g, formatCurrency(data.costs?.subtotal || 0))
+      .replace(/{{total}}/g, formatCurrency(data.costs?.total || 0));
   }
 
   /**

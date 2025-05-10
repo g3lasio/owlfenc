@@ -210,12 +210,66 @@ export async function actualizarContrato(
   }
 }
 
+// Función para analizar texto en busca de información de la compañía
+function extractCompanyInfo(message: string) {
+  let companyInfo: any = {};
+  
+  // Buscar nombre de compañía
+  const companyNameRegex = /[Cc]ompañ[ií]a(?:\s+que\s+es|\s+es)?:?\s*([^,\.;]+)|[Cc]ompany(?:\s+que\s+es|\s+es)?:?\s*([^,\.;]+)/;
+  const companyNameMatch = message.match(companyNameRegex);
+  
+  if (companyNameMatch) {
+    companyInfo.nombre = (companyNameMatch[1] || companyNameMatch[2]).trim();
+  }
+  
+  // Buscar dirección
+  const addressRegex = /[Dd]irecci[oó]n:?\s*([^\.;]+)|[Aa]ddress:?\s*([^\.;]+)/;
+  const addressMatch = message.match(addressRegex);
+  
+  if (addressMatch) {
+    companyInfo.direccion = (addressMatch[1] || addressMatch[2]).trim();
+  }
+  
+  return Object.keys(companyInfo).length > 0 ? { contratista: companyInfo } : null;
+}
+
 export async function processChatMessage(message: string, context: any): Promise<any> {
   try {
     console.log('Chat context being used:', context);
     
     // Detectar mensajes específicos relacionados con contratos y responder localmente
     // para mejorar el tiempo de respuesta y la coherencia del flujo
+    
+    // 0. Detectar información de la compañía en el mensaje
+    const companyInfo = extractCompanyInfo(message);
+    if (companyInfo && context.datos_extraidos) {
+      // Actualizar información de la compañía
+      const datos_actualizados = {
+        ...context.datos_extraidos,
+        contratista: {
+          ...context.datos_extraidos.contratista,
+          ...companyInfo.contratista
+        }
+      };
+      
+      console.log("Información de la compañía actualizada:", datos_actualizados.contratista);
+      
+      // Guardar en localStorage como respaldo
+      try {
+        localStorage.setItem('mervin_extracted_data', JSON.stringify(datos_actualizados));
+        console.log("Datos actualizados guardados en localStorage");
+      } catch (err) {
+        console.error("Error guardando datos actualizados en localStorage:", err);
+      }
+      
+      return {
+        message: `He actualizado la información de tu compañía. Nombre: ${companyInfo.contratista.nombre || 'No proporcionado'}, Dirección: ${companyInfo.contratista.direccion || 'No proporcionada'}. ¿Qué más necesitas ajustar?`,
+        context: {
+          ...context,
+          datos_extraidos: datos_actualizados
+        }
+      };
+    }
     
     // 1. Detectar solicitudes relacionadas con cláusulas personalizadas
     if (message.toLowerCase().includes("añadir cláusula") || 
