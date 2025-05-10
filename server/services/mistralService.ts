@@ -1,6 +1,7 @@
 import axios from 'axios';
 import * as fs from 'fs';
 import OpenAI from "openai"; // Importar OpenAI como fallback
+import pdf from 'pdf-parse'; // Importar pdf-parse directamente
 
 // Configurar cliente de OpenAI para usar como fallback
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -44,51 +45,83 @@ export class MistralService {
     if (!this.apiKey) {
       console.error('ADVERTENCIA: MISTRAL_API_KEY no está configurada');
     }
+    
+    // Crear directorio temporal si no existe
+    this.ensureTempDirExists();
   }
   
   /**
-   * Extrae texto del PDF utilizando pdfjs-dist (más fiable que pdf-parse)
+   * Asegura que exista el directorio temporal para archivos PDF
+   */
+  private ensureTempDirExists(): void {
+    try {
+      const tempDir = './temp';
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+        console.log('Directorio temporal creado:', tempDir);
+      }
+    } catch (error) {
+      console.error('Error verificando/creando directorio temporal:', error);
+    }
+  }
+  
+  /**
+   * Extrae texto del PDF utilizando pdf-parse
    * @param pdfBuffer Buffer del PDF
    * @returns Texto extraído del PDF
    */
   private async extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
     try {
-      console.log('Extrayendo texto con pdfjs-dist...');
+      console.log('Extrayendo texto con pdf-parse...');
       
-      // Cargar pdfjs-dist
-      const pdfjsLib = await import('pdfjs-dist');
-      const pdfjsVersion = pdfjsLib.version;
-      console.log(`Usando pdfjs-dist versión: ${pdfjsVersion}`);
+      // Guardar una copia del PDF en disco (puede ayudar con ciertos errores de pdf-parse)
+      const timestamp = Date.now();
+      const tempPdfPath = `./temp/temp_pdf_${timestamp}.pdf`;
       
-      // No necesitamos configurar un worker en Node.js, esto lo manejará internamente pdfjs-dist
-      // Simplemente establecemos la ruta como una cadena vacía para evitar advertencias
-      pdfjsLib.GlobalWorkerOptions.workerSrc = '';
-      
-      console.log('Cargando documento PDF...');
-      const pdfDoc = await pdfjsLib.getDocument({data: pdfBuffer}).promise;
-      
-      console.log(`PDF cargado. Páginas: ${pdfDoc.numPages}`);
-      
-      // Extraer texto de todas las páginas
-      let pdfText = '';
-      for (let i = 1; i <= pdfDoc.numPages; i++) {
-        console.log(`Procesando página ${i}...`);
-        const page = await pdfDoc.getPage(i);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items.map((item: any) => item.str).join(' ');
-        pdfText += pageText + '\n';
+      try {
+        fs.writeFileSync(tempPdfPath, pdfBuffer);
+        console.log(`PDF guardado temporalmente en: ${tempPdfPath}`);
+      } catch (saveError) {
+        console.error('Error guardando PDF temporal:', saveError);
+        // Continuar incluso si no podemos guardar
       }
       
-      console.log(`Texto extraído: ${pdfText.length} caracteres`);
-      if (pdfText.length === 0) {
+      // Usar opciones simples
+      const options = { max: 0 };
+      
+      // Extraer texto
+      const data = await pdf(pdfBuffer, options);
+      
+      console.log(`PDF procesado. Páginas: ${data.numpages}`);
+      console.log(`Texto extraído: ${data.text.length} caracteres`);
+      
+      if (data.text.length === 0) {
         throw new Error('No se pudo extraer texto del PDF - La extracción resultó en texto vacío');
       }
       
-      console.log(`Muestra: ${pdfText.substring(0, 300)}...`);
-      return pdfText;
-    } catch (error) {
-      console.error('Error extrayendo texto con pdfjs-dist:', error);
-      throw error;
+      console.log(`Muestra: ${data.text.substring(0, 300)}...`);
+      
+      // Limpiar archivo temporal
+      try {
+        fs.unlinkSync(tempPdfPath);
+      } catch (cleanupError) {
+        console.error('Error limpiando archivo temporal:', cleanupError);
+        // No lanzar error por esto
+      }
+      
+      return data.text;
+    } catch (error: any) {
+      console.error('Error extrayendo texto con pdf-parse:', error);
+      
+      if (error.message && typeof error.message === 'string') {
+        // Verificar errores específicos conocidos
+        if (error.message.includes('test/data')) {
+          console.log('Error con archivos de prueba en pdf-parse. Este es un problema conocido.');
+          throw new Error('La biblioteca pdf-parse está intentando acceder a archivos de prueba que no existen. Contacta al soporte técnico.');
+        }
+      }
+      
+      throw new Error(`Error procesando PDF: ${error.message || 'Error desconocido'}`);
     }
   }
   
