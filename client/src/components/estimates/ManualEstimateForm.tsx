@@ -279,7 +279,7 @@ export default function ManualEstimateForm({ onEstimateGenerated, onGenerate }: 
         setTemplates(data);
         
         // Seleccionar la plantilla por defecto si existe
-        const defaultTemplate = data.find((template) => template.isDefault);
+        const defaultTemplate = data.find((template: { isDefault: boolean, id: number }) => template.isDefault);
         if (defaultTemplate) {
           setSelectedTemplateId(defaultTemplate.id);
         } else if (data.length > 0) {

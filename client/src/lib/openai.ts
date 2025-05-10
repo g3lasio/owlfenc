@@ -30,33 +30,29 @@ export async function generateEstimate(projectDetails: any): Promise<string> {
   }
 }
 
+// Función para formatear datos del proyecto para la generación de contrato
+// Eliminada para evitar conflicto con la importación de contractGenerator
+
 export async function generateContract(projectDetails: any): Promise<string> {
   try {
-    // Primero intentamos generar el contrato utilizando contractGenerator local
-    try {
-      console.log("Intentando generar contrato localmente con datos:", projectDetails);
-      
-      // Formatear los datos para el generador de contratos
-      const contractData = formatContractData(projectDetails);
-      
-      // Generar el HTML del contrato utilizando la plantilla local
-      const html = generateContractHTML(contractData);
-      console.log("Contrato generado localmente con éxito");
-      
-      return html;
-    } catch (localError) {
-      console.warn("Error generando contrato localmente, usando API como fallback:", localError);
-      
-      // Si falla la generación local, intentamos con la API
-      const response = await apiRequest("POST", "/api/generate-contract", {
-        projectDetails,
-        model: GPT_MODEL,
-        systemPrompt: MEXICAN_STYLE_PROMPT
-      });
-      
-      const data = await response.json();
-      return data.html;
+    console.log("Iniciando generación de contrato con datos:", projectDetails);
+    
+    // Usar directamente la API del servidor, que internamente intentará OpenAI primero
+    // y luego usará el método de respaldo si es necesario
+    const response = await apiRequest("POST", "/api/generate-contract", {
+      projectDetails,
+      model: GPT_MODEL,
+      systemPrompt: MEXICAN_STYLE_PROMPT
+    });
+    
+    const data = await response.json();
+    
+    if (!data.html) {
+      throw new Error("La respuesta del servidor no contiene HTML para el contrato");
     }
+    
+    console.log("Contrato generado exitosamente");
+    return data.html;
   } catch (error) {
     console.error("¡No manches! Error generando el contrato:", error);
     throw error;
@@ -100,7 +96,7 @@ export async function processPDFForContract(pdfFile: File): Promise<{
   }
 }
 
-import { formatContractData, generateContractHTML } from './contractGenerator';
+import { generateContractHTML } from './contractGenerator';
 
 /**
  * Actualiza un contrato con cláusulas personalizadas o datos adicionales
