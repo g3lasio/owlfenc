@@ -623,14 +623,6 @@ export default function ChatInterface() {
         {isChatActive && !showManualForm && ( // Solo mostrar el input si chat está activo y no estamos en modo manual
           <div className="relative">
             <ChatInput onSendMessage={handleSendMessage} isDisabled={isProcessing} />
-            <Button
-              variant="outline"
-              size="sm"
-              className="absolute bottom-14 left-1/2 transform -translate-x-1/2 mb-2 border-dashed"
-              onClick={handleOpenContractModal}
-            >
-              <i className="ri-file-pdf-line mr-1"></i> 📄 Generar Contrato desde PDF
-            </Button>
           </div>
         )}
         
