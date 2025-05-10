@@ -38,6 +38,7 @@ export default function ChatInterface() {
   const [isContractModalOpen, setIsContractModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploadingContract, setIsUploadingContract] = useState(false);
+  const [showAnalysisEffect, setShowAnalysisEffect] = useState(false);
 
   const ProgressBar = () => (
     <div className="fixed top-16 left-0 right-0 z-50 px-4 py-2 bg-background/80 backdrop-blur-sm border-b">
@@ -356,20 +357,39 @@ export default function ChatInterface() {
     setIsUploadingContract(true);
     
     try {
+      // Cerrar el modal de carga para mostrar el efecto de análisis futurista
+      setIsContractModalOpen(false);
+      
+      // Mostrar el efecto de análisis futurista
+      setShowAnalysisEffect(true);
+      
+      // Procesar el PDF después de un breve retraso para que se vea el efecto
+      const result = await new Promise<Awaited<ReturnType<typeof processPDFForContract>>>(async (resolve) => {
+        // Usamos un setTimeout para permitir que el efecto visual se muestre durante unos segundos
+        // antes de hacer la llamada real a la API
+        setTimeout(async () => {
+          try {
+            const pdfResult = await processPDFForContract(selectedFile!);
+            resolve(pdfResult);
+          } catch (error) {
+            console.error("¡Chale! Error procesando el PDF para el contrato:", error);
+            setShowAnalysisEffect(false);
+            throw error;
+          }
+        }, 6500); // Esperar 6.5 segundos para mostrar el efecto completo
+      });
+      
+      // Ocultar el efecto de análisis cuando termine
+      setShowAnalysisEffect(false);
+      
       // Mostrar mensaje de procesamiento
       const processingMessage: Message = {
         id: `processing-${Date.now()}`,
-        content: "Estoy procesando tu PDF y extrayendo la información con tecnología OCR de Mistral AI...",
+        content: "He analizado tu PDF con éxito utilizando tecnología avanzada de IA...",
         sender: "assistant",
       };
       
       setMessages((prev) => [...prev, processingMessage]);
-      
-      // Usar la nueva función para procesar el PDF
-      const result = await processPDFForContract(selectedFile);
-      
-      // Cerrar el modal
-      setIsContractModalOpen(false);
       
       // Guardar los datos extraídos en el contexto
       setContext((prev) => ({
@@ -463,6 +483,12 @@ export default function ChatInterface() {
 
   return (
     <div className="relative flex flex-col h-full chat-outer-container">
+      {/* Efecto futurista de análisis de Mervin AI */}
+      <AnalysisEffect 
+        isVisible={showAnalysisEffect} 
+        onComplete={() => setShowAnalysisEffect(false)} 
+      />
+
       <div className="flex flex-col h-full chat-container">
         {/* Chat Messages */}
         <div
