@@ -513,12 +513,32 @@ export default function ChatInterface() {
         return [...filteredMessages, processingMessage];
       });
       
+      // Importar servicio de preguntas para analizar los datos extraídos
+      const { contractQuestionService } = await import("../../lib/contractQuestionService");
+      
+      // Analizar qué campos faltan con el servicio especializado
+      const analisisDatosExtraidos = contractQuestionService.analizarDatos(result.datos_extraidos);
+      const porcentajeCompletado = analisisDatosExtraidos.porcentajeCompletado;
+      const proximaPregunta = contractQuestionService.obtenerProximaPregunta(result.datos_extraidos);
+      const resumen = contractQuestionService.generarResumen(result.datos_extraidos);
+      
       // Guardar los datos extraídos en el contexto con estructura completa
       const updatedContext = {
         ...context,
         datos_extraidos: result.datos_extraidos,
-        contrato_html: result.contrato_html
+        contrato_html: result.contrato_html,
+        currentMode: "contract" // Establecer explícitamente el modo contrato
       };
+      
+      // Si faltan campos importantes, activar el modo de recopilación
+      if (proximaPregunta && porcentajeCompletado < 90) {
+        updatedContext.recopilacionDatos = {
+          activa: true,
+          servicioContrato: true,
+          preguntaActual: proximaPregunta.campo,
+          datos: result.datos_extraidos
+        };
+      }
       
       console.log("Actualizando contexto con datos extraídos:", updatedContext);
       
@@ -534,10 +554,18 @@ export default function ChatInterface() {
         console.error("Error guardando datos en localStorage:", storageError);
       }
       
-      // Mostrar mensaje sobre los datos extraídos
-      const extractedDataMessage: Message = {
-        id: `data-${Date.now()}`,
-        content: `
+      // Definir el contenido del mensaje según el nivel de completitud
+      let messageContent = "";
+      
+      if (porcentajeCompletado >= 90) {
+        // Si tenemos suficiente información, mostrar resumen y ofrecer generar el contrato
+        messageContent = `He extraído casi toda la información necesaria del PDF (${porcentajeCompletado}% completo).\n\n${resumen}\n\n¿Quieres generar el contrato con estos datos?`;
+      } else if (proximaPregunta) {
+        // Si falta información crítica, mostrar lo que tenemos y hacer la primera pregunta
+        messageContent = `He extraído algunos datos del PDF (${porcentajeCompletado}% completo).\n\n${resumen}\n\nNecesito un poco más de información:\n\n${proximaPregunta.texto}${proximaPregunta.opciones ? `\nOpciones: ${proximaPregunta.opciones.join(', ')}` : ''}`;
+      } else {
+        // Mensaje básico por defecto
+        messageContent = `
 He extraído los siguientes datos del PDF:
 
 Cliente: ${result.datos_extraidos.cliente?.nombre || "No encontrado"}
@@ -548,7 +576,13 @@ Longitud: ${result.datos_extraidos.proyecto?.longitud || "No encontrada"}
 Total: ${result.datos_extraidos.presupuesto?.total || "No encontrado"}
 
 ¿Quieres que genere un contrato usando estos datos?
-        `,
+        `;
+      }
+      
+      // Mostrar mensaje sobre los datos extraídos
+      const extractedDataMessage: Message = {
+        id: `data-${Date.now()}`,
+        content: messageContent,
         sender: "assistant",
         actions: [
           {
