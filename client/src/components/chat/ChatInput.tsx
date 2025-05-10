@@ -5,11 +5,18 @@ interface ChatInputProps {
   onSendMessage: (message: string) => void;
   isDisabled?: boolean;
   onAttachmentClick?: () => void;
+  onFileUpload?: (file: File) => void;
 }
 
-export default function ChatInput({ onSendMessage, isDisabled = false, onAttachmentClick }: ChatInputProps) {
+export default function ChatInput({ 
+  onSendMessage, 
+  isDisabled = false, 
+  onAttachmentClick,
+  onFileUpload 
+}: ChatInputProps) {
   const [message, setMessage] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,10 +64,25 @@ export default function ChatInput({ onSendMessage, isDisabled = false, onAttachm
           ></textarea>
           <div className="flex items-center justify-between px-2">
             <div className="flex items-center space-x-2 text-muted-foreground">
+              {/* Input de archivo oculto */}
+              <input 
+                type="file" 
+                ref={fileInputRef}
+                className="hidden" 
+                accept=".pdf"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files[0] && onFileUpload) {
+                    onFileUpload(e.target.files[0]);
+                    // Limpiar el input para permitir subir el mismo archivo de nuevo
+                    e.target.value = '';
+                  }
+                }}
+              />
+              {/* Botón que activa el input de archivo */}
               <button 
                 type="button" 
                 className="p-1 hover:text-primary rounded-md"
-                onClick={onAttachmentClick}
+                onClick={() => fileInputRef.current?.click()}
                 title="Adjuntar PDF para generar contrato"
               >
                 <i className="ri-file-pdf-line"></i>

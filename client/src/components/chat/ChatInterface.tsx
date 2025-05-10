@@ -330,16 +330,126 @@ export default function ChatInterface() {
     ]);
   };
   
-  // Función para manejar la apertura del modal de contratos
+  // Función para manejar la apertura del modal de contratos (ya no se usa, pero se mantiene por compatibilidad)
   const handleOpenContractModal = () => {
     setIsContractModalOpen(true);
     setSelectedFile(null);
   };
   
-  // Función para manejar el cambio de archivo seleccionado
+  // Función para manejar el cambio de archivo seleccionado en el modal (para compatibilidad)
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setSelectedFile(e.target.files[0]);
+    }
+  };
+  
+  // Nueva función para manejar la carga directa de archivos desde el icono de la barra de chat
+  const handleDirectFileUpload = async (file: File) => {
+    // Mostrar mensaje informativo al usuario
+    const uploadMessage: Message = {
+      id: `file-upload-${Date.now()}`,
+      content: `Archivo recibido: ${file.name} (${Math.round(file.size / 1024)} KB). Procesando...`,
+      sender: "assistant",
+    };
+    
+    setMessages((prev) => [...prev, uploadMessage]);
+    
+    // Mostrar el efecto de análisis futurista
+    setShowAnalysisEffect(true);
+    setIsUploadingContract(true);
+    
+    try {
+      // Procesar el PDF después de un breve retraso para que se vea el efecto
+      const result = await new Promise<Awaited<ReturnType<typeof processPDFForContract>>>(async (resolve) => {
+        // Usamos un setTimeout para permitir que el efecto visual se muestre durante unos segundos
+        setTimeout(async () => {
+          try {
+            const pdfResult = await processPDFForContract(file);
+            resolve(pdfResult);
+          } catch (error) {
+            console.error("¡Chale! Error procesando el PDF para el contrato:", error);
+            setShowAnalysisEffect(false);
+            throw error;
+          }
+        }, 6500); // Esperar 6.5 segundos para mostrar el efecto completo
+      });
+      
+      // Ocultar el efecto de análisis cuando termine
+      setShowAnalysisEffect(false);
+      
+      // Mostrar mensaje de procesamiento exitoso
+      const processingMessage: Message = {
+        id: `processing-success-${Date.now()}`,
+        content: "He analizado tu PDF con éxito utilizando tecnología avanzada de IA...",
+        sender: "assistant",
+      };
+      
+      // Reemplazar el mensaje de carga con el mensaje de éxito
+      setMessages((prev) => {
+        const filteredMessages = prev.filter(m => m.id !== uploadMessage.id);
+        return [...filteredMessages, processingMessage];
+      });
+      
+      // Guardar los datos extraídos en el contexto
+      setContext((prev) => ({
+        ...prev,
+        datos_extraidos: result.datos_extraidos,
+      }));
+      
+      // Mostrar mensaje sobre los datos extraídos
+      const extractedDataMessage: Message = {
+        id: `data-${Date.now()}`,
+        content: `
+He extraído los siguientes datos del PDF:
+
+Cliente: ${result.datos_extraidos.cliente.nombre || "No encontrado"}
+Dirección: ${result.datos_extraidos.cliente.direccion || "No encontrada"}
+Tipo de cerca: ${result.datos_extraidos.proyecto.tipoCerca || "No encontrado"}
+Altura: ${result.datos_extraidos.proyecto.altura || "No encontrada"}
+Longitud: ${result.datos_extraidos.proyecto.longitud || "No encontrada"}
+Total: ${result.datos_extraidos.presupuesto.total || "No encontrado"}
+
+¿Quieres que genere un contrato usando estos datos?
+        `,
+        sender: "assistant",
+        actions: [
+          {
+            label: "Generar Contrato",
+            onClick: () => handleGenerateContractWithExistingData(),
+          },
+          {
+            label: "Ajustar Datos",
+            onClick: () => handleEditDetails("contract"),
+          },
+        ],
+      };
+      
+      setMessages((prev) => [...prev, extractedDataMessage]);
+    } catch (error) {
+      console.error("Error procesando el PDF:", error);
+      setShowAnalysisEffect(false);
+      setIsUploadingContract(false);
+      
+      // Mostrar mensaje de error
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        content: "Lo siento, ocurrió un error al procesar el PDF. Por favor intenta con otro archivo o contacta a soporte técnico.",
+        sender: "assistant",
+      };
+      
+      // Reemplazar el mensaje de carga con el mensaje de error
+      setMessages((prev) => {
+        const filteredMessages = prev.filter(m => m.id !== uploadMessage.id);
+        return [...filteredMessages, errorMessage];
+      });
+      
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo procesar el PDF. Por favor intenta con otro archivo.",
+      });
+    } finally {
+      setIsUploadingContract(false);
     }
   };
   
@@ -479,6 +589,96 @@ export default function ChatInterface() {
     };
     
     setMessages((prev) => [...prev, botMessage]);
+  };
+  
+  // Función para generar contrato con los datos ya extraídos
+  const handleGenerateContractWithExistingData = async () => {
+    // Mostrar mensaje informativo
+    const generatingMessage: Message = {
+      id: `generating-${Date.now()}`,
+      content: "Generando contrato personalizado con los datos extraídos...",
+      sender: "assistant",
+    };
+    
+    setMessages((prev) => [...prev, generatingMessage]);
+    
+    try {
+      // Simular tiempo de procesamiento
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Crear html ficticio de contrato mientras se implementa la funcionalidad completa
+      const contractHtml = `
+      <div class="p-8 bg-white">
+        <h1 class="text-2xl font-bold mb-6 text-center">CONTRATO DE CONSTRUCCIÓN DE CERCA</h1>
+        <p class="mb-4">Este contrato se celebra entre <strong>Owl Fence Co.</strong> y <strong>${context.datos_extraidos?.cliente?.nombre || 'Cliente'}</strong>.</p>
+        <p class="mb-4"><strong>Dirección del proyecto:</strong> ${context.datos_extraidos?.cliente?.direccion || 'Dirección no especificada'}</p>
+        <p class="mb-4"><strong>Detalles del proyecto:</strong></p>
+        <ul class="list-disc ml-8 mb-4">
+          <li>Tipo de cerca: ${context.datos_extraidos?.proyecto?.tipoCerca || 'No especificado'}</li>
+          <li>Altura: ${context.datos_extraidos?.proyecto?.altura || 'No especificada'}</li>
+          <li>Longitud: ${context.datos_extraidos?.proyecto?.longitud || 'No especificada'}</li>
+        </ul>
+        <p class="mb-4"><strong>Precio total:</strong> $${context.datos_extraidos?.presupuesto?.total || '0.00'}</p>
+        <div class="mt-8 pt-4 border-t border-gray-300">
+          <p class="mb-2">Firma del cliente: _________________________ Fecha: _________</p>
+          <p>Firma del contratista: _________________________ Fecha: _________</p>
+        </div>
+      </div>
+      `;
+      
+      // Mostrar el contrato generado
+      const contractMessage: Message = {
+        id: `contract-${Date.now()}`,
+        content: "¡He generado tu contrato! Aquí está el documento finalizado:",
+        sender: "assistant",
+        template: {
+          type: "contract",
+          html: contractHtml,
+        },
+        actions: [
+          {
+            label: "Descargar PDF",
+            onClick: () => handleDownload("contract"),
+          },
+          {
+            label: "Enviar por Email",
+            onClick: () => handleEmailClient("contract"),
+          },
+          {
+            label: "Solicitar Ajustes",
+            onClick: handleRequestAdjustments,
+          },
+        ],
+      };
+      
+      // Reemplazar el mensaje de generación con el contrato
+      setMessages((prev) => {
+        const filtered = prev.filter(m => m.id !== generatingMessage.id);
+        return [...filtered, contractMessage];
+      });
+      
+    } catch (error) {
+      console.error("Error generando contrato:", error);
+      
+      // Mostrar mensaje de error
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        content: "Lo siento, ocurrió un error al generar el contrato. Por favor intenta de nuevo más tarde.",
+        sender: "assistant",
+      };
+      
+      // Reemplazar el mensaje de generación con el error
+      setMessages((prev) => {
+        const filtered = prev.filter(m => m.id !== generatingMessage.id);
+        return [...filtered, errorMessage];
+      });
+      
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo generar el contrato. Por favor intenta de nuevo.",
+      });
+    }
   };
 
   return (
@@ -646,8 +846,8 @@ export default function ChatInterface() {
           <div className="relative">
             <ChatInput 
               onSendMessage={handleSendMessage} 
-              isDisabled={isProcessing} 
-              onAttachmentClick={handleOpenContractModal}
+              isDisabled={isProcessing}
+              onFileUpload={handleDirectFileUpload}
             />
           </div>
         )}

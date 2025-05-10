@@ -66,9 +66,6 @@ export class MistralService {
       console.log(`Texto extraído: ${pdfText.length} caracteres`);
       console.log(`Muestra: ${pdfText.substring(0, 300)}...`);
       
-      console.log(`Texto extraído del PDF (${pdfText.length} caracteres)`);
-      console.log(`Muestra del texto: ${pdfText.substring(0, 300)}...`);
-      
       const prompt = `
 Eres un asistente especializado en extraer información estructurada de PDFs de estimados de construcción de cercas. 
 Tu tarea es extraer la siguiente información del texto extraído del documento:
