@@ -63,7 +63,6 @@ interface ChatContext {
   [key: string]: any; // Para mantener compatibilidad con otros campos
 }
 
-// Tipos para los formularios
 type CustomClauseFormValues = z.infer<typeof customClauseSchema>;
 type CorrectionFormValues = z.infer<typeof correctionSchema>;
 
@@ -291,8 +290,17 @@ export default function ChatInterface() {
         // Eliminar indicador de escritura
         setMessages((prev) => prev.filter((m) => !m.isTyping));
         
-        // Procesar la corrección
-        await handleProcessCorrection(messageText);
+        // Abrir el diálogo de corrección
+        setIsCorrectionDialogOpen(true);
+        setCorrectionField(messageText);
+        
+        const responseMessage: Message = {
+          id: `assistant-${Date.now()}`,
+          content: "Por favor, especifica qué información deseas corregir y proporciona el valor correcto.",
+          sender: "assistant",
+        };
+        
+        setMessages((prev) => [...prev, responseMessage]);
         setIsProcessing(false);
         return;
       }
@@ -316,6 +324,8 @@ export default function ChatInterface() {
         setIsProcessing(false);
         return;
       }
+      
+
 
       // Verificar si tenemos datos de contrato y estamos en modo recopilación
       if (context.datos_extraidos && context.recopilacionDatos?.activa && context.recopilacionDatos.servicioContrato) {
