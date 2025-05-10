@@ -6,6 +6,7 @@ import TypingIndicator from "./TypingIndicator";
 import EstimatePreview from "../templates/EstimatePreview";
 import ContractPreview from "../templates/ContractPreview";
 import ManualEstimateForm from "../estimates/ManualEstimateForm";
+import { AnalysisEffect } from "../effects/AnalysisEffect";
 import { processChatMessage, processPDFForContract } from "@/lib/openai";
 import { downloadEstimatePDF, downloadContractPDF, downloadPDF } from "@/lib/pdf";
 import { Button } from "@/components/ui/button";

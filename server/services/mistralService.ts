@@ -52,9 +52,13 @@ export class MistralService {
     
     try {
       console.log('Iniciando extracción con Mistral AI...');
+      console.log(`Tamaño del PDF: ${pdfBuffer.length} bytes`);
       
       // Convertir el PDF a base64
       const pdfBase64 = pdfBuffer.toString('base64');
+      console.log(`PDF convertido a base64. Longitud: ${pdfBase64.length} caracteres`);
+      console.log(`Primeros 100 caracteres del base64: ${pdfBase64.substring(0, 100)}...`);
+      console.log('Configurando petición a la API de Mistral...');
       
       const prompt = `
 Eres un asistente especializado en extraer información estructurada de PDFs de estimados de construcción de cercas. 
@@ -105,10 +109,9 @@ Si no encuentras algún dato, deja el campo vacío. NO incluyas explicaciones ad
                   text: prompt,
                 },
                 {
-                  type: 'image',
-                  image: {
-                    data: pdfBase64,
-                    mime_type: 'application/pdf',
+                  type: 'image_url',
+                  image_url: {
+                    url: `data:application/pdf;base64,${pdfBase64}`,
                   },
                 },
               ],
