@@ -7,7 +7,7 @@ import EstimatePreview from "../templates/EstimatePreview";
 import ContractPreview from "../templates/ContractPreview";
 import ManualEstimateForm from "../estimates/ManualEstimateForm";
 import { AnalysisEffect } from "../effects/AnalysisEffect";
-import { processChatMessage, processPDFForContract, actualizarContrato } from "@/lib/openai";
+import { processChatMessage, processPDFForContract, actualizarContrato, generateContract } from "@/lib/openai";
 import { downloadEstimatePDF, downloadContractPDF, downloadPDF } from "@/lib/pdf";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -71,6 +71,7 @@ export default function ChatInterface() {
   const [correctionField, setCorrectionField] = useState("");
   const [customClause, setCustomClause] = useState("");
   const [allCustomClauses, setAllCustomClauses] = useState<string[]>([]);
+  const [showCustomClauseForm, setShowCustomClauseForm] = useState(false);
 
   // Formulario para cláusulas personalizadas
   const customClauseForm = useForm<CustomClauseFormValues>({
@@ -546,7 +547,7 @@ Total: ${result.datos_extraidos.presupuesto?.total || "No encontrado"}
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No hay datos extraídos disponibles. Por favor, carga un estimado primero.",
+        description: "No hay datos extraídos disponibles. Por favor, proporciona la información necesaria.",
       });
       return;
     }
@@ -556,64 +557,84 @@ Total: ${result.datos_extraidos.presupuesto?.total || "No encontrado"}
     // Mostrar mensaje de procesamiento
     const processingMessage: Message = {
       id: `generating-${Date.now()}`,
-      content: "Generando contrato con los datos extraídos...",
+      content: "Generando contrato con la información proporcionada...",
       sender: "assistant",
+      isTyping: true,
     };
     
     setMessages((prev) => [...prev, processingMessage]);
     
     try {
-      // Llamar a la API para generar el contrato usando los datos extraídos
-      const result = await actualizarContrato(context.datos_extraidos);
+      // Formateamos los datos para la API
+      const datosFormateados = context.datos_extraidos;
       
-      // Mostrar mensaje de éxito
-      const successMessage: Message = {
-        id: `success-${Date.now()}`,
-        content: "¡Listo! He generado un contrato personalizado basado en tu estimado.",
+      // Intentamos generar el contrato directamente
+      let contractHtml;
+      
+      if (datosFormateados.contrato_html) {
+        // Si ya tenemos un HTML de contrato generado previamente
+        contractHtml = datosFormateados.contrato_html;
+      } else {
+        // Generamos uno nuevo con OpenAI
+        contractHtml = await generateContract(datosFormateados);
+      }
+      
+      // Feedback visual
+      setMessages((prev) => prev.filter((m) => !m.isTyping));
+      
+      // Mensaje de confirmación
+      const confirmationMessage: Message = {
+        id: `confirm-${Date.now()}`,
+        content: "¡He generado un contrato basado en la información que proporcionaste!",
         sender: "assistant",
       };
+      setMessages((prev) => [...prev, confirmationMessage]);
       
-      // Reemplazar el mensaje de procesamiento con el de éxito
-      setMessages((prev) => prev.filter(m => m.id !== processingMessage.id).concat(successMessage));
-      
-      // Mostrar preview del contrato generado
+      // Mostrar el contrato
       const templateMessage: Message = {
         id: `template-${Date.now()}`,
-        content: "Aquí está el contrato generado:",
+        content: "Aquí está una vista previa de tu contrato:",
         sender: "assistant",
         template: {
           type: "contract",
-          html: result.contrato_html,
+          html: contractHtml,
         },
       };
       
       setMessages((prev) => [...prev, templateMessage]);
       
-      // Preguntar si quiere hacer ajustes al contrato
+      // Agregar mensaje de seguimiento 
       const followUpMessage: Message = {
-        id: `follow-up-${Date.now()}`,
-        content: "¿Te gustaría hacer algún ajuste al contrato? Por ejemplo, añadir cláusulas personalizadas o corregir algún dato.",
+        id: `follow-${Date.now()}`,
+        content: "¿Te gustaría hacer algún cambio en el contrato? Puedes pedirme que modifique algo específico o añada cláusulas personalizadas.",
         sender: "assistant",
-        options: [
-          { text: "Añadir cláusula personalizada", clickable: true },
-          { text: "Corregir información", clickable: true },
-          { text: "Descargar contrato", clickable: true },
-        ],
+        actions: [
+          {
+            label: "Descargar PDF",
+            onClick: () => handleDownloadPDF(contractHtml),
+          },
+          {
+            label: "Añadir cláusula personalizada",
+            onClick: () => setShowCustomClauseForm(true),
+          }
+        ]
       };
       
       setMessages((prev) => [...prev, followUpMessage]);
     } catch (error) {
       console.error("Error generando contrato:", error);
       
-      // Mostrar mensaje de error
+      // Quitar mensaje de procesamiento
+      setMessages((prev) => prev.filter((m) => !m.isTyping));
+      
+      // Agregar mensaje de error
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
-        content: "Lo siento, ocurrió un error al generar el contrato. Por favor intenta de nuevo.",
+        content: "Lo siento, ha ocurrido un error al generar el contrato. Por favor, intenta nuevamente o proporciona más detalles sobre el proyecto.",
         sender: "assistant",
       };
       
-      // Reemplazar el mensaje de procesamiento con el de error
-      setMessages((prev) => prev.filter(m => m.id !== processingMessage.id).concat(errorMessage));
+      setMessages((prev) => [...prev, errorMessage]);
       
       toast({
         variant: "destructive",
