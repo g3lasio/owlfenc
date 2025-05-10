@@ -44,20 +44,44 @@ export class DocumentService {
   }
 
   private replaceTemplateVariables(template: string, data: DocumentData): string {
+    // Verificar y establecer valores predeterminados para evitar errores
+    const safeData = {
+      contractorInfo: {
+        name: data.contractorInfo?.name || 'OWL FENC LLC',
+        phone: data.contractorInfo?.phone || '(202) 549-3519',
+        email: data.contractorInfo?.email || 'contacto@owlfenc.com',
+        address: data.contractorInfo?.address || '2901 Owens Ct, Fairfield, CA 94534 US',
+        license: data.contractorInfo?.license || 'Pendiente'
+      },
+      clientName: data.clientName || 'Cliente',
+      clientPhone: data.clientPhone || 'Pendiente',
+      clientEmail: data.clientEmail || 'Pendiente',
+      clientAddress: data.clientAddress || 'Pendiente',
+      fenceType: data.fenceType || 'Cercado de madera',
+      fenceHeight: data.fenceHeight || 6,
+      fenceLength: data.fenceLength || 0,
+      projectTotal: data.projectTotal || 0,
+      depositPercent: data.depositPercent || 30,
+      startDate: data.startDate || 'A determinar',
+      completionDate: data.completionDate || 'A determinar'
+    };
+    
     const formatCurrency = (amount: number) => `$${amount.toFixed(2)}`;
     
+    console.log("Reemplazando variables de la plantilla con datos:", safeData);
+    
     return template
-      .replace(/{{contractorName}}/g, data.contractorInfo.name)
-      .replace(/{{contractorPhone}}/g, data.contractorInfo.phone)
-      .replace(/{{contractorEmail}}/g, data.contractorInfo.email)
-      .replace(/{{contractorAddress}}/g, data.contractorInfo.address)
-      .replace(/{{contractorLicense}}/g, data.contractorInfo.license)
-      .replace(/{{clientName}}/g, data.clientName)
-      .replace(/{{clientPhone}}/g, data.clientPhone)
-      .replace(/{{clientEmail}}/g, data.clientEmail)
-      .replace(/{{clientAddress}}/g, data.clientAddress)
-      .replace(/{{fenceDetails.type}}/g, data.fenceType)
-      .replace(/{{fenceDetails.height}}/g, data.fenceHeight.toString())
+      .replace(/{{contractorName}}/g, safeData.contractorInfo.name)
+      .replace(/{{contractorPhone}}/g, safeData.contractorInfo.phone)
+      .replace(/{{contractorEmail}}/g, safeData.contractorInfo.email)
+      .replace(/{{contractorAddress}}/g, safeData.contractorInfo.address)
+      .replace(/{{contractorLicense}}/g, safeData.contractorInfo.license)
+      .replace(/{{clientName}}/g, safeData.clientName)
+      .replace(/{{clientPhone}}/g, safeData.clientPhone)
+      .replace(/{{clientEmail}}/g, safeData.clientEmail)
+      .replace(/{{clientAddress}}/g, safeData.clientAddress)
+      .replace(/{{fenceDetails.type}}/g, safeData.fenceType)
+      .replace(/{{fenceDetails.height}}/g, safeData.fenceHeight.toString())
       .replace(/{{fenceDetails.length}}/g, data.linearFeet.toString())
       .replace(/{{breakdown.posts}}/g, formatCurrency(data.breakdown.posts))
       .replace(/{{breakdown.concrete}}/g, formatCurrency(data.breakdown.concrete))
