@@ -384,3 +384,42 @@ export const insertPropertySearchHistorySchema = createInsertSchema(propertySear
 
 export type PropertySearchHistory = typeof propertySearchHistory.$inferSelect;
 export type InsertPropertySearchHistory = z.infer<typeof insertPropertySearchHistorySchema>;
+
+// User Materials table - for user-specific materials inventory
+export const userMaterials = pgTable("user_materials", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  name: text("name").notNull(),
+  category: text("category").notNull(), // categoría del material (pintura, madera, metal, etc.)
+  description: text("description"),
+  unit: text("unit").notNull(), // unidad de medida (pieza, pie, galón, etc.)
+  price: integer("price").notNull(), // precio en centavos
+  supplier: text("supplier"), // proveedor del material
+  supplierLink: text("supplier_link"), // enlace para comprar
+  sku: text("sku"), // código de producto del proveedor
+  stock: integer("stock"), // cantidad en inventario
+  minStock: integer("min_stock"), // nivel mínimo de inventario
+  projectId: text("project_id"), // referencia a proyecto (opcional)
+  tags: jsonb("tags"), // etiquetas para clasificar/filtrar
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertUserMaterialSchema = createInsertSchema(userMaterials).pick({
+  userId: true,
+  name: true,
+  category: true,
+  description: true,
+  unit: true,
+  price: true,
+  supplier: true,
+  supplierLink: true,
+  sku: true,
+  stock: true,
+  minStock: true,
+  projectId: true,
+  tags: true,
+});
+
+export type UserMaterial = typeof userMaterials.$inferSelect;
+export type InsertUserMaterial = z.infer<typeof insertUserMaterialSchema>;
