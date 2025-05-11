@@ -5,6 +5,29 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  .animate-ping {
+    animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+
+  .animate-pulse {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
+
+@keyframes ping {
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+@keyframes pulse {
+  50% {
+    opacity: .5;
+  }
+}
+
 /* Solución para el chat y scrolling */
 .chat-interface-container {
   display: flex;
@@ -450,4 +473,64 @@
     overflow-y: auto;
     padding-bottom: 150px; /* Increased to make room for both input and footer */
   }
+}
+/* Added a button with arc reactor effect */
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  margin: 0;
+}
+
+.arc-reactor-button {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background-color: #29abe2;
+  box-shadow: 0 0 20px rgba(0, 150, 255, 0.5);
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.2s ease-in-out;
+}
+
+.arc-reactor-button:hover {
+  transform: scale(1.05);
+}
+
+.arc-reactor-button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+  animation: pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+.arc-reactor-button i {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 3rem;
+  color: #ffffff;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+}
+
+.arc-reactor-button span {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-family: 'Quantico', sans-serif;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
 }
