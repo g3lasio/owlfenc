@@ -50,6 +50,12 @@ export const navigationGroups: NavigationGroup[] = [
         icon: "ri-user-star-line"
       },
       {
+        id: "materials",
+        label: "Materiales",
+        path: "/materials",
+        icon: "ri-tools-line"
+      },
+      {
         id: "history",
         label: "Historial",
         path: "/history",

@@ -42,6 +42,11 @@ export const mainNavigationConfig: NavigationSection[] = [
         icon: "ri-user-star-line",
       },
       {
+        label: "Materiales",
+        path: "/materials",
+        icon: "ri-tools-line",
+      },
+      {
         label: "Historial",
         path: "/history",
         icon: "ri-time-line",
