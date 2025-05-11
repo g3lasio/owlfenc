@@ -3,7 +3,7 @@ import { MessagesSquare } from "lucide-react";
 
 export default function Home() {
   return (
-    <div className="container mx-auto flex items-center justify-center min-h-[calc(100vh-4rem)]">
+    <div className="w-full h-full flex flex-col items-center justify-center min-h-[calc(100vh-8rem)] px-4">
       <Link href="/mervin">
         <button className="relative group">
           <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-xl group-hover:blur-2xl transition-all duration-500"></div>

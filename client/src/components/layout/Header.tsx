@@ -20,7 +20,7 @@ export default function Header({
   };
 
   return (
-    <header className="h-16 flex items-center justify-between px-4 border-b border-border bg-card">
+    <header className="h-16 w-full flex items-center justify-between px-4 border-b border-border bg-card sticky top-0 z-50">
       <button
         className={`p-2 rounded-md hover:bg-accent/20 transition-all duration-300 z-[10000] relative overflow-hidden group md:hidden ${isMobileMenuOpen ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}
         onClick={(e) => {

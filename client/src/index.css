@@ -266,6 +266,12 @@
 }
 
 @layer components {
+  html, body {
+    overflow-x: hidden;
+    width: 100%;
+    position: relative;
+  }
+
   /* Google Places Autocomplete customization */
   .react-select__control,
   .react-select__menu {
