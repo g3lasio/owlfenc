@@ -31,9 +31,16 @@ export default function Mervin() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
-      content: "¡Hola! Soy Mervin, tu asistente virtual. Puedo ayudarte con:\n\n• Generación de contratos\n• Verificación de propiedades\n• Consulta de permisos\n• Gestión de clientes\n• Facturación y pagos\n\n¿En qué puedo ayudarte hoy?",
-      sender: "assistant"
-    }
+      content: "¡Hola! Soy Mervin, tu asistente virtual para proyectos de cercas. Puedo ayudarte con:\n\n• Contratos - Generación y gestión de contratos\n• Propiedades - Verificación de propiedades\n• Permisos - Asesoría en permisos de construcción\n• Clientes - Gestión de clientes\n• Facturación - Manejo de pagos y facturas\n\n¿En qué puedo ayudarte hoy?",
+      sender: "assistant",
+      options: [
+        { text: "Contratos", clickable: true },
+        { text: "Propiedades", clickable: true },
+        { text: "Permisos", clickable: true },
+        { text: "Clientes", clickable: true },
+        { text: "Facturación", clickable: true }
+      ],
+    },
   ]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -85,7 +92,7 @@ export default function Mervin() {
 
     // Simular carga de archivo (en una implementación real, se subiría a un servidor)
     setIsLoading(true);
-    
+
     setTimeout(() => {
       const userMessage: Message = {
         id: `user-file-${Date.now()}`,
@@ -97,10 +104,10 @@ export default function Mervin() {
           name: file.name
         }
       };
-      
+
       setMessages(prev => [...prev, userMessage]);
       setIsLoading(false);
-      
+
       // Simular respuesta del asistente
       setIsLoading(true);
       setTimeout(() => {
@@ -115,14 +122,14 @@ export default function Mervin() {
         setIsLoading(false);
       }, 1000);
     }, 1500);
-    
+
     // Reset input
     event.target.value = "";
   };
 
   const handleServiceSelection = (service: string) => {
     let message = "";
-    
+
     switch(service) {
       case "contratos":
         message = "Me gustaría generar un contrato. ¿Qué tipo de contrato necesitas crear?";
@@ -142,13 +149,13 @@ export default function Mervin() {
       default:
         message = "¿En qué te puedo ayudar hoy?";
     }
-    
+
     const assistantMessage: Message = {
       id: `assistant-service-${Date.now()}`,
       content: message,
       sender: "assistant"
     };
-    
+
     setMessages(prev => [...prev, assistantMessage]);
     scrollToBottom();
   };
@@ -166,56 +173,10 @@ export default function Mervin() {
   return (
     <div className="flex-1 flex flex-col overflow-hidden p-4">
       <h1 className="text-2xl font-bold mb-4 text-center">Mervin AI</h1>
-      
+
       {/* Tarjetas de opciones rápidas */}
-      <div className="grid grid-cols-5 gap-2 mb-4">
-        <Card 
-          className="hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer transition-colors border-blue-200 hover:border-blue-400"
-          onClick={() => handleServiceSelection("contratos")}
-        >
-          <CardContent className="p-3 flex flex-col items-center justify-center">
-            <FileText className="h-5 w-5 mb-1 text-blue-500" />
-            <span className="text-xs text-center">Contratos</span>
-          </CardContent>
-        </Card>
-        <Card 
-          className="hover:bg-green-50 dark:hover:bg-green-900/30 cursor-pointer transition-colors border-green-200 hover:border-green-400"
-          onClick={() => handleServiceSelection("propiedades")}
-        >
-          <CardContent className="p-3 flex flex-col items-center justify-center">
-            <HomeIcon className="h-5 w-5 mb-1 text-green-500" />
-            <span className="text-xs text-center">Propiedades</span>
-          </CardContent>
-        </Card>
-        <Card 
-          className="hover:bg-purple-50 dark:hover:bg-purple-900/30 cursor-pointer transition-colors border-purple-200 hover:border-purple-400"
-          onClick={() => handleServiceSelection("permisos")}
-        >
-          <CardContent className="p-3 flex flex-col items-center justify-center">
-            <ClipboardCheck className="h-5 w-5 mb-1 text-purple-500" />
-            <span className="text-xs text-center">Permisos</span>
-          </CardContent>
-        </Card>
-        <Card 
-          className="hover:bg-amber-50 dark:hover:bg-amber-900/30 cursor-pointer transition-colors border-amber-200 hover:border-amber-400"
-          onClick={() => handleServiceSelection("clientes")}
-        >
-          <CardContent className="p-3 flex flex-col items-center justify-center">
-            <Users className="h-5 w-5 mb-1 text-amber-500" />
-            <span className="text-xs text-center">Clientes</span>
-          </CardContent>
-        </Card>
-        <Card 
-          className="hover:bg-emerald-50 dark:hover:bg-emerald-900/30 cursor-pointer transition-colors border-emerald-200 hover:border-emerald-400"
-          onClick={() => handleServiceSelection("facturacion")}
-        >
-          <CardContent className="p-3 flex flex-col items-center justify-center">
-            <CircleDollarSign className="h-5 w-5 mb-1 text-emerald-500" />
-            <span className="text-xs text-center">Facturación</span>
-          </CardContent>
-        </Card>
-      </div>
       
+
       <div className="flex-1 overflow-y-auto mb-4 space-y-4 pr-2 border border-muted rounded-lg p-4 bg-background">
         {messages.map(message => (
           <Card 
@@ -232,7 +193,7 @@ export default function Mervin() {
                 </div>
                 <div className="flex-1">
                   <p className="whitespace-pre-wrap">{message.content}</p>
-                  
+
                   {message.attachment && (
                     <div className="mt-2 p-2 border rounded-md max-w-xs">
                       {message.attachment.type === "image" ? (
@@ -271,7 +232,7 @@ export default function Mervin() {
         )}
         <div ref={messagesEndRef} />
       </div>
-      
+
       <div className="relative">
         {showAttachOptions && (
           <div className="absolute bottom-full mb-2 bg-background border border-input rounded-md shadow-md p-2 flex space-x-1">
@@ -313,7 +274,7 @@ export default function Mervin() {
             </Button>
           </div>
         )}
-      
+
         <div className="flex gap-2 mt-auto border border-input rounded-md p-1 bg-background">
           <Button 
             variant="ghost" 
@@ -323,7 +284,7 @@ export default function Mervin() {
           >
             <Paperclip className="h-5 w-5" />
           </Button>
-          
+
           <Input
             placeholder="Escribe tu mensaje..."
             value={inputValue}
@@ -332,7 +293,7 @@ export default function Mervin() {
             disabled={isLoading}
             className="flex-1 border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
           />
-          
+
           <Button 
             onClick={handleSendMessage} 
             disabled={isLoading}
@@ -342,7 +303,7 @@ export default function Mervin() {
             <Send className="h-4 w-4" />
           </Button>
         </div>
-        
+
         {/* Inputs ocultos para archivos */}
         <input 
           type="file" 
