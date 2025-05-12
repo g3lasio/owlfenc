@@ -16,6 +16,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import ChatAssistant from "@/components/contract/ChatAssistant";
 import ContractOptions from "@/components/contract/ContractOptions";
+import QuestionFlowChat from "@/components/contract/QuestionFlowChat";
 
 // Zod schema para validar los datos del formulario
 const contractFormSchema = z.object({
@@ -297,6 +298,7 @@ const ContractGenerator = () => {
             <TabsTrigger value="review-data">2. Revisar Información</TabsTrigger>
             <TabsTrigger value="preview-contract">3. Vista Previa</TabsTrigger>
             <TabsTrigger value="chat-assistant">Asistente</TabsTrigger>
+            <TabsTrigger value="guided-flow">Flujo Guiado</TabsTrigger>
           </TabsList>
 
           {/* Tab para opciones iniciales */}
@@ -336,6 +338,34 @@ const ContractGenerator = () => {
                     projectTotal: form.getValues("projectTotal")
                   }}
                   onDataComplete={handleChatDataComplete}
+                  onFileUpload={setSelectedFile}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          {/* Tab para el flujo guiado de preguntas */}
+          <TabsContent value="guided-flow">
+            <Card>
+              <CardHeader>
+                <CardTitle>Generación Guiada de Contratos</CardTitle>
+                <CardDescription>
+                  Te guiaré paso a paso a través de preguntas específicas para construir tu contrato
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <QuestionFlowChat 
+                  initialData={{
+                    clientName: form.getValues("clientName"),
+                    clientEmail: form.getValues("clientEmail"),
+                    clientPhone: form.getValues("clientPhone"),
+                    clientAddress: form.getValues("clientAddress"),
+                    fenceType: form.getValues("fenceType"),
+                    fenceHeight: form.getValues("fenceHeight"),
+                    fenceLength: form.getValues("fenceLength"),
+                    projectTotal: form.getValues("projectTotal")
+                  }}
+                  onComplete={handleChatDataComplete}
                   onFileUpload={setSelectedFile}
                 />
               </CardContent>

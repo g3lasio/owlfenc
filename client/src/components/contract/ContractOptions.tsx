@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, FileUp, Edit, Clock } from "lucide-react";
+import { FileText, FileUp, Edit, Clock, ListChecks, MessageCircle } from "lucide-react";
 
 interface ContractOptionProps {
   onSelectOption: (option: 'new' | 'template' | 'modify' | 'upload') => void;
