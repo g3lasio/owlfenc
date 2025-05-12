@@ -224,7 +224,7 @@ export const fenceContractQuestions: Question[] = [
 export async function getNextQuestion(currentQuestionId: string | null, answers: Record<string, any>): Promise<Question | null> {
   try {
     // Llamar a la API para validar y obtener la siguiente pregunta
-    const response = await fetch('/api/contracts/questions/next', {
+    const response = await fetch('/api/questions/next', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
