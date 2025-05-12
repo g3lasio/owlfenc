@@ -20,7 +20,7 @@ export default function Header({
   };
 
   return (
-    <header className="h-16 w-full flex items-center justify-between px-4 border-b border-border bg-card sticky top-0 z-50">
+    <header className="h-16 w-full flex items-center justify-between px-0 border-b border-border bg-card sticky top-0 z-50">
       <button
         className={`p-2 rounded-md hover:bg-accent/20 transition-all duration-300 z-[10000] relative overflow-hidden group md:hidden ${isMobileMenuOpen ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}
         onClick={(e) => {
@@ -36,7 +36,7 @@ export default function Header({
         <div className="absolute inset-0 bg-primary/10 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
       </button>
 
-      <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center justify-center">
+      <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center justify-center w-full max-w-[200px]">
         <Link href="/" className="cursor-pointer">
           <img
             src="https://i.postimg.cc/4yc9M62C/White-logo-no-background.png"
