@@ -218,32 +218,70 @@ export const fenceContractQuestions: Question[] = [
 
 /**
  * Función para obtener la siguiente pregunta basada en respuestas previas
- * Esto permite implementar lógica condicional en el flujo de preguntas
+ * Ahora usa validación del servidor para garantizar la integridad de los datos
+ * y permitir control centralizado del flujo de preguntas.
  */
-export function getNextQuestion(currentQuestionId: string | null, answers: Record<string, any>): Question | null {
-  // Si no hay pregunta actual, comenzar desde el principio
-  if (!currentQuestionId) {
-    return fenceContractQuestions[0];
-  }
-  
-  // Encontrar índice de la pregunta actual
-  const currentIndex = fenceContractQuestions.findIndex(q => q.id === currentQuestionId);
-  if (currentIndex === -1 || currentIndex >= fenceContractQuestions.length - 1) {
-    return null; // No hay más preguntas
-  }
-  
-  // Lógica para saltar preguntas basadas en respuestas anteriores
-  // Por ejemplo, si no hay puertas, saltar los detalles de puertas
-  if (currentQuestionId === 'gates' && answers['project.gates'] === 0) {
-    // Encontrar índice de gate_details para saltarlo
-    const gateDetailsIndex = fenceContractQuestions.findIndex(q => q.id === 'gate_details');
-    if (gateDetailsIndex > -1 && gateDetailsIndex === currentIndex + 1) {
-      return fenceContractQuestions[gateDetailsIndex + 1];
+export async function getNextQuestion(currentQuestionId: string | null, answers: Record<string, any>): Promise<Question | null> {
+  try {
+    // Llamar a la API para validar y obtener la siguiente pregunta
+    const response = await fetch('/api/contracts/questions/next', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        currentQuestionId,
+        answers
+      }),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      if (errorData.validationError) {
+        throw new Error(errorData.validationError);
+      }
+      throw new Error('Error al obtener la siguiente pregunta');
     }
+    
+    const data = await response.json();
+    
+    // Si el servidor indica que hemos completado el flujo
+    if (data.completed) {
+      return null;
+    }
+    
+    // Devolver la siguiente pregunta proporcionada por el servidor
+    return data.nextQuestion;
+  } catch (error) {
+    console.error('Error en validación de pregunta:', error);
+    
+    // Como fallback, usar la lógica local si el servidor falla
+    console.warn('Usando lógica local como respaldo');
+    
+    // Si no hay pregunta actual, comenzar desde el principio
+    if (!currentQuestionId) {
+      return fenceContractQuestions[0];
+    }
+    
+    // Encontrar índice de la pregunta actual
+    const currentIndex = fenceContractQuestions.findIndex(q => q.id === currentQuestionId);
+    if (currentIndex === -1 || currentIndex >= fenceContractQuestions.length - 1) {
+      return null; // No hay más preguntas
+    }
+    
+    // Lógica para saltar preguntas basadas en respuestas anteriores
+    // Por ejemplo, si no hay puertas, saltar los detalles de puertas
+    if (currentQuestionId === 'gates' && answers['project.gates'] === 0) {
+      // Encontrar índice de gate_details para saltarlo
+      const gateDetailsIndex = fenceContractQuestions.findIndex(q => q.id === 'gate_details');
+      if (gateDetailsIndex > -1 && gateDetailsIndex === currentIndex + 1) {
+        return fenceContractQuestions[gateDetailsIndex + 1];
+      }
+    }
+    
+    // Devolver la siguiente pregunta en secuencia
+    return fenceContractQuestions[currentIndex + 1];
   }
-  
-  // Devolver la siguiente pregunta en secuencia
-  return fenceContractQuestions[currentIndex + 1];
 }
 
 /**

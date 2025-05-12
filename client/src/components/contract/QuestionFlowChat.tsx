@@ -58,71 +58,115 @@ const QuestionFlowChat: React.FC<QuestionFlowChatProps> = ({
         }
       ]);
 
-      // Cargar la primera pregunta
-      const firstQuestion = getNextQuestion(null, {});
-      if (firstQuestion) {
-        setTimeout(() => {
-          setCurrentQuestion(firstQuestion);
-          setMessages(prev => [...prev, {
-            role: 'assistant',
-            content: firstQuestion.prompt,
-            timestamp: new Date(),
-            questionId: firstQuestion.id
-          }]);
-        }, 1000);
-      }
+      // Cargar la primera pregunta (asíncrono)
+      const loadFirstQuestion = async () => {
+        setIsLoading(true);
+        try {
+          const firstQuestion = await getNextQuestion(null, {});
+          if (firstQuestion) {
+            setTimeout(() => {
+              setCurrentQuestion(firstQuestion);
+              setMessages(prev => [...prev, {
+                role: 'assistant',
+                content: firstQuestion.prompt,
+                timestamp: new Date(),
+                questionId: firstQuestion.id
+              }]);
+              setIsLoading(false);
+            }, 1000);
+          } else {
+            setIsLoading(false);
+            toast({
+              title: "Error",
+              description: "No se pudo cargar la primera pregunta",
+              variant: "destructive"
+            });
+          }
+        } catch (error) {
+          setIsLoading(false);
+          toast({
+            title: "Error de conexión",
+            description: error instanceof Error ? error.message : "No se pudo conectar con el servidor",
+            variant: "destructive"
+          });
+        }
+      };
+      
+      loadFirstQuestion();
     }
-  }, []);
+  }, [toast]);
 
   // Auto-scroll al último mensaje
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Procesar la respuesta y avanzar a la siguiente pregunta
-  const processAnswer = (answer: string, questionId: string) => {
+  // Procesar la respuesta y avanzar a la siguiente pregunta (ahora asíncrono)
+  const processAnswer = async (answer: string, questionId: string) => {
     if (!currentQuestion) return;
+
+    // Mostrar indicador de carga
+    setIsLoading(true);
 
     // Guardar la respuesta
     const updatedAnswers = { ...answers };
     updatedAnswers[currentQuestion.field] = answer;
     setAnswers(updatedAnswers);
 
-    // Conseguir la siguiente pregunta
-    const nextQuestion = getNextQuestion(questionId, updatedAnswers);
+    try {
+      // Conseguir la siguiente pregunta (ahora asíncrono)
+      const nextQuestion = await getNextQuestion(questionId, updatedAnswers);
 
-    // Si hay más preguntas, mostrarla
-    if (nextQuestion) {
-      setCurrentQuestion(nextQuestion);
-      setTimeout(() => {
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: nextQuestion.prompt,
-          timestamp: new Date(),
-          questionId: nextQuestion.id
-        }]);
-      }, 600);
-    } else {
-      // Finalizar el flujo
-      const formattedData = formatAnswersForContract(updatedAnswers);
-      const formData = mapFormDataToContractForm(formattedData);
-      
-      // Avisar que se ha terminado
-      setTimeout(() => {
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: '¡Perfecto! He recopilado toda la información necesaria para generar tu contrato. Puedes revisarla antes de continuar.',
-          timestamp: new Date()
-        }]);
+      // Si hay más preguntas, mostrarla
+      if (nextQuestion) {
+        setCurrentQuestion(nextQuestion);
+        setTimeout(() => {
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: nextQuestion.prompt,
+            timestamp: new Date(),
+            questionId: nextQuestion.id
+          }]);
+          setIsLoading(false);
+        }, 600);
+      } else {
+        // Finalizar el flujo
+        const formattedData = formatAnswersForContract(updatedAnswers);
+        const formData = mapFormDataToContractForm(formattedData);
         
-        onComplete(formData);
-      }, 800);
+        // Avisar que se ha terminado
+        setTimeout(() => {
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: '¡Perfecto! He recopilado toda la información necesaria para generar tu contrato. Puedes revisarla antes de continuar.',
+            timestamp: new Date()
+          }]);
+          
+          setIsLoading(false);
+          onComplete(formData);
+        }, 800);
+      }
+    } catch (error) {
+      setIsLoading(false);
+      // Mostrar error en la interfaz
+      toast({
+        title: "Error de validación",
+        description: error instanceof Error ? error.message : "Error al procesar la respuesta",
+        variant: "destructive"
+      });
+      
+      // Añadir mensaje de error al chat
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `❌ Error: ${error instanceof Error ? error.message : "Error al procesar la respuesta"}. Por favor, intenta de nuevo.`,
+        timestamp: new Date()
+      }]);
     }
   };
 
   // Manejar el envío de mensajes
-  const handleSendMessage = () => {
-    if (!input.trim() || !currentQuestion) return;
+  const handleSendMessage = async () => {
+    if (!input.trim() || !currentQuestion || isLoading) return;
 
     // Añadir respuesta del usuario
     setMessages(prev => [...prev, {
@@ -131,17 +175,17 @@ const QuestionFlowChat: React.FC<QuestionFlowChatProps> = ({
       timestamp: new Date()
     }]);
 
-    // Guardar la respuesta y avanzar
+    // Guardar la respuesta y avanzar (ahora asíncrono)
     const currentQuestionId = currentQuestion.id;
-    processAnswer(input, currentQuestionId);
+    const inputValue = input;
+    setInput(''); // Limpiar el input inmediatamente para mejor UX
     
-    // Limpiar el input
-    setInput('');
+    await processAnswer(inputValue, currentQuestionId);
   };
 
   // Manejar respuestas para preguntas de opción múltiple
-  const handleSelectOption = (value: string) => {
-    if (!currentQuestion) return;
+  const handleSelectOption = async (value: string) => {
+    if (!currentQuestion || isLoading) return;
 
     // Añadir respuesta del usuario
     setMessages(prev => [...prev, {
@@ -150,16 +194,16 @@ const QuestionFlowChat: React.FC<QuestionFlowChatProps> = ({
       timestamp: new Date()
     }]);
 
-    // Guardar la respuesta y avanzar
+    // Guardar la respuesta y avanzar (ahora asíncrono)
     const currentQuestionId = currentQuestion.id;
-    processAnswer(value, currentQuestionId);
+    await processAnswer(value, currentQuestionId);
   };
 
-  // Manejar entrada de teclas
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  // Manejar entrada de teclas (ahora asíncrono)
+  const handleKeyDown = async (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSendMessage();
+      await handleSendMessage();
     }
   };
 
