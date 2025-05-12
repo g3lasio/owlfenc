@@ -35,6 +35,7 @@ export default function Signup() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [formStep, setFormStep] = useState<"personal" | "account">("personal");
 
   // Configurar el formulario
   const form = useForm<SignupFormValues>({
@@ -113,17 +114,37 @@ export default function Signup() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="w-full max-w-md">
-        <div className="mb-6 text-center">
-          <h2 className="text-3xl font-bold text-indigo-800">Owl Fenc</h2>
-          <p className="text-sm text-slate-600">Verificación de propiedades inteligente</p>
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,hsl(180,100%,10%)_0%,hsl(0,0%,7%)_70%)]"></div>
+        <div className="absolute inset-0 opacity-20">
+          {Array.from({ length: 30 }).map((_, i) => (
+            <div 
+              key={i} 
+              className="particle" 
+              style={{ 
+                top: `${Math.random() * 100}%`, 
+                left: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 3}s`,
+                backgroundColor: `hsl(180, 100%, ${40 + Math.random() * 30}%)`,
+                width: `${2 + Math.random() * 3}px`,
+                height: `${2 + Math.random() * 3}px`,
+              }}
+            ></div>
+          ))}
+        </div>
+      </div>
+
+      <div className="w-full max-w-md relative z-10">
+        <div className="mb-8 text-center">
+          <h2 className="text-3xl font-bold text-primary">Owl Fenc</h2>
+          <p className="text-sm text-muted-foreground mt-1">Verificación de propiedades inteligente</p>
         </div>
         
-        <Card className="border-0 shadow-xl overflow-hidden rounded-2xl">
-          <CardHeader className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-6">
+        <Card className="border border-primary/20 shadow-xl overflow-hidden rounded-xl backdrop-blur-sm bg-card/80">
+          <CardHeader className="bg-gradient-to-r from-primary/20 to-accent/20 px-6 py-6 border-b border-primary/20">
             <CardTitle className="text-2xl font-semibold text-center">Crear Cuenta</CardTitle>
-            <CardDescription className="text-center text-indigo-100">
+            <CardDescription className="text-center text-muted-foreground">
               Únete a nuestra comunidad
             </CardDescription>
           </CardHeader>
@@ -136,7 +157,7 @@ export default function Signup() {
                   variant="outline"
                   type="button"
                   onClick={handleGoogleSignup}
-                  className="w-full h-11 rounded-lg border-2 border-slate-200 hover:bg-slate-50 hover:border-indigo-200 transition-all"
+                  className="w-full h-11 rounded-lg border border-primary/20 hover:bg-primary/10 hover:border-primary/30 transition-all"
                 >
                   <FcGoogle className="mr-2 h-5 w-5" />
                   <span>Google</span>
@@ -145,7 +166,7 @@ export default function Signup() {
                   variant="outline"
                   type="button"
                   onClick={handleAppleSignup}
-                  className="w-full h-11 rounded-lg border-2 border-slate-200 hover:bg-slate-50 hover:border-indigo-200 transition-all"
+                  className="w-full h-11 rounded-lg border border-primary/20 hover:bg-primary/10 hover:border-primary/30 transition-all"
                 >
                   <FaApple className="mr-2 h-5 w-5" />
                   <span>Apple</span>
@@ -154,191 +175,247 @@ export default function Signup() {
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <Separator className="w-full border-slate-200" />
+                  <Separator className="w-full border-primary/20" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-2 text-slate-500">
+                  <span className="bg-card px-2 text-muted-foreground">
                     O regístrate con email
                   </span>
+                </div>
+              </div>
+
+              {/* Toggle para seleccionar sección de formulario */}
+              <div className="rounded-lg border border-primary/20 p-1 mb-4">
+                <div className="relative flex items-center rounded-md bg-muted/30 p-1 h-10">
+                  <div 
+                    className="absolute left-0 top-0 bottom-0 w-1/2 bg-primary rounded-md transition-all shadow-lg duration-300 ease-spring" 
+                    style={{ 
+                      transform: formStep === "personal" ? "translateX(0)" : "translateX(100%)",
+                      boxShadow: "0 0 15px 2px rgba(0, 255, 255, 0.3)"
+                    }}
+                  ></div>
+                  
+                  <button 
+                    className={`relative z-10 flex items-center justify-center gap-1 w-1/2 rounded-md px-3 py-1.5 text-sm transition-colors ${
+                      formStep === "personal" ? "text-primary-foreground" : "text-muted-foreground"
+                    }`}
+                    onClick={() => setFormStep("personal")}
+                  >
+                    <span>Datos personales</span>
+                  </button>
+                  
+                  <button 
+                    className={`relative z-10 flex items-center justify-center gap-1 w-1/2 rounded-md px-3 py-1.5 text-sm transition-colors ${
+                      formStep === "account" ? "text-primary-foreground" : "text-muted-foreground"
+                    }`}
+                    onClick={() => setFormStep("account")}
+                  >
+                    <span>Cuenta</span>
+                  </button>
                 </div>
               </div>
 
               {/* Formulario de registro */}
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-slate-700">Nombre completo</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="Juan Pérez" 
-                            {...field} 
-                            className="h-11 rounded-lg border-slate-200 focus:border-indigo-300 focus:ring-1 focus:ring-indigo-300"
-                          />
-                        </FormControl>
-                        <FormMessage className="text-red-500" />
-                      </FormItem>
-                    )}
-                  />
+                  {formStep === "personal" ? (
+                    <>
+                      <FormField
+                        control={form.control}
+                        name="name"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Nombre completo</FormLabel>
+                            <FormControl>
+                              <Input 
+                                placeholder="Juan Pérez" 
+                                {...field} 
+                                className="h-11 rounded-lg border-primary/20 focus:border-primary focus:ring-1 focus:ring-primary bg-card"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                  <FormField
-                    control={form.control}
-                    name="nickname"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-slate-700">Apodo (opcional)</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="Ej: El Flaco, El Pantera, El Gordo" 
-                            {...field}
-                            className="h-11 rounded-lg border-slate-200 focus:border-indigo-300 focus:ring-1 focus:ring-indigo-300 placeholder:text-slate-400" 
-                          />
-                        </FormControl>
-                        <p className="text-xs text-slate-500 mt-1">
-                          Usa un apodo que te identifique en la comunidad
-                        </p>
-                        <FormMessage className="text-red-500" />
-                      </FormItem>
-                    )}
-                  />
+                      <FormField
+                        control={form.control}
+                        name="nickname"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Apodo (opcional)</FormLabel>
+                            <FormControl>
+                              <Input 
+                                placeholder="Ej: El Flaco, El Pantera, El Gordo" 
+                                {...field}
+                                className="h-11 rounded-lg border-primary/20 focus:border-primary focus:ring-1 focus:ring-primary bg-card" 
+                              />
+                            </FormControl>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Usa un apodo que te identifique en la comunidad
+                            </p>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                  <FormField
-                    control={form.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-slate-700">Teléfono (opcional)</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="+1 (555) 123-4567" 
-                            type="tel" 
-                            {...field} 
-                            className="h-11 rounded-lg border-slate-200 focus:border-indigo-300 focus:ring-1 focus:ring-indigo-300"
-                          />
-                        </FormControl>
-                        <FormMessage className="text-red-500" />
-                      </FormItem>
-                    )}
-                  />
+                      <FormField
+                        control={form.control}
+                        name="phone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Teléfono (opcional)</FormLabel>
+                            <FormControl>
+                              <Input 
+                                placeholder="+1 (555) 123-4567" 
+                                type="tel" 
+                                {...field} 
+                                className="h-11 rounded-lg border-primary/20 focus:border-primary focus:ring-1 focus:ring-primary bg-card"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-slate-700">Correo Electrónico</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="tu@email.com" 
-                            {...field} 
-                            className="h-11 rounded-lg border-slate-200 focus:border-indigo-300 focus:ring-1 focus:ring-indigo-300"
-                          />
-                        </FormControl>
-                        <FormMessage className="text-red-500" />
-                      </FormItem>
-                    )}
-                  />
+                      <Button
+                        type="button"
+                        className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium text-base mt-2"
+                        onClick={() => setFormStep("account")}
+                      >
+                        Continuar
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Correo Electrónico</FormLabel>
+                            <FormControl>
+                              <Input 
+                                placeholder="tu@email.com" 
+                                {...field} 
+                                className="h-11 rounded-lg border-primary/20 focus:border-primary focus:ring-1 focus:ring-primary bg-card"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-slate-700">Contraseña</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Input 
-                              type={showPassword ? "text" : "password"} 
-                              placeholder="******" 
-                              {...field} 
-                              className="h-11 rounded-lg border-slate-200 focus:border-indigo-300 focus:ring-1 focus:ring-indigo-300"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setShowPassword(!showPassword)}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
-                            >
-                              {showPassword ? (
-                                <RiEyeOffLine className="h-4 w-4" />
-                              ) : (
-                                <RiEyeLine className="h-4 w-4" />
-                              )}
-                            </button>
-                          </div>
-                        </FormControl>
-                        <FormMessage className="text-red-500" />
-                      </FormItem>
-                    )}
-                  />
+                      <FormField
+                        control={form.control}
+                        name="password"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Contraseña</FormLabel>
+                            <FormControl>
+                              <div className="relative">
+                                <Input 
+                                  type={showPassword ? "text" : "password"} 
+                                  placeholder="******" 
+                                  {...field} 
+                                  className="h-11 rounded-lg border-primary/20 focus:border-primary focus:ring-1 focus:ring-primary bg-card"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowPassword(!showPassword)}
+                                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary"
+                                >
+                                  {showPassword ? (
+                                    <RiEyeOffLine className="h-4 w-4" />
+                                  ) : (
+                                    <RiEyeLine className="h-4 w-4" />
+                                  )}
+                                </button>
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                  <FormField
-                    control={form.control}
-                    name="confirmPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-slate-700">Confirmar Contraseña</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Input 
-                              type={showPassword ? "text" : "password"} 
-                              placeholder="******" 
-                              {...field} 
-                              className="h-11 rounded-lg border-slate-200 focus:border-indigo-300 focus:ring-1 focus:ring-indigo-300"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setShowPassword(!showPassword)}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
-                            >
-                              {showPassword ? (
-                                <RiEyeOffLine className="h-4 w-4" />
-                              ) : (
-                                <RiEyeLine className="h-4 w-4" />
-                              )}
-                            </button>
-                          </div>
-                        </FormControl>
-                        <FormMessage className="text-red-500" />
-                      </FormItem>
-                    )}
-                  />
+                      <FormField
+                        control={form.control}
+                        name="confirmPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Confirmar Contraseña</FormLabel>
+                            <FormControl>
+                              <div className="relative">
+                                <Input 
+                                  type={showPassword ? "text" : "password"} 
+                                  placeholder="******" 
+                                  {...field} 
+                                  className="h-11 rounded-lg border-primary/20 focus:border-primary focus:ring-1 focus:ring-primary bg-card"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowPassword(!showPassword)}
+                                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary"
+                                >
+                                  {showPassword ? (
+                                    <RiEyeOffLine className="h-4 w-4" />
+                                  ) : (
+                                    <RiEyeLine className="h-4 w-4" />
+                                  )}
+                                </button>
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                  <Button
-                    type="submit"
-                    className="w-full h-11 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium text-base mt-2"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <span className="flex items-center justify-center">
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Cargando...
-                      </span>
-                    ) : (
-                      "Crear Cuenta"
-                    )}
-                  </Button>
+                      <div className="flex gap-3 mt-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="flex-1 h-11 rounded-lg border-primary/20 hover:bg-primary/10"
+                          onClick={() => setFormStep("personal")}
+                        >
+                          Atrás
+                        </Button>
+                        
+                        <Button
+                          type="submit"
+                          className="flex-1 h-11 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium"
+                          disabled={isLoading}
+                        >
+                          {isLoading ? (
+                            <span className="flex items-center justify-center">
+                              <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Cargando...
+                            </span>
+                          ) : (
+                            "Crear Cuenta"
+                          )}
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </form>
               </Form>
 
               {/* Mensaje de error */}
               {error && (
-                <div className="text-red-500 text-sm text-center bg-red-50 p-2 rounded-lg">{error}</div>
+                <div className="text-red-500 text-sm text-center bg-red-900/20 p-2 rounded-lg border border-red-500/20">{error}</div>
               )}
             </div>
           </CardContent>
           
-          <CardFooter className="flex justify-center px-6 py-5 bg-slate-50 border-t border-slate-100">
-            <p className="text-sm text-slate-600 text-center">
+          <CardFooter className="flex justify-center px-6 py-5 bg-muted/20 border-t border-primary/10">
+            <p className="text-sm text-muted-foreground text-center">
               ¿Ya tienes una cuenta?{" "}
               <Button 
                 variant="link" 
-                className="p-0 px-1 text-indigo-600 font-medium hover:text-indigo-800" 
+                className="p-0 px-1 text-primary font-medium hover:text-primary/80" 
                 onClick={() => navigate("/login")}
               >
                 Iniciar Sesión

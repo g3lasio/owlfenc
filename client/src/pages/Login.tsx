@@ -148,17 +148,37 @@ export default function Login() {
 
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="w-full max-w-md">
-        <div className="mb-6 text-center">
-          <h2 className="text-3xl font-bold text-indigo-800">Owl Fenc</h2>
-          <p className="text-sm text-slate-600">Verificación de propiedades inteligente</p>
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,hsl(180,100%,10%)_0%,hsl(0,0%,7%)_70%)]"></div>
+        <div className="absolute inset-0 opacity-20">
+          {Array.from({ length: 30 }).map((_, i) => (
+            <div 
+              key={i} 
+              className="particle" 
+              style={{ 
+                top: `${Math.random() * 100}%`, 
+                left: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 3}s`,
+                backgroundColor: `hsl(180, 100%, ${40 + Math.random() * 30}%)`,
+                width: `${2 + Math.random() * 3}px`,
+                height: `${2 + Math.random() * 3}px`,
+              }}
+            ></div>
+          ))}
+        </div>
+      </div>
+
+      <div className="w-full max-w-md relative z-10">
+        <div className="mb-8 text-center">
+          <h2 className="text-3xl font-bold text-primary">Owl Fenc</h2>
+          <p className="text-sm text-muted-foreground mt-1">Verificación de propiedades inteligente</p>
         </div>
         
-        <Card className="border-0 shadow-xl overflow-hidden rounded-2xl">
-          <CardHeader className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-6">
+        <Card className="border border-primary/20 shadow-xl overflow-hidden rounded-xl backdrop-blur-sm bg-card/80">
+          <CardHeader className="bg-gradient-to-r from-primary/20 to-accent/20 px-6 py-6 border-b border-primary/20">
             <CardTitle className="text-2xl font-semibold text-center">Iniciar Sesión</CardTitle>
-            <CardDescription className="text-center text-indigo-100">
+            <CardDescription className="text-center text-muted-foreground">
               Accede a tu cuenta para continuar
             </CardDescription>
           </CardHeader>
@@ -171,7 +191,7 @@ export default function Login() {
                   variant="outline"
                   type="button"
                   onClick={handleGoogleLogin}
-                  className="w-full h-11 rounded-lg border-2 border-slate-200 hover:bg-slate-50 hover:border-indigo-200 transition-all"
+                  className="w-full h-11 rounded-lg border border-primary/20 hover:bg-primary/10 hover:border-primary/30 transition-all"
                 >
                   <FcGoogle className="mr-2 h-5 w-5" />
                   <span>Google</span>
@@ -180,7 +200,7 @@ export default function Login() {
                   variant="outline"
                   type="button"
                   onClick={handleAppleLogin}
-                  className="w-full h-11 rounded-lg border-2 border-slate-200 hover:bg-slate-50 hover:border-indigo-200 transition-all"
+                  className="w-full h-11 rounded-lg border border-primary/20 hover:bg-primary/10 hover:border-primary/30 transition-all"
                 >
                   <FaApple className="mr-2 h-5 w-5" />
                   <span>Apple</span>
@@ -189,41 +209,52 @@ export default function Login() {
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <Separator className="w-full border-slate-200" />
+                  <Separator className="w-full border-primary/20" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-2 text-slate-500">
+                  <span className="bg-card px-2 text-muted-foreground">
                     O continúa con
                   </span>
                 </div>
               </div>
 
               {/* Tabs para seleccionar método de inicio de sesión */}
-              <Tabs 
-                value={loginMethod} 
-                onValueChange={(value) => setLoginMethod(value as "email" | "emailLink")}
-                className="w-full"
-              >
-                <TabsList className="grid grid-cols-2 mb-4 bg-slate-100 p-1 rounded-lg">
-                  <TabsTrigger 
-                    value="email" 
-                    className="flex items-center gap-1 data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-sm rounded-md"
+              <div className="rounded-lg border border-primary/20 p-1">
+                <div className="relative flex items-center rounded-md bg-muted/30 p-1 h-10">
+                  <div 
+                    className="absolute left-0 top-0 bottom-0 w-1/2 bg-primary rounded-md transition-all shadow-lg duration-300 ease-spring" 
+                    style={{ 
+                      transform: loginMethod === "email" ? "translateX(0)" : "translateX(100%)",
+                      boxShadow: "0 0 15px 2px rgba(0, 255, 255, 0.3)"
+                    }}
+                  ></div>
+                  
+                  <button 
+                    className={`relative z-10 flex items-center justify-center gap-1 w-1/2 rounded-md px-3 py-1.5 text-sm transition-colors ${
+                      loginMethod === "email" ? "text-primary-foreground" : "text-muted-foreground"
+                    }`}
+                    onClick={() => setLoginMethod("email")}
                   >
                     <HiMail className="h-4 w-4" />
                     <span className="hidden sm:inline">Email y contraseña</span>
                     <span className="sm:hidden">Email</span>
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="emailLink" 
-                    className="flex items-center gap-1 data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-sm rounded-md"
+                  </button>
+                  
+                  <button 
+                    className={`relative z-10 flex items-center justify-center gap-1 w-1/2 rounded-md px-3 py-1.5 text-sm transition-colors ${
+                      loginMethod === "emailLink" ? "text-primary-foreground" : "text-muted-foreground"
+                    }`}
+                    onClick={() => setLoginMethod("emailLink")}
                   >
                     <RiMailSendLine className="h-4 w-4" />
                     <span className="hidden sm:inline">Sin contraseña</span>
                     <span className="sm:hidden">Link</span>
-                  </TabsTrigger>
-                </TabsList>
+                  </button>
+                </div>
+              </div>
 
-                <TabsContent value="email" className="space-y-4">
+              <div className="mt-5">
+                {loginMethod === "email" ? (
                   <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                       <FormField
@@ -231,15 +262,15 @@ export default function Login() {
                         name="email"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-slate-700">Correo Electrónico</FormLabel>
+                            <FormLabel>Correo Electrónico</FormLabel>
                             <FormControl>
                               <Input 
                                 placeholder="tu@email.com" 
                                 {...field} 
-                                className="h-11 rounded-lg border-slate-200 focus:border-indigo-300 focus:ring-1 focus:ring-indigo-300"
+                                className="h-11 rounded-lg border-primary/20 focus:border-primary focus:ring-1 focus:ring-primary bg-card"
                               />
                             </FormControl>
-                            <FormMessage className="text-red-500" />
+                            <FormMessage />
                           </FormItem>
                         )}
                       />
@@ -249,19 +280,19 @@ export default function Login() {
                         name="password"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-slate-700">Contraseña</FormLabel>
+                            <FormLabel>Contraseña</FormLabel>
                             <FormControl>
                               <div className="relative">
                                 <Input 
                                   type={showPassword ? "text" : "password"} 
                                   placeholder="******" 
                                   {...field} 
-                                  className="h-11 rounded-lg border-slate-200 focus:border-indigo-300 focus:ring-1 focus:ring-indigo-300"
+                                  className="h-11 rounded-lg border-primary/20 focus:border-primary focus:ring-1 focus:ring-primary bg-card"
                                 />
                                 <button
                                   type="button"
                                   onClick={() => setShowPassword(!showPassword)}
-                                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary"
                                 >
                                   {showPassword ? (
                                     <RiEyeOffLine className="h-4 w-4" />
@@ -271,14 +302,14 @@ export default function Login() {
                                 </button>
                               </div>
                             </FormControl>
-                            <FormMessage className="text-red-500" />
+                            <FormMessage />
                           </FormItem>
                         )}
                       />
 
                       <Button
                         type="submit"
-                        className="w-full h-11 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium text-base"
+                        className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium text-base"
                         disabled={isLoading}
                       >
                         {isLoading ? (
@@ -295,9 +326,7 @@ export default function Login() {
                       </Button>
                     </form>
                   </Form>
-                </TabsContent>
-
-                <TabsContent value="emailLink">
+                ) : (
                   <EmailLinkAuth 
                     onSuccess={() => {
                       toast({
@@ -306,12 +335,12 @@ export default function Login() {
                       });
                     }}
                   />
-                </TabsContent>
-              </Tabs>
+                )}
+              </div>
 
               {/* Mensaje de error */}
               {error && (
-                <div className="text-red-500 text-sm text-center bg-red-50 p-2 rounded-lg">{error}</div>
+                <div className="text-red-500 text-sm text-center bg-red-900/20 p-2 rounded-lg border border-red-500/20">{error}</div>
               )}
 
               {/* Recuperación de contraseña */}
@@ -320,7 +349,7 @@ export default function Login() {
                   <Button 
                     variant="link" 
                     onClick={() => navigate("/recuperar-password")}
-                    className="text-indigo-600 hover:text-indigo-800"
+                    className="text-primary hover:text-primary/80"
                   >
                     ¿Olvidaste tu contraseña?
                   </Button>
@@ -329,12 +358,12 @@ export default function Login() {
             </div>
           </CardContent>
           
-          <CardFooter className="flex justify-center px-6 py-5 bg-slate-50 border-t border-slate-100">
-            <p className="text-sm text-slate-600 text-center">
+          <CardFooter className="flex justify-center px-6 py-5 bg-muted/20 border-t border-primary/10">
+            <p className="text-sm text-muted-foreground text-center">
               ¿No tienes una cuenta?{" "}
               <Button 
                 variant="link" 
-                className="p-0 px-1 text-indigo-600 font-medium hover:text-indigo-800" 
+                className="p-0 px-1 text-primary font-medium hover:text-primary/80" 
                 onClick={() => navigate("/signup")}
               >
                 Regístrate
