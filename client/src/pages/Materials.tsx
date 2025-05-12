@@ -55,16 +55,20 @@ import { db as firebaseDb } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
 import { 
   FileSpreadsheet, 
+  FileText,
   Link as LinkIcon, 
+  Loader2,
   Package, 
   PackagePlus, 
+  Plus,
   RefreshCw, 
   Search, 
   ShoppingCart,
   Tag, 
   Trash2, 
   Upload,
-  Download
+  Download,
+  X
 } from "lucide-react";
 
 // Definir interfaz para material
