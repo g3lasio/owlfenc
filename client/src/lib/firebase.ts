@@ -218,10 +218,12 @@ export const updateProject = async (id: string, projectData: any) => {
     }
     
     // Actualizar el proyecto en la lista de muestra
+    const currentProject = sampleProjects[projectIndex];
     const updatedProject = {
-      ...sampleProjects[projectIndex],
+      ...currentProject,
       ...projectData,
-      updatedAt: Timestamp.now()
+      // Solo actualizar si ya existía, para evitar error de tipo
+      ...(currentProject.updatedAt ? { updatedAt: Timestamp.now() } : {})
     };
     
     sampleProjects[projectIndex] = updatedProject;
@@ -269,10 +271,12 @@ export const updateProjectProgress = async (id: string, progress: string) => {
     }
     
     // Actualizar el proyecto en la lista de muestra
+    const currentProject = sampleProjects[projectIndex];
     sampleProjects[projectIndex] = {
-      ...sampleProjects[projectIndex],
+      ...currentProject,
       projectProgress: progress,
-      updatedAt: Timestamp.now()
+      // Solo actualizar si ya existía, para evitar error de tipo
+      ...(currentProject.updatedAt ? { updatedAt: Timestamp.now() } : {})
     };
     
     return sampleProjects[projectIndex];

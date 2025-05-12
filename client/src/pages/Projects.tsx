@@ -127,7 +127,7 @@ export default function Projects() {
     }
     
     // Filter by fence type
-    if (selectedFenceType) {
+    if (selectedFenceType && selectedFenceType !== 'all') {
       result = result.filter(project => project.fenceType === selectedFenceType);
     }
     
@@ -368,7 +368,7 @@ export default function Projects() {
                 <SelectValue placeholder="Filtrar por tipo de cerca" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos los tipos</SelectItem>
+                <SelectItem value="all">Todos los tipos</SelectItem>
                 {fenceTypes.map((type) => (
                   <SelectItem key={type} value={type}>
                     {type}
