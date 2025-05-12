@@ -1,10 +1,10 @@
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, FileUp, Edit, Clock, ListChecks, MessageCircle } from "lucide-react";
+import { FileText, FileUp, Edit, Clock, ListChecks, MessageCircle, Files } from "lucide-react";
 
 interface ContractOptionProps {
-  onSelectOption: (option: 'new' | 'template' | 'modify' | 'upload' | 'chat-assistant' | 'guided-flow') => void;
+  onSelectOption: (option: 'new' | 'template' | 'modify' | 'upload' | 'chat-assistant' | 'guided-flow' | 'my-contracts') => void;
 }
 
 const ContractOptions: React.FC<ContractOptionProps> = ({ onSelectOption }) => {

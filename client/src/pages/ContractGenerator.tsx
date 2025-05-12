@@ -71,6 +71,7 @@ const ContractGenerator = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   
   // Consulta para obtener la lista de contratos
   const contractsQuery = useQuery({
@@ -987,6 +988,94 @@ const ContractGenerator = () => {
           </TabsContent>
         </Tabs>
       </div>
+      
+      {/* Diálogo para vista previa del contrato */}
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Vista previa del contrato</DialogTitle>
+          </DialogHeader>
+          {contractHtml ? (
+            <>
+              <ContractPreview html={contractHtml} />
+              <div className="flex justify-between mt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsPreviewOpen(false)}
+                >
+                  Cerrar
+                </Button>
+                <Button 
+                  onClick={() => {
+                    if (selectedContract) {
+                      downloadMutation.mutate(selectedContract.id);
+                    }
+                  }}
+                  disabled={!selectedContract || downloadMutation.isPending}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Descargar PDF
+                </Button>
+              </div>
+            </>
+          ) : (
+            <div className="text-center p-10">
+              <p className="text-muted-foreground">
+                Cargando vista previa...
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+      
+      {/* Diálogo para crear nuevo contrato */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nuevo Contrato</DialogTitle>
+          </DialogHeader>
+          <p className="text-muted-foreground">
+            Selecciona el método para generar un nuevo contrato:
+          </p>
+          <div className="grid gap-4 py-4">
+            <Button 
+              variant="outline" 
+              className="justify-start"
+              onClick={() => {
+                setIsCreateDialogOpen(false);
+                handleOptionSelect('upload');
+              }}
+            >
+              <Upload className="mr-2 h-4 w-4" />
+              Cargar estimado existente
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              className="justify-start"
+              onClick={() => {
+                setIsCreateDialogOpen(false);
+                handleOptionSelect('new');
+              }}
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              Crear contrato manualmente
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              className="justify-start"
+              onClick={() => {
+                setIsCreateDialogOpen(false);
+                handleOptionSelect('guided-flow');
+              }}
+            >
+              <ArrowRight className="mr-2 h-4 w-4" />
+              Usar flujo guiado de preguntas
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
