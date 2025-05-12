@@ -101,11 +101,22 @@ export default function AppLayout({ children }: AppLayoutProps) {
       {/* Contenido principal */}
       <main className="flex-1 flex flex-col">
         <Header toggleMobileMenu={toggleMobileMenu} isMobileMenuOpen={isMobileMenuOpen} />
-        <div className="flex-1 w-full h-full">
+        <div className="flex-1 w-full h-full relative">
           <Switch>
             <Route path="/settings/profile" component={Profile} />
             <Route path="*">{children}</Route>
           </Switch>
+          
+          {/* Footer fijo global visible en todas las páginas */}
+          <div className="fixed bottom-0 left-0 right-0 py-2 px-4 bg-gray-900 border-t border-cyan-900/30 text-xs text-center text-cyan-500/50 z-10">
+            <div className="flex justify-center space-x-4">
+              <a href="#" className="hover:text-cyan-400">Política de Privacidad</a>
+              <span>|</span>
+              <a href="#" className="hover:text-cyan-400">Términos Legales</a>
+              <span>|</span>
+              <span>© 2025 Owl Fence</span>
+            </div>
+          </div>
         </div>
       </main>
 

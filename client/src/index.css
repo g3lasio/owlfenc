@@ -695,30 +695,31 @@ body {
   width: 0%;
 }
 
-/* Ocultar scrollbar pero mantener funcionalidad */
-.hide-scrollbar {
+/* Ocultar scrollbar pero mantener funcionalidad - Aplicado a TODOS los elementos */
+*, *:before, *:after,
+.hide-scrollbar,
+html, body, 
+div, main, section, article, aside, nav, header, footer,
+.overflow-auto, .overflow-y-auto, .overflow-x-auto,
+.overflow-scroll, .overflow-y-scroll, .overflow-x-scroll {
   -ms-overflow-style: none !important;  /* IE and Edge */
   scrollbar-width: none !important;     /* Firefox */
 }
 
-.hide-scrollbar::-webkit-scrollbar {
+*::-webkit-scrollbar,
+.hide-scrollbar::-webkit-scrollbar,
+html::-webkit-scrollbar, 
+body::-webkit-scrollbar,
+div::-webkit-scrollbar, main::-webkit-scrollbar, 
+section::-webkit-scrollbar, article::-webkit-scrollbar, 
+aside::-webkit-scrollbar, nav::-webkit-scrollbar,
+header::-webkit-scrollbar, footer::-webkit-scrollbar,
+.overflow-auto::-webkit-scrollbar, .overflow-y-auto::-webkit-scrollbar, .overflow-x-auto::-webkit-scrollbar,
+.overflow-scroll::-webkit-scrollbar, .overflow-y-scroll::-webkit-scrollbar, .overflow-x-scroll::-webkit-scrollbar {
   display: none !important;             /* Chrome, Safari, Opera */
   width: 0 !important;                  /* Ancho */
-  background: transparent !important;   /* Opcional: hace que el fondo sea transparente */
-}
-
-/* Ocultar scrollbar en todo el cuerpo y html */
-html, body {
-  -ms-overflow-style: none !important;
-  scrollbar-width: none !important;
-  overflow-y: auto;
-}
-
-html::-webkit-scrollbar, 
-body::-webkit-scrollbar {
-  display: none !important;
-  width: 0 !important;
-  background: transparent !important;
+  height: 0 !important;                 /* Altura para scrollbars horizontales */
+  background-color: transparent !important;   /* Opcional: hace que el fondo sea transparente */
 }
 
 .arc-reactor-button {
