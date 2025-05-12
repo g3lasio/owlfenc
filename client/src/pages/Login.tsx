@@ -346,7 +346,7 @@ export default function AuthPage() {
                   disabled={isLoading}
                 >
                   <FcGoogle className="h-5 w-5" />
-                  <span>Continuar con Google</span>
+                  <span>Google</span>
                 </Button>
                 <Button
                   type="button"
@@ -356,7 +356,7 @@ export default function AuthPage() {
                   disabled={isLoading}
                 >
                   <FaApple className="h-5 w-5" />
-                  <span>Continuar con Apple</span>
+                  <span>Apple</span>
                 </Button>
               </div>
 
