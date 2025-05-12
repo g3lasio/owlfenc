@@ -580,21 +580,14 @@ export const loginWithApple = async () => {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     console.log("10. Dispositivo móvil detectado:", isMobile);
     
-    // En dispositivos móviles es mejor usar redirección directa
-    if (isMobile) {
-      console.log("11. Usando método de redirección por estar en dispositivo móvil");
-      
-      // Persistir el tipo de intento para diagnóstico posterior
-      sessionStorage.setItem('appleAuth_redirect_reason', 'mobile_device');
-      
-      await signInWithRedirect(auth, freshAppleProvider);
-      console.log("12. Redirección iniciada, no debería verse este mensaje");
-      return null;
-    }
-    
-    // En escritorio intentamos primero con popup, si falla usamos redirección
+    // CAMBIO CLAVE: Siempre intentar primero con popup (que es directo) tanto en móvil como en escritorio
     try {
-      console.log("11. Intentando autenticación con popup (escritorio)...");
+      console.log("11. Intentando autenticación con popup...");
+      freshAppleProvider.setCustomParameters({
+        prompt: 'consent', // Forzar mostrar pantalla de consentimiento 
+        locale: 'es_ES'
+      });
+      
       const result = await signInWithPopup(auth, freshAppleProvider);
       console.log("12. Login con popup exitoso! UID:", result.user.uid);
       
@@ -610,10 +603,13 @@ export const loginWithApple = async () => {
       console.warn("12. Error con popup:", popupError.code, popupError.message);
       
       // Si es un error de popup (bloqueado o cerrado), intentamos con redirección
+      // También usamos redirección si estamos en móvil y hay errores relacionados
       if (
         popupError.code === 'auth/popup-blocked' || 
         popupError.code === 'auth/popup-closed-by-user' ||
-        popupError.code === 'auth/cancelled-popup-request'
+        popupError.code === 'auth/cancelled-popup-request' ||
+        popupError.code === 'auth/operation-not-supported-in-this-environment' ||
+        isMobile // Siempre fallback a redirección en móvil ante cualquier error
       ) {
         console.log("13. Cambiando a modo de redirección después de error de popup");
         
@@ -625,7 +621,17 @@ export const loginWithApple = async () => {
           timestamp: Date.now()
         }));
         
+        // Resetear configuración para redirección para evitar problemas
+        freshAppleProvider.setCustomParameters({
+          prompt: 'consent',
+          locale: 'es_ES',
+          // Incluir el URL de redirección y el estado puede mejorar la compatibilidad
+          state: 'apple-auth-' + Date.now()
+        });
+        
         console.log("14. Iniciando redirección a Apple...");
+        
+        // CAMBIO IMPORTANTE: Redirección a la página de callback específica
         await signInWithRedirect(auth, freshAppleProvider);
         console.log("15. Redirección iniciada, no se debería ver este mensaje");
         return null;
@@ -675,6 +681,15 @@ export const loginWithApple = async () => {
       console.error("- Verifica las restricciones de cookies de terceros en el navegador");
       console.error("- Verifica que estás usando HTTPS");
       console.error("- Este error puede ocurrir en navegadores antiguos o con restricciones");
+      
+      // CAMBIO: Si el popup falla por entorno no soportado, intentamos redirección
+      console.log("Intentando redirección como alternativa para entorno no soportado...");
+      try {
+        await signInWithRedirect(auth, new OAuthProvider('apple.com'));
+        return null;
+      } catch (redirectError) {
+        console.error("También falló la redirección:", redirectError);
+      }
     } else if (error.message && error.message.includes('appleid.apple.com refused to connect')) {
       console.error("DIAGNÓSTICO: Error de conexión con los servidores de Apple");
       console.error("- Posibles causas:");
