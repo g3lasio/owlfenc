@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Bot, User, Upload, Calendar, Check } from "lucide-react";
+import { Send, Bot, User, Upload, Calendar, Check, ListChecks } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -28,8 +28,8 @@ interface ChatMessage {
 }
 
 interface QuestionFlowChatProps {
-  initialData?: Record<string, string>;
-  onComplete: (data: Record<string, string>) => void;
+  initialData?: Record<string, any>;
+  onComplete: (data: Record<string, any>) => void;
   onFileUpload?: (file: File) => void;
 }
 
@@ -53,7 +53,7 @@ const QuestionFlowChat: React.FC<QuestionFlowChatProps> = ({
       setMessages([
         {
           role: 'assistant',
-          content: '¡Hola! Te ayudaré a crear tu contrato para la instalación de cercas. Te haré una serie de preguntas para recopilar toda la información necesaria.',
+          content: '¡Hola! Estás en el asistente de Flujo Guiado. Te haré una serie de preguntas específicas en orden para recopilar toda la información necesaria para tu contrato de cerca. Responde a cada pregunta para avanzar al siguiente paso.',
           timestamp: new Date()
         }
       ]);
@@ -270,8 +270,12 @@ const QuestionFlowChat: React.FC<QuestionFlowChatProps> = ({
 
   return (
     <div className="flex flex-col h-[500px] border rounded-lg">
-      <div className="p-3 border-b bg-muted/30">
-        <h3 className="text-lg font-medium">Asistente de Contratos - Flujo Guiado</h3>
+      <div className="p-3 border-b bg-primary/10">
+        <h3 className="text-lg font-medium flex items-center">
+          <ListChecks className="mr-2 h-5 w-5 text-primary" />
+          Asistente de Contratos - Flujo Guiado
+        </h3>
+        <p className="text-xs text-muted-foreground">Responde a cada pregunta en orden para completar tu contrato</p>
       </div>
 
       {/* Área de mensajes */}

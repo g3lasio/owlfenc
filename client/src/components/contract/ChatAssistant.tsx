@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, User, Upload } from "lucide-react";
+import { Send, User, Upload, MessageCircle } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -64,14 +64,14 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({
       setMissingFields(missing.map(f => f.key));
 
       // Crear mensaje de bienvenida basado en la información faltante
-      let welcomeMessage = '¡Hola! Soy tu asistente para la generación de contratos. ';
+      let welcomeMessage = '¡Hola! Soy tu asistente conversacional para la generación de contratos. Puedes hablar conmigo libremente acerca del contrato que necesitas. ';
       
       if (missing.length === 0) {
         welcomeMessage += 'Veo que ya tienes toda la información necesaria para generar el contrato. ¿Quieres proceder o necesitas modificar algún dato?';
       } else if (Object.keys(initialData).some(key => initialData[key] && initialData[key] !== '')) {
         welcomeMessage += `He recibido parte de la información, pero necesito algunos datos adicionales para completar el contrato. Por favor proporciona: ${missing.map(f => f.label).join(', ')}.`;
       } else {
-        welcomeMessage += 'Para generar un contrato, necesito recopilar información sobre el cliente y el proyecto. ¿Prefieres subir un PDF de un estimado aprobado o proporcionar la información manualmente?';
+        welcomeMessage += 'Para generar un contrato, necesito recopilar información sobre el cliente y el proyecto. Puedes subir un PDF de un estimado aprobado o contarme sobre el proyecto que necesita contrato. También puedes usar el "Flujo Guiado" para responder preguntas específicas en orden.';
       }
 
       setMessages([
@@ -254,7 +254,11 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({
   return (
     <div className="flex flex-col h-[500px] border rounded-lg">
       <div className="p-3 border-b bg-muted/30">
-        <h3 className="text-lg font-medium">Asistente de Contratos</h3>
+        <h3 className="text-lg font-medium flex items-center">
+          <MessageCircle className="mr-2 h-5 w-5 text-primary" />
+          Asistente de Contratos - Conversación Libre
+        </h3>
+        <p className="text-xs text-muted-foreground">Puedes hablar libremente o subir un PDF para iniciar</p>
       </div>
 
       {/* Área de mensajes */}
