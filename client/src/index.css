@@ -548,6 +548,120 @@ body {
   justify-content: center;
 }
 
+/* Animación para las partículas flotantes */
+@keyframes floatParticle {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(calc(var(--random, 0.5) * 20px - 10px), 
+                          calc(var(--random, 0.5) * 20px - 10px)) 
+                          scale(1.2);
+  }
+  100% {
+    transform: translate(calc(var(--random, 0.5) * -20px + 10px), 
+                          calc(var(--random, 0.5) * -20px + 10px)) 
+                          scale(0.8);
+  }
+}
+
+/* Animación de rotación lenta */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Animación de escaneo vertical */
+@keyframes scan-y {
+  0% {
+    transform: translateY(-150%) translateX(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(150%) translateX(0);
+    opacity: 0;
+  }
+}
+
+/* Animación de escaneo horizontal */
+@keyframes scan-x {
+  0% {
+    transform: translateX(-150%) translateY(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(150%) translateY(0);
+    opacity: 0;
+  }
+}
+
+/* Clases de utilidad para animaciones */
+.animate-spin-slow {
+  animation: spin-slow 12s linear infinite;
+}
+
+.animate-scan-y {
+  animation: scan-y 4s ease-in-out infinite;
+}
+
+.animate-scan-x {
+  animation: scan-x 4.5s ease-in-out infinite;
+  animation-delay: 0.5s;
+}
+
+/* Animación para revelar texto */
+@keyframes text-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Animación para línea debajo del texto */
+@keyframes line-reveal {
+  0% {
+    width: 0;
+    left: 0;
+  }
+  50% {
+    width: 100%;
+    left: 0;
+  }
+  100% {
+    width: 0;
+    left: 100%;
+  }
+}
+
+.animate-text-reveal {
+  animation: text-reveal 1.5s ease-out forwards;
+}
+
+.animate-line-reveal {
+  animation: line-reveal 3s ease-in-out infinite;
+  animation-delay: 0.5s;
+}
+
 .arc-reactor-button {
   position: relative;
   width: 120px;
