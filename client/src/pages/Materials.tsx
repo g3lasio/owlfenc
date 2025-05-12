@@ -53,6 +53,7 @@ import {
 import { uploadFile } from "@/lib/firebase";
 import { db as firebaseDb } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
+import { AIFileImport } from "@/components/materials/AIFileImport";
 import { 
   FileSpreadsheet, 
   FileText,
@@ -150,6 +151,7 @@ export default function Materials() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [isAIImportDialogOpen, setIsAIImportDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [currentMaterial, setCurrentMaterial] = useState<Material | null>(null);
   const [csvContent, setCsvContent] = useState("");
@@ -508,7 +510,56 @@ export default function Materials() {
     setIsAddDialogOpen(true);
   };
 
-  // Importar materiales desde CSV
+  // Manejar materiales procesados por IA
+  const handleAIProcessedMaterials = async (materials: any[]) => {
+    try {
+      if (!materials || materials.length === 0) {
+        toast({
+          title: "Error",
+          description: "No se encontraron materiales válidos en el archivo",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Mostrar un indicador de carga
+      setIsUploading(true);
+      
+      // Crear un documento para cada material
+      const promises = materials.map(material => {
+        const materialData = {
+          ...material,
+          userId: currentUser?.uid,
+          price: typeof material.price === 'number' ? Math.round(material.price * 100) : 0, // Convertir a centavos
+          createdAt: Timestamp.now(),
+          updatedAt: Timestamp.now()
+        };
+        
+        return addDoc(collection(firebaseDb, "user_materials"), materialData);
+      });
+      
+      await Promise.all(promises);
+      
+      toast({
+        title: "Materiales importados",
+        description: `Se importaron ${materials.length} materiales correctamente`
+      });
+      
+      // Recargar materiales
+      loadMaterials();
+    } catch (error) {
+      console.error("Error al importar materiales:", error);
+      toast({
+        title: "Error",
+        description: "No se pudieron importar los materiales",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // Importar materiales desde CSV (método tradicional)
   const importFromCsv = async () => {
     try {
       if (!csvContent) {
