@@ -18,6 +18,7 @@ import axios from 'axios';
 import { chatService } from './services/chatService';
 import { propertyService } from './services/propertyService';
 import { documentService } from './services/documentService';
+import aiProcessorRoutes from './routes/aiProcessor';
 import { memoryService } from './services/memoryService';
 import { stripeService } from './services/stripeService';
 import { permitService } from './services/permitService';
@@ -91,6 +92,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Registrar rutas de clientes
   app.use('/api/clients', clientRoutes);
+  app.use('/api/ai-processor', aiProcessorRoutes);
 
   // Add API routes
   app.get('/api/projects', async (req: Request, res: Response) => {

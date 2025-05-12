@@ -16,7 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { processMaterialFile, normalizeCSVContent } from "@/services/aiFileProcessor";
+import { analyzeFileWithAI, normalizeCSVWithAI } from "@/services/aiService";
 
 interface AIFileImportProps {
   isOpen: boolean;
@@ -78,13 +78,13 @@ export function AIFileImport({
       let processedContent = fileContent;
       if (fileType === 'csv') {
         // Normalizar el contenido CSV para asegurar formato correcto
-        processedContent = await normalizeCSVContent(fileContent);
+        processedContent = await normalizeCSVWithAI(fileContent);
       }
       
       setProcessingStage("Analizando datos con IA...");
       
       // Procesar el contenido con IA
-      const materials = await processMaterialFile(processedContent, fileType);
+      const materials = await analyzeFileWithAI(processedContent, fileType);
       
       setProcessingStage("Finalizando importación...");
       
