@@ -106,8 +106,37 @@ export const saveProject = async (projectData: any) => {
   }
 };
 
+// Importamos datos de muestra para desarrollo
+import { sampleProjects } from "@/data/sampleProjects";
+
 export const getProjects = async (filters?: { status?: string, fenceType?: string }) => {
   try {
+    // Para desarrollo usamos datos de muestra
+    console.log("Cargando proyectos de muestra");
+    
+    let filteredProjects = [...sampleProjects];
+    
+    // Aplicar filtros si se proporcionan
+    if (filters) {
+      if (filters.status) {
+        filteredProjects = filteredProjects.filter(project => project.status === filters.status);
+      }
+      
+      if (filters.fenceType) {
+        filteredProjects = filteredProjects.filter(project => project.fenceType === filters.fenceType);
+      }
+    }
+    
+    // Ordenar por fecha de creación (más reciente primero)
+    filteredProjects.sort((a, b) => {
+      const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date();
+      const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date();
+      return dateB.getTime() - dateA.getTime();
+    });
+    
+    return filteredProjects;
+    
+    /* Código original para Firebase
     let q = query(
       collection(db, "projects"), 
       orderBy("createdAt", "desc")
@@ -141,6 +170,7 @@ export const getProjects = async (filters?: { status?: string, fenceType?: strin
       // Ensure status is set, default to "draft" if missing
       status: doc.data().status || "draft"
     }));
+    */
   } catch (error) {
     console.error("Error getting projects:", error);
     throw error;
@@ -149,6 +179,17 @@ export const getProjects = async (filters?: { status?: string, fenceType?: strin
 
 export const getProjectById = async (id: string) => {
   try {
+    // Para desarrollo usamos datos de muestra
+    console.log("Buscando proyecto con ID:", id);
+    const project = sampleProjects.find(p => p.id === id);
+    
+    if (project) {
+      return project;
+    } else {
+      throw new Error("Project not found");
+    }
+    
+    /* Código original para Firebase
     const docRef = doc(db, "projects", id);
     const docSnap = await getDoc(docRef);
 
@@ -157,6 +198,7 @@ export const getProjectById = async (id: string) => {
     } else {
       throw new Error("Project not found");
     }
+    */
   } catch (error) {
     console.error("Error getting project:", error);
     throw error;
@@ -165,6 +207,27 @@ export const getProjectById = async (id: string) => {
 
 export const updateProject = async (id: string, projectData: any) => {
   try {
+    // Para desarrollo usamos datos de muestra
+    console.log("Actualizando proyecto con ID:", id, projectData);
+    
+    // Buscar el proyecto en la lista de muestra
+    const projectIndex = sampleProjects.findIndex(p => p.id === id);
+    
+    if (projectIndex === -1) {
+      throw new Error(`Project with ID ${id} not found`);
+    }
+    
+    // Actualizar el proyecto en la lista de muestra
+    const updatedProject = {
+      ...sampleProjects[projectIndex],
+      ...projectData,
+      updatedAt: Timestamp.now()
+    };
+    
+    sampleProjects[projectIndex] = updatedProject;
+    return updatedProject;
+    
+    /* Código original para Firebase
     const docRef = doc(db, "projects", id);
     const docSnap = await getDoc(docRef);
     
@@ -185,6 +248,7 @@ export const updateProject = async (id: string, projectData: any) => {
     // Get the refreshed document
     const updatedDocSnap = await getDoc(docRef);
     return { id, ...updatedDocSnap.data() };
+    */
   } catch (error) {
     console.error("Error updating project:", error);
     throw error;
@@ -194,6 +258,26 @@ export const updateProject = async (id: string, projectData: any) => {
 // Update project progress stage
 export const updateProjectProgress = async (id: string, progress: string) => {
   try {
+    // Para desarrollo usamos datos de muestra
+    console.log("Actualizando progreso del proyecto con ID:", id, progress);
+    
+    // Buscar el proyecto en la lista de muestra
+    const projectIndex = sampleProjects.findIndex(p => p.id === id);
+    
+    if (projectIndex === -1) {
+      throw new Error(`Project with ID ${id} not found`);
+    }
+    
+    // Actualizar el proyecto en la lista de muestra
+    sampleProjects[projectIndex] = {
+      ...sampleProjects[projectIndex],
+      projectProgress: progress,
+      updatedAt: Timestamp.now()
+    };
+    
+    return sampleProjects[projectIndex];
+    
+    /* Código original para Firebase
     const docRef = doc(db, "projects", id);
     await updateDoc(docRef, {
       projectProgress: progress,
@@ -203,6 +287,7 @@ export const updateProjectProgress = async (id: string, progress: string) => {
     // Get updated project
     const updatedDocSnap = await getDoc(docRef);
     return { id, ...updatedDocSnap.data() };
+    */
   } catch (error) {
     console.error("Error updating project progress:", error);
     throw error;
