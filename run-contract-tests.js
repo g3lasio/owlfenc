@@ -49,6 +49,11 @@ const TEST_SCRIPTS = [
     name: 'Servicios de IA', 
     path: './test-ai-services.js',
     description: 'Verifica los servicios de OpenAI y Mistral utilizados en la generación de contratos'
+  },
+  { 
+    name: 'Completado de Contratos', 
+    path: './test-contract-completion.js',
+    description: 'Verifica la capacidad de generar contratos completos a partir de datos parciales'
   }
 ];
 

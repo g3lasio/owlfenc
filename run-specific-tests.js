@@ -63,6 +63,21 @@ const TEST_CATEGORIES = {
     path: './test-ai-services.js',
     description: 'Pruebas de servicios de OpenAI y Mistral'
   },
+  completion: {
+    name: 'Completado de Contratos',
+    path: './test-contract-completion.js',
+    description: 'Pruebas de generación de contratos a partir de datos parciales'
+  },
+  examples: {
+    name: 'Ejemplos del Sistema',
+    path: './contract-system-examples.js',
+    description: 'Ejecuta ejemplos de uso del sistema de contratos'
+  },
+  health: {
+    name: 'Verificación de Salud',
+    path: './health-check-contract-system.js',
+    description: 'Realiza una verificación rápida de salud del sistema'
+  },
   all: {
     name: 'Todas las Pruebas',
     path: './run-contract-tests.js',
