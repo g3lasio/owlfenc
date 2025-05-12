@@ -392,33 +392,27 @@ const ContractGenerator = () => {
                 </div>
 
                 <div className="flex justify-between">
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button variant="outline">
-                        No tengo un estimado
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Información Manual</DialogTitle>
-                      </DialogHeader>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Si no tienes un estimado en PDF, puedes continuar ingresando la información manualmente
-                        en el siguiente paso. Haz clic en continuar para ir a la pantalla de entrada de datos.
-                      </p>
-                      <Button onClick={() => setActiveTab("review-data")}>
-                        Continuar <ArrowRight className="ml-2 h-4 w-4" />
-                      </Button>
-                    </DialogContent>
-                  </Dialog>
-
                   <Button 
-                    onClick={handleProcessEstimate} 
-                    disabled={!selectedFile || isProcessing}
+                    variant="outline" 
+                    onClick={() => setActiveTab("options")}
                   >
-                    {isProcessing ? "Procesando..." : "Procesar Estimado"}
-                    {!isProcessing && <ArrowRight className="ml-2 h-4 w-4" />}
+                    Volver
                   </Button>
+                  <div className="flex space-x-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setActiveTab("chat-assistant")}
+                    >
+                      Necesito ayuda
+                    </Button>
+                    <Button 
+                      onClick={handleProcessEstimate} 
+                      disabled={!selectedFile || isProcessing}
+                    >
+                      {isProcessing ? "Procesando..." : "Procesar Estimado"}
+                      {!isProcessing && <ArrowRight className="ml-2 h-4 w-4" />}
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -581,13 +575,22 @@ const ContractGenerator = () => {
                       <Button 
                         type="button" 
                         variant="outline" 
-                        onClick={() => setActiveTab("upload-estimate")}
+                        onClick={() => setActiveTab("options")}
                       >
                         Volver
                       </Button>
-                      <Button type="submit" disabled={isGeneratingContract}>
-                        {isGeneratingContract ? "Generando..." : "Generar Contrato"}
-                      </Button>
+                      <div className="flex space-x-2">
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          onClick={() => setActiveTab("chat-assistant")}
+                        >
+                          Solicitar ayuda
+                        </Button>
+                        <Button type="submit" disabled={isGeneratingContract}>
+                          {isGeneratingContract ? "Generando..." : "Generar Contrato"}
+                        </Button>
+                      </div>
                     </div>
                   </form>
                 </Form>
@@ -617,10 +620,18 @@ const ContractGenerator = () => {
                       >
                         Volver a Editar
                       </Button>
-                      <Button onClick={handleDownloadPDF}>
-                        <FileText className="h-4 w-4 mr-2" />
-                        Descargar PDF
-                      </Button>
+                      <div className="flex space-x-2">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setActiveTab("chat-assistant")}
+                        >
+                          Asistente
+                        </Button>
+                        <Button onClick={handleDownloadPDF}>
+                          <FileText className="h-4 w-4 mr-2" />
+                          Descargar PDF
+                        </Button>
+                      </div>
                     </div>
                   </>
                 ) : (
