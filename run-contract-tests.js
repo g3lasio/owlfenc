@@ -4,9 +4,14 @@
  * Este script ejecuta las diferentes pruebas del generador de contratos
  * y genera un informe detallado de los resultados.
  */
-const { execSync } = require('child_process');
-const fs = require('fs').promises;
-const path = require('path');
+import { execSync } from 'child_process';
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import { fileURLToPath } from 'url';
+
+// Obtener el directorio actual (equivalente a __dirname en CommonJS)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Configuración
 const TEST_SCRIPTS = [
@@ -29,6 +34,21 @@ const TEST_SCRIPTS = [
     name: 'Integración de Datos y Contratos', 
     path: './test-integration-data-contract.js',
     description: 'Verifica la integración entre procesamiento de datos y generación de contratos'
+  },
+  { 
+    name: 'Validación de PDF', 
+    path: './test-pdf-validation.js',
+    description: 'Verifica la estructura, contenido y calidad del PDF generado'
+  },
+  { 
+    name: 'Manejo de Errores', 
+    path: './test-contract-error-handling.js',
+    description: 'Verifica el manejo de errores en diferentes etapas del proceso'
+  },
+  { 
+    name: 'Servicios de IA', 
+    path: './test-ai-services.js',
+    description: 'Verifica los servicios de OpenAI y Mistral utilizados en la generación de contratos'
   }
 ];
 
