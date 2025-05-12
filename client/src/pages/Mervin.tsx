@@ -257,17 +257,17 @@ export default function Mervin() {
         {messages.map(message => (
           <Card 
             key={message.id} 
-            className={`${message.sender === "assistant" ? "bg-muted" : "bg-primary/10"}`}
+            className={`${message.sender === "assistant" ? "bg-gray-900 border-cyan-900/40" : "bg-gray-800 border-cyan-800/30"}`}
           >
             <CardContent className="pt-4">
               <div className="flex items-start">
-                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center mr-2 flex-shrink-0">
+                <div className="w-8 h-8 rounded-full bg-cyan-900/30 flex items-center justify-center mr-2 flex-shrink-0">
                   {message.sender === "assistant" ? 
                     <div className="mervin-logo-container">
                       <img src="https://i.postimg.cc/FK6hvMbf/logo-mervin.png" alt="Mervin AI" className="mervin-logo" />
                       <div className="glow-effect"></div>
                     </div> : 
-                    <div className="w-4 h-4 rounded-full bg-primary" />
+                    <div className="w-4 h-4 rounded-full bg-cyan-400" />
                   }
                 </div>
                 <div className="flex-1">
@@ -308,15 +308,15 @@ export default function Mervin() {
                         <button
                           key={button.id}
                           onClick={() => handleServiceSelection(button.action)}
-                          className="flex flex-col items-center bg-primary/10 hover:bg-primary/20 transition-all p-3 rounded-lg border border-primary/30 group w-32 h-28"
+                          className="flex flex-col items-center bg-cyan-900/20 hover:bg-cyan-900/30 transition-all p-3 rounded-lg border border-cyan-500/30 group w-32 h-28"
                         >
-                          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                            <div className="text-primary">
+                          <div className="w-10 h-10 rounded-full bg-cyan-900/40 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                            <div className="text-cyan-400">
                               {button.icon}
                             </div>
                           </div>
-                          <span className="text-sm font-medium text-center text-primary/90">{button.text}</span>
-                          <span className="text-xs text-center text-muted-foreground mt-1 line-clamp-2">{button.description}</span>
+                          <span className="text-sm font-medium text-center text-cyan-400 font-quantico">{button.text}</span>
+                          <span className="text-xs text-center text-cyan-300/70 mt-1 line-clamp-2">{button.description}</span>
                         </button>
                       ))}
                     </div>
@@ -347,10 +347,10 @@ export default function Mervin() {
           </Card>
         ))}
         {isLoading && (
-          <Card className="bg-muted">
+          <Card className="bg-gray-900 border-cyan-900/40">
             <CardContent className="pt-4">
               <div className="flex items-start">
-                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center mr-2 flex-shrink-0">
+                <div className="w-8 h-8 rounded-full bg-cyan-900/30 flex items-center justify-center mr-2 flex-shrink-0">
                   <div className="mervin-logo-container">
                     <img src="https://i.postimg.cc/FK6hvMbf/logo-mervin.png" alt="Mervin AI" className="mervin-logo" />
                     <div className="glow-effect"></div>
@@ -360,13 +360,13 @@ export default function Mervin() {
                   <div className="flex items-center">
                     <p className="text-cyan-500 font-quantico">Procesando</p>
                     <div className="ml-1 flex items-center">
-                      <span className="animate-bounce-dot delay-0">.</span>
-                      <span className="animate-bounce-dot delay-1">.</span>
-                      <span className="animate-bounce-dot delay-2">.</span>
+                      <span className="animate-bounce-dot delay-0 text-cyan-400">.</span>
+                      <span className="animate-bounce-dot delay-1 text-cyan-400">.</span>
+                      <span className="animate-bounce-dot delay-2 text-cyan-400">.</span>
                     </div>
                   </div>
-                  <div className="mt-1 w-40 h-1 bg-gray-200 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full animate-progress-bar"></div>
+                  <div className="mt-1 w-40 h-1 bg-gray-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full animate-progress-bar"></div>
                   </div>
                 </div>
               </div>
@@ -387,6 +387,7 @@ export default function Mervin() {
                 imageInputRef.current?.click();
                 setShowAttachOptions(false);
               }}
+              className="bg-gray-800 border-cyan-900/50 text-cyan-500 hover:bg-gray-700"
             >
               <ImageIcon className="h-4 w-4 mr-1" /> 
               Imagen
@@ -398,6 +399,7 @@ export default function Mervin() {
                 fileInputRef.current?.click();
                 setShowAttachOptions(false);
               }}
+              className="bg-gray-800 border-cyan-900/50 text-cyan-500 hover:bg-gray-700"
             >
               <FileText className="h-4 w-4 mr-1" /> 
               Archivo
@@ -412,6 +414,7 @@ export default function Mervin() {
                 });
                 setShowAttachOptions(false);
               }}
+              className="bg-gray-800 border-cyan-900/50 text-cyan-500 hover:bg-gray-700"
             >
               <Camera className="h-4 w-4 mr-1" /> 
               Cámara
@@ -419,12 +422,12 @@ export default function Mervin() {
           </div>
         )}
 
-        <div className="flex gap-2 mt-auto border border-input rounded-md p-1 bg-background">
+        <div className="flex gap-2 mt-auto border border-cyan-900/50 rounded-md p-1 bg-gray-900">
           <Button 
             variant="ghost" 
             size="icon"
             onClick={() => setShowAttachOptions(!showAttachOptions)}
-            className="text-muted-foreground hover:text-foreground"
+            className="text-cyan-500/70 hover:text-cyan-400"
           >
             <Paperclip className="h-5 w-5" />
           </Button>
@@ -435,14 +438,14 @@ export default function Mervin() {
             onChange={e => setInputValue(e.target.value)}
             onKeyDown={e => e.key === "Enter" && handleSendMessage()}
             disabled={isLoading}
-            className="flex-1 border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+            className="flex-1 border-0 bg-gray-900 text-white focus-visible:ring-0 focus-visible:ring-offset-0"
           />
 
           <Button 
             onClick={handleSendMessage} 
             disabled={isLoading}
             size="icon"
-            className="rounded-full"
+            className="rounded-full bg-cyan-500 hover:bg-cyan-400"
           >
             <Send className="h-4 w-4" />
           </Button>
