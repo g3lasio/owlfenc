@@ -26,8 +26,7 @@ import Subscription from "@/pages/Subscription";
 import Account from "./pages/Account";
 import Billing from "./pages/Billing";
 import History from "@/pages/History";
-import Login from "@/pages/Login";
-import Signup from "@/pages/Signup";
+import AuthPage from "@/pages/Login"; // Renombrado el import aunque el archivo sigue siendo Login.tsx
 import RecuperarPassword from "@/pages/RecuperarPassword";
 import ResetPassword from "@/pages/ResetPassword";
 import EmailLinkCallback from "@/pages/EmailLinkCallback";
@@ -69,8 +68,8 @@ function Router() {
   return (
     <Switch>
       {/* Rutas públicas */}
-      <Route path="/login" component={Login} />
-      <Route path="/signup" component={Signup} />
+      <Route path="/login" component={() => <AuthPage />} />
+      <Route path="/signup" component={() => <AuthPage />} /> {/* Mantiene la misma ruta pero usa AuthPage */}
       <Route path="/recuperar-password" component={RecuperarPassword} />
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/login/email-link-callback" component={EmailLinkCallback} />
