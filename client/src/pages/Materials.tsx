@@ -686,7 +686,7 @@ export default function Materials() {
                 Gestiona tu inventario de materiales y suministros para tus proyectos
               </CardDescription>
             </div>
-            <div className="space-x-2">
+            <div className="flex flex-wrap gap-2">
               <Button 
                 variant="outline" 
                 onClick={() => loadMaterials()}
@@ -695,11 +695,18 @@ export default function Materials() {
                 Actualizar
               </Button>
               <Button 
+                variant="outline"
+                onClick={() => setIsAIImportDialogOpen(true)}
+              >
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Importar con IA
+              </Button>
+              <Button 
                 variant="outline" 
                 onClick={() => setIsImportDialogOpen(true)}
               >
                 <Upload className="h-4 w-4 mr-2" />
-                Importar
+                Importar CSV
               </Button>
               <Button 
                 onClick={() => {
@@ -1380,6 +1387,13 @@ export default function Materials() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Componente de importación con IA */}
+      <AIFileImport 
+        isOpen={isAIImportDialogOpen}
+        onOpenChange={setIsAIImportDialogOpen}
+        onMaterialsProcessed={handleAIProcessedMaterials}
+      />
     </div>
   );
 }

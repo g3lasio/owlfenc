@@ -2,7 +2,9 @@ import OpenAI from "openai";
 
 // El modelo más reciente de OpenAI es "gpt-4o" que fue lanzado el 13 de mayo de 2024. 
 // No cambiar a menos que el usuario lo solicite explícitamente
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({
+  apiKey: import.meta.env.VITE_OPENAI_API_KEY
+});
 
 interface MaterialFieldMapping {
   name: string;
