@@ -246,14 +246,14 @@ export default function Mervin() {
   }, [messages]);
 
   return (
-    <div className="flex-1 flex flex-col relative h-full overflow-hidden">
+    <div className="flex-1 flex flex-col relative h-full overflow-hidden bg-black">
       {/* Encabezado fijo */}
-      <div className="p-4 pb-2 bg-background z-10 border-b">
-        <h1 className="text-2xl font-bold text-center">Mervin AI</h1>
+      <div className="sticky top-0 p-4 pb-2 bg-black z-20 border-b border-cyan-900/30 shadow-md">
+        <h1 className="text-2xl font-bold text-center text-white">Mervin AI</h1>
       </div>
 
       {/* Área de mensajes con scroll, con padding inferior para dar espacio al input fijo */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-24 bg-background">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-24 bg-black hide-scrollbar">
         {messages.map(message => (
           <Card 
             key={message.id} 
@@ -377,9 +377,9 @@ export default function Mervin() {
       </div>
 
       {/* Barra de input fija en la parte inferior */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 bg-background border-t border-input shadow-sm z-10">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-black border-t border-cyan-900/30 shadow-lg z-20">
         {showAttachOptions && (
-          <div className="absolute bottom-full left-4 right-4 mb-2 bg-background border border-input rounded-md shadow-md p-2 flex space-x-1">
+          <div className="absolute bottom-full left-4 right-4 mb-2 bg-gray-900 border border-cyan-900/50 rounded-md shadow-md p-2 flex flex-wrap gap-1">
             <Button 
               variant="outline" 
               size="sm"
