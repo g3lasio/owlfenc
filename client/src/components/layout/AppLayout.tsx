@@ -94,14 +94,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
   // Para el resto de las páginas (protegidas), mostrar el layout completo
   return (
-    <div className="flex h-screen overflow-x-hidden">
+    <div className="flex h-screen w-screen overflow-hidden">
       {/* Sidebar único con todas las funcionalidades */}
       <Sidebar />
 
       {/* Contenido principal */}
-      <main className="flex-1 flex flex-col overflow-auto">
+      <main className="flex-1 flex flex-col">
         <Header toggleMobileMenu={toggleMobileMenu} isMobileMenuOpen={isMobileMenuOpen} />
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 w-full h-full">
           <Switch>
             <Route path="/settings/profile" component={Profile} />
             <Route path="*">{children}</Route>
