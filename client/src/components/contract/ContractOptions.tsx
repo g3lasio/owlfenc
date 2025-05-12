@@ -48,7 +48,26 @@ const ContractOptions: React.FC<ContractOptionProps> = ({ onSelectOption }) => {
         </CardContent>
       </Card>
 
-      {/* Opción 3: Modificar contrato existente */}
+      {/* Opción 3: Mis Contratos */}
+      <Card 
+        className="cursor-pointer hover:shadow-md transition-shadow"
+        onClick={() => onSelectOption('my-contracts')}
+      >
+        <CardContent className="p-6 flex flex-col items-center text-center">
+          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+            <Files className="h-6 w-6 text-primary" />
+          </div>
+          <h3 className="text-lg font-medium mb-2">Mis Contratos</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Visualiza, busca y descarga tus contratos existentes.
+          </p>
+          <Button variant="outline" className="mt-auto">
+            Ver mis contratos
+          </Button>
+        </CardContent>
+      </Card>
+      
+      {/* Opción 4: Modificar contrato existente */}
       <Card 
         className="cursor-pointer hover:shadow-md transition-shadow"
         onClick={() => onSelectOption('modify')}
@@ -67,7 +86,7 @@ const ContractOptions: React.FC<ContractOptionProps> = ({ onSelectOption }) => {
         </CardContent>
       </Card>
 
-      {/* Opción 4: Subir PDF de estimado */}
+      {/* Opción 5: Subir PDF de estimado */}
       <Card 
         className="cursor-pointer hover:shadow-md transition-shadow"
         onClick={() => onSelectOption('upload')}
@@ -86,7 +105,7 @@ const ContractOptions: React.FC<ContractOptionProps> = ({ onSelectOption }) => {
         </CardContent>
       </Card>
 
-      {/* Opción 5: Asistente conversacional */}
+      {/* Opción 6: Asistente conversacional */}
       <Card 
         className="cursor-pointer hover:shadow-md transition-shadow"
         onClick={() => onSelectOption('chat-assistant')}
@@ -105,7 +124,7 @@ const ContractOptions: React.FC<ContractOptionProps> = ({ onSelectOption }) => {
         </CardContent>
       </Card>
 
-      {/* Opción 6: Flujo guiado de preguntas */}
+      {/* Opción 7: Flujo guiado de preguntas */}
       <Card 
         className="cursor-pointer hover:shadow-md transition-shadow"
         onClick={() => onSelectOption('guided-flow')}
