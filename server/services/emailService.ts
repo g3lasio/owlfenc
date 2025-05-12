@@ -34,7 +34,7 @@ export const sendEmail = async (params: SendEmailParams): Promise<boolean> => {
       return false;
     }
 
-    const fromAddress = params.from || 'owlfenc@example.com';
+    const fromAddress = params.from || 'soporte@owlfenc.com';
     
     // Crear estructura requerida por SendGrid
     const emailParams: any = {
@@ -644,7 +644,7 @@ Este correo fue enviado a ${to} en respuesta a una solicitud de restablecimiento
 };
 
 /**
- * Envía un correo electrónico con una estimación
+ * Envía un correo electrónico con una estimación usando el estilo futurista de Owl Fenc
  */
 export const sendEstimateByEmail = async (
   estimate: any,
@@ -654,55 +654,247 @@ export const sendEstimateByEmail = async (
   message: string
 ): Promise<boolean> => {
   try {
-    // Crear versión HTML de la estimación
+    // Crear versión HTML de la estimación con el nuevo estilo futurista
     const estimateHTML = `
-    <div style="font-family: Arial, sans-serif; line-height: 1.6;">
-      <h2>Estimación para su proyecto de cerca</h2>
-      <div style="background-color: #f5f5f5; padding: 20px; border-radius: 5px;">
-        <p><strong>Detalles del proyecto:</strong></p>
-        <ul>
-          <li>Longitud: ${estimate.linearFeet || 'N/A'} pies lineales</li>
-          <li>Altura: ${estimate.height || 'N/A'} pies</li>
-          <li>Tipo: ${estimate.fenceType || 'Cerca estándar'}</li>
-          <li>Estado: ${estimate.state || 'N/A'}</li>
-        </ul>
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Estimación de Proyecto - Owl Fenc</title>
+      <style>
+        @import url('https://fonts.googleapis.com/css2?family=Quantico:wght@400;700&family=Rubik:wght@300;400;500;700&display=swap');
         
-        <p><strong>Costo estimado:</strong></p>
-        <ul>
-          <li>Materiales: $${estimate.totalMaterialsCost || estimate.materialsSubtotal || 'N/A'}</li>
-          <li>Mano de obra: $${estimate.laborCost || 'N/A'}</li>
-          <li>Costo total: $${estimate.finalTotalCost || estimate.baseTotalCost || 'N/A'}</li>
-          <li>Costo por pie lineal: $${estimate.costPerLinearFoot || 'N/A'}</li>
-        </ul>
-        
-        <p><em>Esta estimación es preliminar y puede variar según las condiciones específicas del sitio y otros factores.</em></p>
+        body {
+          font-family: 'Rubik', 'Segoe UI', Tahoma, sans-serif;
+          line-height: 1.6;
+          color: #e0e0e0;
+          background-color: #121212;
+          margin: 0;
+          padding: 0;
+        }
+        .container {
+          max-width: 600px;
+          margin: 0 auto;
+          padding: 0;
+          background-color: #0d1117;
+          border-radius: 12px;
+          overflow: hidden;
+          box-shadow: 0 10px 25px rgba(0, 255, 255, 0.15);
+          border: 1px solid rgba(0, 255, 255, 0.15);
+        }
+        .header {
+          background: linear-gradient(135deg, rgba(0, 24, 38, 0.9) 0%, rgba(0, 37, 58, 0.9) 100%);
+          color: white;
+          padding: 25px 20px;
+          text-align: center;
+          position: relative;
+          overflow: hidden;
+        }
+        .header h1 {
+          margin: 0;
+          font-family: 'Quantico', sans-serif;
+          font-size: 24px;
+          letter-spacing: 1px;
+          text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+          position: relative;
+          z-index: 2;
+          color: #00f0ff;
+        }
+        .content {
+          background-color: #171a21;
+          padding: 30px;
+          border-radius: 0 0 8px 8px;
+          position: relative;
+        }
+        .section-title {
+          color: #00f0ff;
+          font-family: 'Quantico', sans-serif;
+          margin-bottom: 20px;
+          position: relative;
+          display: inline-block;
+          font-size: 18px;
+        }
+        .section-title:after {
+          content: '';
+          position: absolute;
+          left: 0;
+          bottom: -8px;
+          width: 100%;
+          height: 2px;
+          background: linear-gradient(90deg, #00f0ff, transparent);
+        }
+        .data-panel {
+          background-color: rgba(0, 255, 255, 0.03);
+          padding: 20px;
+          border-radius: 8px;
+          margin-bottom: 25px;
+          border: 1px solid rgba(0, 255, 255, 0.1);
+        }
+        .data-row {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 12px;
+          padding-bottom: 12px;
+          border-bottom: 1px solid rgba(0, 255, 255, 0.05);
+        }
+        .data-row:last-child {
+          border-bottom: none;
+          margin-bottom: 0;
+          padding-bottom: 0;
+        }
+        .data-label {
+          color: #939eab;
+          font-size: 14px;
+        }
+        .data-value {
+          color: #ffffff;
+          font-family: 'Quantico', sans-serif;
+          text-align: right;
+        }
+        .cost-panel {
+          background-color: rgba(0, 255, 255, 0.05);
+          padding: 20px;
+          border-radius: 8px;
+          margin-bottom: 25px;
+          border: 1px solid rgba(0, 255, 255, 0.1);
+        }
+        .total-cost {
+          font-family: 'Quantico', sans-serif;
+          color: #00f0ff;
+          font-size: 24px;
+          text-align: center;
+          margin: 15px 0;
+          text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+        .footer {
+          text-align: center;
+          margin-top: 25px;
+          font-size: 12px;
+          color: #858585;
+          padding-top: 20px;
+          border-top: 1px solid rgba(0, 255, 255, 0.1);
+        }
+        .disclaimer {
+          font-size: 12px;
+          color: #939eab;
+          font-style: italic;
+          background-color: rgba(255, 255, 255, 0.03);
+          padding: 10px;
+          border-radius: 4px;
+          margin-top: 20px;
+        }
+        .contact-button {
+          background: linear-gradient(135deg, #007a8a 0%, #00b0c7 100%);
+          color: white;
+          text-decoration: none;
+          padding: 12px 24px;
+          border-radius: 6px;
+          font-weight: bold;
+          display: inline-block;
+          margin: 20px 0;
+          font-family: 'Quantico', sans-serif;
+          letter-spacing: 0.5px;
+          text-align: center;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>ESTIMACIÓN DE PROYECTO</h1>
+        </div>
+        <div class="content">
+          <p>Hemos completado la estimación para su proyecto de cerca utilizando nuestro sistema de cálculo avanzado.</p>
+          
+          <h2 class="section-title">ESPECIFICACIONES TÉCNICAS</h2>
+          <div class="data-panel">
+            <div class="data-row">
+              <div class="data-label">Longitud</div>
+              <div class="data-value">${estimate.linearFeet || 'N/A'} pies lineales</div>
+            </div>
+            <div class="data-row">
+              <div class="data-label">Altura</div>
+              <div class="data-value">${estimate.height || 'N/A'} pies</div>
+            </div>
+            <div class="data-row">
+              <div class="data-label">Tipo de cerca</div>
+              <div class="data-value">${estimate.fenceType || 'Cerca estándar'}</div>
+            </div>
+            <div class="data-row">
+              <div class="data-label">Ubicación</div>
+              <div class="data-value">${estimate.state || 'N/A'}</div>
+            </div>
+          </div>
+          
+          <h2 class="section-title">ANÁLISIS DE COSTOS</h2>
+          <div class="cost-panel">
+            <div class="data-row">
+              <div class="data-label">Materiales</div>
+              <div class="data-value">$${estimate.totalMaterialsCost || estimate.materialsSubtotal || 'N/A'}</div>
+            </div>
+            <div class="data-row">
+              <div class="data-label">Mano de obra</div>
+              <div class="data-value">$${estimate.laborCost || 'N/A'}</div>
+            </div>
+            <div class="data-row">
+              <div class="data-label">Costo por pie lineal</div>
+              <div class="data-value">$${estimate.costPerLinearFoot || 'N/A'}</div>
+            </div>
+          </div>
+          
+          <div class="total-cost">
+            COSTO TOTAL: $${estimate.finalTotalCost || estimate.baseTotalCost || 'N/A'}
+          </div>
+          
+          <div class="message-panel">
+            <p>${message || 'Gracias por su interés en nuestros servicios. Nuestro equipo está a disposición para responder cualquier consulta sobre esta estimación.'}</p>
+          </div>
+          
+          <div style="text-align: center;">
+            <a href="https://owlfenc.replit.app" class="contact-button">ACCEDER A MI CUENTA</a>
+          </div>
+          
+          <div class="disclaimer">
+            Esta estimación fue generada por el sistema Owl Fenc y es preliminar. Los costos finales pueden variar según las condiciones específicas del sitio, disponibilidad de materiales y otros factores identificados durante la inspección.
+          </div>
+        </div>
+        <div class="footer">
+          <p>© ${new Date().getFullYear()} Owl Fenc | Tecnología avanzada para profesionales de cercas</p>
+          <p>Este correo fue enviado a ${email} en respuesta a una solicitud de estimación.</p>
+        </div>
       </div>
-      
-      <div style="margin-top: 20px;">
-        <p>${message || 'Gracias por su interés en nuestros servicios. Si tiene alguna pregunta sobre esta estimación, no dude en contactarnos.'}</p>
-      </div>
-    </div>
+    </body>
+    </html>
     `;
     
-    // Versión de texto plano
+    // Versión de texto plano con el nombre correcto
     const estimateText = `
-ESTIMACIÓN PARA SU PROYECTO DE CERCA
+ESTIMACIÓN DE PROYECTO - OWL FENC
 
-DETALLES DEL PROYECTO:
+Hemos completado la estimación para su proyecto de cerca utilizando nuestro sistema de cálculo avanzado.
+
+ESPECIFICACIONES TÉCNICAS:
 - Longitud: ${estimate.linearFeet || 'N/A'} pies lineales
 - Altura: ${estimate.height || 'N/A'} pies
-- Tipo: ${estimate.fenceType || 'Cerca estándar'} 
-- Estado: ${estimate.state || 'N/A'}
+- Tipo de cerca: ${estimate.fenceType || 'Cerca estándar'} 
+- Ubicación: ${estimate.state || 'N/A'}
 
-COSTO ESTIMADO:
+ANÁLISIS DE COSTOS:
 - Materiales: $${estimate.totalMaterialsCost || estimate.materialsSubtotal || 'N/A'}
 - Mano de obra: $${estimate.laborCost || 'N/A'}
-- Costo total: $${estimate.finalTotalCost || estimate.baseTotalCost || 'N/A'}
 - Costo por pie lineal: $${estimate.costPerLinearFoot || 'N/A'}
 
-Esta estimación es preliminar y puede variar según las condiciones específicas del sitio y otros factores.
+COSTO TOTAL: $${estimate.finalTotalCost || estimate.baseTotalCost || 'N/A'}
 
-${message || 'Gracias por su interés en nuestros servicios. Si tiene alguna pregunta sobre esta estimación, no dude en contactarnos.'}
+${message || 'Gracias por su interés en nuestros servicios. Nuestro equipo está a disposición para responder cualquier consulta sobre esta estimación.'}
+
+ACCEDER A MI CUENTA: https://owlfenc.replit.app
+
+Esta estimación fue generada por el sistema Owl Fenc y es preliminar. Los costos finales pueden variar según las condiciones específicas del sitio, disponibilidad de materiales y otros factores identificados durante la inspección.
+
+© ${new Date().getFullYear()} Owl Fenc | Tecnología avanzada para profesionales de cercas
+Este correo fue enviado a ${email} en respuesta a una solicitud de estimación.
     `;
     
     // Enviar el correo

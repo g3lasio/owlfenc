@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { FcGoogle } from "react-icons/fc";
 import { FaApple } from "react-icons/fa";
 import { HiMail } from "react-icons/hi";
-import { RiMailSendLine, RiEyeLine, RiEyeOffLine, RiArrowLeftLine, RiArrowRightLine, RiUserLine, RiShieldKeyholeLine } from "react-icons/ri";
+import { RiMailSendLine, RiEyeLine, RiEyeOffLine, RiArrowLeftLine, RiArrowRightLine, RiUserLine, RiShieldKeyholeLine, RiCheckboxCircleLine } from "react-icons/ri";
 import { useAuth } from "@/contexts/AuthContext";
 import EmailLinkAuth from "@/components/auth/EmailLinkAuth";
 
@@ -45,32 +45,9 @@ export default function AuthPage() {
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [loginMethod, setLoginMethod] = useState<"email" | "emailLink">("email");
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [particles, setParticles] = useState<Array<{x: number, y: number, size: number, color: string, speed: number}>>([]);
-  const [hologramCircles, setHologramCircles] = useState<Array<{x: number, y: number, size: number, opacity: number, delay: number}>>([]);
+  const [showSuccess, setShowSuccess] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
-
-  // Generar partículas para el efecto de cambio
-  useEffect(() => {
-    // Partículas para el toggle
-    const newParticles = Array.from({ length: 60 }, () => ({
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      size: 1.5 + Math.random() * 2.5,
-      color: `hsl(${180 + Math.random() * 30}, 100%, ${40 + Math.random() * 60}%)`,
-      speed: 0.5 + Math.random() * 1.5
-    }));
-    setParticles(newParticles);
-    
-    // Círculos para el efecto holográfico
-    const newHologramCircles = Array.from({ length: 12 }, () => ({
-      x: 50 + (Math.random() * 80 - 40),
-      y: 50 + (Math.random() * 80 - 40),
-      size: 10 + Math.random() * 30,
-      opacity: 0.05 + Math.random() * 0.2,
-      delay: Math.random() * 0.8
-    }));
-    setHologramCircles(newHologramCircles);
-  }, []);
+  const successRef = useRef<HTMLDivElement>(null);
 
   // Configurar el formulario de login
   const loginForm = useForm<LoginFormValues>({
@@ -92,6 +69,25 @@ export default function AuthPage() {
     },
   });
 
+  // Mostrar efecto de congratulación después de login exitoso
+  const showSuccessEffect = () => {
+    setShowSuccess(true);
+    
+    // Reproducir sonido de éxito con tono Iron Man/Stark Industries
+    const audio = new Audio();
+    audio.volume = 0.3;
+    audio.src = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tAwAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAFAAAKhQCFhYWFhYWFhYWFhYWFhYWFhYWFvb29vb29vb29vb29vb29vb29vb3Z2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2fT09PT09PT09PT09PT09PT09PT0//////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAZqAAAAAAAACoXOVK+FAAAAAAD/+xDEAAAKTEVv9BSAIrLHrj81gFBMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQD/+xDEGQANQJV3+aQAI1QpqP81hARMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQD/+xDEPgAUZfl//msAo3glLvnNMARMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQD/+xDEWAAUTHVH+awAo5Qirfz3gBFMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQD/+0DEggAAAZYFAAAIAAADSAAAAQAAANIAAAAAAAAA0gAAAAETEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQ==';
+    
+    // Reproducir el audio
+    audio.play().catch(e => console.log("Audio play prevented: ", e));
+    
+    // Ocultar el efecto después de 3 segundos
+    setTimeout(() => {
+      setShowSuccess(false);
+      navigate("/");
+    }, 3000);
+  };
+
   // Manejar inicio de sesión con email y contraseña
   const onLoginSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
@@ -99,7 +95,7 @@ export default function AuthPage() {
       clearError();
       if (loginMethod === "email") {
         await login(data.email, data.password);
-        navigate("/");
+        showSuccessEffect();
       } else if (loginMethod === "emailLink") {
         await sendEmailLoginLink(data.email);
         toast({
@@ -125,13 +121,8 @@ export default function AuthPage() {
     try {
       clearError();
       await registerUser(data.email, data.password, data.name);
-
-      toast({
-        title: "Registro exitoso",
-        description: "Tu cuenta ha sido creada correctamente.",
-      });
-
-      navigate("/");
+      
+      showSuccessEffect();
     } catch (err: any) {
       console.error("Error de registro:", err);
       toast({
@@ -150,7 +141,7 @@ export default function AuthPage() {
     try {
       clearError();
       await loginWithGoogle();
-      navigate("/");
+      showSuccessEffect();
     } catch (err: any) {
       console.error("Error de autenticación con Google:", err);
       toast({
@@ -171,11 +162,7 @@ export default function AuthPage() {
       const result = await loginWithApple();
       
       if (result) {
-        toast({
-          title: "Autenticación exitosa",
-          description: "Autenticación con Apple completada",
-        });
-        navigate("/");
+        showSuccessEffect();
       } else {
         toast({
           title: "Redirigiendo...",
@@ -207,20 +194,10 @@ export default function AuthPage() {
     }
   };
 
-  // Toggle entre login y signup con efecto de partículas estilo Stark Industries/Iron Man
+  // Toggle entre login y signup con efecto de escaneo Stark Tech
   const toggleAuthMode = () => {
     // Activar la transición
     setIsTransitioning(true);
-    
-    // Crear efectos de partículas con más movimiento
-    const newParticles = Array.from({ length: 80 }, () => ({
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      size: 1.5 + Math.random() * 2.5,
-      color: `hsl(${180 + Math.random() * 30}, 100%, ${40 + Math.random() * 60}%)`,
-      speed: 0.5 + Math.random() * 1.5
-    }));
-    setParticles(newParticles);
     
     // Efecto de escaneo holográfico estilo Jarvis/Friday
     if (cardRef.current) {
@@ -247,16 +224,6 @@ export default function AuthPage() {
       setShowPassword(false);
       clearError();
       
-      // Nuevos círculos holográficos
-      const newHologramCircles = Array.from({ length: 12 }, () => ({
-        x: 50 + (Math.random() * 80 - 40),
-        y: 50 + (Math.random() * 80 - 40),
-        size: 10 + Math.random() * 30,
-        opacity: 0.05 + Math.random() * 0.2,
-        delay: Math.random() * 0.8
-      }));
-      setHologramCircles(newHologramCircles);
-      
       // Desactivar la transición después de completarla
       setTimeout(() => {
         setIsTransitioning(false);
@@ -272,25 +239,29 @@ export default function AuthPage() {
       {/* Fondo con efecto de gradiente */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,hsl(180,100%,10%)_0%,hsl(0,0%,7%)_70%)]"></div>
-        
-        {/* Partículas estáticas */}
-        <div className="absolute inset-0 opacity-20">
-          {Array.from({ length: 30 }).map((_, i) => (
-            <div 
-              key={`static-${i}`} 
-              className="particle" 
-              style={{ 
-                top: `${Math.random() * 100}%`, 
-                left: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 3}s`,
-                backgroundColor: `hsl(180, 100%, ${40 + Math.random() * 30}%)`,
-                width: `${2 + Math.random() * 3}px`,
-                height: `${2 + Math.random() * 3}px`,
-              }}
-            ></div>
-          ))}
-        </div>
       </div>
+
+      {/* Efecto de congratulación cuando se completa login/signup */}
+      {showSuccess && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
+          ref={successRef}
+        >
+          <div className="success-container relative">
+            {/* Círculos concéntricos con animación para efecto holográfico */}
+            <div className="success-circle absolute inset-0 rounded-full border-2 border-primary animate-ping" style={{opacity: 0.3}}></div>
+            <div className="success-circle absolute inset-0 rounded-full border border-primary animate-ping" style={{animationDelay: '0.5s', opacity: 0.4}}></div>
+            <div className="success-circle absolute inset-0 rounded-full border border-primary animate-ping" style={{animationDelay: '1s', opacity: 0.5}}></div>
+            
+            {/* Icono y mensaje de éxito */}
+            <div className="success-content w-64 h-64 flex flex-col items-center justify-center bg-black/50 rounded-full border border-primary/20 backdrop-blur-md shadow-lg">
+              <RiCheckboxCircleLine className="text-primary w-20 h-20" />
+              <h2 className="text-xl font-bold text-primary mt-4">¡Autenticación Exitosa!</h2>
+              <p className="text-center text-muted-foreground text-sm mt-2">Redirigiendo al panel...</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Contenedor principal */}
       <div className="w-full max-w-md relative z-10">
@@ -312,32 +283,14 @@ export default function AuthPage() {
               boxShadow: "0 0 15px 2px rgba(0, 255, 255, 0.5)",
               filter: "brightness(1.1)"
             }}
-          >
-            {particles.map((particle, i) => (
-              <div 
-                key={i}
-                className="absolute rounded-full animate-pulse"
-                style={{
-                  width: `${particle.size}px`,
-                  height: `${particle.size}px`,
-                  backgroundColor: particle.color,
-                  top: `${particle.y}%`,
-                  left: `${particle.x}%`,
-                  opacity: 0.7,
-                  transition: `transform ${0.3 + particle.speed}s ease-out`,
-                  transform: authMode === "login" ? "scale(1)" : "scale(1.5)",
-                  filter: "blur(1px)"
-                }}
-              />
-            ))}
-          </div>
+          ></div>
           
           <div className="absolute inset-0 flex items-stretch">
             <button 
               className={`flex-1 flex items-center justify-center text-xs font-semibold relative z-10 rounded-l-full transition-colors ${
                 authMode === "login" ? "text-white" : "text-muted-foreground"
               }`}
-              onClick={() => setAuthMode("login")}
+              onClick={() => authMode !== "login" && toggleAuthMode()}
             >
               Login
             </button>
@@ -345,7 +298,7 @@ export default function AuthPage() {
               className={`flex-1 flex items-center justify-center text-xs font-semibold relative z-10 rounded-r-full transition-colors ${
                 authMode === "signup" ? "text-white" : "text-muted-foreground"
               }`}
-              onClick={() => setAuthMode("signup")}
+              onClick={() => authMode !== "signup" && toggleAuthMode()}
             >
               Signup
             </button>
@@ -359,28 +312,6 @@ export default function AuthPage() {
             isTransitioning ? 'stark-card-transitioning' : ''
           }`}
         >
-          {/* Efecto de círculos holográficos tipo UI de Iron Man */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none hologram-container">
-            {hologramCircles.map((circle, i) => (
-              <div 
-                key={`holo-${i}`}
-                className="absolute rounded-full stark-holo-circle"
-                style={{
-                  width: `${circle.size}px`,
-                  height: `${circle.size}px`,
-                  top: `${circle.y}%`,
-                  left: `${circle.x}%`,
-                  opacity: circle.opacity,
-                  border: `1px solid rgba(0, 255, 255, 0.3)`,
-                  boxShadow: `0 0 8px rgba(0, 255, 255, 0.3)`,
-                  animationDelay: `${circle.delay}s`,
-                  transform: `scale(${isTransitioning ? '1.5' : '1'})`,
-                  transition: 'transform 0.5s, opacity 0.5s'
-                }}
-              />
-            ))}
-          </div>
-          
           {/* Cabecera con efecto futurista */}
           <CardHeader className="bg-gradient-to-r from-primary/20 to-accent/20 px-6 py-5 border-b border-primary/20 relative">
             {/* Línea de escaneo para efecto Jarvis */}
@@ -406,126 +337,111 @@ export default function AuthPage() {
           <CardContent className="px-6 py-6">
             <div className="space-y-5">
               {/* Botones de proveedor */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col space-y-3">
                 <Button
-                  variant="outline"
                   type="button"
+                  variant="outline"
+                  className="w-full h-10 flex items-center justify-center gap-2 border-muted-foreground/30 hover:bg-primary/10"
                   onClick={handleGoogleAuth}
-                  className="w-full h-11 rounded-lg border border-primary/20 hover:bg-primary/10 hover:border-primary/30 transition-all"
+                  disabled={isLoading}
                 >
-                  <FcGoogle className="mr-2 h-5 w-5" />
-                  <span>Google</span>
+                  <FcGoogle className="h-5 w-5" />
+                  <span>Continuar con Google</span>
                 </Button>
                 <Button
-                  variant="outline"
                   type="button"
+                  variant="outline"
+                  className="w-full h-10 flex items-center justify-center gap-2 border-muted-foreground/30 hover:bg-primary/10"
                   onClick={handleAppleAuth}
-                  className="w-full h-11 rounded-lg border border-primary/20 hover:bg-primary/10 hover:border-primary/30 transition-all"
+                  disabled={isLoading}
                 >
-                  <FaApple className="mr-2 h-5 w-5" />
-                  <span>Apple</span>
+                  <FaApple className="h-5 w-5" />
+                  <span>Continuar con Apple</span>
                 </Button>
               </div>
 
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <Separator className="w-full border-primary/20" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">
-                    O {authMode === "login" ? "continúa con" : "regístrate con email"}
-                  </span>
-                </div>
+              <div className="flex items-center gap-3">
+                <Separator className="flex-1 bg-muted-foreground/30" />
+                <span className="text-sm text-muted-foreground">o</span>
+                <Separator className="flex-1 bg-muted-foreground/30" />
               </div>
 
-              {/* Contenido condicional según el modo (Login o Signup) */}
+              {/* Formulario */}
               {authMode === "login" ? (
-                <>
-                  {/* Toggle de métodos de login */}
-                  {loginMethod === "email" && (
-                    <Form {...loginForm}>
-                      <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
-                        <FormField
-                          control={loginForm.control}
-                          name="email"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Correo Electrónico</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  placeholder="tu@email.com" 
-                                  {...field} 
-                                  className="h-11 rounded-lg border-primary/20 focus:border-primary focus:ring-1 focus:ring-primary bg-card"
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={loginForm.control}
-                          name="password"
-                          render={({ field }) => (
-                            <FormItem>
+                loginMethod === "email" ? (
+                  <Form {...loginForm}>
+                    <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+                      <FormField
+                        control={loginForm.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Correo electrónico</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="tu@email.com"
+                                className="bg-card/50 border-muted-foreground/30 focus-visible:ring-primary"
+                                {...field}
+                                disabled={isLoading}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={loginForm.control}
+                        name="password"
+                        render={({ field }) => (
+                          <FormItem>
+                            <div className="flex items-center justify-between">
                               <FormLabel>Contraseña</FormLabel>
-                              <FormControl>
-                                <div className="relative">
-                                  <Input 
-                                    type={showPassword ? "text" : "password"} 
-                                    placeholder="******" 
-                                    {...field} 
-                                    className="h-11 rounded-lg border-primary/20 focus:border-primary focus:ring-1 focus:ring-primary bg-card"
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary"
-                                  >
-                                    {showPassword ? (
-                                      <RiEyeOffLine className="h-4 w-4" />
-                                    ) : (
-                                      <RiEyeLine className="h-4 w-4" />
-                                    )}
-                                  </button>
-                                </div>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <Button
-                          type="submit"
-                          className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium text-base mt-2"
-                          disabled={isLoading}
-                        >
-                          {isLoading ? (
-                            <span className="flex items-center justify-center">
-                              <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              Cargando...
-                            </span>
-                          ) : (
-                            "Iniciar Sesión"
-                          )}
-                        </Button>
-                        
-                        <div className="text-center">
-                          <Button 
-                            variant="link" 
-                            onClick={() => navigate("/recuperar-password")}
-                            className="text-primary hover:text-primary/80"
-                          >
-                            ¿Olvidaste tu contraseña?
-                          </Button>
-                        </div>
-                      </form>
-                    </Form>
-                  )}
-                </>
+                              <button
+                                type="button"
+                                className="text-xs text-primary/80 hover:text-primary"
+                                onClick={() => navigate("/forgot-password")}
+                              >
+                                ¿Olvidaste tu contraseña?
+                              </button>
+                            </div>
+                            <FormControl>
+                              <div className="relative">
+                                <Input
+                                  type={showPassword ? "text" : "password"}
+                                  placeholder="••••••••"
+                                  className="bg-card/50 border-muted-foreground/30 focus-visible:ring-primary pr-10"
+                                  {...field}
+                                  disabled={isLoading}
+                                />
+                                <button
+                                  type="button"
+                                  className="absolute right-3 top-1/2 -translate-y-1/2"
+                                  onClick={() => setShowPassword(!showPassword)}
+                                >
+                                  {showPassword ? (
+                                    <RiEyeOffLine className="h-5 w-5 text-muted-foreground" />
+                                  ) : (
+                                    <RiEyeLine className="h-5 w-5 text-muted-foreground" />
+                                  )}
+                                </button>
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button
+                        type="submit"
+                        className="w-full h-10 bg-primary hover:bg-primary/80 text-black font-semibold"
+                        disabled={isLoading}
+                      >
+                        {isLoading ? "Iniciando sesión..." : "Iniciar sesión"}
+                      </Button>
+                    </form>
+                  </Form>
+                ) : (
+                  <EmailLinkAuth onToggle={() => setLoginMethod("email")} />
+                )
               ) : (
                 <Form {...signupForm}>
                   <form onSubmit={signupForm.handleSubmit(onSignupSubmit)} className="space-y-4">
@@ -534,37 +450,37 @@ export default function AuthPage() {
                       name="name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Nombre completo</FormLabel>
+                          <FormLabel>Nombre</FormLabel>
                           <FormControl>
-                            <Input 
-                              placeholder="Juan Pérez" 
-                              {...field} 
-                              className="h-11 rounded-lg border-primary/20 focus:border-primary focus:ring-1 focus:ring-primary bg-card"
+                            <Input
+                              placeholder="Tu nombre"
+                              className="bg-card/50 border-muted-foreground/30 focus-visible:ring-primary"
+                              {...field}
+                              disabled={isLoading}
                             />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                    
                     <FormField
                       control={signupForm.control}
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Correo Electrónico</FormLabel>
+                          <FormLabel>Correo electrónico</FormLabel>
                           <FormControl>
-                            <Input 
-                              placeholder="tu@email.com" 
-                              {...field} 
-                              className="h-11 rounded-lg border-primary/20 focus:border-primary focus:ring-1 focus:ring-primary bg-card"
+                            <Input
+                              placeholder="tu@email.com"
+                              className="bg-card/50 border-muted-foreground/30 focus-visible:ring-primary"
+                              {...field}
+                              disabled={isLoading}
                             />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-
                     <FormField
                       control={signupForm.control}
                       name="password"
@@ -573,21 +489,22 @@ export default function AuthPage() {
                           <FormLabel>Contraseña</FormLabel>
                           <FormControl>
                             <div className="relative">
-                              <Input 
-                                type={showPassword ? "text" : "password"} 
-                                placeholder="******" 
-                                {...field} 
-                                className="h-11 rounded-lg border-primary/20 focus:border-primary focus:ring-1 focus:ring-primary bg-card"
+                              <Input
+                                type={showPassword ? "text" : "password"}
+                                placeholder="••••••••"
+                                className="bg-card/50 border-muted-foreground/30 focus-visible:ring-primary pr-10"
+                                {...field}
+                                disabled={isLoading}
                               />
                               <button
                                 type="button"
+                                className="absolute right-3 top-1/2 -translate-y-1/2"
                                 onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary"
                               >
                                 {showPassword ? (
-                                  <RiEyeOffLine className="h-4 w-4" />
+                                  <RiEyeOffLine className="h-5 w-5 text-muted-foreground" />
                                 ) : (
-                                  <RiEyeLine className="h-4 w-4" />
+                                  <RiEyeLine className="h-5 w-5 text-muted-foreground" />
                                 )}
                               </button>
                             </div>
@@ -596,20 +513,20 @@ export default function AuthPage() {
                         </FormItem>
                       )}
                     />
-
                     <FormField
                       control={signupForm.control}
                       name="confirmPassword"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Confirmar Contraseña</FormLabel>
+                          <FormLabel>Confirmar contraseña</FormLabel>
                           <FormControl>
                             <div className="relative">
-                              <Input 
-                                type={showPassword ? "text" : "password"} 
-                                placeholder="******" 
-                                {...field} 
-                                className="h-11 rounded-lg border-primary/20 focus:border-primary focus:ring-1 focus:ring-primary bg-card"
+                              <Input
+                                type={showPassword ? "text" : "password"}
+                                placeholder="••••••••"
+                                className="bg-card/50 border-muted-foreground/30 focus-visible:ring-primary pr-10"
+                                {...field}
+                                disabled={isLoading}
                               />
                             </div>
                           </FormControl>
@@ -617,47 +534,45 @@ export default function AuthPage() {
                         </FormItem>
                       )}
                     />
-
                     <Button
                       type="submit"
-                      className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium text-base mt-2"
+                      className="w-full h-10 bg-primary hover:bg-primary/80 text-black font-semibold"
                       disabled={isLoading}
                     >
-                      {isLoading ? (
-                        <span className="flex items-center justify-center">
-                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          Cargando...
-                        </span>
-                      ) : (
-                        "Crear Cuenta"
-                      )}
+                      {isLoading ? "Registrando..." : "Crear cuenta"}
                     </Button>
                   </form>
                 </Form>
               )}
-
-              {/* Mensaje de error */}
-              {error && (
-                <div className="text-red-500 text-sm text-center bg-red-900/20 p-2 rounded-lg border border-red-500/20">{error}</div>
-              )}
             </div>
           </CardContent>
-          
-          <CardFooter className="flex justify-center px-6 py-5 bg-muted/20 border-t border-primary/10">
-            <p className="text-sm text-muted-foreground text-center">
-              {authMode === "login" ? "¿No tienes una cuenta?" : "¿Ya tienes una cuenta?"}
-              {" "}
-              <Button 
-                variant="link" 
-                className="p-0 px-1 text-primary font-medium hover:text-primary/80" 
-                onClick={toggleAuthMode}
-              >
-                {authMode === "login" ? "Regístrate" : "Iniciar Sesión"}
-              </Button>
-            </p>
+
+          <CardFooter className="px-6 py-4 flex items-center justify-between border-t border-primary/20 bg-muted/10">
+            {authMode === "login" ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary/80"
+                    onClick={() => setLoginMethod(loginMethod === "email" ? "emailLink" : "email")}
+                  >
+                    {loginMethod === "email" ? (
+                      <>
+                        <RiMailSendLine className="h-4 w-4" />
+                        <span>Link mágico</span>
+                      </>
+                    ) : (
+                      <>
+                        <HiMail className="h-4 w-4" />
+                        <span>Contraseña</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div></div>
+            )}
           </CardFooter>
         </Card>
       </div>
