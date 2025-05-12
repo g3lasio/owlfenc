@@ -1,5 +1,5 @@
+
 import { Link } from "wouter";
-import { MessagesSquare } from "lucide-react";
 
 export default function Home() {
   return (
@@ -15,7 +15,11 @@ export default function Home() {
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="w-16 h-16 rounded-full bg-blue-300/40 animate-ping"></div>
             </div>
-            <MessagesSquare className="relative w-12 h-12 text-white z-10" />
+            <img 
+              src="https://i.postimg.cc/FK6hvMbf/logo-mervin.png" 
+              alt="Mervin AI" 
+              className="relative w-24 h-24 object-contain z-10"
+            />
           </div>
           <div className="absolute -inset-2 bg-blue-500/20 rounded-full blur animate-pulse"></div>
           <span className="absolute -bottom-12 left-1/2 -translate-x-1/2 text-lg font-semibold text-blue-500">
