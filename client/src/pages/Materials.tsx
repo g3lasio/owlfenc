@@ -478,9 +478,9 @@ export default function Materials() {
         <CardHeader>
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle className="text-2xl">Mis Materiales</CardTitle>
+              <CardTitle className="text-2xl">My Inventory</CardTitle>
               <CardDescription>
-                Gestiona tu inventario de materiales para tus proyectos
+                Gestiona tu inventario de materiales y suministros para tus proyectos
               </CardDescription>
             </div>
             <div className="space-x-2">

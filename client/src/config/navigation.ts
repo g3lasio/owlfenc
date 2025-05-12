@@ -51,9 +51,9 @@ export const navigationGroups: NavigationGroup[] = [
       },
       {
         id: "materials",
-        label: "Materiales",
+        label: "My Inventory",
         path: "/materials",
-        icon: "ri-tools-line"
+        icon: "ri-archive-line"
       },
       {
         id: "history",

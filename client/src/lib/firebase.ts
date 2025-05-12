@@ -12,6 +12,7 @@ import {
   Timestamp,
   updateDoc
 } from "firebase/firestore";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import {
   getAuth,
   signInWithEmailAndPassword,
@@ -80,6 +81,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
+export const storage = getStorage(app);
 
 // Proveedores de autenticación
 const googleProvider = new GoogleAuthProvider();
@@ -171,6 +173,122 @@ export const updateProject = async (id: string, projectData: any) => {
     return { id, ...projectData };
   } catch (error) {
     console.error("Error updating project:", error);
+    throw error;
+  }
+};
+
+// **************************************
+// FUNCIONES DE MANEJO DE MATERIALES
+// **************************************
+
+// Añadir material al inventario
+export const addMaterial = async (materialData: any) => {
+  try {
+    const materialWithTimestamp = {
+      ...materialData,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now()
+    };
+    
+    const docRef = await addDoc(collection(db, "materials"), materialWithTimestamp);
+    return { id: docRef.id, ...materialWithTimestamp };
+  } catch (error) {
+    console.error("Error al guardar material:", error);
+    throw error;
+  }
+};
+
+// Obtener todos los materiales
+export const getMaterials = async (filters?: { category?: string, projectId?: string }) => {
+  try {
+    let q = query(
+      collection(db, "materials"), 
+      orderBy("createdAt", "desc")
+    );
+    
+    // Aplicar filtros si se proporcionan
+    if (filters) {
+      const queryConstraints = [];
+      
+      if (filters.category) {
+        queryConstraints.push(where("category", "==", filters.category));
+      }
+      
+      if (filters.projectId) {
+        queryConstraints.push(where("projectId", "==", filters.projectId));
+      }
+      
+      if (queryConstraints.length > 0) {
+        q = query(
+          collection(db, "materials"),
+          ...queryConstraints,
+          orderBy("createdAt", "desc")
+        );
+      }
+    }
+    
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error("Error al obtener materiales:", error);
+    throw error;
+  }
+};
+
+// Obtener un material por su ID
+export const getMaterialById = async (id: string) => {
+  try {
+    const docRef = doc(db, "materials", id);
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      return { id: docSnap.id, ...docSnap.data() };
+    } else {
+      throw new Error("Material no encontrado");
+    }
+  } catch (error) {
+    console.error("Error al obtener material:", error);
+    throw error;
+  }
+};
+
+// Actualizar un material
+export const updateMaterial = async (id: string, materialData: any) => {
+  try {
+    const docRef = doc(db, "materials", id);
+    await updateDoc(docRef, {
+      ...materialData,
+      updatedAt: Timestamp.now()
+    });
+    return { id, ...materialData };
+  } catch (error) {
+    console.error("Error al actualizar material:", error);
+    throw error;
+  }
+};
+
+// **************************************
+// FUNCIONES DE MANEJO DE ARCHIVOS
+// **************************************
+
+// Subir archivo a Firebase Storage
+export const uploadFile = async (file: File, path: string): Promise<string> => {
+  try {
+    // Crear una referencia única para el archivo
+    const storageRef = ref(storage, `${path}/${Date.now()}_${file.name}`);
+    
+    // Subir el archivo a Firebase Storage
+    const snapshot = await uploadBytes(storageRef, file);
+    
+    // Obtener la URL de descarga
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    
+    return downloadURL;
+  } catch (error) {
+    console.error("Error al subir archivo:", error);
     throw error;
   }
 };
