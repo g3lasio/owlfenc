@@ -149,6 +149,17 @@ export default function Materials() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [currentMaterial, setCurrentMaterial] = useState<Material | null>(null);
   const [csvContent, setCsvContent] = useState("");
+  
+  // Referencias para carga de archivos
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Estado para manejar subida de archivos
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploadedFileUrls, setUploadedFileUrls] = useState<string[]>([]);
 
   // Configuración del formulario
   const form = useForm<MaterialFormValues>({
@@ -165,6 +176,8 @@ export default function Materials() {
       stock: 0,
       minStock: 0,
       projectId: "",
+      imageUrl: "",
+      fileUrls: [],
       tags: []
     }
   });
