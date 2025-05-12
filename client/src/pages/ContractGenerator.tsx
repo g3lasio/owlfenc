@@ -14,6 +14,8 @@ import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import ChatAssistant from "@/components/contract/ChatAssistant";
+import ContractOptions from "@/components/contract/ContractOptions";
 
 // Zod schema para validar los datos del formulario
 const contractFormSchema = z.object({
@@ -32,12 +34,13 @@ type ContractFormValues = z.infer<typeof contractFormSchema>;
 
 const ContractGenerator = () => {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("upload-estimate");
+  const [activeTab, setActiveTab] = useState("options");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [extractedData, setExtractedData] = useState<any>(null);
   const [contractHtml, setContractHtml] = useState<string>("");
   const [isGeneratingContract, setIsGeneratingContract] = useState(false);
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
 
   // Formulario para datos del contrato
   const form = useForm<ContractFormValues>({
@@ -185,6 +188,56 @@ const ContractGenerator = () => {
     }
   };
 
+  // Manejar selección de opciones de contrato
+  const handleOptionSelect = (option: 'new' | 'template' | 'modify' | 'upload') => {
+    setSelectedOption(option);
+    
+    // Redireccionar basado en la opción seleccionada
+    if (option === 'upload') {
+      setActiveTab("upload-estimate");
+    } else if (option === 'new') {
+      // Para crear nuevo, ir directo al formulario vacío
+      form.reset({
+        clientName: "",
+        clientEmail: "",
+        clientPhone: "",
+        clientAddress: "",
+        fenceType: "",
+        fenceHeight: "",
+        fenceLength: "",
+        projectTotal: "",
+      });
+      setActiveTab("review-data");
+    } else {
+      // Para otras opciones, también mostramos el formulario pero podríamos
+      // cargarlo con datos diferentes según la opción
+      setActiveTab("review-data");
+    }
+  };
+
+  // Manejar datos completos del chat asistente
+  const handleChatDataComplete = (data: any) => {
+    // Actualizar el formulario con los datos recopilados por el chat
+    form.reset({
+      clientName: data.clientName || "",
+      clientEmail: data.clientEmail || "",
+      clientPhone: data.clientPhone || "",
+      clientAddress: data.clientAddress || "",
+      fenceType: data.fenceType || "",
+      fenceHeight: data.fenceHeight || "",
+      fenceLength: data.fenceLength || "",
+      projectTotal: data.projectTotal || "",
+    });
+    
+    // Cambiar a la tab de revisión
+    setActiveTab("review-data");
+    
+    toast({
+      title: "Información recopilada",
+      description: "Se ha completado la recopilación de información. Revisa los datos antes de generar el contrato.",
+    });
+  };
+
   // Descargar contrato como PDF
   const handleDownloadPDF = async () => {
     try {
@@ -239,11 +292,56 @@ const ContractGenerator = () => {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="mb-4">
+            <TabsTrigger value="options">Inicio</TabsTrigger>
             <TabsTrigger value="upload-estimate">1. Cargar Estimado</TabsTrigger>
             <TabsTrigger value="review-data">2. Revisar Información</TabsTrigger>
             <TabsTrigger value="preview-contract">3. Vista Previa</TabsTrigger>
+            <TabsTrigger value="chat-assistant">Asistente</TabsTrigger>
           </TabsList>
 
+          {/* Tab para opciones iniciales */}
+          <TabsContent value="options">
+            <Card>
+              <CardHeader>
+                <CardTitle>¿Cómo deseas generar el contrato?</CardTitle>
+                <CardDescription>
+                  Selecciona una de las siguientes opciones para comenzar a generar tu contrato
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ContractOptions onSelectOption={handleOptionSelect} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          {/* Tab para el asistente virtual */}
+          <TabsContent value="chat-assistant">
+            <Card>
+              <CardHeader>
+                <CardTitle>Asistente Virtual</CardTitle>
+                <CardDescription>
+                  Nuestro asistente te guiará a través del proceso de generación de contratos
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChatAssistant 
+                  initialData={{
+                    clientName: form.getValues("clientName"),
+                    clientEmail: form.getValues("clientEmail"),
+                    clientPhone: form.getValues("clientPhone"),
+                    clientAddress: form.getValues("clientAddress"),
+                    fenceType: form.getValues("fenceType"),
+                    fenceHeight: form.getValues("fenceHeight"),
+                    fenceLength: form.getValues("fenceLength"),
+                    projectTotal: form.getValues("projectTotal")
+                  }}
+                  onDataComplete={handleChatDataComplete}
+                  onFileUpload={setSelectedFile}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
           {/* Tab para cargar estimado */}
           <TabsContent value="upload-estimate">
             <Card>
