@@ -47,21 +47,23 @@
 .chat-input-container {
   position: fixed;
   bottom: 30px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 240px; /* Ancho del sidebar */
+  right: 0;
   background-color: hsl(var(--background));
   padding: 0;
   border-top: 1px solid hsl(var(--border));
   z-index: 50;
-  width: calc(100% - 18rem); /* 18rem es el ancho del sidebar */
-  max-width: 100%;
+  width: auto; /* Ancho automático entre left y right */
+  max-width: calc(100% - 240px); /* No exceder el ancho disponible */
   box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.05);
 }
 
 @media (max-width: 768px) {
   .chat-input-container {
     width: 100%;
+    max-width: 100%;
     left: 0;
+    right: 0;
     transform: none;
   }
 }
@@ -411,13 +413,23 @@
   .chat-input {
     position: fixed;
     bottom: 30px; /* Ajustado para posicionarse justo encima del footer */
-    left: 0;
+    left: 240px; /* Ancho del sidebar */
     right: 0;
     background-color: hsl(var(--background));
     border-top: 1px solid hsl(var(--border));
     z-index: 50;
     padding: 8px;
     margin: 0;
+    width: auto;
+    max-width: calc(100% - 240px);
+  }
+  
+  @media (max-width: 768px) {
+    .chat-input {
+      left: 0;
+      width: 100%;
+      max-width: 100%;
+    }
   }
 
   .template-preview {
@@ -524,14 +536,24 @@
   }
 
   /* Make sure the chat input is repositioned to accommodate the footer */
-  .chat-input {
+  .chat-input.with-footer {
     position: fixed;
     bottom: 28px; /* Adjusted to make room for the footer */
-    left: 0;
+    left: 240px; /* Ancho del sidebar */
     right: 0;
     background-color: hsl(var(--background));
     border-top: 1px solid hsl(var(--border));
     z-index: 50;
+    width: auto;
+    max-width: calc(100% - 240px);
+  }
+  
+  @media (max-width: 768px) {
+    .chat-input.with-footer {
+      left: 0;
+      width: 100%;
+      max-width: 100%;
+    }
   }
 
   /* Adjust the container padding for the repositioned chat input and footer */
