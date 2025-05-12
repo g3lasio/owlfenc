@@ -92,166 +92,287 @@ export const sendWelcomeEmail = async (
   name: string = '',
   companyName: string = '',
 ): Promise<boolean> => {
-  const subject = 'Bienvenido a Owl Fence - Tu asistente inteligente de cercas';
+  const subject = 'Bienvenido a Owl Fenc - Tu asistente inteligente para proyectos de cercas';
   
-  // HTML más atractivo y estructurado para el correo de bienvenida
+  // HTML futurista con diseño inspirado en Stark Industries/Iron Man para el correo de bienvenida
   const html = `
   <!DOCTYPE html>
   <html>
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Bienvenido a Owl Fence</title>
+    <title>Bienvenido a Owl Fenc</title>
     <style>
+      @import url('https://fonts.googleapis.com/css2?family=Quantico:wght@400;700&family=Rubik:wght@300;400;500;700&display=swap');
+      
       body {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-family: 'Rubik', 'Segoe UI', Tahoma, sans-serif;
         line-height: 1.6;
-        color: #333;
-        background-color: #f9f9f9;
+        color: #e0e0e0;
+        background-color: #121212;
         margin: 0;
         padding: 0;
       }
       .container {
-        max-width: 600px;
+        max-width: 620px;
         margin: 0 auto;
-        padding: 20px;
-        background-color: #ffffff;
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        padding: 0;
+        background-color: #0d1117;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 10px 25px rgba(0, 255, 255, 0.15);
+        border: 1px solid rgba(0, 255, 255, 0.15);
       }
       .header {
-        background: linear-gradient(135deg, #02b3b3 0%, #00d4d4 100%);
+        background: linear-gradient(135deg, rgba(0, 24, 38, 0.9) 0%, rgba(0, 37, 58, 0.9) 100%);
         color: white;
-        padding: 25px 20px;
+        padding: 32px 20px;
         text-align: center;
-        border-radius: 8px 8px 0 0;
+        position: relative;
+        overflow: hidden;
+      }
+      .header:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.1), transparent);
+        animation: scanner 3s infinite linear;
+        z-index: 1;
+      }
+      @keyframes scanner {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+      }
+      .logo {
+        position: relative;
+        z-index: 2;
+        margin-bottom: 15px;
+      }
+      .logo img {
+        height: 60px;
+        width: auto;
       }
       .header h1 {
         margin: 0;
+        font-family: 'Quantico', sans-serif;
         font-size: 28px;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        letter-spacing: 1px;
+        text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+        position: relative;
+        z-index: 2;
+        color: #00f0ff;
       }
       .content {
-        background-color: #fff;
-        padding: 30px;
+        background-color: #171a21;
+        padding: 35px;
         border-radius: 0 0 8px 8px;
+        position: relative;
       }
       .highlight {
-        background-color: #e6fff9;
-        border-left: 4px solid #00cccc;
-        padding: 15px;
-        margin: 20px 0;
+        background-color: rgba(0, 255, 255, 0.05);
+        border-left: 3px solid #00cccc;
+        padding: 20px;
+        margin: 25px 0;
         border-radius: 4px;
+        box-shadow: 0 4px 15px rgba(0, 255, 255, 0.1) inset;
+      }
+      .highlight p {
+        margin: 0;
+        color: #00f0ff;
       }
       .features {
-        margin: 25px 0;
+        margin: 30px 0;
+      }
+      .features h2 {
+        color: #00f0ff;
+        font-family: 'Quantico', sans-serif;
+        margin-bottom: 25px;
+        position: relative;
+        display: inline-block;
+      }
+      .features h2:after {
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: -8px;
+        width: 100%;
+        height: 2px;
+        background: linear-gradient(90deg, #00f0ff, transparent);
       }
       .feature {
-        margin-bottom: 20px;
+        margin-bottom: 25px;
         display: flex;
         align-items: flex-start;
-        padding-bottom: 15px;
-        border-bottom: 1px solid #f0f0f0;
+        padding: 15px;
+        border-radius: 8px;
+        background-color: rgba(0, 255, 255, 0.03);
+        transition: all 0.3s ease;
+        border: 1px solid rgba(0, 255, 255, 0.08);
+      }
+      .feature:hover {
+        background-color: rgba(0, 255, 255, 0.05);
+        transform: translateY(-2px);
       }
       .feature-icon {
-        width: 30px;
-        margin-right: 15px;
-        color: #00b0b0;
-        font-size: 24px;
-        text-align: center;
+        width: 50px;
+        height: 50px;
+        margin-right: 20px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, rgba(0, 210, 255, 0.1), rgba(0, 240, 255, 0.3));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
       }
       .feature-text {
         flex: 1;
       }
+      .feature-text strong {
+        color: #00f0ff;
+        font-family: 'Quantico', sans-serif;
+        font-size: 18px;
+        display: block;
+        margin-bottom: 5px;
+      }
       .cta-button {
-        background-color: #00b0b0;
+        background: linear-gradient(135deg, #007a8a 0%, #00b0c7 100%);
         color: white;
         text-decoration: none;
-        padding: 12px 24px;
-        border-radius: 4px;
+        padding: 15px 30px;
+        border-radius: 6px;
         font-weight: bold;
         display: inline-block;
-        margin: 20px 0;
+        margin: 25px 0;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        font-family: 'Quantico', sans-serif;
+        letter-spacing: 0.5px;
+        border: 1px solid rgba(0, 255, 255, 0.3);
+      }
+      .cta-button:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: all 0.6s ease;
+      }
+      .cta-button:hover:before {
+        left: 100%;
+      }
+      .cta-button:hover {
+        box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+        transform: translateY(-2px);
       }
       .footer {
         text-align: center;
-        margin-top: 20px;
+        margin-top: 30px;
         font-size: 12px;
-        color: #999;
+        color: #858585;
+        padding-top: 20px;
+        border-top: 1px solid rgba(0, 255, 255, 0.1);
       }
-      .divider {
-        border-top: 1px solid #eee;
-        margin: 20px 0;
+      .holographic-line {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.5), transparent);
+        margin: 30px 0;
+      }
+      .signature {
+        font-family: 'Quantico', sans-serif;
+        color: #00f0ff;
+      }
+      .tech-background {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOHYxMmgxMlYxOEgzNnptMTIgMTJ2MTJoMTJWMzBoLTEyek0zNiA0MnYxMmgxMlY0MkgzNnptLTEyIDB2MTJoMTJWNDJIMjR6bTAtMTJ2MTJoMTJWMzBIMjR6bS0xMiAwdjEyaDEyVjMwSDEyem0wIDB2LTEyaDEyVjMwSDEyem0xMi0xMlY2aDEydjEySDI0eiIgc3Ryb2tlPSIjMDBmMGZmIiBzdHJva2Utd2lkdGg9Ii41IiBvcGFjaXR5PSIuMSIvPjwvZz48L3N2Zz4=');
+        opacity: 0.03;
+        z-index: 0;
       }
     </style>
   </head>
   <body>
     <div class="container">
       <div class="header">
-        <h1>¡Bienvenido a Owl Fence!</h1>
+        <div class="logo">
+          <!-- Logo o imagen de Owl Fenc -->
+        </div>
+        <h1>BIENVENIDO A OWL FENC</h1>
       </div>
       <div class="content">
-        <p>Estimado <strong>${name || 'usuario'}</strong>,</p>
+        <div class="tech-background"></div>
+        <p>Estimado <strong style="color: #00f0ff;">${name || 'usuario'}</strong>,</p>
         
-        <p>¡Estamos emocionados de darle la bienvenida a Owl Fence! Su cuenta ha sido creada con éxito y ahora tiene acceso a nuestra plataforma integral para la gestión de proyectos de cercas y verificación de propiedades.</p>
+        <p>¡Bienvenido al futuro de la gestión de proyectos de cercas! Su cuenta ha sido creada con éxito y ahora tiene acceso a nuestra plataforma de vanguardia para la verificación de propiedades y gestión de proyectos.</p>
         
         <div class="highlight">
-          <p>Como nuevo miembro, tiene acceso a Mervin, nuestro asistente de IA especializado que le ayudará con sus proyectos, verificación de permisos y generación de contratos.</p>
+          <p>Como nuevo miembro, tiene acceso completo a <strong>Mervin</strong>, nuestro asistente de IA especializado que revolucionará la forma en que gestiona sus proyectos, verifica permisos y genera contratos profesionales.</p>
         </div>
         
         <div class="features">
-          <h2>Lo que puede hacer con Owl Fence:</h2>
+          <h2>CAPACIDADES DEL SISTEMA</h2>
           
           <div class="feature">
             <div class="feature-icon">🔍</div>
             <div class="feature-text">
-              <strong>Verificación de Propiedades</strong>
-              <p>Acceda a historiales de propiedad, información catastral y verifique permisos existentes de forma instantánea.</p>
+              <strong>VERIFICACIÓN INTELIGENTE</strong>
+              <p>Acceda instantáneamente a historiales de propiedad, información catastral y verificación de permisos con precisión milimétrica.</p>
             </div>
           </div>
         
           <div class="feature">
             <div class="feature-icon">📝</div>
             <div class="feature-text">
-              <strong>Contratos Generados por IA</strong>
-              <p>Cree contratos personalizados con un solo clic, adaptados a sus necesidades específicas.</p>
+              <strong>DOCUMENTOS AUTOGENERADOS</strong>
+              <p>Cree contratos legalmente sólidos y personalizados con tecnología de IA avanzada adaptada a cada proyecto.</p>
             </div>
           </div>
           
           <div class="feature">
             <div class="feature-icon">💼</div>
             <div class="feature-text">
-              <strong>Gestión de Proyectos</strong>
-              <p>Organice todos sus proyectos, presupuestos y clientes en un solo lugar.</p>
+              <strong>CONTROL DE OPERACIONES</strong>
+              <p>Gestione todos sus proyectos, presupuestos y clientes desde una interfaz unificada con análisis en tiempo real.</p>
             </div>
           </div>
           
           <div class="feature">
             <div class="feature-icon">🤖</div>
             <div class="feature-text">
-              <strong>Asistente IA Mervin</strong>
-              <p>Reciba asistencia en tiempo real con nuestro asistente IA especializado en la industria de cercas.</p>
+              <strong>ASISTENCIA IA AVANZADA</strong>
+              <p>Mervin analiza su historial de proyectos para ofrecer recomendaciones personalizadas y optimizar resultados.</p>
             </div>
           </div>
         </div>
         
-        <p>Si tiene alguna pregunta o necesita asistencia, nuestro equipo de soporte está aquí para ayudarle.</p>
+        <div class="holographic-line"></div>
+        
+        <p>Nuestro equipo técnico está disponible para asistirle durante su integración con el sistema. Todas las consultas son procesadas con prioridad para garantizar la máxima eficiencia.</p>
           
-        <p>¡Gracias por elegir Owl Fence para ${companyName ? companyName : 'su empresa'}!</p>
+        <p>¡Gracias por incorporar la tecnología de Owl Fenc a ${companyName ? companyName : 'su operación empresarial'}!</p>
         
         <div style="text-align: center; margin: 30px 0;">
-          <a href="https://owlfence.replit.app" class="cta-button" style="padding: 15px 30px; font-size: 16px; background-color: #02b3b3; color: white; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">COMENZAR AHORA</a>
+          <a href="https://owlfenc.replit.app" class="cta-button">INICIAR SESIÓN</a>
         </div>
         
-        <p style="text-align: center; color: #666;">Si tiene alguna pregunta o necesita ayuda, no dude en responder a este correo o contactar a nuestro equipo de soporte.</p>
+        <p style="text-align: center; color: #8e9fae;">Para asistencia técnica, responda a este correo o contacte a soporte@owlfenc.com</p>
         
         <div style="margin-top: 30px; text-align: center;">
-          <p>Saludos,<br><strong>El equipo de Owl Fence</strong></p>
+          <p>Saludos,<br><strong class="signature">El equipo de Owl Fenc</strong></p>
         </div>
       </div>
       <div class="footer">
-        <p>© ${new Date().getFullYear()} Owl Fence. Todos los derechos reservados.</p>
-        <p>Este correo fue enviado a ${to} porque creó una cuenta en nuestra plataforma.</p>
+        <p>© ${new Date().getFullYear()} Owl Fenc | Tecnología avanzada para profesionales de cercas</p>
+        <p>Este correo fue enviado a ${to} porque se registró en nuestra plataforma.</p>
       </div>
     </div>
   </body>
@@ -260,32 +381,37 @@ export const sendWelcomeEmail = async (
   
   // Versión de texto plano para clientes de correo que no soportan HTML
   const text = `
-¡BIENVENIDO A OWL FENCE!
+BIENVENIDO A OWL FENC - TECNOLOGÍA AVANZADA PARA PROFESIONALES DE CERCAS
 
 Estimado ${name || 'usuario'},
 
-¡Estamos emocionados de darle la bienvenida a Owl Fence! Su cuenta ha sido creada con éxito y ahora tiene acceso a nuestra plataforma integral para la gestión de proyectos de cercas y verificación de propiedades.
+¡Bienvenido al futuro de la gestión de proyectos de cercas! Su cuenta ha sido creada con éxito y ahora tiene acceso a nuestra plataforma de vanguardia para la verificación de propiedades y gestión de proyectos.
 
-Como nuevo miembro, tiene acceso a Mervin, nuestro asistente de IA especializado que le ayudará con sus proyectos, verificación de permisos y generación de contratos.
+Como nuevo miembro, tiene acceso completo a Mervin, nuestro asistente de IA especializado que revolucionará la forma en que gestiona sus proyectos, verifica permisos y genera contratos profesionales.
 
-LO QUE PUEDE HACER CON OWL FENCE:
+CAPACIDADES DEL SISTEMA:
 
-- Verificación de Propiedades: Acceda a historiales de propiedad, información catastral y verifique permisos existentes de forma instantánea.
-- Contratos Generados por IA: Cree contratos personalizados con un solo clic, adaptados a sus necesidades específicas.
-- Gestión de Proyectos: Organice todos sus proyectos, presupuestos y clientes en un solo lugar.
-- Asistente IA Mervin: Reciba asistencia en tiempo real con nuestro asistente IA especializado en la industria de cercas.
+- VERIFICACIÓN INTELIGENTE: Acceda instantáneamente a historiales de propiedad, información catastral y verificación de permisos con precisión milimétrica.
 
-¡Gracias por elegir Owl Fence para ${companyName ? companyName : 'su empresa'}!
+- DOCUMENTOS AUTOGENERADOS: Cree contratos legalmente sólidos y personalizados con tecnología de IA avanzada adaptada a cada proyecto.
 
-COMIENCE AHORA: https://owlfence.replit.app
+- CONTROL DE OPERACIONES: Gestione todos sus proyectos, presupuestos y clientes desde una interfaz unificada con análisis en tiempo real.
 
-Si tiene alguna pregunta o necesita ayuda, no dude en responder a este correo o contactar a nuestro equipo de soporte.
+- ASISTENCIA IA AVANZADA: Mervin analiza su historial de proyectos para ofrecer recomendaciones personalizadas y optimizar resultados.
+
+Nuestro equipo técnico está disponible para asistirle durante su integración con el sistema. Todas las consultas son procesadas con prioridad para garantizar la máxima eficiencia.
+
+¡Gracias por incorporar la tecnología de Owl Fenc a ${companyName ? companyName : 'su operación empresarial'}!
+
+INICIAR SESIÓN: https://owlfenc.replit.app
+
+Para asistencia técnica, responda a este correo o contacte a soporte@owlfenc.com
 
 Saludos,
-El equipo de Owl Fence
+El equipo de Owl Fenc
 
-© ${new Date().getFullYear()} Owl Fence. Todos los derechos reservados.
-Este correo fue enviado a ${to} porque creó una cuenta en nuestra plataforma.
+© ${new Date().getFullYear()} Owl Fenc | Tecnología avanzada para profesionales de cercas
+Este correo fue enviado a ${to} porque se registró en nuestra plataforma.
   `;
   
   return sendEmail({
@@ -297,7 +423,7 @@ Este correo fue enviado a ${to} porque creó una cuenta en nuestra plataforma.
 };
 
 /**
- * Envia un correo de restablecimiento de contraseña
+ * Envia un correo de restablecimiento de contraseña con diseño futurista
  */
 export const sendPasswordResetEmail = async (
   to: string,
@@ -310,39 +436,203 @@ export const sendPasswordResetEmail = async (
   <html>
   <head>
     <meta charset="utf-8">
-    <title>Restablecimiento de contraseña</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Restablecimiento de contraseña - Owl Fenc</title>
     <style>
-      body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-      .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-      .button { background-color: #00b0b0; color: white; text-decoration: none; padding: 10px 20px; border-radius: 4px; }
+      @import url('https://fonts.googleapis.com/css2?family=Quantico:wght@400;700&family=Rubik:wght@300;400;500;700&display=swap');
+      
+      body {
+        font-family: 'Rubik', 'Segoe UI', Tahoma, sans-serif;
+        line-height: 1.6;
+        color: #e0e0e0;
+        background-color: #121212;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 0;
+        background-color: #0d1117;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 10px 25px rgba(0, 255, 255, 0.15);
+        border: 1px solid rgba(0, 255, 255, 0.15);
+      }
+      .header {
+        background: linear-gradient(135deg, rgba(0, 24, 38, 0.9) 0%, rgba(0, 37, 58, 0.9) 100%);
+        color: white;
+        padding: 25px 20px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+      }
+      .header:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.1), transparent);
+        animation: scanner 3s infinite linear;
+        z-index: 1;
+      }
+      @keyframes scanner {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+      }
+      .header h1 {
+        margin: 0;
+        font-family: 'Quantico', sans-serif;
+        font-size: 24px;
+        letter-spacing: 1px;
+        text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+        position: relative;
+        z-index: 2;
+        color: #00f0ff;
+      }
+      .content {
+        background-color: #171a21;
+        padding: 30px;
+        border-radius: 0 0 8px 8px;
+        position: relative;
+      }
+      .security-icon {
+        text-align: center;
+        margin: 10px 0 25px;
+        font-size: 48px;
+      }
+      .reset-button {
+        background: linear-gradient(135deg, #007a8a 0%, #00b0c7 100%);
+        color: white;
+        text-decoration: none;
+        padding: 15px 30px;
+        border-radius: 6px;
+        font-weight: bold;
+        display: inline-block;
+        margin: 20px 0;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        font-family: 'Quantico', sans-serif;
+        letter-spacing: 0.5px;
+        border: 1px solid rgba(0, 255, 255, 0.3);
+      }
+      .reset-button:hover {
+        box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+        transform: translateY(-2px);
+      }
+      .reset-button:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: all 0.6s ease;
+      }
+      .reset-button:hover:before {
+        left: 100%;
+      }
+      .footer {
+        text-align: center;
+        margin-top: 25px;
+        font-size: 12px;
+        color: #858585;
+        padding-top: 20px;
+        border-top: 1px solid rgba(0, 255, 255, 0.1);
+      }
+      .warning {
+        background-color: rgba(255, 193, 7, 0.1);
+        border-left: 3px solid rgba(255, 193, 7, 0.5);
+        padding: 15px;
+        margin: 20px 0;
+        border-radius: 4px;
+      }
+      .warning p {
+        margin: 0;
+        color: #ffc107;
+      }
+      .signature {
+        font-family: 'Quantico', sans-serif;
+        color: #00f0ff;
+      }
+      .expiry-counter {
+        background-color: rgba(0, 255, 255, 0.05);
+        border-radius: 4px;
+        padding: 10px;
+        margin: 20px 0;
+        text-align: center;
+        border: 1px solid rgba(0, 255, 255, 0.1);
+      }
+      .expiry-counter span {
+        font-family: 'Quantico', sans-serif;
+        color: #00f0ff;
+        font-size: 18px;
+      }
     </style>
   </head>
   <body>
     <div class="container">
-      <h1>Restablecimiento de contraseña</h1>
-      <p>Has solicitado restablecer tu contraseña. Haz clic en el siguiente enlace para crear una nueva contraseña:</p>
-      <p><a href="${resetLink}" class="button">Restablecer mi contraseña</a></p>
-      <p>Si no solicitaste este cambio, puedes ignorar este correo y tu contraseña seguirá siendo la misma.</p>
-      <p>Este enlace expirará en 1 hora por razones de seguridad.</p>
-      <p>Saludos,<br>El equipo de Owl Fenc</p>
+      <div class="header">
+        <h1>RESTABLECIMIENTO DE SEGURIDAD</h1>
+      </div>
+      <div class="content">
+        <div class="security-icon">🔐</div>
+        
+        <p>Se ha recibido una solicitud para restablecer la contraseña asociada a su cuenta de Owl Fenc.</p>
+        
+        <p>Para proceder con el restablecimiento de su contraseña, haga clic en el siguiente enlace:</p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${resetLink}" class="reset-button">VERIFICAR IDENTIDAD</a>
+        </div>
+        
+        <div class="expiry-counter">
+          <p>Este enlace expirará en <span>60 minutos</span> por motivos de seguridad.</p>
+        </div>
+        
+        <div class="warning">
+          <p>Si usted no solicitó este restablecimiento, puede ignorar este mensaje. Su contraseña actual permanecerá sin cambios.</p>
+        </div>
+        
+        <p>Si tiene alguna pregunta o necesita asistencia, por favor contacte a nuestro soporte técnico.</p>
+        
+        <div style="margin-top: 25px; text-align: center;">
+          <p>Atentamente,<br><strong class="signature">Equipo de Seguridad - Owl Fenc</strong></p>
+        </div>
+      </div>
+      <div class="footer">
+        <p>© ${new Date().getFullYear()} Owl Fenc | Tecnología avanzada para profesionales de cercas</p>
+        <p>Este correo fue enviado a ${to} en respuesta a una solicitud de restablecimiento de contraseña.</p>
+      </div>
     </div>
   </body>
   </html>
   `;
   
   const text = `
-Restablecimiento de contraseña - Owl Fenc
+RESTABLECIMIENTO DE SEGURIDAD - OWL FENC
 
-Has solicitado restablecer tu contraseña. Utiliza el siguiente enlace para crear una nueva contraseña:
+Se ha recibido una solicitud para restablecer la contraseña asociada a su cuenta de Owl Fenc.
+
+Para proceder con el restablecimiento de su contraseña, utilice el siguiente enlace:
 
 ${resetLink}
 
-Si no solicitaste este cambio, puedes ignorar este correo y tu contraseña seguirá siendo la misma.
+IMPORTANTE: Este enlace expirará en 60 minutos por motivos de seguridad.
 
-Este enlace expirará en 1 hora por razones de seguridad.
+Si usted no solicitó este restablecimiento, puede ignorar este mensaje. Su contraseña actual permanecerá sin cambios.
 
-Saludos,
-El equipo de Owl Fenc
+Si tiene alguna pregunta o necesita asistencia, por favor contacte a nuestro soporte técnico.
+
+Atentamente,
+Equipo de Seguridad - Owl Fenc
+
+© ${new Date().getFullYear()} Owl Fenc | Tecnología avanzada para profesionales de cercas
+Este correo fue enviado a ${to} en respuesta a una solicitud de restablecimiento de contraseña.
   `;
   
   return sendEmail({

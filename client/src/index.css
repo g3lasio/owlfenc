@@ -862,3 +862,120 @@ header::-webkit-scrollbar, footer::-webkit-scrollbar,
   font-family: 'Quantico', sans-serif;
   text-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
 }
+
+/* Efectos de estilo Iron Man / Stark Industries */
+.stark-card-transitioning {
+  transform: scale(1.03);
+  box-shadow: 0 0 30px rgba(0, 255, 255, 0.4), 0 0 15px rgba(0, 255, 255, 0.2) inset;
+  border-color: rgba(0, 255, 255, 0.6) !important;
+}
+
+.stark-scan-effect::before,
+.stark-scan-effect::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 255, 255, 0.05) 40%,
+    rgba(0, 255, 255, 0.1) 50%,
+    rgba(0, 255, 255, 0.05) 60%,
+    transparent 100%
+  );
+  z-index: 10;
+  animation: stark-scan 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.stark-scan-effect::after {
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(0, 255, 255, 0.05) 40%,
+    rgba(0, 255, 255, 0.1) 50%,
+    rgba(0, 255, 255, 0.05) 60%,
+    transparent 100%
+  );
+  animation: stark-scan-horizontal 1.5s cubic-bezier(0.4, 0, 0.2, 1) 0.3s forwards;
+}
+
+@keyframes stark-scan {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes stark-scan-horizontal {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.stark-scan-line {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.8), transparent);
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
+.stark-scan-line.scanning {
+  animation: stark-line-scan 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes stark-line-scan {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(400%);
+    opacity: 0;
+  }
+}
+
+.stark-text-glow {
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+  position: relative;
+}
+
+.stark-icon-pulse {
+  animation: stark-icon-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes stark-icon-pulse {
+  0%, 100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 4px rgba(0, 255, 255, 0.8));
+  }
+  50% {
+    opacity: 0.7;
+    filter: drop-shadow(0 0 2px rgba(0, 255, 255, 0.4));
+  }
+}
+
+.stark-holo-circle {
+  animation: stark-circle-pulse 4s infinite;
+}
+
+@keyframes stark-circle-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.3;
+  }
+}
