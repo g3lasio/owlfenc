@@ -1,11 +1,22 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, FileText, ArrowRight, Info } from "lucide-react";
+import { 
+  Upload, 
+  FileText, 
+  ArrowRight, 
+  Info, 
+  Search, 
+  Download, 
+  Eye, 
+  Clock, 
+  PlusCircle 
+} from "lucide-react";
 import ContractPreview from "@/components/templates/ContractPreview";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,9 +25,23 @@ import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 import ChatAssistant from "@/components/contract/ChatAssistant";
 import ContractOptions from "@/components/contract/ContractOptions";
 import QuestionFlowChat from "@/components/contract/QuestionFlowChat";
+
+// Interfaces
+interface Contract {
+  id: number;
+  title: string;
+  clientName: string;
+  createdAt: string; // ISO date string
+  status: 'draft' | 'sent' | 'signed' | 'completed';
+  contractType: string;
+  html?: string;
+}
 
 // Zod schema para validar los datos del formulario
 const contractFormSchema = z.object({
@@ -35,6 +60,7 @@ type ContractFormValues = z.infer<typeof contractFormSchema>;
 
 const ContractGenerator = () => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("options");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -42,6 +68,70 @@ const ContractGenerator = () => {
   const [contractHtml, setContractHtml] = useState<string>("");
   const [isGeneratingContract, setIsGeneratingContract] = useState(false);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  
+  // Consulta para obtener la lista de contratos
+  const contractsQuery = useQuery({
+    queryKey: ['/api/contracts'],
+    queryFn: async () => {
+      try {
+        const response = await fetch('/api/contracts');
+        if (!response.ok) {
+          throw new Error('Error al cargar contratos');
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error("Error cargando contratos:", error);
+        // En desarrollo, retornar datos de muestra si el backend no está listo
+        if (process.env.NODE_ENV === 'development') {
+          return sampleContracts;
+        }
+        throw error;
+      }
+    }
+  });
+  
+  // Mutación para descargar un contrato como PDF
+  const downloadMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await fetch(`/api/contracts/${id}/download`, {
+        method: 'GET',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al descargar contrato');
+      }
+      
+      return await response.blob();
+    },
+    onSuccess: (data, id) => {
+      // Crear URL y descargar
+      const url = window.URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `contrato-${id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Contrato descargado",
+        description: "El contrato ha sido descargado como PDF",
+      });
+    },
+    onError: (error) => {
+      console.error('Error descargando contrato:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo descargar el contrato. Intenta de nuevo más tarde.",
+        variant: "destructive",
+      });
+    }
+  });
 
   // Formulario para datos del contrato
   const form = useForm<ContractFormValues>({
@@ -190,7 +280,7 @@ const ContractGenerator = () => {
   };
 
   // Manejar selección de opciones de contrato
-  const handleOptionSelect = (option: 'new' | 'template' | 'modify' | 'upload' | 'chat-assistant' | 'guided-flow') => {
+  const handleOptionSelect = (option: 'new' | 'template' | 'modify' | 'upload' | 'chat-assistant' | 'guided-flow' | 'my-contracts') => {
     setSelectedOption(option);
     
     // Redireccionar basado en la opción seleccionada
@@ -198,6 +288,7 @@ const ContractGenerator = () => {
       setActiveTab("upload-estimate");
     } else if (option === 'new') {
       // Para crear nuevo, ir directo al formulario vacío
+      setActiveTab("review-data");
     } else if (option === 'chat-assistant') {
       setActiveTab("chat-assistant");
     } else if (option === 'guided-flow') {
@@ -212,12 +303,61 @@ const ContractGenerator = () => {
         fenceLength: "",
         projectTotal: "",
       });
-      setActiveTab("review-data");
+    } else if (option === 'my-contracts') {
+      setActiveTab("my-contracts");
     } else {
       // Para otras opciones, también mostramos el formulario pero podríamos
       // cargarlo con datos diferentes según la opción
       setActiveTab("review-data");
     }
+  };
+  
+  // Vista previa de un contrato existente
+  const handlePreview = async (contract: Contract) => {
+    setSelectedContract(contract);
+    
+    // Si ya tenemos el HTML, mostrarlo directamente
+    if (contract.html) {
+      setContractHtml(contract.html);
+      setIsPreviewOpen(true);
+      return;
+    }
+    
+    // De lo contrario, obtenerlo del servidor
+    try {
+      const response = await fetch(`/api/contracts/${contract.id}`);
+      if (!response.ok) {
+        throw new Error('Error al cargar el contrato');
+      }
+      
+      const data = await response.json();
+      setContractHtml(data.html || '');
+      setIsPreviewOpen(true);
+    } catch (error) {
+      console.error('Error cargando contrato:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo cargar la vista previa del contrato",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  // Filtrar contratos por término de búsqueda
+  const filteredContracts = contractsQuery.data ? 
+    contractsQuery.data.filter((contract: Contract) => 
+      contract.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      contract.clientName.toLowerCase().includes(searchTerm.toLowerCase())
+    ) : [];
+    
+  // Función auxiliar para formatear fecha
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('es-MX', {
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric'
+    }).format(date);
   };
 
   // Manejar datos completos del chat asistente
@@ -287,17 +427,56 @@ const ContractGenerator = () => {
     }
   };
 
+  // Datos de ejemplo para desarrollo
+  const sampleContracts: Contract[] = [
+    {
+      id: 1,
+      title: "Contrato de Cercado - Residencia García",
+      clientName: "Eduardo García",
+      createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+      status: "completed",
+      contractType: "Cerca de Privacidad",
+    },
+    {
+      id: 2,
+      title: "Contrato de Cercado - Negocio Flores",
+      clientName: "María Flores",
+      createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+      status: "signed",
+      contractType: "Cerca Comercial",
+    },
+    {
+      id: 3,
+      title: "Contrato de Cercado - Residencia López",
+      clientName: "Juan López",
+      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      status: "draft",
+      contractType: "Cerca de Vinilo",
+    },
+  ];
+
   return (
     <div className="flex-1 p-6 overflow-auto">
       <div className="max-w-5xl mx-auto">
-        <h1 className="text-2xl font-bold mb-2">Generación de Contratos</h1>
-        <p className="text-muted-foreground mb-6">
-          Genera contratos profesionales a partir de estimados aprobados o información manual
-        </p>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold mb-2">Generación de Contratos</h1>
+            <p className="text-muted-foreground">
+              Genera contratos profesionales a partir de estimados aprobados o información manual
+            </p>
+          </div>
+          {activeTab === "my-contracts" && (
+            <Button onClick={() => setIsCreateDialogOpen(true)}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Nuevo Contrato
+            </Button>
+          )}
+        </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="mb-4">
             <TabsTrigger value="options">Inicio</TabsTrigger>
+            <TabsTrigger value="my-contracts">Mis Contratos</TabsTrigger>
             <TabsTrigger value="upload-estimate">1. Cargar Estimado</TabsTrigger>
             <TabsTrigger value="review-data">2. Revisar Información</TabsTrigger>
             <TabsTrigger value="preview-contract">3. Vista Previa</TabsTrigger>
@@ -318,6 +497,127 @@ const ContractGenerator = () => {
                 <ContractOptions onSelectOption={handleOptionSelect} />
               </CardContent>
             </Card>
+          </TabsContent>
+          
+          {/* Tab para mis contratos */}
+          <TabsContent value="my-contracts" className="space-y-4">
+            <div className="flex justify-between">
+              <div className="relative w-full max-w-sm">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Buscar contratos..."
+                  className="w-full pl-8"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+            </div>
+            
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {contractsQuery.isLoading ? (
+                // Esqueletos de carga
+                Array.from({ length: 6 }).map((_, i) => (
+                  <Card key={i} className="overflow-hidden">
+                    <CardHeader className="p-4">
+                      <Skeleton className="h-6 w-2/3" />
+                      <Skeleton className="h-4 w-1/3 mt-2" />
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
+                      <Skeleton className="h-4 w-full mb-2" />
+                      <Skeleton className="h-4 w-2/3" />
+                    </CardContent>
+                    <CardFooter className="p-4 flex justify-between">
+                      <Skeleton className="h-9 w-16" />
+                      <Skeleton className="h-9 w-16" />
+                    </CardFooter>
+                  </Card>
+                ))
+              ) : contractsQuery.isError ? (
+                <div className="col-span-full flex justify-center py-8">
+                  <div className="text-center">
+                    <p className="text-muted-foreground">
+                      Error al cargar contratos. Intenta refrescar la página.
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      className="mt-4"
+                      onClick={() => contractsQuery.refetch()}
+                    >
+                      Reintentar
+                    </Button>
+                  </div>
+                </div>
+              ) : filteredContracts.length === 0 ? (
+                <div className="col-span-full flex justify-center py-8">
+                  <div className="text-center">
+                    <p className="text-muted-foreground">
+                      {searchTerm ? 'No se encontraron contratos con ese criterio de búsqueda.' : 'No has creado ningún contrato todavía.'}
+                    </p>
+                    <Button 
+                      onClick={() => handleOptionSelect('new')}
+                      className="mt-4"
+                    >
+                      Crear Tu Primer Contrato
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                // Lista de contratos
+                filteredContracts.map((contract: Contract) => (
+                  <Card key={contract.id} className="overflow-hidden">
+                    <CardHeader className="p-4">
+                      <div className="flex justify-between items-start">
+                        <CardTitle className="text-lg">{contract.title}</CardTitle>
+                        <Badge 
+                          variant={
+                            contract.status === 'signed' ? 'default' :
+                            contract.status === 'completed' ? 'default' :
+                            contract.status === 'sent' ? 'outline' : 'secondary'
+                          }
+                        >
+                          {
+                            contract.status === 'draft' ? 'Borrador' :
+                            contract.status === 'sent' ? 'Enviado' :
+                            contract.status === 'signed' ? 'Firmado' : 'Completado'
+                          }
+                        </Badge>
+                      </div>
+                      <CardDescription className="flex items-center">
+                        <Clock className="h-3 w-3 mr-1" />
+                        {formatDate(contract.createdAt)}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
+                      <p className="text-sm">
+                        <span className="font-medium">Cliente:</span> {contract.clientName}
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-medium">Tipo:</span> {contract.contractType}
+                      </p>
+                    </CardContent>
+                    <CardFooter className="p-4 flex justify-between">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handlePreview(contract)}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        Ver
+                      </Button>
+                      <Button 
+                        size="sm"
+                        onClick={() => downloadMutation.mutate(contract.id)}
+                        disabled={downloadMutation.isPending}
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        PDF
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                ))
+              )}
+            </div>
           </TabsContent>
           
           {/* Tab para el asistente virtual */}
