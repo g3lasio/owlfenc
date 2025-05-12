@@ -182,6 +182,64 @@ export default function Materials() {
     }
   });
 
+  // Función para manejar la selección de imagen
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setSelectedImage(file);
+      
+      // Crear preview
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setImagePreview(event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  
+  // Función para manejar la selección de archivos adjuntos
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const filesArray = Array.from(e.target.files);
+      setSelectedFiles(prevFiles => [...prevFiles, ...filesArray]);
+    }
+  };
+  
+  // Función para subir una imagen a Firebase Storage
+  const uploadImageIfNeeded = async (): Promise<string | null> => {
+    if (!selectedImage) return null;
+    
+    try {
+      const imageUrl = await uploadFile(selectedImage, `user_materials/${currentUser?.uid}/images`);
+      return imageUrl;
+    } catch (error) {
+      console.error("Error al subir imagen:", error);
+      throw error;
+    }
+  };
+  
+  // Función para subir archivos a Firebase Storage
+  const uploadFilesIfNeeded = async (): Promise<string[]> => {
+    if (selectedFiles.length === 0) return [];
+    
+    try {
+      const uploadPromises = selectedFiles.map(file => 
+        uploadFile(file, `user_materials/${currentUser?.uid}/files`)
+      );
+      
+      const urls = await Promise.all(uploadPromises);
+      return urls;
+    } catch (error) {
+      console.error("Error al subir archivos:", error);
+      throw error;
+    }
+  };
+  
+  // Eliminar un archivo de la lista
+  const removeSelectedFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   // Cargar materiales al inicio
   useEffect(() => {
     if (currentUser) {
@@ -226,6 +284,8 @@ export default function Materials() {
           stock: data.stock,
           minStock: data.minStock,
           projectId: data.projectId,
+          imageUrl: data.imageUrl,
+          fileUrls: data.fileUrls,
           tags: data.tags,
           createdAt: data.createdAt?.toDate() || new Date(),
           updatedAt: data.updatedAt?.toDate() || new Date(),
@@ -281,11 +341,42 @@ export default function Materials() {
         return;
       }
       
+      setIsUploading(true);
+      
+      // Subir imagen y archivos si es necesario
+      let imageUrl = data.imageUrl || null;
+      let fileUrls: string[] = data.fileUrls || [];
+      
+      try {
+        if (selectedImage) {
+          const uploadedImageUrl = await uploadImageIfNeeded();
+          if (uploadedImageUrl) {
+            imageUrl = uploadedImageUrl;
+          }
+        }
+        
+        if (selectedFiles.length > 0) {
+          const uploadedFileUrls = await uploadFilesIfNeeded();
+          fileUrls = [...fileUrls, ...uploadedFileUrls];
+        }
+      } catch (error) {
+        console.error("Error al subir archivos:", error);
+        toast({
+          title: "Error",
+          description: "No se pudieron subir los archivos adjuntos",
+          variant: "destructive"
+        });
+        setIsUploading(false);
+        return;
+      }
+      
       // Preparar datos para guardar
       const materialData: any = {
         ...data,
         userId: currentUser.uid,
         price: Math.round(data.price * 100), // Convertir a centavos
+        imageUrl,
+        fileUrls,
         updatedAt: Timestamp.now()
       };
       
@@ -312,6 +403,14 @@ export default function Materials() {
       // Resetear formulario y cerrar diálogo
       form.reset();
       setIsAddDialogOpen(false);
+      setIsEditMode(false);
+      setCurrentMaterial(null);
+      
+      // Limpiar estado de archivos
+      setSelectedImage(null);
+      setSelectedFiles([]);
+      setImagePreview(null);
+      setUploadedFileUrls([]);
       
       // Recargar materiales
       loadMaterials();
@@ -322,6 +421,8 @@ export default function Materials() {
         description: "No se pudo guardar el material",
         variant: "destructive"
       });
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -355,6 +456,16 @@ export default function Materials() {
     setCurrentMaterial(material);
     setIsEditMode(true);
     
+    // Si hay una imagen, mostrar la previsualización
+    if (material.imageUrl) {
+      setImagePreview(material.imageUrl);
+    }
+    
+    // Si hay archivos adjuntos, actualizar la lista
+    if (material.fileUrls && material.fileUrls.length > 0) {
+      setUploadedFileUrls(material.fileUrls);
+    }
+    
     // Llenar formulario con datos del material
     form.reset({
       name: material.name,
@@ -368,6 +479,8 @@ export default function Materials() {
       stock: material.stock || 0,
       minStock: material.minStock || 0,
       projectId: material.projectId || "",
+      imageUrl: material.imageUrl || "",
+      fileUrls: material.fileUrls || [],
       tags: material.tags || []
     });
     
