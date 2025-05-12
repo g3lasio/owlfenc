@@ -4,10 +4,15 @@
  * Este script verifica cómo el sistema maneja diferentes situaciones de error
  * en el proceso de generación de contratos y PDFs.
  */
-const axios = require('axios');
-const fs = require('fs').promises;
-const path = require('path');
-const assert = require('assert');
+import axios from 'axios';
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import assert from 'assert';
+import { fileURLToPath } from 'url';
+
+// Obtener el directorio actual (equivalente a __dirname en CommonJS)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Configuración y helpers
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3000';

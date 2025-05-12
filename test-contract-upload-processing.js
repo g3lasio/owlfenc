@@ -4,11 +4,16 @@
  * Este script verifica la funcionalidad de cargar contratos existentes en PDF,
  * extraer sus datos, y generar versiones actualizadas o duplicados.
  */
-const fs = require('fs').promises;
-const FormData = require('form-data');
-const axios = require('axios');
-const path = require('path');
-const assert = require('assert');
+import * as fs from 'fs/promises';
+import FormData from 'form-data';
+import axios from 'axios';
+import * as path from 'path';
+import assert from 'assert';
+import { fileURLToPath } from 'url';
+
+// Obtener el directorio actual (equivalente a __dirname en CommonJS)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Configuración y helpers
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3000';

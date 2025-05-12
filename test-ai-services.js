@@ -4,10 +4,15 @@
  * Este script verifica la funcionalidad de los servicios de IA que se utilizan para generar
  * y procesar contratos, incluyendo la generación de HTML y el procesamiento de datos.
  */
-const axios = require('axios');
-const fs = require('fs').promises;
-const path = require('path');
-const assert = require('assert');
+import axios from 'axios';
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import assert from 'assert';
+import { fileURLToPath } from 'url';
+
+// Obtener el directorio actual (equivalente a __dirname en CommonJS)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Configuración y helpers
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3000';

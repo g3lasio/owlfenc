@@ -5,11 +5,16 @@
  * desde el punto de vista de su estructura, contenido y conformidad con
  * los estándares PDF.
  */
-const axios = require('axios');
-const fs = require('fs').promises;
-const path = require('path');
-const assert = require('assert');
-const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js');
+import axios from 'axios';
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import assert from 'assert';
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.js';
+import { fileURLToPath } from 'url';
+
+// Obtener el directorio actual (equivalente a __dirname en CommonJS)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Configuración y helpers
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3000';

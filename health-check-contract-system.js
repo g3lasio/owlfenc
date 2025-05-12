@@ -13,8 +13,10 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Importar configuración centralizada
+import { API_BASE_URL, API_URLS, TEST_NAMES, TEST_DATA, TIMEOUTS } from './test-config.js';
+
 // Configuración
-const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3000';
 const OUTPUT_DIR = path.join(__dirname, 'health-check');
 
 // Crear directorio de salida si no existe
@@ -28,14 +30,8 @@ async function setup() {
   }
 }
 
-// Datos mínimos para una prueba de contrato
-const minimalContractData = {
-  clientName: 'Cliente de Prueba',
-  address: 'Dirección de Prueba #123',
-  fenceType: 'Básica',
-  fenceLength: '30',
-  total: 10000
-};
+// Usar datos de prueba de la configuración centralizada
+const minimalContractData = TEST_DATA.minimalContract;
 
 // Verificar la API de generación de contratos
 async function checkContractGeneration() {
