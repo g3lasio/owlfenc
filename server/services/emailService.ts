@@ -36,15 +36,44 @@ export const sendEmail = async (params: SendEmailParams): Promise<boolean> => {
 
     const fromAddress = params.from || 'owlfenc@example.com';
     
-    const emailParams = {
+    // Crear estructura requerida por SendGrid
+    const emailParams: any = {
       to: params.to,
       from: fromAddress,
       subject: params.subject,
-      text: params.text,
-      html: params.html,
-      templateId: params.templateId,
-      dynamicTemplateData: params.dynamicTemplateData,
     };
+    
+    // Agregar contenido según lo que esté disponible
+    const content: any[] = [];
+    
+    if (params.text) {
+      content.push({
+        type: 'text/plain',
+        value: params.text
+      });
+    }
+    
+    if (params.html) {
+      content.push({
+        type: 'text/html',
+        value: params.html
+      });
+    }
+    
+    // Si hay contenido, añadirlo
+    if (content.length > 0) {
+      emailParams.content = content;
+    }
+    
+    // Si hay un template ID, usarlo
+    if (params.templateId) {
+      emailParams.templateId = params.templateId;
+      
+      // Si hay datos dinámicos para el template
+      if (params.dynamicTemplateData) {
+        emailParams.dynamicTemplateData = params.dynamicTemplateData;
+      }
+    }
     
     await mailService.send(emailParams);
     console.log(`Correo enviado con éxito a: ${params.to}`);
@@ -63,7 +92,7 @@ export const sendWelcomeEmail = async (
   name: string = '',
   companyName: string = '',
 ): Promise<boolean> => {
-  const subject = 'Bienvenido a Owl Fenc - Tu asistente inteligente de cercas';
+  const subject = 'Bienvenido a Owl Fence - Tu asistente inteligente de cercas';
   
   // HTML más atractivo y estructurado para el correo de bienvenida
   const html = `
@@ -72,12 +101,13 @@ export const sendWelcomeEmail = async (
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Bienvenido a Owl Fenc</title>
+    <title>Bienvenido a Owl Fence</title>
     <style>
       body {
-        font-family: Arial, sans-serif;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         line-height: 1.6;
         color: #333;
+        background-color: #f9f9f9;
         margin: 0;
         padding: 0;
       }
@@ -85,33 +115,47 @@ export const sendWelcomeEmail = async (
         max-width: 600px;
         margin: 0 auto;
         padding: 20px;
+        background-color: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
       }
       .header {
-        background: linear-gradient(90deg, rgba(0,176,176,1) 0%, rgba(0,204,204,1) 100%);
+        background: linear-gradient(135deg, #02b3b3 0%, #00d4d4 100%);
         color: white;
-        padding: 20px;
+        padding: 25px 20px;
         text-align: center;
-        border-radius: 5px 5px 0 0;
+        border-radius: 8px 8px 0 0;
       }
       .header h1 {
         margin: 0;
-        font-size: 24px;
+        font-size: 28px;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
       }
       .content {
         background-color: #fff;
-        padding: 20px;
-        border: 1px solid #e9e9e9;
-        border-top: none;
-        border-radius: 0 0 5px 5px;
+        padding: 30px;
+        border-radius: 0 0 8px 8px;
+      }
+      .highlight {
+        background-color: #e6fff9;
+        border-left: 4px solid #00cccc;
+        padding: 15px;
+        margin: 20px 0;
+        border-radius: 4px;
+      }
+      .features {
+        margin: 25px 0;
       }
       .feature {
         margin-bottom: 20px;
         display: flex;
         align-items: flex-start;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #f0f0f0;
       }
       .feature-icon {
         width: 30px;
-        margin-right: 10px;
+        margin-right: 15px;
         color: #00b0b0;
         font-size: 24px;
         text-align: center;

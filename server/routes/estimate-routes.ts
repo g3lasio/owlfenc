@@ -251,10 +251,16 @@ export function registerEstimateRoutes(app: Express): void {
         }]
       };
       
-      // Enviar email utilizando el método genérico sendEmail
-      const emailResult = await emailService.sendEmail(emailData);
+      // Adaptamos los parámetros para usar sendEmail
+      const emailSent = await emailService.sendEmail({
+        to: emailData.to,
+        subject: emailData.subject,
+        html: emailData.html,
+        text: emailData.message,
+        templateId: emailData.templateId ? String(emailData.templateId) : undefined
+      });
       
-      if (emailResult) {
+      if (emailSent) {
         res.json({
           success: true,
           message: 'Email enviado correctamente'
@@ -262,8 +268,7 @@ export function registerEstimateRoutes(app: Express): void {
       } else {
         res.status(500).json({
           success: false,
-          message: 'Error enviando email',
-          error: emailResult.error
+          message: 'Error enviando email'
         });
       }
     } catch (error) {

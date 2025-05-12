@@ -96,6 +96,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Registrar rutas de clientes
   app.use('/api/clients', clientRoutes);
   app.use('/api/ai-processor', aiProcessorRoutes);
+  
+  // Registrar rutas de correo electrónico
+  app.use('/api/email', emailRoutes);
 
   // Add API routes
   app.get('/api/projects', async (req: Request, res: Response) => {

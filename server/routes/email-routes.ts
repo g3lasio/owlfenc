@@ -1,76 +1,85 @@
-import { Router } from 'express';
-import { sendWelcomeEmail, sendPasswordResetEmail } from '../services/emailService';
+import { Router, Request, Response } from 'express';
+import emailService from '../services/emailService';
+import { z } from 'zod';
 
 const router = Router();
 
-// Ruta para enviar correo de bienvenida
-router.post('/welcome', async (req, res) => {
+// Schema para validar datos de correo de bienvenida
+const welcomeEmailSchema = z.object({
+  to: z.string().email('Correo electrónico inválido'),
+  name: z.string().optional(),
+  companyName: z.string().optional()
+});
+
+// Schema para validar datos de correo de restablecimiento de contraseña
+const passwordResetEmailSchema = z.object({
+  to: z.string().email('Correo electrónico inválido'),
+  resetLink: z.string().url('URL de restablecimiento inválida')
+});
+
+/**
+ * @route POST /api/email/welcome
+ * @desc Envía un correo electrónico de bienvenida
+ */
+router.post('/welcome', async (req: Request, res: Response) => {
   try {
-    const { email, name = '', companyName = '' } = req.body;
-    
-    if (!email) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Se requiere dirección de correo electrónico' 
-      });
-    }
-    
-    const success = await sendWelcomeEmail(email, name, companyName);
+    const { to, name, companyName } = welcomeEmailSchema.parse(req.body);
+
+    const success = await emailService.sendWelcomeEmail(to, name, companyName);
     
     if (success) {
-      return res.json({ 
-        success: true, 
-        message: 'Correo de bienvenida enviado correctamente' 
-      });
+      res.json({ success: true, message: 'Correo de bienvenida enviado con éxito' });
     } else {
-      return res.status(500).json({ 
-        success: false, 
-        message: 'No se pudo enviar el correo de bienvenida' 
-      });
+      res.status(500).json({ success: false, message: 'Error al enviar correo de bienvenida' });
     }
   } catch (error) {
-    console.error('Error en ruta de correo de bienvenida:', error);
-    return res.status(500).json({ 
-      success: false, 
-      message: 'Error al procesar la solicitud de correo' 
-    });
+    console.error('Error procesando solicitud de correo de bienvenida:', error);
+    
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ 
+        success: false, 
+        message: 'Datos inválidos',
+        errors: error.errors 
+      });
+    } else {
+      res.status(500).json({ 
+        success: false, 
+        message: 'Error interno del servidor' 
+      });
+    }
   }
 });
 
-// Ruta para enviar notificación de restablecimiento de contraseña
-router.post('/password-reset-notification', async (req, res) => {
+/**
+ * @route POST /api/email/password-reset
+ * @desc Envía un correo electrónico de restablecimiento de contraseña
+ */
+router.post('/password-reset', async (req: Request, res: Response) => {
   try {
-    const { email, resetLink = '' } = req.body;
-    
-    if (!email) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Se requiere dirección de correo electrónico' 
-      });
-    }
-    
-    // Si no se proporciona un enlace de restablecimiento, usamos uno genérico
-    const resetUrl = resetLink || `${process.env.APP_URL || 'https://owlfenc.com'}/recuperar-password`;
-    
-    const success = await sendPasswordResetEmail(email, resetUrl);
+    const { to, resetLink } = passwordResetEmailSchema.parse(req.body);
+
+    const success = await emailService.sendPasswordResetEmail(to, resetLink);
     
     if (success) {
-      return res.json({ 
-        success: true, 
-        message: 'Notificación de restablecimiento enviada correctamente' 
-      });
+      res.json({ success: true, message: 'Correo de restablecimiento enviado con éxito' });
     } else {
-      return res.status(500).json({ 
-        success: false, 
-        message: 'No se pudo enviar la notificación de restablecimiento' 
-      });
+      res.status(500).json({ success: false, message: 'Error al enviar correo de restablecimiento' });
     }
   } catch (error) {
-    console.error('Error en ruta de notificación de restablecimiento:', error);
-    return res.status(500).json({ 
-      success: false, 
-      message: 'Error al procesar la solicitud de correo' 
-    });
+    console.error('Error procesando solicitud de correo de restablecimiento:', error);
+    
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ 
+        success: false, 
+        message: 'Datos inválidos',
+        errors: error.errors 
+      });
+    } else {
+      res.status(500).json({ 
+        success: false, 
+        message: 'Error interno del servidor' 
+      });
+    }
   }
 });
 
