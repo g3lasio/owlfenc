@@ -64,6 +64,150 @@ function guardarPDFTemporal(buffer: Buffer): string {
 }
 
 // Ruta para generar contrato a partir de un PDF
+// API para manejar el flujo secuencial de preguntas para contratos
+router.post('/questions/next', async (req, res) => {
+  try {
+    const { currentQuestionId, answers } = req.body;
+    
+    // Aquí se definirían las preguntas del flujo y sus validaciones
+    const contractQuestions = [
+      {
+        id: 'contractor_name',
+        field: 'contractor.name',
+        prompt: '¿Cuál es el nombre completo de tu empresa o nombre comercial?',
+        type: 'text',
+        required: true,
+        validate: (val: string) => val.length >= 2 ? null : 'El nombre debe tener al menos 2 caracteres'
+      },
+      {
+        id: 'contractor_address',
+        field: 'contractor.address',
+        prompt: '¿Cuál es la dirección completa de tu empresa?',
+        type: 'multiline',
+        required: true,
+        validate: (val: string) => val.length >= 10 ? null : 'Por favor proporciona una dirección completa'
+      },
+      {
+        id: 'client_name',
+        field: 'client.name',
+        prompt: '¿Cuál es el nombre completo del cliente?',
+        type: 'text',
+        required: true,
+        validate: (val: string) => val.length >= 2 ? null : 'El nombre debe tener al menos 2 caracteres'
+      },
+      {
+        id: 'client_address',
+        field: 'client.address',
+        prompt: '¿Cuál es la dirección completa donde se instalará la cerca?',
+        type: 'multiline',
+        required: true,
+        validate: (val: string) => val.length >= 10 ? null : 'Por favor proporciona una dirección completa'
+      },
+      {
+        id: 'fence_type',
+        field: 'project.fenceType',
+        prompt: '¿Qué tipo de cerca se instalará?',
+        type: 'choice',
+        options: ['Privacidad', 'Residencial', 'Comercial', 'Seguridad', 'Picket', 'Split Rail', 'Vinilo', 'Madera', 'Aluminio', 'Acero', 'Otro'],
+        required: true,
+        validate: (val: string) => val ? null : 'Por favor selecciona un tipo de cerca'
+      },
+      {
+        id: 'fence_height',
+        field: 'project.fenceHeight',
+        prompt: '¿Cuál será la altura de la cerca (en pies)?',
+        type: 'number',
+        required: true,
+        validate: (val: number) => (val > 0 && val <= 12) ? null : 'La altura debe estar entre 1 y 12 pies'
+      },
+      {
+        id: 'fence_length',
+        field: 'project.fenceLength',
+        prompt: '¿Cuál es la longitud total de la cerca (en pies lineales)?',
+        type: 'number',
+        required: true,
+        validate: (val: number) => val > 0 ? null : 'La longitud debe ser mayor que 0'
+      },
+      {
+        id: 'project_total',
+        field: 'payment.total',
+        prompt: '¿Cuál es el costo total del proyecto?',
+        type: 'number',
+        required: true,
+        validate: (val: number) => val > 0 ? null : 'El costo total debe ser mayor que 0'
+      },
+      {
+        id: 'payment_terms',
+        field: 'payment.terms',
+        prompt: '¿Cuáles son los términos de pago?',
+        type: 'text',
+        required: true,
+        validate: (val: string) => val.length > 0 ? null : 'Por favor especifica los términos de pago'
+      }
+    ];
+    
+    // Validar la respuesta actual si existe
+    if (currentQuestionId) {
+      const currentQuestion = contractQuestions.find(q => q.id === currentQuestionId);
+      
+      if (currentQuestion && currentQuestion.required) {
+        const fieldPath = currentQuestion.field.split('.');
+        let value = answers;
+        
+        // Acceder al valor anidado usando la ruta de campo
+        for (const part of fieldPath) {
+          value = value?.[part];
+          if (value === undefined) break;
+        }
+        
+        if (value === undefined || value === '') {
+          return res.status(400).json({ 
+            validationError: `El campo ${currentQuestion.prompt} es obligatorio.` 
+          });
+        }
+        
+        // Validar usando la función específica si existe
+        if (currentQuestion.validate && typeof value !== 'undefined') {
+          const validationError = currentQuestion.validate(value);
+          if (validationError) {
+            return res.status(400).json({ validationError });
+          }
+        }
+      }
+    }
+    
+    // Obtener la siguiente pregunta
+    let nextQuestion = null;
+    
+    if (!currentQuestionId) {
+      // Si no hay pregunta actual, devolver la primera
+      nextQuestion = contractQuestions[0];
+    } else {
+      // Encontrar el índice de la pregunta actual
+      const currentIndex = contractQuestions.findIndex(q => q.id === currentQuestionId);
+      
+      // Si no se encuentra o es la última, devolver null
+      if (currentIndex !== -1 && currentIndex < contractQuestions.length - 1) {
+        nextQuestion = contractQuestions[currentIndex + 1];
+      }
+    }
+    
+    // Si no hay más preguntas, indicar que se ha completado
+    if (!nextQuestion) {
+      return res.json({ completed: true });
+    }
+    
+    // Devolver la siguiente pregunta
+    return res.json({ nextQuestion });
+  } catch (error) {
+    console.error('Error procesando pregunta del contrato:', error);
+    res.status(500).json({ 
+      message: 'Error en el procesamiento de la pregunta',
+      error: error instanceof Error ? error.message : 'Error desconocido'
+    });
+  }
+});
+
 router.post('/generar-contrato', upload.single('pdf'), async (req, res) => {
   try {
     if (!req.file) {
