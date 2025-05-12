@@ -563,6 +563,28 @@
     padding-bottom: 150px; /* Increased to make room for both input and footer */
   }
 }
+/* Estilos específicos para Mervin Chat */
+.mervin-chat-input {
+  position: fixed;
+  bottom: 0;
+  left: 224px;
+  right: 0;
+  padding: 1rem;
+  background-color: black;
+  border-top: 1px solid rgba(21, 94, 117, 0.3);
+  box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
+  z-index: 20;
+  max-width: calc(100% - 224px);
+}
+
+@media (max-width: 768px) {
+  .mervin-chat-input {
+    left: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+}
+
 /* Added a button with arc reactor effect */
 /* Estilos para el cuerpo general */
 body {

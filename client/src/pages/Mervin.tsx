@@ -382,7 +382,7 @@ export default function Mervin() {
       {/* Quitamos el footer del chat */}
       
       {/* Barra de input fija en la parte inferior */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-black border-t border-cyan-900/30 shadow-lg z-20">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-black border-t border-cyan-900/30 shadow-lg z-20 w-full max-w-full md:left-[224px] md:max-w-[calc(100%-224px)]">
         {showAttachOptions && (
           <div className="absolute bottom-full left-4 right-4 mb-2 bg-gray-900 border border-cyan-900/50 rounded-md shadow-md p-2 flex flex-wrap gap-1">
             <Button 
