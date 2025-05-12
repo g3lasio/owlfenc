@@ -46,16 +46,24 @@
 
 .chat-input-container {
   position: fixed;
-  bottom: 30px; /* Ajustado para posicionarse justo encima del footer */
-  left: 0;
-  right: 0;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
   background-color: hsl(var(--background));
   padding: 0;
   border-top: 1px solid hsl(var(--border));
   z-index: 50;
-  width: 100%;
+  width: calc(100% - 18rem); /* 18rem es el ancho del sidebar */
   max-width: 100%;
   box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.05);
+}
+
+@media (max-width: 768px) {
+  .chat-input-container {
+    width: 100%;
+    left: 0;
+    transform: none;
+  }
 }
 
 /* Footer styles */
