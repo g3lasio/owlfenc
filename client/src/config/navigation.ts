@@ -73,6 +73,12 @@ export const navigationGroups: NavigationGroup[] = [
         icon: "ri-shield-keyhole-line"
       },
       {
+        id: "contracts",
+        label: "Generación de Contratos",
+        path: "/contracts",
+        icon: "ri-file-text-line"
+      },
+      {
         id: "permit-advisor",
         label: "Mervin Permit Advisor",
         path: "/permit-advisor",

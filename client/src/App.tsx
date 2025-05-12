@@ -33,6 +33,7 @@ import ResetPassword from "@/pages/ResetPassword";
 import EmailLinkCallback from "@/pages/EmailLinkCallback";
 import AppleCallback from "@/pages/AppleCallback";
 import SecuritySettings from "@/pages/SecuritySettings";
+import ContractGenerator from "@/pages/ContractGenerator";
 import { AuthProvider } from "@/contexts/AuthContext";
 
 // Componente para páginas protegidas
@@ -128,6 +129,9 @@ function Router() {
       </Route>
       <Route path="/security">
         {() => <ProtectedRoute component={SecuritySettings} />}
+      </Route>
+      <Route path="/contracts">
+        {() => <ProtectedRoute component={ContractGenerator} />}
       </Route>
 
       {/* Página no encontrada */}

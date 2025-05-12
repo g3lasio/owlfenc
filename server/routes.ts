@@ -29,7 +29,7 @@ import { promptGeneratorService } from './services/promptGeneratorService';
 import { registerPromptTemplateRoutes } from './routes/prompt-templates';
 import { registerEstimateRoutes } from './routes/estimate-routes';
 import { registerPropertyRoutes } from './routes/property-routes';
-import { registerContractRoutes } from './routes/contract-routes';
+import contractRoutes from './routes/contract-routes';
 import clientRoutes from './routes/clientRoutes';
 import express from 'express'; // Import express to use express.raw
 
@@ -88,7 +88,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerPromptTemplateRoutes(app);
   registerEstimateRoutes(app);
   registerPropertyRoutes(app);
-  registerContractRoutes(app);
+  
+  // Registrar rutas de contratos
+  app.use('/api', contractRoutes);
   
   // Registrar rutas de clientes
   app.use('/api/clients', clientRoutes);

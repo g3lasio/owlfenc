@@ -83,7 +83,7 @@ export class MistralService {
    * @param pdfBuffer Buffer del PDF
    * @returns Texto extraído del PDF
    */
-  private async extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
+  async extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
     try {
       console.log('Extrayendo texto con pdf-parse...');
       
