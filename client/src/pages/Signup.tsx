@@ -138,7 +138,7 @@ export default function Signup() {
       <div className="w-full max-w-md relative z-10">
         <div className="mb-8 text-center">
           <h2 className="text-3xl font-bold text-primary">Owl Fenc</h2>
-          <p className="text-sm text-muted-foreground mt-1">Verificación de propiedades inteligente</p>
+          <p className="text-sm text-muted-foreground mt-1">The AI Force Crafting the Future Skyline</p>
         </div>
         
         <Card className="border border-primary/20 shadow-xl overflow-hidden rounded-xl backdrop-blur-sm bg-card/80">
