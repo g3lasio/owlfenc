@@ -96,6 +96,24 @@ const ContractGenerator = () => {
     }
   });
   
+  // Consulta para obtener la lista de clientes
+  const clientsQuery = useQuery({
+    queryKey: ['/api/clients'],
+    queryFn: async () => {
+      try {
+        const response = await fetch('/api/clients');
+        if (!response.ok) {
+          throw new Error('Error al cargar clientes');
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error("Error cargando clientes:", error);
+        return [];
+      }
+    }
+  });
+  
   // Mutación para descargar un contrato como PDF
   const downloadMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -360,6 +378,20 @@ const ContractGenerator = () => {
       month: 'short', 
       day: 'numeric'
     }).format(date);
+  };
+  
+  // Manejar selección de cliente desde contactos guardados
+  const handleClientSelect = (client: any) => {
+    form.setValue("clientName", client.name || client.fullName || "");
+    form.setValue("clientEmail", client.email || "");
+    form.setValue("clientPhone", client.phone || client.phoneNumber || "");
+    form.setValue("clientAddress", client.address || "");
+    setIsClientSelectOpen(false);
+    
+    toast({
+      title: "Cliente seleccionado",
+      description: "Los datos del cliente han sido cargados en el formulario",
+    });
   };
 
   // Manejar datos completos del chat asistente
