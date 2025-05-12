@@ -984,7 +984,7 @@ export default function Materials() {
       
       {/* Diálogo para agregar/editar material */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{isEditMode ? "Editar Material" : "Agregar Nuevo Material"}</DialogTitle>
             <DialogDescription>
@@ -993,7 +993,7 @@ export default function Materials() {
           </DialogHeader>
           
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(saveMaterial)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(saveMaterial)} className="space-y-4 overflow-y-auto">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
