@@ -10,11 +10,29 @@ import {
   Camera, 
   Send, 
   MessageSquare,
-  HomeIcon,
+  Home,
   ClipboardCheck,
   Users,
-  CircleDollarSign
+  CircleDollarSign,
+  FileSearch,
+  FileSpreadsheet,
+  Building,
+  CheckSquare,
+  BarChart4,
+  BrainCircuit,
+  Search,
+  Database,
+  Loader,
+  ClipboardList
 } from "lucide-react";
+
+interface ActionButton {
+  id: string;
+  text: string;
+  icon: JSX.Element;
+  action: string;
+  description: string;
+}
 
 interface Message {
   id: string;
@@ -25,20 +43,52 @@ interface Message {
     url: string;
     name: string;
   };
+  actionButtons?: ActionButton[];
+  state?: "thinking" | "analyzing" | "deepSearching" | "none";
 }
 
 export default function Mervin() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
-      content: "¡Hola! Soy Mervin, tu asistente virtual para proyectos de cercas. Puedo ayudarte con:\n\n• Contratos - Generación y gestión de contratos\n• Propiedades - Verificación de propiedades\n• Permisos - Asesoría en permisos de construcción\n• Clientes - Gestión de clientes\n• Facturación - Manejo de pagos y facturas\n\n¿En qué puedo ayudarte hoy?",
+      content: "¡Hola! Soy Mervin, tu asistente virtual para proyectos de cercas. Puedo ayudarte con las siguientes funciones:",
       sender: "assistant",
-      options: [
-        { text: "Contratos", clickable: true },
-        { text: "Propiedades", clickable: true },
-        { text: "Permisos", clickable: true },
-        { text: "Clientes", clickable: true },
-        { text: "Facturación", clickable: true }
+      actionButtons: [
+        { 
+          id: "estimados", 
+          text: "Generación de Estimados", 
+          icon: <FileSpreadsheet className="h-4 w-4" />, 
+          action: "estimados",
+          description: "Crea estimados precisos para tus proyectos de cercas"
+        },
+        { 
+          id: "contratos", 
+          text: "Generación de Contratos", 
+          icon: <ClipboardList className="h-4 w-4" />, 
+          action: "contratos",
+          description: "Genera contratos profesionales personalizados"
+        },
+        { 
+          id: "permisos", 
+          text: "Consulta de Permisos", 
+          icon: <ClipboardCheck className="h-4 w-4" />, 
+          action: "permisos",
+          description: "Verifica requisitos y regulaciones de construcción"
+        },
+        { 
+          id: "ownership", 
+          text: "Verificador de Propiedad", 
+          icon: <Building className="h-4 w-4" />, 
+          action: "propiedades",
+          description: "Confirma la propiedad y detalles de inmuebles"
+        },
+        { 
+          id: "insights", 
+          text: "Insights y Análisis", 
+          icon: <BarChart4 className="h-4 w-4" />, 
+          action: "insights",
+          description: "Obtén análisis inteligentes de tus datos y proyectos"
+        }
       ],
     },
   ]);
@@ -128,36 +178,61 @@ export default function Mervin() {
   };
 
   const handleServiceSelection = (service: string) => {
-    let message = "";
-
-    switch(service) {
-      case "contratos":
-        message = "Me gustaría generar un contrato. ¿Qué tipo de contrato necesitas crear?";
-        break;
-      case "propiedades":
-        message = "Puedo ayudarte a verificar información de propiedades. ¿Tienes la dirección de la propiedad que deseas consultar?";
-        break;
-      case "permisos":
-        message = "Te ayudaré con la consulta de permisos. ¿En qué ciudad o condado necesitas verificar los requisitos de permisos?";
-        break;
-      case "clientes":
-        message = "Gestión de clientes. ¿Necesitas añadir un nuevo cliente o consultar información de un cliente existente?";
-        break;
-      case "facturacion":
-        message = "Puedo ayudarte con facturación. ¿Necesitas generar una factura o consultar el estado de pagos?";
-        break;
-      default:
-        message = "¿En qué te puedo ayudar hoy?";
-    }
-
-    const assistantMessage: Message = {
-      id: `assistant-service-${Date.now()}`,
-      content: message,
-      sender: "assistant"
+    setIsLoading(true);
+    
+    // Primero, agregar un mensaje temporal "pensando"
+    const thinkingMessage: Message = {
+      id: `thinking-${Date.now()}`,
+      content: "Preparando información sobre " + service + "...",
+      sender: "assistant",
+      state: "thinking"
     };
-
-    setMessages(prev => [...prev, assistantMessage]);
+    
+    setMessages(prev => [...prev, thinkingMessage]);
     scrollToBottom();
+    
+    // Simular un tiempo de procesamiento
+    setTimeout(() => {
+      // Eliminar el mensaje de pensando
+      setMessages(prev => prev.filter(msg => msg.id !== thinkingMessage.id));
+      
+      let message = "";
+      let state: "none" | "analyzing" | "deepSearching" = "none";
+
+      switch(service) {
+        case "estimados":
+          message = "Puedo ayudarte a generar estimados precisos para tus proyectos de cercas. Para empezar, necesito algunos detalles básicos:\n\n• Tipo de cerca (madera, vinilo, metal, etc.)\n• Longitud aproximada en pies lineales\n• Altura deseada\n• Ubicación (ciudad/condado)\n• ¿Incluye alguna puerta o características especiales?";
+          break;
+        case "contratos":
+          message = "Puedo ayudarte a generar un contrato profesional y legal. ¿Te gustaría:\n\n• Crear un nuevo contrato desde cero\n• Usar una plantilla existente\n• Modificar un contrato anterior";
+          state = "analyzing";
+          break;
+        case "propiedades":
+          message = "Para verificar los detalles de una propiedad, necesito la dirección completa del inmueble. Esta información me permitirá:\n\n• Confirmar al propietario actual\n• Verificar los límites de la propiedad\n• Comprobar si hay restricciones\n• Analizar el historial de transacciones";
+          state = "deepSearching";
+          break;
+        case "permisos":
+          message = "Para ayudarte con información sobre permisos y regulaciones, necesito saber:\n\n• Ubicación exacta (ciudad/condado)\n• Tipo de cerca que planeas instalar\n• Si la propiedad está en una zona con restricciones (HOA)\n• Si la cerca estará en el límite de la propiedad";
+          break;
+        case "insights":
+          message = "Puedo proporcionar análisis detallados sobre:\n\n• Tendencias de costos de materiales\n• Comparativas de proyectos anteriores\n• Métricas de rentabilidad por tipo de proyecto\n• Predicciones de demanda por zona\n\n¿Qué tipo de insights te gustaría explorar?";
+          state = "analyzing";
+          break;
+        default:
+          message = "¿En qué te puedo ayudar hoy?";
+      }
+
+      const assistantMessage: Message = {
+        id: `assistant-service-${Date.now()}`,
+        content: message,
+        sender: "assistant",
+        state: state
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
+      setIsLoading(false);
+      scrollToBottom();
+    }, 1500);
   };
 
   // Scroll to bottom when messages change
