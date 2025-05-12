@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { FcGoogle } from "react-icons/fc";
 import { FaApple } from "react-icons/fa";
 import { HiMail } from "react-icons/hi";
-import { RiMailSendLine, RiEyeLine, RiEyeOffLine, RiArrowLeftLine, RiArrowRightLine, RiUserLine } from "react-icons/ri";
+import { RiMailSendLine, RiEyeLine, RiEyeOffLine, RiArrowLeftLine, RiArrowRightLine, RiUserLine, RiShieldKeyholeLine } from "react-icons/ri";
 import { useAuth } from "@/contexts/AuthContext";
 import EmailLinkAuth from "@/components/auth/EmailLinkAuth";
 
@@ -44,18 +44,32 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [loginMethod, setLoginMethod] = useState<"email" | "emailLink">("email");
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const [particles, setParticles] = useState<Array<{x: number, y: number, size: number, color: string, speed: number}>>([]);
+  const [hologramCircles, setHologramCircles] = useState<Array<{x: number, y: number, size: number, opacity: number, delay: number}>>([]);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   // Generar partículas para el efecto de cambio
   useEffect(() => {
-    const newParticles = Array.from({ length: 50 }, () => ({
+    // Partículas para el toggle
+    const newParticles = Array.from({ length: 60 }, () => ({
       x: Math.random() * 100,
       y: Math.random() * 100,
       size: 1.5 + Math.random() * 2.5,
-      color: `hsl(${180 + Math.random() * 30}, 100%, ${40 + Math.random() * 30}%)`,
+      color: `hsl(${180 + Math.random() * 30}, 100%, ${40 + Math.random() * 60}%)`,
       speed: 0.5 + Math.random() * 1.5
     }));
     setParticles(newParticles);
+    
+    // Círculos para el efecto holográfico
+    const newHologramCircles = Array.from({ length: 12 }, () => ({
+      x: 50 + (Math.random() * 80 - 40),
+      y: 50 + (Math.random() * 80 - 40),
+      size: 10 + Math.random() * 30,
+      opacity: 0.05 + Math.random() * 0.2,
+      delay: Math.random() * 0.8
+    }));
+    setHologramCircles(newHologramCircles);
   }, []);
 
   // Configurar el formulario de login
@@ -193,26 +207,64 @@ export default function AuthPage() {
     }
   };
 
-  // Toggle entre login y signup con efecto de partículas
+  // Toggle entre login y signup con efecto de partículas estilo Stark Industries/Iron Man
   const toggleAuthMode = () => {
-    // Generar nuevas partículas para el efecto
-    const newParticles = Array.from({ length: 50 }, () => ({
+    // Activar la transición
+    setIsTransitioning(true);
+    
+    // Crear efectos de partículas con más movimiento
+    const newParticles = Array.from({ length: 80 }, () => ({
       x: Math.random() * 100,
       y: Math.random() * 100,
       size: 1.5 + Math.random() * 2.5,
-      color: `hsl(${180 + Math.random() * 30}, 100%, ${40 + Math.random() * 30}%)`,
+      color: `hsl(${180 + Math.random() * 30}, 100%, ${40 + Math.random() * 60}%)`,
       speed: 0.5 + Math.random() * 1.5
     }));
     setParticles(newParticles);
     
-    // Cambiar entre login y signup
-    setAuthMode(authMode === "login" ? "signup" : "login");
+    // Efecto de escaneo holográfico estilo Jarvis/Friday
+    if (cardRef.current) {
+      // Aplicar efecto de escaneo 
+      cardRef.current.classList.add('stark-scan-effect');
+      
+      // Reproducir sonido de transición tipo UI de Iron Man (sutil)
+      const audio = new Audio();
+      audio.volume = 0.2;
+      audio.src = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tAwAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAAFDgCenp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6e//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAVBAAAAAAAABQ5+7pVfAAAA//tAxAAABIQTe3UQAAJ4QW/84YAkAEAQBAEAfB8H3/ggCAIB8EAQdwfggGCD4IBgg7g+D4Pg+D4IAgf///CLveKAgCAIZO4IAgCAIAgH///uCH///wnPggCAJleKAgCAIf/hAEAQ/8Jz4PwQBAMP/hAEAQBAEP////CLu4PggCAf/8IBggyvoIBggydzBB8HwfggCAf/+EAQBAEDnwQDCh4QZUuCX+DIEzSK1u4WPyuNIpNLqPQ5HBMZCcdhELhgkCpLig2CZFcUzBCt3DtAYRRJlgliYRFZ4qF2UJuJg5BoCpALShTAoO0fTdBxGwaNr5e8iFQEEGxTMjl8yrtvCJZQGPh0TyeQzcl9sbUMvcvVDTpYnCcvvgOFRsIhfE/DT3W1e+MvkNWOzHyrfOCKyxzEVWtjIm5lmYu/qpurKWaS6vIZw5LdfL53K7qqtbqVYysJV8L2pM1pLuXc3Fn8xbxE3nsZTN5qljUutm/17Ln6Rltq2/2b//tAxLEAE/YdW9mMAJOkPqz7N7ADU+26plSqVLc2qiuWwsz8rmsPSllbK6W+6mqJVy2XFspRKZvMzJXMg3i0aXy2P4vL622K8nBvFuvVktlJt9aQdI1P4rE/FVUPQVRHbEf/+lEITv9oCQIAUD/9/pv/AAD8UGACRbv6BRR//8gA//+h9//WTIIAEL0BkKFGaGdl7fxfLZvLZvLZvLZvLZvLZvLZvLZvLZvLZvLZvLZvLZvLZvLZvLaVJZm5fy/l7Y4EEBBCwQIz+X9jgQQEEDfxTLZvKkmQAAAAAAA4c8X///////xz///////////8c////////+DP6A';
+      
+      // Reproducir el audio
+      audio.play().catch(e => console.log("Audio play prevented: ", e));
+    }
     
-    // Limpiar los formularios
-    loginForm.reset();
-    signupForm.reset();
-    setShowPassword(false);
-    clearError();
+    // Retraso para cambiar de modo
+    setTimeout(() => {
+      // Cambiar entre login y signup
+      setAuthMode(authMode === "login" ? "signup" : "login");
+      
+      // Limpiar los formularios
+      loginForm.reset();
+      signupForm.reset();
+      setShowPassword(false);
+      clearError();
+      
+      // Nuevos círculos holográficos
+      const newHologramCircles = Array.from({ length: 12 }, () => ({
+        x: 50 + (Math.random() * 80 - 40),
+        y: 50 + (Math.random() * 80 - 40),
+        size: 10 + Math.random() * 30,
+        opacity: 0.05 + Math.random() * 0.2,
+        delay: Math.random() * 0.8
+      }));
+      setHologramCircles(newHologramCircles);
+      
+      // Desactivar la transición después de completarla
+      setTimeout(() => {
+        setIsTransitioning(false);
+        if (cardRef.current) {
+          cardRef.current.classList.remove('stark-scan-effect');
+        }
+      }, 600);
+    }, 400);
   };
 
   return (
@@ -300,15 +352,55 @@ export default function AuthPage() {
           </div>
         </div>
         
-        {/* Tarjeta principal */}
-        <Card className="border border-primary/20 shadow-xl overflow-hidden rounded-xl backdrop-blur-sm bg-card/80">
-          <CardHeader className="bg-gradient-to-r from-primary/20 to-accent/20 px-6 py-5 border-b border-primary/20">
-            <CardTitle className="text-2xl font-semibold text-center">
+        {/* Tarjeta principal con estilo Stark Industries/Iron Man */}
+        <Card 
+          ref={cardRef}
+          className={`relative border border-primary/20 shadow-xl overflow-hidden rounded-xl backdrop-blur-sm bg-card/80 transition-all duration-500 ${
+            isTransitioning ? 'stark-card-transitioning' : ''
+          }`}
+        >
+          {/* Efecto de círculos holográficos tipo UI de Iron Man */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none hologram-container">
+            {hologramCircles.map((circle, i) => (
+              <div 
+                key={`holo-${i}`}
+                className="absolute rounded-full stark-holo-circle"
+                style={{
+                  width: `${circle.size}px`,
+                  height: `${circle.size}px`,
+                  top: `${circle.y}%`,
+                  left: `${circle.x}%`,
+                  opacity: circle.opacity,
+                  border: `1px solid rgba(0, 255, 255, 0.3)`,
+                  boxShadow: `0 0 8px rgba(0, 255, 255, 0.3)`,
+                  animationDelay: `${circle.delay}s`,
+                  transform: `scale(${isTransitioning ? '1.5' : '1'})`,
+                  transition: 'transform 0.5s, opacity 0.5s'
+                }}
+              />
+            ))}
+          </div>
+          
+          {/* Cabecera con efecto futurista */}
+          <CardHeader className="bg-gradient-to-r from-primary/20 to-accent/20 px-6 py-5 border-b border-primary/20 relative">
+            {/* Línea de escaneo para efecto Jarvis */}
+            <div className={`absolute inset-0 stark-scan-line pointer-events-none ${isTransitioning ? 'scanning' : ''}`}></div>
+            
+            <CardTitle className="text-2xl font-semibold text-center stark-text-glow">
               {authMode === "login" ? "Iniciar Sesión" : "Crear Cuenta"}
             </CardTitle>
             <CardDescription className="text-center text-muted-foreground">
               {authMode === "login" ? "Accede a tu cuenta para continuar" : "Únete a nuestra comunidad"}
             </CardDescription>
+            
+            {/* Icono de estado en la esquina */}
+            <div className="absolute top-4 right-4">
+              {authMode === "login" ? (
+                <RiShieldKeyholeLine className="h-5 w-5 text-primary stark-icon-pulse" />
+              ) : (
+                <RiUserLine className="h-5 w-5 text-primary stark-icon-pulse" />
+              )}
+            </div>
           </CardHeader>
           
           <CardContent className="px-6 py-6">
