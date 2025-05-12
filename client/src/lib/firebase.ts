@@ -166,13 +166,45 @@ export const getProjectById = async (id: string) => {
 export const updateProject = async (id: string, projectData: any) => {
   try {
     const docRef = doc(db, "projects", id);
-    await updateDoc(docRef, {
+    const docSnap = await getDoc(docRef);
+    
+    if (!docSnap.exists()) {
+      throw new Error(`Project with ID ${id} not found`);
+    }
+    
+    // Make sure we're not losing any existing data
+    const currentData = docSnap.data();
+    
+    const updatedData = {
       ...projectData,
       updatedAt: Timestamp.now()
-    });
-    return { id, ...projectData };
+    };
+    
+    await updateDoc(docRef, updatedData);
+    
+    // Get the refreshed document
+    const updatedDocSnap = await getDoc(docRef);
+    return { id, ...updatedDocSnap.data() };
   } catch (error) {
     console.error("Error updating project:", error);
+    throw error;
+  }
+};
+
+// Update project progress stage
+export const updateProjectProgress = async (id: string, progress: string) => {
+  try {
+    const docRef = doc(db, "projects", id);
+    await updateDoc(docRef, {
+      projectProgress: progress,
+      updatedAt: Timestamp.now()
+    });
+    
+    // Get updated project
+    const updatedDocSnap = await getDoc(docRef);
+    return { id, ...updatedDocSnap.data() };
+  } catch (error) {
+    console.error("Error updating project progress:", error);
     throw error;
   }
 };

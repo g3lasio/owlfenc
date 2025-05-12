@@ -59,6 +59,18 @@ export const projects = pgTable("projects", {
   contractHtml: text("contract_html"),
   totalPrice: integer("total_price"),
   status: text("status").default("draft"),
+  // Project tracking fields
+  projectProgress: text("project_progress").default("estimate_created"), // estimate_created, estimate_sent, client_approved, contract_sent, contract_signed, scheduled, in_progress, completed, cancelled
+  scheduledDate: timestamp("scheduled_date"), // Scheduled installation date
+  completedDate: timestamp("completed_date"), // Actual completion date
+  assignedTo: jsonb("assigned_to"), // Team members assigned to this project
+  attachments: jsonb("attachments"), // Documents and files related to the project
+  permitStatus: text("permit_status"), // not_required, pending, approved, rejected
+  permitDetails: jsonb("permit_details"), // Details about permits if required
+  clientNotes: text("client_notes"), // Notes about client requirements
+  internalNotes: text("internal_notes"), // Internal notes for the team
+  paymentStatus: text("payment_status"), // pending, partial, paid
+  paymentDetails: jsonb("payment_details"), // Payment history and details
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -79,6 +91,17 @@ export const insertProjectSchema = createInsertSchema(projects).pick({
   contractHtml: true,
   totalPrice: true,
   status: true,
+  projectProgress: true,
+  scheduledDate: true,
+  completedDate: true,
+  assignedTo: true,
+  attachments: true,
+  permitStatus: true,
+  permitDetails: true,
+  clientNotes: true,
+  internalNotes: true,
+  paymentStatus: true,
+  paymentDetails: true,
 });
 
 // Templates table
