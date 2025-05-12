@@ -200,12 +200,32 @@ export default function Materials() {
       reader.readAsDataURL(file);
     }
   };
-  
-  // Función para manejar la selección de archivos adjuntos
+
+  // Función para manejar la selección de archivos
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      const filesArray = Array.from(e.target.files);
-      setSelectedFiles(prevFiles => [...prevFiles, ...filesArray]);
+      const newFiles = Array.from(e.target.files);
+      setSelectedFiles(prev => [...prev, ...newFiles]);
+    }
+  };
+  
+  // Función para eliminar un archivo seleccionado
+  const removeSelectedFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+  
+  // Función para manejar la selección de CSV
+  const handleCsvSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      
+      // Leer el contenido del archivo CSV
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const content = event.target?.result as string;
+        setCsvContent(content);
+      };
+      reader.readAsText(file);
     }
   };
   
@@ -239,10 +259,7 @@ export default function Materials() {
     }
   };
   
-  // Eliminar un archivo de la lista
-  const removeSelectedFile = (index: number) => {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
-  };
+  // Esta sección se eliminó para evitar duplicación de funciones
 
   // Cargar materiales al inicio
   useEffect(() => {
@@ -1114,9 +1131,139 @@ export default function Materials() {
                 />
               </div>
               
+              {/* Sección para subir imagen del producto */}
+              <div className="border rounded-md p-4 space-y-4 mt-4">
+                <h3 className="font-medium">Imagen del producto</h3>
+                
+                {/* Previsualización de imagen */}
+                {imagePreview && (
+                  <div className="relative w-40 h-40 mx-auto mb-2">
+                    <img 
+                      src={imagePreview}
+                      alt="Vista previa"
+                      className="object-cover w-full h-full rounded-md border"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-destructive text-white"
+                      onClick={() => {
+                        setSelectedImage(null);
+                        setImagePreview(null);
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+                
+                {/* Selector de imagen */}
+                {!imagePreview && (
+                  <div className="flex items-center justify-center">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-40 h-40 border-dashed flex flex-col gap-2"
+                      onClick={() => imageInputRef.current?.click()}
+                    >
+                      <Upload className="h-8 w-8" />
+                      <span>Subir imagen</span>
+                    </Button>
+                    <input
+                      type="file"
+                      ref={imageInputRef}
+                      className="hidden"
+                      onChange={handleImageSelect}
+                      accept="image/*"
+                    />
+                  </div>
+                )}
+              </div>
+              
+              {/* Sección para archivos adjuntos */}
+              <div className="border rounded-md p-4 space-y-4 mt-4">
+                <h3 className="font-medium">Archivos adjuntos</h3>
+                
+                {/* Lista de archivos seleccionados */}
+                {selectedFiles.length > 0 && (
+                  <div className="space-y-2">
+                    {selectedFiles.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between p-2 border rounded-md">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4" />
+                          <span className="text-sm truncate">{file.name}</span>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => removeSelectedFile(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Lista de archivos ya subidos (en edición) */}
+                {uploadedFileUrls.length > 0 && (
+                  <div className="space-y-2">
+                    {uploadedFileUrls.map((url, index) => {
+                      // Extraer nombre del archivo de la URL
+                      const fileName = url.split('/').pop() || `Archivo ${index + 1}`;
+                      const decodedFileName = decodeURIComponent(
+                        fileName.split('_').slice(1).join('_')
+                      );
+                      
+                      return (
+                        <div key={index} className="flex items-center justify-between p-2 border rounded-md">
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-4 w-4" />
+                            <a 
+                              href={url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-sm truncate text-blue-600 hover:underline"
+                            >
+                              {decodedFileName}
+                            </a>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                
+                {/* Botón para agregar archivos */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Agregar archivo
+                </Button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  onChange={handleFileSelect}
+                  multiple
+                />
+              </div>
+              
               <DialogFooter>
-                <Button type="submit">
-                  {isEditMode ? "Actualizar Material" : "Guardar Material"}
+                <Button type="submit" disabled={isUploading}>
+                  {isUploading ? (
+                    <>
+                      <span className="mr-2">Subiendo archivos...</span>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    </>
+                  ) : isEditMode ? "Actualizar Material" : "Guardar Material"}
                 </Button>
               </DialogFooter>
             </form>
