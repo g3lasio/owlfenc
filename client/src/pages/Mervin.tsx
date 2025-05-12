@@ -175,7 +175,7 @@ export default function Mervin() {
       <h1 className="text-2xl font-bold mb-4 text-center">Mervin AI</h1>
 
       {/* Tarjetas de opciones rápidas */}
-      
+
 
       <div className="flex-1 overflow-y-auto mb-4 space-y-4 pr-2 border border-muted rounded-lg p-4 bg-background">
         {messages.map(message => (
@@ -187,7 +187,10 @@ export default function Mervin() {
               <div className="flex items-start">
                 <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center mr-2 flex-shrink-0">
                   {message.sender === "assistant" ? 
-                    <MessageSquare className="h-4 w-4 text-primary" /> : 
+                    <div className="mervin-logo-container">
+                      <img src="https://i.postimg.cc/FK6hvMbf/logo-mervin.png" alt="Mervin AI" className="mervin-logo" />
+                      <div className="glow-effect"></div>
+                    </div> : 
                     <div className="w-4 h-4 rounded-full bg-primary" />
                   }
                 </div>
@@ -223,7 +226,10 @@ export default function Mervin() {
             <CardContent className="pt-4">
               <div className="flex items-start">
                 <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center mr-2 flex-shrink-0">
-                  <MessageSquare className="h-4 w-4 text-primary" />
+                  <div className="mervin-logo-container">
+                    <img src="https://i.postimg.cc/FK6hvMbf/logo-mervin.png" alt="Mervin AI" className="mervin-logo" />
+                    <div className="glow-effect"></div>
+                  </div>
                 </div>
                 <p>Pensando...</p>
               </div>
