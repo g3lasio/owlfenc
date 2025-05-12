@@ -148,173 +148,201 @@ export default function Login() {
 
 
   return (
-    <div className="container mx-auto max-w-md px-4 py-8 md:py-12">
-      <Card className="w-full overflow-hidden">
-        <CardHeader className="px-4 py-5 sm:px-6">
-          <CardTitle className="text-2xl sm:text-3xl text-center font-bold">Iniciar Sesión</CardTitle>
-          <CardDescription className="text-center text-lg">
-            Accede a tu cuenta de Owl Fenc
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="px-4 py-5 sm:px-6">
-          <div className="space-y-5">
-            {/* Botones de inicio de sesión con proveedores */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-              <Button
-                variant="outline"
-                type="button"
-                onClick={handleGoogleLogin}
-                className="px-4 py-2 h-auto"
-              >
-                <FcGoogle className="mr-2 h-5 w-5" />
-                <span>Google</span>
-              </Button>
-              <Button
-                variant="outline"
-                type="button"
-                onClick={handleAppleLogin}
-                className="px-4 py-2 h-auto"
-              >
-                <FaApple className="mr-2 h-5 w-5" />
-                <span>Iniciar con Apple</span>
-              </Button>
-            </div>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <Separator />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  O continúa con
-                </span>
-              </div>
-            </div>
-
-            {/* Tabs para seleccionar método de inicio de sesión */}
-            <Tabs 
-              value={loginMethod} 
-              onValueChange={(value) => setLoginMethod(value as "email" | "emailLink")}
-              className="w-full"
-            >
-              <TabsList className="grid grid-cols-2 mb-4">
-                <TabsTrigger value="email" className="flex items-center gap-1">
-                  <HiMail className="h-4 w-4" />
-                  <span className="hidden sm:inline">Email y contraseña</span>
-                  <span className="sm:hidden">Email</span>
-                </TabsTrigger>
-                <TabsTrigger value="emailLink" className="flex items-center gap-1">
-                  <RiMailSendLine className="h-4 w-4" />
-                  <span className="hidden sm:inline">Sin contraseña</span>
-                  <span className="sm:hidden">Link</span>
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="email" className="space-y-4">
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Correo Electrónico</FormLabel>
-                          <FormControl>
-                            <Input placeholder="tu@email.com" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Contraseña</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Input 
-                                type={showPassword ? "text" : "password"} 
-                                placeholder="******" 
-                                {...field} 
-                              />
-                              <button
-                                type="button"
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                              >
-                                {showPassword ? (
-                                  <RiEyeOffLine className="h-4 w-4" />
-                                ) : (
-                                  <RiEyeLine className="h-4 w-4" />
-                                )}
-                              </button>
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <Button
-                      type="submit"
-                      className="w-full"
-                      disabled={isLoading}
-                    >
-                      {isLoading ? (
-                        <span className="flex items-center justify-center">
-                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          Cargando...
-                        </span>
-                      ) : (
-                        "Iniciar Sesión"
-                      )}
-                    </Button>
-                  </form>
-                </Form>
-              </TabsContent>
-
-              <TabsContent value="emailLink">
-                <EmailLinkAuth 
-                  onSuccess={() => {
-                    toast({
-                      title: "Enlace enviado",
-                      description: "Se ha enviado un enlace a tu correo electrónico. Por favor, revisa tu bandeja de entrada."
-                    });
-                  }}
-                />
-              </TabsContent>
-            </Tabs>
-
-            {/* Mensaje de error */}
-            {error && (
-              <div className="text-red-500 text-sm text-center">{error}</div>
-            )}
-
-            {/* Recuperación de contraseña */}
-            {loginMethod === "email" && (
-              <div className="text-center">
-                <Button variant="link" onClick={() => navigate("/recuperar-password")}>
-                  ¿Olvidaste tu contraseña?
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+      <div className="w-full max-w-md">
+        <div className="mb-6 text-center">
+          <h2 className="text-3xl font-bold text-indigo-800">Owl Fenc</h2>
+          <p className="text-sm text-slate-600">Verificación de propiedades inteligente</p>
+        </div>
+        
+        <Card className="border-0 shadow-xl overflow-hidden rounded-2xl">
+          <CardHeader className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-6">
+            <CardTitle className="text-2xl font-semibold text-center">Iniciar Sesión</CardTitle>
+            <CardDescription className="text-center text-indigo-100">
+              Accede a tu cuenta para continuar
+            </CardDescription>
+          </CardHeader>
+          
+          <CardContent className="px-6 py-6">
+            <div className="space-y-5">
+              {/* Botones de inicio de sesión con proveedores */}
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  className="w-full h-11 rounded-lg border-2 border-slate-200 hover:bg-slate-50 hover:border-indigo-200 transition-all"
+                >
+                  <FcGoogle className="mr-2 h-5 w-5" />
+                  <span>Google</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={handleAppleLogin}
+                  className="w-full h-11 rounded-lg border-2 border-slate-200 hover:bg-slate-50 hover:border-indigo-200 transition-all"
+                >
+                  <FaApple className="mr-2 h-5 w-5" />
+                  <span>Apple</span>
                 </Button>
               </div>
-            )}
-          </div>
-        </CardContent>
-        <CardFooter className="flex justify-center px-4 py-5 sm:px-6">
-          <p className="text-sm text-muted-foreground text-center">
-            ¿No tienes una cuenta?{" "}
-            <Button variant="link" className="p-0 px-1" onClick={() => navigate("/signup")}>
-              Regístrate
-            </Button>
-          </p>
-        </CardFooter>
-      </Card>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <Separator className="w-full border-slate-200" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white px-2 text-slate-500">
+                    O continúa con
+                  </span>
+                </div>
+              </div>
+
+              {/* Tabs para seleccionar método de inicio de sesión */}
+              <Tabs 
+                value={loginMethod} 
+                onValueChange={(value) => setLoginMethod(value as "email" | "emailLink")}
+                className="w-full"
+              >
+                <TabsList className="grid grid-cols-2 mb-4 bg-slate-100 p-1 rounded-lg">
+                  <TabsTrigger 
+                    value="email" 
+                    className="flex items-center gap-1 data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-sm rounded-md"
+                  >
+                    <HiMail className="h-4 w-4" />
+                    <span className="hidden sm:inline">Email y contraseña</span>
+                    <span className="sm:hidden">Email</span>
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="emailLink" 
+                    className="flex items-center gap-1 data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-sm rounded-md"
+                  >
+                    <RiMailSendLine className="h-4 w-4" />
+                    <span className="hidden sm:inline">Sin contraseña</span>
+                    <span className="sm:hidden">Link</span>
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="email" className="space-y-4">
+                  <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-slate-700">Correo Electrónico</FormLabel>
+                            <FormControl>
+                              <Input 
+                                placeholder="tu@email.com" 
+                                {...field} 
+                                className="h-11 rounded-lg border-slate-200 focus:border-indigo-300 focus:ring-1 focus:ring-indigo-300"
+                              />
+                            </FormControl>
+                            <FormMessage className="text-red-500" />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="password"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-slate-700">Contraseña</FormLabel>
+                            <FormControl>
+                              <div className="relative">
+                                <Input 
+                                  type={showPassword ? "text" : "password"} 
+                                  placeholder="******" 
+                                  {...field} 
+                                  className="h-11 rounded-lg border-slate-200 focus:border-indigo-300 focus:ring-1 focus:ring-indigo-300"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowPassword(!showPassword)}
+                                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                                >
+                                  {showPassword ? (
+                                    <RiEyeOffLine className="h-4 w-4" />
+                                  ) : (
+                                    <RiEyeLine className="h-4 w-4" />
+                                  )}
+                                </button>
+                              </div>
+                            </FormControl>
+                            <FormMessage className="text-red-500" />
+                          </FormItem>
+                        )}
+                      />
+
+                      <Button
+                        type="submit"
+                        className="w-full h-11 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium text-base"
+                        disabled={isLoading}
+                      >
+                        {isLoading ? (
+                          <span className="flex items-center justify-center">
+                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Cargando...
+                          </span>
+                        ) : (
+                          "Iniciar Sesión"
+                        )}
+                      </Button>
+                    </form>
+                  </Form>
+                </TabsContent>
+
+                <TabsContent value="emailLink">
+                  <EmailLinkAuth 
+                    onSuccess={() => {
+                      toast({
+                        title: "Enlace enviado",
+                        description: "Se ha enviado un enlace a tu correo electrónico. Por favor, revisa tu bandeja de entrada."
+                      });
+                    }}
+                  />
+                </TabsContent>
+              </Tabs>
+
+              {/* Mensaje de error */}
+              {error && (
+                <div className="text-red-500 text-sm text-center bg-red-50 p-2 rounded-lg">{error}</div>
+              )}
+
+              {/* Recuperación de contraseña */}
+              {loginMethod === "email" && (
+                <div className="text-center">
+                  <Button 
+                    variant="link" 
+                    onClick={() => navigate("/recuperar-password")}
+                    className="text-indigo-600 hover:text-indigo-800"
+                  >
+                    ¿Olvidaste tu contraseña?
+                  </Button>
+                </div>
+              )}
+            </div>
+          </CardContent>
+          
+          <CardFooter className="flex justify-center px-6 py-5 bg-slate-50 border-t border-slate-100">
+            <p className="text-sm text-slate-600 text-center">
+              ¿No tienes una cuenta?{" "}
+              <Button 
+                variant="link" 
+                className="p-0 px-1 text-indigo-600 font-medium hover:text-indigo-800" 
+                onClick={() => navigate("/signup")}
+              >
+                Regístrate
+              </Button>
+            </p>
+          </CardFooter>
+        </Card>
+      </div>
     </div>
   );
 }
