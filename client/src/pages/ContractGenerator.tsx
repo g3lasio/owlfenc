@@ -190,7 +190,7 @@ const ContractGenerator = () => {
   };
 
   // Manejar selección de opciones de contrato
-  const handleOptionSelect = (option: 'new' | 'template' | 'modify' | 'upload') => {
+  const handleOptionSelect = (option: 'new' | 'template' | 'modify' | 'upload' | 'chat-assistant' | 'guided-flow') => {
     setSelectedOption(option);
     
     // Redireccionar basado en la opción seleccionada
@@ -198,6 +198,10 @@ const ContractGenerator = () => {
       setActiveTab("upload-estimate");
     } else if (option === 'new') {
       // Para crear nuevo, ir directo al formulario vacío
+    } else if (option === 'chat-assistant') {
+      setActiveTab("chat-assistant");
+    } else if (option === 'guided-flow') {
+      setActiveTab("guided-flow");
       form.reset({
         clientName: "",
         clientEmail: "",

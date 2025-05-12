@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { FileText, FileUp, Edit, Clock, ListChecks, MessageCircle } from "lucide-react";
 
 interface ContractOptionProps {
-  onSelectOption: (option: 'new' | 'template' | 'modify' | 'upload') => void;
+  onSelectOption: (option: 'new' | 'template' | 'modify' | 'upload' | 'chat-assistant' | 'guided-flow') => void;
 }
 
 const ContractOptions: React.FC<ContractOptionProps> = ({ onSelectOption }) => {
@@ -82,6 +82,44 @@ const ContractOptions: React.FC<ContractOptionProps> = ({ onSelectOption }) => {
           </p>
           <Button variant="outline" className="mt-auto">
             Subir estimado
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Opción 5: Asistente conversacional */}
+      <Card 
+        className="cursor-pointer hover:shadow-md transition-shadow"
+        onClick={() => onSelectOption('chat-assistant')}
+      >
+        <CardContent className="p-6 flex flex-col items-center text-center">
+          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+            <MessageCircle className="h-6 w-6 text-primary" />
+          </div>
+          <h3 className="text-lg font-medium mb-2">Asistente conversacional</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Conversa con nuestro asistente virtual que te ayudará a recopilar toda la información necesaria.
+          </p>
+          <Button variant="outline" className="mt-auto">
+            Iniciar conversación
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Opción 6: Flujo guiado de preguntas */}
+      <Card 
+        className="cursor-pointer hover:shadow-md transition-shadow"
+        onClick={() => onSelectOption('guided-flow')}
+      >
+        <CardContent className="p-6 flex flex-col items-center text-center">
+          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+            <ListChecks className="h-6 w-6 text-primary" />
+          </div>
+          <h3 className="text-lg font-medium mb-2">Flujo guiado de preguntas</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Te guiaré paso a paso con preguntas específicas para crear tu contrato fácilmente.
+          </p>
+          <Button variant="outline" className="mt-auto">
+            Iniciar flujo guiado
           </Button>
         </CardContent>
       </Card>
