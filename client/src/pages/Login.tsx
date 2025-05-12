@@ -337,11 +337,11 @@ export default function AuthPage() {
           <CardContent className="px-6 py-6">
             <div className="space-y-5">
               {/* Botones de proveedor */}
-              <div className="flex flex-col space-y-3">
+              <div className="grid grid-cols-2 gap-2">
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full h-10 flex items-center justify-center gap-2 border-muted-foreground/30 hover:bg-primary/10"
+                  className="h-10 flex items-center justify-center gap-2 border-muted-foreground/30 hover:bg-primary/10"
                   onClick={handleGoogleAuth}
                   disabled={isLoading}
                 >
@@ -351,7 +351,7 @@ export default function AuthPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full h-10 flex items-center justify-center gap-2 border-muted-foreground/30 hover:bg-primary/10"
+                  className="h-10 flex items-center justify-center gap-2 border-muted-foreground/30 hover:bg-primary/10"
                   onClick={handleAppleAuth}
                   disabled={isLoading}
                 >
