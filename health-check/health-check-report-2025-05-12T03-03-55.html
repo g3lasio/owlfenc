@@ -1,0 +1,149 @@
+
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Health Check del Sistema de Generación de Contratos</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          line-height: 1.6;
+          max-width: 800px;
+          margin: 0 auto;
+          padding: 20px;
+        }
+        .header {
+          text-align: center;
+          margin-bottom: 30px;
+          padding-bottom: 10px;
+          border-bottom: 1px solid #ddd;
+        }
+        .status {
+          text-align: center;
+          padding: 15px;
+          margin-bottom: 20px;
+          border-radius: 5px;
+        }
+        .success {
+          background-color: #d4edda;
+          color: #155724;
+        }
+        .failure {
+          background-color: #f8d7da;
+          color: #721c24;
+        }
+        .service {
+          margin-bottom: 20px;
+          padding: 15px;
+          border: 1px solid #ddd;
+          border-radius: 5px;
+        }
+        .service-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 10px;
+        }
+        .service-name {
+          font-weight: bold;
+          font-size: 18px;
+        }
+        .service-status {
+          padding: 5px 10px;
+          border-radius: 3px;
+          font-weight: bold;
+        }
+        .service-details {
+          margin-top: 10px;
+          font-family: monospace;
+          background-color: #f8f9fa;
+          padding: 10px;
+          border-radius: 3px;
+          overflow-x: auto;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>Health Check del Sistema de Generación de Contratos</h1>
+        <p>Generado el 5/12/2025, 3:03:55 AM</p>
+      </div>
+      
+      <div class="status failure">
+        <h2>Estado General: ERROR</h2>
+        <p>Uno o más servicios críticos no están funcionando correctamente.</p>
+      </div>
+      
+      
+        <div class="service">
+          <div class="service-header">
+            <div class="service-name">Generación de Contratos</div>
+            <div class="service-status" style="background-color: #f8d7da; color: #721c24">
+              ERROR
+            </div>
+          </div>
+          
+          
+            <div>
+              <strong>Error:</strong> connect ECONNREFUSED 127.0.0.1:3000
+            </div>
+          
+          
+          
+        </div>
+      
+        <div class="service">
+          <div class="service-header">
+            <div class="service-name">Generación de PDF</div>
+            <div class="service-status" style="background-color: #f8d7da; color: #721c24">
+              ERROR
+            </div>
+          </div>
+          
+          
+            <div>
+              <strong>Error:</strong> connect ECONNREFUSED 127.0.0.1:3000
+            </div>
+          
+          
+          
+        </div>
+      
+        <div class="service">
+          <div class="service-header">
+            <div class="service-name">Servicios de IA</div>
+            <div class="service-status" style="background-color: #d4edda; color: #155724">
+              FUNCIONANDO
+            </div>
+          </div>
+          
+          
+            <div>
+              <strong>Error:</strong> connect ECONNREFUSED 127.0.0.1:3000
+            </div>
+          
+          
+          
+        </div>
+      
+        <div class="service">
+          <div class="service-header">
+            <div class="service-name">Procesamiento de PDF</div>
+            <div class="service-status" style="background-color: #f8d7da; color: #721c24">
+              ERROR
+            </div>
+          </div>
+          
+          
+            <div>
+              <strong>Error:</strong> connect ECONNREFUSED 127.0.0.1:3000
+            </div>
+          
+          
+          
+        </div>
+      
+    </body>
+    </html>
+  
