@@ -15,6 +15,8 @@ const __dirname = path.dirname(__filename);
 
 // Importar configuración centralizada
 import { API_BASE_URL, API_URLS, TEST_NAMES, TEST_DATA, TIMEOUTS } from './test-config.js';
+// Importar el adaptador mock para pruebas sin conexión
+import { setupMockAdapter, isMockEnabled } from './test-mocks/axios-mock-adapter.js';
 
 // Configuración
 const OUTPUT_DIR = path.join(__dirname, 'health-check');
@@ -207,6 +209,9 @@ async function generateReport(results) {
     .filter(r => criticalServices.includes(r.service))
     .every(r => r.success);
   
+  // Determinar si estamos en modo mock
+  const isMock = isMockEnabled();
+  
   const html = `
     <!DOCTYPE html>
     <html lang="es">
@@ -227,6 +232,22 @@ async function generateReport(results) {
           margin-bottom: 30px;
           padding-bottom: 10px;
           border-bottom: 1px solid #ddd;
+        }
+        .mode-indicator {
+          display: inline-block;
+          padding: 5px 10px;
+          border-radius: 5px;
+          margin-top: 10px;
+          font-size: 14px;
+          font-weight: bold;
+        }
+        .mode-real {
+          background-color: #e2e3e5;
+          color: #383d41;
+        }
+        .mode-mock {
+          background-color: #cce5ff;
+          color: #004085;
         }
         .status {
           text-align: center;
@@ -277,6 +298,9 @@ async function generateReport(results) {
       <div class="header">
         <h1>Health Check del Sistema de Generación de Contratos</h1>
         <p>Generado el ${new Date().toLocaleString()}</p>
+        <div class="mode-indicator ${isMock ? 'mode-mock' : 'mode-real'}">
+          Modo: ${isMock ? 'SIMULADO (MOCK)' : 'REAL'}
+        </div>
       </div>
       
       <div class="status ${allSuccess ? 'success' : 'failure'}">
@@ -284,6 +308,9 @@ async function generateReport(results) {
         <p>${allSuccess 
           ? 'Todos los servicios críticos están funcionando correctamente.' 
           : 'Uno o más servicios críticos no están funcionando correctamente.'}</p>
+        ${isMock && !allSuccess 
+          ? '<p><strong>Nota:</strong> Aunque hay errores, estás en modo simulado (mock).</p>' 
+          : ''}
       </div>
       
       ${results.map(result => `
@@ -331,9 +358,18 @@ function getServiceName(serviceId) {
 }
 
 // Ejecutar todas las verificaciones
-async function runHealthCheck() {
+async function runHealthCheck(useMock = false) {
   try {
     console.log('🚀 Iniciando health check del sistema de generación de contratos...');
+    
+    // Configurar modo mock si es necesario
+    if (useMock) {
+      console.log('🔧 Usando servidor mock para las pruebas');
+      setupMockAdapter(true);
+    } else {
+      console.log('🔧 Usando servidores reales para las pruebas');
+    }
+    
     await setup();
     
     const results = [];
@@ -360,21 +396,38 @@ async function runHealthCheck() {
     
     // Mostrar resumen
     console.log('\n📊 Resumen del Health Check:');
+    console.log(`   Modo: ${useMock ? 'SIMULADO (MOCK)' : 'REAL'}`);
     console.log(`   Servicios críticos: ${criticalSuccess ? '✅ FUNCIONANDO' : '❌ ERROR'}`);
     console.log(`   Servicios verificados: ${results.length}`);
     console.log(`   Servicios funcionando: ${results.filter(r => r.success).length}`);
     
-    if (!criticalSuccess) {
+    if (!criticalSuccess && !useMock) {
       console.error('\n❌ Uno o más servicios críticos no están funcionando correctamente');
+      
+      // Sugerir modo mock si estamos usando servicios reales y hay errores
+      console.log('\n💡 Sugerencia: Ejecuta en modo mock para pruebas sin conexión:');
+      console.log('   node health-check-contract-system.js --mock');
+      
       process.exit(1);
     } else {
       console.log('\n✅ Todos los servicios críticos están funcionando correctamente');
     }
+    
+    // Siempre desactivar el mock al finalizar si lo habíamos activado
+    if (useMock) {
+      setupMockAdapter(false);
+    }
+    
+    return results;
   } catch (error) {
     console.error('\n❌ Error general en el health check:', error.message);
     process.exit(1);
   }
 }
 
+// Procesar argumentos de línea de comandos
+const args = process.argv.slice(2);
+const useMock = args.includes('--mock') || args.includes('-m');
+
 // Ejecutar el health check
-runHealthCheck();
+runHealthCheck(useMock);

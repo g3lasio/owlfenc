@@ -17,6 +17,9 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Importar el adaptador mock para pruebas sin conexión
+import { setupMockAdapter, isMockEnabled } from './test-mocks/axios-mock-adapter.js';
+
 // Configuración y helpers
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3000';
 const OUTPUT_DIR = path.join(__dirname, 'test-output');
