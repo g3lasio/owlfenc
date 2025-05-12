@@ -400,6 +400,8 @@ export const userMaterials = pgTable("user_materials", {
   stock: integer("stock"), // cantidad en inventario
   minStock: integer("min_stock"), // nivel mínimo de inventario
   projectId: text("project_id"), // referencia a proyecto (opcional)
+  imageUrl: text("image_url"), // URL de la imagen del material
+  fileUrls: jsonb("file_urls"), // URLs de archivos adjuntos (facturas, manuales, etc.)
   tags: jsonb("tags"), // etiquetas para clasificar/filtrar
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -418,6 +420,8 @@ export const insertUserMaterialSchema = createInsertSchema(userMaterials).pick({
   stock: true,
   minStock: true,
   projectId: true,
+  imageUrl: true,
+  fileUrls: true,
   tags: true,
 });
 

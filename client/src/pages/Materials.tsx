@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -50,6 +50,7 @@ import {
   orderBy, 
   Timestamp 
 } from "firebase/firestore";
+import { uploadFile } from "@/lib/firebase";
 import { db as firebaseDb } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
 import { 
@@ -80,6 +81,8 @@ interface Material {
   stock?: number;
   minStock?: number;
   projectId?: string;
+  imageUrl?: string;
+  fileUrls?: string[];
   tags?: string[];
   createdAt: Date;
   updatedAt: Date;
@@ -98,6 +101,8 @@ const materialSchema = z.object({
   stock: z.coerce.number().min(0, { message: "El inventario debe ser un número positivo" }).optional(),
   minStock: z.coerce.number().min(0, { message: "El mínimo debe ser un número positivo" }).optional(),
   projectId: z.string().optional(),
+  imageUrl: z.string().optional(),
+  fileUrls: z.array(z.string()).optional(),
   tags: z.array(z.string()).optional()
 });
 
