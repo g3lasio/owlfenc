@@ -12,6 +12,11 @@ export const mainNavigationConfig: NavigationSection[] = [
         icon: "ri-shield-keyhole-line",
       },
       {
+        label: "Contratos",
+        path: "/contracts",
+        icon: "ri-file-contract-line",
+      },
+      {
         label: "Mervin DeepSearch",
         path: "/permit-advisor",
         icon: "ri-robot-2-line",
