@@ -188,64 +188,70 @@ export const sendWelcomeEmail = async (
   <body>
     <div class="container">
       <div class="header">
-        <h1>¡Bienvenido a Owl Fenc!</h1>
+        <h1>¡Bienvenido a Owl Fence!</h1>
       </div>
       <div class="content">
-        <p>Hola ${name || 'estimado usuario'},</p>
+        <p>Estimado <strong>${name || 'usuario'}</strong>,</p>
         
-        <p>Estamos emocionados de tenerte en nuestra plataforma. Owl Fenc y su asistente Mervin AI están aquí para transformar tu experiencia en proyectos de cercas.</p>
+        <p>¡Estamos emocionados de darle la bienvenida a Owl Fence! Su cuenta ha sido creada con éxito y ahora tiene acceso a nuestra plataforma integral para la gestión de proyectos de cercas y verificación de propiedades.</p>
         
-        <div class="divider"></div>
+        <div class="highlight">
+          <p>Como nuevo miembro, tiene acceso a Mervin, nuestro asistente de IA especializado que le ayudará con sus proyectos, verificación de permisos y generación de contratos.</p>
+        </div>
         
-        <h2>Funciones principales que te encantarán:</h2>
+        <div class="features">
+          <h2>Lo que puede hacer con Owl Fence:</h2>
+          
+          <div class="feature">
+            <div class="feature-icon">🔍</div>
+            <div class="feature-text">
+              <strong>Verificación de Propiedades</strong>
+              <p>Acceda a historiales de propiedad, información catastral y verifique permisos existentes de forma instantánea.</p>
+            </div>
+          </div>
         
-        <div class="feature">
-          <div class="feature-icon">🔍</div>
-          <div class="feature-text">
-            <strong>Verificación Inteligente de Propiedades</strong>
-            <p>Verifica permisos y detalles de propiedad en minutos, no en días.</p>
+          <div class="feature">
+            <div class="feature-icon">📝</div>
+            <div class="feature-text">
+              <strong>Contratos Generados por IA</strong>
+              <p>Cree contratos personalizados con un solo clic, adaptados a sus necesidades específicas.</p>
+            </div>
+          </div>
+          
+          <div class="feature">
+            <div class="feature-icon">💼</div>
+            <div class="feature-text">
+              <strong>Gestión de Proyectos</strong>
+              <p>Organice todos sus proyectos, presupuestos y clientes en un solo lugar.</p>
+            </div>
+          </div>
+          
+          <div class="feature">
+            <div class="feature-icon">🤖</div>
+            <div class="feature-text">
+              <strong>Asistente IA Mervin</strong>
+              <p>Reciba asistencia en tiempo real con nuestro asistente IA especializado en la industria de cercas.</p>
+            </div>
           </div>
         </div>
         
-        <div class="feature">
-          <div class="feature-icon">📝</div>
-          <div class="feature-text">
-            <strong>Contratos Generados por IA</strong>
-            <p>Crea contratos personalizados con nuestra tecnología avanzada de IA.</p>
-          </div>
+        <p>Si tiene alguna pregunta o necesita asistencia, nuestro equipo de soporte está aquí para ayudarle.</p>
+          
+        <p>¡Gracias por elegir Owl Fence para ${companyName ? companyName : 'su empresa'}!</p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="https://owlfence.replit.app" class="cta-button" style="padding: 15px 30px; font-size: 16px; background-color: #02b3b3; color: white; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">COMENZAR AHORA</a>
         </div>
         
-        <div class="feature">
-          <div class="feature-icon">🤖</div>
-          <div class="feature-text">
-            <strong>Mervin AI - Tu Asistente Virtual</strong>
-            <p>Consulta con Mervin para obtener consejos expertos, estimaciones de materiales y más.</p>
-          </div>
+        <p style="text-align: center; color: #666;">Si tiene alguna pregunta o necesita ayuda, no dude en responder a este correo o contactar a nuestro equipo de soporte.</p>
+        
+        <div style="margin-top: 30px; text-align: center;">
+          <p>Saludos,<br><strong>El equipo de Owl Fence</strong></p>
         </div>
-        
-        <div class="feature">
-          <div class="feature-icon">📱</div>
-          <div class="feature-text">
-            <strong>Estimaciones en 3D</strong>
-            <p>Visualiza tus proyectos en 3D y obtén estimaciones precisas de costos.</p>
-          </div>
-        </div>
-        
-        <div class="divider"></div>
-        
-        <p>¿Listo para comenzar? Explora el potencial de Mervin AI y toma el control de tus proyectos de cercas:</p>
-        
-        <center>
-          <a href="https://owlfenc.com/tutorial" class="cta-button">COMENZAR AHORA</a>
-        </center>
-        
-        <p>Si tienes alguna pregunta o necesitas ayuda, no dudes en responder a este correo o contactar a nuestro equipo de soporte.</p>
-        
-        <p>Saludos,<br>El equipo de Owl Fenc</p>
       </div>
       <div class="footer">
-        <p>© ${new Date().getFullYear()} Owl Fenc. Todos los derechos reservados.</p>
-        <p>Este correo fue enviado a ${to} porque creaste una cuenta en nuestra plataforma.</p>
+        <p>© ${new Date().getFullYear()} Owl Fence. Todos los derechos reservados.</p>
+        <p>Este correo fue enviado a ${to} porque creó una cuenta en nuestra plataforma.</p>
       </div>
     </div>
   </body>
@@ -254,28 +260,32 @@ export const sendWelcomeEmail = async (
   
   // Versión de texto plano para clientes de correo que no soportan HTML
   const text = `
-¡Bienvenido a Owl Fenc!
+¡BIENVENIDO A OWL FENCE!
 
-Hola ${name || 'estimado usuario'},
+Estimado ${name || 'usuario'},
 
-Estamos emocionados de tenerte en nuestra plataforma. Owl Fenc y su asistente Mervin AI están aquí para transformar tu experiencia en proyectos de cercas.
+¡Estamos emocionados de darle la bienvenida a Owl Fence! Su cuenta ha sido creada con éxito y ahora tiene acceso a nuestra plataforma integral para la gestión de proyectos de cercas y verificación de propiedades.
 
-FUNCIONES PRINCIPALES:
+Como nuevo miembro, tiene acceso a Mervin, nuestro asistente de IA especializado que le ayudará con sus proyectos, verificación de permisos y generación de contratos.
 
-- Verificación Inteligente de Propiedades: Verifica permisos y detalles de propiedad en minutos, no en días.
-- Contratos Generados por IA: Crea contratos personalizados con nuestra tecnología avanzada de IA.
-- Mervin AI - Tu Asistente Virtual: Consulta con Mervin para obtener consejos expertos, estimaciones de materiales y más.
-- Estimaciones en 3D: Visualiza tus proyectos en 3D y obtén estimaciones precisas de costos.
+LO QUE PUEDE HACER CON OWL FENCE:
 
-¿Listo para comenzar? Visita: https://owlfenc.com/tutorial
+- Verificación de Propiedades: Acceda a historiales de propiedad, información catastral y verifique permisos existentes de forma instantánea.
+- Contratos Generados por IA: Cree contratos personalizados con un solo clic, adaptados a sus necesidades específicas.
+- Gestión de Proyectos: Organice todos sus proyectos, presupuestos y clientes en un solo lugar.
+- Asistente IA Mervin: Reciba asistencia en tiempo real con nuestro asistente IA especializado en la industria de cercas.
 
-Si tienes alguna pregunta o necesitas ayuda, no dudes en contactarnos.
+¡Gracias por elegir Owl Fence para ${companyName ? companyName : 'su empresa'}!
+
+COMIENCE AHORA: https://owlfence.replit.app
+
+Si tiene alguna pregunta o necesita ayuda, no dude en responder a este correo o contactar a nuestro equipo de soporte.
 
 Saludos,
-El equipo de Owl Fenc
+El equipo de Owl Fence
 
-© ${new Date().getFullYear()} Owl Fenc. Todos los derechos reservados.
-Este correo fue enviado a ${to} porque creaste una cuenta en nuestra plataforma.
+© ${new Date().getFullYear()} Owl Fence. Todos los derechos reservados.
+Este correo fue enviado a ${to} porque creó una cuenta en nuestra plataforma.
   `;
   
   return sendEmail({
