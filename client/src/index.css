@@ -697,14 +697,28 @@ body {
 
 /* Ocultar scrollbar pero mantener funcionalidad */
 .hide-scrollbar {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;     /* Firefox */
+  -ms-overflow-style: none !important;  /* IE and Edge */
+  scrollbar-width: none !important;     /* Firefox */
 }
 
 .hide-scrollbar::-webkit-scrollbar {
-  display: none;             /* Chrome, Safari, Opera */
-  width: 0px;                /* Ancho */
-  background: transparent;   /* Opcional: hace que el fondo sea transparente */
+  display: none !important;             /* Chrome, Safari, Opera */
+  width: 0 !important;                  /* Ancho */
+  background: transparent !important;   /* Opcional: hace que el fondo sea transparente */
+}
+
+/* Ocultar scrollbar en todo el cuerpo y html */
+html, body {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+  overflow-y: auto;
+}
+
+html::-webkit-scrollbar, 
+body::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  background: transparent !important;
 }
 
 .arc-reactor-button {

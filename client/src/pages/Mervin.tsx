@@ -248,12 +248,15 @@ export default function Mervin() {
   return (
     <div className="flex-1 flex flex-col relative h-full overflow-hidden bg-black">
       {/* Encabezado fijo */}
-      <div className="sticky top-0 p-4 pb-2 bg-black z-20 border-b border-cyan-900/30 shadow-md">
+      <div className="fixed top-0 left-0 right-0 p-4 pb-2 bg-black z-30 border-b border-cyan-900/30 shadow-md">
         <h1 className="text-2xl font-bold text-center text-white">Mervin AI</h1>
       </div>
+      
+      {/* Espaciador para compensar el header fijo */}
+      <div className="h-16"></div>
 
-      {/* Área de mensajes con scroll, con padding inferior para dar espacio al input fijo */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-24 bg-black hide-scrollbar">
+      {/* Área de mensajes con scroll, con padding inferior para dar espacio al input fijo y footer */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-36 bg-black hide-scrollbar">
         {messages.map(message => (
           <Card 
             key={message.id} 
@@ -376,6 +379,17 @@ export default function Mervin() {
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Footer fijo */}
+      <div className="fixed bottom-[70px] left-0 right-0 py-2 px-4 bg-gray-900 border-t border-cyan-900/30 text-xs text-center text-cyan-500/50 z-10">
+        <div className="flex justify-center space-x-4">
+          <a href="#" className="hover:text-cyan-400">Política de Privacidad</a>
+          <span>|</span>
+          <a href="#" className="hover:text-cyan-400">Términos Legales</a>
+          <span>|</span>
+          <span>© 2025 Owl Fence</span>
+        </div>
+      </div>
+      
       {/* Barra de input fija en la parte inferior */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-black border-t border-cyan-900/30 shadow-lg z-20">
         {showAttachOptions && (
