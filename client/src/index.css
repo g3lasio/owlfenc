@@ -662,6 +662,39 @@ body {
   animation-delay: 0.5s;
 }
 
+/* Animaciones para los puntos del estado "procesando" */
+@keyframes bounce-dot {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-4px); }
+}
+
+.animate-bounce-dot {
+  animation: bounce-dot 1.4s infinite ease-in-out;
+  display: inline-block;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.delay-0 { animation-delay: 0s; }
+.delay-1 { animation-delay: 0.2s; }
+.delay-2 { animation-delay: 0.4s; }
+
+/* Animación para la barra de progreso */
+@keyframes progress-bar {
+  0% { width: 0%; }
+  50% { width: 70%; }
+  70% { width: 77%; }
+  80% { width: 84%; }
+  90% { width: 89%; }
+  95% { width: 93%; }
+  100% { width: 100%; }
+}
+
+.animate-progress-bar {
+  animation: progress-bar 2.5s cubic-bezier(0.1, 0.7, 1.0, 0.1) infinite;
+  width: 0%;
+}
+
 .arc-reactor-button {
   position: relative;
   width: 120px;

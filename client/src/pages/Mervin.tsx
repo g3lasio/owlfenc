@@ -270,7 +270,56 @@ export default function Mervin() {
                   }
                 </div>
                 <div className="flex-1">
+                  {/* Indicadores de estado */}
+                  {message.state === "thinking" && (
+                    <div className="flex items-center text-xs text-cyan-500 mb-1 animate-pulse">
+                      <BrainCircuit className="h-3 w-3 mr-1" />
+                      <span>Pensando...</span>
+                    </div>
+                  )}
+                  
+                  {message.state === "analyzing" && (
+                    <div className="flex items-center text-xs text-blue-500 mb-1">
+                      <div className="relative h-3 w-3 mr-1">
+                        <div className="absolute inset-0 bg-blue-500 rounded-full animate-ping opacity-75"></div>
+                        <FileSearch className="h-3 w-3 relative" />
+                      </div>
+                      <span>Analizando datos...</span>
+                    </div>
+                  )}
+                  
+                  {message.state === "deepSearching" && (
+                    <div className="flex items-center text-xs text-indigo-500 mb-1">
+                      <div className="relative h-3 w-3 mr-1">
+                        <div className="absolute inset-0 border border-indigo-500 rounded-full animate-spin"></div>
+                        <Search className="h-3 w-3 relative" />
+                      </div>
+                      <span>Búsqueda profunda...</span>
+                    </div>
+                  )}
+                  
                   <p className="whitespace-pre-wrap">{message.content}</p>
+
+                  {/* Botones de acción */}
+                  {message.actionButtons && message.actionButtons.length > 0 && (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {message.actionButtons.map(button => (
+                        <button
+                          key={button.id}
+                          onClick={() => handleServiceSelection(button.action)}
+                          className="flex flex-col items-center bg-primary/10 hover:bg-primary/20 transition-all p-3 rounded-lg border border-primary/30 group w-32 h-28"
+                        >
+                          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                            <div className="text-primary">
+                              {button.icon}
+                            </div>
+                          </div>
+                          <span className="text-sm font-medium text-center text-primary/90">{button.text}</span>
+                          <span className="text-xs text-center text-muted-foreground mt-1 line-clamp-2">{button.description}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
 
                   {message.attachment && (
                     <div className="mt-2 p-2 border rounded-md max-w-xs">
@@ -306,7 +355,19 @@ export default function Mervin() {
                     <div className="glow-effect"></div>
                   </div>
                 </div>
-                <p>Pensando...</p>
+                <div className="flex flex-col">
+                  <div className="flex items-center">
+                    <p className="text-cyan-500 font-quantico">Procesando</p>
+                    <div className="ml-1 flex items-center">
+                      <span className="animate-bounce-dot delay-0">.</span>
+                      <span className="animate-bounce-dot delay-1">.</span>
+                      <span className="animate-bounce-dot delay-2">.</span>
+                    </div>
+                  </div>
+                  <div className="mt-1 w-40 h-1 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full animate-progress-bar"></div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
