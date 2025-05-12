@@ -72,6 +72,7 @@ const ContractGenerator = () => {
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isClientSelectOpen, setIsClientSelectOpen] = useState(false);
   
   // Consulta para obtener la lista de contratos
   const contractsQuery = useQuery({
@@ -457,7 +458,7 @@ const ContractGenerator = () => {
   ];
 
   return (
-    <div className="flex-1 p-6 overflow-auto">
+    <div className="flex-1 p-6 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 4rem)' }}>
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
