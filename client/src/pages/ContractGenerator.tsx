@@ -380,8 +380,19 @@ const ContractGenerator = () => {
     }).format(date);
   };
   
+  // Interfaz para los datos del cliente
+  interface Client {
+    id: number | string;
+    name?: string;
+    fullName?: string;
+    email?: string;
+    phone?: string;
+    phoneNumber?: string;
+    address?: string;
+  }
+  
   // Manejar selección de cliente desde contactos guardados
-  const handleClientSelect = (client: any) => {
+  const handleClientSelect = (client: Client) => {
     form.setValue("clientName", client.name || client.fullName || "");
     form.setValue("clientEmail", client.email || "");
     form.setValue("clientPhone", client.phone || client.phoneNumber || "");
@@ -800,7 +811,17 @@ const ContractGenerator = () => {
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                     {/* Sección de datos del cliente */}
                     <div>
-                      <h3 className="text-lg font-medium mb-4">Datos del Cliente</h3>
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-medium">Datos del Cliente</h3>
+                        <Button 
+                          type="button"
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setIsClientSelectOpen(true)}
+                        >
+                          Seleccionar Cliente Guardado
+                        </Button>
+                      </div>
                       <div className="grid gap-4 sm:grid-cols-2">
                         <FormField
                           control={form.control}
@@ -1107,6 +1128,81 @@ const ContractGenerator = () => {
               Usar flujo guiado de preguntas
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Diálogo para seleccionar cliente */}
+      <Dialog open={isClientSelectOpen} onOpenChange={setIsClientSelectOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Seleccionar Cliente</DialogTitle>
+          </DialogHeader>
+          <div className="mb-4">
+            <Input
+              placeholder="Buscar cliente..."
+              className="w-full"
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          {clientsQuery.isLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center space-x-3 p-2">
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-[200px]" />
+                    <Skeleton className="h-3 w-[150px]" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : clientsQuery.isError ? (
+            <div className="py-4 text-center">
+              <p className="text-muted-foreground">Error al cargar los clientes</p>
+              <Button 
+                variant="outline" 
+                className="mt-2"
+                onClick={() => clientsQuery.refetch()}
+              >
+                Reintentar
+              </Button>
+            </div>
+          ) : clientsQuery.data?.length === 0 ? (
+            <div className="py-4 text-center">
+              <p className="text-muted-foreground">No tienes clientes guardados</p>
+            </div>
+          ) : (
+            <ScrollArea className="h-[300px]">
+              <div className="space-y-2">
+                {clientsQuery.data
+                  .filter((client: Client) => 
+                    !searchTerm || 
+                    (client.name || client.fullName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    (client.email || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    (client.phone || client.phoneNumber || "").toLowerCase().includes(searchTerm.toLowerCase())
+                  )
+                  .map((client: Client) => (
+                    <div
+                      key={client.id}
+                      className="flex items-center justify-between rounded-md border p-3 hover:bg-accent cursor-pointer"
+                      onClick={() => handleClientSelect(client)}
+                    >
+                      <div>
+                        <p className="font-medium">{client.name || client.fullName}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {client.email}
+                          {client.phone || client.phoneNumber ? ` • ${client.phone || client.phoneNumber}` : ""}
+                        </p>
+                        {client.address && <p className="text-sm text-muted-foreground">{client.address}</p>}
+                      </div>
+                      <Button variant="ghost" size="sm">
+                        Seleccionar
+                      </Button>
+                    </div>
+                  ))}
+              </div>
+            </ScrollArea>
+          )}
         </DialogContent>
       </Dialog>
     </div>
