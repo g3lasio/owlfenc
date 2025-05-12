@@ -2,7 +2,7 @@ import { Express, Request, Response } from "express";
 import { z } from "zod";
 import { storage } from "../storage";
 import { estimatorService, ProjectInput } from "../services/estimatorService";
-import { emailService } from "../services/emailService";
+import emailService from "../services/emailService";
 
 export function registerEstimateRoutes(app: Express): void {
   // Endpoint para validar datos de entrada
@@ -251,10 +251,10 @@ export function registerEstimateRoutes(app: Express): void {
         }]
       };
       
-      // Enviar email
-      const emailResult = await emailService.sendEstimateEmail(emailData);
+      // Enviar email utilizando el método genérico sendEmail
+      const emailResult = await emailService.sendEmail(emailData);
       
-      if (emailResult.success) {
+      if (emailResult) {
         res.json({
           success: true,
           message: 'Email enviado correctamente'

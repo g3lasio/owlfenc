@@ -19,11 +19,12 @@ import { chatService } from './services/chatService';
 import { propertyService } from './services/propertyService';
 import { documentService } from './services/documentService';
 import aiProcessorRoutes from './routes/aiProcessor';
+import emailRoutes from './routes/email-routes';
 import { memoryService } from './services/memoryService';
 import { stripeService } from './services/stripeService';
 import { permitService } from './services/permitService';
 import { searchService } from './services/searchService';
-import { emailService } from './services/emailService';
+import emailService from './services/emailService';
 import { estimatorService, validateProjectInput } from './services/estimatorService';
 import { promptGeneratorService } from './services/promptGeneratorService';
 import { registerPromptTemplateRoutes } from './routes/prompt-templates';
@@ -522,7 +523,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Enviar email
       const result = await emailService.sendEstimateByEmail(
         estimate,
-        templateId || null,
+        templateId ? String(templateId) : null,
         email,
         subject,
         message
