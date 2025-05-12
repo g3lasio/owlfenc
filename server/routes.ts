@@ -637,6 +637,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ message: 'Failed to generate PDF' });
     }
   });
+  
+  // API para obtener contratos del usuario
+  app.get('/api/contracts', async (req: Request, res: Response) => {
+    try {
+      // Verificar autenticación
+      if (!req.isAuthenticated || !req.isAuthenticated()) {
+        return res.status(401).json({ message: 'No autenticado' });
+      }
+
+      const userId = req.user?.id;
+      
+      // Obtener proyectos que tienen contratos generados
+      const userProjects = await storage.getProjectsByUserId(userId, { 
+        filterBy: 'contractHtml',
+        notNull: true
+      });
+      
+      // Mapear proyectos a formato de contrato
+      const contracts = userProjects.map(project => ({
+        id: project.id,
+        title: `Contrato de Cercado - ${project.clientName}`,
+        clientName: project.clientName,
+        createdAt: project.createdAt,
+        status: project.status === 'signed' ? 'signed' : 
+               project.status === 'completed' ? 'completed' : 
+               project.status === 'sent' ? 'sent' : 'draft',
+        contractType: project.fenceType || 'Cerca',
+      }));
+      
+      res.json(contracts);
+    } catch (error) {
+      console.error('Error al obtener contratos:', error);
+      res.status(500).json({ 
+        error: 'Error al obtener los contratos',
+        details: error instanceof Error ? error.message : 'Error desconocido' 
+      });
+    }
+  });
+
+  // API para obtener un contrato específico
+  app.get('/api/contracts/:id', async (req: Request, res: Response) => {
+    try {
+      // Verificar autenticación
+      if (!req.isAuthenticated || !req.isAuthenticated()) {
+        return res.status(401).json({ message: 'No autenticado' });
+      }
+
+      const userId = req.user?.id;
+      const contractId = parseInt(req.params.id);
+      
+      // Obtener el proyecto que contiene el contrato
+      const project = await storage.getProjectById(contractId);
+      
+      if (!project || project.userId !== userId || !project.contractHtml) {
+        return res.status(404).json({ message: 'Contrato no encontrado' });
+      }
+      
+      res.json({
+        id: project.id,
+        title: `Contrato de Cercado - ${project.clientName}`,
+        clientName: project.clientName,
+        createdAt: project.createdAt,
+        status: project.status,
+        contractType: project.fenceType || 'Cerca',
+        html: project.contractHtml
+      });
+    } catch (error) {
+      console.error('Error al obtener contrato:', error);
+      res.status(500).json({ 
+        error: 'Error al obtener el contrato',
+        details: error instanceof Error ? error.message : 'Error desconocido' 
+      });
+    }
+  });
+
+  // API para descargar un contrato como PDF
+  app.get('/api/contracts/:id/download', async (req: Request, res: Response) => {
+    try {
+      // Verificar autenticación
+      if (!req.isAuthenticated || !req.isAuthenticated()) {
+        return res.status(401).json({ message: 'No autenticado' });
+      }
+
+      const userId = req.user?.id;
+      const contractId = parseInt(req.params.id);
+      
+      // Obtener el proyecto que contiene el contrato
+      const project = await storage.getProjectById(contractId);
+      
+      if (!project || project.userId !== userId || !project.contractHtml) {
+        return res.status(404).json({ message: 'Contrato no encontrado' });
+      }
+      
+      // Generar PDF a partir del HTML del contrato
+      const pdfBuffer = await generatePDF(project.contractHtml, 'contract');
+      
+      // Enviar el PDF generado como descarga
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="contrato-${contractId}.pdf"`);
+      res.send(pdfBuffer);
+    } catch (error) {
+      console.error('Error al descargar contrato como PDF:', error);
+      res.status(500).json({ 
+        error: 'Error al descargar el contrato',
+        details: error instanceof Error ? error.message : 'Error desconocido' 
+      });
+    }
+  });
 
   // *** SUBSCRIPTION ROUTES ***
   app.get('/api/subscription/plans', async (req: Request, res: Response) => {
