@@ -22,7 +22,7 @@
     position: absolute;
     border-radius: 50%;
     animation: float 8s cubic-bezier(0.43, 0.13, 0.23, 0.96) infinite;
-    box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+    box-shadow: 0 0 10px rgb(40, 230, 230, 0.5);
     opacity: 0.6;
   }
   

@@ -74,7 +74,7 @@ export default function Header({
           
           <img
             src="https://i.postimg.cc/4yc9M62C/White-logo-no-background.png"
-            alt="Owl Fence"
+            alt="Owl Fenc"
             className="h-14 w-auto object-contain relative z-10 transition-transform duration-300 group-hover:scale-105 filter drop-shadow-[0_0_3px_rgba(56,189,248,0.5)] px-2"
           />
         </Link>
