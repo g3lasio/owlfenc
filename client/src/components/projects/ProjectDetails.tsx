@@ -172,6 +172,7 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
                         size="sm" 
                         className="absolute top-2 right-2" 
                         variant="ghost"
+                        aria-label="Editar notas del cliente"
                       >
                         <i className="ri-edit-line"></i>
                       </Button>
@@ -181,7 +182,7 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
                     <DialogHeader className="sticky top-0 z-10 bg-background flex-shrink-0 p-4 md:p-6 border-b">
                       <DialogTitle>Editar Notas del Cliente</DialogTitle>
                     </DialogHeader>
-                    <div className="flex-1 overflow-y-auto p-4 md:p-6">
+                    <div className="dialog-scroll-container p-4 md:p-6">
                       <Textarea 
                         placeholder="Ingrese notas sobre el cliente aquí..."
                         className="min-h-[150px] resize-none w-full" 
@@ -273,16 +274,17 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
                         size="sm" 
                         className="absolute top-2 right-2" 
                         variant="ghost"
+                        aria-label="Editar notas internas"
                       >
                         <i className="ri-edit-line"></i>
                       </Button>
                     </div>
                   </DialogTrigger>
-                  <DialogContent className="h-[60svh] md:h-auto flex flex-col p-0">
-                    <DialogHeader className="flex-shrink-0 p-4 md:p-6 border-b">
+                  <DialogContent className="flex flex-col p-0">
+                    <DialogHeader className="sticky top-0 z-10 bg-background flex-shrink-0 p-4 md:p-6 border-b">
                       <DialogTitle>Editar Notas Internas</DialogTitle>
                     </DialogHeader>
-                    <div className="flex-1 overflow-y-auto p-4 md:p-6">
+                    <div className="dialog-scroll-container p-4 md:p-6">
                       <Textarea 
                         placeholder="Ingrese notas internas aquí..."
                         className="min-h-[150px] resize-none w-full" 
@@ -290,7 +292,7 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
                         onChange={(e) => setEditableNotes({...editableNotes, internalNotes: e.target.value})}
                       />
                     </div>
-                    <div className="flex justify-end space-x-2 p-4 md:p-6 border-t flex-shrink-0">
+                    <div className="sticky bottom-0 bg-background flex justify-end space-x-2 p-4 md:p-6 border-t flex-shrink-0">
                       <Button 
                         onClick={handleNotesUpdate} 
                         disabled={isSaving}
