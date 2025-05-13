@@ -755,6 +755,13 @@ export default function Materials() {
               </Button>
               <Button 
                 variant="outline" 
+                onClick={() => setIsQuickbooksImportDialogOpen(true)}
+              >
+                <Calculator className="h-4 w-4 mr-2" />
+                Desde QuickBooks
+              </Button>
+              <Button 
+                variant="outline" 
                 onClick={() => setIsImportDialogOpen(true)}
               >
                 <Upload className="h-4 w-4 mr-2" />
@@ -1445,6 +1452,13 @@ export default function Materials() {
         isOpen={isAIImportDialogOpen}
         onOpenChange={setIsAIImportDialogOpen}
         onMaterialsProcessed={handleAIProcessedMaterials}
+      />
+      
+      {/* Componente de importación desde QuickBooks */}
+      <QuickbooksImport
+        isOpen={isQuickbooksImportDialogOpen}
+        onOpenChange={setIsQuickbooksImportDialogOpen}
+        onMaterialsImported={handleQuickbooksImportedMaterials}
       />
     </div>
   );
