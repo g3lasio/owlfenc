@@ -513,7 +513,7 @@ export default function Projects() {
       
       {/* Project Details Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-5xl h-[85vh]">
+        <DialogContent className="max-w-5xl h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex justify-between items-center">
               <span>Dashboard del Proyecto: {selectedProject?.clientName}</span>
@@ -525,7 +525,7 @@ export default function Projects() {
           </DialogHeader>
           
           {selectedProject && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 overflow-y-auto p-1">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 overflow-y-auto p-1 flex-1">
               {/* Project Progress Column */}
               <div className="md:col-span-1">
                 <ProjectProgress 
