@@ -46,8 +46,8 @@ export default function Header({
         <div className="absolute inset-0 bg-primary/10 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
       </button>
 
-      <div className="absolute left-1/2 transform -translate-x-1/2 flex flex-col items-center justify-center w-full max-w-[280px]">
-        <Link href="/" className="cursor-pointer relative group">
+      <div className="absolute left-1/2 transform -translate-x-1/2 flex flex-col items-center justify-center w-full max-w-[280px] px-4">
+        <Link href="/" className="cursor-pointer relative group px-2 mx-2">
           {/* Efectos futuristas modernos sin contorno */}
           <div className={`absolute inset-0 bg-gradient-to-r from-cyan-400/20 via-blue-500/10 to-purple-500/20 rounded-xl blur-lg opacity-30 ${glowPulse ? 'scale-110' : 'scale-100'} transition-all duration-1000 group-hover:opacity-60`}></div>
           
@@ -75,7 +75,7 @@ export default function Header({
           <img
             src="https://i.postimg.cc/4yc9M62C/White-logo-no-background.png"
             alt="Owl Fence"
-            className="h-14 w-auto object-contain relative z-10 transition-transform duration-300 group-hover:scale-105 filter drop-shadow-[0_0_3px_rgba(56,189,248,0.5)]"
+            className="h-14 w-auto object-contain relative z-10 transition-transform duration-300 group-hover:scale-105 filter drop-shadow-[0_0_3px_rgba(56,189,248,0.5)] px-2"
           />
         </Link>
         
