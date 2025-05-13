@@ -111,66 +111,71 @@ import { sampleProjects } from "@/data/sampleProjects";
 
 export const getProjects = async (filters?: { status?: string, fenceType?: string }) => {
   try {
-    // Para desarrollo usamos datos de muestra
-    console.log("Cargando proyectos de muestra");
-    
-    let filteredProjects = [...sampleProjects];
-    
-    // Aplicar filtros si se proporcionan
-    if (filters) {
-      if (filters.status) {
-        filteredProjects = filteredProjects.filter(project => project.status === filters.status);
+    // Verifica si estamos en modo de desarrollo
+    if (devMode) {
+      console.log("Cargando proyectos de muestra");
+      
+      // Intentamos recuperar primero del localStorage para persistencia entre refreshes
+      const savedProjects = localStorage.getItem('owlFenceProjects');
+      
+      // Si hay proyectos guardados en localStorage, los usamos
+      let filteredProjects = savedProjects ? JSON.parse(savedProjects) : [...sampleProjects];
+      
+      // Aplicar filtros si se proporcionan
+      if (filters) {
+        if (filters.status) {
+          filteredProjects = filteredProjects.filter((project: any) => project.status === filters.status);
+        }
+        
+        if (filters.fenceType) {
+          filteredProjects = filteredProjects.filter((project: any) => project.fenceType === filters.fenceType);
+        }
       }
       
-      if (filters.fenceType) {
-        filteredProjects = filteredProjects.filter(project => project.fenceType === filters.fenceType);
+      // Ordenar por fecha de creación (más reciente primero)
+      filteredProjects.sort((a: any, b: any) => {
+        const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
+        const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+        return dateB.getTime() - dateA.getTime();
+      });
+      
+      return filteredProjects;
+    } else {
+      // Código para Firebase en producción
+      let q = query(
+        collection(db, "projects"), 
+        orderBy("createdAt", "desc")
+      );
+
+      // Apply filters if provided
+      if (filters) {
+        const queryConstraints = [];
+
+        if (filters.status) {
+          queryConstraints.push(where("status", "==", filters.status));
+        }
+
+        if (filters.fenceType) {
+          queryConstraints.push(where("fenceType", "==", filters.fenceType));
+        }
+
+        if (queryConstraints.length > 0) {
+          q = query(
+            collection(db, "projects"),
+            ...queryConstraints,
+            orderBy("createdAt", "desc")
+          );
+        }
       }
+
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        // Ensure status is set, default to "draft" if missing
+        status: doc.data().status || "draft"
+      }));
     }
-    
-    // Ordenar por fecha de creación (más reciente primero)
-    filteredProjects.sort((a, b) => {
-      const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date();
-      const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date();
-      return dateB.getTime() - dateA.getTime();
-    });
-    
-    return filteredProjects;
-    
-    /* Código original para Firebase
-    let q = query(
-      collection(db, "projects"), 
-      orderBy("createdAt", "desc")
-    );
-
-    // Apply filters if provided
-    if (filters) {
-      const queryConstraints = [];
-
-      if (filters.status) {
-        queryConstraints.push(where("status", "==", filters.status));
-      }
-
-      if (filters.fenceType) {
-        queryConstraints.push(where("fenceType", "==", filters.fenceType));
-      }
-
-      if (queryConstraints.length > 0) {
-        q = query(
-          collection(db, "projects"),
-          ...queryConstraints,
-          orderBy("createdAt", "desc")
-        );
-      }
-    }
-
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      // Ensure status is set, default to "draft" if missing
-      status: doc.data().status || "draft"
-    }));
-    */
   } catch (error) {
     console.error("Error getting projects:", error);
     throw error;
@@ -179,26 +184,40 @@ export const getProjects = async (filters?: { status?: string, fenceType?: strin
 
 export const getProjectById = async (id: string) => {
   try {
-    // Para desarrollo usamos datos de muestra
-    console.log("Buscando proyecto con ID:", id);
-    const project = sampleProjects.find(p => p.id === id);
-    
-    if (project) {
-      return project;
+    if (devMode) {
+      console.log("Buscando proyecto con ID:", id);
+      
+      // Intentamos recuperar primero del localStorage para persistencia
+      const savedProjects = localStorage.getItem('owlFenceProjects');
+      
+      // Si hay proyectos guardados en localStorage, buscamos ahí primero
+      if (savedProjects) {
+        const projects = JSON.parse(savedProjects);
+        const project = projects.find((p: any) => p.id === id);
+        if (project) {
+          return project;
+        }
+      }
+      
+      // Si no lo encontramos en localStorage, buscamos en sampleProjects
+      const project = sampleProjects.find(p => p.id === id);
+      
+      if (project) {
+        return project;
+      } else {
+        throw new Error("Project not found");
+      }
     } else {
-      throw new Error("Project not found");
-    }
-    
-    /* Código original para Firebase
-    const docRef = doc(db, "projects", id);
-    const docSnap = await getDoc(docRef);
+      // Código para Firebase en producción
+      const docRef = doc(db, "projects", id);
+      const docSnap = await getDoc(docRef);
 
-    if (docSnap.exists()) {
-      return { id: docSnap.id, ...docSnap.data() };
-    } else {
-      throw new Error("Project not found");
+      if (docSnap.exists()) {
+        return { id: docSnap.id, ...docSnap.data() };
+      } else {
+        throw new Error("Project not found");
+      }
     }
-    */
   } catch (error) {
     console.error("Error getting project:", error);
     throw error;
@@ -207,50 +226,60 @@ export const getProjectById = async (id: string) => {
 
 export const updateProject = async (id: string, projectData: any) => {
   try {
-    // Para desarrollo usamos datos de muestra
-    console.log("Actualizando proyecto con ID:", id, projectData);
-    
-    // Buscar el proyecto en la lista de muestra
-    const projectIndex = sampleProjects.findIndex(p => p.id === id);
-    
-    if (projectIndex === -1) {
-      throw new Error(`Project with ID ${id} not found`);
+    if (devMode) {
+      console.log("Actualizando proyecto con ID:", id, projectData);
+      
+      // Obtener los proyectos de localStorage o usar los de muestra
+      const savedProjectsStr = localStorage.getItem('owlFenceProjects');
+      let allProjects = savedProjectsStr ? JSON.parse(savedProjectsStr) : [...sampleProjects];
+      
+      // Buscar el proyecto en la lista
+      const projectIndex = allProjects.findIndex((p: any) => p.id === id);
+      
+      if (projectIndex === -1) {
+        throw new Error(`Project with ID ${id} not found`);
+      }
+      
+      // Actualizar el proyecto
+      const currentProject = allProjects[projectIndex];
+      const updatedProject = {
+        ...currentProject,
+        ...projectData,
+        updatedAt: typeof Timestamp.now === 'function' ? 
+          Timestamp.now() : 
+          { toDate: () => new Date(), toMillis: () => Date.now() }
+      };
+      
+      // Actualizar en la lista
+      allProjects[projectIndex] = updatedProject;
+      
+      // Guardar la lista actualizada en localStorage
+      localStorage.setItem('owlFenceProjects', JSON.stringify(allProjects));
+      
+      return updatedProject;
+    } else {
+      // Código para Firebase en producción
+      const docRef = doc(db, "projects", id);
+      const docSnap = await getDoc(docRef);
+      
+      if (!docSnap.exists()) {
+        throw new Error(`Project with ID ${id} not found`);
+      }
+      
+      // Make sure we're not losing any existing data
+      const currentData = docSnap.data();
+      
+      const updatedData = {
+        ...projectData,
+        updatedAt: Timestamp.now()
+      };
+      
+      await updateDoc(docRef, updatedData);
+      
+      // Get the refreshed document
+      const updatedDocSnap = await getDoc(docRef);
+      return { id, ...updatedDocSnap.data() };
     }
-    
-    // Actualizar el proyecto en la lista de muestra
-    const currentProject = sampleProjects[projectIndex];
-    const updatedProject = {
-      ...currentProject,
-      ...projectData,
-      // Solo actualizar si ya existía, para evitar error de tipo
-      ...(currentProject.updatedAt ? { updatedAt: Timestamp.now() } : {})
-    };
-    
-    sampleProjects[projectIndex] = updatedProject;
-    return updatedProject;
-    
-    /* Código original para Firebase
-    const docRef = doc(db, "projects", id);
-    const docSnap = await getDoc(docRef);
-    
-    if (!docSnap.exists()) {
-      throw new Error(`Project with ID ${id} not found`);
-    }
-    
-    // Make sure we're not losing any existing data
-    const currentData = docSnap.data();
-    
-    const updatedData = {
-      ...projectData,
-      updatedAt: Timestamp.now()
-    };
-    
-    await updateDoc(docRef, updatedData);
-    
-    // Get the refreshed document
-    const updatedDocSnap = await getDoc(docRef);
-    return { id, ...updatedDocSnap.data() };
-    */
   } catch (error) {
     console.error("Error updating project:", error);
     throw error;
@@ -260,38 +289,49 @@ export const updateProject = async (id: string, projectData: any) => {
 // Update project progress stage
 export const updateProjectProgress = async (id: string, progress: string) => {
   try {
-    // Para desarrollo usamos datos de muestra
-    console.log("Actualizando progreso del proyecto con ID:", id, progress);
-    
-    // Buscar el proyecto en la lista de muestra
-    const projectIndex = sampleProjects.findIndex(p => p.id === id);
-    
-    if (projectIndex === -1) {
-      throw new Error(`Project with ID ${id} not found`);
+    if (devMode) {
+      console.log("Actualizando progreso del proyecto con ID:", id, progress);
+      
+      // Obtener los proyectos de localStorage o usar los de muestra
+      const savedProjectsStr = localStorage.getItem('owlFenceProjects');
+      let allProjects = savedProjectsStr ? JSON.parse(savedProjectsStr) : [...sampleProjects];
+      
+      // Buscar el proyecto en la lista
+      const projectIndex = allProjects.findIndex((p: any) => p.id === id);
+      
+      if (projectIndex === -1) {
+        throw new Error(`Project with ID ${id} not found`);
+      }
+      
+      // Actualizar el proyecto
+      const currentProject = allProjects[projectIndex];
+      const updatedProject = {
+        ...currentProject,
+        projectProgress: progress,
+        updatedAt: typeof Timestamp.now === 'function' ? 
+          Timestamp.now() : 
+          { toDate: () => new Date(), toMillis: () => Date.now() }
+      };
+      
+      // Actualizar en la lista
+      allProjects[projectIndex] = updatedProject;
+      
+      // Guardar la lista actualizada en localStorage
+      localStorage.setItem('owlFenceProjects', JSON.stringify(allProjects));
+      
+      return updatedProject;
+    } else {
+      // Código para Firebase en producción
+      const docRef = doc(db, "projects", id);
+      await updateDoc(docRef, {
+        projectProgress: progress,
+        updatedAt: Timestamp.now()
+      });
+      
+      // Get updated project
+      const updatedDocSnap = await getDoc(docRef);
+      return { id, ...updatedDocSnap.data() };
     }
-    
-    // Actualizar el proyecto en la lista de muestra
-    const currentProject = sampleProjects[projectIndex];
-    sampleProjects[projectIndex] = {
-      ...currentProject,
-      projectProgress: progress,
-      // Solo actualizar si ya existía, para evitar error de tipo
-      ...(currentProject.updatedAt ? { updatedAt: Timestamp.now() } : {})
-    };
-    
-    return sampleProjects[projectIndex];
-    
-    /* Código original para Firebase
-    const docRef = doc(db, "projects", id);
-    await updateDoc(docRef, {
-      projectProgress: progress,
-      updatedAt: Timestamp.now()
-    });
-    
-    // Get updated project
-    const updatedDocSnap = await getDoc(docRef);
-    return { id, ...updatedDocSnap.data() };
-    */
   } catch (error) {
     console.error("Error updating project progress:", error);
     throw error;
