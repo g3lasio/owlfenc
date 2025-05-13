@@ -328,6 +328,26 @@
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
   }
+  
+  /* Fix para diálogos con scrolling */
+  [role="dialog"] {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  
+  /* Asegura que los contenidos anidados dentro del diálogo puedan hacer scroll */
+  [role="dialog"] > div {
+    max-height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Safe area para dispositivos móviles */
+  @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .dialog-content-mobile-safe {
+      padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
+    }
+  }
 
   /* Google Places Autocomplete customization */
   .react-select__control,

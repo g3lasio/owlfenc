@@ -514,8 +514,8 @@ export default function Projects() {
       
       {/* Project Details Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-5xl h-[90svh] md:h-[85svh] p-0 flex flex-col">
-          <DialogHeader className="flex-shrink-0 p-4 md:p-6 border-b">
+        <DialogContent className="max-w-5xl h-[95svh] md:h-[90svh] p-0 flex flex-col">
+          <DialogHeader className="sticky top-0 z-10 flex-shrink-0 p-4 md:p-6 border-b bg-background">
             <DialogTitle className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
               <span className="text-base sm:text-lg">Dashboard: {selectedProject?.clientName}</span>
               <Badge className={selectedProject?.projectProgress ? getProgressBadgeColor(selectedProject.projectProgress) : "bg-slate-500"}>
@@ -526,7 +526,7 @@ export default function Projects() {
           </DialogHeader>
           
           {selectedProject && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 p-4 md:p-6 overflow-y-auto dialog-scroll-fix flex-1 pb-16 md:pb-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 p-4 md:p-6 overflow-y-auto flex-1 pb-20 md:pb-6">
               {/* Project Progress Column */}
               <div className="md:col-span-1">
                 <ProjectProgress 
