@@ -875,18 +875,6 @@ export default function Materials() {
             </TabsContent>
             
             <TabsContent value="inventory" className="space-y-4">
-              <div className="flex justify-end mb-4">
-                <Button
-                  onClick={() => {
-                    setIsEditMode(false);
-                    form.reset();
-                    setIsAddDialogOpen(true);
-                  }}
-                >
-                  <PackagePlus className="h-4 w-4 mr-2" />
-                  Agregar Material
-                </Button>
-              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {loading ? (
                   // Skeleton para carga
@@ -996,7 +984,7 @@ export default function Materials() {
       
       {/* Diálogo para agregar/editar material */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>{isEditMode ? "Editar Material" : "Agregar Nuevo Material"}</DialogTitle>
             <DialogDescription>
@@ -1005,7 +993,7 @@ export default function Materials() {
           </DialogHeader>
           
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(saveMaterial)} className="space-y-4 overflow-y-auto">
+            <form onSubmit={form.handleSubmit(saveMaterial)} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
