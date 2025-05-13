@@ -316,7 +316,17 @@
   html, body {
     overflow-x: hidden;
     width: 100%;
+    height: 100%;
     position: relative;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Fix scrolling issues in mobile devices */
+  .dialog-scroll-fix {
+    height: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
 
   /* Google Places Autocomplete customization */
@@ -790,9 +800,12 @@ body {
 .hide-scrollbar,
 html, body, 
 div, main, section, article, aside, nav, header, footer,
+/* Custom scrolling styles for better mobile compatibility */
 .overflow-auto, .overflow-y-auto, .overflow-x-auto,
 .overflow-scroll, .overflow-y-scroll, .overflow-x-scroll {
   -ms-overflow-style: none !important;  /* IE and Edge */
+  -webkit-overflow-scrolling: touch !important; /* iOS scroll */
+  overscroll-behavior: contain !important; /* Prevent scroll chain */
   scrollbar-width: none !important;     /* Firefox */
 }
 

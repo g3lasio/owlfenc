@@ -118,9 +118,9 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
   };
 
   return (
-    <div className="space-y-4 overflow-y-auto">
-      <Tabs defaultValue="client">
-        <TabsList className="mb-4 w-full flex flex-wrap">
+    <div className="h-full flex flex-col">
+      <Tabs defaultValue="client" className="flex flex-col h-full">
+        <TabsList className="mb-4 w-full flex flex-wrap sticky top-0 z-10 bg-background">
           <TabsTrigger value="client" className="flex-1">Cliente</TabsTrigger>
           <TabsTrigger value="project" className="flex-1">Proyecto</TabsTrigger>
           <TabsTrigger value="documents" className="flex-1">Documentos</TabsTrigger>
@@ -177,19 +177,19 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
                       </Button>
                     </div>
                   </DialogTrigger>
-                  <DialogContent className="max-h-[90vh] flex flex-col overflow-hidden">
-                    <DialogHeader className="flex-shrink-0">
+                  <DialogContent className="h-[60svh] md:h-auto flex flex-col p-0">
+                    <DialogHeader className="flex-shrink-0 p-4 md:p-6 border-b">
                       <DialogTitle>Editar Notas del Cliente</DialogTitle>
                     </DialogHeader>
-                    <div className="flex-1 overflow-y-auto py-2">
+                    <div className="flex-1 overflow-y-auto p-4 md:p-6">
                       <Textarea 
                         placeholder="Ingrese notas sobre el cliente aquí..."
-                        className="min-h-[150px]" 
+                        className="min-h-[150px] resize-none w-full" 
                         value={editableNotes.clientNotes}
                         onChange={(e) => setEditableNotes({...editableNotes, clientNotes: e.target.value})}
                       />
                     </div>
-                    <div className="flex justify-end space-x-2 mt-4 flex-shrink-0">
+                    <div className="flex justify-end space-x-2 p-4 md:p-6 border-t flex-shrink-0">
                       <Button 
                         onClick={handleNotesUpdate} 
                         disabled={isSaving}
@@ -278,19 +278,19 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
                       </Button>
                     </div>
                   </DialogTrigger>
-                  <DialogContent className="max-h-[90vh] flex flex-col overflow-hidden">
-                    <DialogHeader className="flex-shrink-0">
+                  <DialogContent className="h-[60svh] md:h-auto flex flex-col p-0">
+                    <DialogHeader className="flex-shrink-0 p-4 md:p-6 border-b">
                       <DialogTitle>Editar Notas Internas</DialogTitle>
                     </DialogHeader>
-                    <div className="flex-1 overflow-y-auto py-2">
+                    <div className="flex-1 overflow-y-auto p-4 md:p-6">
                       <Textarea 
                         placeholder="Ingrese notas internas aquí..."
-                        className="min-h-[150px]" 
+                        className="min-h-[150px] resize-none w-full" 
                         value={editableNotes.internalNotes}
                         onChange={(e) => setEditableNotes({...editableNotes, internalNotes: e.target.value})}
                       />
                     </div>
-                    <div className="flex justify-end space-x-2 mt-4 flex-shrink-0">
+                    <div className="flex justify-end space-x-2 p-4 md:p-6 border-t flex-shrink-0">
                       <Button 
                         onClick={handleNotesUpdate} 
                         disabled={isSaving}
