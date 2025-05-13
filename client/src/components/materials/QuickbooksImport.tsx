@@ -77,15 +77,33 @@ export const QuickbooksImport = ({
   const connectQuickbooks = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get(`/api/quickbooks/auth?userId=${currentUser?.uid}`);
       
-      // Redirigir al usuario a la URL de autorización de QuickBooks
-      window.location.href = response.data.authUrl;
+      // Mostrar toast informativo
+      toast({
+        title: "Conectando con QuickBooks",
+        description: "Serás redirigido a la página de autenticación de QuickBooks...",
+      });
+      
+      console.log("Iniciando proceso de conexión con QuickBooks");
+      const response = await axios.get(`/api/quickbooks/auth?userId=${currentUser?.uid || 'dev-user-123'}`);
+      
+      if (!response.data || !response.data.authUrl) {
+        throw new Error("No se recibió una URL de autorización válida");
+      }
+      
+      console.log("URL de autorización recibida:", response.data.authUrl);
+      
+      // Esperar un momento para mostrar el toast antes de redirigir
+      setTimeout(() => {
+        // Redirigir al usuario a la URL de autorización de QuickBooks
+        window.location.href = response.data.authUrl;
+      }, 1500);
+      
     } catch (error) {
       console.error("Error al conectar con QuickBooks:", error);
       toast({
-        title: "Error",
-        description: "No se pudo iniciar la conexión con QuickBooks",
+        title: "Error de conexión",
+        description: "No se pudo iniciar la conexión con QuickBooks. Por favor, inténtalo de nuevo más tarde.",
         variant: "destructive"
       });
       setIsLoading(false);

@@ -9,8 +9,8 @@ dotenv.config();
 const oauthClient = new OAuthClient({
   clientId: process.env.QUICKBOOKS_CLIENT_ID || '',
   clientSecret: process.env.QUICKBOOKS_CLIENT_SECRET || '',
-  environment: process.env.QUICKBOOKS_ENVIRONMENT || 'sandbox', // 'sandbox' o 'production'
-  redirectUri: `${process.env.APP_URL || 'http://localhost:3000'}/api/quickbooks/callback`,
+  environment: 'sandbox', // Usamos 'sandbox' para desarrollo
+  redirectUri: 'https://material-calculator.replit.app/api/quickbooks/callback', // URL específica de Replit
 });
 
 // Almacenamiento temporal de tokens (en una aplicación de producción usaríamos una base de datos)
@@ -28,14 +28,21 @@ const tokenStore: TokenStore = {};
 // Obtener URL de autorización
 export const getAuthUrl = (req: Request, res: Response) => {
   try {
+    // Obtenemos el userId o usamos uno predeterminado para desarrollo
+    const userId = req.query.userId as string || 'dev-user-123';
+    
+    console.log(`[QuickBooks] Generando URL de autorización para usuario: ${userId}`);
+    
     const authUri = oauthClient.authorizeUri({
       scope: [OAuthClient.scopes.Accounting],
-      state: req.query.userId as string, // Pasamos el userId como state para recuperarlo
+      state: userId,
     });
+    
+    console.log(`[QuickBooks] URL de autorización generada: ${authUri}`);
     
     return res.json({ authUrl: authUri });
   } catch (error) {
-    console.error('Error al generar URL de autorización:', error);
+    console.error('[QuickBooks] Error al generar URL de autorización:', error);
     return res.status(500).json({ error: 'No se pudo generar la URL de autorización' });
   }
 };
@@ -43,14 +50,22 @@ export const getAuthUrl = (req: Request, res: Response) => {
 // Manejar el callback de autorización
 export const handleCallback = async (req: Request, res: Response) => {
   try {
+    console.log('[QuickBooks] Callback recibido:', req.url);
     const userId = req.query.state as string;
     
     if (!userId) {
+      console.log('[QuickBooks] Error: Usuario no especificado en el callback');
       return res.status(400).json({ error: 'Usuario no especificado' });
     }
     
-    const authResponse = await oauthClient.createToken(req.url);
+    // Construir la URL completa para manejar el callback
+    const fullUrl = `https://material-calculator.replit.app${req.url}`;
+    console.log('[QuickBooks] Procesando URL de callback:', fullUrl);
+    
+    const authResponse = await oauthClient.createToken(fullUrl);
     const tokens = authResponse.getJson();
+    
+    console.log('[QuickBooks] Tokens obtenidos correctamente');
     
     // Guardar tokens
     tokenStore[userId] = {
@@ -60,11 +75,14 @@ export const handleCallback = async (req: Request, res: Response) => {
       expiresAt: new Date(Date.now() + tokens.expires_in * 1000),
     };
     
+    console.log(`[QuickBooks] Usuario ${userId} conectado correctamente`);
+    
     // Redirigir al usuario a la página de materiales con un mensaje de éxito
     return res.redirect(`/materials?quickbooks=connected`);
   } catch (error) {
-    console.error('Error en callback de QuickBooks:', error);
-    return res.status(500).json({ error: 'Error al procesar la autenticación' });
+    console.error('[QuickBooks] Error en callback:', error);
+    // Redirigir al usuario a la página de materiales con un mensaje de error
+    return res.redirect(`/materials?quickbooks=error`);
   }
 };
 
@@ -130,13 +148,20 @@ const createQBClient = (userId: string): QuickBooks | null => {
 
 // Verificar si el usuario está conectado a QuickBooks
 export const checkConnection = (req: Request, res: Response) => {
-  const userId = req.query.userId as string;
+  // Obtenemos el userId o usamos uno predeterminado para desarrollo
+  const userId = req.query.userId as string || 'dev-user-123';
   
-  if (!userId) {
-    return res.status(400).json({ error: 'Usuario no especificado' });
+  console.log(`[QuickBooks] Verificando conexión para usuario: ${userId}`);
+  
+  // Verificamos si el usuario tiene tokens almacenados
+  const userTokens = tokenStore[userId];
+  const isConnected = Boolean(userTokens);
+  
+  console.log(`[QuickBooks] Estado de conexión para usuario ${userId}: ${isConnected ? 'Conectado' : 'No conectado'}`);
+  
+  if (isConnected) {
+    console.log(`[QuickBooks] Token expira: ${userTokens.expiresAt}`);
   }
-  
-  const isConnected = Boolean(tokenStore[userId]);
   
   return res.json({ connected: isConnected });
 };
