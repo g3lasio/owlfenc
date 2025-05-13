@@ -977,14 +977,14 @@ export default function NuevoClientes() {
                       <FormControl>
                         <AddressAutocomplete
                           value={field.value}
-                          onChange={field.onChange}
-                          placeholder="Buscar dirección..."
-                          onAddressDetailsChange={(details) => {
+                          onChange={(value, details) => {
+                            field.onChange(value);
                             // Actualizar los demás campos de dirección
-                            if (details.city) clientForm.setValue('city', details.city);
-                            if (details.state) clientForm.setValue('state', details.state);
-                            if (details.zipCode) clientForm.setValue('zipCode', details.zipCode);
+                            if (details?.city) clientForm.setValue('city', details.city);
+                            if (details?.state) clientForm.setValue('state', details.state);
+                            if (details?.zipCode) clientForm.setValue('zipCode', details.zipCode);
                           }}
+                          placeholder="Buscar dirección..."
                         />
                       </FormControl>
                       <FormDescription className="text-xs">
@@ -1052,83 +1052,98 @@ export default function NuevoClientes() {
                 </div>
               </div>
 
-              <FormField
-                control={clientForm.control}
-                name="source"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Fuente</FormLabel>
-                    <FormControl>
-                      <Input placeholder="¿Cómo conoció al cliente?" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Ejemplo: Referencia, Google, Facebook, etc.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="mt-4 pt-2 border-t border-border">
+                <h3 className="text-sm font-medium text-muted-foreground mb-4">Información adicional</h3>
+                
+                <FormField
+                  control={clientForm.control}
+                  name="source"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base font-medium">Fuente</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="¿Cómo conoció al cliente?" 
+                          className="h-11" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormDescription className="text-xs">
+                        Ejemplo: Referencia, Google, Facebook, etc.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={clientForm.control}
-                name="tags"
-                render={() => (
-                  <FormItem>
-                    <FormLabel>Etiquetas</FormLabel>
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      {clientForm.getValues('tags')?.map(tag => (
-                        <Badge key={tag} className="flex items-center gap-1">
-                          {tag}
-                          <X 
-                            className="h-3 w-3 cursor-pointer" 
-                            onClick={() => removeTag(tag)}
-                          />
-                        </Badge>
-                      ))}
-                    </div>
-                    <FormControl>
-                      <Input
-                        placeholder="Añadir etiqueta (presiona Enter)"
-                        value={tagInput}
-                        onChange={(e) => setTagInput(e.target.value)}
-                        onKeyDown={handleTagInput}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Añade etiquetas para categorizar a tus clientes.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={clientForm.control}
+                  name="tags"
+                  render={() => (
+                    <FormItem className="mt-5">
+                      <FormLabel className="text-base font-medium">Etiquetas</FormLabel>
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {clientForm.getValues('tags')?.map(tag => (
+                          <Badge key={tag} className="flex items-center gap-1 py-1.5 px-3">
+                            {tag}
+                            <X 
+                              className="h-3.5 w-3.5 cursor-pointer ml-1" 
+                              onClick={() => removeTag(tag)}
+                            />
+                          </Badge>
+                        ))}
+                      </div>
+                      <FormControl>
+                        <Input
+                          placeholder="Añadir etiqueta (presiona Enter)"
+                          value={tagInput}
+                          onChange={(e) => setTagInput(e.target.value)}
+                          onKeyDown={handleTagInput}
+                          className="h-11"
+                        />
+                      </FormControl>
+                      <FormDescription className="text-xs">
+                        Añade etiquetas para categorizar a tus clientes.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={clientForm.control}
-                name="notes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Notas</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Notas adicionales sobre el cliente"
-                        className="min-h-24"
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={clientForm.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem className="mt-5">
+                      <FormLabel className="text-base font-medium">Notas</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Notas adicionales sobre el cliente"
+                          className="min-h-[100px] resize-y"
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-              <DialogFooter>
+              <DialogFooter className="mt-6 pt-2 border-t border-border">
                 <Button 
                   type="button" 
                   variant="outline" 
                   onClick={() => setShowAddClientDialog(false)}
+                  className="h-11"
                 >
                   Cancelar
                 </Button>
-                <Button type="submit">Guardar Cliente</Button>
+                <Button 
+                  type="submit" 
+                  className="h-11 min-w-[120px]"
+                >
+                  Guardar Cliente
+                </Button>
               </DialogFooter>
             </form>
           </Form>
@@ -1137,8 +1152,8 @@ export default function NuevoClientes() {
 
       {/* Diálogo para editar cliente */}
       <Dialog open={showEditClientDialog} onOpenChange={setShowEditClientDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="sticky top-0 bg-background z-10 pb-4">
             <DialogTitle>Editar cliente</DialogTitle>
             <DialogDescription>
               Actualiza los datos del cliente.
@@ -1146,30 +1161,39 @@ export default function NuevoClientes() {
           </DialogHeader>
 
           <Form {...clientForm}>
-            <form onSubmit={clientForm.handleSubmit(handleClientFormSubmit)} className="space-y-4">
+            <form onSubmit={clientForm.handleSubmit(handleClientFormSubmit)} className="space-y-5">
               <FormField
                 control={clientForm.control}
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nombre*</FormLabel>
+                    <FormLabel className="text-base font-medium">Nombre*</FormLabel>
                     <FormControl>
-                      <Input placeholder="Nombre del cliente" {...field} />
+                      <Input 
+                        placeholder="Nombre del cliente" 
+                        className="h-11" 
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <FormField
                   control={clientForm.control}
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel className="text-base font-medium">Email</FormLabel>
                       <FormControl>
-                        <Input placeholder="Email" {...field} />
+                        <Input 
+                          placeholder="Email" 
+                          type="email"
+                          className="h-11" 
+                          {...field} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -1181,9 +1205,13 @@ export default function NuevoClientes() {
                   name="phone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Teléfono</FormLabel>
+                      <FormLabel className="text-base font-medium">Teléfono</FormLabel>
                       <FormControl>
-                        <Input placeholder="Teléfono" {...field} />
+                        <Input 
+                          placeholder="Teléfono" 
+                          className="h-11" 
+                          {...field} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -1191,66 +1219,91 @@ export default function NuevoClientes() {
                 />
               </div>
 
-              <FormField
-                control={clientForm.control}
-                name="address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Dirección</FormLabel>
-                    <FormControl>
-                      <AddressAutocomplete
-                        value={field.value}
-                        onChange={field.onChange}
-                        placeholder="Dirección"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-3 gap-4">
+              <div className="mt-2 pt-2 border-t border-border">
+                <h3 className="text-sm font-medium text-muted-foreground mb-4">Información de dirección</h3>
+                
                 <FormField
                   control={clientForm.control}
-                  name="city"
+                  name="address"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Ciudad</FormLabel>
+                    <FormItem className="mb-5">
+                      <FormLabel className="text-base font-medium">Dirección</FormLabel>
                       <FormControl>
-                        <Input placeholder="Ciudad" {...field} />
+                        <AddressAutocomplete
+                          value={field.value}
+                          onChange={(value, details) => {
+                            field.onChange(value);
+                            // Actualizar los demás campos de dirección
+                            if (details?.city) clientForm.setValue('city', details.city);
+                            if (details?.state) clientForm.setValue('state', details.state);
+                            if (details?.zipCode) clientForm.setValue('zipCode', details.zipCode);
+                          }}
+                          placeholder="Buscar dirección..."
+                        />
                       </FormControl>
+                      <FormDescription className="text-xs">
+                        Selecciona una dirección del autocompletado para llenar automáticamente ciudad, estado y código postal.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                <FormField
-                  control={clientForm.control}
-                  name="state"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Estado</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Estado" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <FormField
+                    control={clientForm.control}
+                    name="city"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-base font-medium">Ciudad</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="Ciudad" 
+                            className="h-11" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={clientForm.control}
-                  name="zipCode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Código Postal</FormLabel>
-                      <FormControl>
-                        <Input placeholder="CP" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={clientForm.control}
+                    name="state"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-base font-medium">Estado</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="Estado" 
+                            className="h-11" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={clientForm.control}
+                    name="zipCode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-base font-medium">Código Postal</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="CP" 
+                            className="h-11" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </div>
 
               <FormField
