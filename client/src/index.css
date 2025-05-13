@@ -333,6 +333,10 @@
   [role="dialog"] {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
+    touch-action: manipulation;
+    position: fixed !important;
+    max-height: 95vh !important;
+    margin: auto !important;
   }
   
   /* Asegura que los contenidos anidados dentro del diálogo puedan hacer scroll */
@@ -340,6 +344,17 @@
     max-height: 100%;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+  }
+  
+  /* Scrollable areas inside dialogs */
+  .dialog-scroll-container {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
+    position: relative;
   }
   
   /* Safe area para dispositivos móviles */

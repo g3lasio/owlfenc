@@ -513,86 +513,90 @@ export default function Projects() {
       )}
       
       {/* Project Details Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-5xl h-[95svh] md:h-[90svh] p-0 flex flex-col">
-          <DialogHeader className="sticky top-0 z-10 flex-shrink-0 p-4 md:p-6 border-b bg-background">
-            <DialogTitle className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-              <span className="text-base sm:text-lg">Dashboard: {selectedProject?.clientName}</span>
-              <Badge className={selectedProject?.projectProgress ? getProgressBadgeColor(selectedProject.projectProgress) : "bg-slate-500"}>
-                <i className="ri-time-line mr-1"></i>
-                {selectedProject?.projectProgress ? getProgressLabel(selectedProject.projectProgress) : "Presupuesto Creado"}
-              </Badge>
-            </DialogTitle>
-          </DialogHeader>
-          
-          {selectedProject && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 p-4 md:p-6 overflow-y-auto flex-1 pb-20 md:pb-6">
-              {/* Project Progress Column */}
-              <div className="md:col-span-1">
-                <ProjectProgress 
-                  projectId={selectedProject.id} 
-                  currentProgress={selectedProject.projectProgress || "estimate_created"} 
-                  onProgressUpdate={handleProgressUpdate} 
-                />
-                
-                {/* Scheduled Date Card */}
-                <Card className="mt-4">
-                  <CardContent className="pt-6">
-                    <h3 className="font-medium text-lg mb-2">Resumen Financiero</h3>
-                    <div className="space-y-2">
-                      <div>
-                        <span className="text-sm text-muted-foreground">Precio Total:</span>
-                        <p className="font-bold text-lg">
-                          {selectedProject.totalPrice 
-                            ? new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(selectedProject.totalPrice / 100)
-                            : 'No establecido'}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-sm text-muted-foreground">Estado de Pago:</span>
-                        <p>
-                          <Badge className={`${selectedProject.paymentStatus === 'paid' ? 'bg-green-500' : selectedProject.paymentStatus === 'partial' ? 'bg-blue-500' : 'bg-yellow-500'} text-white mt-1`}>
-                            {selectedProject.paymentStatus === 'paid' ? 'Pagado' : selectedProject.paymentStatus === 'partial' ? 'Pago Parcial' : 'Pendiente'}
-                          </Badge>
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                {/* Scheduled Date Card */}
-                <Card className="mt-4">
-                  <CardContent className="pt-6">
-                    <h3 className="font-medium text-lg mb-2">Fechas Importantes</h3>
-                    <div className="space-y-2">
-                      <div>
-                        <span className="text-sm text-muted-foreground">Fecha de Creación:</span>
-                        <p>{formatDate(selectedProject.createdAt.toDate())}</p>
-                      </div>
-                      <div>
-                        <span className="text-sm text-muted-foreground">Instalación Programada:</span>
-                        <p>{selectedProject.scheduledDate ? formatDate(new Date(selectedProject.scheduledDate)) : 'No programada'}</p>
-                      </div>
-                      <div>
-                        <span className="text-sm text-muted-foreground">Fecha de Completado:</span>
-                        <p>{selectedProject.completedDate ? formatDate(new Date(selectedProject.completedDate)) : 'No completado'}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+      {isDialogOpen && selectedProject && (
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="p-0 max-w-5xl w-[95vw] h-[95vh] max-h-[95vh] overflow-hidden">
+            <div className="flex flex-col h-full">
+              <DialogHeader className="flex-shrink-0 p-4 md:p-6 border-b">
+                <DialogTitle className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                  <span className="text-base sm:text-lg">Dashboard: {selectedProject.clientName}</span>
+                  <Badge className={getProgressBadgeColor(selectedProject.projectProgress || "estimate_created")}>
+                    <i className="ri-time-line mr-1"></i>
+                    {getProgressLabel(selectedProject.projectProgress || "estimate_created")}
+                  </Badge>
+                </DialogTitle>
+              </DialogHeader>
               
-              {/* Project Details Column */}
-              <div className="md:col-span-2">
-                <ProjectDetails 
-                  project={selectedProject} 
-                  onUpdate={handleProjectUpdate} 
-                />
+              <div className="dialog-scroll-container">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 p-4 md:p-6 pb-20 md:pb-6">
+                  {/* Project Progress Column */}
+                  <div className="md:col-span-1">
+                    <ProjectProgress 
+                      projectId={selectedProject.id} 
+                      currentProgress={selectedProject.projectProgress || "estimate_created"} 
+                      onProgressUpdate={handleProgressUpdate} 
+                    />
+                    
+                    {/* Financial Summary Card */}
+                    <Card className="mt-4">
+                      <CardContent className="pt-6">
+                        <h3 className="font-medium text-lg mb-2">Resumen Financiero</h3>
+                        <div className="space-y-2">
+                          <div>
+                            <span className="text-sm text-muted-foreground">Precio Total:</span>
+                            <p className="font-bold text-lg">
+                              {selectedProject.totalPrice 
+                                ? new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(selectedProject.totalPrice / 100)
+                                : 'No establecido'}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-sm text-muted-foreground">Estado de Pago:</span>
+                            <p>
+                              <Badge className={`${selectedProject.paymentStatus === 'paid' ? 'bg-green-500' : selectedProject.paymentStatus === 'partial' ? 'bg-blue-500' : 'bg-yellow-500'} text-white mt-1`}>
+                                {selectedProject.paymentStatus === 'paid' ? 'Pagado' : selectedProject.paymentStatus === 'partial' ? 'Pago Parcial' : 'Pendiente'}
+                              </Badge>
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    {/* Important Dates Card */}
+                    <Card className="mt-4">
+                      <CardContent className="pt-6">
+                        <h3 className="font-medium text-lg mb-2">Fechas Importantes</h3>
+                        <div className="space-y-2">
+                          <div>
+                            <span className="text-sm text-muted-foreground">Fecha de Creación:</span>
+                            <p>{formatDate(selectedProject.createdAt.toDate())}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm text-muted-foreground">Instalación Programada:</span>
+                            <p>{selectedProject.scheduledDate ? formatDate(new Date(selectedProject.scheduledDate)) : 'No programada'}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm text-muted-foreground">Fecha de Completado:</span>
+                            <p>{selectedProject.completedDate ? formatDate(new Date(selectedProject.completedDate)) : 'No completado'}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  
+                  {/* Project Details Column */}
+                  <div className="md:col-span-2">
+                    <ProjectDetails 
+                      project={selectedProject} 
+                      onUpdate={handleProjectUpdate} 
+                    />
+                  </div>
+                </div>
               </div>
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
