@@ -73,10 +73,39 @@ export const QuickbooksImport = ({
     }
   };
 
+  // Probar la conexión a los servidores de QuickBooks
+  const testQuickbooksConnection = async () => {
+    try {
+      console.log("Probando conexión a servidores de QuickBooks...");
+      
+      const response = await axios.get('/api/quickbooks/test-connection');
+      
+      console.log("Resultado de prueba de conexión:", response.data);
+      
+      return response.data.success;
+    } catch (error) {
+      console.error("Error al probar conexión con servidores de QuickBooks:", error);
+      return false;
+    }
+  };
+  
   // Iniciar proceso de autorización
   const connectQuickbooks = async () => {
     try {
       setIsLoading(true);
+      
+      // Probar la conexión primero
+      const connectionTest = await testQuickbooksConnection();
+      
+      if (!connectionTest) {
+        toast({
+          title: "Error de conexión",
+          description: "No se pudo conectar con los servidores de QuickBooks. Por favor, inténtelo de nuevo más tarde.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
       
       // Mostrar toast informativo
       toast({

@@ -10,7 +10,7 @@ const oauthClient = new OAuthClient({
   clientId: process.env.QUICKBOOKS_CLIENT_ID || '',
   clientSecret: process.env.QUICKBOOKS_CLIENT_SECRET || '',
   environment: 'sandbox', // Usamos 'sandbox' para desarrollo
-  redirectUri: 'https://material-calculator.replit.app/api/quickbooks/callback', // URL específica de Replit
+  redirectUri: 'https://material-calculator.replit.app/api/quickbooks/callback' // URL específica de Replit
 });
 
 // Almacenamiento temporal de tokens (en una aplicación de producción usaríamos una base de datos)
