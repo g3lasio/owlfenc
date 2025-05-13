@@ -32,6 +32,7 @@ import { registerEstimateRoutes } from './routes/estimate-routes';
 import { registerPropertyRoutes } from './routes/property-routes';
 import contractRoutes from './routes/contract-routes';
 import clientRoutes from './routes/clientRoutes';
+import quickbooksRoutes from './routes/quickbooks-routes';
 import express from 'express'; // Import express to use express.raw
 
 // Initialize OpenAI API
@@ -99,6 +100,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Registrar rutas de correo electrónico
   app.use('/api/email', emailRoutes);
+  
+  // Registrar rutas de QuickBooks
+  app.use('/api/quickbooks', quickbooksRoutes);
 
   // Add API routes
   app.get('/api/projects', async (req: Request, res: Response) => {

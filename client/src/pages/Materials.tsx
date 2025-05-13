@@ -54,6 +54,7 @@ import { uploadFile } from "@/lib/firebase";
 import { db as firebaseDb } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
 import { AIFileImport } from "@/components/materials/AIFileImport";
+import { QuickbooksImport } from "@/components/materials/QuickbooksImport";
 import { 
   FileSpreadsheet, 
   FileText,
@@ -69,6 +70,7 @@ import {
   Trash2, 
   Upload,
   Download,
+  Calculator,
   X
 } from "lucide-react";
 
@@ -152,6 +154,7 @@ export default function Materials() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [isAIImportDialogOpen, setIsAIImportDialogOpen] = useState(false);
+  const [isQuickbooksImportDialogOpen, setIsQuickbooksImportDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [currentMaterial, setCurrentMaterial] = useState<Material | null>(null);
   const [csvContent, setCsvContent] = useState("");
@@ -552,6 +555,55 @@ export default function Materials() {
       toast({
         title: "Error",
         description: "No se pudieron importar los materiales",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+  
+  // Manejar materiales importados desde QuickBooks
+  const handleQuickbooksImportedMaterials = async (materials: any[]) => {
+    try {
+      if (!materials || materials.length === 0) {
+        toast({
+          title: "Error",
+          description: "No se seleccionaron materiales para importar",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Mostrar un indicador de carga
+      setIsUploading(true);
+      
+      // Crear un documento para cada material
+      const promises = materials.map(material => {
+        const materialData = {
+          ...material,
+          userId: currentUser?.uid,
+          price: typeof material.price === 'number' ? Math.round(material.price * 100) : 0, // Convertir a centavos
+          createdAt: Timestamp.now(),
+          updatedAt: Timestamp.now()
+        };
+        
+        return addDoc(collection(firebaseDb, "user_materials"), materialData);
+      });
+      
+      await Promise.all(promises);
+      
+      toast({
+        title: "Importación desde QuickBooks exitosa",
+        description: `Se importaron ${materials.length} materiales correctamente`
+      });
+      
+      // Recargar materiales
+      loadMaterials();
+    } catch (error) {
+      console.error("Error al importar materiales desde QuickBooks:", error);
+      toast({
+        title: "Error",
+        description: "No se pudieron importar los materiales desde QuickBooks",
         variant: "destructive"
       });
     } finally {
