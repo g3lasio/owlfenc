@@ -47,6 +47,43 @@ export const QuickbooksImport = ({
   const [selectedItems, setSelectedItems] = useState<QuickbooksItem[]>([]);
   const [selectAll, setSelectAll] = useState(false);
 
+  // Escuchar mensajes de la ventana de autenticación
+  useEffect(() => {
+    const handleAuthMessage = (event: MessageEvent) => {
+      // Verificar que el mensaje es del tipo correcto
+      if (event.data && event.data.type === 'QUICKBOOKS_AUTH') {
+        console.log('Recibido mensaje de la ventana de autenticación:', event.data);
+        
+        if (event.data.status === 'success') {
+          toast({
+            title: "QuickBooks conectado",
+            description: "Se ha conectado correctamente con tu cuenta de QuickBooks.",
+            duration: 5000
+          });
+          
+          // Abrir el diálogo de importación y recargar la información
+          setIsConnected(true);
+          loadInventory();
+        } else if (event.data.status === 'error') {
+          toast({
+            title: "Error de conexión",
+            description: "No se pudo conectar con QuickBooks. Por favor, inténtelo de nuevo.",
+            variant: "destructive",
+            duration: 5000
+          });
+        }
+      }
+    };
+    
+    // Agregar el detector de eventos
+    window.addEventListener('message', handleAuthMessage);
+    
+    // Limpiar detector al desmontar
+    return () => {
+      window.removeEventListener('message', handleAuthMessage);
+    };
+  }, []);
+  
   // Verificar si el usuario está conectado a QuickBooks
   useEffect(() => {
     if (isOpen && currentUser) {
@@ -124,8 +161,15 @@ export const QuickbooksImport = ({
       
       // Esperar un momento para mostrar el toast antes de redirigir
       setTimeout(() => {
-        // Redirigir al usuario a la URL de autorización de QuickBooks
-        window.location.href = response.data.authUrl;
+        // Abrir en nueva ventana para evitar problemas de CORS y navegación
+        window.open(response.data.authUrl, '_blank', 'noopener,noreferrer');
+        
+        // Notificar al usuario sobre la nueva ventana
+        toast({
+          title: "Ventana de autenticación abierta",
+          description: "Se ha abierto una nueva ventana para la autenticación de QuickBooks. Si no se abrió, permite las ventanas emergentes en tu navegador.",
+          duration: 7000
+        });
       }, 1500);
       
     } catch (error) {

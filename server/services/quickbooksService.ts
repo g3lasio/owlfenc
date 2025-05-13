@@ -77,12 +77,60 @@ export const handleCallback = async (req: Request, res: Response) => {
     
     console.log(`[QuickBooks] Usuario ${userId} conectado correctamente`);
     
-    // Redirigir al usuario a la página de materiales con un mensaje de éxito
-    return res.redirect(`/materials?quickbooks=connected`);
+    // Responder con un HTML que enviará un mensaje al padre y cerrará la ventana
+    return res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Conectado a QuickBooks</title>
+        <style>
+          body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+          .success { color: green; }
+          .message { margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <h1 class="success">¡Conectado a QuickBooks exitosamente!</h1>
+        <p class="message">Puedes cerrar esta ventana y regresar a la aplicación.</p>
+        <script>
+          // Enviar mensaje a la ventana principal
+          if (window.opener) {
+            window.opener.postMessage({ type: 'QUICKBOOKS_AUTH', status: 'success' }, '*');
+            // Cerrar esta ventana automáticamente después de 3 segundos
+            setTimeout(() => window.close(), 3000);
+          }
+        </script>
+      </body>
+      </html>
+    `);
   } catch (error) {
     console.error('[QuickBooks] Error en callback:', error);
-    // Redirigir al usuario a la página de materiales con un mensaje de error
-    return res.redirect(`/materials?quickbooks=error`);
+    // Responder con un HTML de error
+    return res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Error de conexión</title>
+        <style>
+          body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+          .error { color: red; }
+          .message { margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <h1 class="error">Error de conexión con QuickBooks</h1>
+        <p class="message">Hubo un problema al conectar con QuickBooks. Por favor, cierra esta ventana e inténtalo de nuevo.</p>
+        <script>
+          // Enviar mensaje a la ventana principal
+          if (window.opener) {
+            window.opener.postMessage({ type: 'QUICKBOOKS_AUTH', status: 'error' }, '*');
+            // Cerrar esta ventana automáticamente después de 5 segundos
+            setTimeout(() => window.close(), 5000);
+          }
+        </script>
+      </body>
+      </html>
+    `);
   }
 };
 
