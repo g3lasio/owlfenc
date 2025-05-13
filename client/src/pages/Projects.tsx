@@ -78,6 +78,17 @@ const projectProgressStages = [
 ];
 
 export default function Projects() {
+  // Asegurarse de que la página tenga scroll en móviles
+  useEffect(() => {
+    // Forzar el reflow para activar el scrolling
+    document.body.style.overflow = 'auto';
+    document.documentElement.style.overflow = 'auto';
+    
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    };
+  }, []);
   const [projects, setProjects] = useState<Project[]>([]);
   const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
