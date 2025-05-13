@@ -349,7 +349,7 @@ export default function Projects() {
   }
   
   return (
-    <div className="flex-1 p-6 overflow-auto">
+    <div className="flex-1 p-6 page-scroll-container" style={{WebkitOverflowScrolling: 'touch'}}>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Proyectos</h1>
         <div className="flex space-x-2">

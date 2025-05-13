@@ -99,9 +99,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
       <Sidebar />
 
       {/* Contenido principal */}
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col overflow-hidden">
         <Header toggleMobileMenu={toggleMobileMenu} isMobileMenuOpen={isMobileMenuOpen} />
-        <div className="flex-1 w-full h-full relative">
+        <div className="flex-1 w-full h-full relative overflow-y-auto page-scroll-container" style={{WebkitOverflowScrolling: 'touch'}}>
           <Switch>
             <Route path="/settings/profile" component={Profile} />
             <Route path="*">{children}</Route>
