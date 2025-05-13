@@ -247,7 +247,7 @@ export default function NuevoClientes() {
   // Obtener todas las etiquetas únicas
   const allTags = clients && Array.isArray(clients) ? clients.reduce((tags: string[], client) => {
     if (client.tags) {
-      client.tags.forEach(tag => {
+      client.tags.forEach((tag: string) => {
         if (!tags.includes(tag)) {
           tags.push(tag);
         }
@@ -589,7 +589,7 @@ export default function NuevoClientes() {
 
   if (isError) {
     return (
-      <div className="flex-1 p-6 overflow-auto">
+      <div className="flex-1 p-6 page-scroll-container" style={{WebkitOverflowScrolling: 'touch', height: '100%'}}>
         <h1 className="text-2xl font-bold mb-6">Clientes</h1>
         <div className="bg-red-50 p-4 rounded-md text-red-700 mb-6">
           <p className="font-bold">Error al cargar los clientes</p>
@@ -605,7 +605,7 @@ export default function NuevoClientes() {
   // Generar una lista de clientes para la visualización
   if (isLoading) {
     return (
-      <div className="flex-1 p-6 overflow-auto">
+      <div className="flex-1 p-6 page-scroll-container" style={{WebkitOverflowScrolling: 'touch', height: '100%'}}>
         <h1 className="text-2xl font-bold mb-6">Clientes</h1>
         <div className="mb-6 space-y-4">
           <Skeleton className="h-10 w-full md:w-3/4" />
@@ -638,7 +638,7 @@ export default function NuevoClientes() {
   }
 
   return (
-    <div className="flex-1 p-6 overflow-auto">
+    <div className="flex-1 p-6 page-scroll-container" style={{WebkitOverflowScrolling: 'touch', height: '100%'}}>
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
         <h1 className="text-2xl font-bold">Clientes</h1>
         <div className="flex flex-wrap gap-2">
