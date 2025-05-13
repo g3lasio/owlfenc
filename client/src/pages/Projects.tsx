@@ -457,15 +457,15 @@ export default function Projects() {
           ))}
         </div>
       ) : (
-        <div className="overflow-hidden border rounded-lg">
+        <div className="overflow-x-auto border rounded-lg">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-muted">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dirección</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progreso</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Dirección</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Tipo</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Fecha</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Progreso</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
               </tr>
@@ -476,22 +476,22 @@ export default function Projects() {
                   <td className="px-4 py-3 whitespace-nowrap">
                     <div className="font-medium">{project.clientName}</div>
                   </td>
-                  <td className="px-4 py-3 truncate max-w-[200px]">
+                  <td className="px-4 py-3 truncate max-w-[200px] hidden md:table-cell">
                     {project.address}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
+                  <td className="px-4 py-3 whitespace-nowrap hidden sm:table-cell">
                     {project.fenceType}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
+                  <td className="px-4 py-3 whitespace-nowrap hidden sm:table-cell">
                     {formatDate(project.createdAt.toDate())}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <Badge variant="outline" className={`${getProgressBadgeColor(project.projectProgress || "estimate_created")} bg-opacity-10 border-opacity-50`}>
+                  <td className="px-4 py-3 whitespace-nowrap hidden md:table-cell">
+                    <Badge variant="outline" className={`${getProgressBadgeColor(project.projectProgress || "estimate_created")} bg-opacity-10 border-opacity-50 text-xs`}>
                       {getProgressLabel(project.projectProgress || "estimate_created")}
                     </Badge>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <Badge className={`${getStatusBadgeColor(project.status)} text-white`}>
+                    <Badge className={`${getStatusBadgeColor(project.status)} text-white text-xs`}>
                       {getStatusLabel(project.status)}
                     </Badge>
                   </td>
@@ -500,6 +500,7 @@ export default function Projects() {
                       size="sm" 
                       variant="outline"
                       onClick={() => handleViewProject(project.id)}
+                      className="text-xs px-2 py-1 h-auto"
                     >
                       <i className="ri-dashboard-line mr-1"></i> Dashboard
                     </Button>
@@ -513,10 +514,10 @@ export default function Projects() {
       
       {/* Project Details Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-5xl h-[85vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex justify-between items-center">
-              <span>Dashboard del Proyecto: {selectedProject?.clientName}</span>
+        <DialogContent className="max-w-5xl max-h-[90vh] h-[90vh] md:h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+              <span className="text-base sm:text-lg">Dashboard: {selectedProject?.clientName}</span>
               <Badge className={selectedProject?.projectProgress ? getProgressBadgeColor(selectedProject.projectProgress) : "bg-slate-500"}>
                 <i className="ri-time-line mr-1"></i>
                 {selectedProject?.projectProgress ? getProgressLabel(selectedProject.projectProgress) : "Presupuesto Creado"}
@@ -525,7 +526,7 @@ export default function Projects() {
           </DialogHeader>
           
           {selectedProject && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 overflow-y-auto p-1 flex-1">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 overflow-y-auto p-1 flex-1">
               {/* Project Progress Column */}
               <div className="md:col-span-1">
                 <ProjectProgress 

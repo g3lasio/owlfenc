@@ -118,13 +118,13 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 overflow-y-auto">
       <Tabs defaultValue="client">
-        <TabsList className="mb-4">
-          <TabsTrigger value="client">Cliente</TabsTrigger>
-          <TabsTrigger value="project">Proyecto</TabsTrigger>
-          <TabsTrigger value="documents">Documentos</TabsTrigger>
-          <TabsTrigger value="payment">Pagos</TabsTrigger>
+        <TabsList className="mb-4 w-full flex flex-wrap">
+          <TabsTrigger value="client" className="flex-1">Cliente</TabsTrigger>
+          <TabsTrigger value="project" className="flex-1">Proyecto</TabsTrigger>
+          <TabsTrigger value="documents" className="flex-1">Documentos</TabsTrigger>
+          <TabsTrigger value="payment" className="flex-1">Pagos</TabsTrigger>
         </TabsList>
         
         {/* SECCIÓN DE CLIENTE */}
@@ -177,17 +177,19 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
                       </Button>
                     </div>
                   </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
+                  <DialogContent className="max-h-[90vh] flex flex-col overflow-hidden">
+                    <DialogHeader className="flex-shrink-0">
                       <DialogTitle>Editar Notas del Cliente</DialogTitle>
                     </DialogHeader>
-                    <Textarea 
-                      placeholder="Ingrese notas sobre el cliente aquí..."
-                      className="min-h-[150px]" 
-                      value={editableNotes.clientNotes}
-                      onChange={(e) => setEditableNotes({...editableNotes, clientNotes: e.target.value})}
-                    />
-                    <div className="flex justify-end space-x-2 mt-4">
+                    <div className="flex-1 overflow-y-auto py-2">
+                      <Textarea 
+                        placeholder="Ingrese notas sobre el cliente aquí..."
+                        className="min-h-[150px]" 
+                        value={editableNotes.clientNotes}
+                        onChange={(e) => setEditableNotes({...editableNotes, clientNotes: e.target.value})}
+                      />
+                    </div>
+                    <div className="flex justify-end space-x-2 mt-4 flex-shrink-0">
                       <Button 
                         onClick={handleNotesUpdate} 
                         disabled={isSaving}
@@ -276,17 +278,19 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
                       </Button>
                     </div>
                   </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
+                  <DialogContent className="max-h-[90vh] flex flex-col overflow-hidden">
+                    <DialogHeader className="flex-shrink-0">
                       <DialogTitle>Editar Notas Internas</DialogTitle>
                     </DialogHeader>
-                    <Textarea 
-                      placeholder="Ingrese notas internas aquí..."
-                      className="min-h-[150px]" 
-                      value={editableNotes.internalNotes}
-                      onChange={(e) => setEditableNotes({...editableNotes, internalNotes: e.target.value})}
-                    />
-                    <div className="flex justify-end space-x-2 mt-4">
+                    <div className="flex-1 overflow-y-auto py-2">
+                      <Textarea 
+                        placeholder="Ingrese notas internas aquí..."
+                        className="min-h-[150px]" 
+                        value={editableNotes.internalNotes}
+                        onChange={(e) => setEditableNotes({...editableNotes, internalNotes: e.target.value})}
+                      />
+                    </div>
+                    <div className="flex justify-end space-x-2 mt-4 flex-shrink-0">
                       <Button 
                         onClick={handleNotesUpdate} 
                         disabled={isSaving}
