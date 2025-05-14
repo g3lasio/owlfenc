@@ -878,11 +878,11 @@ export class StorageManager implements IStorage {
 // Por defecto usamos PostgreSQL como almacenamiento principal
 const databaseStorage = new DatabaseStorage();
 
-// Crear instancia de Storage Manager con soporte de caché
+// Vamos a utilizar solo el almacenamiento principal de PostgreSQL
+// pero con manejo de errores mejorado en el StorageManager
 export const storage = new StorageManager(databaseStorage);
 
-// NOTA: Para habilitar el failover a Firebase, se necesita completar la implementación
-// de todos los métodos en FirebaseStorage. Cuando esté listo, usar:
-//
+// NOTA: La implementación de Firebase necesita completarse antes de utilizarla
+// como respaldo. Para habilitarla después:
 // const firebaseStorage = new FirebaseStorage();
 // export const storage = new StorageManager(databaseStorage, firebaseStorage);

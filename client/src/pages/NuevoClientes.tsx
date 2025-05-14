@@ -210,7 +210,11 @@ export default function NuevoClientes() {
 
   // Filtrar clientes cuando cambian los filtros
   useEffect(() => {
-    if (!clients || !Array.isArray(clients)) return;
+    // Verificar que clients sea un array válido para evitar errores
+    if (!Array.isArray(clients)) {
+      setFilteredClients([]);
+      return;
+    }
     
     let result = [...clients];
 
@@ -218,7 +222,7 @@ export default function NuevoClientes() {
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       result = result.filter(client => 
-        client.name.toLowerCase().includes(term) || 
+        (client.name && client.name.toLowerCase().includes(term)) || 
         (client.email && client.email.toLowerCase().includes(term)) ||
         (client.phone && client.phone.includes(term)) ||
         (client.address && client.address.toLowerCase().includes(term))
