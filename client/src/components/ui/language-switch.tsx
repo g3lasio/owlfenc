@@ -35,9 +35,9 @@ export function LanguageSwitch({ className }: LanguageSwitchProps) {
         onClick={toggleLanguage}
         className={cn(
           "relative flex items-center justify-between w-14 h-8 px-1 rounded-full transition-all duration-300",
-          "bg-gradient-to-r from-blue-600 to-indigo-900 shadow-lg",
+          "bg-gradient-to-r from-slate-900 to-zinc-900 shadow-lg",
           "overflow-hidden",
-          "border border-blue-400/30",
+          "border border-yellow-600/40",
         )}
         aria-label="Toggle language"
         title={t('general.language')}
@@ -45,15 +45,15 @@ export function LanguageSwitch({ className }: LanguageSwitchProps) {
         {/* Fondo con efecto futurista */}
         <div className="absolute inset-0 bg-grid-white/5 bg-grid-2"></div>
         
-        {/* Efecto de luz de neón en los bordes */}
-        <div className="absolute inset-0 rounded-full opacity-20 blur-sm bg-gradient-to-r from-blue-400 to-indigo-500"></div>
+        {/* Efecto de luz de neón en los bordes - estilo Transformers */}
+        <div className="absolute inset-0 rounded-full opacity-20 blur-sm bg-gradient-to-r from-yellow-500 to-orange-600"></div>
         
         {/* Indicador que se mueve */}
         <div 
           className={cn(
-            "absolute top-1 w-6 h-6 rounded-full bg-white shadow-md transform transition-transform duration-300 ease-out flex items-center justify-center",
-            "before:absolute before:inset-0 before:rounded-full before:bg-gradient-to-b before:from-blue-100 before:to-white before:opacity-80",
-            "after:absolute after:inset-1 after:rounded-full after:bg-gradient-to-b after:from-white after:to-blue-100",
+            "absolute top-1 w-6 h-6 rounded-full bg-zinc-800 shadow-md transform transition-transform duration-300 ease-out flex items-center justify-center",
+            "before:absolute before:inset-0 before:rounded-full before:bg-gradient-to-b before:from-yellow-500 before:to-orange-600 before:opacity-80",
+            "after:absolute after:inset-1 after:rounded-full after:bg-gradient-to-b after:from-slate-800 after:to-zinc-900",
             isAnimating && "animate-pulse",
             language === 'es' ? "left-1" : "left-9"
           )}
@@ -69,10 +69,14 @@ export function LanguageSwitch({ className }: LanguageSwitchProps) {
           language === 'en' ? "text-white" : "text-white/40"
         )}>EN</span>
         
-        {/* Destellos decorativos */}
+        {/* Destellos decorativos estilo Transformers */}
         <div className={cn(
-          "absolute w-10 h-1 bg-blue-200 rotate-45 opacity-0 transition-opacity",
+          "absolute w-10 h-1 bg-yellow-500 rotate-45 opacity-0 transition-opacity",
           isAnimating && "animate-flash"
+        )}></div>
+        <div className={cn(
+          "absolute w-8 h-1 bg-orange-500 -rotate-45 opacity-0 transition-opacity",
+          isAnimating && "animate-flash delay-75"
         )}></div>
       </button>
     </div>

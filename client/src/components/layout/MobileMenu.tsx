@@ -241,6 +241,17 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             </motion.a>
           </motion.div>
 
+          {/* Language Switch para móvil */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 flex items-center p-2 rounded-md bg-black/20 w-full"
+          >
+            <i className="ri-global-line text-lg mr-3 text-primary"></i>
+            <span className="mr-auto text-muted-foreground">{t('general.language')}</span>
+            <LanguageSwitch className="ml-auto" />
+          </motion.div>
+
           {/* Botón de Cerrar Sesión */}
           <motion.button
             whileHover={{ scale: 1.03 }}
