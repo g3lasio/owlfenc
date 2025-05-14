@@ -241,15 +241,16 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             </motion.a>
           </motion.div>
 
-          {/* Language Switch para móvil */}
+          {/* Language Switch para móvil - Estilo Transformers */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-4 flex items-center p-2 rounded-md bg-black/20 w-full"
+            className="mb-4 flex items-center p-3 rounded-md bg-gradient-to-r from-zinc-900 to-slate-800 w-full border border-yellow-600/20"
+            whileHover={{ scale: 1.02, borderColor: 'rgba(202, 138, 4, 0.3)' }}
           >
-            <i className="ri-global-line text-lg mr-3 text-primary"></i>
-            <span className="mr-auto text-muted-foreground">{t('general.language')}</span>
-            <LanguageSwitch className="ml-auto" />
+            <i className="ri-global-line text-xl mr-3 text-yellow-500"></i>
+            <span className="mr-auto text-yellow-500/80 font-medium">{t('general.language')}</span>
+            <LanguageSwitch className="ml-auto scale-110" />
           </motion.div>
 
           {/* Botón de Cerrar Sesión */}
