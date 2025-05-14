@@ -440,7 +440,7 @@ export default function AuthPage() {
                         className="w-full h-10 bg-primary hover:bg-primary/80 text-black font-semibold"
                         disabled={isLoading}
                       >
-                        {isLoading ? "Iniciando sesión..." : "Iniciar sesión"}
+                        {isLoading ? t("auth.login") + "..." : t("auth.login")}
                       </Button>
                     </form>
                   </Form>
@@ -455,7 +455,7 @@ export default function AuthPage() {
                       name="name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Nombre</FormLabel>
+                          <FormLabel>{t("auth.name")}</FormLabel>
                           <FormControl>
                             <Input
                               placeholder="Tu nombre"
@@ -473,7 +473,7 @@ export default function AuthPage() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Correo electrónico</FormLabel>
+                          <FormLabel>{t("auth.email")}</FormLabel>
                           <FormControl>
                             <Input
                               placeholder="tu@email.com"
@@ -491,7 +491,7 @@ export default function AuthPage() {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Contraseña</FormLabel>
+                          <FormLabel>{t("auth.password")}</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Input
@@ -523,7 +523,7 @@ export default function AuthPage() {
                       name="confirmPassword"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Confirmar contraseña</FormLabel>
+                          <FormLabel>{t("auth.confirmPassword")}</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Input
@@ -544,7 +544,7 @@ export default function AuthPage() {
                       className="w-full h-10 bg-primary hover:bg-primary/80 text-black font-semibold"
                       disabled={isLoading}
                     >
-                      {isLoading ? "Registrando..." : "Crear cuenta"}
+                      {isLoading ? t("auth.signup") + "..." : t("auth.createAccount")}
                     </Button>
                   </form>
                 </Form>
