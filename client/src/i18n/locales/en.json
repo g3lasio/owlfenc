@@ -58,6 +58,8 @@
     "validEmail": "Enter a valid email",
     "passwordRequirements": "Password must be at least 6 characters",
     "nameRequirements": "Name must be at least 3 characters",
-    "passwordsMatch": "Passwords must match"
+    "passwordsMatch": "Passwords must match",
+    "success": "Successful!",
+    "redirecting": "Redirecting to dashboard..."
   }
 }

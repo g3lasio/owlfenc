@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle } from "lucide-react";
 import { sendEmailLink } from "@/lib/firebase";
+import { useTranslation } from "react-i18next";
 
 // Esquema para formulario de email
 const emailSchema = z.object({
@@ -19,9 +20,11 @@ type EmailFormValues = z.infer<typeof emailSchema>;
 
 interface EmailLinkAuthProps {
   onSuccess?: () => void;
+  onToggle?: () => void;
 }
 
-export default function EmailLinkAuth({ onSuccess }: EmailLinkAuthProps) {
+export default function EmailLinkAuth({ onSuccess, onToggle }: EmailLinkAuthProps) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

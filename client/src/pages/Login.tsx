@@ -261,8 +261,8 @@ export default function AuthPage() {
             {/* Icono y mensaje de éxito */}
             <div className="success-content w-64 h-64 flex flex-col items-center justify-center bg-black/50 rounded-full border border-primary/20 backdrop-blur-md shadow-lg">
               <RiCheckboxCircleLine className="text-primary w-20 h-20" />
-              <h2 className="text-xl font-bold text-primary mt-4">¡Autenticación Exitosa!</h2>
-              <p className="text-center text-muted-foreground text-sm mt-2">Redirigiendo al panel...</p>
+              <h2 className="text-xl font-bold text-primary mt-4">{t("auth.login")} {t("auth.success")}</h2>
+              <p className="text-center text-muted-foreground text-sm mt-2">{t("auth.redirecting")}</p>
             </div>
           </div>
         </div>

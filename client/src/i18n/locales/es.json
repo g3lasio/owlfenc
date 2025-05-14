@@ -58,6 +58,8 @@
     "validEmail": "Ingresa un correo electrónico válido",
     "passwordRequirements": "La contraseña debe tener al menos 6 caracteres",
     "nameRequirements": "El nombre debe tener al menos 3 caracteres",
-    "passwordsMatch": "Las contraseñas deben coincidir"
+    "passwordsMatch": "Las contraseñas deben coincidir",
+    "success": "Exitoso!",
+    "redirecting": "Redirigiendo al panel..."
   }
 }
