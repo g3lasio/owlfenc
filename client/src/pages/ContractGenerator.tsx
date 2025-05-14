@@ -299,18 +299,24 @@ const ContractGenerator = () => {
     }
   };
 
-  // Manejar selección de opciones de contrato
-  const handleOptionSelect = (option: 'new' | 'template' | 'modify' | 'upload' | 'chat-assistant' | 'guided-flow' | 'my-contracts') => {
+  // Manejar selección de opciones de contrato simplificadas
+  const handleOptionSelect = (option: 'new' | 'guided-flow' | 'my-contracts') => {
     setSelectedOption(option);
     
     // Redireccionar basado en la opción seleccionada
-    if (option === 'upload') {
-      setActiveTab("upload-estimate");
-    } else if (option === 'new') {
+    if (option === 'new') {
       // Para crear nuevo, ir directo al formulario vacío
       setActiveTab("review-data");
-    } else if (option === 'chat-assistant') {
-      setActiveTab("chat-assistant");
+      form.reset({
+        clientName: "",
+        clientEmail: "",
+        clientPhone: "",
+        clientAddress: "",
+        fenceType: "",
+        fenceHeight: "",
+        fenceLength: "",
+        projectTotal: "",
+      });
     } else if (option === 'guided-flow') {
       setActiveTab("guided-flow");
       form.reset({
@@ -325,10 +331,6 @@ const ContractGenerator = () => {
       });
     } else if (option === 'my-contracts') {
       setActiveTab("my-contracts");
-    } else {
-      // Para otras opciones, también mostramos el formulario pero podríamos
-      // cargarlo con datos diferentes según la opción
-      setActiveTab("review-data");
     }
   };
   
@@ -507,11 +509,11 @@ const ContractGenerator = () => {
           <div>
             <h1 className="text-2xl font-bold mb-2">Generación de Contratos</h1>
             <p className="text-muted-foreground">
-              Genera contratos profesionales a partir de estimados aprobados o información manual
+              Genera contratos profesionales de forma rápida y sencilla
             </p>
           </div>
           {activeTab === "my-contracts" && (
-            <Button onClick={() => setIsCreateDialogOpen(true)}>
+            <Button onClick={() => setActiveTab("options")}>
               <PlusCircle className="mr-2 h-4 w-4" />
               Nuevo Contrato
             </Button>
@@ -522,10 +524,8 @@ const ContractGenerator = () => {
           <TabsList className="mb-4">
             <TabsTrigger value="options">Inicio</TabsTrigger>
             <TabsTrigger value="my-contracts">Mis Contratos</TabsTrigger>
-            <TabsTrigger value="upload-estimate">1. Cargar Estimado</TabsTrigger>
-            <TabsTrigger value="review-data">2. Revisar Información</TabsTrigger>
-            <TabsTrigger value="preview-contract">3. Vista Previa</TabsTrigger>
-            <TabsTrigger value="chat-assistant">Asistente</TabsTrigger>
+            <TabsTrigger value="review-data">Revisar Información</TabsTrigger>
+            <TabsTrigger value="preview-contract">Vista Previa</TabsTrigger>
             <TabsTrigger value="guided-flow">Flujo Guiado</TabsTrigger>
           </TabsList>
 
@@ -559,10 +559,10 @@ const ContractGenerator = () => {
               </div>
             </div>
             
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
               {contractsQuery.isLoading ? (
                 // Esqueletos de carga
-                Array.from({ length: 6 }).map((_, i) => (
+                Array.from({ length: 4 }).map((_, i) => (
                   <Card key={i} className="overflow-hidden">
                     <CardHeader className="p-4">
                       <Skeleton className="h-6 w-2/3" />

@@ -1,10 +1,10 @@
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, FileUp, Edit, Clock, ListChecks, MessageCircle, Files } from "lucide-react";
+import { FileText, ListChecks, Files } from "lucide-react";
 
 interface ContractOptionProps {
-  onSelectOption: (option: 'new' | 'template' | 'modify' | 'upload' | 'chat-assistant' | 'guided-flow' | 'my-contracts') => void;
+  onSelectOption: (option: 'new' | 'guided-flow' | 'my-contracts') => void;
 }
 
 const ContractOptions: React.FC<ContractOptionProps> = ({ onSelectOption }) => {
@@ -29,28 +29,28 @@ const ContractOptions: React.FC<ContractOptionProps> = ({ onSelectOption }) => {
         </CardContent>
       </Card>
 
-      {/* Opción 2: Usar plantilla */}
+      {/* Opción 2: Flujo guiado de preguntas */}
       <Card 
-        className="cursor-pointer hover:shadow-md transition-shadow"
-        onClick={() => onSelectOption('template')}
+        className="cursor-pointer hover:shadow-md transition-shadow border-2 border-primary/20"
+        onClick={() => onSelectOption('guided-flow')}
       >
         <CardContent className="p-6 flex flex-col items-center text-center">
-          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-            <Edit className="h-6 w-6 text-primary" />
+          <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center mb-4">
+            <ListChecks className="h-6 w-6 text-primary" />
           </div>
-          <h3 className="text-lg font-medium mb-2">Usar una plantilla</h3>
+          <h3 className="text-lg font-medium mb-2">Flujo guiado de preguntas</h3>
           <p className="text-sm text-muted-foreground mb-4">
-            Elige entre nuestras plantillas prediseñadas y completa los campos necesarios.
+            Te guiaré paso a paso con preguntas específicas para crear tu contrato fácilmente.
           </p>
-          <Button variant="outline" className="mt-auto">
-            Seleccionar plantilla
+          <Button variant="default" className="mt-auto">
+            Iniciar flujo guiado
           </Button>
         </CardContent>
       </Card>
 
       {/* Opción 3: Mis Contratos */}
       <Card 
-        className="cursor-pointer hover:shadow-md transition-shadow"
+        className="cursor-pointer hover:shadow-md transition-shadow md:col-span-2"
         onClick={() => onSelectOption('my-contracts')}
       >
         <CardContent className="p-6 flex flex-col items-center text-center">
@@ -62,83 +62,7 @@ const ContractOptions: React.FC<ContractOptionProps> = ({ onSelectOption }) => {
             Visualiza, busca y descarga tus contratos existentes.
           </p>
           <Button variant="outline" className="mt-auto">
-            Ver mis contratos
-          </Button>
-        </CardContent>
-      </Card>
-      
-      {/* Opción 4: Modificar contrato existente */}
-      <Card 
-        className="cursor-pointer hover:shadow-md transition-shadow"
-        onClick={() => onSelectOption('modify')}
-      >
-        <CardContent className="p-6 flex flex-col items-center text-center">
-          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-            <Clock className="h-6 w-6 text-primary" />
-          </div>
-          <h3 className="text-lg font-medium mb-2">Modificar contrato anterior</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Usa un contrato anterior como base y realiza los cambios necesarios.
-          </p>
-          <Button variant="outline" className="mt-auto">
-            Buscar contratos
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Opción 5: Subir PDF de estimado */}
-      <Card 
-        className="cursor-pointer hover:shadow-md transition-shadow"
-        onClick={() => onSelectOption('upload')}
-      >
-        <CardContent className="p-6 flex flex-col items-center text-center">
-          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-            <FileUp className="h-6 w-6 text-primary" />
-          </div>
-          <h3 className="text-lg font-medium mb-2">Cargar estimado aprobado</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Sube un PDF de un estimado aprobado para convertirlo automáticamente en contrato.
-          </p>
-          <Button variant="outline" className="mt-auto">
-            Subir estimado
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Opción 6: Asistente conversacional */}
-      <Card 
-        className="cursor-pointer hover:shadow-md transition-shadow"
-        onClick={() => onSelectOption('chat-assistant')}
-      >
-        <CardContent className="p-6 flex flex-col items-center text-center">
-          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-            <MessageCircle className="h-6 w-6 text-primary" />
-          </div>
-          <h3 className="text-lg font-medium mb-2">Asistente conversacional</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Conversa con nuestro asistente virtual que te ayudará a recopilar toda la información necesaria.
-          </p>
-          <Button variant="outline" className="mt-auto">
-            Iniciar conversación
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Opción 7: Flujo guiado de preguntas */}
-      <Card 
-        className="cursor-pointer hover:shadow-md transition-shadow"
-        onClick={() => onSelectOption('guided-flow')}
-      >
-        <CardContent className="p-6 flex flex-col items-center text-center">
-          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-            <ListChecks className="h-6 w-6 text-primary" />
-          </div>
-          <h3 className="text-lg font-medium mb-2">Flujo guiado de preguntas</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Te guiaré paso a paso con preguntas específicas para crear tu contrato fácilmente.
-          </p>
-          <Button variant="outline" className="mt-auto">
-            Iniciar flujo guiado
+            Ver historial de contratos
           </Button>
         </CardContent>
       </Card>
