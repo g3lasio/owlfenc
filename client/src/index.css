@@ -1101,3 +1101,18 @@ header::-webkit-scrollbar, footer::-webkit-scrollbar,
     opacity: 0.3;
   }
 }
+
+@keyframes transformerGlow {
+  0% {
+    border-color: rgba(202, 138, 4, 0.3);
+    box-shadow: 0 0 5px rgba(234, 179, 8, 0.3);
+  }
+  50% {
+    border-color: rgba(234, 179, 8, 0.5);
+    box-shadow: 0 0 10px rgba(234, 179, 8, 0.5), 0 0 15px rgba(234, 88, 12, 0.3);
+  }
+  100% {
+    border-color: rgba(202, 138, 4, 0.3);
+    box-shadow: 0 0 5px rgba(234, 179, 8, 0.3);
+  }
+}

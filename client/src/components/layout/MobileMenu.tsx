@@ -241,16 +241,37 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             </motion.a>
           </motion.div>
 
-          {/* Language Switch para móvil - Estilo Transformers */}
+          {/* Language Switch para móvil - Estilo Transformers mejorado */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-4 flex items-center p-3 rounded-md bg-gradient-to-r from-zinc-900 to-slate-800 w-full border border-yellow-600/20"
-            whileHover={{ scale: 1.02, borderColor: 'rgba(202, 138, 4, 0.3)' }}
+            className="mb-4 flex flex-col items-center p-3 rounded-md bg-gradient-to-r from-zinc-950 to-slate-900 w-full border border-yellow-600/30"
+            whileHover={{ scale: 1.02, borderColor: 'rgba(234, 179, 8, 0.4)' }}
+            style={{
+              boxShadow: "0 0 15px rgba(234, 179, 8, 0.2)"
+            }}
           >
-            <i className="ri-global-line text-xl mr-3 text-yellow-500"></i>
-            <span className="mr-auto text-yellow-500/80 font-medium">{t('general.language')}</span>
-            <LanguageSwitch className="ml-auto scale-110" />
+            <div className="flex items-center justify-between w-full mb-2">
+              <div className="flex items-center">
+                <i className="ri-global-line text-xl mr-2 text-yellow-500"></i>
+                <span className="text-yellow-500 font-medium">{t('general.language')}</span>
+              </div>
+              {/* Pequeño icono decorativo de Transformers */}
+              <div className="w-5 h-5 relative opacity-70">
+                <div className="absolute inset-0 rotate-45 border-t-2 border-r-2 border-yellow-500"></div>
+                <div className="absolute inset-[4px] rotate-45 border-b-2 border-l-2 border-orange-500"></div>
+              </div>
+            </div>
+            {/* Switch centrado y con tamaño aumentado */}
+            <div className="w-full flex justify-center my-1">
+              <LanguageSwitch className="transform scale-125" />
+            </div>
+            {/* Texto explicativo */}
+            <div className="w-full mt-2 text-center">
+              <span className="text-xs text-yellow-600/70">
+                {language === 'es' ? 'English Available' : 'Español Disponible'}
+              </span>
+            </div>
           </motion.div>
 
           {/* Botón de Cerrar Sesión */}

@@ -34,10 +34,11 @@ export function LanguageSwitch({ className }: LanguageSwitchProps) {
       <button
         onClick={toggleLanguage}
         className={cn(
-          "relative flex items-center justify-between w-14 h-8 px-1 rounded-full transition-all duration-300",
-          "bg-gradient-to-r from-slate-900 to-zinc-900 shadow-lg",
+          "relative flex items-center justify-between w-16 h-8 px-1.5 rounded-full transition-all duration-300",
+          "bg-gradient-to-r from-slate-950 to-zinc-950 shadow-lg",
           "overflow-hidden",
           "border border-yellow-600/40",
+          "animate-transformer-glow" // Aplicamos la nueva animación de brillo
         )}
         aria-label="Toggle language"
         title={t('general.language')}
@@ -46,36 +47,46 @@ export function LanguageSwitch({ className }: LanguageSwitchProps) {
         <div className="absolute inset-0 bg-grid-white/5 bg-grid-2"></div>
         
         {/* Efecto de luz de neón en los bordes - estilo Transformers */}
-        <div className="absolute inset-0 rounded-full opacity-20 blur-sm bg-gradient-to-r from-yellow-500 to-orange-600"></div>
+        <div className="absolute inset-0 rounded-full opacity-30 blur-sm bg-gradient-to-r from-yellow-500 to-orange-600"></div>
+        
+        {/* Partículas brillantes para efecto Transformers */}
+        <div className="absolute inset-0 overflow-hidden rounded-full">
+          <div className="absolute top-1/2 left-1/4 w-1 h-1 bg-yellow-300 rounded-full opacity-70"></div>
+          <div className="absolute top-1/3 right-1/4 w-0.5 h-0.5 bg-orange-400 rounded-full opacity-90"></div>
+          <div className="absolute bottom-1/4 left-1/3 w-0.5 h-0.5 bg-yellow-400 rounded-full opacity-80"></div>
+        </div>
         
         {/* Indicador que se mueve */}
         <div 
           className={cn(
-            "absolute top-1 w-6 h-6 rounded-full bg-zinc-800 shadow-md transform transition-transform duration-300 ease-out flex items-center justify-center",
-            "before:absolute before:inset-0 before:rounded-full before:bg-gradient-to-b before:from-yellow-500 before:to-orange-600 before:opacity-80",
-            "after:absolute after:inset-1 after:rounded-full after:bg-gradient-to-b after:from-slate-800 after:to-zinc-900",
-            isAnimating && "animate-pulse",
+            "absolute top-1 w-6 h-6 rounded-full bg-zinc-900 shadow-md transform transition-transform duration-300 ease-out flex items-center justify-center",
+            "before:absolute before:inset-0 before:rounded-full before:bg-gradient-to-b before:from-yellow-500 before:to-orange-600 before:opacity-90",
+            "after:absolute after:inset-1 after:rounded-full after:bg-gradient-to-b after:from-slate-900 after:to-zinc-950",
+            isAnimating ? "animate-pulse" : "",
             language === 'es' ? "left-1" : "left-9"
           )}
-        ></div>
+        >
+          {/* Pequeño destello central en el indicador */}
+          <div className="absolute inset-1/4 rounded-full bg-yellow-600/20"></div>
+        </div>
         
         {/* Textos de los idiomas */}
         <span className={cn(
           "text-xs font-bold z-10 transition-all duration-300",
-          language === 'es' ? "text-white" : "text-white/40"
+          language === 'es' ? "text-yellow-500" : "text-yellow-700/50"
         )}>ES</span>
         <span className={cn(
           "text-xs font-bold z-10 transition-all duration-300",
-          language === 'en' ? "text-white" : "text-white/40"
+          language === 'en' ? "text-yellow-500" : "text-yellow-700/50"
         )}>EN</span>
         
         {/* Destellos decorativos estilo Transformers */}
         <div className={cn(
-          "absolute w-10 h-1 bg-yellow-500 rotate-45 opacity-0 transition-opacity",
+          "absolute w-12 h-1 bg-yellow-500 rotate-45 opacity-0 transition-opacity",
           isAnimating && "animate-flash"
         )}></div>
         <div className={cn(
-          "absolute w-8 h-1 bg-orange-500 -rotate-45 opacity-0 transition-opacity",
+          "absolute w-10 h-1 bg-orange-500 -rotate-45 opacity-0 transition-opacity",
           isAnimating && "animate-flash delay-75"
         )}></div>
       </button>
