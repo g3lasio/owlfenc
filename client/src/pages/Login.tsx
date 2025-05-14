@@ -297,7 +297,7 @@ export default function AuthPage() {
               }`}
               onClick={() => authMode !== "login" && toggleAuthMode()}
             >
-              Login
+              {t("auth.login")}
             </button>
             <button 
               className={`flex-1 flex items-center justify-center text-xs font-semibold relative z-10 rounded-r-full transition-colors ${
@@ -305,7 +305,7 @@ export default function AuthPage() {
               }`}
               onClick={() => authMode !== "signup" && toggleAuthMode()}
             >
-              Signup
+              {t("auth.signup")}
             </button>
           </div>
         </div>
@@ -323,10 +323,10 @@ export default function AuthPage() {
             <div className={`absolute inset-0 stark-scan-line pointer-events-none ${isTransitioning ? 'scanning' : ''}`}></div>
             
             <CardTitle className="text-2xl font-semibold text-center stark-text-glow">
-              {authMode === "login" ? "Iniciar Sesión" : "Crear Cuenta"}
+              {authMode === "login" ? t("auth.login") : t("auth.createAccount")}
             </CardTitle>
             <CardDescription className="text-center text-muted-foreground">
-              {authMode === "login" ? "Accede a tu cuenta para continuar" : "Únete a nuestra comunidad"}
+              {authMode === "login" ? t("auth.alreadyAccount") : t("auth.noAccount")}
             </CardDescription>
             
             {/* Icono de estado en la esquina */}
@@ -367,7 +367,7 @@ export default function AuthPage() {
 
               <div className="flex items-center gap-3">
                 <Separator className="flex-1 bg-muted-foreground/30" />
-                <span className="text-sm text-muted-foreground">o</span>
+                <span className="text-sm text-muted-foreground">{t("auth.orContinueWith")}</span>
                 <Separator className="flex-1 bg-muted-foreground/30" />
               </div>
 
@@ -381,7 +381,7 @@ export default function AuthPage() {
                         name="email"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Correo electrónico</FormLabel>
+                            <FormLabel>{t("auth.email")}</FormLabel>
                             <FormControl>
                               <Input
                                 placeholder="tu@email.com"
@@ -400,13 +400,13 @@ export default function AuthPage() {
                         render={({ field }) => (
                           <FormItem>
                             <div className="flex items-center justify-between">
-                              <FormLabel>Contraseña</FormLabel>
+                              <FormLabel>{t("auth.password")}</FormLabel>
                               <button
                                 type="button"
                                 className="text-xs text-primary/80 hover:text-primary"
                                 onClick={() => navigate("/forgot-password")}
                               >
-                                ¿Olvidaste tu contraseña?
+                                {t("auth.forgotPassword")}
                               </button>
                             </div>
                             <FormControl>
