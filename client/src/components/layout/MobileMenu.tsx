@@ -18,6 +18,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   const { logout } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const { t } = useTranslation(); // Añadimos soporte para traducciones
 
   // Manejar cierre de sesión
   const handleLogout = async () => {
@@ -163,7 +164,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                   transition={{ delay: 0.4 + (groupIndex * 0.4), duration: 0.3 }}
                   className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider"
                 >
-                  {group.title}
+                  {t(group.title)}
                 </motion.h2>
                 <div className="space-y-1.5 mb-4">
                   {group.items.map((item, itemIndex) => (
@@ -195,7 +196,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                           ) : (
                             <i className={`${item.icon} text-lg mr-3`}></i>
                           )}
-                          <span>{item.label}</span>
+                          <span>{t(item.label)}</span>
                         </motion.div>
                       </Link>
                     </motion.div>
@@ -228,7 +229,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             className="bg-primary/10 rounded-md p-2 mb-3"
             style={{ height: "auto", minHeight: "70px" }}
           >
-            <p className="text-xs text-center mb-1">¿Necesitas ayuda?</p>
+            <p className="text-xs text-center mb-1">{t('general.needHelp')}</p>
             <motion.a 
               href="mailto:mervin@owlfenc.com"
               whileHover={{ scale: 1.03 }}
@@ -236,7 +237,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
               className="flex items-center justify-center py-1 px-2 w-full bg-card border border-border rounded-md hover:bg-accent text-sm"
             >
               <i className="ri-mail-line mr-1"></i>
-              <span>Contactar Soporte</span>
+              <span>{t('general.support')}</span>
             </motion.a>
           </motion.div>
 
@@ -249,7 +250,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             className="flex items-center p-2 rounded-md hover:bg-destructive/10 w-full text-destructive"
           >
             <i className={`${loading ? 'ri-loader-2-line animate-spin' : 'ri-logout-box-r-line'} text-lg mr-3`}></i>
-            <span>Cerrar Sesión</span>
+            <span>{t('general.logout')}</span>
           </motion.button>
         </motion.div>
       </motion.div>
