@@ -20,18 +20,39 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [language, setLanguage] = useState(i18n.language || 'es');
 
   useEffect(() => {
-    // Inicializar el idioma desde localStorage
+    // Inicializar el idioma desde localStorage o usar el del navegador
     const savedLanguage = localStorage.getItem('language');
+    let initialLanguage = 'es'; // Por defecto, español
+    
     if (savedLanguage) {
-      i18n.changeLanguage(savedLanguage);
-      setLanguage(savedLanguage);
+      initialLanguage = savedLanguage;
+    } else {
+      // Si no hay idioma guardado, intentar detectar del navegador
+      const browserLang = navigator.language.split('-')[0];
+      if (browserLang === 'en' || browserLang === 'es') {
+        initialLanguage = browserLang;
+      }
+      // Guardar para la próxima vez
+      localStorage.setItem('language', initialLanguage);
     }
+    
+    i18n.changeLanguage(initialLanguage);
+    setLanguage(initialLanguage);
+    
+    // Establecer el atributo lang en el documento HTML para accesibilidad
+    document.documentElement.lang = initialLanguage;
   }, []);
 
   const changeLanguage = (lang: string) => {
     i18n.changeLanguage(lang);
     setLanguage(lang);
     localStorage.setItem('language', lang);
+    
+    // Actualizar el atributo lang del HTML para accesibilidad
+    document.documentElement.lang = lang;
+    
+    // Opcional: notificar el cambio de idioma para depuración
+    console.log(`Idioma cambiado a: ${lang}`);
   };
 
   return (

@@ -23,134 +23,134 @@ export interface NavigationGroup {
 // Definición de todos los elementos de navegación
 export const navigationGroups: NavigationGroup[] = [
   {
-    title: "Herramientas",
+    title: "navigation.tools",
     items: [
       {
         id: "dashboard",
-        label: "Dashboard",
+        label: "navigation.dashboard",
         path: "/",
         icon: "ri-dashboard-line"
       },
       {
         id: "mervin",
-        label: "Hablar con Mervin",
+        label: "navigation.talkToMervin",
         path: "/mervin",
         icon: "ri-chat-voice-line"
       },
       {
         id: "projects",
-        label: "Proyectos",
+        label: "navigation.projects",
         path: "/projects",
         icon: "ri-briefcase-4-line"
       },
       {
         id: "clients",
-        label: "Clientes",
+        label: "navigation.clients",
         path: "/clients",
         icon: "ri-user-star-line"
       },
       {
         id: "materials",
-        label: "My Inventory",
+        label: "navigation.inventory",
         path: "/materials",
         icon: "ri-archive-line"
       },
       {
         id: "history",
-        label: "Historial",
+        label: "navigation.history",
         path: "/history",
         icon: "ri-time-line"
       }
     ]
   },
   {
-    title: "Funcionalidades",
+    title: "navigation.features",
     items: [
       {
         id: "property-verifier",
-        label: "Verificación de Propiedad",
+        label: "navigation.propertyVerification",
         path: "/property-verifier",
         icon: "ri-shield-keyhole-line"
       },
       {
         id: "contracts",
-        label: "Generación de Contratos",
+        label: "navigation.contractGeneration",
         path: "/contracts",
         icon: "ri-file-text-line"
       },
       {
         id: "permit-advisor",
-        label: "Mervin Permit Advisor",
+        label: "navigation.permitAdvisor",
         path: "/permit-advisor",
         icon: "ri-robot-2-line"
       },
       {
         id: "ai-project-manager",
-        label: "AI Project Manager",
+        label: "navigation.aiProjectManager",
         path: "/ai-project-manager",
         icon: "lucide-brain"
       },
       {
         id: "ar-fence-estimator",
-        label: "AR Fence Estimator",
+        label: "navigation.arFenceEstimator",
         path: "/ar-fence-estimator",
         icon: "ri-ruler-line"
       }
     ]
   },
   {
-    title: "Mi Perfil",
+    title: "navigation.profile",
     items: [
       {
         id: "account",
-        label: "Perfil Personal",
+        label: "navigation.profile",
         path: "/account",
         icon: "lucide-user"
       },
       {
         id: "security",
-        label: "Seguridad",
+        label: "navigation.security",
         path: "/security",
         icon: "ri-shield-keyhole-line"
       },
       {
         id: "billing",
-        label: "Facturación",
+        label: "navigation.billing",
         path: "/billing",
         icon: "lucide-credit-card"
       },
       {
         id: "subscription",
-        label: "Mi Suscripción",
+        label: "navigation.subscription",
         path: "/subscription",
         icon: "ri-vip-crown-line"
       }
     ]
   },
   {
-    title: "Empresa",
+    title: "navigation.company",
     items: [
       {
         id: "company-profile",
-        label: "Perfil de Empresa",
+        label: "navigation.companyProfile",
         path: "/profile",
         icon: "lucide-building"
       },
       {
         id: "settings",
-        label: "Preferencias",
+        label: "navigation.settings",
         path: "/settings",
         icon: "lucide-settings"
       },
       {
         id: "about-mervin",
-        label: "Acerca de Mervin",
+        label: "navigation.aboutMervin",
         path: "/about-mervin",
         icon: "ri-robot-2-line"
       },
       {
         id: "about-owlfence",
-        label: "Acerca de Owl Fence",
+        label: "navigation.aboutOwlFence",
         path: "/about-owlfenc",
         icon: "ri-store-3-line"
       }

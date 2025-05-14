@@ -12,7 +12,6 @@
     "features": "Features",
     "dashboard": "Dashboard",
     "talkToMervin": "Talk to Mervin",
-    "projects": "Projects",
     "clients": "Clients",
     "inventory": "My Inventory",
     "history": "History",
@@ -24,6 +23,16 @@
     "settings": "Settings",
     "subscription": "Subscription",
     "company": "Company",
-    "profile": "Profile"
+    "profile": "Profile",
+    "aboutMervin": "About Mervin",
+    "aboutOwlFence": "About Owl Fence",
+    "security": "Security",
+    "billing": "Billing",
+    "companyProfile": "Company Profile",
+    "myProfile": "My Profile"
+  },
+  "sidebar": {
+    "toggleSidebar": "Toggle Sidebar",
+    "closeSidebar": "Close Sidebar"
   }
 }

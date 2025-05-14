@@ -114,7 +114,7 @@ export default function Sidebar() {
       <Link key={item.id} href={item.path}>
         <Button variant="ghost" className="w-full justify-start">
           {renderIcon()}
-          {item.label}
+          {t(item.label)}
         </Button>
       </Link>
     );

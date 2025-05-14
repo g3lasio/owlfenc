@@ -4,6 +4,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { AnimatePresence, motion } from "framer-motion";
 import { navigationGroups, NavigationItem, NavigationGroup } from "@/config/navigation";
+import { useTranslation } from "react-i18next";
+import { useLanguage } from "@/contexts/LanguageContext";
+import LanguageSwitch from "@/components/ui/language-switch";
 
 interface MobileMenuProps {
   isOpen: boolean;

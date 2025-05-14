@@ -12,18 +12,27 @@
     "features": "Funcionalidades",
     "dashboard": "Dashboard",
     "talkToMervin": "Hablar con Mervin",
-    "projects": "Proyectos",
     "clients": "Clientes",
-    "inventory": "My Inventory",
+    "inventory": "Mi Inventario",
     "history": "Historial",
     "propertyVerification": "Verificación de Propiedad",
     "contractGeneration": "Generación de Contratos",
-    "permitAdvisor": "Mervin Permit Advisor",
-    "aiProjectManager": "AI Project Manager",
-    "arFenceEstimator": "AR Fence Estimator",
-    "settings": "Configuración",
+    "permitAdvisor": "Asesor de Permisos Mervin",
+    "aiProjectManager": "Gestor de Proyectos IA",
+    "arFenceEstimator": "Estimador AR de Cercas",
+    "settings": "Preferencias",
     "subscription": "Suscripción",
     "company": "Empresa",
-    "profile": "Perfil"
+    "profile": "Perfil",
+    "aboutMervin": "Acerca de Mervin",
+    "aboutOwlFence": "Acerca de Owl Fence",
+    "security": "Seguridad",
+    "billing": "Facturación",
+    "companyProfile": "Perfil de Empresa",
+    "myProfile": "Mi Perfil"
+  },
+  "sidebar": {
+    "toggleSidebar": "Cambiar Barra Lateral",
+    "closeSidebar": "Cerrar Barra Lateral"
   }
 }
