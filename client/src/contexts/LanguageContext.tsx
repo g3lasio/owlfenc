@@ -17,24 +17,22 @@ export const useLanguage = () => {
 };
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [language, setLanguage] = useState(i18n.language || 'es');
+  const [language, setLanguage] = useState(i18n.language || 'en');
 
   useEffect(() => {
-    // Inicializar el idioma desde localStorage o usar el del navegador
+    // Inicializar el idioma desde localStorage o usar inglés por defecto
     const savedLanguage = localStorage.getItem('language');
-    let initialLanguage = 'es'; // Por defecto, español
+    let initialLanguage = 'en'; // Por defecto, siempre inglés
     
     if (savedLanguage) {
-      initialLanguage = savedLanguage;
-    } else {
-      // Si no hay idioma guardado, intentar detectar del navegador
-      const browserLang = navigator.language.split('-')[0];
-      if (browserLang === 'en' || browserLang === 'es') {
-        initialLanguage = browserLang;
+      // Si hay un idioma guardado en localStorage, comprobamos que sea válido
+      if (savedLanguage === 'en' || savedLanguage === 'es') {
+        initialLanguage = savedLanguage;
       }
-      // Guardar para la próxima vez
-      localStorage.setItem('language', initialLanguage);
     }
+    
+    // Guardar para la próxima vez
+    localStorage.setItem('language', initialLanguage);
     
     i18n.changeLanguage(initialLanguage);
     setLanguage(initialLanguage);
