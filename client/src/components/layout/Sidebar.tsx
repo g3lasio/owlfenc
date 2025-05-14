@@ -187,11 +187,24 @@ export default function Sidebar() {
             </a>
           </div>
           
-          {/* Botón de cerrar sesión con switch de idioma */}
-          <div className="flex items-center justify-between space-x-2 mb-3">
+          {/* Contenedor para switch de idioma y botón de cerrar sesión */}
+          <div className="space-y-3 mb-3">
+            {/* Selector de idioma con estilo Transformers */}
+            <div className="flex items-center justify-between p-2 rounded-md bg-gradient-to-r from-zinc-950 to-slate-900 border border-yellow-600/30"
+                 style={{
+                   boxShadow: "0 0 10px rgba(234, 179, 8, 0.15)"
+                 }}>
+              <div className="flex items-center">
+                <i className="ri-global-line text-lg mr-2 text-yellow-500"></i>
+                <span className="text-sm text-yellow-500/80 font-medium">{t('general.language')}</span>
+              </div>
+              <LanguageSwitch className="flex-shrink-0" />
+            </div>
+            
+            {/* Botón de cerrar sesión */}
             <Button 
               variant="ghost" 
-              className="flex-1 flex items-center justify-center text-destructive hover:bg-destructive/10 hover:text-destructive"
+              className="w-full flex items-center justify-center text-destructive hover:bg-destructive/10 hover:text-destructive"
               onClick={handleLogout}
               disabled={loading}
             >
@@ -202,8 +215,6 @@ export default function Sidebar() {
               )}
               {t('general.logout')}
             </Button>
-            
-            <LanguageSwitch className="flex-shrink-0" />
           </div>
         </div>
       </div>

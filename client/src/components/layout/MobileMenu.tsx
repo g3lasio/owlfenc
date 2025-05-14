@@ -19,6 +19,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const { t } = useTranslation(); // Añadimos soporte para traducciones
+  const { language } = useLanguage(); // Obtenemos el idioma actual del contexto
 
   // Manejar cierre de sesión
   const handleLogout = async () => {
