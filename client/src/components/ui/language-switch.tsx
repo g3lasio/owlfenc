@@ -38,7 +38,8 @@ export function LanguageSwitch({ className }: LanguageSwitchProps) {
           "bg-gradient-to-r from-slate-950 to-zinc-950 shadow-lg",
           "overflow-hidden",
           "border border-yellow-600/40",
-          "animate-transformer-glow" // Aplicamos la nueva animación de brillo
+          "animate-transformer-glow", // Aplicamos la nueva animación de brillo
+          "hover:scale-110 hover:border-yellow-500/70" // Efecto al pasar el mouse
         )}
         aria-label="Toggle language"
         title={t('general.language')}

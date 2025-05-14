@@ -242,50 +242,27 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             </motion.a>
           </motion.div>
 
-          {/* Language Switch para móvil - Estilo Transformers mejorado */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-4 flex flex-col items-center p-3 rounded-md bg-gradient-to-r from-zinc-950 to-slate-900 w-full border border-yellow-600/30"
-            whileHover={{ scale: 1.02, borderColor: 'rgba(234, 179, 8, 0.4)' }}
-            style={{
-              boxShadow: "0 0 15px rgba(234, 179, 8, 0.2)"
-            }}
-          >
-            <div className="flex items-center justify-between w-full mb-2">
-              <div className="flex items-center">
-                <i className="ri-global-line text-xl mr-2 text-yellow-500"></i>
-                <span className="text-yellow-500 font-medium">{t('general.language')}</span>
+          {/* Botón de Cerrar Sesión con switch de idioma a su lado */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={handleLogout}
+                disabled={loading}
+                className="flex-1 flex items-center p-2 rounded-md hover:bg-destructive/10 text-destructive"
+              >
+                <i className={`${loading ? 'ri-loader-2-line animate-spin' : 'ri-logout-box-r-line'} text-lg mr-3`}></i>
+                <span>{t('general.logout')}</span>
+              </motion.button>
+              
+              {/* Language Switch simplificado con decoración mínima */}
+              <div className="ml-2 transform hover:scale-105 transition-transform">
+                <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-500 rounded-full opacity-70"></div>
+                <LanguageSwitch />
               </div>
-              {/* Pequeño icono decorativo de Transformers */}
-              <div className="w-5 h-5 relative opacity-70">
-                <div className="absolute inset-0 rotate-45 border-t-2 border-r-2 border-yellow-500"></div>
-                <div className="absolute inset-[4px] rotate-45 border-b-2 border-l-2 border-orange-500"></div>
-              </div>
             </div>
-            {/* Switch centrado y con tamaño aumentado */}
-            <div className="w-full flex justify-center my-1">
-              <LanguageSwitch className="transform scale-125" />
-            </div>
-            {/* Texto explicativo */}
-            <div className="w-full mt-2 text-center">
-              <span className="text-xs text-yellow-600/70">
-                {language === 'es' ? 'English Available' : 'Español Disponible'}
-              </span>
-            </div>
-          </motion.div>
-
-          {/* Botón de Cerrar Sesión */}
-          <motion.button
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={handleLogout}
-            disabled={loading}
-            className="flex items-center p-2 rounded-md hover:bg-destructive/10 w-full text-destructive"
-          >
-            <i className={`${loading ? 'ri-loader-2-line animate-spin' : 'ri-logout-box-r-line'} text-lg mr-3`}></i>
-            <span>{t('general.logout')}</span>
-          </motion.button>
+          </div>
         </motion.div>
       </motion.div>
     </div>
