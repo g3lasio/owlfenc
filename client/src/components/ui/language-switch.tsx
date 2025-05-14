@@ -30,18 +30,17 @@ export function LanguageSwitch({ className }: LanguageSwitchProps) {
   }, [isAnimating]);
 
   return (
-    <div className={cn("flex flex-col items-center", className)}>
-      <span className="text-xs text-muted-foreground mb-1">{t('general.language')}</span>
+    <div className={cn("flex items-center", className)}>
       <button
         onClick={toggleLanguage}
         className={cn(
-          "relative flex items-center justify-between w-16 h-8 px-1 rounded-full transition-all duration-300",
+          "relative flex items-center justify-between w-14 h-8 px-1 rounded-full transition-all duration-300",
           "bg-gradient-to-r from-blue-600 to-indigo-900 shadow-lg",
           "overflow-hidden",
           "border border-blue-400/30",
-          className
         )}
         aria-label="Toggle language"
+        title={t('general.language')}
       >
         {/* Fondo con efecto futurista */}
         <div className="absolute inset-0 bg-grid-white/5 bg-grid-2"></div>

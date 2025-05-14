@@ -187,24 +187,24 @@ export default function Sidebar() {
             </a>
           </div>
           
-          {/* Language Switch */}
-          <div className="mb-3 flex justify-center">
-            <LanguageSwitch />
+          {/* Botón de cerrar sesión con switch de idioma */}
+          <div className="flex items-center justify-between space-x-2 mb-3">
+            <Button 
+              variant="ghost" 
+              className="flex-1 flex items-center justify-center text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={handleLogout}
+              disabled={loading}
+            >
+              {loading ? (
+                <i className="ri-loader-2-line animate-spin mr-2"></i>
+              ) : (
+                <LogOut className="h-4 w-4 mr-2" />
+              )}
+              {t('general.logout')}
+            </Button>
+            
+            <LanguageSwitch className="flex-shrink-0" />
           </div>
-
-          <Button 
-            variant="ghost" 
-            className="flex items-center w-full justify-center text-destructive hover:bg-destructive/10 hover:text-destructive"
-            onClick={handleLogout}
-            disabled={loading}
-          >
-            {loading ? (
-              <i className="ri-loader-2-line animate-spin mr-2"></i>
-            ) : (
-              <LogOut className="h-4 w-4 mr-2" />
-            )}
-            {t('general.logout')}
-          </Button>
         </div>
       </div>
     </aside>
