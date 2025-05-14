@@ -28,6 +28,7 @@ export default function Sidebar() {
   const { currentUser, logout } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const { t } = useTranslation();
 
   const handleLogout = async () => {
     try {
@@ -151,7 +152,7 @@ export default function Sidebar() {
               <Link href="/subscription">
                 <Button size="sm" variant="outline" className="w-full">
                   <i className="ri-vip-crown-line mr-2"></i>
-                  Ver plan: {getCurrentPlanName()}
+                  {t('general.viewPlan')}: {getCurrentPlanName()}
                 </Button>
               </Link>
             </div>
@@ -163,7 +164,7 @@ export default function Sidebar() {
           {navigationGroups.map((group, index) => (
             <div key={`group-${index}`}>
               <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">
-                {group.title}
+                {t(`navigation.${group.title.toLowerCase()}`)}
               </h2>
               <div className="space-y-1 mb-6">
                 {group.items.map(renderNavItem)}
@@ -176,14 +177,19 @@ export default function Sidebar() {
         {/* Footer con soporte y cerrar sesión */}
         <div className="p-4 border-t border-border mt-auto">
           <div className="rounded-md bg-primary/10 p-1.5 text-center mb-3" style={{ height: "auto", minHeight: "70px" }}>
-            <p className="text-xs mb-1">¿Necesitas ayuda?</p>
+            <p className="text-xs mb-1">{t('general.needHelp')}</p>
             <a 
               href="mailto:mervin@owlfenc.com"
               className="inline-flex items-center justify-center py-1 px-2 w-full bg-card text-sm border border-border rounded-md hover:bg-accent"
             >
               <i className="ri-mail-line mr-1"></i>
-              Contactar Soporte
+              {t('general.support')}
             </a>
+          </div>
+          
+          {/* Language Switch */}
+          <div className="mb-3 flex justify-center">
+            <LanguageSwitch />
           </div>
 
           <Button 
@@ -197,7 +203,7 @@ export default function Sidebar() {
             ) : (
               <LogOut className="h-4 w-4 mr-2" />
             )}
-            Cerrar Sesión
+            {t('general.logout')}
           </Button>
         </div>
       </div>

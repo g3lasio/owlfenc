@@ -34,6 +34,7 @@ import AppleCallback from "@/pages/AppleCallback";
 import SecuritySettings from "@/pages/SecuritySettings";
 import ContractGenerator from "@/pages/ContractGenerator";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 
 // Componente para páginas protegidas
 import { useAuth } from "@/contexts/AuthContext";
@@ -142,12 +143,14 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <AppLayout>
-          <Router />
-        </AppLayout>
-        <Toaster />
-      </AuthProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <AppLayout>
+            <Router />
+          </AppLayout>
+          <Toaster />
+        </AuthProvider>
+      </LanguageProvider>
     </QueryClientProvider>
   );
 }
