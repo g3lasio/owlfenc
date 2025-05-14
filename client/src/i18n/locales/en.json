@@ -1,0 +1,29 @@
+{
+  "general": {
+    "language": "Language",
+    "logout": "Logout",
+    "support": "Contact Support",
+    "needHelp": "Need help?",
+    "viewPlan": "View plan"
+  },
+  "navigation": {
+    "tools": "Tools",
+    "projects": "Projects",
+    "features": "Features",
+    "dashboard": "Dashboard",
+    "talkToMervin": "Talk to Mervin",
+    "projects": "Projects",
+    "clients": "Clients",
+    "inventory": "My Inventory",
+    "history": "History",
+    "propertyVerification": "Property Verification",
+    "contractGeneration": "Contract Generation",
+    "permitAdvisor": "Mervin Permit Advisor",
+    "aiProjectManager": "AI Project Manager",
+    "arFenceEstimator": "AR Fence Estimator",
+    "settings": "Settings",
+    "subscription": "Subscription",
+    "company": "Company",
+    "profile": "Profile"
+  }
+}

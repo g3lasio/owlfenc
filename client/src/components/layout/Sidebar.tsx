@@ -8,6 +8,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { LogOut, User, CreditCard, Building, Settings } from "lucide-react";
 import { navigationGroups, NavigationItem } from "@/config/navigation";
+import { useTranslation } from "react-i18next";
+import { useLanguage } from "@/contexts/LanguageContext";
+import LanguageSwitch from "@/components/ui/language-switch";
 
 // Definición de tipos para la suscripción y planes
 interface UserSubscription {
