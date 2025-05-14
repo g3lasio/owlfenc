@@ -15,21 +15,25 @@ import { HiMail } from "react-icons/hi";
 import { RiMailSendLine, RiEyeLine, RiEyeOffLine, RiArrowLeftLine, RiArrowRightLine, RiUserLine, RiShieldKeyholeLine, RiCheckboxCircleLine } from "react-icons/ri";
 import { useAuth } from "@/contexts/AuthContext";
 import EmailLinkAuth from "@/components/auth/EmailLinkAuth";
+import { useTranslation } from "react-i18next";
+
+// Declaramos el hook de traducción para usar en los esquemas
+const { t } = { t: (key: string) => key }; // Inicialización temporal, se sobrescribirá con el hook real
 
 // Esquema de validación para el formulario de login
 const loginSchema = z.object({
-  email: z.string().email("Ingresa un correo electrónico válido"),
-  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
+  email: z.string().email(t("auth.validEmail")),
+  password: z.string().min(6, t("auth.passwordRequirements")),
 });
 
 // Esquema de validación para el formulario de registro
 const signupSchema = z.object({
-  name: z.string().min(3, "El nombre debe tener al menos 3 caracteres"),
-  email: z.string().email("Ingresa un correo electrónico válido"),
-  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
-  confirmPassword: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
+  name: z.string().min(3, t("auth.nameRequirements")),
+  email: z.string().email(t("auth.validEmail")),
+  password: z.string().min(6, t("auth.passwordRequirements")),
+  confirmPassword: z.string().min(6, t("auth.passwordRequirements")),
 }).refine((data) => data.password === data.confirmPassword, {
-  message: "Las contraseñas no coinciden",
+  message: t("auth.passwordsMatch"),
   path: ["confirmPassword"],
 });
 
@@ -48,6 +52,7 @@ export default function AuthPage() {
   const [showSuccess, setShowSuccess] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const successRef = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation(); // Obtenemos la función de traducción
 
   // Configurar el formulario de login
   const loginForm = useForm<LoginFormValues>({

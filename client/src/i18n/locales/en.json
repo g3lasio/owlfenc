@@ -34,5 +34,30 @@
   "sidebar": {
     "toggleSidebar": "Toggle Sidebar",
     "closeSidebar": "Close Sidebar"
+  },
+  "auth": {
+    "login": "Login",
+    "signup": "Sign Up",
+    "forgotPassword": "Forgot Password?",
+    "resetPassword": "Reset Password",
+    "name": "Name",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "googleLogin": "Continue with Google",
+    "appleLogin": "Continue with Apple",
+    "emailLogin": "Continue with Email",
+    "backToLogin": "Back to Login",
+    "alreadyAccount": "Already have an account?",
+    "noAccount": "Don't have an account?",
+    "createAccount": "Create Account",
+    "magicLink": "Sign in with Magic Link",
+    "sendLink": "Send Magic Link",
+    "linkSent": "Link sent! Check your email",
+    "orContinueWith": "or continue with",
+    "validEmail": "Enter a valid email",
+    "passwordRequirements": "Password must be at least 6 characters",
+    "nameRequirements": "Name must be at least 3 characters",
+    "passwordsMatch": "Passwords must match"
   }
 }

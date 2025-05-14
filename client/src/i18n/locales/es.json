@@ -34,5 +34,30 @@
   "sidebar": {
     "toggleSidebar": "Cambiar Barra Lateral",
     "closeSidebar": "Cerrar Barra Lateral"
+  },
+  "auth": {
+    "login": "Iniciar Sesión",
+    "signup": "Registrarse",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "resetPassword": "Restablecer Contraseña",
+    "name": "Nombre",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "confirmPassword": "Confirmar Contraseña",
+    "googleLogin": "Continuar con Google",
+    "appleLogin": "Continuar con Apple",
+    "emailLogin": "Continuar con Email",
+    "backToLogin": "Volver a Iniciar Sesión",
+    "alreadyAccount": "¿Ya tienes una cuenta?",
+    "noAccount": "¿No tienes una cuenta?",
+    "createAccount": "Crear Cuenta",
+    "magicLink": "Iniciar sesión con Magic Link",
+    "sendLink": "Enviar Magic Link",
+    "linkSent": "¡Enlace enviado! Revisa tu correo",
+    "orContinueWith": "o continúa con",
+    "validEmail": "Ingresa un correo electrónico válido",
+    "passwordRequirements": "La contraseña debe tener al menos 6 caracteres",
+    "nameRequirements": "El nombre debe tener al menos 3 caracteres",
+    "passwordsMatch": "Las contraseñas deben coincidir"
   }
 }
