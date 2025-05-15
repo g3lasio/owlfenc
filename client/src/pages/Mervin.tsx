@@ -50,11 +50,18 @@ interface Message {
 }
 
 export default function Mervin() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
+  const [messages, setMessages] = useState<Message[]>([]);
+  
+  // Efecto para mostrar el mensaje de bienvenida con animación
+  useEffect(() => {
+    const welcomeContent = "¡Hola! Soy Mervin, tu asistente virtual especializado en proyectos de construcción y cercas. Puedo ayudarte con las siguientes funciones:";
+    
+    const welcomeMessage: Message = {
       id: "welcome",
-      content: "¡Hola! Soy Mervin, tu asistente virtual especializado en proyectos de construcción y cercas. Puedo ayudarte con las siguientes funciones:",
+      content: welcomeContent,
       sender: "assistant",
+      typewriterEffect: true,
+      visibleContent: "",
       actionButtons: [
         { 
           id: "estimados", 
@@ -91,9 +98,39 @@ export default function Mervin() {
           action: "insights",
           description: "Datos e insights"
         }
-      ],
-    },
-  ]);
+      ]
+    };
+    
+    setMessages([welcomeMessage]);
+    
+    // Iniciar efecto de escritura para el mensaje de bienvenida
+    let currentIndex = 0;
+    const typingInterval = setInterval(() => {
+      if (currentIndex <= welcomeContent.length) {
+        setMessages(prev => 
+          prev.map(msg => 
+            msg.id === welcomeMessage.id 
+              ? { ...msg, visibleContent: welcomeContent.substring(0, currentIndex) }
+              : msg
+          )
+        );
+        currentIndex++;
+      } else {
+        clearInterval(typingInterval);
+        // Cuando termine de "escribir", quitar el efecto de escritura
+        setMessages(prev => 
+          prev.map(msg => 
+            msg.id === welcomeMessage.id 
+              ? { ...msg, typewriterEffect: false }
+              : msg
+          )
+        );
+      }
+    }, 30);
+    
+    // Limpiar el intervalo cuando el componente se desmonte
+    return () => clearInterval(typingInterval);
+  }, []);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showAttachOptions, setShowAttachOptions] = useState(false);
@@ -117,15 +154,45 @@ export default function Mervin() {
     setIsLoading(true);
 
     try {
-      // Simulamos respuesta para esta versión inicial
+      // Simulamos respuesta para esta versión inicial con efecto de escritura
       setTimeout(() => {
+        const responseText = "Estoy aquí para ayudarte. ¿Te gustaría generar un contrato, verificar una propiedad, consultar permisos, gestionar clientes o revisar facturación?";
         const assistantMessage: Message = {
           id: `assistant-${Date.now()}`,
-          content: "Estoy aquí para ayudarte. ¿Te gustaría generar un contrato, verificar una propiedad, consultar permisos, gestionar clientes o revisar facturación?",
-          sender: "assistant"
+          content: responseText,
+          sender: "assistant",
+          typewriterEffect: true,
+          visibleContent: ""
         };
+        
         setMessages(prev => [...prev, assistantMessage]);
-        setIsLoading(false);
+        
+        // Iniciar el efecto de escritura progresiva
+        let currentIndex = 0;
+        const typingInterval = setInterval(() => {
+          if (currentIndex <= responseText.length) {
+            setMessages(prev => 
+              prev.map(msg => 
+                msg.id === assistantMessage.id 
+                  ? { ...msg, visibleContent: responseText.substring(0, currentIndex) }
+                  : msg
+              )
+            );
+            currentIndex++;
+            scrollToBottom();
+          } else {
+            clearInterval(typingInterval);
+            // Cuando termine de "escribir", quitar el efecto de escritura
+            setMessages(prev => 
+              prev.map(msg => 
+                msg.id === assistantMessage.id 
+                  ? { ...msg, typewriterEffect: false }
+                  : msg
+              )
+            );
+            setIsLoading(false);
+          }
+        }, 30); // Velocidad de escritura: 30ms por carácter
       }, 1000);
     } catch (error) {
       console.error("Error al procesar mensaje:", error);
@@ -160,18 +227,50 @@ export default function Mervin() {
       setMessages(prev => [...prev, userMessage]);
       setIsLoading(false);
 
-      // Simular respuesta del asistente
+      // Simular respuesta del asistente con efecto de escritura
       setIsLoading(true);
       setTimeout(() => {
+        const responseText = type === "image" 
+          ? "He recibido tu imagen. ¿Qué te gustaría hacer con ella?" 
+          : "He recibido tu archivo. ¿Qué información necesitas extraer de él?";
+          
         const assistantMessage: Message = {
           id: `assistant-file-${Date.now()}`,
-          content: type === "image" 
-            ? "He recibido tu imagen. ¿Qué te gustaría hacer con ella?" 
-            : "He recibido tu archivo. ¿Qué información necesitas extraer de él?",
-          sender: "assistant"
+          content: responseText,
+          sender: "assistant",
+          typewriterEffect: true,
+          visibleContent: "",
+          state: type === "image" ? "analyzing" : "reading"
         };
+        
         setMessages(prev => [...prev, assistantMessage]);
-        setIsLoading(false);
+        
+        // Iniciar el efecto de escritura progresiva
+        let currentIndex = 0;
+        const typingInterval = setInterval(() => {
+          if (currentIndex <= responseText.length) {
+            setMessages(prev => 
+              prev.map(msg => 
+                msg.id === assistantMessage.id 
+                  ? { ...msg, visibleContent: responseText.substring(0, currentIndex) }
+                  : msg
+              )
+            );
+            currentIndex++;
+            scrollToBottom();
+          } else {
+            clearInterval(typingInterval);
+            // Cuando termine de "escribir", quitar el efecto de escritura
+            setMessages(prev => 
+              prev.map(msg => 
+                msg.id === assistantMessage.id 
+                  ? { ...msg, typewriterEffect: false, state: "none" }
+                  : msg
+              )
+            );
+            setIsLoading(false);
+          }
+        }, 30);
       }, 1000);
     }, 1500);
 
@@ -199,11 +298,12 @@ export default function Mervin() {
       setMessages(prev => prev.filter(msg => msg.id !== thinkingMessage.id));
       
       let message = "";
-      let state: "none" | "analyzing" | "deepSearching" = "none";
+      let state: "none" | "analyzing" | "deepSearching" | "reading" | "calculating" = "none";
 
       switch(service) {
         case "estimados":
           message = "Puedo ayudarte a generar estimados precisos para tus proyectos de cercas. Para empezar, necesito algunos detalles básicos:\n\n• Tipo de cerca (madera, vinilo, metal, etc.)\n• Longitud aproximada en pies lineales\n• Altura deseada\n• Ubicación (ciudad/condado)\n• ¿Incluye alguna puerta o características especiales?";
+          state = "calculating";
           break;
         case "contratos":
           message = "Puedo ayudarte a generar un contrato profesional y legal. ¿Te gustaría:\n\n• Crear un nuevo contrato desde cero\n• Usar una plantilla existente\n• Modificar un contrato anterior";
@@ -215,6 +315,7 @@ export default function Mervin() {
           break;
         case "permisos":
           message = "Para ayudarte con información sobre permisos y regulaciones, necesito saber:\n\n• Ubicación exacta (ciudad/condado)\n• Tipo de cerca que planeas instalar\n• Si la propiedad está en una zona con restricciones (HOA)\n• Si la cerca estará en el límite de la propiedad";
+          state = "reading";
           break;
         case "insights":
           message = "Puedo proporcionar análisis detallados sobre:\n\n• Tendencias de costos de materiales\n• Comparativas de proyectos anteriores\n• Métricas de rentabilidad por tipo de proyecto\n• Predicciones de demanda por zona\n\n¿Qué tipo de insights te gustaría explorar?";
@@ -224,16 +325,44 @@ export default function Mervin() {
           message = "¿En qué te puedo ayudar hoy?";
       }
 
+      // Crear mensaje inicial con contenido vacío pero con efecto de escritura
       const assistantMessage: Message = {
         id: `assistant-service-${Date.now()}`,
         content: message,
         sender: "assistant",
-        state: state
+        state: state,
+        typewriterEffect: true,
+        visibleContent: ""
       };
 
       setMessages(prev => [...prev, assistantMessage]);
-      setIsLoading(false);
-      scrollToBottom();
+      
+      // Iniciar el efecto de escritura progresiva
+      let currentIndex = 0;
+      const typingInterval = setInterval(() => {
+        if (currentIndex <= message.length) {
+          setMessages(prev => 
+            prev.map(msg => 
+              msg.id === assistantMessage.id 
+                ? { ...msg, visibleContent: message.substring(0, currentIndex) }
+                : msg
+            )
+          );
+          currentIndex++;
+          scrollToBottom();
+        } else {
+          clearInterval(typingInterval);
+          // Cuando termine de "escribir", quitar el efecto de escritura
+          setMessages(prev => 
+            prev.map(msg => 
+              msg.id === assistantMessage.id 
+                ? { ...msg, typewriterEffect: false }
+                : msg
+            )
+          );
+          setIsLoading(false);
+        }
+      }, 25); // Velocidad de escritura: 25ms por carácter
     }, 1500);
   };
 
