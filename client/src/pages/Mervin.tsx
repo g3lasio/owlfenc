@@ -65,38 +65,38 @@ export default function Mervin() {
       actionButtons: [
         { 
           id: "estimados", 
-          text: "Estimados", 
+          text: "Estimates", 
           icon: <FileSpreadsheet className="h-5 w-5" />, 
           action: "estimados",
-          description: "Cálculos precisos"
+          description: ""
         },
         { 
           id: "contratos", 
-          text: "Contratos", 
+          text: "Contracts", 
           icon: <ClipboardList className="h-5 w-5" />, 
           action: "contratos",
-          description: "Documentos legales"
+          description: ""
         },
         { 
           id: "permisos", 
-          text: "Permisos", 
+          text: "Permits", 
           icon: <ClipboardCheck className="h-5 w-5" />, 
           action: "permisos",
-          description: "Regulaciones"
+          description: ""
         },
         { 
           id: "ownership", 
-          text: "Propiedades", 
+          text: "Properties", 
           icon: <Building className="h-5 w-5" />, 
           action: "propiedades",
-          description: "Verificación"
+          description: ""
         },
         { 
           id: "insights", 
-          text: "Analítica", 
+          text: "Analytics", 
           icon: <BarChart4 className="h-5 w-5" />, 
           action: "insights",
-          description: "Datos e insights"
+          description: ""
         }
       ]
     };
@@ -392,27 +392,26 @@ export default function Mervin() {
           <Card 
             key={message.id} 
             className={`${message.sender === "assistant" 
-              ? "bg-gray-900 border-cyan-900/40 animate-fadeIn" 
-              : "bg-gray-800 border-cyan-800/30 animate-slideInRight"} 
+              ? "bg-gray-900 border-cyan-900/40 animate-fadeIn max-w-[85%] ml-0 mr-auto" 
+              : "bg-blue-900/30 border-blue-500/30 animate-slideInRight max-w-[85%] ml-auto mr-0"} 
               transition-all duration-300 shadow-md hover:shadow-lg`}
             style={{ animationDelay: `${index * 0.1}s` }}
           >
             <CardContent className="pt-4">
               <div className="flex items-start">
-                <div className="w-10 h-10 rounded-full bg-cyan-900/30 flex items-center justify-center mr-3 flex-shrink-0">
-                  {message.sender === "assistant" ? 
+                {message.sender === "assistant" && (
+                  <div className="w-10 h-10 rounded-full bg-cyan-900/30 flex items-center justify-center mr-3 flex-shrink-0">
                     <div className="mervin-logo-container">
                       <img 
-                        src="https://i.postimg.cc/4yc9M62C/White-logo-no-background.png" 
+                        src="https://i.postimg.cc/W4nKDvTL/logo-mervin.png" 
                         alt="Mervin AI" 
                         className="mervin-logo w-8 h-8 object-contain" 
                       />
                       <div className="glow-effect"></div>
-                    </div> : 
-                    <div className="w-5 h-5 rounded-full bg-cyan-400" />
-                  }
-                </div>
-                <div className="flex-1">
+                    </div>
+                  </div>
+                )}
+                <div className={`flex-1 ${message.sender === "user" ? "text-right" : ""}`}>
                   {/* Indicadores de estado */}
                   {message.state === "thinking" && (
                     <div className="flex items-center text-xs text-cyan-500 mb-1 animate-pulse">
@@ -461,13 +460,17 @@ export default function Mervin() {
                     </div>
                   )}
                   
-                  {message.sender === "assistant" && (
+                  {message.sender === "assistant" ? (
                     <div className="mb-2">
                       <span className="text-cyan-400 font-semibold">Mervin AI</span>
                     </div>
+                  ) : (
+                    <div className="mb-2">
+                      <span className="text-blue-400 font-semibold">You</span>
+                    </div>
                   )}
                   {message.typewriterEffect && message.sender === "assistant" ? (
-                    <p className="whitespace-pre-wrap typewriter-text">{message.visibleContent}</p>
+                    <p className="whitespace-pre-wrap min-h-[20px] typewriter-text" style={{minHeight: `${Math.ceil(message.content.length / 50) * 20}px`}}>{message.visibleContent}</p>
                   ) : (
                     <p className="whitespace-pre-wrap">{message.content}</p>
                   )}
@@ -479,15 +482,14 @@ export default function Mervin() {
                         <button
                           key={button.id}
                           onClick={() => handleServiceSelection(button.action)}
-                          className="flex flex-col items-center bg-gradient-to-b from-cyan-900/30 to-cyan-950/50 hover:from-cyan-800/40 hover:to-cyan-900/60 transition-all p-2 rounded-lg border border-cyan-500/20 group w-full h-20 shadow-md hover:shadow-cyan-500/30 backdrop-blur-sm"
+                          className="flex flex-col items-center bg-gradient-to-b from-cyan-900/30 to-cyan-950/50 hover:from-cyan-800/40 hover:to-cyan-900/60 transition-all p-2 rounded-lg border border-cyan-500/20 group w-full h-16 shadow-md hover:shadow-cyan-500/30 backdrop-blur-sm"
                         >
                           <div className="w-7 h-7 rounded-full bg-gradient-to-br from-cyan-800/70 to-cyan-950/90 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform ring-1 ring-cyan-500/30">
                             <div className="text-cyan-400">
                               {button.icon}
                             </div>
                           </div>
-                          <span className="text-xs font-medium text-center text-cyan-400 font-quantico leading-tight">{button.text}</span>
-                          <span className="text-[9px] text-center text-cyan-300/70 mt-0.5 line-clamp-1">{button.description}</span>
+                          <span className="text-sm font-medium text-center text-cyan-400 font-quantico leading-tight">{button.text}</span>
                         </button>
                       ))}
                     </div>
