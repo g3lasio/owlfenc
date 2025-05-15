@@ -126,11 +126,12 @@ export default function Sidebar() {
       <div className="flex flex-col h-full overflow-y-auto">
         {/* Sidebar Header con logo y perfil */}
         <div className="p-4 border-b border-border">
-          <div className="flex items-center justify-center mb-4">
+          <div className="flex items-center justify-center py-4">
             <img 
               src="https://i.postimg.cc/4yc9M62C/White-logo-no-background.png" 
               alt="Owl Fence"
-              className="h-12 w-auto object-contain"
+              className="h-16 w-auto object-contain px-4"
+              style={{ maxWidth: '90%', margin: '0 auto' }}
               onError={(e) => {
                 e.currentTarget.src = "/White-logo-no-background.png";
               }}

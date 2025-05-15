@@ -78,7 +78,8 @@ export default function Header({
           <img
               src="https://i.postimg.cc/4yc9M62C/White-logo-no-background.png" 
               alt="Owl Fence"
-              className="h-14 w-auto object-contain relative z-10 transition-transform duration-300 group-hover:scale-105 filter drop-shadow-[0_0_3px_rgba(56,189,248,0.5)] px-2"
+              className="h-16 w-auto object-contain relative z-10 transition-transform duration-300 group-hover:scale-105 filter drop-shadow-[0_0_3px_rgba(56,189,248,0.5)] my-2"
+              style={{ maxWidth: '240px', margin: '0 auto' }}
             />
           {/* Texto de respaldo en caso de que la imagen no cargue */}
           <span className="absolute opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-sm text-primary font-bold">Owl Fence</span>
