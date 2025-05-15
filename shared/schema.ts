@@ -318,6 +318,38 @@ export const insertPaymentHistorySchema = createInsertSchema(paymentHistory).pic
   receiptUrl: true,
 });
 
+// Project payments table
+export const projectPayments = pgTable("project_payments", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id),
+  userId: integer("user_id").references(() => users.id),
+  stripePaymentIntentId: text("stripe_payment_intent_id"),
+  stripeCheckoutSessionId: text("stripe_checkout_session_id"),
+  amount: integer("amount").notNull(), // Amount in cents
+  type: text("type").notNull(), // deposit, final
+  status: text("status").notNull(), // pending, succeeded, failed, canceled
+  paymentMethod: text("payment_method"), // card, bank_transfer, etc.
+  receiptUrl: text("receipt_url"),
+  checkoutUrl: text("checkout_url"), // URL for Stripe Checkout Session
+  paymentDate: timestamp("payment_date"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertProjectPaymentSchema = createInsertSchema(projectPayments).pick({
+  projectId: true,
+  userId: true,
+  stripePaymentIntentId: true,
+  stripeCheckoutSessionId: true,
+  amount: true,
+  type: true,
+  status: true,
+  paymentMethod: true,
+  receiptUrl: true,
+  checkoutUrl: true,
+  paymentDate: true,
+});
+
 export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
 export type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlanSchema>;
 
@@ -326,6 +358,9 @@ export type InsertUserSubscription = z.infer<typeof insertUserSubscriptionSchema
 
 export type PaymentHistory = typeof paymentHistory.$inferSelect;
 export type InsertPaymentHistory = z.infer<typeof insertPaymentHistorySchema>;
+
+export type ProjectPayment = typeof projectPayments.$inferSelect;
+export type InsertProjectPayment = z.infer<typeof insertProjectPaymentSchema>;
 
 // Prompt Templates table
 export const promptTemplates = pgTable("prompt_templates", {

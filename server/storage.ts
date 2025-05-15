@@ -17,6 +17,8 @@ import {
   InsertUserSubscription,
   PaymentHistory,
   InsertPaymentHistory,
+  ProjectPayment,
+  InsertProjectPayment,
   Material,
   InsertMaterial,
   PromptTemplate,
