@@ -2,7 +2,6 @@ import { Link, useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import owlLogo from "@assets/White logo - no background.png";
 
 interface HeaderProps {
   toggleMobileMenu: () => void;
@@ -31,22 +30,24 @@ export default function Header({
   };
 
   return (
-    <header className="h-20 w-full flex items-center justify-between px-0 border-b border-border bg-card sticky top-0 z-50">
-      <button
-        className="p-2 rounded-md hover:bg-accent/20 transition-all duration-300 z-[10000] relative overflow-hidden group md:hidden fixed left-4 top-6"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          handleMenuToggle();
-          console.log("Menu toggle clicked in Header");
-        }}
-        aria-label="Menu principal"
-        aria-expanded={isMobileMenuOpen}
-        type="button"
-      >
-        <i className="ri-menu-line text-xl relative z-10 transition-transform duration-300 group-hover:rotate-180 text-primary"></i>
-        <div className="absolute inset-0 bg-primary/10 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
-      </button>
+    <header className="h-20 w-full flex items-center justify-between px-4 border-b border-border bg-card sticky top-0 z-50">
+      <div className="w-10">
+        <button
+          className="p-2 rounded-md hover:bg-accent/20 transition-all duration-300 z-[10000] relative overflow-hidden group md:hidden"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleMenuToggle();
+            console.log("Menu toggle clicked in Header");
+          }}
+          aria-label="Menu principal"
+          aria-expanded={isMobileMenuOpen}
+          type="button"
+        >
+          <i className="ri-menu-line text-2xl relative z-10 transition-transform duration-300 group-hover:rotate-180 text-primary"></i>
+          <div className="absolute inset-0 bg-primary/10 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
+        </button>
+      </div>
 
       <div className="absolute left-1/2 transform -translate-x-1/2 flex flex-col items-center justify-center w-full max-w-[280px] px-4">
         <Link href="/" className="cursor-pointer relative group px-2 mx-2">
@@ -75,7 +76,7 @@ export default function Header({
           </div>
           
           <img
-            src={owlLogo} 
+            src="/owl-logo.png" 
             alt="Owl Fence"
             className="h-14 w-auto object-contain relative z-10 transition-transform duration-300 group-hover:scale-105 filter drop-shadow-[0_0_3px_rgba(56,189,248,0.5)] px-2"
           />
