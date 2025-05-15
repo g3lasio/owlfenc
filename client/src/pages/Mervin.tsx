@@ -1,67 +1,71 @@
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { 
+  FileSpreadsheet, 
+  ClipboardList, 
+  ClipboardCheck, 
+  Building, 
+  BarChart4, 
   FileText, 
-  Image as ImageIcon, 
-  Paperclip, 
+  ImageIcon, 
   Camera, 
+  BrainCircuit, 
+  FileSearch, 
   Send, 
-  MessageSquare,
-  Home,
-  ClipboardCheck,
-  Users,
-  CircleDollarSign,
-  FileSearch,
-  FileSpreadsheet,
-  Building,
-  CheckSquare,
-  BarChart4,
-  BrainCircuit,
-  Search,
   Database,
-  Loader,
-  ClipboardList
+  Paperclip, 
+  Globe 
 } from "lucide-react";
 
-interface ActionButton {
+// Tipo para el mensaje de chat
+type MessageAttachment = {
+  type: 'image' | 'file';
+  name: string;
+  url: string;
+  size?: number;
+};
+
+type MessageButton = {
   id: string;
   text: string;
-  icon: JSX.Element;
+  icon: React.ReactNode;
   action: string;
   description: string;
-}
+};
 
-interface Message {
+type Message = {
   id: string;
   content: string;
   sender: "user" | "assistant";
-  attachment?: {
-    type: "image" | "file";
-    url: string;
-    name: string;
-  };
-  actionButtons?: ActionButton[];
+  attachment?: MessageAttachment;
+  actionButtons?: MessageButton[];
   state?: "thinking" | "analyzing" | "deepSearching" | "reading" | "calculating" | "none";
-  typewriterEffect?: boolean;
-  visibleContent?: string;
-}
+};
 
 export default function Mervin() {
   const [messages, setMessages] = useState<Message[]>([]);
-  
-  // Efecto para mostrar el mensaje de bienvenida con animación
+  const [inputValue, setInputValue] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [showAttachOptions, setShowAttachOptions] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+
+  // Función para desplazarse al final de los mensajes
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // Efecto para mostrar el mensaje de bienvenida al cargar
   useEffect(() => {
-    const welcomeContent = "¡Hola! Soy Mervin, tu asistente virtual especializado en proyectos de construcción y cercas. Puedo ayudarte con las siguientes funciones:";
-    
     const welcomeMessage: Message = {
       id: "welcome",
-      content: welcomeContent,
+      content: "¡Hola! Soy Mervin, tu asistente virtual especializado en proyectos de construcción y cercas. Puedo ayudarte con las siguientes funciones:",
       sender: "assistant",
-      typewriterEffect: true,
-      visibleContent: "",
       actionButtons: [
         { 
           id: "estimados", 
@@ -102,212 +106,99 @@ export default function Mervin() {
     };
     
     setMessages([welcomeMessage]);
-    
-    // Precalcular la altura para evitar temblores
-    const messageHeight = Math.ceil(welcomeContent.length / 40) * 20;
-    
-    // Iniciar efecto de escritura para el mensaje de bienvenida
-    let currentIndex = 0;
-    let lastScrollTime = 0;
-    
-    const typingInterval = setInterval(() => {
-      if (currentIndex <= welcomeContent.length) {
-        setMessages(prev => 
-          prev.map(msg => 
-            msg.id === welcomeMessage.id 
-              ? { ...msg, visibleContent: welcomeContent.substring(0, currentIndex) }
-              : msg
-          )
-        );
-        currentIndex++;
-        
-        // Limitamos la frecuencia de actualización de scroll para evitar temblores
-        const currentTime = Date.now();
-        if (currentTime - lastScrollTime > 200) {
-          messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-          lastScrollTime = currentTime;
-        }
-      } else {
-        clearInterval(typingInterval);
-        // Cuando termine de "escribir", quitar el efecto de escritura
-        setMessages(prev => 
-          prev.map(msg => 
-            msg.id === welcomeMessage.id 
-              ? { ...msg, typewriterEffect: false }
-              : msg
-          )
-        );
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-      }
-    }, 35);
-    
-    // Limpiar el intervalo cuando el componente se desmonte
-    return () => clearInterval(typingInterval);
   }, []);
-  const [inputValue, setInputValue] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [showAttachOptions, setShowAttachOptions] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const imageInputRef = useRef<HTMLInputElement>(null);
-  const { toast } = useToast();
+  
+  // Scroll al fondo cuando cambian los mensajes
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
+  // Manejar el envío de mensajes
   const handleSendMessage = async () => {
-    if (!inputValue.trim()) return;
-
+    if (!inputValue.trim() && !isLoading) return;
+    
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       content: inputValue,
       sender: "user"
     };
-
-    // Add user message to chat
-    setMessages(prev => [...prev, userMessage]);
+    
     setInputValue("");
     setIsLoading(true);
 
+    // Añadimos el mensaje del usuario al historial
+    setMessages(prev => [...prev, userMessage]);
+
     try {
-      // Simulamos respuesta para esta versión inicial con efecto de escritura
+      // Simulamos respuesta para esta versión inicial
       setTimeout(() => {
-        const responseText = "Estoy aquí para ayudarte. ¿Te gustaría generar un contrato, verificar una propiedad, consultar permisos, gestionar clientes o revisar facturación?";
         const assistantMessage: Message = {
           id: `assistant-${Date.now()}`,
-          content: responseText,
-          sender: "assistant",
-          typewriterEffect: true,
-          visibleContent: ""
+          content: "Estoy aquí para ayudarte. ¿Te gustaría generar un contrato, verificar una propiedad, consultar permisos, gestionar clientes o revisar facturación?",
+          sender: "assistant"
         };
-        
         setMessages(prev => [...prev, assistantMessage]);
-        
-        // Precalcular la altura para evitar temblores
-        const messageHeight = Math.ceil(responseText.length / 40) * 20;
-        
-        // Iniciar el efecto de escritura progresiva
-        let currentIndex = 0;
-        let lastScrollTime = 0;
-        
-        const typingInterval = setInterval(() => {
-          if (currentIndex <= responseText.length) {
-            setMessages(prev => 
-              prev.map(msg => 
-                msg.id === assistantMessage.id 
-                  ? { ...msg, visibleContent: responseText.substring(0, currentIndex) }
-                  : msg
-              )
-            );
-            currentIndex++;
-            
-            // Limitar la frecuencia de scroll para reducir temblores
-            const currentTime = Date.now();
-            if (currentTime - lastScrollTime > 200) {
-              scrollToBottom();
-              lastScrollTime = currentTime;
-            }
-          } else {
-            clearInterval(typingInterval);
-            // Cuando termine de "escribir", quitar el efecto de escritura
-            setMessages(prev => 
-              prev.map(msg => 
-                msg.id === assistantMessage.id 
-                  ? { ...msg, typewriterEffect: false }
-                  : msg
-              )
-            );
-            scrollToBottom();
-            setIsLoading(false);
-          }
-        }, 35); // Velocidad de escritura ligeramente más lenta para mayor estabilidad
+        setIsLoading(false);
       }, 1000);
     } catch (error) {
       console.error("Error al procesar mensaje:", error);
       toast({
         title: "Error",
-        description: "No pude procesar tu mensaje. Por favor intenta de nuevo.",
+        description: "No se pudo procesar tu mensaje. Inténtalo de nuevo más tarde.",
         variant: "destructive"
       });
       setIsLoading(false);
     }
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>, type: "file" | "image") => {
-    const file = event.target.files?.[0];
+  // Manejar tecla Enter en el input
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  // Manejar la subida de archivos
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'file') => {
+    const file = event.target.files && event.target.files[0];
+    
     if (!file) return;
 
-    // Simular carga de archivo (en una implementación real, se subiría a un servidor)
-    setIsLoading(true);
-
+    // Simular carga del archivo
     setTimeout(() => {
+      // Crear URL para el archivo
+      const fileUrl = URL.createObjectURL(file);
+      
+      // Crear mensaje de usuario con archivo adjunto
       const userMessage: Message = {
         id: `user-file-${Date.now()}`,
-        content: type === "image" ? "He adjuntado una imagen." : "He adjuntado un archivo.",
+        content: `He subido ${type === 'image' ? 'una imagen' : 'un archivo'}: ${file.name}`,
         sender: "user",
         attachment: {
-          type: type,
-          url: URL.createObjectURL(file),
-          name: file.name
+          type,
+          name: file.name,
+          url: fileUrl,
+          size: file.size
         }
       };
 
       setMessages(prev => [...prev, userMessage]);
       setIsLoading(false);
 
-      // Simular respuesta del asistente con efecto de escritura
+      // Simular respuesta del asistente
       setIsLoading(true);
       setTimeout(() => {
-        const responseText = type === "image" 
-          ? "He recibido tu imagen. ¿Qué te gustaría hacer con ella?" 
-          : "He recibido tu archivo. ¿Qué información necesitas extraer de él?";
-          
         const assistantMessage: Message = {
           id: `assistant-file-${Date.now()}`,
-          content: responseText,
+          content: type === "image" 
+            ? "He recibido tu imagen. ¿Qué te gustaría hacer con ella?" 
+            : "He recibido tu archivo. ¿Qué información necesitas extraer de él?",
           sender: "assistant",
-          typewriterEffect: true,
-          visibleContent: "",
           state: type === "image" ? "analyzing" : "reading"
         };
-        
         setMessages(prev => [...prev, assistantMessage]);
-        
-        // Precalcular la altura para evitar temblores
-        const messageHeight = Math.ceil(responseText.length / 40) * 20;
-        
-        // Iniciar el efecto de escritura progresiva
-        let currentIndex = 0;
-        let lastScrollTime = 0;
-        
-        const typingInterval = setInterval(() => {
-          if (currentIndex <= responseText.length) {
-            setMessages(prev => 
-              prev.map(msg => 
-                msg.id === assistantMessage.id 
-                  ? { ...msg, visibleContent: responseText.substring(0, currentIndex) }
-                  : msg
-              )
-            );
-            currentIndex++;
-            
-            // Limitar la frecuencia de scroll para reducir temblores
-            const currentTime = Date.now();
-            if (currentTime - lastScrollTime > 200) {
-              scrollToBottom();
-              lastScrollTime = currentTime;
-            }
-          } else {
-            clearInterval(typingInterval);
-            // Cuando termine de "escribir", quitar el efecto de escritura
-            setMessages(prev => 
-              prev.map(msg => 
-                msg.id === assistantMessage.id 
-                  ? { ...msg, typewriterEffect: false, state: "none" }
-                  : msg
-              )
-            );
-            scrollToBottom();
-            setIsLoading(false);
-          }
-        }, 35);
+        setIsLoading(false);
       }, 1000);
     }, 1500);
 
@@ -318,7 +209,7 @@ export default function Mervin() {
   const handleServiceSelection = (service: string) => {
     setIsLoading(true);
     
-    // Primero, agregar un mensaje temporal "pensando"
+    // Agregar un mensaje temporal "pensando"
     const thinkingMessage: Message = {
       id: `thinking-${Date.now()}`,
       content: "Preparando información sobre " + service + "...",
@@ -362,69 +253,17 @@ export default function Mervin() {
           message = "¿En qué te puedo ayudar hoy?";
       }
 
-      // Crear mensaje inicial con contenido vacío pero con efecto de escritura
       const assistantMessage: Message = {
         id: `assistant-service-${Date.now()}`,
         content: message,
         sender: "assistant",
-        state: state,
-        typewriterEffect: true,
-        visibleContent: ""
+        state: state
       };
 
       setMessages(prev => [...prev, assistantMessage]);
-      
-      // Precalcular la altura para evitar temblores
-      const messageHeight = Math.ceil(message.length / 40) * 20;
-      
-      // Iniciar el efecto de escritura progresiva
-      let currentIndex = 0;
-      let lastScrollTime = 0;
-      const now = Date.now();
-      
-      const typingInterval = setInterval(() => {
-        if (currentIndex <= message.length) {
-          setMessages(prev => 
-            prev.map(msg => 
-              msg.id === assistantMessage.id 
-                ? { ...msg, visibleContent: message.substring(0, currentIndex) }
-                : msg
-            )
-          );
-          currentIndex++;
-          
-          // Limitar la frecuencia de scroll para reducir temblores
-          const currentTime = Date.now();
-          if (currentTime - lastScrollTime > 200) {
-            scrollToBottom();
-            lastScrollTime = currentTime;
-          }
-        } else {
-          clearInterval(typingInterval);
-          // Cuando termine de "escribir", quitar el efecto de escritura
-          setMessages(prev => 
-            prev.map(msg => 
-              msg.id === assistantMessage.id 
-                ? { ...msg, typewriterEffect: false }
-                : msg
-            )
-          );
-          scrollToBottom();
-          setIsLoading(false);
-        }
-      }, 30); // Velocidad de escritura: 30ms por carácter
+      setIsLoading(false);
     }, 1500);
   };
-
-  // Scroll to bottom when messages change
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  // Usar useEffect para manejar efectos secundarios
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
 
   return (
     <div className="flex flex-col h-screen w-full overflow-hidden bg-black">
@@ -483,22 +322,22 @@ export default function Mervin() {
                   )}
                   
                   {message.state === "deepSearching" && (
-                    <div className="flex items-center text-xs text-indigo-500 mb-1">
+                    <div className="flex items-center text-xs text-purple-500 mb-1">
                       <div className="relative h-3 w-3 mr-1">
-                        <div className="absolute inset-0 border border-indigo-500 rounded-full animate-spin"></div>
-                        <Search className="h-3 w-3 relative" />
+                        <div className="absolute inset-0 bg-purple-500 rounded-full animate-spin-slow opacity-75"></div>
+                        <Globe className="h-3 w-3 relative" />
                       </div>
                       <span>Búsqueda profunda...</span>
                     </div>
                   )}
                   
                   {message.state === "reading" && (
-                    <div className="flex items-center text-xs text-emerald-500 mb-1">
+                    <div className="flex items-center text-xs text-green-500 mb-1">
                       <div className="relative h-3 w-3 mr-1">
-                        <div className="absolute inset-0 bg-emerald-500/50 rounded-full animate-scan-x"></div>
+                        <div className="absolute inset-0 bg-green-500 rounded-full animate-pulse opacity-75"></div>
                         <FileText className="h-3 w-3 relative" />
                       </div>
-                      <span>Leyendo documento...</span>
+                      <span>Leyendo documentos...</span>
                     </div>
                   )}
                   
@@ -521,14 +360,8 @@ export default function Mervin() {
                       <span className="text-blue-400 font-semibold">You</span>
                     </div>
                   )}
-                  <div className="message-container" style={{
-                    minHeight: message.typewriterEffect ? `${Math.ceil(message.content.length / 40) * 20}px` : 'auto'
-                  }}>
-                    {message.typewriterEffect && message.sender === "assistant" ? (
-                      <p className="whitespace-pre-wrap typewriter-text">{message.visibleContent}</p>
-                    ) : (
-                      <p className="whitespace-pre-wrap">{message.content}</p>
-                    )}
+                  <div className="message-container">
+                    <p className="whitespace-pre-wrap">{message.content}</p>
                   </div>
 
                   {/* Botones de acción */}
@@ -581,7 +414,7 @@ export default function Mervin() {
               <div className="flex items-start">
                 <div className="w-10 h-10 rounded-full bg-cyan-900/30 flex items-center justify-center mr-3 flex-shrink-0">
                   <div className="mervin-logo-container">
-                    <img src="/mervin-logo.png" alt="Mervin AI" className="mervin-logo w-full h-full object-contain" />
+                    <img src="https://i.postimg.cc/W4nKDvTL/logo-mervin.png" alt="Mervin AI" className="mervin-logo w-full h-full object-contain" />
                     <div className="glow-effect"></div>
                   </div>
                 </div>
@@ -651,50 +484,54 @@ export default function Mervin() {
           </div>
         )}
 
-        <div className="flex gap-2 mt-auto border border-cyan-900/50 rounded-md p-1 bg-gray-900">
-          <Button 
-            variant="ghost" 
+        <div className="w-full flex items-center gap-2">
+          <input 
+            type="file" 
+            accept="image/*" 
+            ref={imageInputRef} 
+            onChange={(e) => handleFileChange(e, 'image')} 
+            style={{ display: 'none' }} 
+          />
+          <input 
+            type="file" 
+            accept=".pdf,.doc,.docx,.txt" 
+            ref={fileInputRef} 
+            onChange={(e) => handleFileChange(e, 'file')} 
+            style={{ display: 'none' }} 
+          />
+          
+          <Button
+            variant="outline"
             size="icon"
             onClick={() => setShowAttachOptions(!showAttachOptions)}
-            className="text-cyan-500/70 hover:text-cyan-400"
+            className="bg-gray-800 border-cyan-900/50 text-cyan-500 hover:bg-gray-700"
           >
-            <Paperclip className="h-5 w-5" />
+            <Paperclip className="h-4 w-4" />
           </Button>
-
-          <Input
-            placeholder="Escribe tu mensaje..."
-            value={inputValue}
-            onChange={e => setInputValue(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && handleSendMessage()}
-            disabled={isLoading}
-            className="flex-1 border-0 bg-gray-900 text-white focus-visible:ring-0 focus-visible:ring-offset-0"
-          />
-
-          <Button 
-            onClick={handleSendMessage} 
-            disabled={isLoading}
+          
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Escribe tu mensaje..."
+              className="w-full px-4 py-2 bg-gray-800 border border-cyan-900/50 rounded-full text-white focus:outline-none focus:border-cyan-500/70 placeholder-gray-500"
+              ref={inputRef}
+              disabled={isLoading}
+            />
+          </div>
+          
+          <Button
+            variant="default"
             size="icon"
-            className="rounded-full bg-cyan-500 hover:bg-cyan-400"
+            onClick={handleSendMessage}
+            disabled={isLoading || !inputValue.trim()}
+            className={`rounded-full bg-gradient-to-r from-cyan-600 to-cyan-800 hover:from-cyan-500 hover:to-cyan-700 transition-all ${!inputValue.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             <Send className="h-4 w-4" />
           </Button>
         </div>
-
-        {/* Inputs ocultos para archivos */}
-        <input 
-          type="file" 
-          ref={fileInputRef}
-          onChange={(e) => handleFileChange(e, "file")}
-          accept=".pdf,.doc,.docx,.txt"
-          className="hidden" 
-        />
-        <input 
-          type="file" 
-          ref={imageInputRef}
-          onChange={(e) => handleFileChange(e, "image")}
-          accept="image/*"
-          className="hidden" 
-        />
       </div>
     </div>
   );
