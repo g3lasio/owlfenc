@@ -145,6 +145,113 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===== ENDPOINTS DE PAGOS DE PROYECTOS =====
+  
+  // Endpoint para crear un checkout de pago de depósito (50%)
+  app.post('/api/projects/:projectId/payment/deposit', async (req: Request, res: Response) => {
+    try {
+      const { projectId } = req.params;
+      const { successUrl = '', cancelUrl = '' } = req.body;
+
+      // Convertir el projectId a número
+      const projectIdNum = parseInt(projectId);
+      if (isNaN(projectIdNum)) {
+        return res.status(400).json({ message: 'ID de proyecto inválido' });
+      }
+
+      // Generar el enlace de pago
+      const checkoutUrl = await projectPaymentService.createProjectPaymentCheckout({
+        projectId: projectIdNum,
+        paymentType: 'deposit',
+        successUrl,
+        cancelUrl,
+      });
+
+      res.json({ checkoutUrl });
+    } catch (error) {
+      console.error('Error al crear enlace de pago de depósito:', error);
+      res.status(500).json({ 
+        message: 'Error al crear enlace de pago', 
+        error: error.message 
+      });
+    }
+  });
+
+  // Endpoint para crear un checkout de pago final (50% restante)
+  app.post('/api/projects/:projectId/payment/final', async (req: Request, res: Response) => {
+    try {
+      const { projectId } = req.params;
+      const { successUrl = '', cancelUrl = '' } = req.body;
+
+      // Convertir el projectId a número
+      const projectIdNum = parseInt(projectId);
+      if (isNaN(projectIdNum)) {
+        return res.status(400).json({ message: 'ID de proyecto inválido' });
+      }
+
+      // Generar el enlace de pago
+      const checkoutUrl = await projectPaymentService.createProjectPaymentCheckout({
+        projectId: projectIdNum,
+        paymentType: 'final',
+        successUrl,
+        cancelUrl,
+      });
+
+      res.json({ checkoutUrl });
+    } catch (error) {
+      console.error('Error al crear enlace de pago final:', error);
+      res.status(500).json({ 
+        message: 'Error al crear enlace de pago', 
+        error: error.message 
+      });
+    }
+  });
+
+  // Endpoint para obtener los pagos de un proyecto
+  app.get('/api/projects/:projectId/payments', async (req: Request, res: Response) => {
+    try {
+      const { projectId } = req.params;
+
+      // Convertir el projectId a número
+      const projectIdNum = parseInt(projectId);
+      if (isNaN(projectIdNum)) {
+        return res.status(400).json({ message: 'ID de proyecto inválido' });
+      }
+
+      // Obtener los pagos del proyecto
+      const payments = await storage.getProjectPaymentsByProjectId(projectIdNum);
+      
+      res.json(payments);
+    } catch (error) {
+      console.error('Error al obtener pagos del proyecto:', error);
+      res.status(500).json({ message: 'Error al obtener pagos del proyecto' });
+    }
+  });
+
+  // Endpoint para reenviar un enlace de pago
+  app.post('/api/project-payments/:paymentId/resend', async (req: Request, res: Response) => {
+    try {
+      const { paymentId } = req.params;
+
+      // Convertir el paymentId a número
+      const paymentIdNum = parseInt(paymentId);
+      if (isNaN(paymentIdNum)) {
+        return res.status(400).json({ message: 'ID de pago inválido' });
+      }
+
+      // Reenviar el enlace de pago
+      const checkoutUrl = await projectPaymentService.resendPaymentLink(paymentIdNum);
+      
+      res.json({ checkoutUrl });
+    } catch (error) {
+      console.error('Error al reenviar enlace de pago:', error);
+      res.status(500).json({ 
+        message: 'Error al reenviar enlace de pago', 
+        error: error.message 
+      });
+    }
+  });
+
   app.get('/api/templates/:type', async (req: Request, res: Response) => {
     try {
       const { type } = req.params;
@@ -1000,7 +1107,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/webhook/stripe', express.raw({type: 'application/json'}), async (req: Request, res: Response) => {
     try {
-      await stripeService.handleWebhookEvent(req.body);
+      const event = req.body;
+      
+      // Manejar los eventos de suscripciones
+      await stripeService.handleWebhookEvent(event);
+      
+      // Manejar eventos relacionados con pagos de proyectos
+      // Para eventos de checkout.session.completed
+      if (event.type === 'checkout.session.completed') {
+        const session = event.data.object;
+        
+        // Verificar si es un pago de proyecto (tiene metadata.projectId)
+        if (session.metadata?.projectId) {
+          await projectPaymentService.handleProjectCheckoutCompleted(session);
+        }
+      }
+      
       res.json({ received: true });
     } catch (error) {
       console.error('Error al procesar webhook de Stripe:', error);
