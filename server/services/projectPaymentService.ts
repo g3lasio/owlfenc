@@ -9,7 +9,7 @@ if (!process.env.STRIPE_SECRET_KEY) {
 
 // Inicializar Stripe con la clave secreta
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder', {
-  apiVersion: '2023-10-16', // Usar una versión compatible
+  apiVersion: '2023-10-16' as any, // Usar una versión compatible
 });
 
 // Opciones para crear un checkout de pago de proyecto
@@ -58,11 +58,11 @@ export class ProjectPaymentService {
    * Crea una sesión de checkout para un pago de proyecto
    */
   async createProjectPaymentCheckout(options: ProjectPaymentCheckoutOptions): Promise<string> {
-    const { projectId, paymentType, successUrl, cancelUrl, customerEmail, customerName } = options;
+    const { projectId: projectIdParam, paymentType, successUrl, cancelUrl, customerEmail, customerName } = options;
     const startTime = Date.now();
     
     try {
-      console.log(`[${new Date().toISOString()}] Iniciando creación de checkout para proyecto ${projectId}, tipo: ${paymentType}`);
+      console.log(`[${new Date().toISOString()}] Iniciando creación de checkout para proyecto ${projectIdParam}, tipo: ${paymentType}`);
       
       // Verificamos primero la conexión con Stripe
       const isConnected = await this.verifyStripeConnection();
@@ -71,14 +71,25 @@ export class ProjectPaymentService {
       }
       
       // Obtener el proyecto
-      const project = await storage.getProject(projectId);
+      const project = await storage.getProject(projectIdParam);
       if (!project) {
-        throw new Error(`Proyecto con ID ${projectId} no encontrado`);
+        throw new Error(`Proyecto con ID ${projectIdParam} no encontrado`);
       }
       
-      // Verificar que el proyecto tenga un precio total
+      // Verificar que los campos necesarios existen
       if (!project.totalPrice || project.totalPrice <= 0) {
         throw new Error('El proyecto no tiene un precio válido definido');
+      }
+      
+      const totalPrice = project.totalPrice;
+      const fenceType = project.fenceType || 'Proyecto';
+      const address = project.address || 'Sin dirección';
+      const projectId = project.id;
+      const userId = project.userId || 0;
+      const projectIdString = project.projectId || `PROJ-${projectId}`;
+      
+      if (userId === 0) {
+        throw new Error('El proyecto no tiene un usuario válido asignado');
       }
       
       // Calcular el monto a cobrar según el tipo de pago (depósito o final)
@@ -87,12 +98,12 @@ export class ProjectPaymentService {
       
       if (paymentType === 'deposit') {
         // Depósito del 50%
-        amount = Math.round(project.totalPrice * 0.5);
-        paymentDescription = `Depósito (50%) - ${project.fenceType} - ${project.address}`;
+        amount = Math.round(totalPrice * 0.5);
+        paymentDescription = `Depósito (50%) - ${fenceType} - ${address}`;
       } else {
         // Pago final del 50% restante
-        amount = Math.round(project.totalPrice * 0.5); 
-        paymentDescription = `Pago final (50%) - ${project.fenceType} - ${project.address}`;
+        amount = Math.round(totalPrice * 0.5); 
+        paymentDescription = `Pago final (50%) - ${fenceType} - ${address}`;
       }
       
       console.log(`[${new Date().toISOString()}] Monto calculado para el pago: $${amount / 100} (${amount}¢)`);
@@ -107,7 +118,7 @@ export class ProjectPaymentService {
                 currency: 'usd',
                 product_data: {
                   name: paymentDescription,
-                  description: `Proyecto: ${project.projectId} - ${project.address}`,
+                  description: `Proyecto: ${projectIdString} - ${address}`,
                 },
                 unit_amount: amount,
               },
@@ -117,12 +128,12 @@ export class ProjectPaymentService {
           mode: 'payment',
           success_url: successUrl,
           cancel_url: cancelUrl,
-          customer_email: customerEmail || project.clientEmail || undefined,
+          customer_email: customerEmail || (project.clientEmail as string | undefined),
           metadata: {
-            projectId: project.id.toString(),
-            userId: project.userId.toString(),
+            projectId: projectId.toString(),
+            userId: userId.toString(),
             paymentType,
-            projectIdString: project.projectId,
+            projectIdString: projectIdString,
           },
         });
         

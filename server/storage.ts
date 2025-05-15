@@ -701,6 +701,69 @@ export class StorageManager implements IStorage {
       `payment_history_user_${payment.userId}`
     );
   }
+  
+  // Project Payments methods
+  async getProjectPayment(id: number): Promise<ProjectPayment | undefined> {
+    return this.executeWithFailover<ProjectPayment | undefined>(
+      'getProjectPayment',
+      () => this.primaryStorage.getProjectPayment(id),
+      () => this.backupStorage?.getProjectPayment(id),
+      `project_payment_${id}`,
+      this.CACHE_TTL
+    );
+  }
+  
+  async getProjectPaymentsByProjectId(projectId: number): Promise<ProjectPayment[]> {
+    return this.executeWithFailover<ProjectPayment[]>(
+      'getProjectPaymentsByProjectId',
+      () => this.primaryStorage.getProjectPaymentsByProjectId(projectId),
+      () => this.backupStorage?.getProjectPaymentsByProjectId(projectId),
+      `project_payments_by_project_${projectId}`,
+      this.CACHE_TTL
+    );
+  }
+  
+  async getProjectPaymentsByUserId(userId: number): Promise<ProjectPayment[]> {
+    return this.executeWithFailover<ProjectPayment[]>(
+      'getProjectPaymentsByUserId',
+      () => this.primaryStorage.getProjectPaymentsByUserId(userId),
+      () => this.backupStorage?.getProjectPaymentsByUserId(userId),
+      `project_payments_by_user_${userId}`,
+      this.CACHE_TTL
+    );
+  }
+  
+  async getProjectPaymentsByCheckoutSessionId(sessionId: string): Promise<ProjectPayment[]> {
+    return this.executeWithFailover<ProjectPayment[]>(
+      'getProjectPaymentsByCheckoutSessionId',
+      () => this.primaryStorage.getProjectPaymentsByCheckoutSessionId(sessionId),
+      () => this.backupStorage?.getProjectPaymentsByCheckoutSessionId(sessionId),
+      `project_payments_by_session_${sessionId}`,
+      this.CACHE_TTL
+    );
+  }
+  
+  async createProjectPayment(payment: InsertProjectPayment): Promise<ProjectPayment> {
+    return this.executeWithFailover<ProjectPayment>(
+      'createProjectPayment',
+      () => this.primaryStorage.createProjectPayment(payment),
+      () => this.backupStorage?.createProjectPayment(payment),
+      undefined,
+      undefined,
+      `project_payment_user_${payment.userId}`
+    );
+  }
+  
+  async updateProjectPayment(id: number, payment: Partial<ProjectPayment>): Promise<ProjectPayment> {
+    return this.executeWithFailover<ProjectPayment>(
+      'updateProjectPayment',
+      () => this.primaryStorage.updateProjectPayment(id, payment),
+      () => this.backupStorage?.updateProjectPayment(id, payment),
+      undefined,
+      undefined,
+      `project_payment_${id}`
+    );
+  }
 
   // Material methods
   async getMaterialsByCategory(category: string): Promise<Material[]> {
