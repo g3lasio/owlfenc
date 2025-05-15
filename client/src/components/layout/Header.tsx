@@ -14,16 +14,16 @@ export default function Header({
 }: HeaderProps) {
   const [location] = useLocation();
   const [glowPulse, setGlowPulse] = useState(false);
-  
+
   // Efecto para animar el pulso del logo
   useEffect(() => {
     const interval = setInterval(() => {
       setGlowPulse(prev => !prev);
     }, 2000);
-    
+
     return () => clearInterval(interval);
   }, []);
-  
+
   const handleMenuToggle = () => {
     console.log("Menu toggle clicked, current state:", isMobileMenuOpen);
     toggleMobileMenu();
@@ -53,7 +53,7 @@ export default function Header({
         <Link href="/" className="cursor-pointer relative group px-2 mx-2">
           {/* Efectos futuristas modernos sin contorno */}
           <div className={`absolute inset-0 bg-gradient-to-r from-cyan-400/20 via-blue-500/10 to-purple-500/20 rounded-xl blur-lg opacity-30 ${glowPulse ? 'scale-110' : 'scale-100'} transition-all duration-1000 group-hover:opacity-60`}></div>
-          
+
           {/* Partículas brillantes */}
           <div className="absolute inset-0 overflow-hidden">
             {[...Array(6)].map((_, i) => (
@@ -68,22 +68,22 @@ export default function Header({
               />
             ))}
           </div>
-          
+
           {/* Destellos digitales */}
           <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 overflow-hidden">
             <div className="h-[1px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent w-full absolute top-1/3 animate-scan-x"></div>
             <div className="h-[1px] bg-gradient-to-r from-transparent via-blue-400 to-transparent w-full absolute top-2/3 animate-scan-x" style={{animationDelay: '0.5s'}}></div>
           </div>
-          
+
           <img
-            src="/owl-logo.png" 
-            alt="Owl Fence"
-            className="h-14 w-auto object-contain relative z-10 transition-transform duration-300 group-hover:scale-105 filter drop-shadow-[0_0_3px_rgba(56,189,248,0.5)] px-2"
-          />
+              src="https://i.postimg.cc/4yc9M62C/White-logo-no-background.png" 
+              alt="Owl Fence"
+              className="h-14 w-auto object-contain relative z-10 transition-transform duration-300 group-hover:scale-105 filter drop-shadow-[0_0_3px_rgba(56,189,248,0.5)] px-2"
+            />
           {/* Texto de respaldo en caso de que la imagen no cargue */}
           <span className="absolute opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-sm text-primary font-bold">Owl Fence</span>
         </Link>
-        
+
         {/* Slogan con degradado en línea única */}
         <p className="text-xs font-medium bg-gradient-to-r from-cyan-300 via-blue-400 to-purple-500 bg-clip-text text-transparent whitespace-nowrap mt-0.5">
           The AI Force Crafting the Future Skyline

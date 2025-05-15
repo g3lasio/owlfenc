@@ -131,6 +131,9 @@ export default function Sidebar() {
               src="https://i.postimg.cc/4yc9M62C/White-logo-no-background.png" 
               alt="Owl Fence"
               className="h-12 w-auto object-contain"
+              onError={(e) => {
+                e.currentTarget.src = "/White-logo-no-background.png";
+              }}
             />
           </div>
 
