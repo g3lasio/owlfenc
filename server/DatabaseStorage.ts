@@ -17,6 +17,8 @@ import {
   InsertUserSubscription,
   PaymentHistory,
   InsertPaymentHistory,
+  ProjectPayment,
+  InsertProjectPayment,
   Material,
   InsertMaterial,
   PropertySearchHistory,
@@ -34,6 +36,7 @@ import {
   subscriptionPlans,
   userSubscriptions,
   paymentHistory,
+  projectPayments,
   materials,
   promptTemplates,
   permitSearchHistory,
@@ -585,5 +588,54 @@ export class DatabaseStorage implements IStorage {
     }
     
     return history;
+  }
+  
+  // Project Payments methods
+  async getProjectPayment(id: number): Promise<ProjectPayment | undefined> {
+    const [payment] = await db.select().from(projectPayments).where(eq(projectPayments.id, id));
+    return payment;
+  }
+  
+  async getProjectPaymentsByProjectId(projectId: number): Promise<ProjectPayment[]> {
+    return db.select()
+      .from(projectPayments)
+      .where(eq(projectPayments.projectId, projectId))
+      .orderBy(desc(projectPayments.createdAt));
+  }
+  
+  async getProjectPaymentsByUserId(userId: number): Promise<ProjectPayment[]> {
+    return db.select()
+      .from(projectPayments)
+      .where(eq(projectPayments.userId, userId))
+      .orderBy(desc(projectPayments.createdAt));
+  }
+  
+  async getProjectPaymentsByCheckoutSessionId(sessionId: string): Promise<ProjectPayment[]> {
+    return db.select()
+      .from(projectPayments)
+      .where(eq(projectPayments.stripeCheckoutSessionId, sessionId));
+  }
+  
+  async createProjectPayment(payment: InsertProjectPayment): Promise<ProjectPayment> {
+    const [newPayment] = await db.insert(projectPayments)
+      .values(payment)
+      .returning();
+    return newPayment;
+  }
+  
+  async updateProjectPayment(id: number, payment: Partial<ProjectPayment>): Promise<ProjectPayment> {
+    const [updatedPayment] = await db.update(projectPayments)
+      .set({
+        ...payment,
+        updatedAt: new Date()
+      })
+      .where(eq(projectPayments.id, id))
+      .returning();
+    
+    if (!updatedPayment) {
+      throw new Error(`Project payment with ID ${id} not found`);
+    }
+    
+    return updatedPayment;
   }
 }

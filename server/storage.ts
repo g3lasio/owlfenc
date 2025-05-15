@@ -46,6 +46,14 @@ export interface IStorage {
   getProjectsByUserId(userId: number): Promise<Project[]>;
   createProject(project: InsertProject): Promise<Project>;
   updateProject(id: number, project: Partial<Project>): Promise<Project>;
+  
+  // Project Payments methods
+  getProjectPayment(id: number): Promise<ProjectPayment | undefined>;
+  getProjectPaymentsByProjectId(projectId: number): Promise<ProjectPayment[]>;
+  getProjectPaymentsByUserId(userId: number): Promise<ProjectPayment[]>;
+  getProjectPaymentsByCheckoutSessionId(sessionId: string): Promise<ProjectPayment[]>;
+  createProjectPayment(payment: InsertProjectPayment): Promise<ProjectPayment>;
+  updateProjectPayment(id: number, payment: Partial<ProjectPayment>): Promise<ProjectPayment>;
 
   // Template methods
   getTemplate(id: number): Promise<Template | undefined>;
