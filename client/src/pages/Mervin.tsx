@@ -427,25 +427,27 @@ export default function Mervin() {
   }, [messages]);
 
   return (
-    <div className="flex-1 flex flex-col relative h-full overflow-hidden bg-black">
+    <div className="flex flex-col h-screen w-full overflow-hidden bg-black">
       {/* Encabezado fijo */}
-      <div className="fixed top-0 left-0 right-0 p-4 pb-2 bg-black z-30 border-b border-cyan-900/30 shadow-md">
+      <div className="sticky top-0 p-4 pb-2 bg-black z-30 border-b border-cyan-900/30 shadow-md">
         <h1 className="text-2xl font-bold text-center text-white">Mervin AI</h1>
       </div>
-      
-      {/* Espaciador para compensar el header fijo */}
-      <div className="h-16"></div>
 
-      {/* Área de mensajes con scroll, con padding inferior para dar espacio al input fijo y footer global */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6 pb-20 bg-black hide-scrollbar">
+      {/* Área de mensajes con scroll */}
+      <div className="flex-1 overflow-y-auto p-4 pb-24 space-y-6 bg-black chat-area">
+        {messages.length === 0 && (
+          <div className="h-full flex items-center justify-center">
+            <p className="text-cyan-500 opacity-50">Iniciando conversación...</p>
+          </div>
+        )}
         {messages.map((message, index) => (
           <Card 
             key={message.id} 
             className={`${message.sender === "assistant" 
               ? "bg-gray-900 border-cyan-900/40 animate-fadeIn max-w-[85%] ml-0 mr-auto" 
               : "bg-blue-900/30 border-blue-500/30 animate-slideInRight max-w-[85%] ml-auto mr-0"} 
-              transition-all duration-300 shadow-md hover:shadow-lg`}
-            style={{ animationDelay: `${index * 0.1}s` }}
+              transition-all duration-300 shadow-md hover:shadow-lg message-card`}
+            style={{ animationDelay: `${index * 0.05}s` }}
           >
             <CardContent className="pt-4">
               <div className="flex items-start">
@@ -603,10 +605,8 @@ export default function Mervin() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Quitamos el footer del chat */}
-      
       {/* Barra de input fija en la parte inferior */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-black border-t border-cyan-900/30 shadow-lg z-20 w-full max-w-full md:left-[224px] md:max-w-[calc(100%-224px)]">
+      <div className="sticky bottom-0 left-0 right-0 p-4 bg-black border-t border-cyan-900/30 shadow-lg z-20 w-full">
         {showAttachOptions && (
           <div className="absolute bottom-full left-4 right-4 mb-2 bg-gray-900 border border-cyan-900/50 rounded-md shadow-md p-2 flex flex-wrap gap-1">
             <Button 

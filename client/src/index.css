@@ -30,16 +30,34 @@
   /* Estilos para el efecto de escritura sin temblores */
   .typewriter-text {
     position: relative;
-    overflow: hidden;
+    overflow: visible;
     height: auto;
     min-height: 20px;
     word-break: break-word;
+    display: block;
+    white-space: pre-wrap;
+    visibility: visible;
   }
   
   /* Contenedor de mensaje con altura estable */
   .message-container {
     position: relative;
     width: 100%;
+    min-height: 1.5em;
+    transition: min-height 0.2s ease-out;
+  }
+  
+  /* Evitar cambios bruscos de altura durante la animación */
+  .chat-area {
+    scroll-behavior: smooth;
+    overflow-anchor: auto;
+  }
+  
+  /* Asegurar que los mensajes no causen saltos */
+  .message-card {
+    contain: content;
+    transform: translateZ(0);
+    backface-visibility: hidden;
   }
   
   .particle {
