@@ -26,6 +26,7 @@ import Subscription from "@/pages/Subscription";
 import Account from "./pages/Account";
 import Billing from "./pages/Billing";
 import History from "@/pages/History";
+import ProjectPayments from "@/pages/ProjectPayments";
 import AuthPage from "@/pages/Login"; // Renombrado el import aunque el archivo sigue siendo Login.tsx
 import RecuperarPassword from "@/pages/RecuperarPassword";
 import ResetPassword from "@/pages/ResetPassword";
@@ -89,6 +90,9 @@ function Router() {
       </Route>
       <Route path="/projects">
         {() => <ProtectedRoute component={Projects} />}
+      </Route>
+      <Route path="/project-payments">
+        {() => <ProtectedRoute component={ProjectPayments} />}
       </Route>
       <Route path="/clients" component={() => <ProtectedRoute component={NuevoClientes} />} />
       <Route path="/materials">

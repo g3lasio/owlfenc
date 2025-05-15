@@ -33,11 +33,16 @@ const ProjectPayments: React.FC = () => {
   const { data: payments, isLoading, error } = useQuery({
     queryKey: ['/api/projects/payments'],
     queryFn: async () => {
-      const response = await fetch('/api/projects/payments');
-      if (!response.ok) {
+      try {
+        const response = await fetch('/api/projects/payments');
+        if (!response.ok) {
+          throw new Error('Error al obtener los pagos de proyectos');
+        }
+        return response.json() as Promise<ProjectPayment[]>;
+      } catch (err) {
+        console.error('Error fetching payments:', err);
         throw new Error('Error al obtener los pagos de proyectos');
       }
-      return response.json() as Promise<ProjectPayment[]>;
     }
   });
 
@@ -61,6 +66,7 @@ const ProjectPayments: React.FC = () => {
       toast({
         title: "Enlace reenviado",
         description: "El enlace de pago ha sido actualizado correctamente",
+        variant: "default",
       });
 
       // Invalidar la caché para actualizar los datos
@@ -70,7 +76,8 @@ const ProjectPayments: React.FC = () => {
       if (data.checkoutUrl) {
         window.open(data.checkoutUrl, '_blank');
       }
-    } catch (error) {
+    } catch (err) {
+      const error = err as Error;
       toast({
         title: "Error",
         description: error.message || "No se pudo reenviar el enlace de pago",
@@ -90,7 +97,7 @@ const ProjectPayments: React.FC = () => {
       case 'pending':
         return <Badge variant="outline">Pendiente</Badge>;
       case 'paid':
-        return <Badge variant="success">Pagado</Badge>;
+        return <Badge className="bg-green-500 hover:bg-green-600">Pagado</Badge>;
       case 'expired':
         return <Badge variant="destructive">Expirado</Badge>;
       case 'cancelled':
