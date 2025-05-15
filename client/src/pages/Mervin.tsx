@@ -271,7 +271,11 @@ export default function Mervin() {
                 <div className="w-10 h-10 rounded-full bg-cyan-900/30 flex items-center justify-center mr-3 flex-shrink-0">
                   {message.sender === "assistant" ? 
                     <div className="mervin-logo-container">
-                      <img src="/mervin-logo.png" alt="Mervin AI" className="mervin-logo w-full h-full object-contain" />
+                      <img 
+                        src="https://i.postimg.cc/4yc9M62C/White-logo-no-background.png" 
+                        alt="Mervin AI" 
+                        className="mervin-logo w-8 h-8 object-contain" 
+                      />
                       <div className="glow-effect"></div>
                     </div> : 
                     <div className="w-5 h-5 rounded-full bg-cyan-400" />
@@ -315,20 +319,20 @@ export default function Mervin() {
 
                   {/* Botones de acción */}
                   {message.actionButtons && message.actionButtons.length > 0 && (
-                    <div className="mt-4 flex flex-wrap gap-2">
+                    <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2">
                       {message.actionButtons.map(button => (
                         <button
                           key={button.id}
                           onClick={() => handleServiceSelection(button.action)}
-                          className="flex flex-col items-center bg-cyan-900/20 hover:bg-cyan-900/40 transition-all p-3 rounded-lg border border-cyan-500/30 group w-32 h-32 shadow-md hover:shadow-cyan-900/20"
+                          className="flex flex-col items-center bg-cyan-900/20 hover:bg-cyan-900/40 transition-all p-2 rounded-lg border border-cyan-500/30 group w-full h-24 shadow-md hover:shadow-cyan-900/20"
                         >
-                          <div className="w-10 h-10 rounded-full bg-cyan-900/40 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                          <div className="w-8 h-8 rounded-full bg-cyan-900/40 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
                             <div className="text-cyan-400">
                               {button.icon}
                             </div>
                           </div>
-                          <span className="text-sm font-medium text-center text-cyan-400 font-quantico">{button.text}</span>
-                          <span className="text-xs text-center text-cyan-300/70 mt-1 line-clamp-2">{button.description}</span>
+                          <span className="text-xs font-medium text-center text-cyan-400 font-quantico leading-tight">{button.text}</span>
+                          <span className="text-[10px] text-center text-cyan-300/70 mt-0.5 line-clamp-1">{button.description}</span>
                         </button>
                       ))}
                     </div>
