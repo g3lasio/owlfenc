@@ -716,6 +716,222 @@ class StripeService {
       throw error;
     }
   }
+
+  /**
+   * Crea un enlace de onboarding para Stripe Connect
+   * Permite a los usuarios conectar su cuenta bancaria para recibir pagos
+   */
+  async createConnectOnboardingLink(userId: number, refreshUrl: string, returnUrl: string): Promise<string> {
+    try {
+      console.log(`[${new Date().toISOString()}] Creando enlace de onboarding de Stripe Connect para usuario ID: ${userId}`);
+      
+      // Verificar primero que la conexión a Stripe funciona
+      const isConnected = await this.verifyStripeConnection();
+      if (!isConnected) {
+        throw new Error('No se pudo establecer conexión con Stripe. Verifique las credenciales API.');
+      }
+
+      // Buscar si el usuario ya tiene una cuenta de Connect
+      const user = await storage.getUser(userId);
+      if (!user) {
+        throw new Error(`Usuario con ID ${userId} no encontrado`);
+      }
+
+      let stripeConnectAccountId = '';
+      
+      // Verificar si el usuario ya tiene una cuenta de Connect asociada
+      // Como esto debería estar en el objeto de usuario, primero verificamos ahí
+      const userSettings = await storage.getUserSettings(userId);
+      if (userSettings?.stripeConnectAccountId) {
+        stripeConnectAccountId = userSettings.stripeConnectAccountId;
+        console.log(`[${new Date().toISOString()}] Usuario ya tiene cuenta de Stripe Connect: ${stripeConnectAccountId}`);
+      } else {
+        // Crear una cuenta de Connect nueva para el usuario
+        const account = await stripe.accounts.create({
+          type: 'express',
+          email: user.email || undefined,
+          metadata: {
+            userId: userId.toString()
+          },
+          capabilities: {
+            card_payments: {requested: true},
+            transfers: {requested: true},
+          }
+        });
+        
+        stripeConnectAccountId = account.id;
+        
+        // Guardar el ID de la cuenta de Connect en la configuración del usuario
+        if (userSettings) {
+          await storage.updateUserSettings(userSettings.id, {
+            stripeConnectAccountId: account.id,
+            updatedAt: new Date()
+          });
+        } else {
+          // Crear configuración si no existe
+          await storage.createUserSettings({
+            userId,
+            stripeConnectAccountId: account.id,
+          });
+        }
+        
+        console.log(`[${new Date().toISOString()}] Cuenta de Stripe Connect creada - ID: ${account.id}`);
+      }
+      
+      // Crear el enlace de onboarding
+      const accountLink = await stripe.accountLinks.create({
+        account: stripeConnectAccountId,
+        refresh_url: refreshUrl,
+        return_url: returnUrl,
+        type: 'account_onboarding',
+      });
+      
+      console.log(`[${new Date().toISOString()}] Enlace de onboarding creado: ${accountLink.url.substring(0, 60)}...`);
+      return accountLink.url;
+    } catch (error) {
+      console.error(`[${new Date().toISOString()}] Error al crear enlace de onboarding de Stripe Connect:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene el estado de la cuenta de Stripe Connect
+   */
+  async getConnectAccountStatus(userId: number): Promise<any> {
+    try {
+      console.log(`[${new Date().toISOString()}] Obteniendo estado de cuenta Connect para usuario ID: ${userId}`);
+      
+      // Verificar primero que la conexión a Stripe funciona
+      const isConnected = await this.verifyStripeConnection();
+      if (!isConnected) {
+        throw new Error('No se pudo establecer conexión con Stripe. Verifique las credenciales API.');
+      }
+
+      // Buscar el ID de cuenta de Connect del usuario
+      const userSettings = await storage.getUserSettings(userId);
+      
+      if (!userSettings?.stripeConnectAccountId) {
+        return {
+          connected: false,
+          message: 'El usuario no tiene una cuenta de Stripe Connect asociada'
+        };
+      }
+      
+      // Obtener los detalles de la cuenta
+      const account = await stripe.accounts.retrieve(userSettings.stripeConnectAccountId);
+      
+      // Determinar si la cuenta está completamente configurada
+      const isComplete = account.details_submitted && 
+                          account.charges_enabled && 
+                          account.payouts_enabled;
+      
+      return {
+        connected: true,
+        accountId: userSettings.stripeConnectAccountId,
+        isComplete,
+        detailsSubmitted: account.details_submitted,
+        chargesEnabled: account.charges_enabled,
+        payoutsEnabled: account.payouts_enabled,
+        defaultCurrency: account.default_currency,
+        createdAt: new Date(account.created * 1000),
+        businessType: account.business_type,
+        accountType: account.type
+      };
+    } catch (error: any) {
+      // Si el error es que la cuenta no existe, devolver un estado de no conectado
+      if (error.type === 'StripeInvalidRequestError' && error.message.includes('No such account')) {
+        return {
+          connected: false,
+          message: 'La cuenta de Stripe Connect asociada no existe o fue eliminada'
+        };
+      }
+      
+      console.error(`[${new Date().toISOString()}] Error al obtener estado de cuenta Connect:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene la lista de cuentas bancarias externas asociadas a una cuenta de Stripe Connect
+   */
+  async getConnectExternalAccounts(userId: number): Promise<any[]> {
+    try {
+      console.log(`[${new Date().toISOString()}] Obteniendo cuentas bancarias externas para usuario ID: ${userId}`);
+      
+      // Verificar primero que la conexión a Stripe funciona
+      const isConnected = await this.verifyStripeConnection();
+      if (!isConnected) {
+        throw new Error('No se pudo establecer conexión con Stripe. Verifique las credenciales API.');
+      }
+
+      // Buscar el ID de cuenta de Connect del usuario
+      const userSettings = await storage.getUserSettings(userId);
+      
+      if (!userSettings?.stripeConnectAccountId) {
+        throw new Error('El usuario no tiene una cuenta de Stripe Connect asociada');
+      }
+      
+      // Obtener las cuentas bancarias externas
+      const bankAccounts = await stripe.accounts.listExternalAccounts(
+        userSettings.stripeConnectAccountId,
+        { object: 'bank_account', limit: 10 }
+      );
+      
+      // Mapear los resultados para simplificar la respuesta
+      const formattedAccounts = bankAccounts.data.map((account: any) => ({
+        id: account.id,
+        accountHolderName: account.account_holder_name,
+        accountHolderType: account.account_holder_type,
+        bankName: account.bank_name,
+        country: account.country,
+        currency: account.currency,
+        lastFour: account.last4,
+        routingNumber: account.routing_number,
+        status: account.status,
+        isDefault: account.default_for_currency
+      }));
+      
+      console.log(`[${new Date().toISOString()}] Se encontraron ${formattedAccounts.length} cuentas bancarias externas`);
+      return formattedAccounts;
+    } catch (error) {
+      console.error(`[${new Date().toISOString()}] Error al obtener cuentas bancarias externas:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Crea un enlace de dashboard de Stripe Connect para que el usuario pueda gestionar su cuenta
+   */
+  async createConnectDashboardLink(userId: number, returnUrl: string): Promise<string> {
+    try {
+      console.log(`[${new Date().toISOString()}] Creando enlace de dashboard de Stripe Connect para usuario ID: ${userId}`);
+      
+      // Verificar primero que la conexión a Stripe funciona
+      const isConnected = await this.verifyStripeConnection();
+      if (!isConnected) {
+        throw new Error('No se pudo establecer conexión con Stripe. Verifique las credenciales API.');
+      }
+
+      // Buscar el ID de cuenta de Connect del usuario
+      const userSettings = await storage.getUserSettings(userId);
+      
+      if (!userSettings?.stripeConnectAccountId) {
+        throw new Error('El usuario no tiene una cuenta de Stripe Connect asociada');
+      }
+      
+      // Crear el enlace al dashboard
+      const loginLink = await stripe.accounts.createLoginLink(
+        userSettings.stripeConnectAccountId,
+        { redirect_url: returnUrl }
+      );
+      
+      console.log(`[${new Date().toISOString()}] Enlace de dashboard creado: ${loginLink.url.substring(0, 60)}...`);
+      return loginLink.url;
+    } catch (error) {
+      console.error(`[${new Date().toISOString()}] Error al crear enlace de dashboard de Stripe Connect:`, error);
+      throw error;
+    }
+  }
 }
 
 export const stripeService = new StripeService();
