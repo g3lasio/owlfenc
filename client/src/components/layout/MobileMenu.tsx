@@ -138,7 +138,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             initial={{ filter: "blur(10px)", opacity: 0 }}
             animate={{ filter: "blur(0px)", opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.5 }}
-            src={owlLogo}
+            src="/owl-logo.png"
             alt="Owl Fence"
             className="h-10 w-auto max-w-[180px] object-contain"
           />
