@@ -7,6 +7,7 @@ import { navigationGroups, NavigationItem, NavigationGroup } from "@/config/navi
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
 import LanguageSwitch from "@/components/ui/language-switch";
+import owlLogo from "@assets/White logo - no background.png";
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -138,10 +139,17 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             initial={{ filter: "blur(10px)", opacity: 0 }}
             animate={{ filter: "blur(0px)", opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.5 }}
-            src="https://i.postimg.cc/4yc9M62C/White-logo-no-background.png"
+            src="/White-logo-no-background.png"
             alt="Owl Fence"
             className="h-10 w-auto max-w-[180px] object-contain"
           />
+          {/* Texto de respaldo */}
+          <motion.span 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.2 }}
+            className="absolute text-primary/50 font-bold text-lg">
+            Owl Fence
+          </motion.span>
           <motion.button
             whileHover={{ scale: 1.1, rotate: 90 }}
             whileTap={{ scale: 0.9 }}
