@@ -763,10 +763,8 @@ class StripeService {
         
         stripeConnectAccountId = account.id;
         
-        // Guardar el ID de la cuenta de Connect en el usuario
-        await storage.updateUser(userId, {
-          stripeConnectAccountId: account.id
-        } as any);
+        // Guardar el ID de la cuenta de Connect en el usuario usando el método específico
+        await storage.updateStripeConnectAccountId(userId, account.id);
         
         console.log(`[${new Date().toISOString()}] Cuenta de Stripe Connect creada - ID: ${account.id}`);
       }
