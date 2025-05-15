@@ -27,6 +27,21 @@
     transition-timing-function: cubic-bezier(0.5, 0, 0.25, 1.25);
   }
   
+  /* Estilos para el efecto de escritura sin temblores */
+  .typewriter-text {
+    position: relative;
+    overflow: hidden;
+    height: auto;
+    min-height: 20px;
+    word-break: break-word;
+  }
+  
+  /* Contenedor de mensaje con altura estable */
+  .message-container {
+    position: relative;
+    width: 100%;
+  }
+  
   .particle {
     position: absolute;
     border-radius: 50%;

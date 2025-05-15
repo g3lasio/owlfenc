@@ -103,8 +103,13 @@ export default function Mervin() {
     
     setMessages([welcomeMessage]);
     
+    // Precalcular la altura para evitar temblores
+    const messageHeight = Math.ceil(welcomeContent.length / 40) * 20;
+    
     // Iniciar efecto de escritura para el mensaje de bienvenida
     let currentIndex = 0;
+    let lastScrollTime = 0;
+    
     const typingInterval = setInterval(() => {
       if (currentIndex <= welcomeContent.length) {
         setMessages(prev => 
@@ -115,6 +120,13 @@ export default function Mervin() {
           )
         );
         currentIndex++;
+        
+        // Limitamos la frecuencia de actualización de scroll para evitar temblores
+        const currentTime = Date.now();
+        if (currentTime - lastScrollTime > 200) {
+          messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+          lastScrollTime = currentTime;
+        }
       } else {
         clearInterval(typingInterval);
         // Cuando termine de "escribir", quitar el efecto de escritura
@@ -125,8 +137,9 @@ export default function Mervin() {
               : msg
           )
         );
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
       }
-    }, 30);
+    }, 35);
     
     // Limpiar el intervalo cuando el componente se desmonte
     return () => clearInterval(typingInterval);
@@ -167,8 +180,13 @@ export default function Mervin() {
         
         setMessages(prev => [...prev, assistantMessage]);
         
+        // Precalcular la altura para evitar temblores
+        const messageHeight = Math.ceil(responseText.length / 40) * 20;
+        
         // Iniciar el efecto de escritura progresiva
         let currentIndex = 0;
+        let lastScrollTime = 0;
+        
         const typingInterval = setInterval(() => {
           if (currentIndex <= responseText.length) {
             setMessages(prev => 
@@ -179,7 +197,13 @@ export default function Mervin() {
               )
             );
             currentIndex++;
-            scrollToBottom();
+            
+            // Limitar la frecuencia de scroll para reducir temblores
+            const currentTime = Date.now();
+            if (currentTime - lastScrollTime > 200) {
+              scrollToBottom();
+              lastScrollTime = currentTime;
+            }
           } else {
             clearInterval(typingInterval);
             // Cuando termine de "escribir", quitar el efecto de escritura
@@ -190,9 +214,10 @@ export default function Mervin() {
                   : msg
               )
             );
+            scrollToBottom();
             setIsLoading(false);
           }
-        }, 30); // Velocidad de escritura: 30ms por carácter
+        }, 35); // Velocidad de escritura ligeramente más lenta para mayor estabilidad
       }, 1000);
     } catch (error) {
       console.error("Error al procesar mensaje:", error);
@@ -245,8 +270,13 @@ export default function Mervin() {
         
         setMessages(prev => [...prev, assistantMessage]);
         
+        // Precalcular la altura para evitar temblores
+        const messageHeight = Math.ceil(responseText.length / 40) * 20;
+        
         // Iniciar el efecto de escritura progresiva
         let currentIndex = 0;
+        let lastScrollTime = 0;
+        
         const typingInterval = setInterval(() => {
           if (currentIndex <= responseText.length) {
             setMessages(prev => 
@@ -257,7 +287,13 @@ export default function Mervin() {
               )
             );
             currentIndex++;
-            scrollToBottom();
+            
+            // Limitar la frecuencia de scroll para reducir temblores
+            const currentTime = Date.now();
+            if (currentTime - lastScrollTime > 200) {
+              scrollToBottom();
+              lastScrollTime = currentTime;
+            }
           } else {
             clearInterval(typingInterval);
             // Cuando termine de "escribir", quitar el efecto de escritura
@@ -268,9 +304,10 @@ export default function Mervin() {
                   : msg
               )
             );
+            scrollToBottom();
             setIsLoading(false);
           }
-        }, 30);
+        }, 35);
       }, 1000);
     }, 1500);
 
@@ -337,8 +374,14 @@ export default function Mervin() {
 
       setMessages(prev => [...prev, assistantMessage]);
       
+      // Precalcular la altura para evitar temblores
+      const messageHeight = Math.ceil(message.length / 40) * 20;
+      
       // Iniciar el efecto de escritura progresiva
       let currentIndex = 0;
+      let lastScrollTime = 0;
+      const now = Date.now();
+      
       const typingInterval = setInterval(() => {
         if (currentIndex <= message.length) {
           setMessages(prev => 
@@ -349,7 +392,13 @@ export default function Mervin() {
             )
           );
           currentIndex++;
-          scrollToBottom();
+          
+          // Limitar la frecuencia de scroll para reducir temblores
+          const currentTime = Date.now();
+          if (currentTime - lastScrollTime > 200) {
+            scrollToBottom();
+            lastScrollTime = currentTime;
+          }
         } else {
           clearInterval(typingInterval);
           // Cuando termine de "escribir", quitar el efecto de escritura
@@ -360,9 +409,10 @@ export default function Mervin() {
                 : msg
             )
           );
+          scrollToBottom();
           setIsLoading(false);
         }
-      }, 25); // Velocidad de escritura: 25ms por carácter
+      }, 30); // Velocidad de escritura: 30ms por carácter
     }, 1500);
   };
 
@@ -469,11 +519,15 @@ export default function Mervin() {
                       <span className="text-blue-400 font-semibold">You</span>
                     </div>
                   )}
-                  {message.typewriterEffect && message.sender === "assistant" ? (
-                    <p className="whitespace-pre-wrap min-h-[20px] typewriter-text" style={{minHeight: `${Math.ceil(message.content.length / 50) * 20}px`}}>{message.visibleContent}</p>
-                  ) : (
-                    <p className="whitespace-pre-wrap">{message.content}</p>
-                  )}
+                  <div className="message-container" style={{
+                    minHeight: message.typewriterEffect ? `${Math.ceil(message.content.length / 40) * 20}px` : 'auto'
+                  }}>
+                    {message.typewriterEffect && message.sender === "assistant" ? (
+                      <p className="whitespace-pre-wrap typewriter-text">{message.visibleContent}</p>
+                    ) : (
+                      <p className="whitespace-pre-wrap">{message.content}</p>
+                    )}
+                  </div>
 
                   {/* Botones de acción */}
                   {message.actionButtons && message.actionButtons.length > 0 && (
