@@ -205,7 +205,9 @@ export class ProjectPaymentService {
       await storage.updateProjectPayment(payment.id, {
         status: 'succeeded',
         stripePaymentIntentId: paymentIntentId,
-        paymentMethod: paymentIntent.payment_method_types[0],
+        paymentMethod: Array.isArray(paymentIntent.payment_method_types) 
+          ? paymentIntent.payment_method_types[0] 
+          : 'card',
         paymentDate: new Date(),
       });
       
@@ -219,27 +221,47 @@ export class ProjectPaymentService {
       
       // Actualizar el estado de pago del proyecto
       let paymentStatus = project.paymentStatus || 'pending';
-      let paymentDetails = project.paymentDetails || { history: [] };
       
-      if (!paymentDetails.history) {
-        paymentDetails = { ...paymentDetails, history: [] };
+      // Inicializar paymentDetails
+      let paymentDetails: any = { history: [] };
+      
+      // Si existe paymentDetails, intentar parsearlo
+      if (project.paymentDetails) {
+        if (typeof project.paymentDetails === 'string') {
+          try {
+            paymentDetails = JSON.parse(project.paymentDetails);
+          } catch (e) {
+            console.error('Error al parsear paymentDetails del proyecto, inicializando nuevo:', e);
+            paymentDetails = { history: [] };
+          }
+        } else {
+          paymentDetails = project.paymentDetails;
+        }
+      }
+      
+      // Asegurar que history sea un array
+      if (!paymentDetails.history || !Array.isArray(paymentDetails.history)) {
+        paymentDetails.history = [];
       }
       
       // Agregar el pago al historial
       paymentDetails.history.push({
         date: new Date(),
-        amount: payment.amount,
-        method: paymentIntent.payment_method_types[0],
+        amount: payment.amount || 0,
+        method: Array.isArray(paymentIntent.payment_method_types) 
+          ? paymentIntent.payment_method_types[0] 
+          : 'card',
         type: paymentType,
         reference: paymentIntentId,
       });
       
       // Calcular el total pagado
-      const totalPaid = paymentDetails.history.reduce((sum: number, payment: any) => sum + payment.amount, 0);
+      const totalPaid = paymentDetails.history.reduce((sum: number, payment: any) => sum + (payment.amount || 0), 0);
       paymentDetails.totalPaid = totalPaid;
       
       // Determinar el estado de pago
-      if (totalPaid >= project.totalPrice) {
+      const projectTotalPrice = project.totalPrice || 0;
+      if (totalPaid >= projectTotalPrice && projectTotalPrice > 0) {
         paymentStatus = 'paid';
       } else if (totalPaid > 0) {
         paymentStatus = 'partial';
@@ -313,19 +335,33 @@ export class ProjectPaymentService {
       }
       
       // De lo contrario, crear un nuevo checkout
-      const project = await storage.getProject(payment.projectId);
+      if (!payment.projectId) {
+        throw new Error(`El pago no tiene un proyecto asociado válido`);
+      }
+      
+      const projectId = payment.projectId;
+      const project = await storage.getProject(projectId);
       
       if (!project) {
-        throw new Error(`Proyecto con ID ${payment.projectId} no encontrado`);
+        throw new Error(`Proyecto con ID ${projectId} no encontrado`);
       }
+      
+      // Asegurar que el tipo de pago sea válido
+      const paymentType: 'deposit' | 'final' = 
+        (payment.type === 'deposit' || payment.type === 'final') 
+          ? payment.type 
+          : 'deposit';
+      
+      // Usar un projectId string seguro
+      const projectIdString = project.projectId || `PROJ-${project.id}`;
       
       // Crear nuevo checkout con los mismos parámetros
       const checkoutUrl = await this.createProjectPaymentCheckout({
-        projectId: payment.projectId,
-        paymentType: payment.type as 'deposit' | 'final',
-        successUrl: `${process.env.APP_URL || 'http://localhost:5000'}/projects/${project.projectId}?payment_success=true`,
-        cancelUrl: `${process.env.APP_URL || 'http://localhost:5000'}/projects/${project.projectId}?payment_canceled=true`,
-        customerEmail: project.clientEmail,
+        projectId: projectId,
+        paymentType: paymentType,
+        successUrl: `${process.env.APP_URL || 'http://localhost:5000'}/projects/${projectIdString}?payment_success=true`,
+        cancelUrl: `${process.env.APP_URL || 'http://localhost:5000'}/projects/${projectIdString}?payment_canceled=true`,
+        customerEmail: project.clientEmail ? String(project.clientEmail) : undefined,
       });
       
       return checkoutUrl;

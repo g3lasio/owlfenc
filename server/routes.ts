@@ -27,6 +27,7 @@ import { searchService } from './services/searchService';
 import emailService from './services/emailService';
 import { estimatorService, validateProjectInput } from './services/estimatorService';
 import { promptGeneratorService } from './services/promptGeneratorService';
+import { projectPaymentService } from './services/projectPaymentService';
 import { registerPromptTemplateRoutes } from './routes/prompt-templates';
 import { registerEstimateRoutes } from './routes/estimate-routes';
 import { registerPropertyRoutes } from './routes/property-routes';
