@@ -12,14 +12,11 @@ import {
 } from "lucide-react";
 
 // Tipos para los mensajes
-type MessageSender = "user" | "assistant";
-type MessageState = "analyzing" | "thinking" | "none";
-
 type Message = {
   id: string;
   content: string;
-  sender: MessageSender;
-  state?: MessageState;
+  sender: "user" | "assistant";
+  state?: "analyzing" | "thinking" | "none";
   action?: string;
 }
 
@@ -41,14 +38,14 @@ export default function Mervin() {
 
   // Inicializar con mensaje de bienvenida
   useEffect(() => {
-    const welcomeMessage: Message = {
-      id: "welcome",
-      content: "¡Hola! Soy Mervin, tu asistente virtual especializado en proyectos de construcción y cercas. Puedo ayudarte con las siguientes funciones:",
-      sender: "assistant",
-      action: "menu"
-    };
-    
-    setMessages([welcomeMessage]);
+    setMessages([
+      {
+        id: "welcome",
+        content: "¡Hola! Soy Mervin, tu asistente virtual especializado en proyectos de construcción y cercas. Puedo ayudarte con las siguientes funciones:",
+        sender: "assistant",
+        action: "menu"
+      }
+    ]);
   }, []);
 
   // Manejar envío de mensajes
