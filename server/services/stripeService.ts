@@ -864,16 +864,20 @@ class StripeService {
         throw new Error('No se pudo establecer conexión con Stripe. Verifique las credenciales API.');
       }
 
-      // Buscar el ID de cuenta de Connect del usuario
-      const userSettings = await storage.getUserSettings(userId);
+      // Buscar el usuario
+      const user = await storage.getUser(userId);
       
-      if (!userSettings?.stripeConnectAccountId) {
+      if (!user) {
+        throw new Error('Usuario no encontrado');
+      }
+      
+      if (!user.stripeConnectAccountId) {
         throw new Error('El usuario no tiene una cuenta de Stripe Connect asociada');
       }
       
       // Obtener las cuentas bancarias externas
       const bankAccounts = await stripe.accounts.listExternalAccounts(
-        userSettings.stripeConnectAccountId,
+        user.stripeConnectAccountId,
         { object: 'bank_account', limit: 10 }
       );
       
@@ -912,17 +916,20 @@ class StripeService {
         throw new Error('No se pudo establecer conexión con Stripe. Verifique las credenciales API.');
       }
 
-      // Buscar el ID de cuenta de Connect del usuario
-      const userSettings = await storage.getUserSettings(userId);
+      // Buscar el usuario
+      const user = await storage.getUser(userId);
       
-      if (!userSettings?.stripeConnectAccountId) {
+      if (!user) {
+        throw new Error('Usuario no encontrado');
+      }
+      
+      if (!user.stripeConnectAccountId) {
         throw new Error('El usuario no tiene una cuenta de Stripe Connect asociada');
       }
       
-      // Crear el enlace al dashboard
+      // Crear el enlace al dashboard - la documentación más reciente usa una API diferente
       const loginLink = await stripe.accounts.createLoginLink(
-        userSettings.stripeConnectAccountId,
-        { redirect_url: returnUrl }
+        user.stripeConnectAccountId
       );
       
       console.log(`[${new Date().toISOString()}] Enlace de dashboard creado: ${loginLink.url.substring(0, 60)}...`);

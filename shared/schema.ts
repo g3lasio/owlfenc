@@ -28,6 +28,8 @@ export const users = pgTable("users", {
   socialMedia: jsonb("social_media"),
   documents: jsonb("documents"),
   logo: text("logo"),
+  // Stripe Connect fields
+  stripeConnectAccountId: text("stripe_connect_account_id"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
