@@ -44,7 +44,9 @@ interface Message {
     name: string;
   };
   actionButtons?: ActionButton[];
-  state?: "thinking" | "analyzing" | "deepSearching" | "none";
+  state?: "thinking" | "analyzing" | "deepSearching" | "reading" | "calculating" | "none";
+  typewriterEffect?: boolean;
+  visibleContent?: string;
 }
 
 export default function Mervin() {
@@ -56,38 +58,38 @@ export default function Mervin() {
       actionButtons: [
         { 
           id: "estimados", 
-          text: "Generación de Estimados", 
-          icon: <FileSpreadsheet className="h-4 w-4" />, 
+          text: "Estimados", 
+          icon: <FileSpreadsheet className="h-5 w-5" />, 
           action: "estimados",
-          description: "Crea estimados precisos para tus proyectos de cercas"
+          description: "Cálculos precisos"
         },
         { 
           id: "contratos", 
-          text: "Generación de Contratos", 
-          icon: <ClipboardList className="h-4 w-4" />, 
+          text: "Contratos", 
+          icon: <ClipboardList className="h-5 w-5" />, 
           action: "contratos",
-          description: "Genera contratos profesionales personalizados"
+          description: "Documentos legales"
         },
         { 
           id: "permisos", 
-          text: "Consulta de Permisos", 
-          icon: <ClipboardCheck className="h-4 w-4" />, 
+          text: "Permisos", 
+          icon: <ClipboardCheck className="h-5 w-5" />, 
           action: "permisos",
-          description: "Verifica requisitos y regulaciones de construcción"
+          description: "Regulaciones"
         },
         { 
           id: "ownership", 
-          text: "Verificador de Propiedad", 
-          icon: <Building className="h-4 w-4" />, 
+          text: "Propiedades", 
+          icon: <Building className="h-5 w-5" />, 
           action: "propiedades",
-          description: "Confirma la propiedad y detalles de inmuebles"
+          description: "Verificación"
         },
         { 
           id: "insights", 
-          text: "Insights y Análisis", 
-          icon: <BarChart4 className="h-4 w-4" />, 
+          text: "Analítica", 
+          icon: <BarChart4 className="h-5 w-5" />, 
           action: "insights",
-          description: "Obtén análisis inteligentes de tus datos y proyectos"
+          description: "Datos e insights"
         }
       ],
     },
@@ -310,29 +312,53 @@ export default function Mervin() {
                     </div>
                   )}
                   
+                  {message.state === "reading" && (
+                    <div className="flex items-center text-xs text-emerald-500 mb-1">
+                      <div className="relative h-3 w-3 mr-1">
+                        <div className="absolute inset-0 bg-emerald-500/50 rounded-full animate-scan-x"></div>
+                        <FileText className="h-3 w-3 relative" />
+                      </div>
+                      <span>Leyendo documento...</span>
+                    </div>
+                  )}
+                  
+                  {message.state === "calculating" && (
+                    <div className="flex items-center text-xs text-amber-500 mb-1">
+                      <div className="relative h-3 w-3 mr-1">
+                        <div className="absolute inset-0 bg-amber-500/50 rounded-full animate-spin-slow"></div>
+                        <Database className="h-3 w-3 relative" />
+                      </div>
+                      <span>Calculando estimados...</span>
+                    </div>
+                  )}
+                  
                   {message.sender === "assistant" && (
                     <div className="mb-2">
                       <span className="text-cyan-400 font-semibold">Mervin AI</span>
                     </div>
                   )}
-                  <p className="whitespace-pre-wrap">{message.content}</p>
+                  {message.typewriterEffect && message.sender === "assistant" ? (
+                    <p className="whitespace-pre-wrap typewriter-text">{message.visibleContent}</p>
+                  ) : (
+                    <p className="whitespace-pre-wrap">{message.content}</p>
+                  )}
 
                   {/* Botones de acción */}
                   {message.actionButtons && message.actionButtons.length > 0 && (
-                    <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <div className="mt-4 grid grid-cols-3 sm:grid-cols-5 gap-2">
                       {message.actionButtons.map(button => (
                         <button
                           key={button.id}
                           onClick={() => handleServiceSelection(button.action)}
-                          className="flex flex-col items-center bg-cyan-900/20 hover:bg-cyan-900/40 transition-all p-2 rounded-lg border border-cyan-500/30 group w-full h-24 shadow-md hover:shadow-cyan-900/20"
+                          className="flex flex-col items-center bg-gradient-to-b from-cyan-900/30 to-cyan-950/50 hover:from-cyan-800/40 hover:to-cyan-900/60 transition-all p-2 rounded-lg border border-cyan-500/20 group w-full h-20 shadow-md hover:shadow-cyan-500/30 backdrop-blur-sm"
                         >
-                          <div className="w-8 h-8 rounded-full bg-cyan-900/40 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
+                          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-cyan-800/70 to-cyan-950/90 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform ring-1 ring-cyan-500/30">
                             <div className="text-cyan-400">
                               {button.icon}
                             </div>
                           </div>
                           <span className="text-xs font-medium text-center text-cyan-400 font-quantico leading-tight">{button.text}</span>
-                          <span className="text-[10px] text-center text-cyan-300/70 mt-0.5 line-clamp-1">{button.description}</span>
+                          <span className="text-[9px] text-center text-cyan-300/70 mt-0.5 line-clamp-1">{button.description}</span>
                         </button>
                       ))}
                     </div>
