@@ -1104,6 +1104,165 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  
+  // ===== STRIPE CONNECT (Bank Accounts) ENDPOINTS =====
+  
+  // Endpoint para crear un enlace de onboarding de Stripe Connect
+  app.post('/api/payments/connect/create-onboarding', async (req: Request, res: Response) => {
+    try {
+      // En una app real, verificaríamos autenticación
+      const userId = 1; // ID de usuario fijo para pruebas
+      
+      // Validar los parámetros de la solicitud
+      const schema = z.object({
+        refreshUrl: z.string(),
+        returnUrl: z.string()
+      });
+
+      const validationResult = schema.safeParse(req.body);
+      
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Datos de solicitud inválidos",
+          errors: validationResult.error.format()
+        });
+      }
+      
+      const { refreshUrl, returnUrl } = validationResult.data;
+
+      console.log(`Creando enlace de onboarding para usuario ID: ${userId}`);
+      
+      try {
+        // Crear el enlace de onboarding
+        const onboardingUrl = await stripeService.createConnectOnboardingLink(
+          userId, 
+          refreshUrl,
+          returnUrl
+        );
+
+        console.log('Enlace de onboarding creado exitosamente:', onboardingUrl.substring(0, 60) + '...');
+        res.json({ url: onboardingUrl });
+      } catch (stripeError: any) {
+        console.error('Error específico de Stripe:', stripeError.message || stripeError);
+        res.status(502).json({ 
+          message: 'Error al comunicarse con el servicio de pagos',
+          details: stripeError.message || 'Error desconocido'
+        });
+      }
+    } catch (error: any) {
+      console.error('Error al crear enlace de onboarding:', error);
+      res.status(500).json({ 
+        message: 'Error al crear enlace de onboarding', 
+        details: error.message || 'Error desconocido'
+      });
+    }
+  });
+
+  // Endpoint para obtener el estado de la cuenta de Stripe Connect
+  app.get('/api/payments/connect/account-status', async (req: Request, res: Response) => {
+    try {
+      // En una app real, verificaríamos autenticación
+      const userId = 1; // ID de usuario fijo para pruebas
+
+      console.log(`Obteniendo estado de cuenta Connect para usuario ID: ${userId}`);
+      
+      try {
+        // Obtener el estado de la cuenta
+        const accountStatus = await stripeService.getConnectAccountStatus(userId);
+        
+        console.log('Estado de cuenta Connect obtenido:', accountStatus);
+        res.json(accountStatus);
+      } catch (stripeError: any) {
+        console.error('Error específico de Stripe:', stripeError.message || stripeError);
+        res.status(502).json({ 
+          message: 'Error al comunicarse con el servicio de pagos',
+          details: stripeError.message || 'Error desconocido'
+        });
+      }
+    } catch (error: any) {
+      console.error('Error al obtener estado de cuenta Connect:', error);
+      res.status(500).json({ 
+        message: 'Error al obtener estado de cuenta', 
+        details: error.message || 'Error desconocido'
+      });
+    }
+  });
+
+  // Endpoint para obtener las cuentas bancarias externas
+  app.get('/api/payments/connect/external-accounts', async (req: Request, res: Response) => {
+    try {
+      // En una app real, verificaríamos autenticación
+      const userId = 1; // ID de usuario fijo para pruebas
+
+      console.log(`Obteniendo cuentas bancarias para usuario ID: ${userId}`);
+      
+      try {
+        // Obtener las cuentas bancarias
+        const accounts = await stripeService.getConnectExternalAccounts(userId);
+        
+        console.log(`Se encontraron ${accounts.length} cuentas bancarias`);
+        res.json(accounts);
+      } catch (stripeError: any) {
+        console.error('Error específico de Stripe:', stripeError.message || stripeError);
+        res.status(502).json({ 
+          message: 'Error al comunicarse con el servicio de pagos',
+          details: stripeError.message || 'Error desconocido'
+        });
+      }
+    } catch (error: any) {
+      console.error('Error al obtener cuentas bancarias:', error);
+      res.status(500).json({ 
+        message: 'Error al obtener cuentas bancarias', 
+        details: error.message || 'Error desconocido'
+      });
+    }
+  });
+
+  // Endpoint para crear un enlace al dashboard de Stripe Connect
+  app.post('/api/payments/connect/dashboard-link', async (req: Request, res: Response) => {
+    try {
+      // En una app real, verificaríamos autenticación
+      const userId = 1; // ID de usuario fijo para pruebas
+      
+      // Validar los parámetros de la solicitud
+      const schema = z.object({
+        returnUrl: z.string()
+      });
+
+      const validationResult = schema.safeParse(req.body);
+      
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Datos de solicitud inválidos",
+          errors: validationResult.error.format()
+        });
+      }
+      
+      const { returnUrl } = validationResult.data;
+
+      console.log(`Creando enlace al dashboard para usuario ID: ${userId}`);
+      
+      try {
+        // Crear el enlace al dashboard
+        const dashboardUrl = await stripeService.createConnectDashboardLink(userId, returnUrl);
+        
+        console.log('Enlace al dashboard creado exitosamente:', dashboardUrl.substring(0, 60) + '...');
+        res.json({ url: dashboardUrl });
+      } catch (stripeError: any) {
+        console.error('Error específico de Stripe:', stripeError.message || stripeError);
+        res.status(502).json({ 
+          message: 'Error al comunicarse con el servicio de pagos',
+          details: stripeError.message || 'Error desconocido'
+        });
+      }
+    } catch (error: any) {
+      console.error('Error al crear enlace al dashboard:', error);
+      res.status(500).json({ 
+        message: 'Error al crear enlace al dashboard', 
+        details: error.message || 'Error desconocido'
+      });
+    }
+  });
 
   app.post('/api/webhook/stripe', express.raw({type: 'application/json'}), async (req: Request, res: Response) => {
     try {
