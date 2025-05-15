@@ -39,6 +39,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, userData: Partial<User>): Promise<User>;
+  updateStripeConnectAccountId(userId: number, accountId: string): Promise<User>;
 
   // Project methods
   getProject(id: number): Promise<Project | undefined>;
@@ -335,6 +336,17 @@ export class StorageManager implements IStorage {
       undefined,
       undefined,
       `user_${id}`
+    );
+  }
+  
+  async updateStripeConnectAccountId(userId: number, accountId: string): Promise<User> {
+    return this.executeWithFailover<User>(
+      'updateStripeConnectAccountId',
+      () => this.primaryStorage.updateStripeConnectAccountId(userId, accountId),
+      () => this.backupStorage!.updateStripeConnectAccountId(userId, accountId),
+      undefined,
+      undefined,
+      `user_${userId}`
     );
   }
 

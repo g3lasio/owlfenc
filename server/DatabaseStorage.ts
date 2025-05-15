@@ -92,6 +92,20 @@ export class DatabaseStorage implements IStorage {
     
     return user;
   }
+  
+  async updateStripeConnectAccountId(userId: number, accountId: string): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ stripeConnectAccountId: accountId })
+      .where(eq(users.id, userId))
+      .returning();
+      
+    if (!user) {
+      throw new Error(`User with ID ${userId} not found`);
+    }
+    
+    return user;
+  }
 
   // Project methods
   async getProject(id: number): Promise<Project | undefined> {

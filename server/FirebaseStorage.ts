@@ -198,6 +198,53 @@ export class FirebaseStorage implements IStorage {
 
     throw new Error('Error inesperado al actualizar usuario');
   }
+  
+  async updateStripeConnectAccountId(userId: number, accountId: string): Promise<User> {
+    const maxRetries = 3;
+    let retryCount = 0;
+    
+    while (retryCount < maxRetries) {
+      try {
+        // Verificar que existe el usuario
+        const userRef = doc(db, 'users', userId.toString());
+        const userSnap = await getDoc(userRef);
+        
+        if (!userSnap.exists()) {
+          throw new Error(`Usuario con ID ${userId} no encontrado`);
+        }
+        
+        // Actualizar el ID de cuenta de Stripe Connect
+        await updateDoc(userRef, {
+          stripeConnectAccountId: accountId,
+          updatedAt: serverTimestamp()
+        });
+        
+        // Obtener los datos actualizados
+        const updatedSnap = await getDoc(userRef);
+        const updatedData = updatedSnap.data();
+        
+        if (!updatedData) {
+          throw new Error('Error al verificar la actualización de Stripe Connect');
+        }
+        
+        return {
+          ...convertTimestampToDate(updatedData),
+          id: userId
+        } as User;
+      } catch (error) {
+        if (retryCount === maxRetries - 1) {
+          console.error('Error al actualizar ID de cuenta Stripe Connect:', error);
+          throw new Error(`Error al actualizar ID de cuenta Stripe Connect: ${error.message}`);
+        }
+        
+        retryCount++;
+        // Esperar antes de reintentar
+        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+      }
+    }
+    
+    throw new Error('Error inesperado al actualizar ID de cuenta Stripe Connect');
+  }
 
   // Project methods
   async getProject(id: number): Promise<Project | undefined> {
