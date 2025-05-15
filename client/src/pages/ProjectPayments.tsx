@@ -452,9 +452,220 @@ const ProjectPayments: React.FC = () => {
             </Card>
           </div>
           
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="col-span-1">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <TrendingUp className="mr-2 h-5 w-5 text-indigo-500" />
+                  Evolución de Ingresos
+                </CardTitle>
+                <CardDescription>Tendencias de ingresos mensuales de 2025</CardDescription>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart
+                      data={monthlyRevenueData}
+                      margin={{
+                        top: 20,
+                        right: 30,
+                        left: 20,
+                        bottom: 10,
+                      }}
+                    >
+                      <defs>
+                        <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="#8884d8" stopOpacity={0}/>
+                        </linearGradient>
+                        <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#82ca9d" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="#82ca9d" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'rgba(12, 15, 28, 0.8)', 
+                          border: '1px solid #333',
+                          borderRadius: '8px',
+                          color: '#fff' 
+                        }} 
+                      />
+                      <Legend />
+                      <Area 
+                        type="monotone" 
+                        dataKey="income" 
+                        stroke="#8884d8" 
+                        fillOpacity={1} 
+                        fill="url(#colorIncome)" 
+                        name="Ingresos"
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="profit" 
+                        stroke="#82ca9d" 
+                        fillOpacity={1} 
+                        fill="url(#colorProfit)" 
+                        name="Ganancia"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="col-span-1">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Activity className="mr-2 h-5 w-5 text-indigo-500" />
+                  Pagos Diarios (Mayo 2025)
+                </CardTitle>
+                <CardDescription>Flujo de pagos de los últimos 7 días</CardDescription>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={dailyPaymentsData}
+                      margin={{
+                        top: 20,
+                        right: 30,
+                        left: 20,
+                        bottom: 10,
+                      }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'rgba(12, 15, 28, 0.8)', 
+                          border: '1px solid #333',
+                          borderRadius: '8px',
+                          color: '#fff' 
+                        }}
+                        formatter={(value) => [`$${value}`, 'Monto']}
+                      />
+                      <Legend />
+                      <Bar dataKey="amount" name="Monto de pago" radius={[8, 8, 0, 0]}>
+                        {dailyPaymentsData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <PieChart className="mr-2 h-5 w-5 text-indigo-500" />
+                  Distribución de Pagos
+                </CardTitle>
+                <CardDescription>Estado actual de todos los pagos</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-72 flex justify-center">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RechartsPieChart>
+                      <Pie
+                        data={paymentStatusData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={100}
+                        fill="#8884d8"
+                        paddingAngle={5}
+                        dataKey="value"
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {paymentStatusData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'rgba(12, 15, 28, 0.8)', 
+                          border: '1px solid #333',
+                          borderRadius: '8px',
+                          color: '#fff' 
+                        }} 
+                      />
+                    </RechartsPieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex flex-wrap justify-center mt-4 gap-2">
+                  {paymentStatusData.map((entry, index) => (
+                    <div key={entry.name} className="flex items-center text-sm">
+                      <div 
+                        className="w-3 h-3 mr-1 rounded-full" 
+                        style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                      />
+                      {entry.name} ({entry.value})
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <ArrowUpRight className="mr-2 h-5 w-5 text-indigo-500" />
+                  Rendimiento por Tipo de Proyecto
+                </CardTitle>
+                <CardDescription>Análisis de proyectos y su desempeño financiero</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={projectTypeData}>
+                      <PolarGrid stroke="#444" />
+                      <PolarAngleAxis dataKey="subject" />
+                      <PolarRadiusAxis angle={30} domain={[0, 150]} />
+                      <Radar
+                        name="Ingresos"
+                        dataKey="A"
+                        stroke="#8884d8"
+                        fill="#8884d8"
+                        fillOpacity={0.6}
+                      />
+                      <Radar
+                        name="Proyectos"
+                        dataKey="B"
+                        stroke="#82ca9d"
+                        fill="#82ca9d"
+                        fillOpacity={0.6}
+                      />
+                      <Legend />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'rgba(12, 15, 28, 0.8)', 
+                          border: '1px solid #333',
+                          borderRadius: '8px',
+                          color: '#fff' 
+                        }} 
+                      />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           <Card>
             <CardHeader>
-              <CardTitle>Resumen de Pagos Recientes</CardTitle>
+              <CardTitle className="flex items-center">
+                <Clock className="mr-2 h-5 w-5 text-indigo-500" />
+                Resumen de Pagos Recientes
+              </CardTitle>
               <CardDescription>Últimos pagos recibidos y pendientes</CardDescription>
             </CardHeader>
             <CardContent>
@@ -464,7 +675,7 @@ const ProjectPayments: React.FC = () => {
                     <div className="flex items-start space-x-4">
                       <div className="bg-primary/10 p-2 rounded-full">
                         {payment.status === 'paid' ? (
-                          <DollarSign className="h-5 w-5 text-green-500" />
+                          <CheckCircle className="h-5 w-5 text-green-500" />
                         ) : (
                           <AlertCircle className="h-5 w-5 text-amber-500" />
                         )}
