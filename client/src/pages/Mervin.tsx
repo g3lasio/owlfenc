@@ -51,7 +51,7 @@ export default function Mervin() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
-      content: "¡Hola! Soy Mervin, tu asistente virtual para proyectos de cercas. Puedo ayudarte con las siguientes funciones:",
+      content: "¡Hola! Soy Mervin, tu asistente virtual especializado en proyectos de construcción y cercas. Puedo ayudarte con las siguientes funciones:",
       sender: "assistant",
       actionButtons: [
         { 
@@ -256,21 +256,25 @@ export default function Mervin() {
       <div className="h-16"></div>
 
       {/* Área de mensajes con scroll, con padding inferior para dar espacio al input fijo y footer global */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-20 bg-black hide-scrollbar">
-        {messages.map(message => (
+      <div className="flex-1 overflow-y-auto p-4 space-y-6 pb-20 bg-black hide-scrollbar">
+        {messages.map((message, index) => (
           <Card 
             key={message.id} 
-            className={`${message.sender === "assistant" ? "bg-gray-900 border-cyan-900/40" : "bg-gray-800 border-cyan-800/30"}`}
+            className={`${message.sender === "assistant" 
+              ? "bg-gray-900 border-cyan-900/40 animate-fadeIn" 
+              : "bg-gray-800 border-cyan-800/30 animate-slideInRight"} 
+              transition-all duration-300 shadow-md hover:shadow-lg`}
+            style={{ animationDelay: `${index * 0.1}s` }}
           >
             <CardContent className="pt-4">
               <div className="flex items-start">
-                <div className="w-8 h-8 rounded-full bg-cyan-900/30 flex items-center justify-center mr-2 flex-shrink-0">
+                <div className="w-10 h-10 rounded-full bg-cyan-900/30 flex items-center justify-center mr-3 flex-shrink-0">
                   {message.sender === "assistant" ? 
                     <div className="mervin-logo-container">
-                      <img src="https://i.postimg.cc/FK6hvMbf/logo-mervin.png" alt="Mervin AI" className="mervin-logo" />
+                      <img src="/mervin-logo.png" alt="Mervin AI" className="mervin-logo w-full h-full object-contain" />
                       <div className="glow-effect"></div>
                     </div> : 
-                    <div className="w-4 h-4 rounded-full bg-cyan-400" />
+                    <div className="w-5 h-5 rounded-full bg-cyan-400" />
                   }
                 </div>
                 <div className="flex-1">
@@ -302,6 +306,11 @@ export default function Mervin() {
                     </div>
                   )}
                   
+                  {message.sender === "assistant" && (
+                    <div className="mb-2">
+                      <span className="text-cyan-400 font-semibold">Mervin AI</span>
+                    </div>
+                  )}
                   <p className="whitespace-pre-wrap">{message.content}</p>
 
                   {/* Botones de acción */}
@@ -311,7 +320,7 @@ export default function Mervin() {
                         <button
                           key={button.id}
                           onClick={() => handleServiceSelection(button.action)}
-                          className="flex flex-col items-center bg-cyan-900/20 hover:bg-cyan-900/30 transition-all p-3 rounded-lg border border-cyan-500/30 group w-32 h-28"
+                          className="flex flex-col items-center bg-cyan-900/20 hover:bg-cyan-900/40 transition-all p-3 rounded-lg border border-cyan-500/30 group w-32 h-32 shadow-md hover:shadow-cyan-900/20"
                         >
                           <div className="w-10 h-10 rounded-full bg-cyan-900/40 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                             <div className="text-cyan-400">
@@ -353,9 +362,9 @@ export default function Mervin() {
           <Card className="bg-gray-900 border-cyan-900/40">
             <CardContent className="pt-4">
               <div className="flex items-start">
-                <div className="w-8 h-8 rounded-full bg-cyan-900/30 flex items-center justify-center mr-2 flex-shrink-0">
+                <div className="w-10 h-10 rounded-full bg-cyan-900/30 flex items-center justify-center mr-3 flex-shrink-0">
                   <div className="mervin-logo-container">
-                    <img src="https://i.postimg.cc/FK6hvMbf/logo-mervin.png" alt="Mervin AI" className="mervin-logo" />
+                    <img src="/mervin-logo.png" alt="Mervin AI" className="mervin-logo w-full h-full object-contain" />
                     <div className="glow-effect"></div>
                   </div>
                 </div>
