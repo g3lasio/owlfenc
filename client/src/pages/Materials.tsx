@@ -506,12 +506,11 @@ export default function Materials() {
   };
 
   return (
-    <AppLayout>
-      <div className="container py-6">
-        <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-2">Inventario de Materiales</h1>
-          <p className="text-muted-foreground">
-            Gestiona el inventario de materiales para tus proyectos de cercado
+    <div className="container py-6">
+      <div className="mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Inventario de Materiales</h1>
+        <p className="text-muted-foreground">
+          Gestiona el inventario de materiales para tus proyectos de cercado
           </p>
         </div>
 
@@ -969,7 +968,6 @@ export default function Materials() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </AppLayout>
   );
 
   /**
