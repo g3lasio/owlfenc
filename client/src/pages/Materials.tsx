@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -103,7 +103,6 @@ export default function Materials() {
   const [activeTab, setActiveTab] = useState('todos');
   const [categories, setCategories] = useState<string[]>([]);
 
-  const toast = useToast();
   const [, navigate] = useLocation();
 
   // Comprobar autenticación y cargar materiales al montar
@@ -538,7 +537,7 @@ export default function Materials() {
                 <SelectValue placeholder="Categoría" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas las categorías</SelectItem>
+                <SelectItem value="todas">Todas las categorías</SelectItem>
                 {categories.map((category) => (
                   <SelectItem key={category} value={category}>
                     {category}
