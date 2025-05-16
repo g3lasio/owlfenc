@@ -53,13 +53,21 @@ export default function Header({
       <div className="flex-1 flex flex-col items-center justify-center">
         <Link href="/" className="flex flex-col items-center">
           <div className="h-10 flex items-center justify-center relative">
-            {/* Logo de texto como fallback */}
-            <div className="text-2xl font-bold text-primary md:hidden">Owl Fence</div>
+            {/* Logo para móvil */}
+            <img
+              src="https://i.postimg.cc/yYSwtxhq/White-logo-no-background.png" 
+              alt="Logo"
+              className="h-10 w-auto object-contain md:hidden"
+              style={{ filter: 'brightness(1.1) contrast(1.1)' }}
+              onError={(e) => {
+                e.currentTarget.src = "/White-logo-no-background-new.png";
+              }}
+            />
             
             {/* Imagen del logo (oculta en móvil) */}
             <img
               src="https://i.postimg.cc/yYSwtxhq/White-logo-no-background.png" 
-              alt="Owl Fence"
+              alt="Logo"
               className="h-10 w-auto object-contain hidden md:block"
               style={{ filter: 'brightness(1.1) contrast(1.1)' }}
               onError={(e) => {
