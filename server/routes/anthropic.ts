@@ -80,7 +80,16 @@ IMPORTANTE: Cualquier valor numérico debe ser un número, no un string.
     });
     
     // Extraer la respuesta de Claude
-    const content = response.content[0].text;
+    const messageContent = response.content[0];
+    let content = '';
+    
+    if ('text' in messageContent) {
+      content = messageContent.text;
+    } else {
+      return res.status(500).json({ 
+        error: 'Formato de respuesta de Claude no reconocido'
+      });
+    }
     
     // Intentar parsear la respuesta JSON
     try {
@@ -105,7 +114,7 @@ IMPORTANTE: Cualquier valor numérico debe ser un número, no un string.
       }
       
       // Validar y limpiar cada material
-      const materials = result.materials.map(material => ({
+      const materials = result.materials.map((material: any) => ({
         name: material.name || '',
         category: material.category || '',
         description: material.description || '',
@@ -116,21 +125,21 @@ IMPORTANTE: Cualquier valor numérico debe ser un número, no un string.
         sku: material.sku || '',
         stock: typeof material.stock === 'number' ? material.stock : parseFloat(material.stock || '0') || 0,
         minStock: typeof material.minStock === 'number' ? material.minStock : parseFloat(material.minStock || '0') || 0
-      })).filter(m => m.name && m.name.trim() !== '');
+      })).filter((m: any) => m.name && m.name.trim() !== '');
       
       return res.json({ materials });
-    } catch (parseError) {
-      console.error('Error al parsear respuesta JSON de Claude:', parseError);
+    } catch (error: unknown) {
+      console.error('Error al parsear respuesta JSON de Claude:', error);
       return res.status(500).json({ 
         error: 'Error al parsear respuesta JSON',
         rawResponse: content
       });
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error al analizar CSV con Anthropic:', error);
     return res.status(500).json({ 
       error: 'Error al procesar el archivo CSV con Anthropic',
-      message: error.message
+      message: error instanceof Error ? error.message : 'Error desconocido'
     });
   }
 });
@@ -176,18 +185,27 @@ Responde SOLAMENTE con el CSV normalizado, sin explicaciones adicionales.
       ],
     });
     
-    // Extraer la respuesta de Claude (asumiendo que es texto CSV limpio)
-    const normalizedContent = response.content[0].text.trim();
+    // Extraer la respuesta de Claude
+    const messageContent = response.content[0];
+    let normalizedContent = '';
+    
+    if ('text' in messageContent) {
+      normalizedContent = messageContent.text.trim();
+    } else {
+      return res.status(500).json({ 
+        error: 'Formato de respuesta de Claude no reconocido'
+      });
+    }
     
     // Limpiar posibles backticks que Claude podría haber incluido
     const cleanContent = normalizedContent.replace(/^\`\`\`csv\n|\`\`\`$/g, '');
     
     return res.json({ normalizedContent: cleanContent });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error al normalizar CSV con Anthropic:', error);
     return res.status(500).json({ 
       error: 'Error al normalizar CSV con Anthropic',
-      message: error.message
+      message: error instanceof Error ? error.message : 'Error desconocido'
     });
   }
 });
@@ -259,7 +277,16 @@ IMPORTANTE: Cualquier valor numérico debe ser un número, no un string.
     });
     
     // Extraer la respuesta de Claude
-    const content = response.content[0].text;
+    const messageContent = response.content[0];
+    let content = '';
+    
+    if ('text' in messageContent) {
+      content = messageContent.text;
+    } else {
+      return res.status(500).json({ 
+        error: 'Formato de respuesta de Claude no reconocido'
+      });
+    }
     
     // Intentar parsear la respuesta JSON
     try {
@@ -284,7 +311,7 @@ IMPORTANTE: Cualquier valor numérico debe ser un número, no un string.
       }
       
       // Validar y limpiar cada material
-      const materials = result.materials.map(material => ({
+      const materials = result.materials.map((material: any) => ({
         name: material.name || '',
         category: material.category || '',
         description: material.description || '',
@@ -295,21 +322,21 @@ IMPORTANTE: Cualquier valor numérico debe ser un número, no un string.
         sku: material.sku || '',
         stock: typeof material.stock === 'number' ? material.stock : parseFloat(material.stock || '0') || 0,
         minStock: typeof material.minStock === 'number' ? material.minStock : parseFloat(material.minStock || '0') || 0
-      })).filter(m => m.name && m.name.trim() !== '');
+      })).filter((m: any) => m.name && m.name.trim() !== '');
       
       return res.json({ materials });
-    } catch (parseError) {
-      console.error('Error al parsear respuesta JSON de Claude:', parseError);
+    } catch (error: unknown) {
+      console.error('Error al parsear respuesta JSON de Claude:', error);
       return res.status(500).json({ 
         error: 'Error al parsear respuesta JSON',
         rawResponse: content
       });
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error al extraer materiales con Anthropic:', error);
     return res.status(500).json({ 
       error: 'Error al extraer materiales con Anthropic',
-      message: error.message
+      message: error instanceof Error ? error.message : 'Error desconocido'
     });
   }
 });
