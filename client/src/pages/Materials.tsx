@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import AppLayout from '../components/layout/AppLayout';
 import { collection, query, where, getDocs, addDoc, deleteDoc, doc, serverTimestamp, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useLocation } from 'wouter';
@@ -504,6 +505,473 @@ export default function Materials() {
     setShowDeleteDialog(true);
   };
 
+  return (
+    <AppLayout>
+      <div className="container py-6">
+        <div className="mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2">Inventario de Materiales</h1>
+          <p className="text-muted-foreground">
+            Gestiona el inventario de materiales para tus proyectos de cercado
+          </p>
+        </div>
+
+        {/* Barra de acciones */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Buscar materiales..."
+                className="pl-8"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            
+            <Select
+              value={selectedCategory}
+              onValueChange={setSelectedCategory}
+            >
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue placeholder="Categoría" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas las categorías</SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Button variant="outline" className="relative" disabled={isUploading}>
+              <FileUp className="mr-2 h-4 w-4" />
+              <span>Importar CSV</span>
+              <Input
+                type="file"
+                accept=".csv"
+                className="absolute inset-0 opacity-0 cursor-pointer"
+                onChange={handleFileUpload}
+                disabled={isUploading}
+              />
+            </Button>
+            
+            <Button onClick={() => setShowAddDialog(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              <span>Agregar Material</span>
+            </Button>
+          </div>
+        </div>
+
+        {/* Tabs para filtrado rápido */}
+        <Tabs 
+          defaultValue="todos" 
+          className="w-full mb-6"
+          value={activeTab}
+          onValueChange={setActiveTab}
+        >
+          <TabsList className="mb-4">
+            <TabsTrigger value="todos">Todos los materiales</TabsTrigger>
+            <TabsTrigger value="bajo-stock">Bajo stock</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="todos">
+            <Card>
+              <CardHeader className="py-4">
+                <CardTitle>Inventario Completo</CardTitle>
+                <CardDescription>
+                  {filteredMaterials.length} materiales disponibles
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {renderMaterialsTable()}
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="bajo-stock">
+            <Card>
+              <CardHeader className="py-4">
+                <CardTitle>Materiales con Bajo Stock</CardTitle>
+                <CardDescription>
+                  Materiales que requieren reabastecimiento
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {filteredMaterials.length === 0 ? (
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Sin materiales bajo stock</AlertTitle>
+                    <AlertDescription>
+                      Todos los materiales tienen niveles de stock adecuados.
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  renderMaterialsTable()
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      {/* Dialog para agregar material */}
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Agregar Nuevo Material</DialogTitle>
+            <DialogDescription>
+              Completa los detalles del material para agregarlo al inventario.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="required">Nombre</Label>
+                <Input
+                  id="name"
+                  placeholder="Poste de madera 4x4"
+                  value={newMaterial.name}
+                  onChange={(e) => setNewMaterial({...newMaterial, name: e.target.value})}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="category" className="required">Categoría</Label>
+                <Select
+                  value={newMaterial.category}
+                  onValueChange={(value) => setNewMaterial({...newMaterial, category: value})}
+                >
+                  <SelectTrigger id="category">
+                    <SelectValue placeholder="Selecciona una categoría" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {COMMON_CATEGORIES.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="description">Descripción</Label>
+              <Input
+                id="description"
+                placeholder="Poste de madera tratada para uso exterior"
+                value={newMaterial.description || ''}
+                onChange={(e) => setNewMaterial({...newMaterial, description: e.target.value})}
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="unit" className="required">Unidad</Label>
+                <Select
+                  value={newMaterial.unit}
+                  onValueChange={(value) => setNewMaterial({...newMaterial, unit: value})}
+                >
+                  <SelectTrigger id="unit">
+                    <SelectValue placeholder="Selecciona unidad" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {COMMON_UNITS.map((unit) => (
+                      <SelectItem key={unit} value={unit}>
+                        {unit}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="price" className="required">Precio</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={newMaterial.price || ''}
+                  onChange={(e) => setNewMaterial({...newMaterial, price: parseFloat(e.target.value) || 0})}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="sku">SKU / Código</Label>
+                <Input
+                  id="sku"
+                  placeholder="HD-123456"
+                  value={newMaterial.sku || ''}
+                  onChange={(e) => setNewMaterial({...newMaterial, sku: e.target.value})}
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="supplier">Proveedor</Label>
+                <Input
+                  id="supplier"
+                  placeholder="Home Depot"
+                  value={newMaterial.supplier || ''}
+                  onChange={(e) => setNewMaterial({...newMaterial, supplier: e.target.value})}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="supplierLink">URL Proveedor</Label>
+                <Input
+                  id="supplierLink"
+                  placeholder="https://www.homedepot.com/p/123456"
+                  value={newMaterial.supplierLink || ''}
+                  onChange={(e) => setNewMaterial({...newMaterial, supplierLink: e.target.value})}
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="stock">Stock Actual</Label>
+                <Input
+                  id="stock"
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="0"
+                  value={newMaterial.stock || ''}
+                  onChange={(e) => setNewMaterial({...newMaterial, stock: parseInt(e.target.value) || 0})}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="minStock">Stock Mínimo</Label>
+                <Input
+                  id="minStock"
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="0"
+                  value={newMaterial.minStock || ''}
+                  onChange={(e) => setNewMaterial({...newMaterial, minStock: parseInt(e.target.value) || 0})}
+                />
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancelar</Button>
+            <Button onClick={saveMaterial}>Guardar Material</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para editar material */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Material</DialogTitle>
+            <DialogDescription>
+              Actualiza los detalles del material.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {editingMaterial && (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-name" className="required">Nombre</Label>
+                  <Input
+                    id="edit-name"
+                    placeholder="Poste de madera 4x4"
+                    value={editingMaterial.name}
+                    onChange={(e) => setEditingMaterial({...editingMaterial, name: e.target.value})}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="edit-category" className="required">Categoría</Label>
+                  <Select
+                    value={editingMaterial.category}
+                    onValueChange={(value) => setEditingMaterial({...editingMaterial, category: value})}
+                  >
+                    <SelectTrigger id="edit-category">
+                      <SelectValue placeholder="Selecciona una categoría" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COMMON_CATEGORIES.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                      {/* Incluir la categoría actual si no está en las comunes */}
+                      {!COMMON_CATEGORIES.includes(editingMaterial.category) && (
+                        <SelectItem value={editingMaterial.category}>
+                          {editingMaterial.category}
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-description">Descripción</Label>
+                <Input
+                  id="edit-description"
+                  placeholder="Poste de madera tratada para uso exterior"
+                  value={editingMaterial.description || ''}
+                  onChange={(e) => setEditingMaterial({...editingMaterial, description: e.target.value})}
+                />
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-unit" className="required">Unidad</Label>
+                  <Select
+                    value={editingMaterial.unit}
+                    onValueChange={(value) => setEditingMaterial({...editingMaterial, unit: value})}
+                  >
+                    <SelectTrigger id="edit-unit">
+                      <SelectValue placeholder="Selecciona unidad" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COMMON_UNITS.map((unit) => (
+                        <SelectItem key={unit} value={unit}>
+                          {unit}
+                        </SelectItem>
+                      ))}
+                      {/* Incluir la unidad actual si no está en las comunes */}
+                      {!COMMON_UNITS.includes(editingMaterial.unit) && (
+                        <SelectItem value={editingMaterial.unit}>
+                          {editingMaterial.unit}
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="edit-price" className="required">Precio</Label>
+                  <Input
+                    id="edit-price"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={editingMaterial.price || ''}
+                    onChange={(e) => setEditingMaterial({...editingMaterial, price: parseFloat(e.target.value) || 0})}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="edit-sku">SKU / Código</Label>
+                  <Input
+                    id="edit-sku"
+                    placeholder="HD-123456"
+                    value={editingMaterial.sku || ''}
+                    onChange={(e) => setEditingMaterial({...editingMaterial, sku: e.target.value})}
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-supplier">Proveedor</Label>
+                  <Input
+                    id="edit-supplier"
+                    placeholder="Home Depot"
+                    value={editingMaterial.supplier || ''}
+                    onChange={(e) => setEditingMaterial({...editingMaterial, supplier: e.target.value})}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="edit-supplierLink">URL Proveedor</Label>
+                  <Input
+                    id="edit-supplierLink"
+                    placeholder="https://www.homedepot.com/p/123456"
+                    value={editingMaterial.supplierLink || ''}
+                    onChange={(e) => setEditingMaterial({...editingMaterial, supplierLink: e.target.value})}
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-stock">Stock Actual</Label>
+                  <Input
+                    id="edit-stock"
+                    type="number"
+                    min="0"
+                    step="1"
+                    placeholder="0"
+                    value={editingMaterial.stock || ''}
+                    onChange={(e) => setEditingMaterial({...editingMaterial, stock: parseInt(e.target.value) || 0})}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="edit-minStock">Stock Mínimo</Label>
+                  <Input
+                    id="edit-minStock"
+                    type="number"
+                    min="0"
+                    step="1"
+                    placeholder="0"
+                    value={editingMaterial.minStock || ''}
+                    onChange={(e) => setEditingMaterial({...editingMaterial, minStock: parseInt(e.target.value) || 0})}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditDialog(false)}>Cancelar</Button>
+            <Button onClick={updateMaterial}>Actualizar Material</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para confirmar eliminación */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar Eliminación</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que deseas eliminar este material? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {deletingMaterial && (
+            <div className="py-4">
+              <p className="font-semibold">{deletingMaterial.name}</p>
+              <p className="text-muted-foreground">
+                {deletingMaterial.category} • {formatPrice(deletingMaterial.price)} por {deletingMaterial.unit}
+              </p>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>Cancelar</Button>
+            <Button variant="destructive" onClick={deleteMaterial}>
+              <Trash className="mr-2 h-4 w-4" />
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </AppLayout>
+  );
+
   /**
    * Renderizar tabla de materiales
    */
@@ -554,36 +1022,40 @@ export default function Materials() {
                 <TableCell>{material.category}</TableCell>
                 <TableCell>{formatPrice(material.price)} / {material.unit}</TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-2">
-                    <span className={`${
+                  <div className="flex items-center">
+                    <span className={`mr-2 ${
                       typeof material.stock === 'number' && 
                       typeof material.minStock === 'number' && 
-                      material.stock <= material.minStock
-                        ? 'text-red-500'
+                      material.stock <= material.minStock 
+                        ? 'text-destructive' 
                         : ''
                     }`}>
-                      {material.stock}
+                      {typeof material.stock === 'number' ? material.stock : 'N/A'}
                     </span>
+                    
                     {typeof material.stock === 'number' && 
                      typeof material.minStock === 'number' && 
                      material.stock <= material.minStock && (
-                      <AlertCircle className="h-4 w-4 text-red-500" />
+                      <AlertCircle className="h-4 w-4 text-destructive" />
                     )}
                   </div>
                 </TableCell>
-                <TableCell>{material.sku || "-"}</TableCell>
+                <TableCell>{material.sku || 'N/A'}</TableCell>
                 <TableCell className="text-right">
-                  <div className="flex justify-end gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => openEditDialog(material)}>
-                      <i className="ri-edit-line text-lg"></i>
-                      <span className="sr-only">Editar</span>
-                    </Button>
-                    
-                    <Button variant="ghost" size="icon" onClick={() => openDeleteDialog(material)}>
-                      <i className="ri-delete-bin-line text-lg"></i>
-                      <span className="sr-only">Eliminar</span>
-                    </Button>
-                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => openEditDialog(material)}>
+                    <span className="sr-only">Editar</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                      <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
+                    </svg>
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => openDeleteDialog(material)}>
+                    <span className="sr-only">Eliminar</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                      <path d="M3 6h18"></path>
+                      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                    </svg>
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -592,464 +1064,4 @@ export default function Materials() {
       </div>
     );
   }
-
-  return (
-    <div className="container py-6">
-      <div className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Inventario de Materiales</h1>
-        <p className="text-muted-foreground">
-          Gestiona el inventario de materiales para tus proyectos de cercado
-        </p>
-      </div>
-
-      {/* Barra de acciones */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Buscar materiales..."
-              className="pl-8"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          
-          <Select
-            value={selectedCategory}
-            onValueChange={setSelectedCategory}
-          >
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Categoría" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">Todas las categorías</SelectItem>
-              {categories.map((category) => (
-                <SelectItem key={category} value={category}>
-                  {category}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Button variant="outline" className="relative" disabled={isUploading}>
-            <FileUp className="mr-2 h-4 w-4" />
-            <span>Importar CSV</span>
-            <Input
-              type="file"
-              accept=".csv"
-              className="absolute inset-0 opacity-0 cursor-pointer"
-              onChange={handleFileUpload}
-              disabled={isUploading}
-            />
-          </Button>
-          
-          <Button onClick={() => setShowAddDialog(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            <span>Agregar Material</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* Tabs para filtrado rápido */}
-      <Tabs 
-        defaultValue="todos" 
-        className="w-full mb-6"
-        value={activeTab}
-        onValueChange={setActiveTab}
-      >
-        <TabsList className="mb-4">
-          <TabsTrigger value="todos">Todos los materiales</TabsTrigger>
-          <TabsTrigger value="bajo-stock">Bajo stock</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="todos">
-          <Card>
-            <CardHeader className="py-4">
-              <CardTitle>Inventario Completo</CardTitle>
-              <CardDescription>
-                {filteredMaterials.length} materiales disponibles
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {renderMaterialsTable()}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="bajo-stock">
-          <Card>
-            <CardHeader className="py-4">
-              <CardTitle>Materiales con Bajo Stock</CardTitle>
-              <CardDescription>
-                Materiales que requieren reabastecimiento
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {filteredMaterials.length === 0 ? (
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Sin materiales bajo stock</AlertTitle>
-                  <AlertDescription>
-                    Todos los materiales tienen niveles de stock adecuados.
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                renderMaterialsTable()
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-
-      {/* Dialog para agregar material */}
-      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Agregar Nuevo Material</DialogTitle>
-            <DialogDescription>
-              Introduce los detalles del material a añadir al inventario.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="name">Nombre *</Label>
-              <Input 
-                id="name" 
-                value={newMaterial.name} 
-                onChange={(e) => setNewMaterial({...newMaterial, name: e.target.value})} 
-                placeholder="Ej. Poste de madera tratada"
-              />
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="category">Categoría *</Label>
-              <Select
-                value={newMaterial.category}
-                onValueChange={(value) => setNewMaterial({...newMaterial, category: value})}
-              >
-                <SelectTrigger id="category">
-                  <SelectValue placeholder="Selecciona una categoría" />
-                </SelectTrigger>
-                <SelectContent>
-                  {COMMON_CATEGORIES.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="description">Descripción</Label>
-              <Input 
-                id="description" 
-                value={newMaterial.description} 
-                onChange={(e) => setNewMaterial({...newMaterial, description: e.target.value})} 
-                placeholder="Descripción detallada del material"
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="unit">Unidad *</Label>
-                <Select
-                  value={newMaterial.unit}
-                  onValueChange={(value) => setNewMaterial({...newMaterial, unit: value})}
-                >
-                  <SelectTrigger id="unit">
-                    <SelectValue placeholder="Unidad de medida" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {COMMON_UNITS.map((unit) => (
-                      <SelectItem key={unit} value={unit}>
-                        {unit}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="grid gap-2">
-                <Label htmlFor="price">Precio (MXN) *</Label>
-                <Input 
-                  id="price" 
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={newMaterial.price} 
-                  onChange={(e) => setNewMaterial({
-                    ...newMaterial, 
-                    price: parseFloat(e.target.value) || 0
-                  })} 
-                />
-              </div>
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="sku">SKU / Código</Label>
-              <Input 
-                id="sku" 
-                value={newMaterial.sku} 
-                onChange={(e) => setNewMaterial({...newMaterial, sku: e.target.value})} 
-                placeholder="Código identificador único"
-              />
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="supplier">Proveedor</Label>
-              <Input 
-                id="supplier" 
-                value={newMaterial.supplier} 
-                onChange={(e) => setNewMaterial({...newMaterial, supplier: e.target.value})} 
-                placeholder="Nombre del proveedor"
-              />
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="supplierLink">Enlace al proveedor</Label>
-              <Input 
-                id="supplierLink" 
-                value={newMaterial.supplierLink} 
-                onChange={(e) => setNewMaterial({...newMaterial, supplierLink: e.target.value})} 
-                placeholder="URL del catálogo o tienda"
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="stock">Stock actual</Label>
-                <Input 
-                  id="stock" 
-                  type="number"
-                  min="0"
-                  value={newMaterial.stock} 
-                  onChange={(e) => setNewMaterial({
-                    ...newMaterial, 
-                    stock: parseInt(e.target.value) || 0
-                  })} 
-                />
-              </div>
-              
-              <div className="grid gap-2">
-                <Label htmlFor="minStock">Stock mínimo</Label>
-                <Input 
-                  id="minStock" 
-                  type="number"
-                  min="0"
-                  value={newMaterial.minStock} 
-                  onChange={(e) => setNewMaterial({
-                    ...newMaterial, 
-                    minStock: parseInt(e.target.value) || 0
-                  })} 
-                />
-              </div>
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancelar</Button>
-            <Button onClick={saveMaterial}>Guardar Material</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog para editar material */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Editar Material</DialogTitle>
-            <DialogDescription>
-              Modifica los detalles del material seleccionado.
-            </DialogDescription>
-          </DialogHeader>
-          
-          {editingMaterial && (
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="edit-name">Nombre *</Label>
-                <Input 
-                  id="edit-name" 
-                  value={editingMaterial.name} 
-                  onChange={(e) => setEditingMaterial({...editingMaterial, name: e.target.value})} 
-                />
-              </div>
-              
-              <div className="grid gap-2">
-                <Label htmlFor="edit-category">Categoría *</Label>
-                <Select
-                  value={editingMaterial.category}
-                  onValueChange={(value) => setEditingMaterial({...editingMaterial, category: value})}
-                >
-                  <SelectTrigger id="edit-category">
-                    <SelectValue placeholder="Selecciona una categoría" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {COMMON_CATEGORIES.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
-                    {/* Incluir la categoría actual si no está en las comunes */}
-                    {!COMMON_CATEGORIES.includes(editingMaterial.category) && (
-                      <SelectItem value={editingMaterial.category}>
-                        {editingMaterial.category}
-                      </SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="grid gap-2">
-                <Label htmlFor="edit-description">Descripción</Label>
-                <Input 
-                  id="edit-description" 
-                  value={editingMaterial.description || ''} 
-                  onChange={(e) => setEditingMaterial({...editingMaterial, description: e.target.value})} 
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="edit-unit">Unidad *</Label>
-                  <Select
-                    value={editingMaterial.unit}
-                    onValueChange={(value) => setEditingMaterial({...editingMaterial, unit: value})}
-                  >
-                    <SelectTrigger id="edit-unit">
-                      <SelectValue placeholder="Unidad de medida" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {COMMON_UNITS.map((unit) => (
-                        <SelectItem key={unit} value={unit}>
-                          {unit}
-                        </SelectItem>
-                      ))}
-                      {/* Incluir la unidad actual si no está en las comunes */}
-                      {!COMMON_UNITS.includes(editingMaterial.unit) && (
-                        <SelectItem value={editingMaterial.unit}>
-                          {editingMaterial.unit}
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="grid gap-2">
-                  <Label htmlFor="edit-price">Precio (MXN) *</Label>
-                  <Input 
-                    id="edit-price" 
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={editingMaterial.price} 
-                    onChange={(e) => setEditingMaterial({
-                      ...editingMaterial, 
-                      price: parseFloat(e.target.value) || 0
-                    })} 
-                  />
-                </div>
-              </div>
-              
-              <div className="grid gap-2">
-                <Label htmlFor="edit-sku">SKU / Código</Label>
-                <Input 
-                  id="edit-sku" 
-                  value={editingMaterial.sku || ''} 
-                  onChange={(e) => setEditingMaterial({...editingMaterial, sku: e.target.value})} 
-                />
-              </div>
-              
-              <div className="grid gap-2">
-                <Label htmlFor="edit-supplier">Proveedor</Label>
-                <Input 
-                  id="edit-supplier" 
-                  value={editingMaterial.supplier || ''} 
-                  onChange={(e) => setEditingMaterial({...editingMaterial, supplier: e.target.value})} 
-                />
-              </div>
-              
-              <div className="grid gap-2">
-                <Label htmlFor="edit-supplierLink">Enlace al proveedor</Label>
-                <Input 
-                  id="edit-supplierLink" 
-                  value={editingMaterial.supplierLink || ''} 
-                  onChange={(e) => setEditingMaterial({...editingMaterial, supplierLink: e.target.value})} 
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="edit-stock">Stock actual</Label>
-                  <Input 
-                    id="edit-stock" 
-                    type="number"
-                    min="0"
-                    value={editingMaterial.stock || 0} 
-                    onChange={(e) => setEditingMaterial({
-                      ...editingMaterial, 
-                      stock: parseInt(e.target.value) || 0
-                    })} 
-                  />
-                </div>
-                
-                <div className="grid gap-2">
-                  <Label htmlFor="edit-minStock">Stock mínimo</Label>
-                  <Input 
-                    id="edit-minStock" 
-                    type="number"
-                    min="0"
-                    value={editingMaterial.minStock || 0} 
-                    onChange={(e) => setEditingMaterial({
-                      ...editingMaterial, 
-                      minStock: parseInt(e.target.value) || 0
-                    })} 
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditDialog(false)}>Cancelar</Button>
-            <Button onClick={updateMaterial}>Actualizar Material</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog para confirmar eliminación */}
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirmar Eliminación</DialogTitle>
-            <DialogDescription>
-              ¿Estás seguro de que deseas eliminar este material? Esta acción no se puede deshacer.
-            </DialogDescription>
-          </DialogHeader>
-          
-          {deletingMaterial && (
-            <div className="py-4">
-              <p className="font-semibold">{deletingMaterial.name}</p>
-              <p className="text-muted-foreground">
-                {deletingMaterial.category} • {formatPrice(deletingMaterial.price)} por {deletingMaterial.unit}
-              </p>
-            </div>
-          )}
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>Cancelar</Button>
-            <Button variant="destructive" onClick={deleteMaterial}>
-              <Trash className="mr-2 h-4 w-4" />
-              Eliminar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
 }
