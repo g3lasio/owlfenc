@@ -976,20 +976,43 @@ export default function Estimates() {
   };
   
   // Handle download PDF
-  const handleDownloadPdf = () => {
-    toast({
-      title: 'Descarga iniciada',
-      description: 'El PDF del estimado se está generando.'
-    });
-    
-    // In a real app, you would call an API to generate and download the PDF
-    // For this example, we'll just show a success message after a delay
-    setTimeout(() => {
+  const handleDownloadPdf = async () => {
+    try {
+      if (!previewHtml) {
+        toast({
+          title: 'Error',
+          description: 'Primero debes generar una vista previa',
+          variant: 'destructive'
+        });
+        return;
+      }
+      
+      toast({
+        title: 'Descarga iniciada',
+        description: 'El PDF del estimado se está generando.'
+      });
+      
+      // Importar la función de descarga de PDF
+      const { downloadHTMLAsPDF } = await import('../lib/pdf');
+      
+      // Generar un nombre de archivo para el PDF
+      const fileName = `Estimado-${Date.now()}`;
+      
+      // Llamar a la función para descargar el PDF
+      await downloadHTMLAsPDF(previewHtml, fileName);
+      
       toast({
         title: 'PDF generado',
-        description: 'El PDF del estimado se ha generado correctamente.'
+        description: 'El PDF del estimado se ha descargado correctamente.'
       });
-    }, 1500);
+    } catch (error) {
+      console.error('Error descargando PDF:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo descargar el PDF. Por favor, inténtalo de nuevo.',
+        variant: 'destructive'
+      });
+    }
   };
   
   return (

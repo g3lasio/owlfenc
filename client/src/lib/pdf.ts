@@ -9,12 +9,10 @@
  */
 export async function downloadHTMLAsPDF(html: string, fileName = 'documento'): Promise<void> {
   try {
-    // Verificar que hay contenido HTML para generar el PDF
-    if (!html || html.trim() === '') {
-      throw new Error('No hay contenido HTML para generar el PDF');
-    }
+    // Mostrar un mensaje de carga mientras se procesa
+    console.log('Generando PDF...');
     
-    // Crear FormData para enviar al servidor
+    // Crear un FormData para enviar el HTML al servidor
     const formData = new FormData();
     formData.append('html', html);
     formData.append('filename', `${fileName}.pdf`);
@@ -22,33 +20,36 @@ export async function downloadHTMLAsPDF(html: string, fileName = 'documento'): P
     // Llamar al endpoint del servidor para generar el PDF
     const response = await fetch('/api/pdf/generate', {
       method: 'POST',
-      body: formData
+      body: formData,
     });
     
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || 'Error al generar el PDF');
+      throw new Error(`Error en el servidor: ${errorData.error || 'Error desconocido'}`);
     }
     
     // Obtener el blob del PDF
     const blob = await response.blob();
     
-    // Crear URL para descargar
+    // Crear una URL para el blob
     const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.style.display = 'none';
-    a.href = url;
-    a.download = `${fileName}.pdf`;
     
-    // Añadir temporalmente a la página y simular clic
-    document.body.appendChild(a);
-    a.click();
+    // Crear un enlace invisible
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${fileName}.pdf`;
+    
+    // Hacer clic en el enlace para descargar
+    document.body.appendChild(link);
+    link.click();
     
     // Limpiar
+    document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
+    
+    console.log('PDF descargado con éxito');
   } catch (error) {
-    console.error('Error descargando PDF:', error);
+    console.error('Error al generar PDF:', error);
     throw error;
   }
 }
@@ -63,13 +64,12 @@ export async function downloadHTMLAsPDF(html: string, fileName = 'documento'): P
  */
 export async function generateClientSidePDF(html: string, fileName = 'documento'): Promise<void> {
   try {
-    // En caso de que el servidor no esté disponible, podríamos implementar aquí
-    // una solución client-side usando jsPDF y html2canvas
-    
-    // Por ahora, lanzamos un error para indicar que esta funcionalidad no está implementada
-    throw new Error('La generación de PDF en el cliente no está implementada');
+    // Esta función requeriría la importación de jsPDF y html2canvas
+    // que actualmente no están instalados en el proyecto
+    console.warn('generateClientSidePDF: Esta función no está implementada aún');
+    throw new Error('Función no implementada');
   } catch (error) {
-    console.error('Error generando PDF en el cliente:', error);
+    console.error('Error al generar PDF en cliente:', error);
     throw error;
   }
 }

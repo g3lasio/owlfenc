@@ -35,6 +35,7 @@ import contractRoutes from './routes/contract-routes';
 import clientRoutes from './routes/clientRoutes';
 import quickbooksRoutes from './routes/quickbooks-routes';
 import anthropicRoutes from './routes/anthropic';
+import pdfRoutes from './routes/pdf-routes';
 import express from 'express'; // Import express to use express.raw
 
 // Initialize OpenAI API
@@ -108,6 +109,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Registrar rutas de Anthropic (Claude)
   app.use('/api/anthropic', anthropicRoutes);
+  
+  // Registrar rutas de generación de PDF
+  app.use('/api/pdf', pdfRoutes);
 
   // Add API routes
   app.get('/api/projects', async (req: Request, res: Response) => {
