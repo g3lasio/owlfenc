@@ -67,10 +67,13 @@ export async function generatePDF(
       footerTemplate: pdfOptions.footerTemplate || '',
     });
     
+    // Convertir a Buffer de Node.js para evitar errores de tipo
+    const buffer = Buffer.from(pdfBuffer);
+    
     // Cerrar navegador
     await browser.close();
     
-    return pdfBuffer;
+    return buffer;
   } catch (error) {
     console.error('Error generando PDF:', error);
     throw new Error(`Error al generar PDF: ${error instanceof Error ? error.message : 'Error desconocido'}`);
