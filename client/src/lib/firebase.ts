@@ -45,10 +45,24 @@ import {
 
 // Verificamos si estamos en modo de desarrollo en Replit
 const isReplitDev = window.location.hostname.includes('.replit.dev') || 
-                   window.location.hostname.includes('.id.repl.co');
+                   window.location.hostname.includes('.id.repl.co') ||
+                   window.location.hostname === 'localhost' ||
+                   window.location.hostname.includes('replit.app');
 
 // Activar modo de desarrollo si estamos en Replit
 export const devMode = isReplitDev;
+
+// Auto login en modo desarrollo
+if (devMode) {
+  console.log("Modo de desarrollo detectado. Activando auto-login.");
+  // Disparar evento después de un pequeño retraso para asegurar que todo está cargado
+  setTimeout(() => {
+    const devUser = createDevUser();
+    window.dispatchEvent(new CustomEvent('dev-auth-change', { 
+      detail: { user: devUser }
+    }));
+  }, 1000);
+}
 
 // Crear un usuario simulado para modo de desarrollo
 export const createDevUser = () => {
