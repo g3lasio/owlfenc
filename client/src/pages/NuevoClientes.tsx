@@ -25,12 +25,21 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useProfile } from "@/hooks/use-profile";
 import { apiRequest } from "@/lib/queryClient";
 import { ScrollArea } from "@/components/ui/scroll-area";
+// Importaciones de Firebase
+import { 
+  getClients as getFirebaseClients, 
+  saveClient as saveFirebaseClient, 
+  updateClient as updateFirebaseClient, 
+  deleteClient as deleteFirebaseClient,
+  importClientsFromCsv,
+  importClientsFromVcf
+} from "../lib/clientFirebase";
 
 // Interfaces
 interface Client {
-  id: number;
-  userId: number;
-  clientId: string;
+  id: string;         // En Firebase, el ID es un string
+  userId?: string;    // Usuario propietario del cliente
+  clientId: string;   // Identificador único del cliente
   name: string;
   email?: string;
   phone?: string;
@@ -42,6 +51,7 @@ interface Client {
   notes?: string;
   source?: string;
   tags?: string[];
+  classification?: string;
   lastContact?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -107,26 +117,36 @@ export default function NuevoClientes() {
   const [tagInput, setTagInput] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
-  // Consulta para obtener clientes
+  // Consulta para obtener clientes desde Firebase
   const { 
     data: clients = [], 
     isLoading,
     isError,
     error 
   } = useQuery({
-    queryKey: ['/api/clients', { userId }],
-    queryFn: () => apiRequest.get(`/api/clients?userId=${userId}`),
+    queryKey: ['firebaseClients'],
+    queryFn: async () => {
+      try {
+        console.log("Obteniendo clientes desde Firebase...");
+        const data = await getFirebaseClients();
+        console.log("Clientes obtenidos:", data);
+        return data;
+      } catch (err) {
+        console.error("Error al obtener clientes de Firebase:", err);
+        throw err;
+      }
+    },
   });
 
-  // Mutation para crear un cliente
+  // Mutation para crear un cliente usando Firebase
   const createClientMutation = useMutation({
-    mutationFn: (newClient: any) => apiRequest.post('/api/clients', newClient),
+    mutationFn: (newClient: any) => saveFirebaseClient(newClient),
     onSuccess: () => {
       toast({
         title: "Cliente añadido",
         description: "El cliente ha sido añadido correctamente."
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/clients'] });
+      queryClient.invalidateQueries({ queryKey: ['firebaseClients'] });
       setShowAddClientDialog(false);
       clientForm.reset();
     },
@@ -139,16 +159,16 @@ export default function NuevoClientes() {
     }
   });
 
-  // Mutation para actualizar un cliente
+  // Mutation para actualizar un cliente usando Firebase
   const updateClientMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number, data: any }) => 
-      apiRequest.patch(`/api/clients/${id}`, data),
+    mutationFn: ({ id, data }: { id: string, data: any }) => 
+      updateFirebaseClient(id, data),
     onSuccess: () => {
       toast({
         title: "Cliente actualizado",
         description: "El cliente ha sido actualizado correctamente."
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/clients'] });
+      queryClient.invalidateQueries({ queryKey: ['firebaseClients'] });
       setShowEditClientDialog(false);
       setCurrentClient(null);
     },
@@ -161,15 +181,15 @@ export default function NuevoClientes() {
     }
   });
 
-  // Mutation para eliminar un cliente
+  // Mutation para eliminar un cliente usando Firebase
   const deleteClientMutation = useMutation({
-    mutationFn: (id: number) => apiRequest.delete(`/api/clients/${id}`),
+    mutationFn: (id: string) => deleteFirebaseClient(id),
     onSuccess: () => {
       toast({
         title: "Cliente eliminado",
         description: "El cliente ha sido eliminado correctamente."
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/clients'] });
+      queryClient.invalidateQueries({ queryKey: ['firebaseClients'] });
       setShowDeleteDialog(false);
       setCurrentClient(null);
     },
@@ -281,10 +301,11 @@ export default function NuevoClientes() {
 
   // Manejar envío del formulario de cliente
   const handleClientFormSubmit = async (values: z.infer<typeof clientFormSchema>) => {
-    // Asegurar que userId esté incluido
+    // Preparar datos del cliente para Firebase
+    // Convertimos el userId a string para mantener consistencia
     const clientData = {
       ...values,
-      userId,
+      userId: userId.toString(),
     };
 
     if (currentClient) {
@@ -331,35 +352,18 @@ export default function NuevoClientes() {
 
         try {
           const csvData = e.target.result;
-          const rows = csvData.split('\n').slice(1); // Ignorar encabezados
           
-          // Procesar cada fila y crear clientes
-          for (const row of rows) {
-            if (!row.trim()) continue; // Ignorar filas vacías
-            
-            const [name, email, phone, address] = row.split(',');
-            if (name) {
-              const clientData = {
-                userId,
-                clientId: `client_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-                name: name.trim(),
-                email: email?.trim() || "",
-                phone: phone?.trim() || "",
-                address: address?.trim() || "",
-                source: "CSV Import",
-              };
-
-              // Crear cliente
-              await apiRequest.post('/api/clients', clientData);
-            }
-          }
+          // Usar la función de Firebase para importar clientes desde CSV
+          console.log("Iniciando importación de clientes desde CSV...");
+          const importedClients = await importClientsFromCsv(csvData);
+          console.log(`Importados ${importedClients.length} clientes desde CSV`);
 
           // Actualizar lista de clientes
-          queryClient.invalidateQueries({ queryKey: ['/api/clients'] });
+          queryClient.invalidateQueries({ queryKey: ['firebaseClients'] });
           
           toast({
             title: "Importación exitosa",
-            description: `Se han importado los clientes desde CSV.`
+            description: `Se han importado ${importedClients.length} clientes desde CSV.`
           });
 
           setShowImportDialog(false);
