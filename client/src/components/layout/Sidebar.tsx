@@ -128,7 +128,7 @@ export default function Sidebar() {
         <div className="p-4 border-b border-border">
           <div className="flex items-center justify-center py-4">
             <img 
-              src="https://i.postimg.cc/4yc9M62C/White-logo-no-background.png" 
+              src="https://i.postimg.cc/yYSwtxhq/White-logo-no-background.png" 
               alt="Owl Fence"
               className="h-16 w-auto object-contain px-4"
               style={{ maxWidth: '90%', margin: '0 auto' }}

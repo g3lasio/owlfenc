@@ -58,7 +58,7 @@ export default function Header({
             
             {/* Imagen del logo (oculta en móvil) */}
             <img
-              src="https://i.postimg.cc/4yc9M62C/White-logo-no-background.png" 
+              src="https://i.postimg.cc/yYSwtxhq/White-logo-no-background.png" 
               alt="Owl Fence"
               className="h-10 w-auto object-contain hidden md:block"
               onError={(e) => {
