@@ -622,82 +622,13 @@ export default function Estimates() {
     <div className="container py-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Nuevo Estimado</h1>
-        <div className="flex space-x-2">
-          <Button 
-            variant="outline" 
-            onClick={handleGeneratePreview}
-            disabled={!estimate.client || estimate.items.length === 0}
-          >
-            <ArrowRight className="mr-2 h-4 w-4" />
-            Vista previa
-          </Button>
-          
-          <Button 
-            onClick={handleSaveEstimate} 
-            disabled={isSaving || !estimate.client || estimate.items.length === 0}
-          >
-            {isSaving ? (
-              <>
-                <RotateCcw className="mr-2 h-4 w-4 animate-spin" />
-                Guardando...
-              </>
-            ) : (
-              <>
-                <CalendarCheck className="mr-2 h-4 w-4" />
-                Guardar
-              </>
-            )}
-          </Button>
-        </div>
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Client Information */}
-        <Card className="lg:col-span-1">
+        {/* Contract Information */}
+        <Card className="lg:col-span-3">
           <CardHeader>
-            <CardTitle className="flex justify-between items-center">
-              <span>Cliente</span>
-              <Button variant="ghost" size="sm" onClick={() => setShowClientSearchDialog(true)}>
-                <Search className="h-4 w-4 mr-2" />
-                Buscar
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {estimate.client ? (
-              <div>
-                <div className="mb-4">
-                  <h3 className="font-medium">{estimate.client.name}</h3>
-                  {estimate.client.email && (
-                    <p className="text-sm text-muted-foreground">{estimate.client.email}</p>
-                  )}
-                  {estimate.client.phone && (
-                    <p className="text-sm text-muted-foreground">{estimate.client.phone}</p>
-                  )}
-                  {estimate.client.address && (
-                    <p className="text-sm text-muted-foreground">{estimate.client.address}</p>
-                  )}
-                </div>
-                <Button variant="outline" size="sm" onClick={() => setShowClientSearchDialog(true)}>
-                  Cambiar cliente
-                </Button>
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <p className="mb-4 text-muted-foreground">No hay un cliente seleccionado</p>
-                <Button onClick={() => setShowClientSearchDialog(true)}>
-                  <Search className="h-4 w-4 mr-2" />
-                  Seleccionar cliente
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-        
-        {/* Estimate details */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Detalles del Estimado</CardTitle>
+            <CardTitle>Información del Contrato</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -711,35 +642,107 @@ export default function Estimates() {
                 />
               </div>
               
-              <div>
-                <Label htmlFor="estimate-notes">Notas</Label>
-                <Textarea 
-                  id="estimate-notes" 
-                  value={estimate.notes} 
-                  onChange={(e) => setEstimate(prev => ({ ...prev, notes: e.target.value }))}
-                  placeholder="Notas adicionales para el cliente"
-                  rows={3}
-                />
-              </div>
-              
-              <div>
-                <Label>Estado</Label>
-                <Select 
-                  value={estimate.status} 
-                  onValueChange={(value: 'draft' | 'sent' | 'approved' | 'rejected') => setEstimate(prev => ({ ...prev, status: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar estado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Borrador</SelectItem>
-                    <SelectItem value="sent">Enviado</SelectItem>
-                    <SelectItem value="approved">Aprobado</SelectItem>
-                    <SelectItem value="rejected">Rechazado</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Estado</Label>
+                  <Select 
+                    value={estimate.status} 
+                    onValueChange={(value: 'draft' | 'sent' | 'approved' | 'rejected') => setEstimate(prev => ({ ...prev, status: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar estado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="draft">Borrador</SelectItem>
+                      <SelectItem value="sent">Enviado</SelectItem>
+                      <SelectItem value="approved">Aprobado</SelectItem>
+                      <SelectItem value="rejected">Rechazado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label>Fecha</Label>
+                  <Input
+                    type="date"
+                    defaultValue={new Date().toISOString().split('T')[0]}
+                    disabled
+                  />
+                </div>
               </div>
             </div>
+          </CardContent>
+        </Card>
+        
+        {/* Client Information */}
+        <Card className="lg:col-span-3">
+          <CardHeader>
+            <CardTitle className="flex justify-between items-center">
+              <span>Información del Cliente</span>
+              <Button variant="ghost" size="sm" onClick={() => setShowClientSearchDialog(true)}>
+                <Search className="h-4 w-4 mr-2" />
+                Buscar
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {estimate.client ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="font-medium text-lg mb-2">{estimate.client.name}</h3>
+                  {estimate.client.email && (
+                    <p className="text-sm text-muted-foreground mb-1">
+                      <span className="font-medium">Email:</span> {estimate.client.email}
+                    </p>
+                  )}
+                  {estimate.client.phone && (
+                    <p className="text-sm text-muted-foreground mb-1">
+                      <span className="font-medium">Teléfono:</span> {estimate.client.phone}
+                    </p>
+                  )}
+                  {estimate.client.mobilePhone && (
+                    <p className="text-sm text-muted-foreground mb-1">
+                      <span className="font-medium">Móvil:</span> {estimate.client.mobilePhone}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  {estimate.client.address && (
+                    <p className="text-sm text-muted-foreground mb-1">
+                      <span className="font-medium">Dirección:</span> {estimate.client.address}
+                    </p>
+                  )}
+                  {estimate.client.city && (
+                    <p className="text-sm text-muted-foreground mb-1">
+                      <span className="font-medium">Ciudad:</span> {estimate.client.city}
+                    </p>
+                  )}
+                  {estimate.client.state && (
+                    <p className="text-sm text-muted-foreground mb-1">
+                      <span className="font-medium">Estado:</span> {estimate.client.state}
+                    </p>
+                  )}
+                  {estimate.client.zipCode && (
+                    <p className="text-sm text-muted-foreground mb-1">
+                      <span className="font-medium">Código Postal:</span> {estimate.client.zipCode}
+                    </p>
+                  )}
+                </div>
+                <div className="md:col-span-2">
+                  <Button variant="outline" size="sm" onClick={() => setShowClientSearchDialog(true)}>
+                    Cambiar cliente
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="mb-4 text-muted-foreground">No hay un cliente seleccionado</p>
+                <Button onClick={() => setShowClientSearchDialog(true)}>
+                  <Search className="h-4 w-4 mr-2" />
+                  Seleccionar cliente
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
         
@@ -850,14 +853,35 @@ export default function Estimates() {
           </CardContent>
         </Card>
         
+        {/* Estimate details */}
+        <Card className="lg:col-span-3">
+          <CardHeader>
+            <CardTitle>Detalles del Estimado</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="estimate-notes">Notas</Label>
+                <Textarea 
+                  id="estimate-notes" 
+                  value={estimate.notes} 
+                  onChange={(e) => setEstimate(prev => ({ ...prev, notes: e.target.value }))}
+                  placeholder="Notas adicionales para el cliente"
+                  rows={3}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
         {/* Summary */}
         <Card className="lg:col-span-3">
           <CardHeader>
             <CardTitle>Resumen</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex justify-between items-center">
-              <div className="flex-1">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+              <div className="flex-1 mb-4 md:mb-0">
                 <p className="mb-2">
                   <span className="font-medium">Subtotal:</span> {formatCurrency(estimate.subtotal)}
                 </p>
@@ -866,7 +890,16 @@ export default function Estimates() {
                 </p>
               </div>
               
-              <div className="space-x-2">
+              <div className="space-y-2 md:space-y-0 md:space-x-2 flex flex-col md:flex-row">
+                <Button 
+                  variant="outline" 
+                  onClick={handleGeneratePreview}
+                  disabled={!estimate.client || estimate.items.length === 0}
+                >
+                  <ArrowRight className="mr-2 h-4 w-4" />
+                  Vista previa
+                </Button>
+                
                 <Button 
                   variant="outline" 
                   onClick={handleDownloadPdf}
@@ -889,6 +922,23 @@ export default function Estimates() {
                     <>
                       <Mail className="mr-2 h-4 w-4" />
                       Enviar por Email
+                    </>
+                  )}
+                </Button>
+                
+                <Button 
+                  onClick={handleSaveEstimate} 
+                  disabled={isSaving || !estimate.client || estimate.items.length === 0}
+                >
+                  {isSaving ? (
+                    <>
+                      <RotateCcw className="mr-2 h-4 w-4 animate-spin" />
+                      Guardando...
+                    </>
+                  ) : (
+                    <>
+                      <CalendarCheck className="mr-2 h-4 w-4" />
+                      Guardar
                     </>
                   )}
                 </Button>
