@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import AppLayout from '../components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -624,7 +623,6 @@ export default function Estimates() {
   };
   
   return (
-    <AppLayout>
       <div className="container py-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Nuevo Estimado</h1>
@@ -1284,6 +1282,5 @@ export default function Estimates() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </AppLayout>
   );
 }
