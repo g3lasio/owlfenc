@@ -51,20 +51,20 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { getClients } from '../lib/clientFirebase';
+import { getClients, Client as FirebaseClient } from '../lib/clientFirebase';
 
 // Types
 interface Client {
   id: string;
   clientId: string;
   name: string;
-  email?: string;
-  phone?: string;
-  mobilePhone?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  zipCode?: string;
+  email?: string | null;
+  phone?: string | null;
+  mobilePhone?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zipCode?: string | null;
 }
 
 interface Material {
@@ -162,7 +162,20 @@ export default function Estimates() {
       try {
         // Load clients
         const clientsData = await getClients();
-        setClients(clientsData);
+        // Convert Firebase clients to our Client interface
+        const mappedClients: Client[] = clientsData.map(client => ({
+          id: client.id,
+          clientId: client.clientId,
+          name: client.name,
+          email: client.email,
+          phone: client.phone,
+          mobilePhone: client.mobilePhone,
+          address: client.address,
+          city: client.city,
+          state: client.state,
+          zipCode: client.zipCode
+        }));
+        setClients(mappedClients);
         
         // Load materials
         const materialsRef = collection(db, 'materials');
@@ -481,6 +494,9 @@ export default function Estimates() {
       return;
     }
     
+    // En este punto sabemos que estimate.client no es null
+    const client = estimate.client;
+    
     // In a real app, you would call an API to generate the HTML
     // For this example, we'll create a simple HTML template
     const html = `
@@ -499,10 +515,10 @@ export default function Estimates() {
         
         <div class="client-info">
           <h3>Cliente</h3>
-          <p><strong>Nombre:</strong> ${estimate.client.name}</p>
-          <p><strong>Email:</strong> ${estimate.client.email || 'N/A'}</p>
-          <p><strong>Teléfono:</strong> ${estimate.client.phone || 'N/A'}</p>
-          <p><strong>Dirección:</strong> ${estimate.client.address || 'N/A'}</p>
+          <p><strong>Nombre:</strong> ${client.name}</p>
+          <p><strong>Email:</strong> ${client.email || 'N/A'}</p>
+          <p><strong>Teléfono:</strong> ${client.phone || 'N/A'}</p>
+          <p><strong>Dirección:</strong> ${client.address || 'N/A'}</p>
         </div>
         
         <div class="estimate-items">
@@ -571,6 +587,9 @@ export default function Estimates() {
       return;
     }
     
+    // En este punto sabemos que estimate.client y estimate.client.email no son null
+    const clientEmail = estimate.client.email;
+    
     setIsSendingEmail(true);
     
     // In a real app, you would call an API to send the email
@@ -578,7 +597,7 @@ export default function Estimates() {
     setTimeout(() => {
       toast({
         title: 'Email enviado',
-        description: `El estimado se ha enviado correctamente a ${estimate.client.email}.`
+        description: `El estimado se ha enviado correctamente a ${clientEmail}.`
       });
       setIsSendingEmail(false);
     }, 1500);

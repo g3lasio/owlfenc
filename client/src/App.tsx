@@ -9,6 +9,7 @@ import Projects from "@/pages/Projects";
 import Clients from "./pages/Clients";
 import NuevoClientes from "./pages/NuevoClientes";
 import Materials from "./pages/Materials";
+import Estimates from "./pages/Estimates";
 import ChatInterface from "@/components/chat/ChatInterface";
 import Settings from "@/pages/Settings";
 import Profile from "@/pages/Profile";
@@ -136,6 +137,9 @@ function Router() {
       </Route>
       <Route path="/contracts">
         {() => <ProtectedRoute component={ContractGenerator} />}
+      </Route>
+      <Route path="/estimates">
+        {() => <ProtectedRoute component={Estimates} />}
       </Route>
 
       {/* Página no encontrada */}
