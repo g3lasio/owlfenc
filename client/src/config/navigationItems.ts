@@ -47,6 +47,11 @@ export const mainNavigationConfig: NavigationSection[] = [
         icon: "ri-user-star-line",
       },
       {
+        label: "Estimados",
+        path: "/estimates",
+        icon: "ri-file-list-3-line",
+      },
+      {
         label: "My Inventory",
         path: "/materials",
         icon: "ri-archive-line",
