@@ -963,4 +963,23 @@ export default function Materials() {
             materialData.sku = values[skuIndex];
           }
 
-          // Guardar en Firebase (sin await para procesar en paralelo)
+          // Completar datos del material
+          materialData.userId = currentUser.uid;
+          materialData.createdAt = serverTimestamp();
+          materialData.updatedAt = serverTimestamp();
+          
+          return materialData;
+        }));
+        
+        // Guardar materiales en Firebase usando batch
+        await saveProcessedMaterialsToFirebase(processedMaterials);
+        
+        // Actualizar el estado de los materiales en el frontend
+        setMaterials(prevMaterials => [...prevMaterials, ...processedMaterials]);
+        
+        toast({
+          title: "Importación exitosa",
+          description: `Se han importado ${processedMaterials.length} materiales desde CSV.`
+        });
+        
+        setIsUploading(false);
