@@ -539,8 +539,8 @@ export default function Materials() {
               <SelectContent>
                 <SelectItem value="todas">Todas las categorías</SelectItem>
                 {categories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
+                  <SelectItem key={category} value={category || "categoria_sin_nombre"}>
+                    {category || "Categoría sin nombre"}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -652,8 +652,8 @@ export default function Materials() {
                   </SelectTrigger>
                   <SelectContent>
                     {COMMON_CATEGORIES.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
+                      <SelectItem key={category} value={category || "categoria_sin_nombre"}>
+                        {category || "Categoría sin nombre"}
                       </SelectItem>
                     ))}
                   </SelectContent>
