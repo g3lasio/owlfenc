@@ -426,8 +426,217 @@ export default function Estimates() {
       // En este punto sabemos que estimate.client no es null
       const client = estimate.client;
       
-      // In a real application, you would call an API endpoint to generate HTML
-      // For now, we'll just prepare the structure for Firebase
+      // Primero, vamos a generar el HTML del estimado usando la misma lógica 
+      // que usamos para la vista previa
+      const estimateHtml = `
+      <style>
+        .estimate-preview {
+          font-family: 'Arial', sans-serif;
+          color: #333;
+          max-width: 100%;
+          margin: 0 auto;
+        }
+        
+        .estimate-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 30px;
+          padding-bottom: 20px;
+          border-bottom: 1px solid #ddd;
+        }
+        
+        .company-info h1 {
+          margin: 0 0 10px 0;
+          color: #1e3a8a;
+          font-size: 24px;
+        }
+        
+        .company-info p {
+          margin: 5px 0;
+          font-size: 14px;
+        }
+        
+        .estimate-title {
+          text-align: right;
+        }
+        
+        .estimate-title h2 {
+          margin: 0 0 10px 0;
+          color: #1e3a8a;
+          font-size: 28px;
+        }
+        
+        .estimate-title p {
+          margin: 5px 0;
+          font-size: 14px;
+        }
+        
+        .section {
+          margin-bottom: 25px;
+        }
+        
+        .section h3 {
+          margin: 0 0 15px 0;
+          color: #1e3a8a;
+          font-size: 18px;
+          padding-bottom: 8px;
+          border-bottom: 1px solid #eee;
+        }
+        
+        .section p {
+          margin: 5px 0;
+          font-size: 14px;
+        }
+        
+        .grid-container {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+          margin-bottom: 20px;
+        }
+        
+        .grid-item strong {
+          display: inline-block;
+          min-width: 100px;
+          color: #555;
+        }
+        
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 20px;
+        }
+        
+        th {
+          text-align: left;
+          padding: 10px;
+          background-color: #f4f4f8;
+          font-weight: 600;
+          border-bottom: 2px solid #ddd;
+        }
+        
+        td {
+          padding: 10px;
+          border-bottom: 1px solid #eee;
+        }
+        
+        .summary {
+          margin-top: 20px;
+          text-align: right;
+        }
+        
+        .summary-item {
+          margin: 5px 0;
+          font-size: 14px;
+        }
+        
+        .total {
+          font-size: 18px;
+          font-weight: bold;
+          color: #1e3a8a;
+          margin-top: 10px;
+        }
+        
+        .notes {
+          margin-top: 30px;
+          padding: 15px;
+          background-color: #f9f9f9;
+          border-radius: 4px;
+        }
+        
+        .estimate-footer {
+          margin-top: 30px;
+          padding-top: 15px;
+          border-top: 1px solid #ddd;
+          font-size: 12px;
+          color: #777;
+          text-align: center;
+        }
+      </style>
+      
+      <div class="estimate-preview">
+        <div class="estimate-header">
+          <div class="company-info">
+            <h1>Owl Fence</h1>
+            <p>123 Fence Avenue, San Diego, CA 92101</p>
+            <p>info@owlfence.com | (555) 123-4567</p>
+            <p>www.owlfence.com</p>
+          </div>
+          <div class="estimate-title">
+            <h2>ESTIMADO</h2>
+            <p><strong>Fecha:</strong> ${new Date().toLocaleDateString()}</p>
+            <p><strong>Estimado #:</strong> EST-${Date.now().toString().slice(-6)}</p>
+            <p><strong>Válido hasta:</strong> ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}</p>
+          </div>
+        </div>
+        
+        <div class="section">
+          <h3>Cliente</h3>
+          <div class="grid-container">
+            <div class="grid-item">
+              <p><strong>Nombre:</strong> ${client.name}</p>
+              <p><strong>Email:</strong> ${client.email || 'N/A'}</p>
+              <p><strong>Teléfono:</strong> ${client.phone || 'N/A'}</p>
+            </div>
+            <div class="grid-item">
+              <p><strong>Dirección:</strong> ${client.address || 'N/A'}</p>
+              <p><strong>Ciudad:</strong> ${client.city || 'N/A'}</p>
+              <p><strong>Estado/CP:</strong> ${client.state || 'N/A'} ${client.zipCode ? ', ' + client.zipCode : ''}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="section">
+          <h3>Detalles y Descripción del Proyecto</h3>
+          <p>${estimate.notes || 'Sin descripción detallada del proyecto.'}</p>
+        </div>
+        
+        <div class="section">
+          <h3>Materiales y Servicios</h3>
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 40%">Descripción</th>
+                <th style="width: 15%">Cantidad</th>
+                <th style="width: 15%">Unidad</th>
+                <th style="width: 15%">Precio</th>
+                <th style="width: 15%">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${estimate.items.map(item => `
+                <tr>
+                  <td>${item.name}${item.description ? `<br><span style="color: #666; font-size: 12px;">${item.description}</span>` : ''}</td>
+                  <td>${item.quantity}</td>
+                  <td>${item.unit}</td>
+                  <td>${formatCurrency(item.price)}</td>
+                  <td>${formatCurrency(item.total)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          
+          <div class="summary">
+            <div class="summary-item">
+              <strong>Subtotal:</strong>
+              <span>${formatCurrency(estimate.subtotal)}</span>
+            </div>
+            <div class="summary-item total">
+              <strong>Total:</strong>
+              <span>${formatCurrency(estimate.total)}</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="estimate-footer">
+          <p>Este estimado es válido por 30 días a partir de la fecha de emisión. Precios sujetos a cambios después de este período.</p>
+          <p>Para aprobar este estimado, por favor contáctenos por teléfono o email para programar el inicio del proyecto.</p>
+        </div>
+      </div>
+      `;
+      
+      // Preparar los datos del estimado para guardar
       const estimateData = {
         title: estimate.title,
         clientId: estimate.clientId,
@@ -442,14 +651,41 @@ export default function Estimates() {
         status: estimate.status,
         userId: currentUser.uid,
         createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
+        estimateHtml: estimateHtml // Guardamos el HTML del estimado
       };
       
-      const docRef = await addDoc(collection(db, 'estimates'), estimateData);
+      // Guardar el estimado en la colección de estimates
+      const estimateDocRef = await addDoc(collection(db, 'estimates'), estimateData);
+      
+      // Crear o actualizar el proyecto relacionado con este estimado
+      const projectData = {
+        projectId: `EST-${Date.now().toString().slice(-6)}`,
+        clientName: client.name,
+        clientEmail: client.email || '',
+        clientPhone: client.phone || '',
+        address: client.address || '',
+        city: client.city || '',
+        state: client.state || '',
+        zipCode: client.zipCode || '',
+        estimateHtml: estimateHtml,
+        totalPrice: estimate.total,
+        status: 'draft',
+        projectProgress: 'estimate_created',
+        projectType: 'Residencial', // Valor por defecto, se podría personalizar
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        userId: currentUser.uid,
+        estimateId: estimateDocRef.id, // Referencia al estimado creado
+        clientNotes: estimate.notes || ''
+      };
+      
+      // Guardar el proyecto en la colección de projects
+      await addDoc(collection(db, 'projects'), projectData);
       
       toast({
         title: 'Estimado guardado',
-        description: 'El estimado se ha guardado correctamente.'
+        description: 'El estimado se ha guardado correctamente y está disponible en Proyectos.'
       });
       
       // Reset the form
@@ -1384,19 +1620,21 @@ export default function Estimates() {
       
       {/* Preview Dialog */}
       <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
-        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader className="pb-3">
+        <DialogContent className="sm:max-w-[800px] h-[85vh] flex flex-col">
+          <DialogHeader className="pb-3 shrink-0">
             <DialogTitle className="text-lg">Vista Previa del Estimado</DialogTitle>
           </DialogHeader>
           
-          {previewHtml && (
-            <div 
-              className="estimate-preview border rounded-md p-4 bg-white overflow-hidden"
-              dangerouslySetInnerHTML={{ __html: previewHtml as string }}
-            />
-          )}
+          <div className="flex-grow overflow-y-auto mb-4">
+            {previewHtml && (
+              <div 
+                className="estimate-preview border rounded-md p-4 bg-white"
+                dangerouslySetInnerHTML={{ __html: previewHtml as string }}
+              />
+            )}
+          </div>
           
-          <DialogFooter className="pt-3">
+          <DialogFooter className="pt-3 mt-auto shrink-0 border-t">
             <Button variant="outline" size="sm" onClick={() => setShowPreviewDialog(false)}>
               Cerrar
             </Button>
