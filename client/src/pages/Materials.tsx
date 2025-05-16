@@ -21,9 +21,9 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '../components/layout/AppLayout';
 import { collection, query, where, getDocs, addDoc, deleteDoc, doc, serverTimestamp, updateDoc, getDoc } from 'firebase/firestore';
-import { db } from '../firebase';
-import { useNavigate } from 'wouter';
-import { useAuth } from '../hooks/useAuth';
+import { db } from '../lib/firebase';
+import { useLocation } from 'wouter';
+import { useAuth } from '../contexts/AuthContext';
 import Papa from 'papaparse';
 import { analyzeCSVWithAnthropic } from '../services/anthropicService';
 
@@ -103,8 +103,8 @@ export default function Materials() {
   const [activeTab, setActiveTab] = useState('todos');
   const [categories, setCategories] = useState<string[]>([]);
 
-  const toast = useToast();
-  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [, navigate] = useLocation();
 
   // Comprobar autenticación y cargar materiales al montar
   useEffect(() => {
