@@ -103,7 +103,7 @@ export default function Materials() {
   const [activeTab, setActiveTab] = useState('todos');
   const [categories, setCategories] = useState<string[]>([]);
 
-  const { toast } = useToast();
+  const toast = useToast();
   const [, navigate] = useLocation();
 
   // Comprobar autenticación y cargar materiales al montar
