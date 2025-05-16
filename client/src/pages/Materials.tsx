@@ -1,7 +1,4 @@
-The code has been modified to improve the handling of AI-processed materials and the saving of materials to Firebase, including error handling and batch processing.
-```
-
-```replit_final_file
+// Página de gestión de materiales e inventario con soporte para importación vía IA
 import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
