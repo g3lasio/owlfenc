@@ -376,11 +376,11 @@ export default function Materials() {
       // Leer el archivo como texto
       const fileText = await readFileAsText(file);
       
-      let processedMaterials: any[] = [];
+      let processedMaterials: Partial<Material>[] = [];
       
       try {
         // Intentar procesar el CSV con Claude
-        processedMaterials = await analyzeCSVWithAnthropic(fileText);
+        processedMaterials = await analyzeCSVWithAnthropic(fileText) as Partial<Material>[];
         console.log('Procesamiento con Anthropic exitoso:', processedMaterials);
       } catch (aiError) {
         console.warn('Error al procesar con Anthropic, usando procesamiento fallback:', aiError);
@@ -424,7 +424,7 @@ export default function Materials() {
       }
       
       // Guardar materiales en Firebase
-      const batch = [];
+      const batch: Material[] = [];
       for (const material of processedMaterials) {
         const materialData = {
           ...material,
@@ -440,7 +440,7 @@ export default function Materials() {
             ...materialData,
             createdAt: new Date(),
             updatedAt: new Date()
-          });
+          } as Material);
         } catch (error) {
           console.error('Error al guardar material:', error);
         }
@@ -683,8 +683,8 @@ export default function Materials() {
                   </SelectTrigger>
                   <SelectContent>
                     {COMMON_UNITS.map((unit) => (
-                      <SelectItem key={unit} value={unit}>
-                        {unit}
+                      <SelectItem key={unit} value={unit || "unidad_default"}>
+                        {unit || "Unidad predeterminada"}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -807,14 +807,14 @@ export default function Materials() {
                     </SelectTrigger>
                     <SelectContent>
                       {COMMON_CATEGORIES.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
+                        <SelectItem key={category} value={category || "categoria_sin_nombre"}>
+                          {category || "Categoría sin nombre"}
                         </SelectItem>
                       ))}
                       {/* Incluir la categoría actual si no está en las comunes */}
-                      {!COMMON_CATEGORIES.includes(editingMaterial.category) && (
-                        <SelectItem value={editingMaterial.category}>
-                          {editingMaterial.category}
+                      {!COMMON_CATEGORIES.includes(editingMaterial.category) && editingMaterial.category && (
+                        <SelectItem value={editingMaterial.category || "categoria_sin_nombre"}>
+                          {editingMaterial.category || "Categoría sin nombre"}
                         </SelectItem>
                       )}
                     </SelectContent>
@@ -844,14 +844,14 @@ export default function Materials() {
                     </SelectTrigger>
                     <SelectContent>
                       {COMMON_UNITS.map((unit) => (
-                        <SelectItem key={unit} value={unit}>
-                          {unit}
+                        <SelectItem key={unit} value={unit || "unidad_default"}>
+                          {unit || "Unidad predeterminada"}
                         </SelectItem>
                       ))}
                       {/* Incluir la unidad actual si no está en las comunes */}
-                      {!COMMON_UNITS.includes(editingMaterial.unit) && (
-                        <SelectItem value={editingMaterial.unit}>
-                          {editingMaterial.unit}
+                      {!COMMON_UNITS.includes(editingMaterial.unit) && editingMaterial.unit && (
+                        <SelectItem value={editingMaterial.unit || "unidad_default"}>
+                          {editingMaterial.unit || "Unidad predeterminada"}
                         </SelectItem>
                       )}
                     </SelectContent>
