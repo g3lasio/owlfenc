@@ -625,10 +625,10 @@ export default function Estimates() {
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Contract Information */}
+        {/* Estimate Information */}
         <Card className="lg:col-span-3">
           <CardHeader>
-            <CardTitle>Información del Contrato</CardTitle>
+            <CardTitle>Información del Estimado</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -642,33 +642,41 @@ export default function Estimates() {
                 />
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Estado</Label>
-                  <Select 
-                    value={estimate.status} 
-                    onValueChange={(value: 'draft' | 'sent' | 'approved' | 'rejected') => setEstimate(prev => ({ ...prev, status: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar estado" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="draft">Borrador</SelectItem>
-                      <SelectItem value="sent">Enviado</SelectItem>
-                      <SelectItem value="approved">Aprobado</SelectItem>
-                      <SelectItem value="rejected">Rechazado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div>
-                  <Label>Fecha</Label>
-                  <Input
-                    type="date"
-                    defaultValue={new Date().toISOString().split('T')[0]}
-                    disabled
-                  />
-                </div>
+              <div>
+                <Label>Fecha</Label>
+                <Input
+                  type="date"
+                  defaultValue={new Date().toISOString().split('T')[0]}
+                  disabled
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        {/* Contractor Information */}
+        <Card className="lg:col-span-3">
+          <CardHeader>
+            <CardTitle>Información del Contratista</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="font-medium text-lg mb-2">Owl Fence</h3>
+                <p className="text-sm text-muted-foreground mb-1">
+                  <span className="font-medium">Email:</span> info@owlfence.com
+                </p>
+                <p className="text-sm text-muted-foreground mb-1">
+                  <span className="font-medium">Teléfono:</span> (555) 123-4567
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">
+                  <span className="font-medium">Dirección:</span> 123 Fence Avenue, San Diego, CA 92101
+                </p>
+                <p className="text-sm text-muted-foreground mb-1">
+                  <span className="font-medium">Website:</span> www.owlfence.com
+                </p>
               </div>
             </div>
           </CardContent>
@@ -853,21 +861,21 @@ export default function Estimates() {
           </CardContent>
         </Card>
         
-        {/* Estimate details */}
+        {/* Project details and description */}
         <Card className="lg:col-span-3">
           <CardHeader>
-            <CardTitle>Detalles del Estimado</CardTitle>
+            <CardTitle>Detalles y Descripción del Proyecto</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="estimate-notes">Notas</Label>
+                <Label htmlFor="estimate-notes">Descripción</Label>
                 <Textarea 
                   id="estimate-notes" 
                   value={estimate.notes} 
                   onChange={(e) => setEstimate(prev => ({ ...prev, notes: e.target.value }))}
-                  placeholder="Notas adicionales para el cliente"
-                  rows={3}
+                  placeholder="Descripción detallada del proyecto y notas adicionales para el cliente"
+                  rows={4}
                 />
               </div>
             </div>
