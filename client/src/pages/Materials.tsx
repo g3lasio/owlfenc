@@ -318,42 +318,89 @@ export default function Materials() {
     try {
       setLoading(true);
       
+      // Usar datos de muestra en desarrollo si es necesario
+      const useSampleData = (process.env.NODE_ENV === 'development' && 
+                             (!currentUser?.uid || currentUser.uid === 'dev-user-123'));
+      
+      if (useSampleData) {
+        console.log("Usando datos de muestra para desarrollo");
+        // Datos de ejemplo para desarrollo
+        const sampleMaterials: Material[] = [
+          {
+            id: "sample1",
+            name: "Poste de madera",
+            category: "Madera",
+            description: "Poste de madera tratada 4x4",
+            unit: "pieza",
+            price: 1599, // en centavos
+            supplier: "Home Depot",
+            sku: "HD-123",
+            stock: 15,
+            minStock: 5,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            id: "sample2",
+            name: "Panel de vinilo",
+            category: "Cercas",
+            description: "Panel de vinilo blanco 6x8",
+            unit: "pieza",
+            price: 4599, // en centavos
+            supplier: "Lowe's",
+            sku: "LW-456",
+            stock: 8,
+            minStock: 3,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            id: "sample3",
+            name: "Cemento para postes",
+            category: "Concreto",
+            description: "Bolsa de cemento para instalación de postes",
+            unit: "bolsa",
+            price: 799, // en centavos
+            supplier: "Menards",
+            sku: "MN-789",
+            stock: 20,
+            minStock: 10,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          }
+        ];
+        
+        setMaterials(sampleMaterials);
+        setLoading(false);
+        return;
+      }
+      
       // Referencia a la colección de materiales del usuario
       const materialsRef = collection(firebaseDb, "user_materials");
-      const q = query(
-        materialsRef,
-        where("userId", "==", currentUser?.uid),
-        orderBy("category"),
-        orderBy("name")
-      );
       
-      const snapshot = await getDocs(q);
-      
-      // Convertir documentos a objetos Material
-      const materialsData: Material[] = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          name: data.name,
-          category: data.category,
-          description: data.description,
-          unit: data.unit,
-          price: data.price,
-          supplier: data.supplier,
-          supplierLink: data.supplierLink,
-          sku: data.sku,
-          stock: data.stock,
-          minStock: data.minStock,
-          projectId: data.projectId,
-          imageUrl: data.imageUrl,
-          fileUrls: data.fileUrls,
-          tags: data.tags,
-          createdAt: data.createdAt?.toDate() || new Date(),
-          updatedAt: data.updatedAt?.toDate() || new Date(),
-        };
-      });
-      
-      setMaterials(materialsData);
+      try {
+        // Intentar primero con doble ordenamiento (puede fallar en algunas versiones de Firebase)
+        const q = query(
+          materialsRef,
+          where("userId", "==", currentUser?.uid),
+          orderBy("category"),
+          orderBy("name")
+        );
+        
+        const snapshot = await getDocs(q);
+        processMaterialsSnapshot(snapshot);
+      } catch (queryError) {
+        console.warn("Error con ordenamiento múltiple, usando ordenamiento simple:", queryError);
+        
+        // Si falla el doble ordenamiento, intentar solo con where
+        const simpleQuery = query(
+          materialsRef,
+          where("userId", "==", currentUser?.uid)
+        );
+        
+        const snapshot = await getDocs(simpleQuery);
+        processMaterialsSnapshot(snapshot);
+      }
     } catch (error) {
       console.error("Error al cargar materiales:", error);
       toast({
@@ -361,6 +408,84 @@ export default function Materials() {
         description: "No se pudieron cargar los materiales",
         variant: "destructive"
       });
+      setLoading(false);
+      
+      // Si hay un error, cargar datos de muestra para mostrar la UI
+      const fallbackMaterials: Material[] = [
+        {
+          id: "fallback1",
+          name: "Poste de madera (muestra)",
+          category: "Madera",
+          description: "Datos de muestra - Error al cargar datos reales",
+          unit: "pieza",
+          price: 1599,
+          stock: 10,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: "fallback2",
+          name: "Panel de vinilo (muestra)",
+          category: "Cercas",
+          description: "Datos de muestra - Error al cargar datos reales",
+          unit: "pieza",
+          price: 4599,
+          stock: 5,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }
+      ];
+      
+      setMaterials(fallbackMaterials);
+    }
+  };
+  
+  // Función para procesar los resultados de la consulta de materiales
+  const processMaterialsSnapshot = (snapshot: any) => {
+    try {
+      // Convertir documentos a objetos Material
+      const materialsData: Material[] = snapshot.docs.map((doc: any) => {
+        const data = doc.data();
+        
+        // Verificar datos mínimos requeridos y aplicar valores predeterminados
+        if (!data.name || !data.category || !data.unit) {
+          console.warn(`Material ${doc.id} tiene datos incompletos:`, data);
+        }
+        
+        return {
+          id: doc.id,
+          name: data.name || "Sin nombre",
+          category: data.category || "Otro",
+          description: data.description || "",
+          unit: data.unit || "pieza",
+          price: typeof data.price === 'number' ? data.price : 0,
+          supplier: data.supplier || "",
+          supplierLink: data.supplierLink || "",
+          sku: data.sku || "",
+          stock: typeof data.stock === 'number' ? data.stock : 0,
+          minStock: typeof data.minStock === 'number' ? data.minStock : 0,
+          projectId: data.projectId || "",
+          imageUrl: data.imageUrl || "",
+          fileUrls: Array.isArray(data.fileUrls) ? data.fileUrls : [],
+          tags: Array.isArray(data.tags) ? data.tags : [],
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date(),
+        };
+      });
+      
+      // Ordenar materiales por categoría y nombre
+      materialsData.sort((a, b) => {
+        if (a.category === b.category) {
+          return a.name.localeCompare(b.name);
+        }
+        return a.category.localeCompare(b.category);
+      });
+      
+      console.log(`Cargados ${materialsData.length} materiales`);
+      setMaterials(materialsData);
+    } catch (processError) {
+      console.error("Error al procesar resultados:", processError);
+      throw processError;
     } finally {
       setLoading(false);
     }
@@ -658,94 +783,166 @@ export default function Materials() {
         return;
       }
       
-      const lines = csvContent.split('\\n');
+      // Reemplazar diferentes tipos de saltos de línea y manejar posibles errores de formato
+      let normalizedContent = csvContent.replace(/\\n/g, '\n').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      const lines = normalizedContent.split('\n');
+      
+      console.log("Procesando CSV con", lines.length, "líneas");
+      
       if (lines.length < 2) {
         toast({
           title: "Error",
-          description: "Formato CSV inválido",
+          description: "Formato CSV inválido - se necesitan al menos dos líneas",
           variant: "destructive"
         });
         return;
       }
       
       // La primera línea debe ser el encabezado
-      const headers = lines[0].split(',').map(h => h.trim());
+      const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+      console.log("Encabezados detectados:", headers);
       
-      // Índices para campos requeridos
-      const nameIndex = headers.indexOf('nombre');
-      const categoryIndex = headers.indexOf('categoria');
-      const unitIndex = headers.indexOf('unidad');
-      const priceIndex = headers.indexOf('precio');
+      // Índices para campos requeridos (con verificación de varios formatos posibles)
+      const nameIndex = headers.indexOf('nombre') !== -1 ? headers.indexOf('nombre') : headers.indexOf('name');
+      const categoryIndex = headers.indexOf('categoria') !== -1 ? headers.indexOf('categoria') : headers.indexOf('category');
+      const unitIndex = headers.indexOf('unidad') !== -1 ? headers.indexOf('unidad') : headers.indexOf('unit');
+      const priceIndex = headers.indexOf('precio') !== -1 ? headers.indexOf('precio') : headers.indexOf('price');
       
       if (nameIndex === -1 || categoryIndex === -1 || unitIndex === -1 || priceIndex === -1) {
         toast({
           title: "Error",
-          description: "El CSV debe contener las columnas: nombre, categoria, unidad, precio",
+          description: "El CSV debe contener las columnas: nombre/name, categoria/category, unidad/unit, precio/price",
           variant: "destructive"
         });
         return;
       }
       
+      // Mostrar indicador de progreso
+      setIsUploading(true);
+      
       // Procesar cada línea
       let importCount = 0;
+      let errorLines = 0;
+      let promises = [];
+      
       for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue; // Saltar líneas vacías
         
-        const values = lines[i].split(',').map(v => v.trim());
-        
-        // Obtener valores
-        const name = values[nameIndex];
-        const category = values[categoryIndex];
-        const unit = values[unitIndex];
-        const priceStr = values[priceIndex];
-        
-        if (!name || !category || !unit || !priceStr) continue;
-        
-        // Convertir precio a centavos
-        const price = Math.round(parseFloat(priceStr) * 100);
-        
-        // Crear material
-        const materialData: any = {
-          userId: currentUser?.uid,
-          name,
-          category,
-          unit,
-          price,
-          createdAt: Timestamp.now(),
-          updatedAt: Timestamp.now()
-        };
-        
-        // Agregar campos opcionales si existen en el CSV
-        const descIndex = headers.indexOf('descripcion');
-        if (descIndex !== -1 && values[descIndex]) {
-          materialData.description = values[descIndex];
+        try {
+          const values = lines[i].split(',').map(v => v.trim());
+          
+          // Verificar si hay suficientes columnas
+          if (values.length < Math.max(nameIndex, categoryIndex, unitIndex, priceIndex) + 1) {
+            console.warn(`Línea ${i} no tiene suficientes columnas, saltando`);
+            errorLines++;
+            continue;
+          }
+          
+          // Obtener valores
+          const name = values[nameIndex];
+          const category = values[categoryIndex];
+          const unit = values[unitIndex];
+          const priceStr = values[priceIndex];
+          
+          if (!name || !category || !unit || !priceStr) {
+            console.warn(`Línea ${i} tiene campos requeridos vacíos, saltando`);
+            errorLines++;
+            continue;
+          }
+          
+          // Convertir precio a centavos
+          let price = 0;
+          try {
+            // Limpiar el precio de simbolos $ y convertir a número
+            const cleanPrice = priceStr.replace(/[$,]/g, '');
+            price = Math.round(parseFloat(cleanPrice) * 100);
+            if (isNaN(price)) {
+              console.warn(`Línea ${i} tiene un precio inválido: ${priceStr}, estableciendo a 0`);
+              price = 0;
+            }
+          } catch (e) {
+            console.warn(`Error al convertir precio en línea ${i}: ${priceStr}`, e);
+            price = 0;
+          }
+          
+          // Crear material
+          const materialData: any = {
+            userId: currentUser?.uid,
+            name,
+            category,
+            unit,
+            price,
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now()
+          };
+          
+          // Agregar campos opcionales si existen en el CSV
+          const descIndex = headers.indexOf('descripcion') !== -1 ? 
+            headers.indexOf('descripcion') : headers.indexOf('description');
+          if (descIndex !== -1 && values[descIndex]) {
+            materialData.description = values[descIndex];
+          }
+          
+          const supplierIndex = headers.indexOf('proveedor') !== -1 ?
+            headers.indexOf('proveedor') : headers.indexOf('supplier');
+          if (supplierIndex !== -1 && values[supplierIndex]) {
+            materialData.supplier = values[supplierIndex];
+          }
+          
+          const skuIndex = headers.indexOf('sku') !== -1 ?
+            headers.indexOf('sku') : headers.indexOf('code');
+          if (skuIndex !== -1 && values[skuIndex]) {
+            materialData.sku = values[skuIndex];
+          }
+          
+          // Guardar en Firebase (sin await para procesar en paralelo)
+          promises.push(
+            addDoc(collection(firebaseDb, "user_materials"), materialData)
+              .then(() => {
+                importCount++;
+                return true;
+              })
+              .catch(err => {
+                console.error(`Error al guardar material de línea ${i}:`, err);
+                errorLines++;
+                return false;
+              })
+          );
+          
+          // Limitar el número de promesas concurrentes
+          if (promises.length >= 10) {
+            await Promise.all(promises);
+            promises = [];
+          }
+        } catch (lineError) {
+          console.error(`Error procesando línea ${i}:`, lineError);
+          errorLines++;
         }
-        
-        const supplierIndex = headers.indexOf('proveedor');
-        if (supplierIndex !== -1 && values[supplierIndex]) {
-          materialData.supplier = values[supplierIndex];
-        }
-        
-        const skuIndex = headers.indexOf('sku');
-        if (skuIndex !== -1 && values[skuIndex]) {
-          materialData.sku = values[skuIndex];
-        }
-        
-        // Guardar en Firebase
-        await addDoc(collection(firebaseDb, "user_materials"), materialData);
-        importCount++;
       }
       
-      // Mostrar mensaje de éxito
-      toast({
-        title: "Importación exitosa",
-        description: `Se importaron ${importCount} materiales correctamente`
-      });
+      // Esperar a que terminen las promesas pendientes
+      if (promises.length > 0) {
+        await Promise.all(promises);
+      }
       
-      // Cerrar diálogo y recargar
-      setIsImportDialogOpen(false);
-      setCsvContent("");
-      loadMaterials();
+      // Mostrar mensaje de éxito/error
+      if (importCount > 0) {
+        toast({
+          title: "Importación exitosa",
+          description: `Se importaron ${importCount} materiales correctamente${errorLines > 0 ? ` (${errorLines} líneas con errores)` : ''}`
+        });
+        
+        // Cerrar diálogo y recargar
+        setIsImportDialogOpen(false);
+        setCsvContent("");
+        loadMaterials();
+      } else {
+        toast({
+          title: "Error",
+          description: "No se pudo importar ningún material. Verifique el formato del CSV.",
+          variant: "destructive"
+        });
+      }
     } catch (error) {
       console.error("Error al importar CSV:", error);
       toast({
@@ -753,6 +950,8 @@ export default function Materials() {
         description: "No se pudieron importar los materiales",
         variant: "destructive"
       });
+    } finally {
+      setIsUploading(false);
     }
   };
 

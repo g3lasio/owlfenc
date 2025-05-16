@@ -161,15 +161,67 @@ export const QuickbooksImport = ({
       
       // Esperar un momento para mostrar el toast antes de redirigir
       setTimeout(() => {
-        // Abrir en nueva ventana para evitar problemas de CORS y navegación
-        window.open(response.data.authUrl, '_blank', 'noopener,noreferrer');
-        
-        // Notificar al usuario sobre la nueva ventana
-        toast({
-          title: "Ventana de autenticación abierta",
-          description: "Se ha abierto una nueva ventana para la autenticación de QuickBooks. Si no se abrió, permite las ventanas emergentes en tu navegador.",
-          duration: 7000
-        });
+        try {
+          // Almacenar en localStorage que se inició un proceso de autenticación
+          localStorage.setItem('qbAuthInProgress', 'true');
+          localStorage.setItem('qbAuthStartTime', Date.now().toString());
+          
+          // Abrir en nueva ventana para evitar problemas de CORS y navegación
+          const newWindow = window.open(response.data.authUrl, '_blank', 'noopener,noreferrer,width=800,height=600');
+          
+          if (!newWindow) {
+            // Si la ventana no se pudo abrir, intentar el enfoque de redirección
+            toast({
+              title: "Ventanas emergentes bloqueadas",
+              description: "No se pudo abrir la ventana de autenticación. Haciendo redirección completa...",
+              duration: 3000
+            });
+            
+            // Guardar la URL actual para regresar después
+            localStorage.setItem('qbRedirectFromUrl', window.location.href);
+            
+            // Redirigir a la página de QuickBooks
+            setTimeout(() => {
+              window.location.href = response.data.authUrl;
+            }, 2000);
+          } else {
+            // Notificar al usuario sobre la nueva ventana
+            toast({
+              title: "Ventana de autenticación abierta",
+              description: "Se ha abierto una nueva ventana para la autenticación de QuickBooks. Al completar el proceso, regresa a esta ventana.",
+              duration: 7000
+            });
+            
+            // Verificar periódicamente si el proceso ha sido completado
+            const checkInterval = setInterval(() => {
+              if (localStorage.getItem('qbAuthCompleted') === 'true') {
+                clearInterval(checkInterval);
+                localStorage.removeItem('qbAuthInProgress');
+                localStorage.removeItem('qbAuthStartTime');
+                localStorage.removeItem('qbAuthCompleted');
+                
+                // Recargar datos
+                setIsConnected(true);
+                loadInventory();
+                setIsLoading(false);
+              }
+            }, 1000);
+            
+            // Establecer un tiempo máximo de espera (2 minutos)
+            setTimeout(() => {
+              clearInterval(checkInterval);
+              setIsLoading(false);
+            }, 120000);
+          }
+        } catch (windowError) {
+          console.error("Error al abrir ventana:", windowError);
+          toast({
+            title: "Error al abrir ventana",
+            description: "No se pudo abrir la ventana de autenticación. Intente de nuevo o verifique la configuración de su navegador.",
+            variant: "destructive"
+          });
+          setIsLoading(false);
+        }
       }, 1500);
       
     } catch (error) {
