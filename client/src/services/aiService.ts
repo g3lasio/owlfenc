@@ -1,6 +1,7 @@
 
 import axios from 'axios';
 import Papa from 'papaparse';
+import { analyzeCSVWithAnthropic } from './anthropicService';
 
 /**
  * Analiza un archivo CSV/Excel utilizando IA para extraer información estructurada de materiales
@@ -18,7 +19,22 @@ export async function analyzeFileWithAI(fileContent: string, fileType: string): 
       : fileContent;
     
     try {
-      // Intentar primero con la API del servidor
+      if (fileType === 'csv') {
+        // Intentar primero con Anthropic Claude para archivos CSV (mejor para datos tabulares)
+        try {
+          console.log('Procesando con Anthropic Claude (optimizado para datos tabulares)...');
+          const materials = await analyzeCSVWithAnthropic(truncatedContent);
+          if (materials && materials.length > 0) {
+            console.log(`Análisis con Anthropic completado. Encontrados ${materials.length} materiales`);
+            return materials;
+          }
+        } catch (anthropicError) {
+          console.error('Error al procesar con Anthropic:', anthropicError);
+          // Si falla Anthropic, continuar con OpenAI como respaldo
+        }
+      }
+      
+      // Intentar con OpenAI a través de la API del servidor
       const response = await axios.post('/api/ai-processor/analyze-file', {
         fileContent: truncatedContent,
         fileType
@@ -80,7 +96,7 @@ function processFileLocally(fileContent: string, fileType: string): Promise<any[
           console.log(`Procesamiento local completado. Encontrados ${materials.length} materiales`);
           resolve(materials);
         },
-        error: (error) => {
+        error: (error: any) => {
           console.error('Error al procesar CSV localmente:', error);
           // Devolver un array vacío en caso de error
           resolve([]);
@@ -146,6 +162,23 @@ export async function normalizeCSVWithAI(content: string): Promise<string> {
       : content;
       
     try {
+      // Intentar primero con Anthropic Claude (mejor para datos tabulares)
+      try {
+        console.log('Normalizando CSV con Anthropic Claude...');
+        const { normalizeCSVWithAnthropic } = await import('./anthropicService');
+        const normalizedContent = await normalizeCSVWithAnthropic(truncatedContent);
+        
+        if (normalizedContent && normalizedContent.trim()) {
+          console.log('Normalización con Anthropic completada');
+          return normalizedContent;
+        }
+      } catch (anthropicError) {
+        console.error('Error al normalizar con Anthropic:', anthropicError);
+        // Si falla Anthropic, continuar con OpenAI como respaldo
+      }
+      
+      // Respaldo: Intentar con OpenAI a través de la API
+      console.log('Intentando normalización con OpenAI...');
       const response = await axios.post('/api/ai-processor/normalize-csv', { 
         content: truncatedContent 
       }, {
