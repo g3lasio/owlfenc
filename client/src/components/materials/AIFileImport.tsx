@@ -77,28 +77,60 @@ export function AIFileImport({
       
       let processedContent = fileContent;
       if (fileType === 'csv') {
-        // Normalizar el contenido CSV para asegurar formato correcto
-        processedContent = await normalizeCSVWithAI(fileContent);
+        try {
+          // Normalizar el contenido CSV para asegurar formato correcto
+          processedContent = await normalizeCSVWithAI(fileContent);
+          setProcessingStage("Formato procesado correctamente");
+        } catch (formatError) {
+          console.error("Error al normalizar CSV:", formatError);
+          setProcessingStage("Error al normalizar formato (continuando con formato original)");
+        }
       }
       
       setProcessingStage("Analizando datos con IA...");
       
-      // Procesar el contenido con IA
-      const materials = await analyzeFileWithAI(processedContent, fileType);
-      
-      setProcessingStage("Finalizando importación...");
-      
-      // Informar al componente padre sobre los materiales procesados
-      onMaterialsProcessed(materials);
-      
-      // Cerrar diálogo y limpiar estado
-      onOpenChange(false);
-      setFile(null);
-      
-      toast({
-        title: "Importación exitosa",
-        description: `Se procesaron ${materials.length} materiales correctamente`
-      });
+      try {
+        // Procesar el contenido con IA o con el fallback local
+        const materials = await analyzeFileWithAI(processedContent, fileType);
+        
+        if (!materials || materials.length === 0) {
+          setProcessingStage("No se encontraron materiales válidos");
+          toast({
+            title: "Sin resultados",
+            description: "No se pudieron identificar materiales en el archivo. Verifica el formato.",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        setProcessingStage(`Encontrados ${materials.length} materiales. Finalizando importación...`);
+        
+        // Mostrar vista previa de los primeros 3 materiales
+        const preview = materials.slice(0, 3).map(m => m.name).join(", ");
+        
+        // Informar al componente padre sobre los materiales procesados
+        onMaterialsProcessed(materials);
+        
+        // Cerrar diálogo y limpiar estado
+        setTimeout(() => {
+          onOpenChange(false);
+          setFile(null);
+          
+          toast({
+            title: "Importación exitosa",
+            description: `Se procesaron ${materials.length} materiales correctamente. Ejemplos: ${preview}${materials.length > 3 ? '...' : ''}`
+          });
+        }, 1000); // Pequeño retraso para que el usuario pueda ver el mensaje de éxito
+      } catch (analysisError) {
+        console.error("Error al analizar datos:", analysisError);
+        setProcessingStage("Error al procesar los datos");
+        
+        toast({
+          title: "Error en el procesamiento",
+          description: "No se pudieron procesar los materiales. Se utilizará procesamiento local.",
+          variant: "destructive"
+        });
+      }
     } catch (error) {
       console.error("Error al procesar archivo:", error);
       toast({

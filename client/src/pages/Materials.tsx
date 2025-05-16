@@ -1,3 +1,7 @@
+The code has been modified to improve the handling of AI-processed materials and the saving of materials to Firebase, including error handling and batch processing.
+```
+
+```replit_final_file
 import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,7 +52,9 @@ import {
   query, 
   where, 
   orderBy, 
-  Timestamp 
+  Timestamp,
+  writeBatch,
+  serverTimestamp
 } from "firebase/firestore";
 import { uploadFile } from "@/lib/firebase";
 import { db as firebaseDb } from "@/lib/firebase";
@@ -155,13 +161,13 @@ export default function Materials() {
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [isAIImportDialogOpen, setIsAIImportDialogOpen] = useState(false);
   const [isQuickbooksImportDialogOpen, setIsQuickbooksImportDialogOpen] = useState(false);
-  
+
   // Verificar resultado de redirección de QuickBooks
   useEffect(() => {
     console.log("Verificando resultado de redirección...");
     const queryParams = new URLSearchParams(window.location.search);
     const quickbooksParam = queryParams.get('quickbooks');
-    
+
     if (quickbooksParam === 'connected') {
       // Si fue conectado exitosamente, mostrar mensaje y abrir diálogo de importación
       toast({
@@ -169,10 +175,10 @@ export default function Materials() {
         description: "Se ha conectado correctamente con tu cuenta de QuickBooks.",
         duration: 5000
       });
-      
+
       // Limpiar URL
       window.history.replaceState({}, document.title, window.location.pathname);
-      
+
       // Abrir el diálogo de importación
       setTimeout(() => {
         setIsQuickbooksImportDialogOpen(true);
@@ -185,7 +191,7 @@ export default function Materials() {
         variant: "destructive",
         duration: 5000
       });
-      
+
       // Limpiar URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
@@ -193,11 +199,11 @@ export default function Materials() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [currentMaterial, setCurrentMaterial] = useState<Material | null>(null);
   const [csvContent, setCsvContent] = useState("");
-  
+
   // Referencias para carga de archivos
   const imageInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   // Estado para manejar subida de archivos
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -231,7 +237,7 @@ export default function Materials() {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setSelectedImage(file);
-      
+
       // Crear preview
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -248,17 +254,17 @@ export default function Materials() {
       setSelectedFiles(prev => [...prev, ...newFiles]);
     }
   };
-  
+
   // Función para eliminar un archivo seleccionado
   const removeSelectedFile = (index: number) => {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
-  
+
   // Función para manejar la selección de CSV
   const handleCsvSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      
+
       // Leer el contenido del archivo CSV
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -268,11 +274,11 @@ export default function Materials() {
       reader.readAsText(file);
     }
   };
-  
+
   // Función para subir una imagen a Firebase Storage
   const uploadImageIfNeeded = async (): Promise<string | null> => {
     if (!selectedImage) return null;
-    
+
     try {
       const imageUrl = await uploadFile(selectedImage, `user_materials/${currentUser?.uid}/images`);
       return imageUrl;
@@ -281,16 +287,16 @@ export default function Materials() {
       throw error;
     }
   };
-  
+
   // Función para subir archivos a Firebase Storage
   const uploadFilesIfNeeded = async (): Promise<string[]> => {
     if (selectedFiles.length === 0) return [];
-    
+
     try {
       const uploadPromises = selectedFiles.map(file => 
         uploadFile(file, `user_materials/${currentUser?.uid}/files`)
       );
-      
+
       const urls = await Promise.all(uploadPromises);
       return urls;
     } catch (error) {
@@ -298,7 +304,7 @@ export default function Materials() {
       throw error;
     }
   };
-  
+
   // Esta sección se eliminó para evitar duplicación de funciones
 
   // Cargar materiales al inicio
@@ -317,11 +323,11 @@ export default function Materials() {
   const loadMaterials = async () => {
     try {
       setLoading(true);
-      
+
       // Usar datos de muestra en desarrollo si es necesario
       const useSampleData = (process.env.NODE_ENV === 'development' && 
                              (!currentUser?.uid || currentUser.uid === 'dev-user-123'));
-      
+
       if (useSampleData) {
         console.log("Usando datos de muestra para desarrollo");
         // Datos de ejemplo para desarrollo
@@ -369,15 +375,15 @@ export default function Materials() {
             updatedAt: new Date(),
           }
         ];
-        
+
         setMaterials(sampleMaterials);
         setLoading(false);
         return;
       }
-      
+
       // Referencia a la colección de materiales del usuario
       const materialsRef = collection(firebaseDb, "user_materials");
-      
+
       try {
         // Intentar primero con doble ordenamiento (puede fallar en algunas versiones de Firebase)
         const q = query(
@@ -386,18 +392,18 @@ export default function Materials() {
           orderBy("category"),
           orderBy("name")
         );
-        
+
         const snapshot = await getDocs(q);
         processMaterialsSnapshot(snapshot);
       } catch (queryError) {
         console.warn("Error con ordenamiento múltiple, usando ordenamiento simple:", queryError);
-        
+
         // Si falla el doble ordenamiento, intentar solo con where
         const simpleQuery = query(
           materialsRef,
           where("userId", "==", currentUser?.uid)
         );
-        
+
         const snapshot = await getDocs(simpleQuery);
         processMaterialsSnapshot(snapshot);
       }
@@ -409,7 +415,7 @@ export default function Materials() {
         variant: "destructive"
       });
       setLoading(false);
-      
+
       // Si hay un error, cargar datos de muestra para mostrar la UI
       const fallbackMaterials: Material[] = [
         {
@@ -435,23 +441,23 @@ export default function Materials() {
           updatedAt: new Date(),
         }
       ];
-      
+
       setMaterials(fallbackMaterials);
     }
   };
-  
+
   // Función para procesar los resultados de la consulta de materiales
   const processMaterialsSnapshot = (snapshot: any) => {
     try {
       // Convertir documentos a objetos Material
       const materialsData: Material[] = snapshot.docs.map((doc: any) => {
         const data = doc.data();
-        
+
         // Verificar datos mínimos requeridos y aplicar valores predeterminados
         if (!data.name || !data.category || !data.unit) {
           console.warn(`Material ${doc.id} tiene datos incompletos:`, data);
         }
-        
+
         return {
           id: doc.id,
           name: data.name || "Sin nombre",
@@ -472,7 +478,7 @@ export default function Materials() {
           updatedAt: data.updatedAt?.toDate() || new Date(),
         };
       });
-      
+
       // Ordenar materiales por categoría y nombre
       materialsData.sort((a, b) => {
         if (a.category === b.category) {
@@ -480,7 +486,7 @@ export default function Materials() {
         }
         return a.category.localeCompare(b.category);
       });
-      
+
       console.log(`Cargados ${materialsData.length} materiales`);
       setMaterials(materialsData);
     } catch (processError) {
@@ -494,12 +500,12 @@ export default function Materials() {
   // Filtrar materiales según criterios
   const filterMaterials = () => {
     let filtered = [...materials];
-    
+
     // Filtrar por categoría
     if (categoryFilter !== "all") {
       filtered = filtered.filter(m => m.category === categoryFilter);
     }
-    
+
     // Filtrar por término de búsqueda
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
@@ -511,7 +517,7 @@ export default function Materials() {
         m.tags?.some(tag => tag.toLowerCase().includes(term))
       );
     }
-    
+
     setFilteredMaterials(filtered);
   };
 
@@ -526,13 +532,13 @@ export default function Materials() {
         });
         return;
       }
-      
+
       setIsUploading(true);
-      
+
       // Subir imagen y archivos si es necesario
       let imageUrl = data.imageUrl || null;
       let fileUrls: string[] = data.fileUrls || [];
-      
+
       try {
         if (selectedImage) {
           const uploadedImageUrl = await uploadImageIfNeeded();
@@ -540,7 +546,7 @@ export default function Materials() {
             imageUrl = uploadedImageUrl;
           }
         }
-        
+
         if (selectedFiles.length > 0) {
           const uploadedFileUrls = await uploadFilesIfNeeded();
           fileUrls = [...fileUrls, ...uploadedFileUrls];
@@ -555,7 +561,7 @@ export default function Materials() {
         setIsUploading(false);
         return;
       }
-      
+
       // Preparar datos para guardar
       const materialData: any = {
         ...data,
@@ -565,12 +571,12 @@ export default function Materials() {
         fileUrls,
         updatedAt: Timestamp.now()
       };
-      
+
       if (isEditMode && currentMaterial) {
         // Actualizar material existente
         const materialRef = doc(firebaseDb, "user_materials", currentMaterial.id);
         await updateDoc(materialRef, materialData);
-        
+
         toast({
           title: "Material actualizado",
           description: `${data.name} ha sido actualizado correctamente`
@@ -579,25 +585,25 @@ export default function Materials() {
         // Crear nuevo material
         materialData.createdAt = Timestamp.now();
         await addDoc(collection(firebaseDb, "user_materials"), materialData);
-        
+
         toast({
           title: "Material agregado",
           description: `${data.name} ha sido agregado correctamente`
         });
       }
-      
+
       // Resetear formulario y cerrar diálogo
       form.reset();
       setIsAddDialogOpen(false);
       setIsEditMode(false);
       setCurrentMaterial(null);
-      
+
       // Limpiar estado de archivos
       setSelectedImage(null);
       setSelectedFiles([]);
       setImagePreview(null);
       setUploadedFileUrls([]);
-      
+
       // Recargar materiales
       loadMaterials();
     } catch (error) {
@@ -618,12 +624,12 @@ export default function Materials() {
       if (confirm(`¿Estás seguro de que deseas eliminar "${name}"?`)) {
         const materialRef = doc(firebaseDb, "user_materials", id);
         await deleteDoc(materialRef);
-        
+
         toast({
           title: "Material eliminado",
           description: `${name} ha sido eliminado correctamente`
         });
-        
+
         // Recargar materiales
         loadMaterials();
       }
@@ -641,17 +647,17 @@ export default function Materials() {
   const openEditDialog = (material: Material) => {
     setCurrentMaterial(material);
     setIsEditMode(true);
-    
+
     // Si hay una imagen, mostrar la previsualización
     if (material.imageUrl) {
       setImagePreview(material.imageUrl);
     }
-    
+
     // Si hay archivos adjuntos, actualizar la lista
     if (material.fileUrls && material.fileUrls.length > 0) {
       setUploadedFileUrls(material.fileUrls);
     }
-    
+
     // Llenar formulario con datos del material
     form.reset({
       name: material.name,
@@ -669,59 +675,124 @@ export default function Materials() {
       fileUrls: material.fileUrls || [],
       tags: material.tags || []
     });
-    
+
     setIsAddDialogOpen(true);
   };
 
-  // Manejar materiales procesados por IA
-  const handleAIProcessedMaterials = async (materials: any[]) => {
-    try {
-      if (!materials || materials.length === 0) {
-        toast({
-          title: "Error",
-          description: "No se encontraron materiales válidos en el archivo",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      // Mostrar un indicador de carga
-      setIsUploading(true);
-      
-      // Crear un documento para cada material
-      const promises = materials.map(material => {
-        const materialData = {
-          ...material,
-          userId: currentUser?.uid,
-          price: typeof material.price === 'number' ? Math.round(material.price * 100) : 0, // Convertir a centavos
-          createdAt: Timestamp.now(),
-          updatedAt: Timestamp.now()
-        };
-        
-        return addDoc(collection(firebaseDb, "user_materials"), materialData);
-      });
-      
-      await Promise.all(promises);
-      
+  // Manejador para materiales procesados con IA
+  const handleAIProcessedMaterials = (materials: any[]) => {
+    if (!materials || materials.length === 0) {
       toast({
-        title: "Materiales importados",
-        description: `Se importaron ${materials.length} materiales correctamente`
-      });
-      
-      // Recargar materiales
-      loadMaterials();
-    } catch (error) {
-      console.error("Error al importar materiales:", error);
-      toast({
-        title: "Error",
-        description: "No se pudieron importar los materiales",
+        title: "Sin datos",
+        description: "No se detectaron materiales válidos en el archivo importado",
         variant: "destructive"
       });
-    } finally {
-      setIsUploading(false);
+      return;
+    }
+
+    // Formatear los materiales para asegurar que tienen la estructura correcta
+    const formattedMaterials = materials.map(material => ({
+      name: material.name || "Sin nombre",
+      category: material.category || "General",
+      description: material.description || "",
+      unit: material.unit || "pieza",
+      price: typeof material.price === 'number' ? material.price : parseFloat(material.price) || 0,
+      supplier: material.supplier || "",
+      supplierLink: material.supplierLink || "",
+      sku: material.sku || "",
+      stock: typeof material.stock === 'number' ? material.stock : parseFloat(material.stock) || 0,
+      minStock: typeof material.minStock === 'number' ? material.minStock : parseFloat(material.minStock) || 0
+    }));
+
+    // Actualizar el estado
+    setMaterials(prevMaterials => [...prevMaterials, ...formattedMaterials]);
+
+    // Guardar en Firebase
+    saveProcessedMaterialsToFirebase(formattedMaterials);
+
+    // Mostrar mensaje de éxito con detalles
+    toast({
+      title: "Materiales importados",
+      description: `Se agregaron ${formattedMaterials.length} materiales a tu inventario`,
+    });
+  };
+
+  // Función para guardar materiales procesados a Firebase
+  const saveProcessedMaterialsToFirebase = async (materials: any[]) => {
+    if (!materials || materials.length === 0) return;
+
+    try {
+      let savedCount = 0;
+      let errorCount = 0;
+
+      // Crear batch para operaciones en lote (máximo 500 operaciones por batch)
+      const batchSize = 450; // Firebase tiene un límite de 500 operaciones por batch
+      const totalBatches = Math.ceil(materials.length / batchSize);
+
+      for (let i = 0; i < totalBatches; i++) {
+        const batch = writeBatch(firebaseDb);
+        const start = i * batchSize;
+        const end = Math.min((i + 1) * batchSize, materials.length);
+        const batchMaterials = materials.slice(start, end);
+
+        // Procesar cada material en este batch
+        batchMaterials.forEach(material => {
+          try {
+            if (!material.name) return; // Saltar materiales sin nombre
+
+            const materialRef = doc(collection(firebaseDb, "user_materials"));
+            batch.set(materialRef, {
+              name: material.name,
+              category: material.category || "General",
+              description: material.description || "",
+              unit: material.unit || "pieza",
+              price: typeof material.price === 'number' ? material.price : parseFloat(material.price) || 0,
+              supplier: material.supplier || "",
+              supplierLink: material.supplierLink || "",
+              sku: material.sku || "",
+              stock: typeof material.stock === 'number' ? material.stock : parseFloat(material.stock) || 0,
+              minStock: typeof material.minStock === 'number' ? material.minStock : parseFloat(material.minStock) || 0,
+              userId: currentUser?.uid || 'dev-user',
+              createdAt: serverTimestamp()
+            });
+
+            savedCount++;
+          } catch (itemError) {
+            console.error("Error al procesar material individual:", itemError);
+            errorCount++;
+          }
+        });
+
+        // Ejecutar este batch
+        await batch.commit();
+        console.log(`Batch ${i+1}/${totalBatches} completado: ${batchMaterials.length} materiales`);
+      }
+
+      if (savedCount > 0) {
+        toast({
+          title: "Materiales guardados",
+          description: `Se guardaron ${savedCount} materiales correctamente${errorCount > 0 ? ` (${errorCount} con errores)` : ''}`
+        });
+
+        // Recargar la lista de materiales
+        loadMaterials();
+      } else if (errorCount > 0) {
+        toast({
+          title: "Error al guardar",
+          description: `No se pudo guardar ningún material (${errorCount} errores)`,
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error al guardar materiales en Firebase:", error);
+      toast({
+        title: "Error en la base de datos",
+        description: "Ocurrió un error al intentar guardar los materiales",
+        variant: "destructive"
+      });
     }
   };
-  
+
   // Manejar materiales importados desde QuickBooks
   const handleQuickbooksImportedMaterials = async (materials: any[]) => {
     try {
@@ -733,10 +804,10 @@ export default function Materials() {
         });
         return;
       }
-      
+
       // Mostrar un indicador de carga
       setIsUploading(true);
-      
+
       // Crear un documento para cada material
       const promises = materials.map(material => {
         const materialData = {
@@ -746,17 +817,17 @@ export default function Materials() {
           createdAt: Timestamp.now(),
           updatedAt: Timestamp.now()
         };
-        
+
         return addDoc(collection(firebaseDb, "user_materials"), materialData);
       });
-      
+
       await Promise.all(promises);
-      
+
       toast({
         title: "Importación desde QuickBooks exitosa",
         description: `Se importaron ${materials.length} materiales correctamente`
       });
-      
+
       // Recargar materiales
       loadMaterials();
     } catch (error) {
@@ -782,13 +853,13 @@ export default function Materials() {
         });
         return;
       }
-      
+
       // Reemplazar diferentes tipos de saltos de línea y manejar posibles errores de formato
       let normalizedContent = csvContent.replace(/\\n/g, '\n').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
       const lines = normalizedContent.split('\n');
-      
+
       console.log("Procesando CSV con", lines.length, "líneas");
-      
+
       if (lines.length < 2) {
         toast({
           title: "Error",
@@ -797,17 +868,17 @@ export default function Materials() {
         });
         return;
       }
-      
+
       // La primera línea debe ser el encabezado
       const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
       console.log("Encabezados detectados:", headers);
-      
+
       // Índices para campos requeridos (con verificación de varios formatos posibles)
       const nameIndex = headers.indexOf('nombre') !== -1 ? headers.indexOf('nombre') : headers.indexOf('name');
       const categoryIndex = headers.indexOf('categoria') !== -1 ? headers.indexOf('categoria') : headers.indexOf('category');
       const unitIndex = headers.indexOf('unidad') !== -1 ? headers.indexOf('unidad') : headers.indexOf('unit');
       const priceIndex = headers.indexOf('precio') !== -1 ? headers.indexOf('precio') : headers.indexOf('price');
-      
+
       if (nameIndex === -1 || categoryIndex === -1 || unitIndex === -1 || priceIndex === -1) {
         toast({
           title: "Error",
@@ -816,40 +887,40 @@ export default function Materials() {
         });
         return;
       }
-      
+
       // Mostrar indicador de progreso
       setIsUploading(true);
-      
+
       // Procesar cada línea
       let importCount = 0;
       let errorLines = 0;
       let promises = [];
-      
+
       for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue; // Saltar líneas vacías
-        
+
         try {
           const values = lines[i].split(',').map(v => v.trim());
-          
+
           // Verificar si hay suficientes columnas
           if (values.length < Math.max(nameIndex, categoryIndex, unitIndex, priceIndex) + 1) {
             console.warn(`Línea ${i} no tiene suficientes columnas, saltando`);
             errorLines++;
             continue;
           }
-          
+
           // Obtener valores
           const name = values[nameIndex];
           const category = values[categoryIndex];
           const unit = values[unitIndex];
           const priceStr = values[priceIndex];
-          
+
           if (!name || !category || !unit || !priceStr) {
             console.warn(`Línea ${i} tiene campos requeridos vacíos, saltando`);
             errorLines++;
             continue;
           }
-          
+
           // Convertir precio a centavos
           let price = 0;
           try {
@@ -864,7 +935,7 @@ export default function Materials() {
             console.warn(`Error al convertir precio en línea ${i}: ${priceStr}`, e);
             price = 0;
           }
-          
+
           // Crear material
           const materialData: any = {
             userId: currentUser?.uid,
@@ -875,825 +946,24 @@ export default function Materials() {
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now()
           };
-          
+
           // Agregar campos opcionales si existen en el CSV
           const descIndex = headers.indexOf('descripcion') !== -1 ? 
             headers.indexOf('descripcion') : headers.indexOf('description');
           if (descIndex !== -1 && values[descIndex]) {
             materialData.description = values[descIndex];
           }
-          
+
           const supplierIndex = headers.indexOf('proveedor') !== -1 ?
             headers.indexOf('proveedor') : headers.indexOf('supplier');
           if (supplierIndex !== -1 && values[supplierIndex]) {
             materialData.supplier = values[supplierIndex];
           }
-          
+
           const skuIndex = headers.indexOf('sku') !== -1 ?
             headers.indexOf('sku') : headers.indexOf('code');
           if (skuIndex !== -1 && values[skuIndex]) {
             materialData.sku = values[skuIndex];
           }
-          
+
           // Guardar en Firebase (sin await para procesar en paralelo)
-          promises.push(
-            addDoc(collection(firebaseDb, "user_materials"), materialData)
-              .then(() => {
-                importCount++;
-                return true;
-              })
-              .catch(err => {
-                console.error(`Error al guardar material de línea ${i}:`, err);
-                errorLines++;
-                return false;
-              })
-          );
-          
-          // Limitar el número de promesas concurrentes
-          if (promises.length >= 10) {
-            await Promise.all(promises);
-            promises = [];
-          }
-        } catch (lineError) {
-          console.error(`Error procesando línea ${i}:`, lineError);
-          errorLines++;
-        }
-      }
-      
-      // Esperar a que terminen las promesas pendientes
-      if (promises.length > 0) {
-        await Promise.all(promises);
-      }
-      
-      // Mostrar mensaje de éxito/error
-      if (importCount > 0) {
-        toast({
-          title: "Importación exitosa",
-          description: `Se importaron ${importCount} materiales correctamente${errorLines > 0 ? ` (${errorLines} líneas con errores)` : ''}`
-        });
-        
-        // Cerrar diálogo y recargar
-        setIsImportDialogOpen(false);
-        setCsvContent("");
-        loadMaterials();
-      } else {
-        toast({
-          title: "Error",
-          description: "No se pudo importar ningún material. Verifique el formato del CSV.",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error("Error al importar CSV:", error);
-      toast({
-        title: "Error",
-        description: "No se pudieron importar los materiales",
-        variant: "destructive"
-      });
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  // Formatear precio para mostrar
-  const formatPrice = (priceInCents: number) => {
-    return `$${(priceInCents / 100).toFixed(2)}`;
-  };
-
-  // Renderizar contenido de la página
-  return (
-    <div className="p-4 space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle className="text-2xl">My Inventory</CardTitle>
-              <CardDescription>
-                Gestiona tu inventario de materiales y suministros para tus proyectos
-              </CardDescription>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button 
-                variant="outline" 
-                onClick={() => loadMaterials()}
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Actualizar
-              </Button>
-              <Button 
-                variant="outline"
-                onClick={() => setIsAIImportDialogOpen(true)}
-              >
-                <FileSpreadsheet className="h-4 w-4 mr-2" />
-                Importar con IA
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => setIsQuickbooksImportDialogOpen(true)}
-              >
-                <Calculator className="h-4 w-4 mr-2" />
-                Desde QuickBooks
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => setIsImportDialogOpen(true)}
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                Importar CSV
-              </Button>
-              <Button 
-                onClick={() => {
-                  setIsEditMode(false);
-                  form.reset({
-                    name: "",
-                    category: "",
-                    description: "",
-                    unit: "",
-                    price: 0,
-                    supplier: "",
-                    supplierLink: "",
-                    sku: "",
-                    stock: 0,
-                    minStock: 0,
-                    projectId: ""
-                  });
-                  setIsAddDialogOpen(true);
-                }}
-              >
-                <PackagePlus className="h-4 w-4 mr-2" />
-                Agregar Material
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="list" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="list">Lista de Materiales</TabsTrigger>
-              <TabsTrigger value="inventory">Inventario</TabsTrigger>
-            </TabsList>
-            
-            <div className="flex gap-4 mb-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar material..."
-                    className="pl-8"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-              </div>
-              <Select 
-                value={categoryFilter} 
-                onValueChange={setCategoryFilter}
-              >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Todas las categorías" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas las categorías</SelectItem>
-                  {categories.map(cat => (
-                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <TabsContent value="list" className="space-y-4">
-              {loading ? (
-                // Skeleton para carga
-                <div className="space-y-2">
-                  {[...Array(5)].map((_, i) => (
-                    <Skeleton key={i} className="h-12 w-full" />
-                  ))}
-                </div>
-              ) : filteredMaterials.length > 0 ? (
-                <Table>
-                  <TableCaption>Lista de materiales ({filteredMaterials.length})</TableCaption>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nombre</TableHead>
-                      <TableHead>Categoría</TableHead>
-                      <TableHead>Unidad</TableHead>
-                      <TableHead>Precio</TableHead>
-                      <TableHead>Proveedor</TableHead>
-                      <TableHead>Stock</TableHead>
-                      <TableHead>Acciones</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredMaterials.map((material) => (
-                      <TableRow key={material.id}>
-                        <TableCell className="font-medium">{material.name}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{material.category}</Badge>
-                        </TableCell>
-                        <TableCell>{material.unit}</TableCell>
-                        <TableCell>{formatPrice(material.price)}</TableCell>
-                        <TableCell>
-                          {material.supplier}
-                          {material.supplierLink && (
-                            <a 
-                              href={material.supplierLink} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="ml-2 inline-block text-primary hover:text-primary/80"
-                            >
-                              <LinkIcon className="h-4 w-4" />
-                            </a>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {material.stock !== undefined ? material.stock : 'N/A'}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => openEditDialog(material)}
-                            >
-                              Editar
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              className="text-destructive"
-                              onClick={() => deleteMaterial(material.id, material.name)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : (
-                <div className="text-center py-8">
-                  <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium">No hay materiales</h3>
-                  <p className="text-muted-foreground">
-                    {searchTerm || categoryFilter !== 'all' 
-                      ? 'No se encontraron materiales con esos filtros' 
-                      : 'Agrega tu primer material para comenzar'}
-                  </p>
-                  {searchTerm || categoryFilter !== 'all' ? (
-                    <Button 
-                      variant="link" 
-                      onClick={() => {
-                        setSearchTerm("");
-                        setCategoryFilter("all");
-                      }}
-                    >
-                      Limpiar filtros
-                    </Button>
-                  ) : (
-                    <Button 
-                      className="mt-4" 
-                      onClick={() => {
-                        setIsEditMode(false);
-                        form.reset();
-                        setIsAddDialogOpen(true);
-                      }}
-                    >
-                      <PackagePlus className="h-4 w-4 mr-2" />
-                      Agregar Material
-                    </Button>
-                  )}
-                </div>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="inventory" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {loading ? (
-                  // Skeleton para carga
-                  [...Array(6)].map((_, i) => (
-                    <Card key={i}>
-                      <CardHeader className="pb-2">
-                        <Skeleton className="h-5 w-3/4" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-2">
-                          <Skeleton className="h-4 w-full" />
-                          <Skeleton className="h-4 w-2/3" />
-                          <Skeleton className="h-4 w-1/2" />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                ) : filteredMaterials.length > 0 ? (
-                  filteredMaterials.map((material) => (
-                    <Card key={material.id}>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-lg flex justify-between">
-                          {material.name}
-                          <Badge variant="outline">{material.category}</Badge>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-2">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Precio:</span>
-                            <span className="font-medium">{formatPrice(material.price)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Unidad:</span>
-                            <span>{material.unit}</span>
-                          </div>
-                          {material.stock !== undefined && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Inventario:</span>
-                              <span 
-                                className={material.minStock !== undefined && material.stock < material.minStock 
-                                  ? "text-destructive font-medium" 
-                                  : ""
-                                }
-                              >
-                                {material.stock} {material.unit}
-                                {material.minStock !== undefined && material.stock < material.minStock && 
-                                  " (Bajo inventario)"}
-                              </span>
-                            </div>
-                          )}
-                          {material.supplier && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Proveedor:</span>
-                              <span>
-                                {material.supplier}
-                                {material.supplierLink && (
-                                  <a 
-                                    href={material.supplierLink} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="ml-2 inline-block text-primary hover:text-primary/80"
-                                  >
-                                    <LinkIcon className="h-4 w-4" />
-                                  </a>
-                                )}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex justify-end gap-2 mt-4">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => openEditDialog(material)}
-                          >
-                            Editar
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            className="text-destructive"
-                            onClick={() => deleteMaterial(material.id, material.name)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                ) : (
-                  <div className="col-span-full text-center py-8">
-                    <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-medium">No hay materiales</h3>
-                    <p className="text-muted-foreground">
-                      {searchTerm || categoryFilter !== 'all' 
-                        ? 'No se encontraron materiales con esos filtros' 
-                        : 'Agrega tu primer material para comenzar'}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-      
-      {/* Diálogo para agregar/editar material */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>{isEditMode ? "Editar Material" : "Agregar Nuevo Material"}</DialogTitle>
-            <DialogDescription>
-              Completa los detalles del material. Los campos marcados con * son obligatorios.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(saveMaterial)} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nombre *</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="category"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Categoría *</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccionar categoría" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {categories.map(category => (
-                            <SelectItem key={category} value={category}>
-                              {category}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Descripción</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        {...field} 
-                        placeholder="Describe el material..." 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="unit"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Unidad de medida *</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccionar unidad" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {units.map(unit => (
-                            <SelectItem key={unit} value={unit}>
-                              {unit}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="price"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Precio ($) *</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Precio por unidad
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="supplier"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Proveedor</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Home Depot, Lowe's, etc." />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="supplierLink"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Enlace de compra</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="https://..." />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <FormField
-                  control={form.control}
-                  name="sku"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>SKU / Código</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="stock"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Stock actual</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="0"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="minStock"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Stock mínimo</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="0"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              {/* Sección para subir imagen del producto */}
-              <div className="border rounded-md p-4 space-y-4 mt-4">
-                <h3 className="font-medium">Imagen del producto</h3>
-                
-                {/* Previsualización de imagen */}
-                {imagePreview && (
-                  <div className="relative w-40 h-40 mx-auto mb-2">
-                    <img 
-                      src={imagePreview}
-                      alt="Vista previa"
-                      className="object-cover w-full h-full rounded-md border"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-destructive text-white"
-                      onClick={() => {
-                        setSelectedImage(null);
-                        setImagePreview(null);
-                      }}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
-                
-                {/* Selector de imagen */}
-                {!imagePreview && (
-                  <div className="flex items-center justify-center">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-40 h-40 border-dashed flex flex-col gap-2"
-                      onClick={() => imageInputRef.current?.click()}
-                    >
-                      <Upload className="h-8 w-8" />
-                      <span>Subir imagen</span>
-                    </Button>
-                    <input
-                      type="file"
-                      ref={imageInputRef}
-                      className="hidden"
-                      onChange={handleImageSelect}
-                      accept="image/*"
-                    />
-                  </div>
-                )}
-              </div>
-              
-              {/* Sección para archivos adjuntos */}
-              <div className="border rounded-md p-4 space-y-4 mt-4">
-                <h3 className="font-medium">Archivos adjuntos</h3>
-                
-                {/* Lista de archivos seleccionados */}
-                {selectedFiles.length > 0 && (
-                  <div className="space-y-2">
-                    {selectedFiles.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between p-2 border rounded-md">
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4" />
-                          <span className="text-sm truncate">{file.name}</span>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6"
-                          onClick={() => removeSelectedFile(index)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                
-                {/* Lista de archivos ya subidos (en edición) */}
-                {uploadedFileUrls.length > 0 && (
-                  <div className="space-y-2">
-                    {uploadedFileUrls.map((url, index) => {
-                      // Extraer nombre del archivo de la URL
-                      const fileName = url.split('/').pop() || `Archivo ${index + 1}`;
-                      const decodedFileName = decodeURIComponent(
-                        fileName.split('_').slice(1).join('_')
-                      );
-                      
-                      return (
-                        <div key={index} className="flex items-center justify-between p-2 border rounded-md">
-                          <div className="flex items-center gap-2">
-                            <FileText className="h-4 w-4" />
-                            <a 
-                              href={url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-sm truncate text-blue-600 hover:underline"
-                            >
-                              {decodedFileName}
-                            </a>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-                
-                {/* Botón para agregar archivos */}
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Agregar archivo
-                </Button>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  className="hidden"
-                  onChange={handleFileSelect}
-                  multiple
-                />
-              </div>
-              
-              <DialogFooter>
-                <Button type="submit" disabled={isUploading}>
-                  {isUploading ? (
-                    <>
-                      <span className="mr-2">Subiendo archivos...</span>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    </>
-                  ) : isEditMode ? "Actualizar Material" : "Guardar Material"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Diálogo para importar CSV */}
-      <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Importar Materiales</DialogTitle>
-            <DialogDescription>
-              Puedes importar múltiples materiales desde un archivo CSV. El formato debe incluir las columnas: nombre, categoria, unidad, precio.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div className="flex justify-center items-center border-2 border-dashed border-primary/20 rounded-md p-4">
-              <div className="text-center">
-                <FileSpreadsheet className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground mb-2">
-                  Copia y pega el contenido de tu archivo CSV aquí
-                </p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="mb-4"
-                  onClick={() => {
-                    // Descargar plantilla de ejemplo
-                    const template = 'nombre,categoria,unidad,precio,descripcion,proveedor,sku\nPoste de madera,Madera,pieza,15.99,Poste tratado de 4x4,Home Depot,HD-123\nPanel de vinilo,Cercas,pieza,45.25,Panel de vinilo blanco 6x8,Lowe\'s,LW-456';
-                    const blob = new Blob([template], { type: 'text/csv' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'plantilla_materiales.csv';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                  }}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Descargar plantilla
-                </Button>
-                <Textarea 
-                  className="min-h-[150px]" 
-                  placeholder="nombre,categoria,unidad,precio,descripcion,proveedor,sku..."
-                  value={csvContent}
-                  onChange={(e) => setCsvContent(e.target.value)}
-                />
-              </div>
-            </div>
-            
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsImportDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={importFromCsv}>
-                <Upload className="h-4 w-4 mr-2" />
-                Importar Materiales
-              </Button>
-            </DialogFooter>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Componente de importación con IA */}
-      <AIFileImport 
-        isOpen={isAIImportDialogOpen}
-        onOpenChange={setIsAIImportDialogOpen}
-        onMaterialsProcessed={handleAIProcessedMaterials}
-      />
-      
-      {/* Componente de importación desde QuickBooks */}
-      <QuickbooksImport
-        isOpen={isQuickbooksImportDialogOpen}
-        onOpenChange={setIsQuickbooksImportDialogOpen}
-        onMaterialsImported={handleQuickbooksImportedMaterials}
-      />
-    </div>
-  );
-}
