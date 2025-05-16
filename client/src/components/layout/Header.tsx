@@ -61,9 +61,15 @@ export default function Header({
               src="https://i.postimg.cc/yYSwtxhq/White-logo-no-background.png" 
               alt="Owl Fence"
               className="h-10 w-auto object-contain hidden md:block"
+              style={{ filter: 'brightness(1.1) contrast(1.1)' }}
               onError={(e) => {
-                e.currentTarget.classList.add('hidden');
-                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                console.log("Error cargando logo en Header, usando fallback");
+                e.currentTarget.src = "/White-logo-no-background-new.png";
+                // Si aún hay error, entonces usar el texto alternativo
+                e.currentTarget.onerror = () => {
+                  e.currentTarget.classList.add('hidden');
+                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                };
               }}
             />
             

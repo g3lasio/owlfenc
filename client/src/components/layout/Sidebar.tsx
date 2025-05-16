@@ -131,9 +131,14 @@ export default function Sidebar() {
               src="https://i.postimg.cc/yYSwtxhq/White-logo-no-background.png" 
               alt="Owl Fence"
               className="h-16 w-auto object-contain px-4"
-              style={{ maxWidth: '90%', margin: '0 auto' }}
+              style={{ 
+                maxWidth: '90%', 
+                margin: '0 auto',
+                filter: 'brightness(1.1) contrast(1.1)'
+              }}
               onError={(e) => {
-                e.currentTarget.src = "/White-logo-no-background.png";
+                console.log("Error cargando logo en Sidebar, usando fallback");
+                e.currentTarget.src = "/White-logo-no-background-new.png";
               }}
             />
           </div>
