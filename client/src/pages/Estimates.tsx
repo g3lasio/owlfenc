@@ -424,15 +424,18 @@ export default function Estimates() {
     setIsSaving(true);
     
     try {
+      // En este punto sabemos que estimate.client no es null
+      const client = estimate.client;
+      
       // In a real application, you would call an API endpoint to generate HTML
       // For now, we'll just prepare the structure for Firebase
       const estimateData = {
         title: estimate.title,
         clientId: estimate.clientId,
-        clientName: estimate.client.name,
-        clientEmail: estimate.client.email || '',
-        clientPhone: estimate.client.phone || '',
-        clientAddress: estimate.client.address || '',
+        clientName: client.name,
+        clientEmail: client.email || '',
+        clientPhone: client.phone || '',
+        clientAddress: client.address || '',
         items: estimate.items,
         subtotal: estimate.subtotal,
         total: estimate.total,
