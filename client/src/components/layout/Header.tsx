@@ -31,9 +31,9 @@ export default function Header({
 
   return (
     <header className="h-20 w-full flex items-center justify-between px-4 border-b border-border bg-card sticky top-0 z-50">
-      <div className="w-10">
+      <div className="w-10 flex items-center justify-center">
         <button
-          className="p-2 rounded-md hover:bg-accent/20 transition-all duration-300 z-[10000] relative overflow-hidden group md:hidden"
+          className="p-2 rounded-md hover:bg-accent/20 transition-all duration-300 z-[10000] relative overflow-visible group md:hidden bg-primary/5"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -45,7 +45,7 @@ export default function Header({
           type="button"
         >
           <i className="ri-menu-line text-2xl relative z-10 transition-transform duration-300 group-hover:rotate-180 text-primary"></i>
-          <div className="absolute inset-0 bg-primary/10 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
+          <div className="absolute inset-0 bg-primary/20 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-md"></div>
         </button>
       </div>
 
