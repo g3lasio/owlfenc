@@ -970,38 +970,28 @@ export default function Profile() {
             </div>
           </div>
 
-          {/* User Profile Card */}
+          {/* Personal Information Section */}
           <Card>
             <CardHeader>
-              <CardTitle>User Profile</CardTitle>
+              <CardTitle>Información Personal</CardTitle>
               <CardDescription>
-                Personal information about the user and their credentials.
+                Información personal y credenciales del usuario.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
-                  <Input
-                    id="username"
-                    name="username"
-                    value="john_contractor"
-                    disabled
-                    placeholder="Username"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="userEmail">Personal Email</Label>
+                  <Label htmlFor="userEmail">Correo Electrónico</Label>
                   <Input
                     id="userEmail"
                     name="userEmail"
                     type="email"
-                    placeholder="user@gmail.com"
+                    placeholder="usuario@gmail.com"
                     onChange={handleChange}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="userPhone">Personal Phone</Label>
+                  <Label htmlFor="userPhone">Teléfono</Label>
                   <Input
                     id="userPhone"
                     name="userPhone"
