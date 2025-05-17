@@ -510,7 +510,7 @@ export default function Projects() {
                     {project.fenceType}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap hidden sm:table-cell">
-                    {formatDate(project.createdAt.toDate())}
+                    {formatDate(project.createdAt)}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap hidden md:table-cell">
                     <Badge variant="outline" className={`${getProgressBadgeColor(project.projectProgress || "estimate_created")} bg-opacity-10 border-opacity-50 text-xs`}>
@@ -596,7 +596,7 @@ export default function Projects() {
                         <div className="space-y-2">
                           <div>
                             <span className="text-sm text-muted-foreground">Fecha de Creación:</span>
-                            <p>{formatDate(selectedProject.createdAt.toDate())}</p>
+                            <p>{formatDate(selectedProject.createdAt)}</p>
                           </div>
                           <div>
                             <span className="text-sm text-muted-foreground">Instalación Programada:</span>
