@@ -124,7 +124,7 @@ export default function Sidebar() {
     <aside className="hidden md:flex md:w-72 flex-col bg-card border-r border-border h-screen overflow-hidden">
       {/* Todo el contenido en un contenedor con scroll */}
       <div className="flex flex-col h-full overflow-y-auto">
-        {/* Sidebar Header con logo y perfil */}
+        {/* Sidebar Header solo con logo */}
         <div className="p-4 border-b border-border">
           <div className="flex items-center justify-center py-4">
             <img 
@@ -141,30 +141,6 @@ export default function Sidebar() {
                 e.currentTarget.src = "/White-logo-no-background-new.png";
               }}
             />
-          </div>
-
-          {/* Información del usuario */}
-          <div className="flex flex-col space-y-3">
-            <div className="flex items-center">
-              <Avatar>
-                <AvatarImage src={currentUser?.photoURL || undefined} alt={currentUser?.displayName || "Usuario"} />
-                <AvatarFallback className="bg-primary/20 text-primary">{getUserInitials()}</AvatarFallback>
-              </Avatar>
-              <div className="ml-3">
-                <div className="text-sm font-medium">{currentUser?.displayName || "Usuario"}</div>
-                <div className="text-xs text-muted-foreground">{currentUser?.email}</div>
-              </div>
-            </div>
-
-            {/* Botón de actualizar plan */}
-            <div className="mt-1">
-              <Link href="/subscription">
-                <Button size="sm" variant="outline" className="w-full">
-                  <i className="ri-vip-crown-line mr-2"></i>
-                  {t('general.viewPlan')}: {getCurrentPlanName()}
-                </Button>
-              </Link>
-            </div>
           </div>
         </div>
 
