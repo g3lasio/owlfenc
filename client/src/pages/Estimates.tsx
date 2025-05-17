@@ -1388,9 +1388,9 @@ export default function Estimates() {
                 <Table className="text-sm">
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="py-2">Nombre</TableHead>
+                      <TableHead className="py-2">Name</TableHead>
                       <TableHead className="py-2">Email</TableHead>
-                      <TableHead className="py-2">Teléfono</TableHead>
+                      <TableHead className="py-2">Phone</TableHead>
                       <TableHead className="py-2 w-[100px]"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1423,7 +1423,7 @@ export default function Estimates() {
           
           <DialogFooter className="pt-2">
             <Button variant="outline" size="sm" onClick={() => setShowClientSearchDialog(false)}>
-              Cancelar
+              Cancel
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1513,7 +1513,7 @@ export default function Estimates() {
                 <div>
                   <h3 className="font-medium text-sm">{tempSelectedMaterial.name}</h3>
                   <p className="text-xs text-muted-foreground">
-                    {tempSelectedMaterial.description || 'Sin descripción'}
+                    {tempSelectedMaterial.description || 'No description'}
                   </p>
                   <p className="text-xs mt-1">
                     <span className="font-medium">Precio:</span> {formatCurrency(tempSelectedMaterial.price)}
@@ -1550,7 +1550,7 @@ export default function Estimates() {
           
           <DialogFooter className="pt-2">
             <Button variant="outline" size="sm" onClick={() => setShowMaterialSearchDialog(false)}>
-              Cancelar
+              Cancel
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1651,7 +1651,7 @@ export default function Estimates() {
           
           <DialogFooter className="pt-3">
             <Button variant="outline" size="sm" onClick={() => setShowAddMaterialDialog(false)}>
-              Cancelar
+              Cancel
             </Button>
             <Button size="sm" onClick={handleSaveMaterial}>
               Save Material
