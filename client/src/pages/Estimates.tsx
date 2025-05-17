@@ -1174,10 +1174,10 @@ export default function Estimates() {
         <Card className="lg:col-span-2">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex justify-between items-center">
-              <span>Materiales y Servicios</span>
+              <span>Materials and Services</span>
               <Button size="sm" onClick={() => setShowMaterialSearchDialog(true)} className="h-8">
                 <PlusCircle className="h-4 w-4 mr-1" />
-                Agregar
+                Add
               </Button>
             </CardTitle>
           </CardHeader>
@@ -1273,10 +1273,10 @@ export default function Estimates() {
               </div>
             ) : (
               <div className="text-center py-6">
-                <p className="mb-2 text-muted-foreground text-sm">No hay materiales agregados</p>
+                <p className="mb-2 text-muted-foreground text-sm">No materials added</p>
                 <Button onClick={() => setShowMaterialSearchDialog(true)} size="sm">
                   <PlusCircle className="h-4 w-4 mr-1" />
-                  Agregar Material
+                  Add Material
                 </Button>
               </div>
             )}
@@ -1516,11 +1516,11 @@ export default function Estimates() {
                     {tempSelectedMaterial.description || 'No description'}
                   </p>
                   <p className="text-xs mt-1">
-                    <span className="font-medium">Precio:</span> {formatCurrency(tempSelectedMaterial.price)}
+                    <span className="font-medium">Price:</span> {formatCurrency(tempSelectedMaterial.price)}
                   </p>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Label htmlFor="quantity" className="whitespace-nowrap text-xs">Cantidad:</Label>
+                  <Label htmlFor="quantity" className="whitespace-nowrap text-xs">Quantity:</Label>
                   <Input
                     id="quantity"
                     type="number"
