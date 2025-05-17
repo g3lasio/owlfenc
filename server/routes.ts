@@ -94,6 +94,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerEstimateRoutes(app);
   registerPropertyRoutes(app);
   
+  // Registrar rutas de PDF
+  app.use('/api/pdf', pdfRoutes);
+  
   // Registrar rutas de contratos
   app.use('/api', contractRoutes);
   

@@ -17,19 +17,31 @@ export async function downloadHTMLAsPDF(html: string, fileName = 'documento'): P
     formData.append('html', html);
     formData.append('filename', `${fileName}.pdf`);
     
+    console.log('Enviando solicitud a /api/pdf/generate...');
+    
     // Llamar al endpoint del servidor para generar el PDF
     const response = await fetch('/api/pdf/generate', {
       method: 'POST',
       body: formData,
     });
     
+    console.log('Respuesta recibida, estado:', response.status);
+    
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`Error en el servidor: ${errorData.error || 'Error desconocido'}`);
+      let errorMessage = 'Error desconocido';
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorData.message || 'Error desconocido';
+      } catch (e) {
+        console.error('Error al procesar respuesta de error:', e);
+      }
+      throw new Error(`Error en el servidor: ${errorMessage}`);
     }
     
     // Obtener el blob del PDF
+    console.log('Obteniendo blob del PDF...');
     const blob = await response.blob();
+    console.log('Blob obtenido, tamaño:', blob.size);
     
     // Crear una URL para el blob
     const url = window.URL.createObjectURL(blob);
