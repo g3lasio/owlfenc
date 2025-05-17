@@ -979,12 +979,11 @@ export default function Estimates() {
   const handleDownloadPdf = async () => {
     try {
       if (!previewHtml) {
-        toast({
-          title: 'Error',
-          description: 'Primero debes generar una vista previa',
-          variant: 'destructive'
-        });
-        return;
+        // Si no hay HTML de vista previa, generarlo primero
+        await handleGeneratePreview();
+        if (!previewHtml) {
+          return; // Si aún no hay HTML, handleGeneratePreview ya mostró un toast de error
+        }
       }
       
       toast({
@@ -992,11 +991,15 @@ export default function Estimates() {
         description: 'El PDF del estimado se está generando.'
       });
       
+      console.log('Preparando descarga de PDF...');
+      
       // Importar la función de descarga de PDF
       const { downloadHTMLAsPDF } = await import('../lib/pdf');
       
       // Generar un nombre de archivo para el PDF
-      const fileName = `Estimado-${Date.now()}`;
+      const fileName = `Estimado-${estimate.client?.name.replace(/\s+/g, '-')}-${Date.now()}`;
+      
+      console.log('Llamando a la API para generar PDF...');
       
       // Llamar a la función para descargar el PDF
       await downloadHTMLAsPDF(previewHtml, fileName);
