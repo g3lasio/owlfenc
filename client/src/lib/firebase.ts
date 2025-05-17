@@ -297,9 +297,9 @@ export const updateProjectProgress = async (id: string, progress: string) => {
     if (devMode) {
       console.log("Actualizando progreso del proyecto con ID:", id, progress);
       
-      // Obtener los proyectos de localStorage o usar los de muestra
+      // Obtener los proyectos de localStorage
       const savedProjectsStr = localStorage.getItem('owlFenceProjects');
-      let allProjects = savedProjectsStr ? JSON.parse(savedProjectsStr) : [...sampleProjects];
+      let allProjects = savedProjectsStr ? JSON.parse(savedProjectsStr) : [];
       
       // Buscar el proyecto en la lista
       const projectIndex = allProjects.findIndex((p: any) => p.id === id);
