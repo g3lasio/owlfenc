@@ -90,6 +90,63 @@ function calculateCompletionTime(length: number): string {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Endpoint para mejorar descripciones con OpenAI
+  app.post("/api/enhance-description", async (req: Request, res: Response) => {
+    try {
+      const { description } = req.body;
+      
+      if (!description) {
+        return res.status(400).json({ error: "No se proporcionó una descripción" });
+      }
+      
+      const prompt = `
+      Eres Mervin, un asistente virtual especializado en proyectos de construcción, cercas y mejoras para el hogar.
+      
+      Por favor, mejora la siguiente descripción de proyecto para que sea más profesional, clara y detallada.
+      
+      Añade información técnica relevante si es necesario y organiza el texto para que sea fácil de entender.
+      
+      Mantén el mismo idioma (español) y usa un tono profesional pero accesible.
+      
+      Descripción original:
+      ${description || 'Sin descripción proporcionada.'}
+      `;
+      
+      const response = await openai.chat.completions.create({
+        model: GPT_MODEL,
+        messages: [
+          { role: "system", content: "Eres Mervin, un asistente especializado en mejoras de descripciones para proyectos de construcción." },
+          { role: "user", content: prompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 500,
+      });
+      
+      const enhancedDescription = response.choices[0].message.content || "No se pudo mejorar la descripción.";
+      
+      res.json({ enhancedDescription });
+    } catch (error: any) {
+      console.error("Error al mejorar descripción:", error);
+      res.status(500).json({ error: "Error al procesar la solicitud", message: error.message || "Error desconocido" });
+    }
+  });
+  
+  // Endpoint para verificar el estado de OpenAI
+  app.get("/api/openai-status", async (req: Request, res: Response) => {
+    try {
+      // Comprobación básica de OpenAI
+      await openai.chat.completions.create({
+        model: GPT_MODEL,
+        messages: [{ role: "user", content: "Hola" }],
+        max_tokens: 5
+      });
+      res.json({ available: true });
+    } catch (error: any) {
+      console.error("Error verificando OpenAI:", error);
+      res.json({ available: false, error: error.message || "Error desconocido" });
+    }
+  });
+  
   // Registrar rutas específicas
   registerPromptTemplateRoutes(app);
   registerEstimateRoutes(app);
