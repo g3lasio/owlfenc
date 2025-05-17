@@ -155,12 +155,28 @@ export default function Projects() {
     setFilteredProjects(result);
   }, [activeTab, selectedFenceType, searchTerm, projects]);
   
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('es-ES', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    }).format(date);
+  const formatDate = (date: any) => {
+    try {
+      // Si es un objeto con método toDate (formato Firebase Timestamp)
+      if (date && typeof date.toDate === 'function') {
+        return new Intl.DateTimeFormat('es-ES', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        }).format(date.toDate());
+      }
+      
+      // Si es una fecha válida o string de fecha
+      const dateObj = date instanceof Date ? date : new Date(date);
+      return new Intl.DateTimeFormat('es-ES', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      }).format(dateObj);
+    } catch (e) {
+      // Si hay algún error, devolver formato predeterminado
+      return "Fecha no disponible";
+    }
   };
   
   // Helper function to get badge color based on status
@@ -427,7 +443,7 @@ export default function Projects() {
                 </div>
                 <CardDescription className="flex items-center">
                   <i className="ri-calendar-line mr-1"></i>
-                  {formatDate(project.createdAt.toDate())}
+                  {formatDate(project.createdAt)}
                   {project.projectType && (
                     <span className="ml-2 bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full">
                       {project.projectType}
