@@ -120,20 +120,17 @@ export const saveProject = async (projectData: any) => {
   }
 };
 
-// Importamos datos de muestra para desarrollo
-import { sampleProjects } from "@/data/sampleProjects";
-
 export const getProjects = async (filters?: { status?: string, fenceType?: string }) => {
   try {
     // Verifica si estamos en modo de desarrollo
     if (devMode) {
-      console.log("Cargando proyectos de muestra");
+      console.log("Cargando proyectos almacenados localmente");
       
       // Intentamos recuperar primero del localStorage para persistencia entre refreshes
       const savedProjects = localStorage.getItem('owlFenceProjects');
       
       // Si hay proyectos guardados en localStorage, los usamos
-      let filteredProjects = savedProjects ? JSON.parse(savedProjects) : [...sampleProjects];
+      let filteredProjects = savedProjects ? JSON.parse(savedProjects) : [];
       
       // Aplicar filtros si se proporcionan
       if (filters) {
@@ -201,10 +198,10 @@ export const getProjectById = async (id: string) => {
     if (devMode) {
       console.log("Buscando proyecto con ID:", id);
       
-      // Intentamos recuperar primero del localStorage para persistencia
+      // Intentamos recuperar del localStorage
       const savedProjects = localStorage.getItem('owlFenceProjects');
       
-      // Si hay proyectos guardados en localStorage, buscamos ahí primero
+      // Si hay proyectos guardados en localStorage, buscamos ahí
       if (savedProjects) {
         const projects = JSON.parse(savedProjects);
         const project = projects.find((p: any) => p.id === id);
@@ -213,14 +210,8 @@ export const getProjectById = async (id: string) => {
         }
       }
       
-      // Si no lo encontramos en localStorage, buscamos en sampleProjects
-      const project = sampleProjects.find(p => p.id === id);
-      
-      if (project) {
-        return project;
-      } else {
-        throw new Error("Project not found");
-      }
+      // Si no encontramos el proyecto
+      throw new Error("Project not found");
     } else {
       // Código para Firebase en producción
       const docRef = doc(db, "projects", id);
@@ -243,9 +234,9 @@ export const updateProject = async (id: string, projectData: any) => {
     if (devMode) {
       console.log("Actualizando proyecto con ID:", id, projectData);
       
-      // Obtener los proyectos de localStorage o usar los de muestra
+      // Obtener los proyectos de localStorage
       const savedProjectsStr = localStorage.getItem('owlFenceProjects');
-      let allProjects = savedProjectsStr ? JSON.parse(savedProjectsStr) : [...sampleProjects];
+      let allProjects = savedProjectsStr ? JSON.parse(savedProjectsStr) : [];
       
       // Buscar el proyecto en la lista
       const projectIndex = allProjects.findIndex((p: any) => p.id === id);
