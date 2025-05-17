@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { MervinAssistant } from '@/components/ui/mervin-assistant';
 import { 
   Table, 
   TableBody, 
@@ -1138,7 +1139,14 @@ export default function Estimates() {
         {/* Project details and description */}
         <Card className="lg:col-span-2">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Detalles y Descripción del Proyecto</CardTitle>
+            <CardTitle className="text-base flex justify-between items-center">
+              <span>Detalles y Descripción del Proyecto</span>
+              <MervinAssistant 
+                originalText={estimate.notes}
+                onTextEnhanced={(enhancedText) => setEstimate(prev => ({ ...prev, notes: enhancedText }))}
+                className="ml-2"
+              />
+            </CardTitle>
           </CardHeader>
           <CardContent className="pb-4">
             <div>
