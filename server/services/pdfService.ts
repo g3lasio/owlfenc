@@ -45,18 +45,27 @@ export async function generatePDF(
     };
     
     // Lanzar navegador headless
+    console.log('Lanzando navegador Puppeteer...');
     const browser = await puppeteer.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+      args: [
+        '--no-sandbox', 
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu'
+      ]
     });
     
     // Crear nueva página
+    console.log('Navegador iniciado, creando página...');
     const page = await browser.newPage();
     
     // Establecer contenido HTML
+    console.log('Configurando contenido HTML...');
     await page.setContent(html, { waitUntil: 'networkidle0' });
     
     // Generar PDF
+    console.log('Generando PDF...');
     const pdfBuffer = await page.pdf({
       format: pdfOptions.format as any,
       landscape: pdfOptions.landscape,

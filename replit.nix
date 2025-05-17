@@ -1,5 +1,6 @@
 {pkgs}: {
   deps = [
+    pkgs.chromium
     pkgs.librsvg
     pkgs.giflib
     pkgs.libjpeg
