@@ -1560,44 +1560,44 @@ export default function Estimates() {
       <Dialog open={showAddMaterialDialog} onOpenChange={setShowAddMaterialDialog}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader className="pb-3">
-            <DialogTitle className="text-lg">Nuevo Material</DialogTitle>
+            <DialogTitle className="text-lg">New Material</DialogTitle>
             <DialogDescription className="text-sm">
-              Agrega un nuevo material a tu inventario.
+              Add a new material to your inventory.
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-3">
             <div>
-              <Label htmlFor="material-name" className="text-xs">Nombre*</Label>
+              <Label htmlFor="material-name" className="text-xs">Name*</Label>
               <Input 
                 id="material-name" 
                 value={newMaterial.name} 
                 onChange={(e) => setNewMaterial(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Nombre del material"
+                placeholder="Material name"
                 required
                 className="h-9"
               />
             </div>
             
             <div>
-              <Label htmlFor="material-category" className="text-xs">Categoría*</Label>
+              <Label htmlFor="material-category" className="text-xs">Category*</Label>
               <Input 
                 id="material-category" 
                 value={newMaterial.category} 
                 onChange={(e) => setNewMaterial(prev => ({ ...prev, category: e.target.value }))}
-                placeholder="Categoría del material"
+                placeholder="Material category"
                 required
                 className="h-9"
               />
             </div>
             
             <div>
-              <Label htmlFor="material-description" className="text-xs">Descripción</Label>
+              <Label htmlFor="material-description" className="text-xs">Description</Label>
               <Textarea 
                 id="material-description" 
                 value={newMaterial.description} 
                 onChange={(e) => setNewMaterial(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Descripción detallada"
+                placeholder="Detailed description"
                 className="text-sm resize-none"
                 rows={2}
               />
@@ -1605,7 +1605,7 @@ export default function Estimates() {
             
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="material-price" className="text-xs">Precio*</Label>
+                <Label htmlFor="material-price" className="text-xs">Price*</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-2">
                     <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -1624,25 +1624,25 @@ export default function Estimates() {
               </div>
               
               <div>
-                <Label htmlFor="material-unit" className="text-xs">Unidad*</Label>
+                <Label htmlFor="material-unit" className="text-xs">Unit*</Label>
                 <Select 
                   value={newMaterial.unit} 
                   onValueChange={(value: string) => setNewMaterial(prev => ({ ...prev, unit: value }))}
                 >
                   <SelectTrigger id="material-unit" className="h-9">
-                    <SelectValue placeholder="Seleccionar" />
+                    <SelectValue placeholder="Select" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pieza">Pieza</SelectItem>
-                    <SelectItem value="metro">Metro</SelectItem>
-                    <SelectItem value="metro2">Metro²</SelectItem>
-                    <SelectItem value="metro3">Metro³</SelectItem>
-                    <SelectItem value="kg">Kilogramo</SelectItem>
-                    <SelectItem value="galón">Galón</SelectItem>
-                    <SelectItem value="litro">Litro</SelectItem>
-                    <SelectItem value="bolsa">Bolsa</SelectItem>
-                    <SelectItem value="caja">Caja</SelectItem>
-                    <SelectItem value="juego">Juego</SelectItem>
+                    <SelectItem value="pieza">Piece</SelectItem>
+                    <SelectItem value="metro">Meter</SelectItem>
+                    <SelectItem value="metro2">Square Meter</SelectItem>
+                    <SelectItem value="metro3">Cubic Meter</SelectItem>
+                    <SelectItem value="kg">Kilogram</SelectItem>
+                    <SelectItem value="galón">Gallon</SelectItem>
+                    <SelectItem value="litro">Liter</SelectItem>
+                    <SelectItem value="bolsa">Bag</SelectItem>
+                    <SelectItem value="caja">Box</SelectItem>
+                    <SelectItem value="juego">Set</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
