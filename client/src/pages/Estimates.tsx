@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { useProfile } from '@/hooks/use-profile';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -107,6 +108,7 @@ interface Estimate {
 export default function Estimates() {
   const { currentUser } = useAuth();
   const { toast } = useToast();
+  const { profile } = useProfile();
   
   // States for clients
   const [clients, setClients] = useState<Client[]>([]);
@@ -559,10 +561,10 @@ export default function Estimates() {
       <div class="estimate-preview">
         <div class="estimate-header">
           <div class="company-info">
-            <h1>Owl Fence</h1>
-            <p>123 Fence Avenue, San Diego, CA 92101</p>
-            <p>info@owlfence.com | (555) 123-4567</p>
-            <p>www.owlfence.com</p>
+            <h1>${profile?.companyName || 'Owl Fence'}</h1>
+            <p>${profile?.address || '123 Fence Avenue'}, ${profile?.city || 'San Diego'}, ${profile?.state || 'CA'} ${profile?.zipCode || '92101'}</p>
+            <p>${profile?.email || 'info@owlfence.com'} | ${profile?.phone || profile?.mobilePhone || '(555) 123-4567'}</p>
+            <p>${profile?.website || 'www.owlfence.com'}</p>
           </div>
           <div class="estimate-title">
             <h2>ESTIMADO</h2>
@@ -868,10 +870,10 @@ export default function Estimates() {
       <div class="estimate-preview">
         <div class="estimate-header">
           <div class="company-info">
-            <h1>Owl Fence</h1>
-            <p>123 Fence Avenue, San Diego, CA 92101</p>
-            <p>info@owlfence.com | (555) 123-4567</p>
-            <p>www.owlfence.com</p>
+            <h1>${profile?.companyName || 'Owl Fence'}</h1>
+            <p>${profile?.address || '123 Fence Avenue'}, ${profile?.city || 'San Diego'}, ${profile?.state || 'CA'} ${profile?.zipCode || '92101'}</p>
+            <p>${profile?.email || 'info@owlfence.com'} | ${profile?.phone || profile?.mobilePhone || '(555) 123-4567'}</p>
+            <p>${profile?.website || 'www.owlfence.com'}</p>
           </div>
           <div class="estimate-title">
             <h2>ESTIMADO</h2>
@@ -1064,19 +1066,19 @@ export default function Estimates() {
           </CardHeader>
           <CardContent className="pb-4">
             <div className="grid grid-cols-1 gap-1">
-              <h3 className="font-medium text-sm">Owl Fence</h3>
+              <h3 className="font-medium text-sm">{profile?.companyName || "Owl Fence"}</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
                 <p className="text-xs text-muted-foreground">
-                  <span className="font-medium">Email:</span> info@owlfence.com
+                  <span className="font-medium">Email:</span> {profile?.email || "info@owlfence.com"}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  <span className="font-medium">Teléfono:</span> (555) 123-4567
+                  <span className="font-medium">Teléfono:</span> {profile?.phone || profile?.mobilePhone || "(555) 123-4567"}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  <span className="font-medium">Dirección:</span> 123 Fence Avenue
+                  <span className="font-medium">Dirección:</span> {profile?.address || "123 Fence Avenue"}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  <span className="font-medium">Website:</span> www.owlfence.com
+                  <span className="font-medium">Website:</span> {profile?.website || "www.owlfence.com"}
                 </p>
               </div>
             </div>
