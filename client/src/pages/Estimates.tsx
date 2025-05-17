@@ -1308,7 +1308,7 @@ export default function Estimates() {
                   className="h-9"
                 >
                   <ArrowRight className="mr-1 h-4 w-4" />
-                  Vista previa
+                  Preview
                 </Button>
                 
                 <Button 
@@ -1355,7 +1355,7 @@ export default function Estimates() {
                   ) : (
                     <>
                       <CalendarCheck className="mr-1 h-4 w-4" />
-                      Guardar
+                      Save
                     </>
                   )}
                 </Button>
@@ -1654,7 +1654,7 @@ export default function Estimates() {
               Cancelar
             </Button>
             <Button size="sm" onClick={handleSaveMaterial}>
-              Guardar Material
+              Save Material
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1723,7 +1723,7 @@ export default function Estimates() {
                   }
                 }}
               >
-                {isEditingPreview ? "Guardar Cambios" : "Editar Texto"}
+                {isEditingPreview ? "Save Changes" : "Edit Text"}
               </Button>
             </div>
             
@@ -1735,7 +1735,7 @@ export default function Estimates() {
                 setShowPreviewDialog(false);
               }}
             >
-              Cerrar
+              Close
             </Button>
             <Button 
               size="sm" 
@@ -1743,7 +1743,7 @@ export default function Estimates() {
               disabled={isEditingPreview}
             >
               <FileDown className="mr-1 h-4 w-4" />
-              Descargar PDF
+              Download PDF
             </Button>
           </DialogFooter>
         </DialogContent>
