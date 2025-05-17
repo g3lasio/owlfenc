@@ -152,6 +152,8 @@ export default function Estimates() {
   const [tempQuantity, setTempQuantity] = useState<number>(1);
   const [tempSelectedMaterial, setTempSelectedMaterial] = useState<Material | null>(null);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [editableHtml, setEditableHtml] = useState<string | null>(null);
+  const [isEditingPreview, setIsEditingPreview] = useState(false);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   
   // Load clients and materials when component mounts
