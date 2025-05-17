@@ -362,25 +362,6 @@ export default function Profile() {
                   </svg>
                   El Mero Patrón
                 </div>
-                <div className="text-center mt-2">
-                  <Link to="/subscription" className="text-xs text-primary hover:underline">
-                    Cambiar plan
-                  </Link>
-                </div>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-              <div className="bg-accent/20 rounded-md p-3 text-center">
-                <p className="text-sm text-muted-foreground">Proyectos Activos</p>
-                <p className="text-xl font-semibold">12</p>
-              </div>
-              <div className="bg-accent/20 rounded-md p-3 text-center">
-                <p className="text-sm text-muted-foreground">Clientes</p>
-                <p className="text-xl font-semibold">47</p>
-              </div>
-              <div className="bg-accent/20 rounded-md p-3 text-center">
-                <p className="text-sm text-muted-foreground">Vence</p>
-                <p className="text-xl font-semibold">15 Mayo 2025</p>
               </div>
             </div>
           </div>
