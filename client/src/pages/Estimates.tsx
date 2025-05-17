@@ -106,6 +106,8 @@ interface Estimate {
 }
 
 export default function Estimates() {
+  // Set English as the default language
+  const defaultLanguage = 'en';
   const { currentUser } = useAuth();
   const { toast } = useToast();
   const { profile } = useProfile();
@@ -133,7 +135,7 @@ export default function Estimates() {
   
   // States for the estimate
   const [estimate, setEstimate] = useState<Estimate>({
-    title: 'Nuevo Estimado',
+    title: 'New Estimate',
     clientId: '',
     client: null,
     items: [],
@@ -721,8 +723,8 @@ export default function Estimates() {
   const handleGeneratePreview = async () => {
     if (!estimate.client) {
       toast({
-        title: 'Datos incompletos',
-        description: 'Por favor, selecciona un cliente antes de generar la vista previa.',
+        title: 'Incomplete Data',
+        description: 'Please select a client before generating the preview.',
         variant: 'destructive'
       });
       return;
@@ -730,8 +732,8 @@ export default function Estimates() {
     
     if (estimate.items.length === 0) {
       toast({
-        title: 'Sin materiales',
-        description: 'Por favor, agrega al menos un material al estimado.',
+        title: 'No Materials',
+        description: 'Please add at least one material to the estimate.',
         variant: 'destructive'
       });
       return;
@@ -1662,7 +1664,7 @@ export default function Estimates() {
       <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
         <DialogContent className="sm:max-w-[800px] h-[85vh] flex flex-col">
           <DialogHeader className="pb-3 shrink-0">
-            <DialogTitle className="text-lg">Vista Previa del Estimado</DialogTitle>
+            <DialogTitle className="text-lg">Estimate Preview</DialogTitle>
           </DialogHeader>
           
           <div className="flex-grow overflow-y-auto mb-4">
