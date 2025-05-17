@@ -1095,10 +1095,10 @@ export default function Estimates() {
         <Card className="lg:col-span-2">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex justify-between items-center">
-              <span>Información del Cliente</span>
+              <span>Client Information</span>
               <Button variant="ghost" size="sm" onClick={() => setShowClientSearchDialog(true)} className="h-8">
                 <Search className="h-4 w-4 mr-1" />
-                Buscar
+                Search
               </Button>
             </CardTitle>
           </CardHeader>
@@ -1369,15 +1369,15 @@ export default function Estimates() {
       <Dialog open={showClientSearchDialog} onOpenChange={setShowClientSearchDialog}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader className="pb-3">
-            <DialogTitle className="text-lg">Seleccionar Cliente</DialogTitle>
+            <DialogTitle className="text-lg">Select Client</DialogTitle>
             <DialogDescription className="text-sm">
-              Busca y selecciona un cliente para el estimado.
+              Search and select a client for the estimate.
             </DialogDescription>
           </DialogHeader>
           
           <div>
             <Input
-              placeholder="Buscar por nombre, email o teléfono..."
+              placeholder="Search by name, email or phone..."
               value={searchClientTerm}
               onChange={(e) => setSearchClientTerm(e.target.value)}
               className="mb-3"
@@ -1433,16 +1433,16 @@ export default function Estimates() {
       <Dialog open={showMaterialSearchDialog} onOpenChange={setShowMaterialSearchDialog}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader className="pb-3">
-            <DialogTitle className="text-lg">Seleccionar Material</DialogTitle>
+            <DialogTitle className="text-lg">Select Material</DialogTitle>
             <DialogDescription className="text-sm">
-              Busca un material existente o agrega uno nuevo.
+              Search for an existing material or add a new one.
             </DialogDescription>
           </DialogHeader>
           
           <div>
             <div className="flex justify-between items-center mb-3">
               <Input
-                placeholder="Buscar material..."
+                placeholder="Search materials..."
                 value={searchMaterialTerm}
                 onChange={(e) => setSearchMaterialTerm(e.target.value)}
                 className="flex-1 mr-2"
