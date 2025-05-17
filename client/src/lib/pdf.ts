@@ -68,7 +68,7 @@ export async function downloadHTMLAsPDF(html: string, fileName = 'documento'): P
 
 /**
  * Convierte HTML a PDF usando jsPDF (implementación client-side)
- * Esta versión es una alternativa que se ejecuta completamente en el cliente
+ * Esta versión se ejecuta completamente en el cliente
  * sin necesidad de llamar al servidor
  * 
  * @param html El contenido HTML a convertir a PDF
@@ -76,10 +76,71 @@ export async function downloadHTMLAsPDF(html: string, fileName = 'documento'): P
  */
 export async function generateClientSidePDF(html: string, fileName = 'documento'): Promise<void> {
   try {
-    // Esta función requeriría la importación de jsPDF y html2canvas
-    // que actualmente no están instalados en el proyecto
-    console.warn('generateClientSidePDF: Esta función no está implementada aún');
-    throw new Error('Función no implementada');
+    console.log('Iniciando generación de PDF en el cliente...');
+    
+    // Importar jsPDF y html2canvas dinámicamente
+    const [jsPDFModule, html2canvasModule] = await Promise.all([
+      import('jspdf'),
+      import('html2canvas')
+    ]);
+    
+    // Crear instancias
+    const jsPDF = jsPDFModule.default;
+    const html2canvas = html2canvasModule.default;
+    
+    // Crear un contenedor temporal para renderizar el HTML
+    const container = document.createElement('div');
+    container.innerHTML = html;
+    container.style.position = 'absolute';
+    container.style.left = '-9999px';
+    container.style.top = '0';
+    container.style.width = '794px'; // ~A4
+    document.body.appendChild(container);
+
+    // Crear una instancia de jsPDF
+    const pdf = new jsPDF('p', 'pt', 'a4');
+    
+    console.log('Renderizando HTML...');
+    
+    // Convertir el HTML a canvas
+    const canvas = await html2canvas(container, {
+      scale: 2, // Mayor calidad
+      useCORS: true,
+      logging: false,
+      allowTaint: true,
+      backgroundColor: '#FFFFFF'
+    });
+    
+    console.log('HTML renderizado, generando PDF...');
+    
+    // Obtener la imagen del canvas
+    const imgData = canvas.toDataURL('image/png');
+    
+    // Establecer el tamaño de página
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    
+    // Calcular la altura proporcional 
+    const imgWidth = canvas.width;
+    const imgHeight = canvas.height;
+    const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+    const imgX = (pdfWidth - imgWidth * ratio) / 2;
+    
+    // Añadir la imagen al PDF
+    pdf.addImage(imgData, 'PNG', imgX, 0, imgWidth * ratio, imgHeight * ratio);
+    
+    // Si el contenido es más alto que una página, agregar más páginas
+    let remainingHeight = imgHeight * ratio;
+    const pageHeight = pdfHeight;
+    
+    // Eliminar el contenedor temporal
+    document.body.removeChild(container);
+    
+    // Guardar el PDF
+    console.log('Descargando PDF...');
+    pdf.save(`${fileName}.pdf`);
+    
+    console.log('PDF generado y descargado con éxito');
   } catch (error) {
     console.error('Error al generar PDF en cliente:', error);
     throw error;
