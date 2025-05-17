@@ -10,7 +10,8 @@ import {
   where,
   orderBy,
   Timestamp,
-  updateDoc
+  updateDoc,
+  limit
 } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import {
@@ -455,6 +456,76 @@ export const uploadFile = async (file: File, path: string): Promise<string> => {
     return downloadURL;
   } catch (error) {
     console.error("Error al subir archivo:", error);
+    throw error;
+  }
+};
+
+// **************************************
+// FUNCIONES DE MANEJO DE PERFIL DE USUARIO
+// **************************************
+
+// Obtener perfil de usuario
+export const getUserProfile = async (userId: string) => {
+  try {
+    const q = query(
+      collection(db, "userProfiles"),
+      where("userId", "==", userId),
+      limit(1)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    
+    if (querySnapshot.empty) {
+      return null;
+    }
+    
+    const doc = querySnapshot.docs[0];
+    return { 
+      id: doc.id, 
+      ...doc.data() 
+    };
+  } catch (error) {
+    console.error("Error al obtener perfil de usuario:", error);
+    throw error;
+  }
+};
+
+// Guardar o actualizar perfil de usuario
+export const saveUserProfile = async (userId: string, profileData: any) => {
+  try {
+    // Primero buscar si ya existe un perfil para este usuario
+    const q = query(
+      collection(db, "userProfiles"),
+      where("userId", "==", userId),
+      limit(1)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    
+    if (querySnapshot.empty) {
+      // No existe, crear nuevo perfil
+      const profileWithMeta = {
+        ...profileData,
+        userId,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now()
+      };
+      
+      const docRef = await addDoc(collection(db, "userProfiles"), profileWithMeta);
+      return { id: docRef.id, ...profileWithMeta };
+    } else {
+      // Ya existe, actualizar
+      const docRef = doc(db, "userProfiles", querySnapshot.docs[0].id);
+      const updatedData = {
+        ...profileData,
+        updatedAt: Timestamp.now()
+      };
+      
+      await updateDoc(docRef, updatedData);
+      return { id: docRef.id, ...updatedData };
+    }
+  } catch (error) {
+    console.error("Error al guardar perfil de usuario:", error);
     throw error;
   }
 };

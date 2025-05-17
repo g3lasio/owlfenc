@@ -27,37 +27,13 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
-type SocialMediaLinks = {
-  facebook?: string;
-  instagram?: string;
-  linkedin?: string;
-  [key: string]: string | undefined;
-};
+type SocialMediaLinks = Record<string, string>;
 
-interface CompanyInfoType {
-  profilePhoto?: string;
-  companyName: string;
-  ownerName: string;
-  role: string;
-  email: string;
-  phone: string;
-  mobilePhone: string;
-  address: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  license: string;
-  insurancePolicy: string;
-  ein: string;
-  businessType: string;
-  yearEstablished: string;
-  website: string;
-  description: string;
-  specialties: string[];
-  socialMedia: SocialMediaLinks;
-  documents: Record<string, string>;
-  logo: string;
-}
+// Usamos el mismo tipo UserProfile del hook para evitar incompatibilidades
+import { UserProfile } from "@/hooks/use-profile";
+
+// Alias de CompanyInfoType a UserProfile para mantener compatibilidad con el código existente
+type CompanyInfoType = UserProfile;
 
 export default function Profile() {
   const { profile, isLoading: isLoadingProfile, error: profileError, updateProfile } = useProfile();
@@ -147,11 +123,14 @@ export default function Profile() {
   };
 
   const handleSocialMediaChange = (platform: string, value: string) => {
+    // Aseguramos que nunca se guarde un valor undefined
+    const safeValue = value || "";
+    
     setCompanyInfo(prev => ({
       ...prev,
       socialMedia: {
         ...prev.socialMedia,
-        [platform]: value
+        [platform]: safeValue
       }
     }));
   };
