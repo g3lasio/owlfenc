@@ -93,12 +93,32 @@ export default function Profile() {
   const { toast } = useToast();
 
   useEffect(() => {
-    loadCompanyProfile();
-  }, []);
+    if (profile) {
+      setCompanyInfo(prev => ({
+        ...prev,
+        ...profile
+      }));
+    }
+  }, [profile]);
+  
+  // Si no hay perfil en el hook useProfile, intentamos cargar directamente
+  useEffect(() => {
+    if (!profile && !isLoadingProfile) {
+      loadCompanyProfile();
+    }
+  }, [profile, isLoadingProfile]);
 
   const loadCompanyProfile = async () => {
     try {
-      const response = await apiRequest("GET", "/api/user-profile");
+      const response = await fetch("/api/user-profile", {
+        method: "GET",
+        credentials: "include"
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+      
       const data = await response.json();
       setCompanyInfo(data);
     } catch (error) {
@@ -189,7 +209,25 @@ export default function Profile() {
   const handleSave = async () => {
     setLoading(true);
     try {
-      await updateProfile(companyInfo);
+      // Primero intentamos usar la función del hook
+      if (updateProfile) {
+        await updateProfile(companyInfo);
+      } else {
+        // Si no está disponible, hacemos la petición directamente
+        const response = await fetch("/api/user-profile", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify(companyInfo),
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+      }
+      
       toast({
         title: "Perfil actualizado",
         description: "La información de la compañía ha sido guardada exitosamente.",
