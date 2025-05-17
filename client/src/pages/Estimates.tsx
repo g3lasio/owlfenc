@@ -993,16 +993,16 @@ export default function Estimates() {
       
       console.log('Preparando descarga de PDF...');
       
-      // Importar la función de descarga de PDF
-      const { downloadHTMLAsPDF } = await import('../lib/pdf');
+      // Importar la función de generación client-side de PDF
+      const { generateClientSidePDF } = await import('../lib/pdf');
       
       // Generar un nombre de archivo para el PDF
-      const fileName = `Estimado-${estimate.client?.name.replace(/\s+/g, '-')}-${Date.now()}`;
+      const fileName = `Estimado-${estimate.client?.name?.replace(/\s+/g, '-') || 'Sin-Cliente'}-${Date.now()}`;
       
-      console.log('Llamando a la API para generar PDF...');
+      console.log('Generando PDF en el navegador...');
       
-      // Llamar a la función para descargar el PDF
-      await downloadHTMLAsPDF(previewHtml, fileName);
+      // Llamar a la función para generar y descargar el PDF en el cliente
+      await generateClientSidePDF(previewHtml, fileName);
       
       toast({
         title: 'PDF generado',
@@ -1012,7 +1012,7 @@ export default function Estimates() {
       console.error('Error descargando PDF:', error);
       toast({
         title: 'Error',
-        description: 'No se pudo descargar el PDF. Por favor, inténtalo de nuevo.',
+        description: 'No se pudo descargar el PDF. ' + (error instanceof Error ? error.message : 'Por favor, inténtalo de nuevo.'),
         variant: 'destructive'
       });
     }
