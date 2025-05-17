@@ -62,12 +62,6 @@ export const navigationGroups: NavigationGroup[] = [
         icon: "ri-archive-line"
       },
       {
-        id: "estimates",
-        label: "navigation.estimates",
-        path: "/estimates",
-        icon: "ri-file-list-3-line"
-      },
-      {
         id: "history",
         label: "navigation.history",
         path: "/history",
@@ -78,6 +72,12 @@ export const navigationGroups: NavigationGroup[] = [
   {
     title: "navigation.features",
     items: [
+      {
+        id: "estimates",
+        label: "navigation.estimateGenerator",
+        path: "/estimates",
+        icon: "ri-file-list-3-line"
+      },
       {
         id: "property-verifier",
         label: "navigation.propertyVerification",

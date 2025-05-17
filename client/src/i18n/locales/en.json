@@ -63,5 +63,7 @@
     "passwordsMatch": "Passwords must match",
     "success": "Successful!",
     "redirecting": "Redirecting to dashboard..."
-  }
+  },
+ "navigation.estimates": "Estimates",
+    "navigation.estimateGenerator": "Estimate Generator"
 }
