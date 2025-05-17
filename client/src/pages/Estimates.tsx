@@ -737,6 +737,8 @@ export default function Estimates() {
       return;
     }
     
+    setIsEditingPreview(false); // Aseguramos que comenzamos en modo vista
+    
     // En este punto sabemos que estimate.client no es null
     const client = estimate.client;
     
@@ -1664,19 +1666,80 @@ export default function Estimates() {
           </DialogHeader>
           
           <div className="flex-grow overflow-y-auto mb-4">
-            {previewHtml && (
-              <div 
-                className="estimate-preview border rounded-md p-4 bg-white"
-                dangerouslySetInnerHTML={{ __html: previewHtml as string }}
-              />
+            {isEditingPreview ? (
+              <div className="border rounded-md bg-white">
+                <textarea 
+                  className="w-full h-full min-h-[500px] p-4 font-sans text-sm resize-none focus:outline-none focus:ring-1 focus:ring-primary"
+                  value={editableHtml || ""}
+                  onChange={(e) => setEditableHtml(e.target.value)}
+                  style={{ fontFamily: 'Arial, sans-serif' }}
+                />
+              </div>
+            ) : (
+              previewHtml && (
+                <div 
+                  className="estimate-preview border rounded-md p-4 bg-white"
+                  dangerouslySetInnerHTML={{ __html: previewHtml as string }}
+                />
+              )
             )}
           </div>
           
           <DialogFooter className="pt-3 mt-auto shrink-0 border-t">
-            <Button variant="outline" size="sm" onClick={() => setShowPreviewDialog(false)}>
+            <div className="flex items-center mr-auto">
+              <Button 
+                variant={isEditingPreview ? "default" : "outline"} 
+                size="sm" 
+                onClick={() => {
+                  if (isEditingPreview) {
+                    // Guardar cambios y salir del modo edición
+                    // Creamos una versión HTML básica con el texto editado
+                    const formattedHtml = `
+                      <div class="estimate-preview">
+                        <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.5;">
+                          ${editableHtml?.split('\n').map(line => `<p>${line}</p>`).join('') || ''}
+                        </div>
+                      </div>
+                    `;
+                    setPreviewHtml(formattedHtml);
+                    setIsEditingPreview(false);
+                  } else {
+                    // Entrar en modo edición
+                    // Extraemos el texto del HTML, preservando los saltos de línea
+                    const plainText = previewHtml?.replace(/<p[^>]*>/gi, '')
+                                                 .replace(/<\/p>/gi, '\n')
+                                                 .replace(/<br\s*\/?>/gi, '\n')
+                                                 .replace(/<[^>]*>/g, '')
+                                                 .replace(/&nbsp;/g, ' ')
+                                                 .replace(/&amp;/g, '&')
+                                                 .replace(/&lt;/g, '<')
+                                                 .replace(/&gt;/g, '>')
+                                                 .replace(/&quot;/g, '"')
+                                                 .trim() || "";
+                    setEditableHtml(plainText);
+                    setIsEditingPreview(true);
+                  }
+                }}
+              >
+                {isEditingPreview ? "Guardar Cambios" : "Editar Texto"}
+              </Button>
+            </div>
+            
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => {
+                setIsEditingPreview(false);
+                setShowPreviewDialog(false);
+              }}
+            >
               Cerrar
             </Button>
-            <Button size="sm" onClick={handleDownloadPdf}>
+            <Button 
+              size="sm" 
+              onClick={handleDownloadPdf}
+              disabled={isEditingPreview}
+            >
               <FileDown className="mr-1 h-4 w-4" />
               Descargar PDF
             </Button>
