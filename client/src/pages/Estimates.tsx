@@ -1014,14 +1014,14 @@ export default function Estimates() {
       await generateClientSidePDF(previewHtml, fileName);
       
       toast({
-        title: 'PDF generado',
-        description: 'El PDF del estimado se ha descargado correctamente.'
+        title: 'PDF Generated',
+        description: 'The estimate PDF has been successfully downloaded.'
       });
     } catch (error) {
       console.error('Error descargando PDF:', error);
       toast({
         title: 'Error',
-        description: 'No se pudo descargar el PDF. ' + (error instanceof Error ? error.message : 'Por favor, inténtalo de nuevo.'),
+        description: 'Could not download the PDF. ' + (error instanceof Error ? error.message : 'Please try again.'),
         variant: 'destructive'
       });
     }
@@ -1037,7 +1037,7 @@ export default function Estimates() {
         {/* Estimate Information */}
         <Card className="lg:col-span-1">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Información del Estimado</CardTitle>
+            <CardTitle className="text-base">Estimate Information</CardTitle>
           </CardHeader>
           <CardContent className="pb-4">
             <div className="space-y-3">
@@ -1068,7 +1068,7 @@ export default function Estimates() {
         {/* Contractor Information */}
         <Card className="lg:col-span-1">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Información del Contratista</CardTitle>
+            <CardTitle className="text-base">Contractor Information</CardTitle>
           </CardHeader>
           <CardContent className="pb-4">
             <div className="grid grid-cols-1 gap-1">
@@ -1331,7 +1331,7 @@ export default function Estimates() {
                   {isSendingEmail ? (
                     <>
                       <RotateCcw className="mr-1 h-4 w-4 animate-spin" />
-                      Enviando...
+                      Sending...
                     </>
                   ) : (
                     <>
