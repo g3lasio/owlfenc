@@ -1347,7 +1347,11 @@ export default function PermitAdvisor() {
                                     Proceso para programar:
                                   </h4>
                                   <p className="text-sm text-muted-foreground">
-                                    {inspection.schedulingProcess}
+                                    {typeof inspection.schedulingProcess === 'string'
+                                      ? inspection.schedulingProcess
+                                      : typeof inspection.schedulingProcess === 'object'
+                                        ? JSON.stringify(inspection.schedulingProcess)
+                                        : 'Información no disponible'}
                                   </p>
                                 </div>
                               )}
@@ -1358,7 +1362,11 @@ export default function PermitAdvisor() {
                                     Preparación necesaria:
                                   </h4>
                                   <p className="text-sm text-muted-foreground">
-                                    {inspection.preparationNeeded}
+                                    {typeof inspection.preparationNeeded === 'string'
+                                      ? inspection.preparationNeeded
+                                      : typeof inspection.preparationNeeded === 'object'
+                                        ? JSON.stringify(inspection.preparationNeeded)
+                                        : 'Información no disponible'}
                                   </p>
                                 </div>
                               )}
@@ -1369,7 +1377,11 @@ export default function PermitAdvisor() {
                                     Problemas comunes:
                                   </h4>
                                   <p className="text-sm text-muted-foreground">
-                                    {inspection.commonIssues}
+                                    {typeof inspection.commonIssues === 'string'
+                                      ? inspection.commonIssues
+                                      : typeof inspection.commonIssues === 'object'
+                                        ? JSON.stringify(inspection.commonIssues)
+                                        : 'Información no disponible'}
                                   </p>
                                 </div>
                               )}
@@ -1381,7 +1393,11 @@ export default function PermitAdvisor() {
                                     Información de contacto:
                                   </h4>
                                   <p className="text-sm text-muted-foreground">
-                                    {inspection.contactInfo}
+                                    {typeof inspection.contactInfo === 'string' 
+                                      ? inspection.contactInfo 
+                                      : typeof inspection.contactInfo === 'object' 
+                                        ? JSON.stringify(inspection.contactInfo) 
+                                        : 'Información no disponible'}
                                   </p>
                                 </div>
                               )}
