@@ -168,7 +168,8 @@ const ProjectPayments: React.FC = () => {
         // Temporarily using mock data during development
         return mockPayments;
       }
-    }
+    },
+    enabled: true // Always enabled (removed dependency on bank account simulation)
   });
 
   // Function to resend payment link
@@ -485,15 +486,9 @@ const ProjectPayments: React.FC = () => {
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Payment Tracker</h1>
-        {!connectedToStripe ? (
-          <Button onClick={connectToStripe} className="bg-indigo-600 hover:bg-indigo-700 text-white">
-            <CreditCard className="mr-2 h-4 w-4" /> Connect Stripe
-          </Button>
-        ) : (
-          <Badge className="bg-green-500 px-3 py-1">
-            <CreditCard className="mr-2 h-4 w-4" /> Stripe Connected
-          </Badge>
-        )}
+        <Button onClick={connectToStripe} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+          <CreditCard className="mr-2 h-4 w-4" /> Connect to Stripe
+        </Button>
       </div>
       
       {/* Payment Link Modal */}
@@ -581,68 +576,7 @@ const ProjectPayments: React.FC = () => {
         </div>
       )}
       
-      {/* Bank Account Modal */}
-      {showBankModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-          <div className="bg-background rounded-lg shadow-lg w-full max-w-md p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold">Connect Bank Account</h3>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => setShowBankModal(false)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            
-            <form onSubmit={addBankAccount}>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="accountNumber">Account Number</Label>
-                  <Input
-                    id="accountNumber"
-                    placeholder="XXXX XXXX XXXX XXXX"
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="routingNumber">Routing Number</Label>
-                  <Input
-                    id="routingNumber"
-                    placeholder="XXXXXXXXX"
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="accountType">Account Type</Label>
-                  <Select defaultValue="checking">
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select account type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="checking">Checking</SelectItem>
-                      <SelectItem value="savings">Savings</SelectItem>
-                      <SelectItem value="business">Business</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="pt-2">
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-indigo-600 hover:bg-indigo-700"
-                  >
-                    Connect Bank Account
-                  </Button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* No bank account modal - removed incorrect functionality */}
       
       
       <Tabs defaultValue="dashboard" value={activeTab} onValueChange={setActiveTab} className="space-y-6">
