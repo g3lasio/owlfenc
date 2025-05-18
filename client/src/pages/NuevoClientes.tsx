@@ -110,8 +110,12 @@ export default function NuevoClientes() {
   const [showAddClientDialog, setShowAddClientDialog] = useState(false);
   const [showEditClientDialog, setShowEditClientDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showBatchDeleteDialog, setShowBatchDeleteDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [showSmartImportDialog, setShowSmartImportDialog] = useState(false);
+  const [selectedClients, setSelectedClients] = useState<string[]>([]);
+  const [selectAllChecked, setSelectAllChecked] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [currentClient, setCurrentClient] = useState<Client | null>(null);
   const [importType, setImportType] = useState<"csv" | "vcf">("csv");
   const [csvFile, setCsvFile] = useState<File | null>(null);
@@ -592,6 +596,78 @@ export default function NuevoClientes() {
   const openDeleteDialog = (client: Client) => {
     setCurrentClient(client);
     setShowDeleteDialog(true);
+  };
+  
+  // Manejar selección de cliente individual
+  const handleClientSelection = (clientId: string) => {
+    setSelectedClients(prev => {
+      if (prev.includes(clientId)) {
+        // Si ya está seleccionado, lo quitamos
+        return prev.filter(id => id !== clientId);
+      } else {
+        // Si no está seleccionado, lo añadimos
+        return [...prev, clientId];
+      }
+    });
+  };
+  
+  // Seleccionar o deseleccionar todos los clientes
+  const handleSelectAll = () => {
+    if (selectAllChecked) {
+      // Si ya están todos seleccionados, deseleccionamos todos
+      setSelectedClients([]);
+    } else {
+      // Si no están todos seleccionados, seleccionamos todos
+      setSelectedClients(filteredClients.map(client => client.id));
+    }
+    setSelectAllChecked(!selectAllChecked);
+  };
+  
+  // Abrir diálogo de eliminación masiva
+  const openBatchDeleteDialog = () => {
+    if (selectedClients.length === 0) {
+      toast({
+        title: "Selección vacía",
+        description: "Por favor, selecciona al menos un contacto para eliminar",
+        variant: "destructive"
+      });
+      return;
+    }
+    setShowBatchDeleteDialog(true);
+  };
+  
+  // Eliminar clientes seleccionados en lote
+  const deleteSelectedClients = async () => {
+    try {
+      setIsProcessing(true);
+      
+      // Eliminar cada cliente seleccionado
+      for (const clientId of selectedClients) {
+        await deleteFirebaseClient(clientId);
+      }
+      
+      // Actualizar lista de clientes
+      queryClient.invalidateQueries({ queryKey: ['firebaseClients'] });
+      
+      toast({
+        title: "Eliminación exitosa",
+        description: `Se han eliminado ${selectedClients.length} contactos`
+      });
+      
+      // Limpiar selección y cerrar diálogo
+      setSelectedClients([]);
+      setSelectAllChecked(false);
+      setShowBatchDeleteDialog(false);
+    } catch (error) {
+      console.error('Error al eliminar clientes en lote:', error);
+      toast({
+        title: "Error al eliminar",
+        description: "No se pudieron eliminar algunos contactos",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   // Manejar entrada de etiquetas
@@ -1594,6 +1670,53 @@ export default function NuevoClientes() {
               </form>
             </TabsContent>
           </Tabs>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo de Eliminación Masiva */}
+      <Dialog open={showBatchDeleteDialog} onOpenChange={setShowBatchDeleteDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Eliminar contactos seleccionados</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que deseas eliminar {selectedClients.length} contactos? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                Esta acción eliminará permanentemente {selectedClients.length} contactos de tu base de datos.
+              </AlertDescription>
+            </Alert>
+          </div>
+
+          <DialogFooter>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setShowBatchDeleteDialog(false)}
+              disabled={isProcessing}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              type="button" 
+              variant="destructive"
+              onClick={deleteSelectedClients}
+              disabled={isProcessing}
+            >
+              {isProcessing ? (
+                <>
+                  <Spinner className="mr-2 h-4 w-4" />
+                  Eliminando...
+                </>
+              ) : (
+                'Eliminar seleccionados'
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
