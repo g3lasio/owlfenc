@@ -1,40 +1,32 @@
+import express, { Request, Response } from 'express';
 import Anthropic from '@anthropic-ai/sdk';
+import { ColumnMapping } from '../../client/src/lib/intelligentImport';
 
 // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
 const anthropic = new Anthropic({
-  apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY,
-  dangerouslyAllowBrowser: true // Permitir uso en el navegador
+  apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-export interface ColumnMapping {
-  originalHeader: string;
-  detectedType: string;
-  targetField: string;
-  confidence: number;
-  examples: string[];
-}
-
-export interface CSVAnalysisResult {
-  mappings: ColumnMapping[];
-  headerRow: string[];
-  sampleRows: string[][];
-  hasHeaderRow: boolean;
-}
+const router = express.Router();
 
 /**
- * Analyzes a CSV file to detect column types and suggest mappings
- * @param csvData The raw CSV data as a string
- * @returns Analysis result with column mappings
+ * Servicio que analiza la estructura de un CSV y detecta automáticamente los tipos de columnas
  */
-export const analyzeCSVStructure = async (csvData: string): Promise<CSVAnalysisResult> => {
+router.post('/analyze-csv', async (req: Request, res: Response) => {
   try {
+    const { csvData } = req.body;
+
+    if (!csvData) {
+      return res.status(400).json({ message: 'No se proporcionaron datos CSV' });
+    }
+
     // Parse the CSV
     const rows = csvData.split('\n')
-      .map(row => row.split(',').map(cell => cell.trim()))
-      .filter(row => row.some(cell => cell.length > 0)); // Filter out empty rows
+      .map((row: string) => row.split(',').map((cell: string) => cell.trim()))
+      .filter((row: string[]) => row.some(cell => cell.length > 0)); // Filter out empty rows
     
     if (rows.length === 0) {
-      throw new Error("El archivo CSV está vacío");
+      return res.status(400).json({ message: 'El archivo CSV está vacío' });
     }
 
     // Check if first row is likely a header row
@@ -81,7 +73,7 @@ export const analyzeCSVStructure = async (csvData: string): Promise<CSVAnalysisR
     // Parse JSON from Claude's response
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      throw new Error("No se pudo analizar la respuesta del modelo IA");
+      return res.status(500).json({ message: 'No se pudo analizar la respuesta del modelo IA' });
     }
     
     const analysisResult = JSON.parse(jsonMatch[0]);
@@ -98,17 +90,20 @@ export const analyzeCSVStructure = async (csvData: string): Promise<CSVAnalysisR
       };
     });
     
-    return {
+    res.status(200).json({
       mappings,
       headerRow,
       sampleRows,
       hasHeaderRow
-    };
-  } catch (error) {
-    console.error("Error analyzing CSV structure:", error);
-    throw error;
+    });
+  } catch (error: any) {
+    console.error('Error al analizar CSV:', error);
+    res.status(500).json({ 
+      message: 'Error al analizar el archivo CSV',
+      error: error.message || 'Error desconocido'
+    });
   }
-};
+});
 
 /**
  * Generate default headers (Column1, Column2, etc.) when no header row is present
@@ -224,31 +219,4 @@ Only return the JSON with no explanations or additional text.`;
   return prompt;
 }
 
-/**
- * Process a row with the detected column mappings
- * @param row A row of CSV data
- * @param mappings The column mappings detected
- * @returns Structured client data
- */
-export const processCsvRowWithMapping = (row: string[], mappings: ColumnMapping[]): Record<string, any> => {
-  const clientData: Record<string, any> = {};
-  
-  // Start with default fields
-  clientData.clientId = `client_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-  clientData.source = "CSV Import";
-  clientData.classification = "cliente";
-  
-  // Map data based on detected fields
-  mappings.forEach((mapping, index) => {
-    if (index < row.length && mapping.targetField !== 'unknown' && row[index]) {
-      // Special handling for tags field (assuming comma-separated values)
-      if (mapping.targetField === 'tags' && row[index]) {
-        clientData[mapping.targetField] = row[index].split(/[,;]/).map(tag => tag.trim()).filter(tag => tag);
-      } else {
-        clientData[mapping.targetField] = row[index];
-      }
-    }
-  });
-  
-  return clientData;
-};
+export default router;

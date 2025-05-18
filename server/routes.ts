@@ -20,6 +20,7 @@ import { propertyService } from './services/propertyService';
 import { documentService } from './services/documentService';
 import aiProcessorRoutes from './routes/aiProcessor';
 import emailRoutes from './routes/email-routes';
+import aiImportRoutes from './routes/ai-import-routes';
 import { memoryService } from './services/memoryService';
 import { stripeService } from './services/stripeService';
 import { permitService } from './services/permitService';

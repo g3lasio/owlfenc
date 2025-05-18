@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, CheckCircle, AlertCircle, ArrowRight, FileText } from "lucide-react";
+import { CheckCircle, AlertCircle, ArrowRight, FileText, Loader2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Client } from "@/lib/clientFirebase";
 import { CSVAnalysisResult, ColumnMapping, analyzeCSVStructure, processCsvRowWithMapping } from "@/lib/intelligentImport";
