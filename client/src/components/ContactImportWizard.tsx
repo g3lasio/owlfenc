@@ -84,12 +84,12 @@ export function ContactImportWizard({ isOpen, onClose, onImportComplete }: Conta
       
       const result = await analyzeCSVWithIA(fileContent);
       setAnalysisResult(result);
-      setColumnMappings(result.suggestedMappings);
+      setColumnMappings(result.mappings);
       
       // Generar vista previa con los primeros 5 registros
       const preview = mapCSVToClients(
         result.sampleRows.slice(0, 5), 
-        result.suggestedMappings
+        result.mappings
       );
       setPreviewData(preview);
       setEditableData(preview);
