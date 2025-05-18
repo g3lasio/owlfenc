@@ -739,42 +739,7 @@ const ProjectPayments: React.FC = () => {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div>
-                  <CardTitle className="text-lg font-medium">Payment Link Generator</CardTitle>
-                  <CardDescription>Create custom payment links for clients</CardDescription>
-                </div>
-                <Button className="bg-indigo-600 hover:bg-indigo-700" onClick={() => setShowPaymentLinkModal(true)}>
-                  <DollarSign className="mr-2 h-4 w-4" /> New Link
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="rounded-lg border p-4">
-                    <div className="flex items-center space-x-2 mb-4">
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                      <span className="font-medium">Accept multiple payment methods</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Create professional payment links that allow your clients to pay you instantly 
-                      with credit cards, debit cards, and Apple Pay.
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant="outline" className="bg-slate-100 text-slate-800">
-                        Credit Cards
-                      </Badge>
-                      <Badge variant="outline" className="bg-slate-100 text-slate-800">
-                        Debit Cards
-                      </Badge>
-                      <Badge variant="outline" className="bg-slate-100 text-slate-800">
-                        Apple Pay
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            
           </div>
 
           {/* Las tarjetas de Recent Payment Summary, Cuenta Bancaria Principal y Estado de Stripe Connect fueron eliminadas */}
