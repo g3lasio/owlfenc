@@ -1,0 +1,15 @@
+Problema crítico de importación y mapeo inteligente de contactos en la página “Clients”:
+
+Actualmente, la funcionalidad de importación de contactos presenta deficiencias graves en la interpretación y mapeo de datos provenientes de diferentes CRMs y archivos CSV. Cada fuente externa puede estructurar sus columnas (nombre, teléfono, email, dirección, etc.) de manera distinta, y nuestra plataforma no está realizando un reconocimiento automático ni una clasificación inteligente de los campos. Como resultado, hemos detectado que los datos se asignan incorrectamente: por ejemplo, direcciones aparecen en la columna de teléfono, y los números telefónicos no se reconocen ni se ubican correctamente, provocando un caos en la base de datos de clientes.
+
+Requerimientos para solución real y escalable:
+
+Implementar un sistema inteligente de importación de contactos, idealmente soportado por algoritmos de IA/NLP, que analice automáticamente el encabezado y contenido de cada columna del archivo importado, identificando el tipo de dato (email, teléfono, dirección, nombre, etc.) y mapeando cada campo al destino correcto en nuestra base de datos.
+
+Ofrecer un proceso de revisión previa a la importación donde el usuario pueda confirmar o reasignar manualmente campos detectados por la IA, asegurando precisión antes de guardar los datos.
+
+Diseñar el sistema para manejar variaciones, errores y formatos inesperados, minimizando la intervención manual y los errores de mapeo.
+
+Garantizar que, tras la importación, los datos se almacenen de forma estructurada y consistente, sin ambigüedades ni desorden.
+
+Este tipo de funcionalidad ya es estándar en plataformas líderes de CRM y productividad, y es fundamental que nuestro sistema esté a la altura, brindando robustez, flexibilidad y experiencia de usuario profesional. No acepto una solución tradicional ni “parches”; necesito un enfoque basado en inteligencia artificial que resuelva el problema de raíz y optimice el proceso para cualquier tipo de archivo fuente, hoy y en el futuro.
