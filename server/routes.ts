@@ -36,6 +36,7 @@ import clientRoutes from './routes/clientRoutes';
 import quickbooksRoutes from './routes/quickbooks-routes';
 import anthropicRoutes from './routes/anthropic';
 import pdfRoutes from './routes/pdf-routes';
+import paymentRoutes from './routes/payment-routes'; // Import payment routes
 import express from 'express'; // Import express to use express.raw
 
 // Initialize OpenAI API

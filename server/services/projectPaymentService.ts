@@ -2,17 +2,17 @@ import Stripe from 'stripe';
 import { ProjectPayment, InsertProjectPayment, Project } from '@shared/schema';
 import { storage } from '../storage';
 
-// Verificar que la clave secreta de Stripe esté configurada
+// Verify that the Stripe secret key is configured
 if (!process.env.STRIPE_SECRET_KEY) {
-  console.warn('¡ADVERTENCIA! La clave secreta de Stripe no está configurada. Las funciones de pago no funcionarán correctamente.');
+  console.warn('WARNING! Stripe secret key is not configured. Payment functions will not work correctly.');
 }
 
-// Inicializar Stripe con la clave secreta
+// Initialize Stripe with the secret key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder', {
-  apiVersion: '2023-10-16' as any, // Usar una versión compatible
+  apiVersion: '2023-10-16' as any, // Use a compatible version
 });
 
-// Opciones para crear un checkout de pago de proyecto
+// Options for creating a project payment checkout
 interface ProjectPaymentCheckoutOptions {
   projectId: number;
   paymentType: 'deposit' | 'final';
@@ -22,35 +22,238 @@ interface ProjectPaymentCheckoutOptions {
   customerName?: string;
 }
 
-// Clase para manejar los pagos de proyectos con Stripe
+// Options for creating a standalone payment link
+interface PaymentLinkOptions {
+  amount: number;
+  description: string;
+  successUrl: string;
+  cancelUrl: string;
+  customerEmail?: string;
+  userId: number;
+  projectId?: number;
+}
+
+// Options for Stripe Connect onboarding
+interface ConnectAccountOptions {
+  userId: number;
+  email: string;
+  refreshUrl: string;
+  returnUrl: string;
+  businessType?: 'individual' | 'company';
+  country?: string;
+}
+
+// Class to handle project payments with Stripe
 export class ProjectPaymentService {
   /**
-   * Verifica la conexión con Stripe
+   * Verifies the connection to Stripe
    */
   async verifyStripeConnection(): Promise<boolean> {
     try {
-      console.log(`[${new Date().toISOString()}] Verificando conexión con Stripe`);
-      // Usar timeout para evitar bloqueos largos
+      console.log(`[${new Date().toISOString()}] Verifying connection with Stripe`);
+      // Use timeout to avoid long blocks
       const timeoutPromise = new Promise<boolean>((_, reject) => {
-        setTimeout(() => reject(new Error('Timeout al conectar con Stripe')), 10000);
+        setTimeout(() => reject(new Error('Timeout connecting to Stripe')), 10000);
       });
 
-      // Realizar una consulta simple a Stripe
+      // Make a simple query to Stripe
       const balancePromise = new Promise<boolean>(async (resolve) => {
         try {
           await stripe.balance.retrieve();
           resolve(true);
         } catch (error) {
-          console.error(`[${new Date().toISOString()}] Error al verificar conexión con Stripe:`, error);
+          console.error(`[${new Date().toISOString()}] Error verifying connection with Stripe:`, error);
           resolve(false);
         }
       });
 
-      // Devolver el resultado de la primera promesa que se resuelva
+      // Return the result of the first promise to resolve
       return await Promise.race([balancePromise, timeoutPromise]);
     } catch (error) {
-      console.error(`[${new Date().toISOString()}] Error general al verificar conexión con Stripe:`, error);
+      console.error(`[${new Date().toISOString()}] General error verifying connection with Stripe:`, error);
       return false;
+    }
+  }
+  
+  /**
+   * Creates a Stripe Connect account for a contractor
+   */
+  async createConnectAccount(options: ConnectAccountOptions): Promise<string> {
+    try {
+      console.log(`[${new Date().toISOString()}] Creating Stripe Connect account for user ID: ${options.userId}`);
+      
+      // Verify connection to Stripe first
+      const isConnected = await this.verifyStripeConnection();
+      if (!isConnected) {
+        throw new Error('Could not establish connection with Stripe. Please verify API credentials.');
+      }
+      
+      // First, check if the user already has a Stripe Connect account
+      const user = await storage.getUser(options.userId);
+      if (!user) {
+        throw new Error(`User with ID ${options.userId} not found`);
+      }
+      
+      // If user already has a Connect account, get a new onboarding link
+      if (user.stripeConnectAccountId) {
+        return await this.refreshConnectAccountLink(
+          user.stripeConnectAccountId, 
+          options.refreshUrl, 
+          options.returnUrl
+        );
+      }
+      
+      // Create a new Stripe Connect account
+      const account = await stripe.accounts.create({
+        type: 'express',
+        email: options.email,
+        business_type: options.businessType || 'individual',
+        country: options.country || 'US',
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true },
+        },
+        metadata: {
+          userId: options.userId.toString()
+        }
+      });
+      
+      // Update user record with Stripe Connect account ID
+      await storage.updateUser(options.userId, {
+        stripeConnectAccountId: account.id
+      });
+      
+      // Create an account link for onboarding
+      const accountLink = await stripe.accountLinks.create({
+        account: account.id,
+        refresh_url: options.refreshUrl,
+        return_url: options.returnUrl,
+        type: 'account_onboarding',
+      });
+      
+      console.log(`[${new Date().toISOString()}] Stripe Connect account created with ID: ${account.id}`);
+      return accountLink.url;
+    } catch (error) {
+      console.error(`[${new Date().toISOString()}] Error creating Stripe Connect account:`, error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Creates a new onboarding link for existing Stripe Connect account
+   */
+  async refreshConnectAccountLink(accountId: string, refreshUrl: string, returnUrl: string): Promise<string> {
+    try {
+      const accountLink = await stripe.accountLinks.create({
+        account: accountId,
+        refresh_url: refreshUrl,
+        return_url: returnUrl,
+        type: 'account_onboarding',
+      });
+      
+      return accountLink.url;
+    } catch (error) {
+      console.error(`[${new Date().toISOString()}] Error refreshing Connect account link:`, error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Creates a dashboard link for a Stripe Connect account
+   */
+  async createConnectDashboardLink(userId: number): Promise<string> {
+    try {
+      // Get user with Connect account ID
+      const user = await storage.getUser(userId);
+      if (!user || !user.stripeConnectAccountId) {
+        throw new Error('User does not have a Stripe Connect account');
+      }
+      
+      // Create login link to Stripe dashboard
+      const loginLink = await stripe.accounts.createLoginLink(user.stripeConnectAccountId);
+      
+      return loginLink.url;
+    } catch (error) {
+      console.error(`[${new Date().toISOString()}] Error creating Connect dashboard link:`, error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Creates a standalone payment link that can be shared with clients
+   */
+  async createPaymentLink(options: PaymentLinkOptions): Promise<string> {
+    try {
+      console.log(`[${new Date().toISOString()}] Creating payment link for $${options.amount}`);
+      
+      // Verify connection to Stripe
+      const isConnected = await this.verifyStripeConnection();
+      if (!isConnected) {
+        throw new Error('Could not establish connection with Stripe. Please verify API credentials.');
+      }
+      
+      // Get user to check if they have a Connect account
+      const user = await storage.getUser(options.userId);
+      if (!user) {
+        throw new Error(`User with ID ${options.userId} not found`);
+      }
+      
+      // Create a product for this payment
+      const product = await stripe.products.create({
+        name: options.description,
+        metadata: {
+          userId: options.userId.toString(),
+          projectId: options.projectId?.toString() || 'standalone',
+          createdAt: new Date().toISOString()
+        }
+      });
+      
+      // Create a price for the product
+      const price = await stripe.prices.create({
+        product: product.id,
+        unit_amount: Math.round(options.amount * 100), // Convert to cents
+        currency: 'usd',
+      });
+      
+      // Create payment link with the price
+      const paymentLink = await stripe.paymentLinks.create({
+        line_items: [
+          {
+            price: price.id,
+            quantity: 1,
+          },
+        ],
+        after_completion: {
+          type: 'redirect',
+          redirect: {
+            url: options.successUrl,
+          },
+        },
+        payment_method_types: ['card'],
+        metadata: {
+          userId: options.userId.toString(),
+          projectId: options.projectId?.toString() || 'standalone',
+          description: options.description
+        }
+      });
+      
+      // Store the payment link in the database
+      const paymentData: InsertProjectPayment = {
+        userId: options.userId,
+        projectId: options.projectId,
+        amount: options.amount * 100, // Store in cents for consistency
+        type: 'custom',
+        status: 'pending',
+        checkoutUrl: paymentLink.url
+      };
+      
+      await storage.createProjectPayment(paymentData);
+      
+      console.log(`[${new Date().toISOString()}] Payment link created: ${paymentLink.url}`);
+      return paymentLink.url;
+    } catch (error) {
+      console.error(`[${new Date().toISOString()}] Error creating payment link:`, error);
+      throw error;
     }
   }
 
