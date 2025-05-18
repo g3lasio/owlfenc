@@ -89,6 +89,12 @@ export const navigationGroups: NavigationGroup[] = [
         label: "navigation.aiProjectManager",
         path: "/ai-project-manager",
         icon: "lucide-brain"
+      },
+      {
+        id: "owl-funding",
+        label: "Owl Funding",
+        path: "/owl-funding",
+        icon: "ri-money-dollar-box-line"
       }
     ]
   },
