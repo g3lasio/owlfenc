@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Spinner } from '@/components/ui/spinner';
 import { useToast } from '@/hooks/use-toast';
 import { Client } from '@/lib/clientFirebase';
-import { analyzeCSVWithIA, analyzeVCFWithIA, mapCSVToClients, normalizeClientData, CSVAnalysisResult, ColumnMapping, CLIENT_FIELD_OPTIONS } from '@/lib/intelligentImport';
+import { analyzeCSVWithIA, analyzeVCFWithIA, mapCSVToClients, normalizeClientData, enhanceContactsWithAI, CSVAnalysisResult, ColumnMapping, CLIENT_FIELD_OPTIONS } from '@/lib/intelligentImport';
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
@@ -159,6 +159,8 @@ export function ImportWizard({ isOpen, onClose, onImportComplete }: ImportWizard
   const completeImport = useCallback(async () => {
     try {
       setIsLoading(true);
+      setProgress(10);
+      setProgressMessage('Procesando datos para importar...');
       
       if (!analysisResult) {
         throw new Error('No hay datos para importar');
@@ -168,19 +170,34 @@ export function ImportWizard({ isOpen, onClose, onImportComplete }: ImportWizard
       const rows = analysisResult.hasHeaderRow 
         ? analysisResult.sampleRows 
         : analysisResult.sampleRows;
-        
+      
+      setProgress(30);
+      setProgressMessage('Mapeando datos a formato de cliente...');
+      
       // Mapear los datos a objetos cliente usando los mapeos finales
       const mappedClients = mapCSVToClients(rows, columnMappings);
       
       // Normalizar los datos para asegurar consistencia
       const normalizedClients = normalizeClientData(mappedClients);
       
-      // Llamar al callback con los clientes importados
-      onImportComplete(normalizedClients);
+      setProgress(50);
+      setProgressMessage('Procesando nombres y mejorando información de contactos con IA...');
+      
+      // Usar IA avanzada para mejorar los datos, especialmente la identificación de nombres
+      const enhancedClients = await enhanceContactsWithAI(normalizedClients);
+      
+      setProgress(80);
+      setProgressMessage('Finalizando importación...');
+      
+      // Llamar al callback con los clientes mejorados
+      onImportComplete(enhancedClients);
+      
+      setProgress(100);
+      setProgressMessage('Importación completada con éxito');
       
       toast({
         title: 'Importación exitosa',
-        description: `Se importaron ${normalizedClients.length} clientes correctamente.`,
+        description: `Se importaron ${enhancedClients.length} clientes correctamente.`,
       });
       
       // Cerrar el wizard
