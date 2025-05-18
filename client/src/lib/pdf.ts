@@ -95,12 +95,45 @@ export async function generateClientSidePDF(html: string, fileName = 'documento'
     container.style.left = '-9999px';
     container.style.top = '0';
     container.style.width = '794px'; // ~A4
+    
+    // Buscar todas las imágenes, incluyendo el logo, y prepararlas para el PDF
+    const images = container.querySelectorAll('img');
+    if (images.length > 0) {
+      console.log(`Procesando ${images.length} imágenes para PDF...`);
+      images.forEach((img) => {
+        // Asegurarse de que las imágenes tengan atributos de carga correctos
+        img.setAttribute('crossorigin', 'anonymous');
+        
+        // Aplicar estilos explícitos para las imágenes
+        if (img.alt === 'Logo') {
+          img.style.maxWidth = '200px';
+          img.style.maxHeight = '80px';
+          img.style.objectFit = 'contain';
+        }
+      });
+    }
+    
     document.body.appendChild(container);
 
     // Crear una instancia de jsPDF
     const pdf = new jsPDF('p', 'pt', 'a4');
     
     console.log('Renderizando HTML...');
+    
+    // Esperar a que todas las imágenes se carguen antes de continuar
+    await Promise.all(Array.from(container.querySelectorAll('img')).map(img => {
+      return new Promise((resolve) => {
+        if (img.complete) {
+          resolve(true);
+        } else {
+          img.onload = () => resolve(true);
+          img.onerror = () => {
+            console.warn('Error cargando imagen:', img.src);
+            resolve(false);
+          };
+        }
+      });
+    }));
     
     // Convertir el HTML a canvas
     const canvas = await html2canvas(container, {

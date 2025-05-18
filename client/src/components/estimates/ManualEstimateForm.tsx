@@ -221,7 +221,7 @@ export default function ManualEstimateForm({ onEstimateGenerated, onGenerate }: 
         toast({
           title: "Perfil incompleto",
           description: "La información de tu empresa está incompleta. Actualiza tu perfil para incluirla en los estimados.",
-          variant: "warning"
+          variant: "destructive"
         });
       }
     }
