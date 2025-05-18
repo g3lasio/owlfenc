@@ -908,17 +908,17 @@ const ProjectPayments: React.FC = () => {
               
               {filteredPayments?.length === 0 ? (
                 <div className="text-center py-6">
-                  <p className="text-muted-foreground">No hay pagos disponibles con el filtro seleccionado.</p>
+                  <p className="text-muted-foreground">No payments available with the selected filter.</p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {filteredPayments?.map((payment) => (
+                  {filteredPayments?.map((payment: ProjectPayment) => (
                     <Card key={payment.id} className="border overflow-hidden">
                       <CardHeader className="pb-2 bg-muted/50">
                         <div className="flex justify-between items-center">
                           <div>
                             <CardTitle className="text-base">
-                              {payment.projectName || `Proyecto #${payment.projectId}`}
+                              {payment.projectName || (payment.projectId ? `Project #${payment.projectId}` : 'Custom Payment')}
                             </CardTitle>
                             <CardDescription>
                               ID: {payment.id} - {formatDate(payment.createdAt)}
@@ -932,29 +932,36 @@ const ProjectPayments: React.FC = () => {
                       <CardContent className="pt-4">
                         <div className="flex flex-col md:flex-row justify-between">
                           <div className="space-y-1">
-                            <p className="text-sm text-muted-foreground">Tipo de pago</p>
+                            <p className="text-sm text-muted-foreground">Payment type</p>
                             <p className="font-medium">{formatPaymentType(payment.type)}</p>
                           </div>
                           <div className="space-y-1">
-                            <p className="text-sm text-muted-foreground">Monto</p>
+                            <p className="text-sm text-muted-foreground">Amount</p>
                             <p className="font-medium">${payment.amount.toFixed(2)}</p>
                           </div>
                           {payment.paymentDate && (
                             <div className="space-y-1">
-                              <p className="text-sm text-muted-foreground">Fecha de pago</p>
+                              <p className="text-sm text-muted-foreground">Payment date</p>
                               <p className="font-medium">{formatDate(payment.paymentDate)}</p>
                             </div>
                           )}
                         </div>
                         
+                        {payment.description && (
+                          <div className="mt-3">
+                            <p className="text-sm text-muted-foreground">Description</p>
+                            <p className="font-medium">{payment.description}</p>
+                          </div>
+                        )}
+                        
                         <div className="flex flex-wrap gap-2 mt-4">
-                          {payment.status === 'pending' && payment.stripePaymentLinkUrl && (
+                          {payment.status === 'pending' && payment.checkoutUrl && (
                             <Button 
-                              onClick={() => window.open(payment.stripePaymentLinkUrl!, '_blank')}
+                              onClick={() => window.open(payment.checkoutUrl!, '_blank')}
                               variant="default"
                               size="sm"
                             >
-                              <Send className="mr-2 h-4 w-4" /> Ver enlace de pago
+                              <Send className="mr-2 h-4 w-4" /> View payment link
                             </Button>
                           )}
                           
@@ -964,7 +971,7 @@ const ProjectPayments: React.FC = () => {
                               variant="outline"
                               size="sm"
                             >
-                              {payment.status === 'expired' ? 'Generar nuevo enlace' : 'Reenviar enlace'}
+                              {payment.status === 'expired' ? 'Generate new link' : 'Resend link'}
                             </Button>
                           )}
                         </div>
@@ -977,20 +984,20 @@ const ProjectPayments: React.FC = () => {
           </Card>
         </TabsContent>
         
-        {/* Panel de Configuración */}
+        {/* Settings Panel */}
         <TabsContent value="settings" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Configuración de Cuenta Bancaria</CardTitle>
-              <CardDescription>Gestione dónde recibirá sus pagos</CardDescription>
+              <CardTitle>Bank Account Settings</CardTitle>
+              <CardDescription>Manage where you'll receive your payments</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div>
-                <h3 className="text-lg font-medium mb-2">Cuentas Bancarias</h3>
+                <h3 className="text-lg font-medium mb-2">Bank Accounts</h3>
                 
                 {mockBankAccounts.length > 0 ? (
                   <div className="space-y-4">
-                    {mockBankAccounts.map((account) => (
+                    {mockBankAccounts.map((account: BankAccount) => (
                       <div key={account.id} className="border rounded-lg p-4 flex justify-between items-center">
                         <div>
                           <p className="font-medium">{account.bankName}</p>
@@ -998,16 +1005,16 @@ const ProjectPayments: React.FC = () => {
                             {account.accountType} **** {account.lastFour}
                           </p>
                           <div className="mt-1 flex items-center space-x-2">
-                            {account.isDefault && <Badge className="bg-indigo-500">Predeterminada</Badge>}
-                            {account.isVerified && <Badge variant="outline">Verificada</Badge>}
+                            {account.isDefault && <Badge className="bg-indigo-500">Default</Badge>}
+                            {account.isVerified && <Badge variant="outline">Verified</Badge>}
                           </div>
                         </div>
                         <div className="flex space-x-2">
                           <Button variant="outline" size="sm">
-                            Editar
+                            Edit
                           </Button>
                           <Button variant="destructive" size="sm">
-                            Eliminar
+                            Remove
                           </Button>
                         </div>
                       </div>
@@ -1015,7 +1022,7 @@ const ProjectPayments: React.FC = () => {
                   </div>
                 ) : (
                   <div className="text-center py-6 border rounded-lg">
-                    <p className="text-muted-foreground mb-4">No hay cuentas bancarias configuradas</p>
+                    <p className="text-muted-foreground mb-4">No bank accounts configured</p>
                   </div>
                 )}
                 
@@ -1024,22 +1031,22 @@ const ProjectPayments: React.FC = () => {
                   variant="outline"
                   onClick={() => setShowBankModal(true)}
                 >
-                  <CreditCard className="mr-2 h-4 w-4" /> Agregar cuenta bancaria
+                  <CreditCard className="mr-2 h-4 w-4" /> Add bank account
                 </Button>
               </div>
               
               <Separator />
               
               <div>
-                <h3 className="text-lg font-medium mb-2">Conexión a Stripe</h3>
+                <h3 className="text-lg font-medium mb-2">Stripe Connection</h3>
                 
                 {connectedToStripe ? (
                   <div className="space-y-4">
                     <Alert>
                       <CreditCard className="h-4 w-4" />
-                      <AlertTitle>Cuenta conectada</AlertTitle>
+                      <AlertTitle>Account connected</AlertTitle>
                       <AlertDescription>
-                        Su cuenta de Stripe está correctamente configurada para recibir pagos.
+                        Your Stripe account is properly configured to receive payments.
                       </AlertDescription>
                     </Alert>
                     <div className="border rounded-lg p-4">
@@ -1049,19 +1056,19 @@ const ProjectPayments: React.FC = () => {
                           <p className="text-sm text-muted-foreground">acct_1a2b3c4d5e6f7g8h9i</p>
                         </div>
                         <div>
-                          <Badge className="bg-green-500">Activa</Badge>
+                          <Badge className="bg-green-500">Active</Badge>
                         </div>
                       </div>
                       <div className="mt-4">
-                        <p className="text-sm text-muted-foreground">Comisión por transacción</p>
-                        <p>2.9% + $0.30 USD por pago</p>
+                        <p className="text-sm text-muted-foreground">Transaction fee</p>
+                        <p>2.9% + $0.30 USD per payment</p>
                       </div>
                       <div className="mt-4 flex justify-end space-x-2">
                         <Button variant="outline" size="sm">
-                          Panel de Stripe
+                          Stripe Dashboard
                         </Button>
                         <Button variant="destructive" size="sm">
-                          Desconectar
+                          Disconnect
                         </Button>
                       </div>
                     </div>
@@ -1070,15 +1077,15 @@ const ProjectPayments: React.FC = () => {
                   <div className="space-y-4">
                     <Alert variant="destructive">
                       <AlertCircle className="h-4 w-4" />
-                      <AlertTitle>Cuenta no conectada</AlertTitle>
+                      <AlertTitle>Account not connected</AlertTitle>
                       <AlertDescription>
-                        Para recibir pagos, necesita conectar su cuenta de Stripe.
+                        To receive payments, you need to connect your Stripe account.
                       </AlertDescription>
                     </Alert>
                     <div className="text-center py-6 border rounded-lg">
-                      <p className="text-muted-foreground mb-4">Conecte su cuenta para recibir pagos directamente</p>
+                      <p className="text-muted-foreground mb-4">Connect your account to receive payments directly</p>
                       <Button onClick={connectToStripe} className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                        <CreditCard className="mr-2 h-4 w-4" /> Conectar Stripe
+                        <CreditCard className="mr-2 h-4 w-4" /> Connect Stripe
                       </Button>
                     </div>
                   </div>
@@ -1089,33 +1096,33 @@ const ProjectPayments: React.FC = () => {
         </TabsContent>
       </Tabs>
       
-      {/* Modal para agregar cuenta bancaria */}
+      {/* Add bank account modal */}
       {showBankModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <Card className="w-full max-w-md mx-4">
             <CardHeader>
-              <CardTitle>Agregar Cuenta Bancaria</CardTitle>
-              <CardDescription>Ingrese los datos de su cuenta bancaria para recibir pagos</CardDescription>
+              <CardTitle>Add Bank Account</CardTitle>
+              <CardDescription>Enter your bank account details to receive payments</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={addBankAccount} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="bankName">Nombre del Banco</Label>
-                  <Input id="bankName" placeholder="Banco Nacional" />
+                  <Label htmlFor="bankName">Bank Name</Label>
+                  <Input id="bankName" placeholder="National Bank" />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="accountType">Tipo de Cuenta</Label>
+                  <Label htmlFor="accountType">Account Type</Label>
                   <Select defaultValue="checking">
                     <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar tipo de cuenta" />
+                      <SelectValue placeholder="Select account type" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
-                        <SelectLabel>Tipo de Cuenta</SelectLabel>
-                        <SelectItem value="checking">Cuenta Corriente</SelectItem>
-                        <SelectItem value="savings">Cuenta de Ahorros</SelectItem>
-                        <SelectItem value="business">Cuenta Empresarial</SelectItem>
+                        <SelectLabel>Account Type</SelectLabel>
+                        <SelectItem value="checking">Checking Account</SelectItem>
+                        <SelectItem value="savings">Savings Account</SelectItem>
+                        <SelectItem value="business">Business Account</SelectItem>
                       </SelectGroup>
                     </SelectContent>
                   </Select>
