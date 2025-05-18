@@ -153,25 +153,6 @@ const ProjectPayments: React.FC = () => {
     }
   ];
   
-  // Get Stripe account status
-  const { data: stripeAccountStatus, isLoading: loadingStripeStatus } = useQuery({
-    queryKey: ['/api/stripe/account-status'],
-    queryFn: async () => {
-      try {
-        const response = await fetch('/api/stripe/account-status');
-        if (!response.ok) {
-          throw new Error('Failed to fetch Stripe account status');
-        }
-        const data = await response.json();
-        setConnectedToStripe(data.hasStripeAccount);
-        return data;
-      } catch (error) {
-        console.error('Error fetching Stripe account status:', error);
-        return { hasStripeAccount: false };
-      }
-    }
-  });
-
   // Get payment links
   const { data: payments, isLoading, error } = useQuery({
     queryKey: ['/api/payment-links'],
@@ -187,8 +168,7 @@ const ProjectPayments: React.FC = () => {
         // Temporarily using mock data during development
         return mockPayments;
       }
-    },
-    enabled: connectedToStripe
+    }
   });
 
   // Function to resend payment link
@@ -361,17 +341,7 @@ const ProjectPayments: React.FC = () => {
     }
   };
   
-  // Function to add bank account
-  const addBankAccount = (e: React.FormEvent) => {
-    e.preventDefault();
-    setShowBankModal(false);
-    
-    toast({
-      title: "Bank account added",
-      description: "Your bank account information has been saved successfully",
-      variant: "default"
-    });
-  };
+  // No bank account functions needed
   
   // Function to create payment link
   const createPaymentLink = async (e: React.FormEvent) => {
@@ -979,71 +949,7 @@ const ProjectPayments: React.FC = () => {
         </TabsContent>
       </Tabs>
       
-      {/* Add bank account modal */}
-      {showBankModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md mx-4">
-            <CardHeader>
-              <CardTitle>Add Bank Account</CardTitle>
-              <CardDescription>Enter your bank account details to receive payments</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={addBankAccount} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="bankName">Bank Name</Label>
-                  <Input id="bankName" placeholder="National Bank" />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="accountType">Account Type</Label>
-                  <Select defaultValue="checking">
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select account type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectLabel>Account Type</SelectLabel>
-                        <SelectItem value="checking">Checking Account</SelectItem>
-                        <SelectItem value="savings">Savings Account</SelectItem>
-                        <SelectItem value="business">Business Account</SelectItem>
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="accountHolderName">Account Holder Name</Label>
-                  <Input id="accountHolderName" placeholder="John Smith" />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="routingNumber">Routing Number</Label>
-                  <Input id="routingNumber" placeholder="123456789" />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="accountNumber">Account Number</Label>
-                  <Input id="accountNumber" placeholder="987654321" />
-                </div>
-                
-                <div className="flex items-center space-x-2 mt-4">
-                  <input type="checkbox" id="isDefault" className="rounded border-gray-300" />
-                  <Label htmlFor="isDefault">Set as default account</Label>
-                </div>
-                
-                <div className="flex justify-end space-x-2 pt-4">
-                  <Button variant="outline" type="button" onClick={() => setShowBankModal(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit">
-                    Save
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      {/* Payment Link Modal - This is the correct functionality for this app */}
     </div>
   );
 };
