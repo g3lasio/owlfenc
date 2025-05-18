@@ -24,7 +24,7 @@ export const mainNavigationConfig: NavigationSection[] = [
       {
         label: "AI Project Manager",
         path: "/ai-project-manager",
-        icon: "ri-brain-line",
+        icon: "lucide-brain",
       },
     ],
   },

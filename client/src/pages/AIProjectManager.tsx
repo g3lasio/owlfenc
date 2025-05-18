@@ -5,10 +5,17 @@ import { BrainIcon } from "lucide-react";
 export default function AIProjectManager() {
   return (
     <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-2">AI Project Manager</h1>
-      <p className="text-muted-foreground mb-6">
-        Coming Soon: Your intelligent assistant for managing fence projects and business tasks
-      </p>
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+          <BrainIcon className="w-6 h-6 text-primary" />
+        </div>
+        <div>
+          <h1 className="text-3xl font-bold">AI Project Manager</h1>
+          <p className="text-muted-foreground">
+            Coming Soon: Your intelligent assistant for managing fence projects and business tasks
+          </p>
+        </div>
+      </div>
 
       <Card className="w-full overflow-hidden">
         <CardHeader className="bg-primary/10">
@@ -20,7 +27,7 @@ export default function AIProjectManager() {
         <CardContent className="p-6 text-center">
           <div className="mb-6">
             <div className="w-24 h-24 rounded-full bg-primary/20 mx-auto flex items-center justify-center mb-4">
-              <i className="ri-robot-line text-4xl text-primary"></i>
+              <BrainIcon className="w-12 h-12 text-primary" />
             </div>
             <h3 className="text-xl font-semibold mb-2">AI Project Manager</h3>
             <p className="text-muted-foreground mb-4">
