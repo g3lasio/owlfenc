@@ -176,38 +176,40 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                 </motion.h2>
                 <div className="space-y-1.5 mb-4">
                   {group.items.map((item, itemIndex) => (
-                    <motion.div
-                      key={item.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.4 + (groupIndex * 0.4) + (itemIndex * 0.1), duration: 0.3 }}
-                    >
-                      <Link 
-                        href={item.path} 
-                        onClick={onClose}
+                    {item.id !== "mervin" && (
+                      <motion.div
+                        key={item.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.4 + (groupIndex * 0.4) + (itemIndex * 0.1), duration: 0.3 }}
                       >
-                        <motion.div 
-                          whileHover={{ 
-                            scale: 1.02,
-                            x: 5
-                          }}
-                          className="flex items-center p-2 rounded-md hover:bg-accent"
+                        <Link 
+                          href={item.path} 
+                          onClick={onClose}
                         >
-                          {item.icon.startsWith('lucide-') ? (
-                            <>
-                              {item.icon === 'lucide-user' && <i className="ri-user-settings-line text-lg mr-3"></i>}
-                              {item.icon === 'lucide-credit-card' && <i className="ri-bank-card-line text-lg mr-3"></i>}
-                              {item.icon === 'lucide-building' && <i className="ri-building-4-line text-lg mr-3"></i>}
-                              {item.icon === 'lucide-settings' && <i className="ri-settings-4-line text-lg mr-3"></i>}
-                              {item.icon === 'lucide-brain' && <i className="ri-brain-artificial-line text-lg mr-3"></i>}
-                            </>
-                          ) : (
-                            <i className={`${item.icon} text-lg mr-3`}></i>
-                          )}
-                          <span>{t(item.label)}</span>
-                        </motion.div>
-                      </Link>
-                    </motion.div>
+                          <motion.div 
+                            whileHover={{ 
+                              scale: 1.02,
+                              x: 5
+                            }}
+                            className="flex items-center p-2 rounded-md hover:bg-accent"
+                          >
+                            {item.icon.startsWith('lucide-') ? (
+                              <>
+                                {item.icon === 'lucide-user' && <i className="ri-user-settings-line text-lg mr-3"></i>}
+                                {item.icon === 'lucide-credit-card' && <i className="ri-bank-card-line text-lg mr-3"></i>}
+                                {item.icon === 'lucide-building' && <i className="ri-building-4-line text-lg mr-3"></i>}
+                                {item.icon === 'lucide-settings' && <i className="ri-settings-4-line text-lg mr-3"></i>}
+                                {item.icon === 'lucide-brain' && <i className="ri-brain-artificial-line text-lg mr-3"></i>}
+                              </>
+                            ) : (
+                              <i className={`${item.icon} text-lg mr-3`}></i>
+                            )}
+                            <span>{t(item.label)}</span>
+                          </motion.div>
+                        </Link>
+                      </motion.div>
+                    )}
                   ))}
                 </div>
                 

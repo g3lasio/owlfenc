@@ -39,7 +39,7 @@ export const navigationGroups: NavigationGroup[] = [
       },
       {
         id: "project-payments",
-        label: "navigation.projectPayments",
+        label: "navigation.paymentTracker",
         path: "/project-payments",
         icon: "ri-money-dollar-circle-line"
       },

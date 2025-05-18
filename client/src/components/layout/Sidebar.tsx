@@ -155,7 +155,7 @@ export default function Sidebar() {
               <div className="space-y-1 mb-6">
                 {/* Filtrar el elemento de Mervin AI si existe */}
                 {group.items
-                  .filter(item => item.path !== "/mervin")
+                  .filter(item => item.path !== "/mervin" && item.id !== "mervin")
                   .map(renderNavItem)}
               </div>
               {index < navigationGroups.length - 1 && index === 1 && <Separator className="my-2" />}
