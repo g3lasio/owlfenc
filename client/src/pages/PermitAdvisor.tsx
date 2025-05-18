@@ -1326,7 +1326,11 @@ export default function PermitAdvisor() {
                                     Descripción:
                                   </h4>
                                   <p className="text-sm text-muted-foreground">
-                                    {inspection.description}
+                                    {typeof inspection.description === 'string'
+                                      ? inspection.description
+                                      : typeof inspection.description === 'object'
+                                        ? JSON.stringify(inspection.description)
+                                        : 'Información no disponible'}
                                   </p>
                                 </div>
                               )}
