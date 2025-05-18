@@ -949,9 +949,18 @@ export class EstimatorService {
         </head>
         <body>
           <div class="header">
-            <h1>Estimado de Proyecto</h1>
-            <p>Fecha: ${new Date().toLocaleDateString()}</p>
-            <p>Número de Estimado: ${estimateData.projectId || 'N/A'}</p>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+              ${estimateData.contractor?.logo ? 
+                `<div style="max-width: 200px; max-height: 80px;">
+                   <img src="${estimateData.contractor.logo}" alt="Logo" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
+                 </div>` : 
+                '<div style="width: 200px;"></div>'}
+              <div>
+                <h1>Estimado de Proyecto</h1>
+                <p>Fecha: ${new Date().toLocaleDateString()}</p>
+                <p>Número de Estimado: ${estimateData.projectId || 'N/A'}</p>
+              </div>
+            </div>
           </div>
           
           <div class="info-section">
