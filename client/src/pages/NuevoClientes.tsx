@@ -34,6 +34,8 @@ import {
   importClientsFromCsv,
   importClientsFromVcf
 } from "../lib/clientFirebase";
+// Importación del componente de importación inteligente
+import { ImportWizard } from "@/components/ImportWizard";
 
 // Interfaces
 interface Client {
