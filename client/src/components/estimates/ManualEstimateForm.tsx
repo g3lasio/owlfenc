@@ -210,30 +210,22 @@ export default function ManualEstimateForm({ onEstimateGenerated, onGenerate }: 
     setCurrentStep(currentStep - 1);
   };
   
-  // Cargar datos del contratista
+  // Usar datos del contratista del profile hook
   useEffect(() => {
-    async function fetchContractorData() {
-      try {
-        const response = await fetch('/api/contractor/profile');
-        if (!response.ok) {
-          throw new Error('Error al obtener datos del contratista');
-        }
-        const data = await response.json();
-        setContractor(data);
-        setIsLoadingContractor(false);
-      } catch (error) {
-        console.error('Error cargando datos del contratista:', error);
+    // Al usar el hook useProfile, ya no necesitamos hacer una solicitud HTTP separada
+    if (!isLoadingProfile) {
+      setIsLoadingContractor(false);
+      
+      // Si no hay datos del perfil, mostrar una advertencia
+      if (!profile || !profile.companyName) {
         toast({
-          title: "Error",
-          description: "No se pudieron cargar los datos del contratista. Por favor verifica tu perfil.",
-          variant: "destructive"
+          title: "Perfil incompleto",
+          description: "La información de tu empresa está incompleta. Actualiza tu perfil para incluirla en los estimados.",
+          variant: "warning"
         });
-        setIsLoadingContractor(false);
       }
     }
-    
-    fetchContractorData();
-  }, [toast]);
+  }, [isLoadingProfile, profile, toast]);
   
   // Cargar materiales
   useEffect(() => {
