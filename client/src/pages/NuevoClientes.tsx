@@ -39,6 +39,7 @@ import {
 } from "../lib/clientFirebase";
 // Importación del componente de importación inteligente
 import { ImportWizard } from "@/components/ImportWizard";
+import { ContactImportWizard } from "@/components/ContactImportWizard";
 
 // Interfaces
 interface Client {
@@ -1749,8 +1750,8 @@ export default function NuevoClientes() {
         </DialogContent>
       </Dialog>
 
-      {/* Diálogo de Importación Inteligente */}
-      <ImportWizard 
+      {/* Diálogo de Importación Inteligente con mayor control de edición */}
+      <ContactImportWizard 
         isOpen={showSmartImportDialog}
         onClose={() => setShowSmartImportDialog(false)}
         onImportComplete={handleSmartImportComplete}
