@@ -1002,8 +1002,9 @@ export default function Materials() {
       );
     }
     
-    return (
-      <div className="overflow-x-auto">
+    // Vista de escritorio: tabla completa
+    const desktopView = (
+      <div className="hidden md:block overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -1062,6 +1063,84 @@ export default function Materials() {
           </TableBody>
         </Table>
       </div>
+    );
+
+    // Vista móvil: tarjetas
+    const mobileView = (
+      <div className="grid grid-cols-1 gap-4 md:hidden">
+        {filteredMaterials.map((material) => (
+          <div key={material.id} className="bg-card border rounded-lg shadow-sm overflow-hidden">
+            <div className="p-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="font-medium text-base">{material.name}</h3>
+                  <p className="text-muted-foreground text-sm">{material.category}</p>
+                </div>
+                <div className="flex space-x-1">
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => openEditDialog(material)}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                      <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
+                    </svg>
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => openDeleteDialog(material)}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                      <path d="M3 6h18"></path>
+                      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                    </svg>
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3 mt-3 text-sm">
+                <div>
+                  <span className="text-muted-foreground block">Precio:</span>
+                  <div className="font-medium">{formatPrice(material.price)} / {material.unit}</div>
+                </div>
+                <div>
+                  <span className="text-muted-foreground block">Stock:</span>
+                  <div className="font-medium flex items-center">
+                    <span className={
+                      typeof material.stock === 'number' && 
+                      typeof material.minStock === 'number' && 
+                      material.stock <= material.minStock 
+                        ? 'text-destructive' 
+                        : ''
+                    }>
+                      {typeof material.stock === 'number' ? material.stock : 'N/A'}
+                    </span>
+                    
+                    {typeof material.stock === 'number' && 
+                     typeof material.minStock === 'number' && 
+                     material.stock <= material.minStock && (
+                      <AlertCircle className="h-3 w-3 ml-1 text-destructive" />
+                    )}
+                  </div>
+                </div>
+                {material.sku && (
+                  <div className="col-span-2">
+                    <span className="text-muted-foreground block">SKU:</span>
+                    <div className="font-medium">{material.sku}</div>
+                  </div>
+                )}
+                {material.supplier && (
+                  <div className="col-span-2">
+                    <span className="text-muted-foreground block">Proveedor:</span>
+                    <div className="font-medium">{material.supplier}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+
+    return (
+      <>
+        {desktopView}
+        {mobileView}
+      </>
     );
   }
 }
