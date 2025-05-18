@@ -507,6 +507,42 @@ export default function NuevoClientes() {
       }
     }
   };
+  
+  // Manejar la importación inteligente de clientes
+  const handleSmartImportComplete = async (importedClients: Client[]) => {
+    try {
+      console.log("Procesando importación inteligente de clientes...", importedClients);
+      
+      // Asignar el userId a los clientes importados si existe un perfil
+      const clientsWithUserId = importedClients.map(client => ({
+        ...client,
+        userId: profile?.id?.toString() || "dev-user-123"
+      }));
+      
+      // Guardar los clientes en Firebase
+      for (const client of clientsWithUserId) {
+        await saveFirebaseClient(client);
+      }
+      
+      // Actualizar la lista de clientes
+      queryClient.invalidateQueries({ queryKey: ['firebaseClients'] });
+      
+      toast({
+        title: "Importación inteligente exitosa",
+        description: `Se han importado ${importedClients.length} clientes correctamente.`
+      });
+      
+      // Cerrar el diálogo de importación inteligente
+      setShowSmartImportDialog(false);
+    } catch (error: any) {
+      console.error('Error en la importación inteligente:', error);
+      toast({
+        variant: "destructive",
+        title: "Error en la importación inteligente",
+        description: error.message || "No se pudieron importar los clientes"
+      });
+    }
+  };
 
   // Manejar apertura del formulario de edición
   const openEditForm = (client: Client) => {
@@ -1565,15 +1601,7 @@ export default function NuevoClientes() {
       <ImportWizard 
         isOpen={showSmartImportDialog}
         onClose={() => setShowSmartImportDialog(false)}
-        onImportComplete={(importedClients) => {
-          // Actualizar lista de clientes
-          queryClient.invalidateQueries({ queryKey: ['firebaseClients'] });
-          
-          toast({
-            title: "Importación exitosa",
-            description: `Se han importado ${importedClients.length} contactos de forma inteligente.`
-          });
-        }}
+        onImportComplete={handleSmartImportComplete}
       />
     </div>
   );
