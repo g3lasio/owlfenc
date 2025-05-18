@@ -16,7 +16,10 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, FileSymlink, Phone, Mail, MapPin, Star, Edit, UserPlus, Upload, Download, Search, X, Tag, Filter, List, Grid, Sliders } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Spinner } from "@/components/ui/spinner";
+import { Trash2, FileSymlink, Phone, Mail, MapPin, Star, Edit, UserPlus, Upload, Download, Search, X, Tag, Filter, List, Grid, Sliders, AlertTriangle, CheckCircle, CircleAlert } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -765,6 +768,16 @@ export default function NuevoClientes() {
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
         <h1 className="text-2xl font-bold">Clientes</h1>
         <div className="flex flex-wrap gap-2">
+          {selectedClients.length > 0 && (
+            <Button 
+              variant="destructive" 
+              onClick={openBatchDeleteDialog} 
+              className="animate-in fade-in"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Eliminar seleccionados ({selectedClients.length})
+            </Button>
+          )}
           <Button variant="outline" onClick={() => setShowImportDialog(true)}>
             <Upload className="w-4 h-4 mr-2" />
             Importar
@@ -950,6 +963,14 @@ export default function NuevoClientes() {
           <table className="w-full">
             <thead className="bg-muted/50">
               <tr>
+                <th className="px-2 py-3 text-center text-sm font-medium text-muted-foreground w-10">
+                  <Checkbox 
+                    id="select-all"
+                    checked={selectAllChecked}
+                    onCheckedChange={handleSelectAll}
+                    aria-label="Seleccionar todos los contactos"
+                  />
+                </th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Nombre</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Contacto</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground hidden md:table-cell">Dirección</th>
@@ -960,6 +981,14 @@ export default function NuevoClientes() {
             <tbody className="divide-y">
               {filteredClients.map(client => (
                 <tr key={client.id} className="hover:bg-muted/30">
+                  <td className="px-2 py-3 text-center">
+                    <Checkbox 
+                      id={`select-client-${client.id}`}
+                      checked={selectedClients.includes(client.id)}
+                      onCheckedChange={() => handleClientSelection(client.id)}
+                      aria-label={`Seleccionar ${client.name}`}
+                    />
+                  </td>
                   <td className="px-4 py-3 text-sm">
                     <div className="font-medium">{client.name}</div>
                     {client.tags && client.tags.length > 0 && (
