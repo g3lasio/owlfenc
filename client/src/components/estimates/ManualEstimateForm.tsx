@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { useProfile } from "@/hooks/use-profile";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -111,8 +112,8 @@ const estimateFormSchema = z.object({
 type EstimateFormValues = z.infer<typeof estimateFormSchema>;
 
 export default function ManualEstimateForm({ onEstimateGenerated, onGenerate }: ManualEstimateFormProps) {
-  // Estado para datos del contratista
-  const [contractor, setContractor] = useState<Contractor | null>(null);
+  // Usar el hook de perfil para obtener los datos del contratista
+  const { profile, isLoading: isLoadingProfile } = useProfile();
   const [isLoadingContractor, setIsLoadingContractor] = useState(true);
   
   // Estado para clientes y cliente seleccionado
@@ -306,18 +307,18 @@ export default function ManualEstimateForm({ onEstimateGenerated, onGenerate }: 
     
     const formValues = form.getValues();
     const additionalFeatures = formValues.additionalFeatures;
-    const contractorId = contractor?.id || 1; // ID por defecto para pruebas
+    const contractorId = profile?.id || 1; // ID por defecto para pruebas
     
     // Datos básicos del proyecto
     return {
       contractorId,
-      contractorName: contractor?.name || "Mi Empresa",
-      contractorCompany: contractor?.company || "",
-      contractorAddress: contractor?.address || "",
-      contractorPhone: contractor?.phone || "",
-      contractorEmail: contractor?.email || "",
-      contractorLicense: contractor?.license || "",
-      contractorLogo: contractor?.logo || "",
+      contractorName: profile?.companyName || "",
+      contractorCompany: profile?.companyName || "",
+      contractorAddress: profile?.address || "",
+      contractorPhone: profile?.phone || profile?.mobilePhone || "",
+      contractorEmail: profile?.email || "",
+      contractorLicense: profile?.license || "",
+      contractorLogo: profile?.logo || "",
       
       // Datos del cliente
       clientName: validatedClient.name,
