@@ -111,6 +111,7 @@ export default function NuevoClientes() {
   const [showEditClientDialog, setShowEditClientDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const [showSmartImportDialog, setShowSmartImportDialog] = useState(false);
   const [currentClient, setCurrentClient] = useState<Client | null>(null);
   const [importType, setImportType] = useState<"csv" | "vcf">("csv");
   const [csvFile, setCsvFile] = useState<File | null>(null);
@@ -655,6 +656,10 @@ export default function NuevoClientes() {
           <Button variant="outline" onClick={() => setShowImportDialog(true)}>
             <Upload className="w-4 h-4 mr-2" />
             Importar
+          </Button>
+          <Button variant="outline" onClick={() => setShowSmartImportDialog(true)}>
+            <Upload className="w-4 h-4 mr-2" />
+            Importación Inteligente
           </Button>
           <Button onClick={openAddForm}>
             <UserPlus className="w-4 h-4 mr-2" />
@@ -1555,6 +1560,21 @@ export default function NuevoClientes() {
           </Tabs>
         </DialogContent>
       </Dialog>
+
+      {/* Diálogo de Importación Inteligente */}
+      <ImportWizard 
+        isOpen={showSmartImportDialog}
+        onClose={() => setShowSmartImportDialog(false)}
+        onImportComplete={(importedClients) => {
+          // Actualizar lista de clientes
+          queryClient.invalidateQueries({ queryKey: ['firebaseClients'] });
+          
+          toast({
+            title: "Importación exitosa",
+            description: `Se han importado ${importedClients.length} contactos de forma inteligente.`
+          });
+        }}
+      />
     </div>
   );
 }
