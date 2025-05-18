@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useProfile } from '@/hooks/use-profile';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -1071,22 +1072,36 @@ export default function Estimates() {
             <CardTitle className="text-base">Contractor Information</CardTitle>
           </CardHeader>
           <CardContent className="pb-4">
-            <div className="grid grid-cols-1 gap-1">
-              <h3 className="font-medium text-sm">{profile?.companyName || "Owl Fence"}</h3>
+            <div className="grid grid-cols-1 gap-3">
+              {profile?.logo && (
+                <div className="flex justify-center mb-2">
+                  <img 
+                    src={profile.logo} 
+                    alt="Company Logo" 
+                    className="max-h-16 object-contain" 
+                  />
+                </div>
+              )}
+              <h3 className="font-medium text-sm">{profile?.companyName || ""}</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
                 <p className="text-xs text-muted-foreground">
-                  <span className="font-medium">Email:</span> {profile?.email || "info@owlfence.com"}
+                  <span className="font-medium">Email:</span> {profile?.email || ""}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  <span className="font-medium">Teléfono:</span> {profile?.phone || profile?.mobilePhone || "(555) 123-4567"}
+                  <span className="font-medium">Teléfono:</span> {profile?.phone || profile?.mobilePhone || ""}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  <span className="font-medium">Dirección:</span> {profile?.address || "123 Fence Avenue"}
+                  <span className="font-medium">Dirección:</span> {profile?.address || ""}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  <span className="font-medium">Website:</span> {profile?.website || "www.owlfence.com"}
+                  <span className="font-medium">Website:</span> {profile?.website || ""}
                 </p>
               </div>
+              {(!profile?.companyName || !profile?.email || !profile?.phone) && (
+                <div className="mt-2 bg-amber-50 p-2 rounded text-xs text-amber-700 border border-amber-200">
+                  <p>Información incompleta. Actualiza tu <Link href="/settings/profile">perfil de empresa</Link> para mostrar datos correctos en tus estimados.</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
