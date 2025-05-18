@@ -39,22 +39,19 @@ export default function OwlFunding() {
   };
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex flex-col md:flex-row items-center mb-8">
+    <div className="container mx-auto p-6 flex flex-col items-center">
+      <div className="flex flex-col items-center justify-center mb-8 text-center">
         <img 
           src="https://i.postimg.cc/BQWQ1rjG/Color-logo-no-background.png" 
           alt="Owl Funding Logo" 
-          className="h-24 mb-4 md:mb-0 md:mr-6"
+          className="h-32 mb-4"
         />
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Owl Funding</h1>
-          <p className="text-muted-foreground">
-            Soluciones de financiamiento exclusivas para contratistas
-          </p>
-        </div>
+        <p className="text-muted-foreground max-w-2xl">
+          Soluciones de financiamiento exclusivas para contratistas
+        </p>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl w-full">
         <Card>
           <CardHeader>
             <CardTitle>Financiamiento para Contratistas</CardTitle>
@@ -188,11 +185,11 @@ export default function OwlFunding() {
               <div className="space-y-2">
                 <p className="text-sm flex items-center gap-2">
                   <i className="ri-mail-line text-primary"></i>
-                  <a href="mailto:funding@owlfenc.com" className="hover:underline">funding@owlfenc.com</a>
+                  <a href="mailto:info@0wlfunding.com" className="hover:underline">info@0wlfunding.com</a>
                 </p>
                 <p className="text-sm flex items-center gap-2">
                   <i className="ri-phone-line text-primary"></i>
-                  <a href="tel:+18001234567" className="hover:underline">(800) 123-4567</a>
+                  <a href="tel:+12025493519" className="hover:underline">(202) 549-3519</a>
                 </p>
               </div>
             </div>
