@@ -169,6 +169,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Registrar rutas de correo electrónico
   app.use('/api/email', emailRoutes);
   
+  // Registrar rutas de importación inteligente
+  app.use('/api/import', aiImportRoutes);
+  
   // Registrar rutas de QuickBooks
   app.use('/api/quickbooks', quickbooksRoutes);
   

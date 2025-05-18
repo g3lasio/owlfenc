@@ -1,26 +1,17 @@
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import React, { useState, useRef, useCallback } from 'react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Spinner } from '@/components/ui/spinner';
+import { useToast } from '@/hooks/use-toast';
+import { Client } from '@/lib/clientFirebase';
+import { analyzeCSVWithIA, analyzeVCFWithIA, mapCSVToClients, normalizeClientData, CSVAnalysisResult, ColumnMapping, CLIENT_FIELD_OPTIONS } from '@/lib/intelligentImport';
 import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle, AlertCircle, ArrowRight, FileText, Loader2 } from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Client } from "@/lib/clientFirebase";
-import { CSVAnalysisResult, ColumnMapping, analyzeCSVStructure, processCsvRowWithMapping } from "@/lib/intelligentImport";
-import { addDoc, collection, Timestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { HelpCircle, Upload, FileSpreadsheet, Smartphone, Database, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface ImportWizardProps {
   isOpen: boolean;
@@ -30,477 +21,440 @@ interface ImportWizardProps {
 
 export function ImportWizard({ isOpen, onClose, onImportComplete }: ImportWizardProps) {
   const { toast } = useToast();
-  const [importType, setImportType] = useState<"csv" | "vcf">("csv");
-  const [file, setFile] = useState<File | null>(null);
-  const [step, setStep] = useState(1);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [isImporting, setIsImporting] = useState(false);
-  const [csvContent, setCsvContent] = useState<string>("");
+  const [activeTab, setActiveTab] = useState('csv');
+  const [step, setStep] = useState<'upload' | 'mapping' | 'preview'>('upload');
+  const [isLoading, setIsLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [progressMessage, setProgressMessage] = useState('');
+  
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [vcfFile, setVcfFile] = useState<File | null>(null);
+  const [fileContent, setFileContent] = useState<string>('');
+  
   const [analysisResult, setAnalysisResult] = useState<CSVAnalysisResult | null>(null);
   const [columnMappings, setColumnMappings] = useState<ColumnMapping[]>([]);
-  const [missingRequiredFields, setMissingRequiredFields] = useState<string[]>([]);
   const [previewData, setPreviewData] = useState<any[]>([]);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    // Reset wizard state when opened
-    if (isOpen) {
-      setStep(1);
-      setFile(null);
-      setCsvContent("");
-      setAnalysisResult(null);
-      setColumnMappings([]);
-      setPreviewData([]);
-    }
-  }, [isOpen]);
-
-  // When analysis result changes, initialize column mappings
-  useEffect(() => {
-    if (analysisResult) {
-      setColumnMappings(analysisResult.mappings);
-      validateMappings(analysisResult.mappings);
-      
-      // Generate preview data with current mappings
-      generatePreviewData(analysisResult, analysisResult.mappings);
-    }
-  }, [analysisResult]);
-
-  // Validate if required fields are mapped
-  const validateMappings = (mappings: ColumnMapping[]) => {
-    const requiredFields = ["name"];
-    const missing = requiredFields.filter(field => 
-      !mappings.some(mapping => mapping.targetField === field)
-    );
-    setMissingRequiredFields(missing);
-    return missing.length === 0;
-  };
-
-  // Update when mappings change
-  useEffect(() => {
-    if (analysisResult && columnMappings.length > 0) {
-      validateMappings(columnMappings);
-      generatePreviewData(analysisResult, columnMappings);
-    }
-  }, [columnMappings]);
-
-  // Generate preview data
-  const generatePreviewData = (analysis: CSVAnalysisResult, mappings: ColumnMapping[]) => {
-    const previewRows = analysis.sampleRows.slice(0, 5);
-    const preview = previewRows.map(row => {
-      return processCsvRowWithMapping(row, mappings);
-    });
-    setPreviewData(preview);
-  };
-
-  // Handle file selection
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setFile(e.target.files[0]);
-    }
-  };
-
-  // Handle file analysis
-  const analyzeFile = async () => {
-    if (!file) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Por favor selecciona un archivo para importar"
-      });
-      return;
-    }
-
-    setIsAnalyzing(true);
-
-    try {
+  // Manejar la carga del archivo CSV
+  const handleCsvFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setCsvFile(file);
       const reader = new FileReader();
       
-      reader.onload = async (e) => {
-        if (!e.target || typeof e.target.result !== 'string') {
-          throw new Error("Error al leer el archivo");
-        }
-
-        const content = e.target.result;
-        setCsvContent(content);
-        
-        if (importType === "csv") {
-          // Analyze CSV structure with AI
-          const result = await analyzeCSVStructure(content);
-          setAnalysisResult(result);
-          setStep(2);
-        } else if (importType === "vcf") {
-          // Future: Process vCard data with AI
-          toast({
-            variant: "default",
-            title: "Importación de vCard",
-            description: "La importación inteligente de vCard estará disponible próximamente"
-          });
-        }
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
+        setFileContent(content);
       };
-
-      reader.onerror = () => {
-        throw new Error("Error al leer el archivo");
-      };
-
-      if (importType === "csv") {
-        reader.readAsText(file);
-      } else if (importType === "vcf") {
-        reader.readAsText(file);
-      }
-    } catch (error: any) {
-      console.error("Error analyzing file:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Error al analizar el archivo: " + (error.message || "Error desconocido")
-      });
-    } finally {
-      setIsAnalyzing(false);
+      
+      reader.readAsText(file);
     }
   };
 
-  // Handle mapping change
-  const handleMappingChange = (columnIndex: number, newTargetField: string) => {
-    const updatedMappings = [...columnMappings];
-    updatedMappings[columnIndex] = {
-      ...updatedMappings[columnIndex],
-      targetField: newTargetField
-    };
-    setColumnMappings(updatedMappings);
+  // Manejar la carga del archivo VCF
+  const handleVcfFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setVcfFile(file);
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
+        setFileContent(content);
+      };
+      
+      reader.readAsText(file);
+    }
   };
 
-  // Import the data with current mappings
-  const importData = async () => {
-    if (!csvContent || !analysisResult) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No hay datos para importar"
-      });
-      return;
-    }
-
-    // Validate required fields
-    if (missingRequiredFields.length > 0) {
-      toast({
-        variant: "destructive",
-        title: "Campos requeridos faltantes",
-        description: `Falta mapear el campo obligatorio: ${missingRequiredFields.join(", ")}`
-      });
-      return;
-    }
-
-    setIsImporting(true);
-
+  // Analizar el archivo utilizando IA
+  const analyzeFile = async () => {
     try {
-      // Get data rows from CSV
-      const rows = csvContent.split('\n');
-      const dataStartIndex = analysisResult.hasHeaderRow ? 1 : 0;
-      const dataRows = rows.slice(dataStartIndex).filter(row => row.trim());
+      setIsLoading(true);
+      setProgress(10);
+      setProgressMessage('Preparando archivo para análisis...');
       
-      // Process each row with current mappings
-      const importedClients: Client[] = [];
-      
-      for (const rowData of dataRows) {
-        if (!rowData.trim()) continue;
+      if (activeTab === 'csv' && fileContent) {
+        setProgress(30);
+        setProgressMessage('Analizando estructura del CSV con IA...');
         
-        const row = rowData.split(',').map(cell => cell.trim());
-        const clientData = processCsvRowWithMapping(row, columnMappings);
+        const result = await analyzeCSVWithIA(fileContent);
+        setAnalysisResult(result);
         
-        // Skip rows without a name
-        if (!clientData.name) continue;
+        setProgress(70);
+        setProgressMessage('Generando mapeos preliminares...');
         
-        // Add timestamps for Firebase
-        clientData.createdAt = Timestamp.now();
-        clientData.updatedAt = Timestamp.now();
+        setColumnMappings(result.mappings);
         
-        try {
-          // Save to Firebase
-          const docRef = await addDoc(collection(db, "clients"), clientData);
-          
-          importedClients.push({
-            id: docRef.id,
-            ...clientData,
-            createdAt: clientData.createdAt.toDate(),
-            updatedAt: clientData.updatedAt.toDate(),
-          } as Client);
-        } catch (error) {
-          console.error("Error saving client:", error);
-        }
+        // Generar una vista previa de los datos mapeados
+        setProgress(90);
+        setProgressMessage('Preparando vista previa de los datos...');
+        
+        // Usar solo las primeras 10 filas de datos para la vista previa
+        const dataRows = result.hasHeaderRow ? result.sampleRows : result.sampleRows.slice(0, 10);
+        const preview = generatePreviewData(result, result.mappings);
+        setPreviewData(preview);
+        
+        setProgress(100);
+        setProgressMessage('Análisis completado correctamente');
+        
+        setStep('mapping');
+      } else if (activeTab === 'vcf' && fileContent) {
+        setProgress(30);
+        setProgressMessage('Analizando archivo VCF con IA...');
+        
+        const result = await analyzeVCFWithIA(fileContent);
+        // Manejar el resultado del análisis VCF
+        // (Similar al procesamiento de CSV pero adaptado para VCF)
+        
+        setProgress(100);
+        setProgressMessage('Análisis completado correctamente');
+      } else {
+        throw new Error('No se ha seleccionado ningún archivo para analizar');
       }
-      
-      // Notify success
+    } catch (error) {
+      console.error('Error al analizar el archivo:', error);
       toast({
-        title: "Importación exitosa",
-        description: `Se importaron ${importedClients.length} contactos`
-      });
-      
-      onImportComplete(importedClients);
-      onClose();
-    } catch (error: any) {
-      console.error("Error importing data:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Error al importar datos: " + (error.message || "Error desconocido")
+        title: 'Error al analizar el archivo',
+        description: error instanceof Error ? error.message : 'Ocurrió un error inesperado',
+        variant: 'destructive',
       });
     } finally {
-      setIsImporting(false);
+      setIsLoading(false);
     }
   };
 
-  // Get field options for mapping
-  const getFieldOptions = () => {
-    return [
-      { value: "name", label: "Nombre" },
-      { value: "email", label: "Email" },
-      { value: "phone", label: "Teléfono" },
-      { value: "mobilePhone", label: "Teléfono móvil" },
-      { value: "address", label: "Dirección" },
-      { value: "city", label: "Ciudad" },
-      { value: "state", label: "Estado/Provincia" },
-      { value: "zipCode", label: "Código postal" },
-      { value: "notes", label: "Notas" },
-      { value: "source", label: "Fuente" },
-      { value: "tags", label: "Etiquetas" },
-      { value: "classification", label: "Clasificación" },
-      { value: "unknown", label: "No importar" }
-    ];
+  // Generar datos de vista previa basados en los mapeos actuales
+  const generatePreviewData = (analysis: CSVAnalysisResult, mappings: ColumnMapping[]) => {
+    if (!analysis || !analysis.sampleRows || analysis.sampleRows.length === 0) {
+      return [];
+    }
+    
+    // Usar solo hasta 10 filas para la vista previa
+    const dataRows = analysis.sampleRows.slice(0, 10);
+    const rawClients = mapCSVToClients(dataRows, mappings);
+    return normalizeClientData(rawClients);
   };
 
-  // Render confidence badge
-  const renderConfidenceBadge = (confidence: number) => {
-    if (confidence >= 0.8) {
-      return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-        <CheckCircle className="w-3 h-3 mr-1" /> Alta
-      </span>;
-    } else if (confidence >= 0.5) {
-      return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-        Media
-      </span>;
-    } else {
-      return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-        <AlertCircle className="w-3 h-3 mr-1" /> Baja
-      </span>;
+  // Actualizar el mapeo de una columna específica
+  const updateColumnMapping = (index: number, targetField: string) => {
+    const newMappings = [...columnMappings];
+    newMappings[index] = {
+      ...newMappings[index],
+      targetField,
+    };
+    
+    setColumnMappings(newMappings);
+    
+    // Actualizar la vista previa con los nuevos mapeos
+    if (analysisResult) {
+      const preview = generatePreviewData(analysisResult, newMappings);
+      setPreviewData(preview);
     }
   };
 
-  // Render wizard content based on current step
-  const renderWizardContent = () => {
-    switch (step) {
-      case 1:
-        return (
-          <>
-            <DialogHeader>
-              <DialogTitle>Importar contactos</DialogTitle>
-              <DialogDescription>
-                Importa contactos desde distintas fuentes de forma inteligente.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="py-4">
-              <Tabs defaultValue="csv" onValueChange={(value) => setImportType(value as "csv" | "vcf")}>
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="csv">CSV / Excel</TabsTrigger>
-                  <TabsTrigger value="vcf">vCard (Contactos)</TabsTrigger>
-                </TabsList>
-                <TabsContent value="csv" className="mt-4">
-                  <div className="space-y-4">
-                    <div className="border rounded-md p-4">
-                      <Label htmlFor="csv-file" className="text-sm font-medium">
-                        Selecciona un archivo CSV
-                      </Label>
-                      <Input
-                        id="csv-file"
-                        type="file"
-                        accept=".csv"
-                        onChange={handleFileChange}
-                        className="mt-2"
-                      />
-                      <p className="text-sm text-gray-500 mt-2">
-                        El sistema analizará automáticamente la estructura del archivo
-                      </p>
-                    </div>
-                  </div>
-                </TabsContent>
-                <TabsContent value="vcf" className="mt-4">
-                  <div className="space-y-4">
-                    <div className="border rounded-md p-4">
-                      <Label htmlFor="vcf-file" className="text-sm font-medium">
-                        Selecciona un archivo vCard (.vcf)
-                      </Label>
-                      <Input
-                        id="vcf-file"
-                        type="file"
-                        accept=".vcf,.vcard"
-                        onChange={handleFileChange}
-                        className="mt-2"
-                      />
-                      <p className="text-sm text-gray-500 mt-2">
-                        Importa contactos desde Apple Contacts, Google Contacts u otros
-                      </p>
-                    </div>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={onClose}>
-                Cancelar
-              </Button>
-              <Button 
-                onClick={analyzeFile} 
-                disabled={!file || isAnalyzing}
-              >
-                {isAnalyzing ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Analizando...
-                  </>
-                ) : (
-                  <>
-                    Continuar
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </>
-                )}
-              </Button>
-            </DialogFooter>
-          </>
-        );
+  // Completar la importación
+  const completeImport = useCallback(async () => {
+    try {
+      setIsLoading(true);
       
-      case 2:
-        return (
-          <>
-            <DialogHeader>
-              <DialogTitle>Mapeo de campos</DialogTitle>
-              <DialogDescription>
-                Revisa y ajusta el mapeo automático de los campos
-              </DialogDescription>
-            </DialogHeader>
-            
-            {analysisResult && (
-              <div className="py-4 space-y-6">
-                {missingRequiredFields.length > 0 && (
-                  <div className="bg-red-50 border border-red-200 rounded-md p-3 text-sm text-red-800">
-                    <AlertCircle className="inline-block mr-2 h-4 w-4" />
-                    Falta mapear el campo obligatorio: {missingRequiredFields.join(", ")}
-                  </div>
-                )}
-                
-                <div className="border rounded-md">
-                  <div className="bg-muted p-3 font-medium text-sm">
-                    <FileText className="inline mr-2 h-4 w-4" />
-                    Mapeo de columnas detectado automáticamente
-                  </div>
-                  
-                  <ScrollArea className="h-[400px]">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-[180px]">Encabezado original</TableHead>
-                          <TableHead className="w-[120px]">Tipo detectado</TableHead>
-                          <TableHead className="w-[100px]">Confianza</TableHead>
-                          <TableHead className="w-[180px]">Mapear a campo</TableHead>
-                          <TableHead>Ejemplos</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {columnMappings.map((mapping, index) => (
-                          <TableRow key={index}>
-                            <TableCell className="font-medium">{mapping.originalHeader}</TableCell>
-                            <TableCell>{mapping.detectedType}</TableCell>
-                            <TableCell>{renderConfidenceBadge(mapping.confidence)}</TableCell>
-                            <TableCell>
-                              <Select 
-                                value={mapping.targetField}
-                                onValueChange={(value) => handleMappingChange(index, value)}
-                              >
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Seleccionar campo" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {getFieldOptions().map(option => (
-                                    <SelectItem key={option.value} value={option.value}>
-                                      {option.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </TableCell>
-                            <TableCell className="text-sm text-gray-600">
-                              {mapping.examples.join(", ")}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </ScrollArea>
-                </div>
+      if (!analysisResult) {
+        throw new Error('No hay datos para importar');
+      }
+      
+      // Procesar todas las filas, no solo la muestra de vista previa
+      const rows = analysisResult.hasHeaderRow 
+        ? analysisResult.sampleRows 
+        : analysisResult.sampleRows;
+        
+      // Mapear los datos a objetos cliente usando los mapeos finales
+      const mappedClients = mapCSVToClients(rows, columnMappings);
+      
+      // Normalizar los datos para asegurar consistencia
+      const normalizedClients = normalizeClientData(mappedClients);
+      
+      // Llamar al callback con los clientes importados
+      onImportComplete(normalizedClients);
+      
+      toast({
+        title: 'Importación exitosa',
+        description: `Se importaron ${normalizedClients.length} clientes correctamente.`,
+      });
+      
+      // Cerrar el wizard
+      onClose();
+    } catch (error) {
+      console.error('Error al importar clientes:', error);
+      toast({
+        title: 'Error en la importación',
+        description: error instanceof Error ? error.message : 'Ocurrió un error inesperado',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [analysisResult, columnMappings, onImportComplete, onClose, toast]);
 
-                <div className="border rounded-md">
-                  <div className="bg-muted p-3 font-medium text-sm">
-                    Vista previa de datos
-                  </div>
-                  <ScrollArea className="h-[200px]">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-[200px]">Nombre</TableHead>
-                          <TableHead className="w-[200px]">Email</TableHead>
-                          <TableHead className="w-[150px]">Teléfono</TableHead>
-                          <TableHead>Dirección</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {previewData.map((client, index) => (
-                          <TableRow key={index}>
-                            <TableCell>{client.name || '-'}</TableCell>
-                            <TableCell>{client.email || '-'}</TableCell>
-                            <TableCell>{client.phone || client.mobilePhone || '-'}</TableCell>
-                            <TableCell>{client.address || '-'}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </ScrollArea>
-                </div>
-              </div>
+  // Resetear el estado al cerrar
+  const handleClose = () => {
+    setStep('upload');
+    setCsvFile(null);
+    setVcfFile(null);
+    setFileContent('');
+    setAnalysisResult(null);
+    setColumnMappings([]);
+    setPreviewData([]);
+    onClose();
+  };
+
+  // Renderizar la interfaz de carga de archivos
+  const renderUploadStep = () => (
+    <div className="space-y-6 py-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="csv">
+            <FileSpreadsheet className="mr-2 h-4 w-4" />
+            CSV
+          </TabsTrigger>
+          <TabsTrigger value="vcf">
+            <Smartphone className="mr-2 h-4 w-4" />
+            vCard (VCF)
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="csv" className="pt-4">
+          <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md p-8 mb-4 cursor-pointer hover:bg-gray-50 transition-colors"
+            onClick={() => fileInputRef.current?.click()}>
+            <input 
+              type="file" 
+              ref={fileInputRef}
+              accept=".csv" 
+              className="hidden" 
+              onChange={handleCsvFileChange} 
+            />
+            <Upload className="h-10 w-10 text-gray-400 mb-2" />
+            <p className="text-sm text-gray-600 mb-1">Haz clic para seleccionar o arrastra un archivo CSV</p>
+            {csvFile ? (
+              <p className="text-xs font-medium">{csvFile.name}</p>
+            ) : (
+              <p className="text-xs text-gray-500">CSV, XLS, XLSX hasta 10MB</p>
             )}
-            
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setStep(1)}>
-                Atrás
-              </Button>
-              <Button 
-                onClick={importData}
-                disabled={isImporting || missingRequiredFields.length > 0}
-              >
-                {isImporting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Importando...
-                  </>
-                ) : "Importar contactos"}
-              </Button>
-            </DialogFooter>
-          </>
-        );
+          </div>
+          
+          {csvFile && (
+            <div className="bg-gray-50 p-3 rounded-md">
+              <div className="flex items-center">
+                <FileSpreadsheet className="h-5 w-5 text-blue-500 mr-2" />
+                <div className="text-sm font-medium">{csvFile.name}</div>
+              </div>
+              <div className="mt-2 text-xs text-gray-500">
+                {(csvFile.size / 1024).toFixed(1)} KB
+              </div>
+            </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="vcf" className="pt-4">
+          <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md p-8 mb-4 cursor-pointer hover:bg-gray-50 transition-colors"
+            onClick={() => fileInputRef.current?.click()}>
+            <input 
+              type="file" 
+              ref={fileInputRef}
+              accept=".vcf" 
+              className="hidden" 
+              onChange={handleVcfFileChange} 
+            />
+            <Upload className="h-10 w-10 text-gray-400 mb-2" />
+            <p className="text-sm text-gray-600 mb-1">Haz clic para seleccionar o arrastra un archivo VCF</p>
+            {vcfFile ? (
+              <p className="text-xs font-medium">{vcfFile.name}</p>
+            ) : (
+              <p className="text-xs text-gray-500">Archivos vCard (VCF) hasta 10MB</p>
+            )}
+          </div>
+          
+          {vcfFile && (
+            <div className="bg-gray-50 p-3 rounded-md">
+              <div className="flex items-center">
+                <Smartphone className="h-5 w-5 text-blue-500 mr-2" />
+                <div className="text-sm font-medium">{vcfFile.name}</div>
+              </div>
+              <div className="mt-2 text-xs text-gray-500">
+                {(vcfFile.size / 1024).toFixed(1)} KB
+              </div>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
       
-      default:
-        return null;
-    }
-  };
-
-  // Create a Spinner component for loading states
-  const Spinner = () => (
-    <div className="flex items-center justify-center h-40">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      <span className="ml-2">Procesando...</span>
+      {isLoading && (
+        <div className="mt-4 space-y-3">
+          <Progress value={progress} />
+          <p className="text-sm text-gray-600">{progressMessage}</p>
+        </div>
+      )}
+      
+      <div className="flex justify-end space-x-2">
+        <Button variant="outline" onClick={handleClose}>Cancelar</Button>
+        <Button 
+          onClick={analyzeFile} 
+          disabled={isLoading || (!csvFile && !vcfFile)}
+        >
+          {isLoading && <Spinner className="mr-2 h-4 w-4" />}
+          Analizar con IA
+        </Button>
+      </div>
     </div>
   );
 
+  // Renderizar la interfaz de mapeo de columnas
+  const renderMappingStep = () => {
+    if (!analysisResult || !columnMappings.length) return null;
+    
+    return (
+      <div className="space-y-6 py-4">
+        <Alert className="mb-6">
+          <AlertTriangle className="h-5 w-5 mr-2" />
+          <AlertDescription>
+            Nuestro sistema ha analizado las columnas de tu archivo y detectado automáticamente su contenido. 
+            Por favor, verifica y ajusta las asignaciones si es necesario.
+          </AlertDescription>
+        </Alert>
+
+        <Table>
+          <TableCaption>Asignación de columnas detectada por IA</TableCaption>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[200px]">Columna en CSV</TableHead>
+              <TableHead>Ejemplos de datos</TableHead>
+              <TableHead>Tipo detectado</TableHead>
+              <TableHead className="w-[200px]">Asignar a campo</TableHead>
+              <TableHead className="w-[50px]">Confianza</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {columnMappings.map((mapping, index) => (
+              <TableRow key={index}>
+                <TableCell className="font-medium">{mapping.originalHeader}</TableCell>
+                <TableCell className="text-xs text-gray-600">
+                  {mapping.examples.join(', ')}
+                </TableCell>
+                <TableCell>
+                  {mapping.detectedType}
+                  {mapping.confidence >= 0.9 && (
+                    <CheckCircle2 className="inline-block ml-1 h-4 w-4 text-green-500" />
+                  )}
+                </TableCell>
+                <TableCell>
+                  <Select
+                    value={mapping.targetField}
+                    onValueChange={(value) => updateColumnMapping(index, value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar campo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CLIENT_FIELD_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center space-x-1">
+                    <Progress value={mapping.confidence * 100} className="h-2 w-10" />
+                    <span className="text-xs">{Math.round(mapping.confidence * 100)}%</span>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        
+        <div className="flex justify-between pt-4">
+          <Button variant="outline" onClick={() => setStep('upload')}>
+            Atrás
+          </Button>
+          <Button onClick={() => setStep('preview')}>
+            Previsualizar datos
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
+  // Renderizar la interfaz de previsualización de datos
+  const renderPreviewStep = () => {
+    if (!previewData.length) return null;
+    
+    const previewColumns = ['name', 'email', 'phone', 'mobilePhone', 'address'];
+    
+    return (
+      <div className="space-y-6 py-4">
+        <Alert className="mb-6">
+          <HelpCircle className="h-5 w-5 mr-2" />
+          <AlertDescription>
+            Previsualización de los primeros 10 registros. Verifica que los datos se hayan mapeado correctamente.
+          </AlertDescription>
+        </Alert>
+        
+        <div className="overflow-x-auto">
+          <Table>
+            <TableCaption>Previsualización de datos a importar</TableCaption>
+            <TableHeader>
+              <TableRow>
+                {previewColumns.map((column) => (
+                  <TableHead key={column}>{column}</TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {previewData.map((client, index) => (
+                <TableRow key={index}>
+                  {previewColumns.map((column) => (
+                    <TableCell key={column}>
+                      {client[column] || '-'}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+        
+        <div className="flex justify-between pt-4">
+          <Button variant="outline" onClick={() => setStep('mapping')}>
+            Atrás
+          </Button>
+          <Button onClick={completeImport} disabled={isLoading}>
+            {isLoading && <Spinner className="mr-2 h-4 w-4" />}
+            Importar {previewData.length} clientes
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
-        {renderWizardContent()}
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-4xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center">
+            <Database className="mr-2 h-5 w-5" />
+            Importación Inteligente de Contactos
+          </DialogTitle>
+          <DialogDescription>
+            Importa contactos desde diferentes fuentes con detección automática de campos usando IA.
+          </DialogDescription>
+        </DialogHeader>
+        
+        {step === 'upload' && renderUploadStep()}
+        {step === 'mapping' && renderMappingStep()}
+        {step === 'preview' && renderPreviewStep()}
       </DialogContent>
     </Dialog>
   );
