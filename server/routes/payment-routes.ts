@@ -4,6 +4,7 @@ import { projectPaymentService } from '../services/projectPaymentService';
 import { storage } from '../storage';
 import Stripe from 'stripe';
 import express from 'express';
+import { isAuthenticated } from '../middleware/auth';
 
 // Initialize Stripe with the secret key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder', {
@@ -29,12 +30,8 @@ const connectAccountSchema = z.object({
 const router = Router();
 
 // Get Stripe account status
-router.get('/stripe/account-status', async (req: Request, res: Response) => {
+router.get('/stripe/account-status', isAuthenticated, async (req: Request, res: Response) => {
   try {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: 'Not authenticated' });
-    }
-
     const userId = req.user.id;
     const user = await storage.getUser(userId);
 
@@ -74,12 +71,8 @@ router.get('/stripe/account-status', async (req: Request, res: Response) => {
 });
 
 // Create Stripe Connect account
-router.post('/stripe/connect', async (req: Request, res: Response) => {
+router.post('/stripe/connect', isAuthenticated, async (req: Request, res: Response) => {
   try {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: 'Not authenticated' });
-    }
-
     const userId = req.user.id;
     const user = await storage.getUser(userId);
 
@@ -114,12 +107,8 @@ router.post('/stripe/connect', async (req: Request, res: Response) => {
 });
 
 // Get Stripe Connect dashboard link
-router.get('/stripe/dashboard', async (req: Request, res: Response) => {
+router.get('/stripe/dashboard', isAuthenticated, async (req: Request, res: Response) => {
   try {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: 'Not authenticated' });
-    }
-
     const userId = req.user.id;
     const dashboardLink = await projectPaymentService.createConnectDashboardLink(userId);
 
@@ -131,12 +120,8 @@ router.get('/stripe/dashboard', async (req: Request, res: Response) => {
 });
 
 // Create a payment link
-router.post('/payment-links', async (req: Request, res: Response) => {
+router.post('/payment-links', isAuthenticated, async (req: Request, res: Response) => {
   try {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: 'Not authenticated' });
-    }
-
     const userId = req.user.id;
     const validatedData = createPaymentLinkSchema.parse(req.body);
 
@@ -162,12 +147,8 @@ router.post('/payment-links', async (req: Request, res: Response) => {
 });
 
 // Get all payment links for the current user
-router.get('/payment-links', async (req: Request, res: Response) => {
+router.get('/payment-links', isAuthenticated, async (req: Request, res: Response) => {
   try {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: 'Not authenticated' });
-    }
-
     const userId = req.user.id;
     const payments = await storage.getProjectPaymentsByUserId(userId);
 

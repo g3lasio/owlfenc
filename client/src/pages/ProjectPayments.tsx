@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { paymentService } from '@/services/paymentService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -171,40 +172,35 @@ const ProjectPayments: React.FC = () => {
 
   // Get payment links
   const { data: payments, isLoading, error } = useQuery({
-    queryKey: ['/api/payment-links'],
+    queryKey: ['payment-links'],
     queryFn: async () => {
       try {
-        const response = await fetch('/api/payment-links');
-        if (!response.ok) {
-          throw new Error('Failed to fetch payment links');
-        }
-        return await response.json();
+        return await paymentService.getPaymentLinks();
       } catch (error) {
         console.error('Error fetching payment links:', error);
-        // Temporarily using mock data during development
+        // Fallback a datos de ejemplo si la API falla
         return mockPayments;
       }
-    },
-    enabled: true // Always enabled (removed dependency on bank account simulation)
+    }
   });
 
-  // Function to resend payment link
-  const resendPaymentLink = async (paymentId: number) => {
-    try {
-      const response = await fetch(`/api/payment-links/${paymentId}/resend`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Error resending payment link');
+  // Obtener el estado de la cuenta de Stripe
+  const { data: stripeAccountStatus } = useQuery({
+    queryKey: ['stripe-account-status'],
+    queryFn: async () => {
+      try {
+        return await paymentService.getStripeAccountStatus();
+      } catch (error) {
+        console.error('Error obteniendo estado de cuenta Stripe:', error);
+        return { hasStripeAccount: false };
       }
+    }
+  });
 
-      const data = await response.json();
-
+  // Mutación para reenviar enlaces de pago
+  const resendPaymentLinkMutation = useMutation({
+    mutationFn: (paymentId: number) => paymentService.resendPaymentLink(paymentId),
+    onSuccess: (data) => {
       // Show success message
       toast({
         title: "Payment link resent",
@@ -213,7 +209,7 @@ const ProjectPayments: React.FC = () => {
       });
 
       // Invalidate cache to update data
-      queryClient.invalidateQueries({ queryKey: ['/api/payment-links'] });
+      queryClient.invalidateQueries({ queryKey: ['payment-links'] });
 
       // Copy to clipboard if available
       if (data.url) {
@@ -224,13 +220,19 @@ const ProjectPayments: React.FC = () => {
           variant: "default",
         });
       }
-    } catch (error: any) {
+    },
+    onError: (error: any) => {
       toast({
         title: "Error",
         description: error.message || "Could not resend payment link",
         variant: "destructive",
       });
     }
+  });
+
+  // Function to resend payment link
+  const resendPaymentLink = (paymentId: number) => {
+    resendPaymentLinkMutation.mutate(paymentId);
   };
 
   // Function to format payment type
@@ -321,44 +323,78 @@ const ProjectPayments: React.FC = () => {
   ];
 
   // Connect to Stripe for payment processing
-  const connectToStripe = async () => {
-    try {
-      toast({
-        title: "Connecting to Stripe",
-        description: "Redirecting to Stripe to connect your account...",
-        variant: "default"
-      });
-
-      // Call the backend to initiate Stripe Connect
-      const response = await fetch('/api/stripe/connect', { 
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to connect with Stripe');
-      }
-
-      const data = await response.json();
-
+  const connectStripeMutation = useMutation({
+    mutationFn: () => paymentService.connectStripeAccount(),
+    onSuccess: (data) => {
       // Redirect to Stripe onboarding URL
       if (data.url) {
         window.location.href = data.url;
       } else {
         throw new Error('No redirect URL received from server');
       }
-    } catch (error: any) {
+    },
+    onError: (error: any) => {
       toast({
         title: "Connection failed",
         description: error.message || "Could not connect to Stripe. Please try again.",
         variant: "destructive"
       });
     }
+  });
+
+  const connectToStripe = async () => {
+    toast({
+      title: "Connecting to Stripe",
+      description: "Redirecting to Stripe to connect your account...",
+      variant: "default"
+    });
+    
+    connectStripeMutation.mutate();
   };
 
   // No bank account functions needed
+
+  // Mutación para crear enlaces de pago
+  const createPaymentLinkMutation = useMutation({
+    mutationFn: (data: { amount: number, description: string }) => 
+      paymentService.createPaymentLink({
+        amount: data.amount,
+        description: data.description
+      }),
+    onSuccess: (data) => {
+      if (data.url) {
+        // Copy to clipboard
+        navigator.clipboard.writeText(data.url);
+
+        // Success message
+        toast({
+          title: "Payment link created",
+          description: "Payment link has been created and copied to clipboard",
+          variant: "default"
+        });
+
+        // Refresh payment links list
+        queryClient.invalidateQueries({ queryKey: ['payment-links'] });
+
+        // Reset form and close modal
+        setPaymentAmount('');
+        setPaymentDescription('');
+        setShowPaymentLinkModal(false);
+      } else {
+        throw new Error('No payment link URL received from server');
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error creating payment link",
+        description: error.message || "There was a problem creating your payment link. Please try again.",
+        variant: "destructive"
+      });
+    },
+    onSettled: () => {
+      setCreatingPaymentLink(false);
+    }
+  });
 
   // Function to create payment link
   const createPaymentLink = async (e: React.FormEvent) => {
@@ -375,53 +411,17 @@ const ProjectPayments: React.FC = () => {
         throw new Error('Please enter a description (minimum 3 characters)');
       }
 
-      // Call API to create a payment link
-      const response = await fetch('/api/payment-links', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          amount: parseFloat(paymentAmount),
-          description: paymentDescription
-        })
+      // Crear el enlace de pago
+      createPaymentLinkMutation.mutate({
+        amount: parseFloat(paymentAmount),
+        description: paymentDescription
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create payment link');
-      }
-
-      const data = await response.json();
-
-      if (data.url) {
-        // Copy to clipboard
-        navigator.clipboard.writeText(data.url);
-
-        // Success message
-        toast({
-          title: "Payment link created",
-          description: "Payment link has been created and copied to clipboard",
-          variant: "default"
-        });
-
-        // Refresh payment links list
-        queryClient.invalidateQueries({ queryKey: ['/api/payment-links'] });
-      } else {
-        throw new Error('No payment link URL received from server');
-      }
-
-      // Reset form and close modal
-      setPaymentAmount('');
-      setPaymentDescription('');
-      setShowPaymentLinkModal(false);
     } catch (error: any) {
       toast({
         title: "Error creating payment link",
         description: error.message || "There was a problem creating your payment link. Please try again.",
         variant: "destructive"
       });
-    } finally {
       setCreatingPaymentLink(false);
     }
   };

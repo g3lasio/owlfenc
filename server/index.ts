@@ -32,6 +32,13 @@ app.use(express.json());
 })();
 app.use(express.urlencoded({ extended: false }));
 
+
+// Importar rutas de pagos
+import paymentRoutes from './routes/payment-routes';
+
+// Registrar rutas de pagos
+app.use('/api', paymentRoutes);
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
