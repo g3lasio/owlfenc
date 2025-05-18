@@ -26,11 +26,6 @@ export const mainNavigationConfig: NavigationSection[] = [
         path: "/ai-project-manager",
         icon: "ri-brain-line",
       },
-      {
-        label: "AR Fence Estimator",
-        path: "/ar-fence-estimator",
-        icon: "ri-3d-cube-sphere-line",
-      },
     ],
   },
   {

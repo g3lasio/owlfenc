@@ -89,12 +89,6 @@ export const navigationGroups: NavigationGroup[] = [
         label: "navigation.aiProjectManager",
         path: "/ai-project-manager",
         icon: "lucide-brain"
-      },
-      {
-        id: "ar-fence-estimator",
-        label: "navigation.arFenceEstimator",
-        path: "/ar-fence-estimator",
-        icon: "ri-ruler-line"
       }
     ]
   },
