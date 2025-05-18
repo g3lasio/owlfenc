@@ -172,20 +172,38 @@ const ProjectPayments: React.FC = () => {
     }
   ];
   
-  // Simular la consulta de pagos con datos de ejemplo
-  const { data: payments, isLoading, error } = useQuery({
-    queryKey: ['/api/projects/payments'],
+  // Obtener el estado de la cuenta de Stripe
+  const { data: stripeAccountStatus, isLoading: loadingStripeStatus } = useQuery({
+    queryKey: ['/api/stripe/account-status'],
     queryFn: async () => {
-      // Simulando tiempo de carga para una experiencia más realista
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return Promise.resolve(mockPayments);
+      const response = await fetch('/api/stripe/account-status');
+      if (!response.ok) {
+        throw new Error('Failed to fetch Stripe account status');
+      }
+      return response.json();
+    },
+    onSuccess: (data: any) => {
+      setConnectedToStripe(data.hasStripeAccount);
     }
   });
 
-  // Función para reenviar un enlace de pago
+  // Obtener los enlaces de pago
+  const { data: payments, isLoading, error } = useQuery({
+    queryKey: ['/api/payment-links'],
+    queryFn: async () => {
+      const response = await fetch('/api/payment-links');
+      if (!response.ok) {
+        throw new Error('Failed to fetch payment links');
+      }
+      return response.json();
+    },
+    enabled: connectedToStripe
+  });
+
+  // Function to resend payment link
   const resendPaymentLink = async (paymentId: number) => {
     try {
-      const response = await fetch(`/api/project-payments/${paymentId}/resend`, {
+      const response = await fetch(`/api/payment-links/${paymentId}/resend`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -193,30 +211,35 @@ const ProjectPayments: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Error al reenviar el enlace de pago');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Error resending payment link');
       }
 
       const data = await response.json();
       
-      // Mostrar mensaje de éxito
+      // Show success message
       toast({
-        title: "Enlace reenviado",
-        description: "El enlace de pago ha sido actualizado correctamente",
+        title: "Payment link resent",
+        description: "The payment link has been successfully updated",
         variant: "default",
       });
 
-      // Invalidar la caché para actualizar los datos
-      queryClient.invalidateQueries({ queryKey: ['/api/projects/payments'] });
+      // Invalidate cache to update data
+      queryClient.invalidateQueries({ queryKey: ['/api/payment-links'] });
       
-      // Redireccionar al enlace de pago si está disponible
-      if (data.checkoutUrl) {
-        window.open(data.checkoutUrl, '_blank');
+      // Copy to clipboard if available
+      if (data.url) {
+        navigator.clipboard.writeText(data.url);
+        toast({
+          title: "Link copied",
+          description: "Payment link copied to clipboard",
+          variant: "default",
+        });
       }
-    } catch (err) {
-      const error = err as Error;
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "No se pudo reenviar el enlace de pago",
+        description: error.message || "Could not resend payment link",
         variant: "destructive",
       });
     }
@@ -307,25 +330,30 @@ const ProjectPayments: React.FC = () => {
         variant: "default"
       });
       
-      // In a real implementation, we would call an API endpoint to initiate Stripe Connect
-      // For demo purposes, we're just simulating the process
-      // const response = await fetch('/api/stripe/connect', { method: 'POST' });
-      // const data = await response.json();
-      // window.location.href = data.url;
+      // Call the backend to initiate Stripe Connect
+      const response = await fetch('/api/stripe/connect', { 
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
       
-      // Simulating successful connection
-      setTimeout(() => {
-        setConnectedToStripe(true);
-        toast({
-          title: "Account connected",
-          description: "Your Stripe account has been successfully connected",
-          variant: "default"
-        });
-      }, 2000);
-    } catch (error) {
+      if (!response.ok) {
+        throw new Error('Failed to connect with Stripe');
+      }
+      
+      const data = await response.json();
+      
+      // Redirect to Stripe onboarding URL
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error('No redirect URL received from server');
+      }
+    } catch (error: any) {
       toast({
         title: "Connection failed",
-        description: "Could not connect to Stripe. Please try again.",
+        description: error.message || "Could not connect to Stripe. Please try again.",
         variant: "destructive"
       });
     }
@@ -349,42 +377,59 @@ const ProjectPayments: React.FC = () => {
     setCreatingPaymentLink(true);
     
     try {
-      // In a real implementation, we would call Stripe API to create a payment link
-      // const response = await fetch('/api/payment-links', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json'
-      //   },
-      //   body: JSON.stringify({
-      //     amount: parseFloat(paymentAmount) * 100, // Convert to cents
-      //     description: paymentDescription
-      //   })
-      // });
+      // Validate input
+      if (!paymentAmount || isNaN(parseFloat(paymentAmount)) || parseFloat(paymentAmount) <= 0) {
+        throw new Error('Please enter a valid amount');
+      }
       
-      // const data = await response.json();
-      // if (data.url) {
-      //   // Copy to clipboard
-      //   navigator.clipboard.writeText(data.url);
-      // }
+      if (!paymentDescription || paymentDescription.trim().length < 3) {
+        throw new Error('Please enter a description (minimum 3 characters)');
+      }
       
-      // Simulate API call for demo
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Success message
-      toast({
-        title: "Payment link created",
-        description: "Payment link has been created and copied to clipboard",
-        variant: "default"
+      // Call API to create a payment link
+      const response = await fetch('/api/payment-links', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          amount: parseFloat(paymentAmount),
+          description: paymentDescription
+        })
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create payment link');
+      }
+      
+      const data = await response.json();
+      
+      if (data.url) {
+        // Copy to clipboard
+        navigator.clipboard.writeText(data.url);
+        
+        // Success message
+        toast({
+          title: "Payment link created",
+          description: "Payment link has been created and copied to clipboard",
+          variant: "default"
+        });
+        
+        // Refresh payment links list
+        queryClient.invalidateQueries({ queryKey: ['/api/payment-links'] });
+      } else {
+        throw new Error('No payment link URL received from server');
+      }
       
       // Reset form and close modal
       setPaymentAmount('');
       setPaymentDescription('');
       setShowPaymentLinkModal(false);
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error creating payment link",
-        description: "There was a problem creating your payment link. Please try again.",
+        description: error.message || "There was a problem creating your payment link. Please try again.",
         variant: "destructive"
       });
     } finally {

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { projectPaymentService } from '../services/projectPaymentService';
 import { storage } from '../storage';
 import Stripe from 'stripe';
+import express from 'express';
 
 // Initialize Stripe with the secret key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder', {

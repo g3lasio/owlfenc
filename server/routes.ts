@@ -91,6 +91,8 @@ function calculateCompletionTime(length: number): string {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Use payment routes
+  app.use('/api', paymentRoutes);
   // Endpoint para mejorar descripciones con OpenAI
   app.post("/api/enhance-description", async (req: Request, res: Response) => {
     try {
