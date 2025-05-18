@@ -153,7 +153,10 @@ export default function Sidebar() {
                 {t(`navigation.${group.title.toLowerCase()}`)}
               </h2>
               <div className="space-y-1 mb-6">
-                {group.items.map(renderNavItem)}
+                {/* Filtrar el elemento de Mervin AI si existe */}
+                {group.items
+                  .filter(item => item.path !== "/mervin")
+                  .map(renderNavItem)}
               </div>
               {index < navigationGroups.length - 1 && index === 1 && <Separator className="my-2" />}
             </div>
