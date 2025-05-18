@@ -106,17 +106,18 @@ const ProjectPayments: React.FC = () => {
     }
   ];
   
-  // Datos de ejemplo para pagos mientras solucionamos el problema con la base de datos
+  // Example payment data while we resolve database connection issues
   const mockPayments: ProjectPayment[] = [
     {
       id: 1,
       projectId: 101,
-      projectName: 'Valla Residencial Familia Martínez',
+      projectName: 'Martinez Family Residential Fence',
       type: 'deposit',
       status: 'paid',
       amount: 2500.00,
       stripePaymentIntentId: 'pi_3NcXj2CZ6qsJgndV0QhhsuUs',
-      stripePaymentLinkUrl: null,
+      description: 'Deposit payment for residential fence installation',
+      paymentMethod: 'card',
       createdAt: '2025-04-15T10:30:00Z',
       updatedAt: '2025-04-15T14:20:00Z',
       paymentDate: '2025-04-15T14:20:00Z',
@@ -124,12 +125,14 @@ const ProjectPayments: React.FC = () => {
     {
       id: 2,
       projectId: 102,
-      projectName: 'Cercado Comercial Plaza Norte',
+      projectName: 'North Plaza Commercial Fencing',
       type: 'deposit',
       status: 'pending',
       amount: 5750.00,
       stripePaymentIntentId: 'pi_3NcY5kCZ6qsJgndV1MkL9i7q',
-      stripePaymentLinkUrl: 'https://checkout.stripe.com/pay/cs_test_a1fUjP16ZtL49f8MT4x4y3ghJcEcbFSINNqOrcRGUuSRTBoQqFkE74BCrz',
+      stripeCheckoutSessionId: 'cs_test_a1fUjP16ZtL49f8MT4x4y3ghJcEcbFSINNqOrcRGUuSRTBoQqFkE74BCrz',
+      checkoutUrl: 'https://checkout.stripe.com/pay/cs_test_a1fUjP16ZtL49f8MT4x4y3ghJcEcbFSINNqOrcRGUuSRTBoQqFkE74BCrz',
+      description: '50% deposit for commercial fencing project',
       createdAt: '2025-05-02T09:15:00Z',
       updatedAt: null,
       paymentDate: null,
@@ -137,12 +140,14 @@ const ProjectPayments: React.FC = () => {
     {
       id: 3,
       projectId: 101,
-      projectName: 'Valla Residencial Familia Martínez',
+      projectName: 'Martinez Family Residential Fence',
       type: 'final',
       status: 'pending',
       amount: 2500.00,
       stripePaymentIntentId: 'pi_3NdTr8CZ6qsJgndV0cTYh82R',
-      stripePaymentLinkUrl: 'https://checkout.stripe.com/pay/cs_test_b2gVkQ27AuM59g8NT5x5z4hiKdFdcGTJOOpPsdSHVvTSUCpPrGlF85CDs0',
+      stripeCheckoutSessionId: 'cs_test_b2gVkQ27AuM59g8NT5x5z4hiKdFdcGTJOOpPsdSHVvTSUCpPrGlF85CDs0',
+      checkoutUrl: 'https://checkout.stripe.com/pay/cs_test_b2gVkQ27AuM59g8NT5x5z4hiKdFdcGTJOOpPsdSHVvTSUCpPrGlF85CDs0',
+      description: 'Final payment for residential fence installation',
       createdAt: '2025-05-10T15:45:00Z',
       updatedAt: null,
       paymentDate: null,
@@ -150,12 +155,12 @@ const ProjectPayments: React.FC = () => {
     {
       id: 4,
       projectId: 103,
-      projectName: 'Cerca de Seguridad Colegio San José',
+      projectName: 'San José School Security Fence',
       type: 'deposit',
       status: 'expired',
       amount: 3200.00,
       stripePaymentIntentId: 'pi_3NcZt6CZ6qsJgndV2PjM0k8s',
-      stripePaymentLinkUrl: null,
+      description: 'Deposit payment for school security fence',
       createdAt: '2025-04-28T11:20:00Z',
       updatedAt: '2025-05-05T00:00:00Z',
       paymentDate: null,
@@ -163,12 +168,13 @@ const ProjectPayments: React.FC = () => {
     {
       id: 5,
       projectId: 104,
-      projectName: 'Renovación Valla Comunidad Los Pinos',
+      projectName: 'Los Pinos Community Fence Renovation',
       type: 'deposit',
-      status: 'paid',
+      status: 'succeeded',
       amount: 4800.00,
       stripePaymentIntentId: 'pi_3NdbW7CZ6qsJgndV3QkN1l9t',
-      stripePaymentLinkUrl: null,
+      paymentMethod: 'apple_pay',
+      description: 'Deposit payment for community fence renovation',
       createdAt: '2025-05-01T08:30:00Z',
       updatedAt: '2025-05-01T10:15:00Z',
       paymentDate: '2025-05-01T10:15:00Z',
@@ -464,7 +470,7 @@ const ProjectPayments: React.FC = () => {
   if (isLoading) {
     return (
       <div className="container mx-auto py-10">
-        <h1 className="text-3xl font-bold mb-6">Panel de Pagos</h1>
+        <h1 className="text-3xl font-bold mb-6">Payment Tracker</h1>
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
             <Card key={i}>
@@ -494,13 +500,13 @@ const ProjectPayments: React.FC = () => {
             <CardTitle>Error</CardTitle>
           </CardHeader>
           <CardContent>
-            <p>No se pudieron cargar los pagos de proyectos. Por favor, intenta nuevamente más tarde.</p>
+            <p>Could not load payment data. Please try again later.</p>
             <Button 
               variant="outline" 
               className="mt-4"
-              onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/projects/payments'] })}
+              onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/payment-links'] })}
             >
-              Reintentar
+              Retry
             </Button>
           </CardContent>
         </Card>
@@ -508,11 +514,25 @@ const ProjectPayments: React.FC = () => {
     );
   }
 
-  // Filtrar pagos según la pestaña seleccionada
+  // Filter payments based on the selected tab
   const getFilteredPayments = () => {
     if (activeTab === 'payments') {
       if (activePaidTab === 'all') return payments;
-      return payments?.filter(payment => payment.status === activePaidTab);
+      
+      return payments?.filter((payment: ProjectPayment) => {
+        switch(activePaidTab) {
+          case 'pending':
+            return payment.status === 'pending';
+          case 'paid':
+            return payment.status === 'paid' || payment.status === 'succeeded';
+          case 'expired':
+            return payment.status === 'expired';
+          case 'cancelled':
+            return payment.status === 'cancelled' || payment.status === 'canceled';
+          default:
+            return true;
+        }
+      });
     }
     return payments;
   };
