@@ -44,19 +44,7 @@ type ProjectPayment = {
   paymentDate?: string | null;
 };
 
-// Bank account type
-type BankAccount = {
-  id: string;
-  accountType: 'checking' | 'savings' | 'business';
-  accountNumber: string;
-  routingNumber: string;
-  bankName: string;
-  accountHolderName: string;
-  isDefault: boolean;
-  isVerified: boolean;
-  currency: string;
-  lastFour: string;
-};
+// No bank account simulation needed
 
 // Payment summary statistics type
 type PaymentSummary = {
@@ -73,8 +61,6 @@ const ProjectPayments: React.FC = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [activePaidTab, setActivePaidTab] = useState('all');
-  const [connectedToStripe, setConnectedToStripe] = useState(false);
-  const [showBankModal, setShowBankModal] = useState(false);
   const [showPaymentLinkModal, setShowPaymentLinkModal] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentDescription, setPaymentDescription] = useState('');
@@ -90,21 +76,7 @@ const ProjectPayments: React.FC = () => {
     paidCount: 12
   };
   
-  // Datos de ejemplo para cuentas bancarias
-  const mockBankAccounts: BankAccount[] = [
-    {
-      id: 'ba_1234567890',
-      accountType: 'business',
-      accountNumber: '************4567',
-      routingNumber: '*****9876',
-      bankName: 'Bank of America',
-      accountHolderName: 'Owl Fence LLC',
-      isDefault: true,
-      isVerified: true,
-      currency: 'USD',
-      lastFour: '4567'
-    }
-  ];
+  // No mock bank account data needed
   
   // Example payment data while we resolve database connection issues
   const mockPayments: ProjectPayment[] = [
@@ -984,112 +956,23 @@ const ProjectPayments: React.FC = () => {
           </Card>
         </TabsContent>
         
-        {/* Settings Panel */}
+        {/* Stripe Integration Tab (Coming Soon) */}
         <TabsContent value="settings" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Bank Account Settings</CardTitle>
-              <CardDescription>Manage where you'll receive your payments</CardDescription>
+              <CardTitle>Payment Settings</CardTitle>
+              <CardDescription>Manage your payment settings and preferences</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-6">              
               <div>
-                <h3 className="text-lg font-medium mb-2">Bank Accounts</h3>
-                
-                {mockBankAccounts.length > 0 ? (
-                  <div className="space-y-4">
-                    {mockBankAccounts.map((account: BankAccount) => (
-                      <div key={account.id} className="border rounded-lg p-4 flex justify-between items-center">
-                        <div>
-                          <p className="font-medium">{account.bankName}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {account.accountType} **** {account.lastFour}
-                          </p>
-                          <div className="mt-1 flex items-center space-x-2">
-                            {account.isDefault && <Badge className="bg-indigo-500">Default</Badge>}
-                            {account.isVerified && <Badge variant="outline">Verified</Badge>}
-                          </div>
-                        </div>
-                        <div className="flex space-x-2">
-                          <Button variant="outline" size="sm">
-                            Edit
-                          </Button>
-                          <Button variant="destructive" size="sm">
-                            Remove
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-6 border rounded-lg">
-                    <p className="text-muted-foreground mb-4">No bank accounts configured</p>
-                  </div>
-                )}
-                
-                <Button 
-                  className="mt-4 w-full" 
-                  variant="outline"
-                  onClick={() => setShowBankModal(true)}
-                >
-                  <CreditCard className="mr-2 h-4 w-4" /> Add bank account
-                </Button>
-              </div>
-              
-              <Separator />
-              
-              <div>
-                <h3 className="text-lg font-medium mb-2">Stripe Connection</h3>
-                
-                {connectedToStripe ? (
-                  <div className="space-y-4">
-                    <Alert>
-                      <CreditCard className="h-4 w-4" />
-                      <AlertTitle>Account connected</AlertTitle>
-                      <AlertDescription>
-                        Your Stripe account is properly configured to receive payments.
-                      </AlertDescription>
-                    </Alert>
-                    <div className="border rounded-lg p-4">
-                      <div className="flex justify-between">
-                        <div>
-                          <p className="font-medium">Stripe Connect</p>
-                          <p className="text-sm text-muted-foreground">acct_1a2b3c4d5e6f7g8h9i</p>
-                        </div>
-                        <div>
-                          <Badge className="bg-green-500">Active</Badge>
-                        </div>
-                      </div>
-                      <div className="mt-4">
-                        <p className="text-sm text-muted-foreground">Transaction fee</p>
-                        <p>2.9% + $0.30 USD per payment</p>
-                      </div>
-                      <div className="mt-4 flex justify-end space-x-2">
-                        <Button variant="outline" size="sm">
-                          Stripe Dashboard
-                        </Button>
-                        <Button variant="destructive" size="sm">
-                          Disconnect
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <Alert variant="destructive">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertTitle>Account not connected</AlertTitle>
-                      <AlertDescription>
-                        To receive payments, you need to connect your Stripe account.
-                      </AlertDescription>
-                    </Alert>
-                    <div className="text-center py-6 border rounded-lg">
-                      <p className="text-muted-foreground mb-4">Connect your account to receive payments directly</p>
-                      <Button onClick={connectToStripe} className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                        <CreditCard className="mr-2 h-4 w-4" /> Connect Stripe
-                      </Button>
-                    </div>
-                  </div>
-                )}
+                <h3 className="text-lg font-medium mb-2">Stripe Integration</h3>
+                <Alert>
+                  <CreditCard className="h-4 w-4" />
+                  <AlertTitle>Coming Soon</AlertTitle>
+                  <AlertDescription>
+                    Stripe integration for direct payment processing will be available soon.
+                  </AlertDescription>
+                </Alert>
               </div>
             </CardContent>
           </Card>
