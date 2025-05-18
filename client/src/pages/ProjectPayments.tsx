@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { 
   AlertCircle, BarChart4, CreditCard, DollarSign, Send, Settings, 
   User, TrendingUp, Activity, PieChart, Calendar, ArrowUpRight, 
-  ArrowDownRight, CheckCircle, Clock
+  ArrowDownRight, CheckCircle, Clock, X
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -331,16 +331,65 @@ const ProjectPayments: React.FC = () => {
     }
   };
   
-  // Función para agregar cuenta bancaria
+  // Function to add bank account
   const addBankAccount = (e: React.FormEvent) => {
     e.preventDefault();
     setShowBankModal(false);
     
     toast({
-      title: "Cuenta bancaria agregada",
-      description: "La información de su cuenta bancaria se ha guardado correctamente",
+      title: "Bank account added",
+      description: "Your bank account information has been saved successfully",
       variant: "default"
     });
+  };
+  
+  // Function to create payment link
+  const createPaymentLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreatingPaymentLink(true);
+    
+    try {
+      // In a real implementation, we would call Stripe API to create a payment link
+      // const response = await fetch('/api/payment-links', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json'
+      //   },
+      //   body: JSON.stringify({
+      //     amount: parseFloat(paymentAmount) * 100, // Convert to cents
+      //     description: paymentDescription
+      //   })
+      // });
+      
+      // const data = await response.json();
+      // if (data.url) {
+      //   // Copy to clipboard
+      //   navigator.clipboard.writeText(data.url);
+      // }
+      
+      // Simulate API call for demo
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Success message
+      toast({
+        title: "Payment link created",
+        description: "Payment link has been created and copied to clipboard",
+        variant: "default"
+      });
+      
+      // Reset form and close modal
+      setPaymentAmount('');
+      setPaymentDescription('');
+      setShowPaymentLinkModal(false);
+    } catch (error) {
+      toast({
+        title: "Error creating payment link",
+        description: "There was a problem creating your payment link. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setCreatingPaymentLink(false);
+    }
   };
 
   if (isLoading) {
@@ -415,6 +464,155 @@ const ProjectPayments: React.FC = () => {
           </Badge>
         )}
       </div>
+      
+      {/* Payment Link Modal */}
+      {showPaymentLinkModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+          <div className="bg-background rounded-lg shadow-lg w-full max-w-md p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold">Create Payment Link</h3>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setShowPaymentLinkModal(false)}
+                disabled={creatingPaymentLink}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <form onSubmit={createPaymentLink}>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="amount">Amount ($)</Label>
+                  <Input
+                    id="amount"
+                    type="number"
+                    step="0.01"
+                    min="1"
+                    placeholder="100.00"
+                    value={paymentAmount}
+                    onChange={(e) => setPaymentAmount(e.target.value)}
+                    required
+                    disabled={creatingPaymentLink}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Input
+                    id="description"
+                    placeholder="Fence installation deposit"
+                    value={paymentDescription}
+                    onChange={(e) => setPaymentDescription(e.target.value)}
+                    required
+                    disabled={creatingPaymentLink}
+                  />
+                </div>
+                
+                <div className="pt-2">
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-indigo-600 hover:bg-indigo-700"
+                    disabled={creatingPaymentLink}
+                  >
+                    {creatingPaymentLink ? (
+                      <>
+                        <span className="mr-2">Creating Link</span>
+                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                      </>
+                    ) : (
+                      "Create Payment Link"
+                    )}
+                  </Button>
+                </div>
+                
+                <div className="text-xs text-muted-foreground text-center pt-2">
+                  Payment links can be shared with your clients via email, text message, or any messaging app.
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      
+      {/* Bank Account Modal */}
+      {showBankModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+          <div className="bg-background rounded-lg shadow-lg w-full max-w-md p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold">Connect Bank Account</h3>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setShowBankModal(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <form onSubmit={addBankAccount}>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="accountNumber">Account Number</Label>
+                  <Input
+                    id="accountNumber"
+                    placeholder="XXXX XXXX XXXX XXXX"
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="routingNumber">Routing Number</Label>
+                  <Input
+                    id="routingNumber"
+                    placeholder="XXXXXXXXX"
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="accountType">Account Type</Label>
+                  <Select defaultValue="checking">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select account type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="checking">Checking</SelectItem>
+                      <SelectItem value="savings">Savings</SelectItem>
+                      <SelectItem value="business">Business</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="pt-2">
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    Connect Bank Account
+                  </Button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      
       
       <Tabs defaultValue="dashboard" value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
@@ -978,31 +1176,31 @@ const ProjectPayments: React.FC = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="accountHolderName">Nombre del Titular</Label>
-                  <Input id="accountHolderName" placeholder="Juan Pérez" />
+                  <Label htmlFor="accountHolderName">Account Holder Name</Label>
+                  <Input id="accountHolderName" placeholder="John Smith" />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="routingNumber">Número de Ruta</Label>
+                  <Label htmlFor="routingNumber">Routing Number</Label>
                   <Input id="routingNumber" placeholder="123456789" />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="accountNumber">Número de Cuenta</Label>
+                  <Label htmlFor="accountNumber">Account Number</Label>
                   <Input id="accountNumber" placeholder="987654321" />
                 </div>
                 
                 <div className="flex items-center space-x-2 mt-4">
                   <input type="checkbox" id="isDefault" className="rounded border-gray-300" />
-                  <Label htmlFor="isDefault">Establecer como cuenta predeterminada</Label>
+                  <Label htmlFor="isDefault">Set as default account</Label>
                 </div>
                 
                 <div className="flex justify-end space-x-2 pt-4">
                   <Button variant="outline" type="button" onClick={() => setShowBankModal(false)}>
-                    Cancelar
+                    Cancel
                   </Button>
                   <Button type="submit">
-                    Guardar
+                    Save
                   </Button>
                 </div>
               </form>
