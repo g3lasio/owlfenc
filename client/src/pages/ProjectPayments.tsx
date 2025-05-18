@@ -26,7 +26,7 @@ import {
   Tooltip, Legend, ResponsiveContainer 
 } from 'recharts';
 
-// Tipo para los pagos de proyectos
+// Payment tracker types
 type ProjectPayment = {
   id: number;
   projectId?: number;
@@ -44,7 +44,7 @@ type ProjectPayment = {
   paymentDate?: string | null;
 };
 
-// Tipo para la cuenta bancaria
+// Bank account type
 type BankAccount = {
   id: string;
   accountType: 'checking' | 'savings' | 'business';
@@ -58,7 +58,7 @@ type BankAccount = {
   lastFour: string;
 };
 
-// Tipo para los datos de resumen
+// Payment summary statistics type
 type PaymentSummary = {
   totalPending: number;
   totalPaid: number;
@@ -181,7 +181,7 @@ const ProjectPayments: React.FC = () => {
     }
   ];
   
-  // Obtener el estado de la cuenta de Stripe
+  // Get Stripe account status
   const { data: stripeAccountStatus, isLoading: loadingStripeStatus } = useQuery({
     queryKey: ['/api/stripe/account-status'],
     queryFn: async () => {
@@ -200,7 +200,7 @@ const ProjectPayments: React.FC = () => {
     }
   });
 
-  // Obtener los enlaces de pago
+  // Get payment links
   const { data: payments, isLoading, error } = useQuery({
     queryKey: ['/api/payment-links'],
     queryFn: async () => {
@@ -212,7 +212,7 @@ const ProjectPayments: React.FC = () => {
         return await response.json();
       } catch (error) {
         console.error('Error fetching payment links:', error);
-        // Temporalmente usar datos de ejemplo durante el desarrollo
+        // Temporarily using mock data during development
         return mockPayments;
       }
     },
@@ -296,11 +296,11 @@ const ProjectPayments: React.FC = () => {
     }
   };
 
-  // Función para formatear la fecha
+  // Function to format date
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
-    return new Intl.DateTimeFormat('es-ES', {
+    return new Intl.DateTimeFormat('en-US', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
