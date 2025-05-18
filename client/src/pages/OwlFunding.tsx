@@ -42,7 +42,7 @@ export default function OwlFunding() {
     <div className="container mx-auto p-6 flex flex-col items-center">
       <div className="flex flex-col items-center justify-center mb-8 text-center">
         <img 
-          src="/images/owl-funding-logo.png" 
+          src="/images/owl-funding-logo-white.png" 
           alt="Owl Funding Logo" 
           className="h-32 mb-4"
         />
