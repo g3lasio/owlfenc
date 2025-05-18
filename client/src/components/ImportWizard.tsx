@@ -34,6 +34,7 @@ export function ImportWizard({ isOpen, onClose, onImportComplete }: ImportWizard
   const [analysisResult, setAnalysisResult] = useState<CSVAnalysisResult | null>(null);
   const [columnMappings, setColumnMappings] = useState<ColumnMapping[]>([]);
   const [previewData, setPreviewData] = useState<any[]>([]);
+  const [editablePreviewData, setEditablePreviewData] = useState<any[]>([]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -166,38 +167,70 @@ export function ImportWizard({ isOpen, onClose, onImportComplete }: ImportWizard
         throw new Error('No hay datos para importar');
       }
       
-      // Procesar todas las filas, no solo la muestra de vista previa
-      const rows = analysisResult.hasHeaderRow 
-        ? analysisResult.sampleRows 
-        : analysisResult.sampleRows;
-      
+      // Procesar todas las filas, incluyendo cualquier edición manual hecha por el usuario
       setProgress(30);
-      setProgressMessage('Mapeando datos a formato de cliente...');
       
-      // Mapear los datos a objetos cliente usando los mapeos finales
-      const mappedClients = mapCSVToClients(rows, columnMappings);
+      // Determinar qué datos usar (los editados manualmente o los procesados automáticamente)
+      let finalClients;
       
-      // Normalizar los datos para asegurar consistencia
-      const normalizedClients = normalizeClientData(mappedClients);
-      
-      setProgress(50);
-      setProgressMessage('Procesando nombres y mejorando información de contactos con IA...');
-      
-      // Usar IA avanzada para mejorar los datos, especialmente la identificación de nombres
-      const enhancedClients = await enhanceContactsWithAI(normalizedClients);
+      if (step === 'preview' && editablePreviewData.length > 0) {
+        // Si estamos en paso de previsualización y hay datos editados por el usuario
+        setProgressMessage('Preparando datos editados para importación...');
+        
+        // Usar directamente los datos que el usuario ha editado en la interfaz
+        finalClients = editablePreviewData;
+      } else {
+        // Si no, seguir el proceso automático normal
+        setProgressMessage('Mapeando datos a formato de cliente...');
+        
+        // Obtener todas las filas de datos
+        const rows = analysisResult.hasHeaderRow 
+          ? analysisResult.sampleRows 
+          : analysisResult.sampleRows;
+        
+        // Mapear los datos a objetos cliente usando los mapeos finales
+        const mappedClients = mapCSVToClients(rows, columnMappings);
+        
+        // Normalizar los datos para asegurar consistencia
+        const normalizedClients = normalizeClientData(mappedClients);
+        
+        setProgress(50);
+        setProgressMessage('Procesando y mejorando información de contactos...');
+        
+        // Usar IA avanzada sólo si no hay datos editados manualmente
+        finalClients = await enhanceContactsWithAI(normalizedClients);
+      }
       
       setProgress(80);
       setProgressMessage('Finalizando importación...');
       
-      // Llamar al callback con los clientes mejorados
-      onImportComplete(enhancedClients);
+      // Limpiar los datos antes de importar (eliminar espacios en blanco innecesarios, etc.)
+      const cleanedClients = finalClients.map(client => {
+        const cleaned = { ...client };
+        Object.keys(cleaned).forEach(key => {
+          if (typeof cleaned[key] === 'string') {
+            cleaned[key] = cleaned[key].trim();
+          }
+        });
+        return cleaned;
+      });
+      
+      // Validar que cada cliente tenga al menos un campo con datos
+      const validClients = cleanedClients.filter(client => {
+        return Object.values(client).some(value => 
+          value !== null && value !== undefined && value !== ''
+        );
+      });
+      
+      // Llamar al callback con los clientes finales
+      onImportComplete(validClients);
       
       setProgress(100);
       setProgressMessage('Importación completada con éxito');
       
       toast({
         title: 'Importación exitosa',
-        description: `Se importaron ${enhancedClients.length} clientes correctamente.`,
+        description: `Se importaron ${validClients.length} clientes correctamente.`,
       });
       
       // Cerrar el wizard
@@ -212,7 +245,7 @@ export function ImportWizard({ isOpen, onClose, onImportComplete }: ImportWizard
     } finally {
       setIsLoading(false);
     }
-  }, [analysisResult, columnMappings, onImportComplete, onClose, toast]);
+  }, [analysisResult, columnMappings, editablePreviewData, step, onImportComplete, onClose, toast]);
 
   // Resetear el estado al cerrar
   const handleClose = () => {
@@ -405,6 +438,24 @@ export function ImportWizard({ isOpen, onClose, onImportComplete }: ImportWizard
   };
 
   // Renderizar la interfaz de previsualización de datos
+  
+  // Actualizar el valor de una celda editable
+  const updateCellValue = (rowIndex: number, column: string, value: string) => {
+    const updatedData = [...editablePreviewData];
+    updatedData[rowIndex] = {
+      ...updatedData[rowIndex],
+      [column]: value
+    };
+    setEditablePreviewData(updatedData);
+  };
+  
+  // Esta función se ejecuta cuando el usuario cambia a la vista previa
+  React.useEffect(() => {
+    if (step === 'preview' && previewData.length > 0 && editablePreviewData.length === 0) {
+      setEditablePreviewData([...previewData]);
+    }
+  }, [step, previewData]);
+  
   const renderPreviewStep = () => {
     if (!previewData.length) return null;
     
@@ -415,13 +466,13 @@ export function ImportWizard({ isOpen, onClose, onImportComplete }: ImportWizard
         <Alert className="mb-6">
           <HelpCircle className="h-5 w-5 mr-2" />
           <AlertDescription>
-            Previsualización de los primeros 10 registros. Verifica que los datos se hayan mapeado correctamente.
+            Previsualización de los primeros 10 registros. Puedes editar directamente los campos para corregir cualquier error antes de importar.
           </AlertDescription>
         </Alert>
         
         <div className="overflow-x-auto">
           <Table>
-            <TableCaption>Previsualización de datos a importar</TableCaption>
+            <TableCaption>Previsualización de datos a importar (editable)</TableCaption>
             <TableHeader>
               <TableRow>
                 {previewColumns.map((column) => (
@@ -430,11 +481,17 @@ export function ImportWizard({ isOpen, onClose, onImportComplete }: ImportWizard
               </TableRow>
             </TableHeader>
             <TableBody>
-              {previewData.map((client, index) => (
-                <TableRow key={index}>
+              {editablePreviewData.map((client, rowIndex) => (
+                <TableRow key={rowIndex}>
                   {previewColumns.map((column) => (
                     <TableCell key={column}>
-                      {client[column] || '-'}
+                      <input
+                        type="text"
+                        value={client[column] || ''}
+                        onChange={(e) => updateCellValue(rowIndex, column, e.target.value)}
+                        className="h-8 w-full border border-gray-300 rounded px-2"
+                        placeholder={`Ingresa ${column}`}
+                      />
                     </TableCell>
                   ))}
                 </TableRow>
