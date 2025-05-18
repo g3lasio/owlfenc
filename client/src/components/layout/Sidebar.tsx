@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { LogOut, User, CreditCard, Building, Settings } from "lucide-react";
+import { LogOut, User, CreditCard, Building, Settings, Brain as BrainIcon } from "lucide-react";
 import { navigationGroups, NavigationItem } from "@/config/navigation";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -102,6 +102,7 @@ export default function Sidebar() {
           case 'credit-card': return <CreditCard className="h-4 w-4 mr-2" />;
           case 'building': return <Building className="h-4 w-4 mr-2" />;
           case 'settings': return <Settings className="h-4 w-4 mr-2" />;
+          case 'brain': return <BrainIcon className="h-4 w-4 mr-2" />;
           default: return <i className={`${item.icon} mr-2 text-lg`}></i>;
         }
       } else {
