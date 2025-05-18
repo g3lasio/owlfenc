@@ -1,10 +1,16 @@
 import express, { Request, Response } from 'express';
 import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 import { ColumnMapping } from '../../client/src/lib/intelligentImport';
 
 // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
+});
+
+// the newest OpenAI model is "gpt-4o" which was released May 13, 2024
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 const router = express.Router();
@@ -120,6 +126,90 @@ function extractExamplesForColumn(sampleRows: string[][], columnIndex: number): 
     .map(row => columnIndex < row.length ? row[columnIndex] : '')
     .filter(example => example.trim().length > 0)
     .slice(0, 3); // Just take up to 3 examples
+}
+
+/**
+ * Enhanced contact data processing with name extraction
+ * This endpoint takes the mapped data and tries to extract proper names from it
+ */
+router.post('/enhance-contacts', async (req: Request, res: Response) => {
+  try {
+    const { contacts } = req.body;
+    
+    if (!contacts || !Array.isArray(contacts)) {
+      return res.status(400).json({ message: 'No se proporcionaron datos de contactos válidos' });
+    }
+    
+    // Process contacts in batches to avoid hitting rate limits
+    const batchSize = 10;
+    const enhancedContacts = [];
+    
+    for (let i = 0; i < contacts.length; i += batchSize) {
+      const batch = contacts.slice(i, i + batchSize);
+      const enhancedBatch = await enhanceContactsWithAI(batch);
+      enhancedContacts.push(...enhancedBatch);
+    }
+    
+    res.status(200).json({
+      enhancedContacts
+    });
+  } catch (error: any) {
+    console.error('Error al mejorar contactos:', error);
+    res.status(500).json({ 
+      message: 'Error al procesar los contactos',
+      error: error.message || 'Error desconocido'
+    });
+  }
+});
+
+/**
+ * Uses OpenAI to analyze contact data and extract proper names and other information
+ */
+async function enhanceContactsWithAI(contacts: any[]): Promise<any[]> {
+  try {
+    // Prepare data for OpenAI
+    const contactsJson = JSON.stringify(contacts, null, 2);
+    
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are an AI specialized in contact information processing. Your task is to analyze and enhance contact data, particularly extracting proper names from email addresses, addresses, and other fields when names are missing."
+        },
+        {
+          role: "user",
+          content: `Analiza los siguientes datos de contactos y mejora la información, especialmente extrayendo nombres propios cuando faltan. Por cada contacto, si el campo 'name' es vacío o 'Cliente sin nombre', intenta determinar el nombre real basado en los otros campos (especialmente email, que suele contener nombres). Proporciona una versión mejorada de cada contacto.
+
+Datos de contactos:
+${contactsJson}
+
+Responde con un JSON que contiene solo la lista mejorada de contactos.`
+        }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.2,
+    });
+
+    // Parse the response
+    let enhancedContacts = contacts; // Default fallback
+    try {
+      const responseContent = response.choices[0].message.content;
+      if (responseContent) {
+        const parsedResponse = JSON.parse(responseContent);
+        if (parsedResponse.contacts) {
+          enhancedContacts = parsedResponse.contacts;
+        }
+      }
+    } catch (parseError) {
+      console.error('Error parsing AI response:', parseError);
+    }
+    
+    return enhancedContacts;
+  } catch (error) {
+    console.error('Error in AI enhancement:', error);
+    return contacts; // Return original contacts if enhancement fails
+  }
 }
 
 /**

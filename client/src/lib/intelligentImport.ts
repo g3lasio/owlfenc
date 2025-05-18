@@ -49,6 +49,32 @@ export async function analyzeCSVWithIA(csvContent: string): Promise<CSVAnalysisR
   }
 }
 
+// Función para mejorar los contactos utilizando IA avanzada para identificar nombres
+export async function enhanceContactsWithAI(contacts: any[]): Promise<any[]> {
+  try {
+    // Llamar al servicio de mejora de contactos en el servidor
+    const response = await fetch('/api/import/enhance-contacts', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ contacts }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Error al mejorar los contactos');
+    }
+
+    const result = await response.json();
+    return result.enhancedContacts;
+  } catch (error) {
+    console.error('Error en la mejora IA de contactos:', error);
+    // Si falla la mejora, devolver los contactos originales
+    return contacts;
+  }
+}
+
 /**
  * Analiza un archivo VCF utilizando IA para extraer contactos
  */
