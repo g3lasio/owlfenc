@@ -681,7 +681,7 @@ export default function PermitAdvisor() {
                     </p>
                   </div>
                 ) : (
-                  <ScrollArea className="h-[400px] pr-4">
+                  <ScrollArea className="h-[min(65vh,400px)] pr-4">
                     <div className="space-y-3">
                       {historyQuery.data.map((item) => (
                         <Card key={item.id} className="hover:bg-primary/5 transition-colors">
@@ -1666,25 +1666,25 @@ export default function PermitAdvisor() {
                               {contact.phone && (
                                 <div className="flex items-center">
                                   <Phone className="h-3.5 w-3.5 mr-2 text-primary/70" />
-                                  <span>{contact.phone}</span>
+                                  <span>{typeof contact.phone === 'string' ? contact.phone : JSON.stringify(contact.phone)}</span>
                                 </div>
                               )}
                               {contact.email && (
                                 <div className="flex items-center">
                                   <Mail className="h-3.5 w-3.5 mr-2 text-primary/70" />
-                                  <span>{contact.email}</span>
+                                  <span>{typeof contact.email === 'string' ? contact.email : JSON.stringify(contact.email)}</span>
                                 </div>
                               )}
                               {contact.address && (
                                 <div className="flex items-center">
                                   <MapPin className="h-3.5 w-3.5 mr-2 text-primary/70" />
-                                  <span>{contact.address}</span>
+                                  <span>{typeof contact.address === 'string' ? contact.address : JSON.stringify(contact.address)}</span>
                                 </div>
                               )}
                               {contact.hours && (
                                 <div className="flex items-center">
                                   <Clock className="h-3.5 w-3.5 mr-2 text-primary/70" />
-                                  <span>{contact.hours}</span>
+                                  <span>{typeof contact.hours === 'string' ? contact.hours : JSON.stringify(contact.hours)}</span>
                                 </div>
                               )}
                             </div>
