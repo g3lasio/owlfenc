@@ -12,7 +12,7 @@ export default function Header({
   toggleMobileMenu,
   isMobileMenuOpen,
 }: HeaderProps) {
-  const [location] = useLocation();
+  const [path] = useLocation();
   const [glowPulse, setGlowPulse] = useState(false);
 
   // Efecto para animar el pulso del logo
@@ -28,6 +28,14 @@ export default function Header({
     console.log("Menu toggle clicked, current state:", isMobileMenuOpen);
     toggleMobileMenu();
   };
+
+  // Verificar si estamos en la página de Materials para evitar duplicación de header
+  const isMaterialsPage = path === '/materials';
+
+  // Si estamos en la página de materiales, no mostrar el header duplicado
+  if (isMaterialsPage) {
+    return null;
+  }
 
   return (
     <header className="h-20 w-full flex items-center bg-card border-b border-border sticky top-0 z-50">
