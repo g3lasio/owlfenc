@@ -26,12 +26,6 @@ export const navigationGroups: NavigationGroup[] = [
     title: "navigation.tools",
     items: [
       {
-        id: "dashboard",
-        label: "navigation.dashboard",
-        path: "/",
-        icon: "ri-dashboard-line"
-      },
-      {
         id: "mervin",
         label: "navigation.talkToMervin",
         path: "/mervin",
@@ -39,7 +33,7 @@ export const navigationGroups: NavigationGroup[] = [
       },
       {
         id: "projects",
-        label: "navigation.projects",
+        label: "navigation.dashboard",
         path: "/projects",
         icon: "ri-briefcase-4-line"
       },

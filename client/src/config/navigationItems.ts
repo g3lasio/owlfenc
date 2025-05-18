@@ -37,7 +37,7 @@ export const mainNavigationConfig: NavigationSection[] = [
     title: "Proyectos",
     items: [
       {
-        label: "Proyectos",
+        label: "Dashboard",
         path: "/projects",
         icon: "ri-briefcase-4-line",
       },
