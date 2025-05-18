@@ -303,46 +303,46 @@ const ProjectPayments: React.FC = () => {
     }).format(date);
   };
 
-  // Simulamos datos para gráficas y estadísticas  
+  // Data for charts and statistics  
   const monthlyRevenueData = [
-    { name: 'Ene', income: 3500, expenses: 2100, profit: 1400 },
+    { name: 'Jan', income: 3500, expenses: 2100, profit: 1400 },
     { name: 'Feb', income: 4200, expenses: 2300, profit: 1900 },
     { name: 'Mar', income: 5000, expenses: 2800, profit: 2200 },
-    { name: 'Abr', income: 4600, expenses: 2500, profit: 2100 },
+    { name: 'Apr', income: 4600, expenses: 2500, profit: 2100 },
     { name: 'May', income: 7800, expenses: 3200, profit: 4600 },
     { name: 'Jun', income: 9200, expenses: 3800, profit: 5400 },
   ];
   
   const paymentTypeDistribution = [
-    { name: 'Depósitos', value: 65 },
-    { name: 'Pagos Finales', value: 35 },
+    { name: 'Deposits', value: 65 },
+    { name: 'Final Payments', value: 35 },
   ];
   
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
   
   const paymentStatusData = [
-    { name: 'Pendientes', value: mockPaymentSummary.pendingCount },
-    { name: 'Pagados', value: mockPaymentSummary.paidCount },
-    { name: 'Vencidos', value: 2 },
-    { name: 'Cancelados', value: 1 },
+    { name: 'Pending', value: mockPaymentSummary.pendingCount },
+    { name: 'Paid', value: mockPaymentSummary.paidCount },
+    { name: 'Expired', value: 2 },
+    { name: 'Canceled', value: 1 },
   ];
   
   const dailyPaymentsData = [
-    { name: '9/5', amount: 1200 },
-    { name: '10/5', amount: 2500 },
-    { name: '11/5', amount: 1800 },
-    { name: '12/5', amount: 4200 },
-    { name: '13/5', amount: 3100 },
-    { name: '14/5', amount: 2700 },
-    { name: '15/5', amount: 3500 },
+    { name: '5/9', amount: 1200 },
+    { name: '5/10', amount: 2500 },
+    { name: '5/11', amount: 1800 },
+    { name: '5/12', amount: 4200 },
+    { name: '5/13', amount: 3100 },
+    { name: '5/14', amount: 2700 },
+    { name: '5/15', amount: 3500 },
   ];
   
   const projectTypeData = [
-    { subject: 'Residencial', A: 120, B: 110, fullMark: 150 },
-    { subject: 'Comercial', A: 98, B: 130, fullMark: 150 },
+    { subject: 'Residential', A: 120, B: 110, fullMark: 150 },
+    { subject: 'Commercial', A: 98, B: 130, fullMark: 150 },
     { subject: 'Industrial', A: 86, B: 130, fullMark: 150 },
-    { subject: 'Institucional', A: 99, B: 100, fullMark: 150 },
-    { subject: 'Agrícola', A: 85, B: 90, fullMark: 150 },
+    { subject: 'Institutional', A: 99, B: 100, fullMark: 150 },
+    { subject: 'Agricultural', A: 85, B: 90, fullMark: 150 },
   ];
 
   // Connect to Stripe for payment processing
