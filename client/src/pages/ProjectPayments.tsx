@@ -298,24 +298,37 @@ const ProjectPayments: React.FC = () => {
     { subject: 'Agrícola', A: 85, B: 90, fullMark: 150 },
   ];
 
-  // Función para simular conexión a Stripe Connect
-  const connectToStripe = () => {
-    // Simular proceso de conexión a Stripe Connect
-    toast({
-      title: "Conectando con Stripe",
-      description: "Redirigiendo a Stripe para completar la conexión de su cuenta...",
-      variant: "default"
-    });
-    
-    // Simulamos un tiempo de espera y luego cambiar el estado
-    setTimeout(() => {
-      setConnectedToStripe(true);
+  // Connect to Stripe for payment processing
+  const connectToStripe = async () => {
+    try {
       toast({
-        title: "Cuenta conectada",
-        description: "Su cuenta de Stripe ha sido conectada exitosamente",
+        title: "Connecting to Stripe",
+        description: "Redirecting to Stripe to connect your account...",
         variant: "default"
       });
-    }, 2000);
+      
+      // In a real implementation, we would call an API endpoint to initiate Stripe Connect
+      // For demo purposes, we're just simulating the process
+      // const response = await fetch('/api/stripe/connect', { method: 'POST' });
+      // const data = await response.json();
+      // window.location.href = data.url;
+      
+      // Simulating successful connection
+      setTimeout(() => {
+        setConnectedToStripe(true);
+        toast({
+          title: "Account connected",
+          description: "Your Stripe account has been successfully connected",
+          variant: "default"
+        });
+      }, 2000);
+    } catch (error) {
+      toast({
+        title: "Connection failed",
+        description: "Could not connect to Stripe. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
   
   // Función para agregar cuenta bancaria
@@ -548,45 +561,38 @@ const ProjectPayments: React.FC = () => {
             </Card>
 
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <ArrowUpRight className="mr-2 h-5 w-5 text-indigo-500" />
-                  Rendimiento por Tipo de Proyecto
-                </CardTitle>
-                <CardDescription>Análisis de proyectos y su desempeño financiero</CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div>
+                  <CardTitle className="text-lg font-medium">Payment Link Generator</CardTitle>
+                  <CardDescription>Create custom payment links for clients</CardDescription>
+                </div>
+                <Button className="bg-indigo-600 hover:bg-indigo-700" onClick={() => setShowPaymentLinkModal(true)}>
+                  <DollarSign className="mr-2 h-4 w-4" /> New Link
+                </Button>
               </CardHeader>
               <CardContent>
-                <div className="h-72">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={projectTypeData}>
-                      <PolarGrid stroke="#444" />
-                      <PolarAngleAxis dataKey="subject" />
-                      <PolarRadiusAxis angle={30} domain={[0, 150]} />
-                      <Radar
-                        name="Ingresos"
-                        dataKey="A"
-                        stroke="#8884d8"
-                        fill="#8884d8"
-                        fillOpacity={0.6}
-                      />
-                      <Radar
-                        name="Proyectos"
-                        dataKey="B"
-                        stroke="#82ca9d"
-                        fill="#82ca9d"
-                        fillOpacity={0.6}
-                      />
-                      <Legend />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'rgba(12, 15, 28, 0.8)', 
-                          border: '1px solid #333',
-                          borderRadius: '8px',
-                          color: '#fff' 
-                        }} 
-                      />
-                    </RadarChart>
-                  </ResponsiveContainer>
+                <div className="space-y-4">
+                  <div className="rounded-lg border p-4">
+                    <div className="flex items-center space-x-2 mb-4">
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                      <span className="font-medium">Accept multiple payment methods</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Create professional payment links that allow your clients to pay you instantly 
+                      with credit cards, debit cards, and Apple Pay.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="outline" className="bg-slate-100 text-slate-800">
+                        Credit Cards
+                      </Badge>
+                      <Badge variant="outline" className="bg-slate-100 text-slate-800">
+                        Debit Cards
+                      </Badge>
+                      <Badge variant="outline" className="bg-slate-100 text-slate-800">
+                        Apple Pay
+                      </Badge>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -596,9 +602,9 @@ const ProjectPayments: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Clock className="mr-2 h-5 w-5 text-indigo-500" />
-                Resumen de Pagos Recientes
+                Recent Payment Summary
               </CardTitle>
-              <CardDescription>Últimos pagos recibidos y pendientes</CardDescription>
+              <CardDescription>Latest received and pending payments</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -613,13 +619,25 @@ const ProjectPayments: React.FC = () => {
                         )}
                       </div>
                       <div>
-                        <p className="font-medium">{payment.projectName || `Proyecto #${payment.projectId}`}</p>
-                        <p className="text-sm text-muted-foreground">{formatPaymentType(payment.type)}</p>
+                        <p className="font-medium">{payment.projectName || `Project #${payment.projectId}`}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {payment.type === 'deposit' ? 'Deposit (50%)' : 'Final Payment (50%)'}
+                        </p>
                       </div>
                     </div>
                     <div className="text-right">
                       <p className="font-medium">${payment.amount.toFixed(2)}</p>
-                      <div className="mt-1">{formatPaymentStatus(payment.status)}</div>
+                      <div className="mt-1">
+                        {payment.status === 'pending' ? (
+                          <Badge variant="outline">Pending</Badge>
+                        ) : payment.status === 'paid' ? (
+                          <Badge className="bg-green-500 hover:bg-green-600">Paid</Badge>
+                        ) : payment.status === 'expired' ? (
+                          <Badge variant="destructive">Expired</Badge>
+                        ) : (
+                          <Badge variant="secondary">Cancelled</Badge>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -627,7 +645,7 @@ const ProjectPayments: React.FC = () => {
             </CardContent>
             <CardFooter>
               <Button variant="outline" className="w-full" onClick={() => setActiveTab('payments')}>
-                Ver todos los pagos
+                View all payments
               </Button>
             </CardFooter>
           </Card>
