@@ -164,35 +164,114 @@ router.post('/enhance-contacts', async (req: Request, res: Response) => {
 
 /**
  * Uses OpenAI to analyze contact data and extract proper names and other information
+ * Con reglas más estrictas y detección precisa de patrones
  */
 async function enhanceContactsWithAI(contacts: any[]): Promise<any[]> {
   try {
-    // Prepare data for OpenAI
-    const contactsJson = JSON.stringify(contacts, null, 2);
+    // Primera pasada: aplicar reglas básicas de preprocesamiento
+    const preprocessedContacts = contacts.map(contact => {
+      // Copia del contacto para no modificar el original
+      const enhancedContact = { ...contact };
+      
+      // Regla 1: Si el nombre está vacío o es "Cliente sin nombre", pero hay email, intentar extraer nombre del email
+      if (!enhancedContact.name || enhancedContact.name === "Cliente sin nombre") {
+        if (enhancedContact.email && enhancedContact.email.includes('@')) {
+          const emailParts = enhancedContact.email.split('@')[0];
+          // Separar por puntos, guiones o guiones bajos
+          const nameParts = emailParts.split(/[._-]/);
+          
+          if (nameParts.length >= 1) {
+            // Capitalizar cada parte y unir
+            const possibleName = nameParts.map(part => 
+              part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
+            ).join(' ');
+            
+            if (possibleName.length > 2) {
+              enhancedContact.name = possibleName;
+            }
+          }
+        }
+      }
+      
+      // Regla 2: Asegurarse de que el teléfono está en el campo correcto
+      // Si phone tiene formato de dirección (contiene letras) pero mobilePhone es numérico
+      if (enhancedContact.phone && /[a-zA-Z]/.test(enhancedContact.phone)) {
+        if (enhancedContact.mobilePhone && /^[0-9()\s-+]+$/.test(enhancedContact.mobilePhone)) {
+          // El teléfono móvil parece un número de teléfono válido
+          const temp = enhancedContact.phone;
+          enhancedContact.phone = enhancedContact.mobilePhone;
+          // Si parece dirección, moverla a dirección
+          if (!enhancedContact.address) {
+            enhancedContact.address = temp;
+          }
+        }
+      }
+      
+      // Regla 3: Detectar números de teléfono en otros campos
+      // Si el campo dirección contiene lo que parece ser un teléfono
+      if (enhancedContact.address && /\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/.test(enhancedContact.address)) {
+        const phoneMatch = enhancedContact.address.match(/\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
+        if (phoneMatch && !enhancedContact.phone) {
+          enhancedContact.phone = phoneMatch[0];
+          // Eliminar el teléfono de la dirección
+          enhancedContact.address = enhancedContact.address.replace(phoneMatch[0], '').trim();
+        }
+      }
+      
+      return enhancedContact;
+    });
+    
+    // Ahora usamos IA para un análisis más profundo
+    const contactsJson = JSON.stringify(preprocessedContacts, null, 2);
     
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
         {
           role: "system",
-          content: "You are an AI specialized in contact information processing. Your task is to analyze and enhance contact data, particularly extracting proper names from email addresses, addresses, and other fields when names are missing."
+          content: `Eres un experto en procesamiento y estructuración de contactos. Tu tarea es analizar y mejorar datos de contactos con reglas muy precisas:
+
+1. NOMBRES:
+   - Si el campo 'name' es vacío o "Cliente sin nombre", debes extraer el nombre de otros campos
+   - Los emails suelen tener el formato nombre.apellido@dominio.com o nombreapellido@dominio.com
+   - Convierte nombres como "juangomez" a "Juan Gomez"
+   - Muchas veces los nombres están en los datos de dirección o en notas
+
+2. TELÉFONOS:
+   - Un número de teléfono válido debe tener aproximadamente 10 dígitos (con posibles separadores)
+   - Formatos válidos: (123) 456-7890, 123-456-7890, 123.456.7890, etc.
+   - Si encuentras un teléfono en otros campos (dirección, notas), muévelo al campo correcto
+   
+3. DIRECCIONES:
+   - Las direcciones normalmente contienen palabras como St, Ave, Blvd, Road, etc.
+   - Si una dirección está en el campo de teléfono, muévela al campo correcto
+   
+4. EMAIL:
+   - Un email siempre contiene el símbolo @
+   - Si encuentras un email en otros campos, muévelo al campo de email`
         },
         {
           role: "user",
-          content: `Analiza los siguientes datos de contactos y mejora la información, especialmente extrayendo nombres propios cuando faltan. Por cada contacto, si el campo 'name' es vacío o 'Cliente sin nombre', intenta determinar el nombre real basado en los otros campos (especialmente email, que suele contener nombres). Proporciona una versión mejorada de cada contacto.
+          content: `Analiza estos datos de contactos y mejora la información, aplicando las reglas estrictas.
+
+Por cada contacto:
+1. Si el nombre está incompleto o ausente, extráelo de otros campos (especialmente email)
+2. Asegúrate de que cada dato esté en su campo correcto (teléfonos en campo phone, emails en campo email, etc.)
+3. Corrige y mejora la estructura de los datos sin inventar información
+4. Devuelve EXACTAMENTE los mismos campos que te envío, manteniendo todos los IDs y metadatos
 
 Datos de contactos:
 ${contactsJson}
 
-Responde con un JSON que contiene solo la lista mejorada de contactos.`
+Responde con un JSON que contiene una lista 'contacts' con los contactos mejorados.`
         }
       ],
       response_format: { type: "json_object" },
-      temperature: 0.2,
+      temperature: 0.1,
     });
 
     // Parse the response
-    let enhancedContacts = contacts; // Default fallback
+    let enhancedContacts = preprocessedContacts; // Default fallback
     try {
       const responseContent = response.choices[0].message.content;
       if (responseContent) {
@@ -205,7 +284,50 @@ Responde con un JSON que contiene solo la lista mejorada de contactos.`
       console.error('Error parsing AI response:', parseError);
     }
     
-    return enhancedContacts;
+    // Aplicamos reglas de post-procesamiento para garantizar la calidad
+    const finalContacts = enhancedContacts.map(contact => {
+      const finalContact = { ...contact };
+      
+      // Validar teléfono: debe ser numérico con posibles separadores
+      if (finalContact.phone && !/^[0-9()\s.\-+]+$/.test(finalContact.phone.replace(/[^0-9()\s.\-+]/g, ''))) {
+        // Si no parece un teléfono válido, intentar encontrar uno en el campo
+        const phoneMatch = finalContact.phone.match(/\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
+        if (phoneMatch) {
+          finalContact.phone = phoneMatch[0];
+        } else if (finalContact.phone.length > 30 || /[a-zA-Z]{3,}/.test(finalContact.phone)) {
+          // Si es muy largo o tiene muchas letras, probablemente es una dirección
+          if (!finalContact.address) finalContact.address = finalContact.phone;
+          finalContact.phone = '';
+        }
+      }
+      
+      // Validar email: debe contener @
+      if (finalContact.email && !finalContact.email.includes('@')) {
+        // Si no parece un email válido, buscar uno en el campo
+        const emailMatch = finalContact.email.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+        if (emailMatch) {
+          finalContact.email = emailMatch[0];
+        } else {
+          // Si no encontramos un email, podría ser otro tipo de dato
+          finalContact.email = '';
+        }
+      }
+      
+      // Asegurarse de que el nombre tenga algo razonable
+      if (!finalContact.name || finalContact.name === "Cliente sin nombre") {
+        if (finalContact.email && finalContact.email.includes('@')) {
+          const username = finalContact.email.split('@')[0];
+          finalContact.name = username
+            .split(/[._-]/)
+            .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+            .join(' ');
+        }
+      }
+      
+      return finalContact;
+    });
+    
+    return finalContacts;
   } catch (error) {
     console.error('Error in AI enhancement:', error);
     return contacts; // Return original contacts if enhancement fails
