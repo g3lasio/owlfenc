@@ -831,32 +831,34 @@ export default function PermitAdvisor() {
             onValueChange={setActiveTab}
             className="mt-2"
           >
-            <div className="px-6 pb-4">
-              <TabsList className="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-4">
-                <TabsTrigger value="permits" className="text-xs md:text-sm">
-                  <FileText className="h-4 w-4 mr-1 hidden sm:inline" />
-                  Permisos
-                </TabsTrigger>
-                <TabsTrigger value="licenses" className="text-xs md:text-sm">
-                  <CheckCircle2 className="h-4 w-4 mr-1 hidden sm:inline" />
-                  Licencias
-                </TabsTrigger>
-                <TabsTrigger value="codes" className="text-xs md:text-sm">
-                  <Building2 className="h-4 w-4 mr-1 hidden sm:inline" />
-                  Códigos
-                </TabsTrigger>
-                <TabsTrigger value="inspections" className="text-xs md:text-sm">
-                  <ListChecks className="h-4 w-4 mr-1 hidden sm:inline" />
-                  Inspecciones
-                </TabsTrigger>
-                <TabsTrigger value="process" className="text-xs md:text-sm">
-                  <HardHat className="h-4 w-4 mr-1 hidden sm:inline" />
-                  Proceso
-                </TabsTrigger>
-              </TabsList>
+            <div className="px-4 sm:px-6 pb-4">
+              <div className="overflow-x-auto pb-2 -mx-1 px-1">
+                <TabsList className="grid min-w-[500px] sm:min-w-fit grid-cols-5 gap-2 mb-4">
+                  <TabsTrigger value="permits" className="text-xs md:text-sm whitespace-nowrap">
+                    <FileText className="h-4 w-4 mr-1 hidden sm:inline" />
+                    <span>Permisos</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="licenses" className="text-xs md:text-sm whitespace-nowrap">
+                    <CheckCircle2 className="h-4 w-4 mr-1 hidden sm:inline" />
+                    <span>Licencias</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="codes" className="text-xs md:text-sm whitespace-nowrap">
+                    <Building2 className="h-4 w-4 mr-1 hidden sm:inline" />
+                    <span>Códigos</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="inspections" className="text-xs md:text-sm whitespace-nowrap">
+                    <ListChecks className="h-4 w-4 mr-1 hidden sm:inline" />
+                    <span>Inspecciones</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="process" className="text-xs md:text-sm whitespace-nowrap">
+                    <HardHat className="h-4 w-4 mr-1 hidden sm:inline" />
+                    <span>Proceso</span>
+                  </TabsTrigger>
+                </TabsList>
+              </div>
             </div>
 
-            <ScrollArea className="h-[500px] mt-4">
+            <ScrollArea className="h-[min(75vh,500px)] mt-4">
               <TabsContent value="overview" className="px-6 py-4 space-y-6">
                 <h3 className="text-lg font-medium flex items-center">
                   <Search className="mr-2 h-5 w-5 text-primary" />
@@ -1794,7 +1796,7 @@ export default function PermitAdvisor() {
                 </p>
               </div>
             ) : (
-              <ScrollArea className="h-[400px] pr-4">
+              <ScrollArea className="h-[min(65vh,400px)] pr-4">
                 <div className="space-y-3">
                   {historyQuery.data.map((item) => (
                     <Card key={item.id} className="hover:bg-primary/5 transition-colors">
