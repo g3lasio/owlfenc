@@ -175,8 +175,8 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                   {t(group.title)}
                 </motion.h2>
                 <div className="space-y-1.5 mb-4">
-                  {group.items.map((item, itemIndex) => (
-                    {item.id !== "mervin" && (
+                  {group.items.map((item, itemIndex) => 
+                    item.id !== "mervin" ? (
                       <motion.div
                         key={item.id}
                         initial={{ opacity: 0, x: -20 }}
@@ -209,8 +209,8 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                           </motion.div>
                         </Link>
                       </motion.div>
-                    )}
-                  ))}
+                    ) : null
+                  )}
                 </div>
                 
                 {/* Añadir separador después del segundo grupo (entre Funcionalidades y Mi Perfil) */}

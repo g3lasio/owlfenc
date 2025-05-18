@@ -44,7 +44,25 @@ type ProjectPayment = {
   paymentDate?: string | null;
 };
 
-// No bank account simulation needed
+// Datos de muestra para cuentas bancarias
+const mockBankAccounts = [
+  {
+    id: 'acct_1',
+    name: 'Chase Business Checking',
+    last4: '4567',
+    routingNumber: '******021',
+    type: 'checking',
+    status: 'verified'
+  },
+  {
+    id: 'acct_2',
+    name: 'Bank of America Savings',
+    last4: '8901',
+    routingNumber: '******011',
+    type: 'savings',
+    status: 'verified'
+  }
+];
 
 // Payment summary statistics type
 type PaymentSummary = {
@@ -65,7 +83,7 @@ const ProjectPayments: React.FC = () => {
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentDescription, setPaymentDescription] = useState('');
   const [creatingPaymentLink, setCreatingPaymentLink] = useState(false);
-  
+
   // Datos de ejemplo para el dashboard mientras solucionamos el problema con la base de datos
   const mockPaymentSummary: PaymentSummary = {
     totalPending: 15250.00,
@@ -75,9 +93,7 @@ const ProjectPayments: React.FC = () => {
     pendingCount: 5,
     paidCount: 12
   };
-  
-  // No mock bank account data needed
-  
+
   // Example payment data while we resolve database connection issues
   const mockPayments: ProjectPayment[] = [
     {
@@ -152,7 +168,7 @@ const ProjectPayments: React.FC = () => {
       paymentDate: '2025-05-01T10:15:00Z',
     }
   ];
-  
+
   // Get payment links
   const { data: payments, isLoading, error } = useQuery({
     queryKey: ['/api/payment-links'],
@@ -188,7 +204,7 @@ const ProjectPayments: React.FC = () => {
       }
 
       const data = await response.json();
-      
+
       // Show success message
       toast({
         title: "Payment link resent",
@@ -198,7 +214,7 @@ const ProjectPayments: React.FC = () => {
 
       // Invalidate cache to update data
       queryClient.invalidateQueries({ queryKey: ['/api/payment-links'] });
-      
+
       // Copy to clipboard if available
       if (data.url) {
         navigator.clipboard.writeText(data.url);
@@ -271,21 +287,21 @@ const ProjectPayments: React.FC = () => {
     { name: 'May', income: 7800, expenses: 3200, profit: 4600 },
     { name: 'Jun', income: 9200, expenses: 3800, profit: 5400 },
   ];
-  
+
   const paymentTypeDistribution = [
     { name: 'Deposits', value: 65 },
     { name: 'Final Payments', value: 35 },
   ];
-  
+
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
-  
+
   const paymentStatusData = [
     { name: 'Pending', value: mockPaymentSummary.pendingCount },
     { name: 'Paid', value: mockPaymentSummary.paidCount },
     { name: 'Expired', value: 2 },
     { name: 'Canceled', value: 1 },
   ];
-  
+
   const dailyPaymentsData = [
     { name: '5/9', amount: 1200 },
     { name: '5/10', amount: 2500 },
@@ -295,7 +311,7 @@ const ProjectPayments: React.FC = () => {
     { name: '5/14', amount: 2700 },
     { name: '5/15', amount: 3500 },
   ];
-  
+
   const projectTypeData = [
     { subject: 'Residential', A: 120, B: 110, fullMark: 150 },
     { subject: 'Commercial', A: 98, B: 130, fullMark: 150 },
@@ -312,7 +328,7 @@ const ProjectPayments: React.FC = () => {
         description: "Redirecting to Stripe to connect your account...",
         variant: "default"
       });
-      
+
       // Call the backend to initiate Stripe Connect
       const response = await fetch('/api/stripe/connect', { 
         method: 'POST',
@@ -320,13 +336,13 @@ const ProjectPayments: React.FC = () => {
           'Content-Type': 'application/json'
         }
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to connect with Stripe');
       }
-      
+
       const data = await response.json();
-      
+
       // Redirect to Stripe onboarding URL
       if (data.url) {
         window.location.href = data.url;
@@ -341,24 +357,24 @@ const ProjectPayments: React.FC = () => {
       });
     }
   };
-  
+
   // No bank account functions needed
-  
+
   // Function to create payment link
   const createPaymentLink = async (e: React.FormEvent) => {
     e.preventDefault();
     setCreatingPaymentLink(true);
-    
+
     try {
       // Validate input
       if (!paymentAmount || isNaN(parseFloat(paymentAmount)) || parseFloat(paymentAmount) <= 0) {
         throw new Error('Please enter a valid amount');
       }
-      
+
       if (!paymentDescription || paymentDescription.trim().length < 3) {
         throw new Error('Please enter a description (minimum 3 characters)');
       }
-      
+
       // Call API to create a payment link
       const response = await fetch('/api/payment-links', {
         method: 'POST',
@@ -370,31 +386,31 @@ const ProjectPayments: React.FC = () => {
           description: paymentDescription
         })
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to create payment link');
       }
-      
+
       const data = await response.json();
-      
+
       if (data.url) {
         // Copy to clipboard
         navigator.clipboard.writeText(data.url);
-        
+
         // Success message
         toast({
           title: "Payment link created",
           description: "Payment link has been created and copied to clipboard",
           variant: "default"
         });
-        
+
         // Refresh payment links list
         queryClient.invalidateQueries({ queryKey: ['/api/payment-links'] });
       } else {
         throw new Error('No payment link URL received from server');
       }
-      
+
       // Reset form and close modal
       setPaymentAmount('');
       setPaymentDescription('');
@@ -461,7 +477,7 @@ const ProjectPayments: React.FC = () => {
   const getFilteredPayments = () => {
     if (activeTab === 'payments') {
       if (activePaidTab === 'all') return payments;
-      
+
       return payments?.filter((payment: ProjectPayment) => {
         switch(activePaidTab) {
           case 'pending':
@@ -479,7 +495,7 @@ const ProjectPayments: React.FC = () => {
     }
     return payments;
   };
-  
+
   const filteredPayments = getFilteredPayments();
 
   return (
@@ -490,7 +506,7 @@ const ProjectPayments: React.FC = () => {
           <CreditCard className="mr-2 h-4 w-4" /> Connect to Stripe
         </Button>
       </div>
-      
+
       {/* Payment Link Modal */}
       {showPaymentLinkModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
@@ -506,7 +522,7 @@ const ProjectPayments: React.FC = () => {
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            
+
             <form onSubmit={createPaymentLink}>
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -523,7 +539,7 @@ const ProjectPayments: React.FC = () => {
                     disabled={creatingPaymentLink}
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="description">Description</Label>
                   <Input
@@ -535,7 +551,7 @@ const ProjectPayments: React.FC = () => {
                     disabled={creatingPaymentLink}
                   />
                 </div>
-                
+
                 <div className="pt-2">
                   <Button 
                     type="submit" 
@@ -566,7 +582,7 @@ const ProjectPayments: React.FC = () => {
                     )}
                   </Button>
                 </div>
-                
+
                 <div className="text-xs text-muted-foreground text-center pt-2">
                   Payment links can be shared with your clients via email, text message, or any messaging app.
                 </div>
@@ -575,10 +591,10 @@ const ProjectPayments: React.FC = () => {
           </div>
         </div>
       )}
-      
+
       {/* No bank account modal - removed incorrect functionality */}
-      
-      
+
+
       <Tabs defaultValue="dashboard" value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="dashboard">
@@ -591,7 +607,7 @@ const ProjectPayments: React.FC = () => {
             <Settings className="mr-2 h-4 w-4" /> Settings
           </TabsTrigger>
         </TabsList>
-        
+
         {/* Dashboard Panel */}
         <TabsContent value="dashboard" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -606,7 +622,7 @@ const ProjectPayments: React.FC = () => {
                 <Progress value={65} className="h-2 mt-4" />
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg font-medium">Received Payments</CardTitle>
@@ -618,7 +634,7 @@ const ProjectPayments: React.FC = () => {
                 <Progress value={78} className="h-2 mt-4" />
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg font-medium">Total Revenue</CardTitle>
@@ -631,7 +647,7 @@ const ProjectPayments: React.FC = () => {
               </CardContent>
             </Card>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="col-span-1 md:col-span-2">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -647,7 +663,7 @@ const ProjectPayments: React.FC = () => {
                 <div className="text-sm text-muted-foreground mb-4">
                   Quickly create payment links for your clients and send them via email, text message, or any messaging app.
                 </div>
-                
+
                 <div className="rounded-lg border p-4 space-y-4">
                   <div className="flex items-center">
                     <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
@@ -763,7 +779,7 @@ const ProjectPayments: React.FC = () => {
 
           {/* Las tarjetas de Recent Payment Summary, Cuenta Bancaria Principal y Estado de Stripe Connect fueron eliminadas */}
         </TabsContent>
-        
+
         {/* Payments Panel */}
         <TabsContent value="payments" className="space-y-6">
           <Card>
@@ -781,7 +797,7 @@ const ProjectPayments: React.FC = () => {
                   <TabsTrigger value="cancelled">Canceled</TabsTrigger>
                 </TabsList>
               </Tabs>
-              
+
               {filteredPayments?.length === 0 ? (
                 <div className="text-center py-6">
                   <p className="text-muted-foreground">No payments available with the selected filter.</p>
@@ -822,14 +838,14 @@ const ProjectPayments: React.FC = () => {
                             </div>
                           )}
                         </div>
-                        
+
                         {payment.description && (
                           <div className="mt-3">
                             <p className="text-sm text-muted-foreground">Description</p>
                             <p className="font-medium">{payment.description}</p>
                           </div>
                         )}
-                        
+
                         <div className="flex flex-wrap gap-2 mt-4">
                           {payment.status === 'pending' && payment.checkoutUrl && (
                             <Button 
@@ -840,7 +856,7 @@ const ProjectPayments: React.FC = () => {
                               <Send className="mr-2 h-4 w-4" /> View payment link
                             </Button>
                           )}
-                          
+
                           {(payment.status === 'pending' || payment.status === 'expired') && (
                             <Button 
                               onClick={() => resendPaymentLink(payment.id)}
@@ -859,7 +875,7 @@ const ProjectPayments: React.FC = () => {
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         {/* Stripe Integration Tab (Coming Soon) */}
         <TabsContent value="settings" className="space-y-6">
           <Card>
@@ -882,7 +898,7 @@ const ProjectPayments: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
-      
+
       {/* Payment Link Modal - This is the correct functionality for this app */}
     </div>
   );
