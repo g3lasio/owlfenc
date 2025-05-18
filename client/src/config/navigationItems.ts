@@ -12,7 +12,7 @@ export const mainNavigationConfig: NavigationSection[] = [
         icon: "ri-shield-keyhole-line",
       },
       {
-        label: "Contratos",
+        label: "Contract Generator",
         path: "/contracts",
         icon: "ri-file-contract-line",
       },
@@ -55,11 +55,6 @@ export const mainNavigationConfig: NavigationSection[] = [
         label: "My Inventory",
         path: "/materials",
         icon: "ri-archive-line",
-      },
-      {
-        label: "Historial",
-        path: "/history",
-        icon: "ri-time-line",
       },
     ],
   }

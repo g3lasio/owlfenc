@@ -16,9 +16,7 @@
     "clients": "Clients",
     "inventory": "My Inventory",
     "estimates": "Estimates",
-    "history": "History",
     "propertyVerification": "Property Verification",
-    "contractGeneration": "Contract Generation",
     "permitAdvisor": "Mervin Permit Advisor",
     "aiProjectManager": "AI Project Manager",
     "arFenceEstimator": "AR Fence Estimator",
@@ -31,7 +29,9 @@
     "security": "Security",
     "billing": "Billing",
     "companyProfile": "Company Profile",
-    "myProfile": "My Profile"
+    "myProfile": "My Profile",
+    "estimateGenerator": "Estimate Generator",
+    "contractGenerator": "Contract Generator"
   },
   "sidebar": {
     "toggleSidebar": "Toggle Sidebar",

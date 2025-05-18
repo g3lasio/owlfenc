@@ -54,12 +54,6 @@ export const navigationGroups: NavigationGroup[] = [
         label: "navigation.inventory",
         path: "/materials",
         icon: "ri-archive-line"
-      },
-      {
-        id: "history",
-        label: "navigation.history",
-        path: "/history",
-        icon: "ri-time-line"
       }
     ]
   },
@@ -73,16 +67,16 @@ export const navigationGroups: NavigationGroup[] = [
         icon: "ri-file-list-3-line"
       },
       {
+        id: "contracts",
+        label: "navigation.contractGenerator",
+        path: "/contracts",
+        icon: "ri-file-text-line"
+      },
+      {
         id: "property-verifier",
         label: "navigation.propertyVerification",
         path: "/property-verifier",
         icon: "ri-shield-keyhole-line"
-      },
-      {
-        id: "contracts",
-        label: "navigation.contractGeneration",
-        path: "/contracts",
-        icon: "ri-file-text-line"
       },
       {
         id: "permit-advisor",
