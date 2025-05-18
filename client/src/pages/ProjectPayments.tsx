@@ -72,6 +72,10 @@ const ProjectPayments: React.FC = () => {
   const [activePaidTab, setActivePaidTab] = useState('all');
   const [connectedToStripe, setConnectedToStripe] = useState(false);
   const [showBankModal, setShowBankModal] = useState(false);
+  const [showPaymentLinkModal, setShowPaymentLinkModal] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentDescription, setPaymentDescription] = useState('');
+  const [creatingPaymentLink, setCreatingPaymentLink] = useState(false);
   
   // Datos de ejemplo para el dashboard mientras solucionamos el problema con la base de datos
   const mockPaymentSummary: PaymentSummary = {
@@ -387,14 +391,14 @@ const ProjectPayments: React.FC = () => {
   return (
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Panel de Pagos</h1>
+        <h1 className="text-3xl font-bold">Payment Tracker</h1>
         {!connectedToStripe ? (
           <Button onClick={connectToStripe} className="bg-indigo-600 hover:bg-indigo-700 text-white">
-            <CreditCard className="mr-2 h-4 w-4" /> Conectar Stripe
+            <CreditCard className="mr-2 h-4 w-4" /> Connect Stripe
           </Button>
         ) : (
           <Badge className="bg-green-500 px-3 py-1">
-            <CreditCard className="mr-2 h-4 w-4" /> Cuenta Stripe conectada
+            <CreditCard className="mr-2 h-4 w-4" /> Stripe Connected
           </Badge>
         )}
       </div>
@@ -405,158 +409,86 @@ const ProjectPayments: React.FC = () => {
             <BarChart4 className="mr-2 h-4 w-4" /> Dashboard
           </TabsTrigger>
           <TabsTrigger value="payments">
-            <DollarSign className="mr-2 h-4 w-4" /> Pagos
+            <DollarSign className="mr-2 h-4 w-4" /> Payments
           </TabsTrigger>
           <TabsTrigger value="settings">
-            <Settings className="mr-2 h-4 w-4" /> Configuración
+            <Settings className="mr-2 h-4 w-4" /> Settings
           </TabsTrigger>
         </TabsList>
         
-        {/* Panel de Dashboard */}
+        {/* Dashboard Panel */}
         <TabsContent value="dashboard" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg font-medium">Pagos Pendientes</CardTitle>
-                <CardDescription>Total de pagos por cobrar</CardDescription>
+                <CardTitle className="text-lg font-medium">Pending Payments</CardTitle>
+                <CardDescription>Total payments to collect</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-indigo-600">${mockPaymentSummary.totalPending.toLocaleString('es-ES')}</div>
-                <p className="text-sm text-muted-foreground">{mockPaymentSummary.pendingCount} pagos pendientes</p>
+                <div className="text-3xl font-bold text-indigo-600">${mockPaymentSummary.totalPending.toLocaleString('en-US')}</div>
+                <p className="text-sm text-muted-foreground">{mockPaymentSummary.pendingCount} pending payments</p>
                 <Progress value={65} className="h-2 mt-4" />
               </CardContent>
             </Card>
             
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg font-medium">Pagos Recibidos</CardTitle>
-                <CardDescription>Total de pagos completados</CardDescription>
+                <CardTitle className="text-lg font-medium">Received Payments</CardTitle>
+                <CardDescription>Total completed payments</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-green-600">${mockPaymentSummary.totalPaid.toLocaleString('es-ES')}</div>
-                <p className="text-sm text-muted-foreground">{mockPaymentSummary.paidCount} pagos completados</p>
+                <div className="text-3xl font-bold text-green-600">${mockPaymentSummary.totalPaid.toLocaleString('en-US')}</div>
+                <p className="text-sm text-muted-foreground">{mockPaymentSummary.paidCount} completed payments</p>
                 <Progress value={78} className="h-2 mt-4" />
               </CardContent>
             </Card>
             
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg font-medium">Ingresos Totales</CardTitle>
-                <CardDescription>Total facturado este año</CardDescription>
+                <CardTitle className="text-lg font-medium">Total Revenue</CardTitle>
+                <CardDescription>Total billed this year</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">${mockPaymentSummary.totalRevenue.toLocaleString('es-ES')}</div>
-                <p className="text-sm text-muted-foreground">Incremento del 12% respecto al año pasado</p>
+                <div className="text-3xl font-bold">${mockPaymentSummary.totalRevenue.toLocaleString('en-US')}</div>
+                <p className="text-sm text-muted-foreground">12% increase from last year</p>
                 <Progress value={85} className="h-2 mt-4" />
               </CardContent>
             </Card>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="col-span-1">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <TrendingUp className="mr-2 h-5 w-5 text-indigo-500" />
-                  Evolución de Ingresos
-                </CardTitle>
-                <CardDescription>Tendencias de ingresos mensuales de 2025</CardDescription>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart
-                      data={monthlyRevenueData}
-                      margin={{
-                        top: 20,
-                        right: 30,
-                        left: 20,
-                        bottom: 10,
-                      }}
-                    >
-                      <defs>
-                        <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor="#8884d8" stopOpacity={0}/>
-                        </linearGradient>
-                        <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#82ca9d" stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor="#82ca9d" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'rgba(12, 15, 28, 0.8)', 
-                          border: '1px solid #333',
-                          borderRadius: '8px',
-                          color: '#fff' 
-                        }} 
-                      />
-                      <Legend />
-                      <Area 
-                        type="monotone" 
-                        dataKey="income" 
-                        stroke="#8884d8" 
-                        fillOpacity={1} 
-                        fill="url(#colorIncome)" 
-                        name="Ingresos"
-                      />
-                      <Area 
-                        type="monotone" 
-                        dataKey="profit" 
-                        stroke="#82ca9d" 
-                        fillOpacity={1} 
-                        fill="url(#colorProfit)" 
-                        name="Ganancia"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
+            <Card className="col-span-1 md:col-span-2">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div>
+                  <CardTitle className="text-lg font-medium">Payment Links</CardTitle>
+                  <CardDescription>Create and manage payment links</CardDescription>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card className="col-span-1">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Activity className="mr-2 h-5 w-5 text-indigo-500" />
-                  Pagos Diarios (Mayo 2025)
-                </CardTitle>
-                <CardDescription>Flujo de pagos de los últimos 7 días</CardDescription>
+                <Button className="bg-indigo-600 hover:bg-indigo-700" onClick={() => setShowPaymentLinkModal(true)}>
+                  <DollarSign className="mr-2 h-4 w-4" /> Create New Payment Link
+                </Button>
               </CardHeader>
-              <CardContent className="pt-0">
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={dailyPaymentsData}
-                      margin={{
-                        top: 20,
-                        right: 30,
-                        left: 20,
-                        bottom: 10,
-                      }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'rgba(12, 15, 28, 0.8)', 
-                          border: '1px solid #333',
-                          borderRadius: '8px',
-                          color: '#fff' 
-                        }}
-                        formatter={(value) => [`$${value}`, 'Monto']}
-                      />
-                      <Legend />
-                      <Bar dataKey="amount" name="Monto de pago" radius={[8, 8, 0, 0]}>
-                        {dailyPaymentsData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
+              <CardContent>
+                <div className="text-sm text-muted-foreground mb-4">
+                  Quickly create payment links for your clients and send them via email, text message, or any messaging app.
+                </div>
+                
+                <div className="rounded-lg border p-4 space-y-4">
+                  <div className="flex items-center">
+                    <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+                    <span>Accept credit cards, debit cards and Apple Pay</span>
+                  </div>
+                  <div className="flex items-center">
+                    <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+                    <span>Money deposited directly to your bank account</span>
+                  </div>
+                  <div className="flex items-center">
+                    <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+                    <span>Secure payment processing through Stripe</span>
+                  </div>
+                  <div className="flex items-center">
+                    <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+                    <span>Real-time payment notifications</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -567,9 +499,9 @@ const ProjectPayments: React.FC = () => {
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <PieChart className="mr-2 h-5 w-5 text-indigo-500" />
-                  Distribución de Pagos
+                  Payment Distribution
                 </CardTitle>
-                <CardDescription>Estado actual de todos los pagos</CardDescription>
+                <CardDescription>Current status of all payments</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="h-72 flex justify-center">
