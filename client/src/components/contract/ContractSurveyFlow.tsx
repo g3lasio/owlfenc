@@ -416,6 +416,8 @@ const ContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
       [field]: value
     });
   };
+  
+  // Las funciones handleEnhanceDescription y applyEnhancedDescription ya están definidas anteriormente
 
   // Manejar cambio de dirección con autocompletado
   const handleAddressChange = (field: string, value: string) => {
@@ -573,6 +575,53 @@ const ContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Diálogo para mostrar la comparación de descripciones mejoradas con IA */}
+      <Dialog open={isAIDialogOpen} onOpenChange={setIsAIDialogOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Mejora de descripción con IA</DialogTitle>
+          </DialogHeader>
+          
+          {isAIEnhancingDescription ? (
+            <div className="flex flex-col items-center justify-center py-8 space-y-4">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p>La IA está mejorando tu descripción...</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Esto puede tomar unos segundos
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Descripción Original</Label>
+                  <div className="border rounded-md p-3 bg-muted/30 text-sm min-h-[200px] overflow-y-auto">
+                    {originalDescription || "Sin descripción"}
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Descripción Mejorada</Label>
+                  <div className="border rounded-md p-3 bg-primary/5 text-sm min-h-[200px] overflow-y-auto">
+                    {enhancedDescription || "No hay mejoras disponibles"}
+                  </div>
+                </div>
+              </div>
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsAIDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={applyEnhancedDescription}>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Aplicar Mejoras
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+    
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <div>

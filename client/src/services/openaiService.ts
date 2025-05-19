@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 
 // Crear instancia de OpenAI con la API key del entorno
-const openai = new OpenAI({ apiKey: import.meta.env.VITE_OPENAI_API_KEY || process.env.OPENAI_API_KEY });
+const openai = new OpenAI({ apiKey: import.meta.env.VITE_OPENAI_API_KEY });
 
 // El modelo más reciente de OpenAI
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
