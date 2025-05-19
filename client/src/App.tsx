@@ -10,7 +10,6 @@ import Clients from "./pages/Clients";
 import NuevoClientes from "./pages/NuevoClientes";
 import Materials from "./pages/Materials";
 import Estimates from "./pages/Estimates";
-import EstimatesDashboard from "./pages/EstimatesDashboard";
 import ChatInterface from "@/components/chat/ChatInterface";
 import Settings from "@/pages/Settings";
 import Profile from "@/pages/Profile";
@@ -143,14 +142,8 @@ function Router() {
       <Route path="/contracts">
         {() => <ProtectedRoute component={ContractGenerator} />}
       </Route>
-      <Route path="/estimates/dashboard">
-        {() => <ProtectedRoute component={EstimatesDashboard} />}
-      </Route>
-      <Route path="/estimates/new">
-        {() => <ProtectedRoute component={Estimates} />}
-      </Route>
       <Route path="/estimates">
-        {() => <ProtectedRoute component={EstimatesDashboard} />}
+        {() => <ProtectedRoute component={Estimates} />}
       </Route>
 
       {/* Página no encontrada */}

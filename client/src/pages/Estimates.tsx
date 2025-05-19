@@ -1,14 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useProfile } from '@/hooks/use-profile';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Link } from 'wouter';
-
-// UI Components
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { MervinAssistant } from '@/components/ui/mervin-assistant';
 import { 
   Table, 
   TableBody, 
@@ -54,8 +53,6 @@ import {
   Save,
   X
 } from 'lucide-react';
-
-// Services and Context
 import { useAuth } from '../contexts/AuthContext';
 import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -580,7 +577,8 @@ export default function Estimates() {
           <div class="estimate-title">
             <h2>ESTIMADO</h2>
             <p><strong>Fecha:</strong> ${new Date().toLocaleDateString()}</p>
-            <p><strong>Estimado #:</strong> EST-${Date.now().toString().slice(-8)}</p>
+            <p><strong>Estimado #:</strong> EST-${Date.now().toString().slice(-6)}</p>
+            <p><strong>Válido hasta:</strong> ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}</p>
           </div>
         </div>
         
@@ -589,13 +587,20 @@ export default function Estimates() {
           <div class="grid-container">
             <div class="grid-item">
               <p><strong>Nombre:</strong> ${client.name}</p>
-              ${client.email ? `<p><strong>Email:</strong> ${client.email}</p>` : ''}
+              <p><strong>Email:</strong> ${client.email || 'N/A'}</p>
+              <p><strong>Teléfono:</strong> ${client.phone || 'N/A'}</p>
             </div>
             <div class="grid-item">
-              ${client.phone ? `<p><strong>Teléfono:</strong> ${client.phone}</p>` : ''}
-              ${client.address ? `<p><strong>Dirección:</strong> ${client.address}, ${client.city || ''}, ${client.state || ''} ${client.zipCode || ''}</p>` : ''}
+              <p><strong>Dirección:</strong> ${client.address || 'N/A'}</p>
+              <p><strong>Ciudad:</strong> ${client.city || 'N/A'}</p>
+              <p><strong>Estado/CP:</strong> ${client.state || 'N/A'} ${client.zipCode ? ', ' + client.zipCode : ''}</p>
             </div>
           </div>
+        </div>
+        
+        <div class="section">
+          <h3>Detalles y Descripción del Proyecto</h3>
+          <p>${estimate.notes || 'Sin descripción detallada del proyecto.'}</p>
         </div>
         
         <div class="section">
@@ -603,45 +608,37 @@ export default function Estimates() {
           <table>
             <thead>
               <tr>
-                <th style="width: 40%;">Descripción</th>
-                <th style="width: 15%;">Precio</th>
-                <th style="width: 15%;">Cantidad</th>
-                <th style="width: 15%;">Unidad</th>
-                <th style="width: 15%;">Total</th>
+                <th style="width: 40%">Descripción</th>
+                <th style="width: 15%">Cantidad</th>
+                <th style="width: 15%">Unidad</th>
+                <th style="width: 15%">Precio</th>
+                <th style="width: 15%">Total</th>
               </tr>
             </thead>
             <tbody>
               ${estimate.items.map(item => `
                 <tr>
-                  <td>
-                    <strong>${item.name}</strong>
-                    ${item.description ? `<br><span style="font-size: 12px; color: #555;">${item.description}</span>` : ''}
-                  </td>
-                  <td>${formatCurrency(item.price)}</td>
+                  <td>${item.name}${item.description ? `<br><span style="color: #666; font-size: 12px;">${item.description}</span>` : ''}</td>
                   <td>${item.quantity}</td>
                   <td>${item.unit}</td>
+                  <td>${formatCurrency(item.price)}</td>
                   <td>${formatCurrency(item.total)}</td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
+          
+          <div class="summary">
+            <div class="summary-item">
+              <strong>Subtotal:</strong>
+              <span>${formatCurrency(estimate.subtotal)}</span>
+            </div>
+            <div class="summary-item total">
+              <strong>Total:</strong>
+              <span>${formatCurrency(estimate.total)}</span>
+            </div>
+          </div>
         </div>
-        
-        <div class="summary">
-          <div class="summary-item">
-            <strong>Subtotal:</strong> ${formatCurrency(estimate.subtotal)}
-          </div>
-          <div class="total">
-            <strong>Total:</strong> ${formatCurrency(estimate.total)}
-          </div>
-        </div>
-        
-        ${estimate.notes ? `
-          <div class="notes">
-            <h3>Notas:</h3>
-            <p>${estimate.notes.replace(/\n/g, '<br>')}</p>
-          </div>
-        ` : ''}
         
         <div class="estimate-footer">
           <p>Este estimado es válido por 30 días a partir de la fecha de emisión. Precios sujetos a cambios después de este período.</p>
@@ -650,29 +647,61 @@ export default function Estimates() {
       </div>
       `;
       
-      // Ahora guardamos el estimado en Firestore
-      const estimateToSave = {
-        ...estimate,
+      // Preparar los datos del estimado para guardar
+      const estimateData = {
+        title: estimate.title,
+        clientId: estimate.clientId,
+        clientName: client.name,
+        clientEmail: client.email || '',
+        clientPhone: client.phone || '',
+        clientAddress: client.address || '',
+        items: estimate.items,
+        subtotal: estimate.subtotal,
+        total: estimate.total,
+        notes: estimate.notes,
+        status: estimate.status,
         userId: currentUser.uid,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        html: estimateHtml // Guardamos el HTML generado
+        estimateHtml: estimateHtml // Guardamos el HTML del estimado
       };
       
-      // Eliminamos el ID de client para evitar problemas con Firestore
-      delete estimateToSave.client;
+      // Guardar el estimado en la colección de estimates
+      const estimateDocRef = await addDoc(collection(db, 'estimates'), estimateData);
       
-      // Guardar en Firestore
-      const docRef = await addDoc(collection(db, 'estimates'), estimateToSave);
+      // Crear o actualizar el proyecto relacionado con este estimado
+      const projectData = {
+        projectId: `EST-${Date.now().toString().slice(-6)}`,
+        clientName: client.name,
+        clientEmail: client.email || '',
+        clientPhone: client.phone || '',
+        address: client.address || '',
+        city: client.city || '',
+        state: client.state || '',
+        zipCode: client.zipCode || '',
+        estimateHtml: estimateHtml,
+        totalPrice: estimate.total,
+        status: 'draft',
+        projectProgress: 'estimate_created',
+        projectType: 'Residencial', // Valor por defecto, se podría personalizar
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        userId: currentUser.uid,
+        estimateId: estimateDocRef.id, // Referencia al estimado creado
+        clientNotes: estimate.notes || ''
+      };
+      
+      // Guardar el proyecto en la colección de projects
+      await addDoc(collection(db, 'projects'), projectData);
       
       toast({
         title: 'Estimado guardado',
-        description: 'El estimado se ha guardado correctamente.'
+        description: 'El estimado se ha guardado correctamente y está disponible en Proyectos.'
       });
       
-      // Reiniciar el formulario
+      // Reset the form
       setEstimate({
-        title: 'New Estimate',
+        title: 'Nuevo Estimado',
         clientId: '',
         client: null,
         items: [],
@@ -681,7 +710,7 @@ export default function Estimates() {
         notes: '',
         status: 'draft'
       });
-      
+      setSelectedClient(null);
     } catch (error) {
       console.error('Error al guardar estimado:', error);
       toast({
@@ -698,7 +727,7 @@ export default function Estimates() {
   const handleGeneratePreview = async () => {
     if (!estimate.client) {
       toast({
-        title: 'Cliente requerido',
+        title: 'Incomplete Data',
         description: 'Please select a client before generating the preview.',
         variant: 'destructive'
       });
@@ -707,7 +736,7 @@ export default function Estimates() {
     
     if (estimate.items.length === 0) {
       toast({
-        title: 'Sin materiales',
+        title: 'No Materials',
         description: 'Please add at least one material to the estimate.',
         variant: 'destructive'
       });
@@ -715,19 +744,40 @@ export default function Estimates() {
     }
     
     console.log('Generando preview del estimado...');
+    setIsEditingPreview(false); // Aseguramos que comenzamos en modo vista
     
-    // Determine logo URL
-    let logoUrl = '/owl-logo.png'; // Default logo
+    // En este punto sabemos que estimate.client no es null
+    const client = estimate.client;
     
-    // Use company logo if available
+    // Determinamos la URL del logo
+    let logoUrl = '/owl-logo.png'; // Logo por defecto
+    
+    // Si el perfil tiene un logo personalizado, lo usamos
     if (profile?.logo) {
       console.log('Usando logo del perfil de la empresa:', profile.logo);
-      logoUrl = profile.logo;
+      // Verificar si el logo es una URL externa o relativa
+      if (profile.logo.startsWith('http') || profile.logo.startsWith('data:')) {
+        logoUrl = profile.logo;
+      } else {
+        // Si es una ruta relativa, asegurarnos de que tenga el formato correcto
+        logoUrl = profile.logo.startsWith('/') ? profile.logo : `/${profile.logo}`;
+      }
+    } else {
+      console.log('Usando logo por defecto:', logoUrl);
     }
+    
+    // Precargamos la imagen para verificar si puede cargarse correctamente
+    const logoImg = new Image();
+    logoImg.onload = () => console.log('Logo precargado correctamente:', logoUrl);
+    logoImg.onerror = () => {
+      console.warn('Error precargando logo, usando logo por defecto');
+      logoUrl = '/owl-logo.png';
+    };
+    logoImg.src = logoUrl;
     
     console.log('Preparando plantilla HTML con logo...');
     
-    // Generate HTML
+    // Generar una plantilla HTML mejorada con el logo
     const html = `
       <style>
         .estimate-preview {
@@ -741,6 +791,7 @@ export default function Estimates() {
           max-width: 200px;
           max-height: 80px;
           margin-bottom: 10px;
+          object-fit: contain;
         }
         
         .estimate-header {
@@ -873,7 +924,8 @@ export default function Estimates() {
           <div class="estimate-title">
             <h2>ESTIMADO</h2>
             <p><strong>Fecha:</strong> ${new Date().toLocaleDateString()}</p>
-            <p><strong>Estimado #:</strong> EST-${Date.now().toString().slice(-8)}</p>
+            <p><strong>Estimado #:</strong> EST-${Date.now().toString().slice(-6)}</p>
+            <p><strong>Válido hasta:</strong> ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}</p>
           </div>
         </div>
         
@@ -881,14 +933,21 @@ export default function Estimates() {
           <h3>Cliente</h3>
           <div class="grid-container">
             <div class="grid-item">
-              <p><strong>Nombre:</strong> ${estimate.client.name}</p>
-              ${estimate.client.email ? `<p><strong>Email:</strong> ${estimate.client.email}</p>` : ''}
+              <p><strong>Nombre:</strong> ${client.name}</p>
+              <p><strong>Email:</strong> ${client.email || 'N/A'}</p>
+              <p><strong>Teléfono:</strong> ${client.phone || 'N/A'}</p>
             </div>
             <div class="grid-item">
-              ${estimate.client.phone ? `<p><strong>Teléfono:</strong> ${estimate.client.phone}</p>` : ''}
-              ${estimate.client.address ? `<p><strong>Dirección:</strong> ${estimate.client.address}, ${estimate.client.city || ''}, ${estimate.client.state || ''} ${estimate.client.zipCode || ''}</p>` : ''}
+              <p><strong>Dirección:</strong> ${client.address || 'N/A'}</p>
+              <p><strong>Ciudad:</strong> ${client.city || 'N/A'}</p>
+              <p><strong>Estado/CP:</strong> ${client.state || 'N/A'} ${client.zipCode ? ', ' + client.zipCode : ''}</p>
             </div>
           </div>
+        </div>
+        
+        <div class="section">
+          <h3>Detalles y Descripción del Proyecto</h3>
+          <p>${estimate.notes || 'Sin descripción detallada del proyecto.'}</p>
         </div>
         
         <div class="section">
@@ -896,45 +955,37 @@ export default function Estimates() {
           <table>
             <thead>
               <tr>
-                <th style="width: 40%;">Descripción</th>
-                <th style="width: 15%;">Precio</th>
-                <th style="width: 15%;">Cantidad</th>
-                <th style="width: 15%;">Unidad</th>
-                <th style="width: 15%;">Total</th>
+                <th style="width: 40%">Descripción</th>
+                <th style="width: 15%">Cantidad</th>
+                <th style="width: 15%">Unidad</th>
+                <th style="width: 15%">Precio</th>
+                <th style="width: 15%">Total</th>
               </tr>
             </thead>
             <tbody>
               ${estimate.items.map(item => `
                 <tr>
-                  <td>
-                    <strong>${item.name}</strong>
-                    ${item.description ? `<br><span style="font-size: 12px; color: #555;">${item.description}</span>` : ''}
-                  </td>
-                  <td>${formatCurrency(item.price)}</td>
+                  <td>${item.name}${item.description ? `<br><span style="color: #666; font-size: 12px;">${item.description}</span>` : ''}</td>
                   <td>${item.quantity}</td>
                   <td>${item.unit}</td>
+                  <td>${formatCurrency(item.price)}</td>
                   <td>${formatCurrency(item.total)}</td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
+          
+          <div class="summary">
+            <div class="summary-item">
+              <strong>Subtotal:</strong>
+              <span>${formatCurrency(estimate.subtotal)}</span>
+            </div>
+            <div class="summary-item total">
+              <strong>Total:</strong>
+              <span>${formatCurrency(estimate.total)}</span>
+            </div>
+          </div>
         </div>
-        
-        <div class="summary">
-          <div class="summary-item">
-            <strong>Subtotal:</strong> ${formatCurrency(estimate.subtotal)}
-          </div>
-          <div class="total">
-            <strong>Total:</strong> ${formatCurrency(estimate.total)}
-          </div>
-        </div>
-        
-        ${estimate.notes ? `
-          <div class="notes">
-            <h3>Notas:</h3>
-            <p>${estimate.notes.replace(/\n/g, '<br>')}</p>
-          </div>
-        ` : ''}
         
         <div class="estimate-footer">
           <p>Este estimado es válido por 30 días a partir de la fecha de emisión. Precios sujetos a cambios después de este período.</p>
@@ -1051,30 +1102,33 @@ export default function Estimates() {
         };
         preloadImg.src = logoUrl;
         
-        // Añadir el logo al HTML
-        const logoHtml = `<img src="${logoUrl}" alt="Logo" class="company-logo" crossorigin="anonymous" style="max-width: 200px; max-height: 80px; margin-bottom: 10px;" />`;
+        // Añadir el logo al inicio del HTML
+        const logoTag = `<img src="${logoUrl}" alt="Logo" class="company-logo" crossorigin="anonymous" 
+          style="max-width: 200px; max-height: 80px; margin-bottom: 10px; object-fit: contain;" 
+          onerror="if(this.src !== '/owl-logo.png') this.src='/owl-logo.png'; else this.style.display='none';" />`;
         
-        // Insertar el logo en el HTML
-        finalHtml = finalHtml.replace('<div class="company-info">', `<div class="company-info">${logoHtml}`);
+        // Intentar insertar el logo en el HTML existente
+        finalHtml = finalHtml.replace(/<div class="company-info">/g, 
+          `<div class="company-info">${logoTag}`);
       }
       
-      // Generar el PDF
+      // Llamar a la función para generar y descargar el PDF en el cliente
       await generateClientSidePDF(finalHtml, fileName);
       
       toast({
-        title: 'PDF generado',
-        description: 'El PDF del estimado se ha generado correctamente.'
+        title: 'PDF Generated',
+        description: 'The estimate PDF has been successfully downloaded.'
       });
     } catch (error) {
-      console.error('Error al generar PDF:', error);
+      console.error('Error descargando PDF:', error);
       toast({
         title: 'Error',
-        description: 'Ocurrió un error al generar el PDF. Por favor, inténtalo de nuevo.',
+        description: 'Could not download the PDF. ' + (error instanceof Error ? error.message : 'Please try again.'),
         variant: 'destructive'
       });
     }
   };
-
+  
   return (
     <div className="container py-6">
       <div className="flex justify-between items-center mb-4">
@@ -1090,42 +1144,59 @@ export default function Estimates() {
           <CardContent className="pb-4">
             <div className="space-y-3">
               <div>
-                <Label htmlFor="title">Título del Estimado</Label>
+                <Label htmlFor="estimate-title" className="text-xs">Título</Label>
                 <Input 
-                  id="title" 
+                  id="estimate-title" 
                   value={estimate.title} 
-                  onChange={(e) => setEstimate({...estimate, title: e.target.value})}
-                  placeholder="Ej. Instalación de cerca de madera"
+                  onChange={(e) => setEstimate(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="Título del estimado"
+                  className="h-9"
                 />
               </div>
               
               <div>
-                <Label htmlFor="notes">Notas</Label>
-                <Textarea 
-                  id="notes" 
-                  value={estimate.notes} 
-                  onChange={(e) => setEstimate({...estimate, notes: e.target.value})}
-                  placeholder="Agregue notas importantes sobre el estimado aquí..."
-                  className="min-h-[100px]"
+                <Label className="text-xs">Fecha</Label>
+                <Input
+                  type="date"
+                  defaultValue={new Date().toISOString().split('T')[0]}
+                  disabled
+                  className="h-9"
                 />
               </div>
-              
-              <div className="flex justify-between items-center">
-                <Label>Estado</Label>
-                <Select 
-                  value={estimate.status}
-                  onValueChange={(value) => setEstimate({...estimate, status: value as 'draft' | 'sent' | 'approved' | 'rejected'})}
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Seleccionar estado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Borrador</SelectItem>
-                    <SelectItem value="sent">Enviado</SelectItem>
-                    <SelectItem value="approved">Aprobado</SelectItem>
-                    <SelectItem value="rejected">Rechazado</SelectItem>
-                  </SelectContent>
-                </Select>
+            </div>
+          </CardContent>
+        </Card>
+        
+        {/* Contractor Information */}
+        <Card className="lg:col-span-1">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Contractor Information</CardTitle>
+          </CardHeader>
+          <CardContent className="pb-4">
+            <div className="grid grid-cols-1 gap-3">
+              {profile?.logo && (
+                <div className="flex justify-center mb-2">
+                  <img 
+                    src={profile.logo} 
+                    alt="Company Logo" 
+                    className="max-h-16 object-contain" 
+                  />
+                </div>
+              )}
+              <h3 className="font-medium text-sm">{profile?.companyName || ""}</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-medium">Email:</span> {profile?.email || ""}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-medium">Teléfono:</span> {profile?.phone || profile?.mobilePhone || ""}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-medium">Dirección:</span> {profile?.address || ""}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-medium">Website:</span> {profile?.website || ""}
+                </p>
               </div>
               {(!profile?.companyName || !profile?.email || !profile?.phone) && (
                 <div className="mt-2 bg-amber-50 p-2 rounded text-xs text-amber-700 border border-amber-200">
@@ -1137,7 +1208,7 @@ export default function Estimates() {
         </Card>
         
         {/* Client Information */}
-        <Card className="lg:col-span-1">
+        <Card className="lg:col-span-2">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex justify-between items-center">
               <span>Client Information</span>
@@ -1178,106 +1249,139 @@ export default function Estimates() {
                 </Button>
               </div>
             ) : (
-              <div className="text-center py-6">
-                <p className="text-muted-foreground mb-2">No client selected</p>
-                <Button size="sm" onClick={() => setShowClientSearchDialog(true)}>
+              <div className="text-center py-4">
+                <p className="mb-2 text-muted-foreground text-sm">No hay un cliente seleccionado</p>
+                <Button onClick={() => setShowClientSearchDialog(true)} size="sm">
                   <Search className="h-4 w-4 mr-1" />
-                  Select Client
+                  Seleccionar cliente
                 </Button>
               </div>
             )}
           </CardContent>
         </Card>
         
-        {/* Materials & Items */}
+        {/* Project details and description */}
+        <Card className="lg:col-span-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">
+              Detalles y Descripción del Proyecto
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pb-4">
+            <div className="relative">
+              <Textarea 
+                id="estimate-notes" 
+                value={estimate.notes} 
+                onChange={(e) => setEstimate(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder="Descripción detallada del proyecto y notas adicionales para el cliente"
+                rows={3}
+                className="resize-none text-sm"
+              />
+              <div className="absolute right-2 top-2">
+                <MervinAssistant 
+                  originalText={estimate.notes} 
+                  onTextEnhanced={(enhancedText) => setEstimate(prev => ({ ...prev, notes: enhancedText }))}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        {/* Materials List */}
         <Card className="lg:col-span-2">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex justify-between items-center">
-              <span>Materiales & Items</span>
-              <Button variant="ghost" size="sm" onClick={() => setShowMaterialSearchDialog(true)} className="h-8">
+              <span>Materials and Services</span>
+              <Button size="sm" onClick={() => setShowMaterialSearchDialog(true)} className="h-8">
                 <PlusCircle className="h-4 w-4 mr-1" />
-                Agregar Item
+                Add
               </Button>
             </CardTitle>
           </CardHeader>
           <CardContent className="pb-4">
             {estimate.items.length > 0 ? (
-              <div className="w-full overflow-x-auto">
-                <Table>
+              <div className="overflow-x-auto">
+                <Table className="text-xs">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Descripción</TableHead>
-                      <TableHead className="text-right">Precio</TableHead>
-                      <TableHead className="text-center">Cantidad</TableHead>
-                      <TableHead className="text-center">Unidad</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                      <TableHead className="text-right">Acciones</TableHead>
+                      <TableHead style={{ width: 45 }} className="px-1"></TableHead>
+                      <TableHead className="px-2">Nombre</TableHead>
+                      <TableHead className="px-2 whitespace-nowrap">Unidad</TableHead>
+                      <TableHead className="px-2 whitespace-nowrap">Precio</TableHead>
+                      <TableHead className="px-2 whitespace-nowrap">Cant.</TableHead>
+                      <TableHead className="px-2 whitespace-nowrap">Total</TableHead>
+                      <TableHead style={{ width: 40 }} className="px-1"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {estimate.items.map((item) => (
+                    {estimate.items.map(item => (
                       <TableRow key={item.id}>
-                        <TableCell>
-                          <div>
-                            <span className="font-medium">{item.name}</span>
-                            {item.description && (
-                              <p className="text-xs text-muted-foreground">{item.description}</p>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">{formatCurrency(item.price)}</TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex items-center justify-center space-x-2">
-                            <Button 
-                              variant="outline" 
-                              size="icon" 
-                              className="h-6 w-6" 
-                              onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                              disabled={item.quantity <= 1}
-                            >
-                              <span className="text-xs">-</span>
-                            </Button>
-                            <span className="w-8 text-center">{item.quantity}</span>
-                            <Button 
-                              variant="outline" 
-                              size="icon" 
-                              className="h-6 w-6" 
-                              onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                            >
-                              <span className="text-xs">+</span>
-                            </Button>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center">{item.unit}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(item.total)}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end space-x-1">
+                        <TableCell className="align-middle p-1">
+                          <div className="flex">
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Button 
-                                    variant="ghost" 
                                     size="icon" 
-                                    onClick={() => moveItem(item.id, 'up')}
-                                    className="h-6 w-6"
+                                    variant="ghost" 
+                                    onClick={() => moveItem(item.id, "up")}
+                                    className="h-5 w-5"
+                                  >
+                                    <MoveVertical className="h-3 w-3 rotate-180" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="right">
+                                  <p>Mover arriba</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    size="icon" 
+                                    variant="ghost" 
+                                    onClick={() => moveItem(item.id, "down")}
+                                    className="h-5 w-5 -ml-1"
                                   >
                                     <MoveVertical className="h-3 w-3" />
                                   </Button>
                                 </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Mover arriba/abajo</p>
+                                <TooltipContent side="right">
+                                  <p>Mover abajo</p>
                                 </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              onClick={() => handleRemoveItem(item.id)}
-                              className="h-6 w-6"
-                            >
-                              <Trash2 className="h-3 w-3 text-destructive" />
-                            </Button>
                           </div>
+                        </TableCell>
+                        <TableCell className="p-2 font-medium">
+                          {item.name}
+                          {item.description && (
+                            <p className="text-xs text-muted-foreground truncate max-w-[150px]">{item.description}</p>
+                          )}
+                        </TableCell>
+                        <TableCell className="p-2">{item.unit}</TableCell>
+                        <TableCell className="p-2">{formatCurrency(item.price)}</TableCell>
+                        <TableCell className="p-2">
+                          <Input 
+                            type="number"
+                            value={item.quantity}
+                            onChange={(e) => handleUpdateQuantity(item.id, Number(e.target.value))}
+                            min={1}
+                            className="w-16 h-7 text-xs"
+                          />
+                        </TableCell>
+                        <TableCell className="p-2 font-medium">{formatCurrency(item.total)}</TableCell>
+                        <TableCell className="p-1">
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => handleRemoveItem(item.id)}
+                            className="h-5 w-5"
+                          >
+                            <Trash2 className="h-3 w-3 text-destructive" />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -1317,15 +1421,48 @@ export default function Estimates() {
                   variant="outline" 
                   onClick={handleGeneratePreview}
                   disabled={!estimate.client || estimate.items.length === 0}
-                  className="flex items-center"
+                  size="sm"
+                  className="h-9"
                 >
                   <ArrowRight className="mr-1 h-4 w-4" />
-                  Vista previa
+                  Preview
                 </Button>
+                
                 <Button 
-                  onClick={handleSaveEstimate}
+                  variant="outline" 
+                  onClick={handleDownloadPdf}
+                  disabled={estimate.items.length === 0 || !estimate.client}
+                  size="sm"
+                  className="h-9"
+                >
+                  <FileDown className="mr-1 h-4 w-4" />
+                  PDF
+                </Button>
+                
+                <Button 
+                  onClick={handleSendEmail}
+                  disabled={isSendingEmail || estimate.items.length === 0 || !estimate.client || !estimate.client.email}
+                  size="sm"
+                  className="h-9"
+                >
+                  {isSendingEmail ? (
+                    <>
+                      <RotateCcw className="mr-1 h-4 w-4 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="mr-1 h-4 w-4" />
+                      Email
+                    </>
+                  )}
+                </Button>
+                
+                <Button 
+                  onClick={handleSaveEstimate} 
                   disabled={isSaving || !estimate.client || estimate.items.length === 0}
-                  className="flex items-center"
+                  size="sm"
+                  className="h-9"
                 >
                   {isSaving ? (
                     <>
@@ -1334,26 +1471,10 @@ export default function Estimates() {
                     </>
                   ) : (
                     <>
-                      Guardar
+                      <CalendarCheck className="mr-1 h-4 w-4" />
+                      Save
                     </>
                   )}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={handleSendEmail}
-                  disabled={isSendingEmail || !estimate.client || !estimate.client.email || estimate.items.length === 0}
-                  className="flex items-center"
-                >
-                  <Mail className="mr-1 h-4 w-4" />
-                  Enviar por email
-                </Button>
-                <Button 
-                  onClick={handleDownloadPdf}
-                  disabled={!estimate.client || estimate.items.length === 0}
-                  className="flex items-center"
-                >
-                  <FileDown className="mr-1 h-4 w-4" />
-                  Descargar PDF
                 </Button>
               </div>
             </div>
@@ -1364,141 +1485,43 @@ export default function Estimates() {
       {/* Client Search Dialog */}
       <Dialog open={showClientSearchDialog} onOpenChange={setShowClientSearchDialog}>
         <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Buscar Cliente</DialogTitle>
-            <DialogDescription>
-              Busca y selecciona un cliente para el estimado.
+          <DialogHeader className="pb-3">
+            <DialogTitle className="text-lg">Select Client</DialogTitle>
+            <DialogDescription className="text-sm">
+              Search and select a client for the estimate.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="mb-4">
+          <div>
             <Input
+              placeholder="Search by name, email or phone..."
               value={searchClientTerm}
               onChange={(e) => setSearchClientTerm(e.target.value)}
-              placeholder="Buscar por nombre, email o teléfono..."
-              className="mb-4"
+              className="mb-3"
             />
             
-            <div className="max-h-[300px] overflow-y-auto">
+            <div className="max-h-[300px] overflow-y-auto border rounded-md">
               {filteredClients.length > 0 ? (
-                <Table>
+                <Table className="text-sm">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Nombre</TableHead>
-                      <TableHead>Contacto</TableHead>
-                      <TableHead></TableHead>
+                      <TableHead className="py-2">Name</TableHead>
+                      <TableHead className="py-2">Email</TableHead>
+                      <TableHead className="py-2">Phone</TableHead>
+                      <TableHead className="py-2 w-[100px]"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredClients.map((client) => (
-                      <TableRow key={client.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleSelectClient(client)}>
-                        <TableCell className="font-medium">{client.name}</TableCell>
-                        <TableCell>
-                          {client.email && (
-                            <div className="text-xs text-muted-foreground">
-                              {client.email}
-                            </div>
-                          )}
-                          {client.phone && (
-                            <div className="text-xs text-muted-foreground">
-                              {client.phone}
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Button size="sm" variant="ghost">Seleccionar</Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : (
-                <div className="text-center py-6">
-                  <p className="text-muted-foreground">No se encontraron clientes.</p>
-                </div>
-              )}
-            </div>
-          </div>
-          
-          <div className="flex justify-between mt-4">
-            <Link href="/clients/new">
-              <Button variant="outline">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Nuevo Cliente
-              </Button>
-            </Link>
-            <Button variant="outline" onClick={() => setShowClientSearchDialog(false)}>
-              Cancelar
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Material Search Dialog */}
-      <Dialog open={showMaterialSearchDialog} onOpenChange={setShowMaterialSearchDialog}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Agregar Material</DialogTitle>
-            <DialogDescription>
-              Busca y selecciona materiales para agregar al estimado.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="mb-4">
-            <div className="flex justify-between items-center mb-4">
-              <Input
-                value={searchMaterialTerm}
-                onChange={(e) => setSearchMaterialTerm(e.target.value)}
-                placeholder="Buscar por nombre, descripción o categoría..."
-                className="mr-2"
-              />
-              <Button onClick={() => setShowAddMaterialDialog(true)} size="sm">
-                <PlusCircle className="h-4 w-4 mr-1" />
-                Nuevo
-              </Button>
-            </div>
-            
-            <div className="max-h-[300px] overflow-y-auto">
-              {filteredMaterials.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nombre</TableHead>
-                      <TableHead>Categoría</TableHead>
-                      <TableHead className="text-right">Precio</TableHead>
-                      <TableHead></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredMaterials.map((material) => (
-                      <TableRow 
-                        key={material.id} 
-                        className={`cursor-pointer hover:bg-muted/50 ${material.id === tempSelectedMaterial?.id ? 'bg-muted' : ''}`}
-                        onClick={() => setTempSelectedMaterial(material)}
-                      >
-                        <TableCell className="font-medium">
-                          {material.name}
-                          {material.description && (
-                            <div className="text-xs text-muted-foreground">
-                              {material.description}
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell>{material.category}</TableCell>
-                        <TableCell className="text-right">
-                          {formatCurrency(material.price)}
-                          <div className="text-xs text-muted-foreground">
-                            {material.unit}
-                          </div>
-                        </TableCell>
-                        <TableCell>
+                    {filteredClients.map(client => (
+                      <TableRow key={client.id}>
+                        <TableCell className="py-1.5 font-medium">{client.name}</TableCell>
+                        <TableCell className="py-1.5">{client.email || '-'}</TableCell>
+                        <TableCell className="py-1.5">{client.phone || '-'}</TableCell>
+                        <TableCell className="py-1.5">
                           <Button 
                             size="sm" 
-                            variant={material.id === tempSelectedMaterial?.id ? "default" : "ghost"}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setTempSelectedMaterial(material);
-                            }}
+                            onClick={() => handleSelectClient(client)}
+                            className="h-7 text-xs px-2"
                           >
                             Seleccionar
                           </Button>
@@ -1509,148 +1532,243 @@ export default function Estimates() {
                 </Table>
               ) : (
                 <div className="text-center py-6">
-                  <p className="text-muted-foreground">No se encontraron materiales.</p>
+                  <p className="text-sm text-muted-foreground">No se encontraron clientes</p>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <DialogFooter className="pt-2">
+            <Button variant="outline" size="sm" onClick={() => setShowClientSearchDialog(false)}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Material Search Dialog */}
+      <Dialog open={showMaterialSearchDialog} onOpenChange={setShowMaterialSearchDialog}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader className="pb-3">
+            <DialogTitle className="text-lg">Select Material</DialogTitle>
+            <DialogDescription className="text-sm">
+              Search for an existing material or add a new one.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div>
+            <div className="flex justify-between items-center mb-3">
+              <Input
+                placeholder="Search materials..."
+                value={searchMaterialTerm}
+                onChange={(e) => setSearchMaterialTerm(e.target.value)}
+                className="flex-1 mr-2"
+              />
+              <Button 
+                size="sm" 
+                onClick={() => {
+                  setShowAddMaterialDialog(true);
+                  setShowMaterialSearchDialog(false);
+                }}
+                className="h-9"
+              >
+                <PlusCircle className="h-4 w-4 mr-1" />
+                Nuevo
+              </Button>
+            </div>
+            
+            <div className="max-h-[200px] overflow-y-auto border rounded-md mb-4">
+              {filteredMaterials.length > 0 ? (
+                <Table className="text-sm">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="py-2">Nombre</TableHead>
+                      <TableHead className="py-2">Categoría</TableHead>
+                      <TableHead className="py-2">Precio</TableHead>
+                      <TableHead className="py-2 w-[100px]"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredMaterials.map(material => (
+                      <TableRow key={material.id}>
+                        <TableCell className="py-1.5 font-medium">
+                          {material.name}
+                          {material.description && (
+                            <p className="text-xs text-muted-foreground truncate max-w-[180px]">
+                              {material.description}
+                            </p>
+                          )}
+                        </TableCell>
+                        <TableCell className="py-1.5">{material.category}</TableCell>
+                        <TableCell className="py-1.5">{formatCurrency(material.price)}</TableCell>
+                        <TableCell className="py-1.5">
+                          <Button 
+                            size="sm" 
+                            onClick={() => {
+                              setTempSelectedMaterial(material);
+                            }}
+                            className="h-7 text-xs px-2"
+                          >
+                            Seleccionar
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-sm text-muted-foreground">No se encontraron materiales</p>
                 </div>
               )}
             </div>
           </div>
           
           {tempSelectedMaterial && (
-            <div className="mt-4 p-4 bg-muted/40 rounded-md">
-              <div className="text-sm font-medium mb-2">
-                Material seleccionado: {tempSelectedMaterial.name}
-              </div>
-              <div className="flex justify-between items-center">
-                <div className="flex-1">
-                  <Label htmlFor="quantity">Cantidad</Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      id="quantity"
-                      type="number"
-                      value={tempQuantity}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value);
-                        if (!isNaN(val) && val > 0) {
-                          setTempQuantity(val);
-                        }
-                      }}
-                      className="w-20"
-                    />
-                    <span className="text-sm text-muted-foreground">{tempSelectedMaterial.unit}</span>
-                  </div>
-                </div>
-                <div className="ml-4">
-                  <p className="text-xs text-muted-foreground mb-1">Total</p>
-                  <p className="font-medium">
-                    {formatCurrency(tempSelectedMaterial.price * tempQuantity)}
+            <div className="bg-muted p-3 rounded-md mb-3">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2">
+                <div>
+                  <h3 className="font-medium text-sm">{tempSelectedMaterial.name}</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {tempSelectedMaterial.description || 'No description'}
+                  </p>
+                  <p className="text-xs mt-1">
+                    <span className="font-medium">Price:</span> {formatCurrency(tempSelectedMaterial.price)}
                   </p>
                 </div>
+                <div className="flex items-center space-x-2">
+                  <Label htmlFor="quantity" className="whitespace-nowrap text-xs">Quantity:</Label>
+                  <Input
+                    id="quantity"
+                    type="number"
+                    value={tempQuantity}
+                    onChange={(e) => setTempQuantity(Number(e.target.value))}
+                    min={1}
+                    className="w-20 h-8 text-sm"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-sm font-medium">Total: {formatCurrency(tempSelectedMaterial.price * tempQuantity)}</p>
+                </div>
+                <Button 
+                  size="sm"
+                  onClick={handleAddItemToEstimate}
+                  className="h-8"
+                >
+                  <PlusCircle className="h-4 w-4 mr-1" />
+                  Agregar
+                </Button>
               </div>
             </div>
           )}
           
-          <DialogFooter className="gap-2 mt-4">
-            <Button variant="outline" onClick={() => setShowMaterialSearchDialog(false)}>
-              Cancelar
-            </Button>
-            <Button 
-              onClick={handleAddItemToEstimate}
-              disabled={!tempSelectedMaterial}
-            >
-              Agregar Material
+          <DialogFooter className="pt-2">
+            <Button variant="outline" size="sm" onClick={() => setShowMaterialSearchDialog(false)}>
+              Cancel
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
       
-      {/* Add New Material Dialog */}
+      {/* Add Material Dialog */}
       <Dialog open={showAddMaterialDialog} onOpenChange={setShowAddMaterialDialog}>
         <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Agregar Nuevo Material</DialogTitle>
-            <DialogDescription>
-              Completa la información del nuevo material.
+          <DialogHeader className="pb-3">
+            <DialogTitle className="text-lg">New Material</DialogTitle>
+            <DialogDescription className="text-sm">
+              Add a new material to your inventory.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div>
-              <Label htmlFor="name">Nombre</Label>
+              <Label htmlFor="material-name" className="text-xs">Name*</Label>
               <Input 
-                id="name" 
-                value={newMaterial.name}
-                onChange={(e) => setNewMaterial({...newMaterial, name: e.target.value})}
-                placeholder="Ej. Poste de madera"
+                id="material-name" 
+                value={newMaterial.name} 
+                onChange={(e) => setNewMaterial(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Material name"
+                required
+                className="h-9"
               />
             </div>
             
             <div>
-              <Label htmlFor="category">Categoría</Label>
+              <Label htmlFor="material-category" className="text-xs">Category*</Label>
               <Input 
-                id="category" 
-                value={newMaterial.category}
-                onChange={(e) => setNewMaterial({...newMaterial, category: e.target.value})}
-                placeholder="Ej. Madera, Metal, Herramientas"
+                id="material-category" 
+                value={newMaterial.category} 
+                onChange={(e) => setNewMaterial(prev => ({ ...prev, category: e.target.value }))}
+                placeholder="Material category"
+                required
+                className="h-9"
               />
             </div>
             
             <div>
-              <Label htmlFor="description">Descripción (opcional)</Label>
+              <Label htmlFor="material-description" className="text-xs">Description</Label>
               <Textarea 
-                id="description" 
-                value={newMaterial.description || ''}
-                onChange={(e) => setNewMaterial({...newMaterial, description: e.target.value})}
-                placeholder="Descripción detallada del material..."
+                id="material-description" 
+                value={newMaterial.description} 
+                onChange={(e) => setNewMaterial(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Detailed description"
+                className="text-sm resize-none"
+                rows={2}
               />
             </div>
             
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="price">Precio</Label>
+                <Label htmlFor="material-price" className="text-xs">Price*</Label>
                 <div className="relative">
-                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                  <span className="absolute left-3 top-2">
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                  </span>
                   <Input 
-                    id="price" 
+                    id="material-price" 
                     type="number"
-                    step="0.01"
-                    min="0"
-                    value={newMaterial.price}
-                    onChange={(e) => {
-                      const val = parseFloat(e.target.value);
-                      setNewMaterial({...newMaterial, price: isNaN(val) ? 0 : val});
-                    }}
-                    className="pl-6"
+                    value={newMaterial.price} 
+                    onChange={(e) => setNewMaterial(prev => ({ ...prev, price: Number(e.target.value) }))}
+                    min={0}
+                    step={0.01}
+                    className="pl-9 h-9"
+                    required
                   />
                 </div>
               </div>
               
               <div>
-                <Label htmlFor="unit">Unidad</Label>
+                <Label htmlFor="material-unit" className="text-xs">Unit*</Label>
                 <Select 
-                  value={newMaterial.unit}
-                  onValueChange={(value) => setNewMaterial({...newMaterial, unit: value})}
+                  value={newMaterial.unit} 
+                  onValueChange={(value: string) => setNewMaterial(prev => ({ ...prev, unit: value }))}
                 >
-                  <SelectTrigger id="unit">
-                    <SelectValue placeholder="Seleccionar unidad" />
+                  <SelectTrigger id="material-unit" className="h-9">
+                    <SelectValue placeholder="Select" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pieza">Pieza</SelectItem>
-                    <SelectItem value="metro">Metro</SelectItem>
-                    <SelectItem value="kg">Kilogramo</SelectItem>
-                    <SelectItem value="litro">Litro</SelectItem>
-                    <SelectItem value="m2">Metro cuadrado</SelectItem>
-                    <SelectItem value="m3">Metro cúbico</SelectItem>
-                    <SelectItem value="hora">Hora</SelectItem>
-                    <SelectItem value="día">Día</SelectItem>
+                    <SelectItem value="pieza">Piece</SelectItem>
+                    <SelectItem value="metro">Meter</SelectItem>
+                    <SelectItem value="metro2">Square Meter</SelectItem>
+                    <SelectItem value="metro3">Cubic Meter</SelectItem>
+                    <SelectItem value="kg">Kilogram</SelectItem>
+                    <SelectItem value="galón">Gallon</SelectItem>
+                    <SelectItem value="litro">Liter</SelectItem>
+                    <SelectItem value="bolsa">Bag</SelectItem>
+                    <SelectItem value="caja">Box</SelectItem>
+                    <SelectItem value="juego">Set</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
           </div>
           
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddMaterialDialog(false)}>
-              Cancelar
+          <DialogFooter className="pt-3">
+            <Button variant="outline" size="sm" onClick={() => setShowAddMaterialDialog(false)}>
+              Cancel
             </Button>
             <Button size="sm" onClick={handleSaveMaterial}>
               Save Material
