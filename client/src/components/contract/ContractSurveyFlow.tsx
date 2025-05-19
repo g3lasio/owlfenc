@@ -40,18 +40,8 @@ import {
 } from "@/components/ui/dialog";
 import { enhanceDescriptionWithAI } from "@/services/openaiService";
 
-// Tipos ampliados para las preguntas
-interface SurveyQuestion {
-  id: string;
-  field: string;
-  prompt: string;
-  type: 'text' | 'multiline' | 'date' | 'number' | 'choice' | 'address' | 'ai-enhanced';
-  options?: string[];
-  required?: boolean;
-  useCompanyProfile?: boolean;
-  description?: string;
-  projectTypes?: string[];
-}
+// Importar el tipo Question del servicio de preguntas
+import { Question as SurveyQuestion } from "@/services/contractQuestionService";
 
 // Agrupación de preguntas para mostrar 2 a la vez cuando sea posible
 interface QuestionGroup {
@@ -84,17 +74,31 @@ const ContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
 
   // Combinar preguntas según el tipo de proyecto seleccionado
   const getQuestionsForCategory = () => {
+    // Siempre comenzar con las preguntas generales
     let questions = [...generalContractQuestions];
     
     // Encontrar la categoría seleccionada por su nombre
     if (selectedCategory) {
       const category = projectCategories.find(cat => cat.name === selectedCategory);
-      if (category && category.id === 'fencing') {
-        // Agregar preguntas específicas para cercas si es ese tipo de proyecto
-        questions = [
-          ...generalContractQuestions,
-          ...fencingSpecificQuestions
-        ];
+      if (category) {
+        // Si la categoría es cercas, añadir preguntas específicas
+        if (category.id === 'fencing') {
+          questions = [
+            ...generalContractQuestions,
+            ...fencingSpecificQuestions
+          ];
+        }
+        
+        // Podríamos añadir más categorías específicas aquí
+        // Por ejemplo: techos, plomería, electricidad, etc.
+        // if (category.id === 'roofing') { ... }
+        // if (category.id === 'plumbing') { ... }
+        
+        // Filtrar preguntas específicas según el tipo de proyecto
+        questions = questions.filter(q => 
+          // Incluir si aplica a todos los proyectos (sin projectTypes) o si incluye esta categoría
+          !q.projectTypes || q.projectTypes.includes(category.id)
+        );
       }
     }
     
