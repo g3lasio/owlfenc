@@ -1,24 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { useProfile } from '@/hooks/use-profile';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogFooter, 
-  DialogDescription 
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { MervinAssistant } from '@/components/ui/mervin-assistant';
 import { 
   Table, 
   TableBody, 
@@ -27,67 +16,127 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
-import { Textarea } from '@/components/ui/textarea';
-import { useAuth } from '@/contexts/AuthContext';
-import { useProfile } from '@/hooks/use-profile';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
-import { MervinAssistant } from '@/components/ui/mervin-assistant';
 import { 
-  ArrowDown, 
-  ArrowUp, 
-  Edit, 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription,
+  DialogFooter
+} from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { 
+  PlusCircle, 
+  Trash2, 
+  ArrowRight, 
   FileDown, 
   Mail, 
-  Minus, 
-  Plus, 
+  CalendarCheck, 
   Search, 
-  Trash 
+  RotateCcw, 
+  DollarSign,
+  MoveVertical
 } from 'lucide-react';
-import { 
-  collection, 
-  getDocs, 
-  addDoc, 
-  query, 
-  where 
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { getClients } from '@/lib/clientFirebase';
+import { useAuth } from '../contexts/AuthContext';
+import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import { getClients, Client as FirebaseClient } from '../lib/clientFirebase';
+
+// Types
+interface Client {
+  id: string;
+  clientId: string;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  mobilePhone?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zipCode?: string | null;
+}
+
+interface Material {
+  id: string;
+  name: string;
+  category: string;
+  description?: string;
+  unit: string;
+  price: number;
+  supplier?: string;
+  sku?: string;
+  stock?: number;
+}
+
+interface EstimateItem {
+  id: string;
+  materialId: string;
+  name: string;
+  description?: string;
+  price: number;
+  quantity: number;
+  unit: string;
+  total: number;
+}
+
+interface Estimate {
+  id?: string;
+  title: string;
+  clientId: string;
+  client: Client | null;
+  items: EstimateItem[];
+  subtotal: number;
+  total: number;
+  notes: string;
+  status: 'draft' | 'sent' | 'approved' | 'rejected';
+  createdAt?: Date;
+  updatedAt?: Date;
+}
 
 export default function Estimates() {
-  // Using the auth context
+  // Set English as the default language
+  const defaultLanguage = 'en';
   const { currentUser } = useAuth();
   const { toast } = useToast();
   const { profile } = useProfile();
   
-  // States for data
+  // States for clients
   const [clients, setClients] = useState<Client[]>([]);
-  const [filteredClients, setFilteredClients] = useState<Client[]>([]);
-  const [searchClientTerm, setSearchClientTerm] = useState('');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  
-  const [materials, setMaterials] = useState<Material[]>([]);
-  const [filteredMaterials, setFilteredMaterials] = useState<Material[]>([]);
-  const [searchMaterialTerm, setSearchMaterialTerm] = useState('');
-  
-  // Dialog states
+  const [searchClientTerm, setSearchClientTerm] = useState('');
+  const [filteredClients, setFilteredClients] = useState<Client[]>([]);
   const [showClientSearchDialog, setShowClientSearchDialog] = useState(false);
+  
+  // States for materials
+  const [materials, setMaterials] = useState<Material[]>([]);
+  const [searchMaterialTerm, setSearchMaterialTerm] = useState('');
+  const [filteredMaterials, setFilteredMaterials] = useState<Material[]>([]);
   const [showMaterialSearchDialog, setShowMaterialSearchDialog] = useState(false);
   const [showAddMaterialDialog, setShowAddMaterialDialog] = useState(false);
-  
-  // New material state
-  const [newMaterial, setNewMaterial] = useState<Material>({
-    id: '',
+  const [newMaterial, setNewMaterial] = useState<Partial<Material>>({
     name: '',
-    category: 'wood',
+    category: '',
     description: '',
     unit: 'pieza',
-    price: 0,
+    price: 0
   });
   
-  // Estimate state
+  // States for the estimate
   const [estimate, setEstimate] = useState<Estimate>({
-    title: 'Nuevo Estimado',
+    title: 'New Estimate',
     clientId: '',
     client: null,
     items: [],
@@ -109,58 +158,6 @@ export default function Estimates() {
   const [editableHtml, setEditableHtml] = useState<string | null>(null);
   const [isEditingPreview, setIsEditingPreview] = useState(false);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
-  
-  // Function to handle image errors in the preview
-  const handleImageError = useCallback((img: HTMLImageElement): void => {
-    console.error('Error cargando imagen en preview:', img.src);
-    // Si es el logo de la empresa, intentar con el logo local
-    if ((img.alt.includes('Logo') || img.alt.includes('logo')) && !img.src.includes('owl-logo.png')) {
-      console.log('Intentando cargar logo alternativo en preview');
-      img.src = '/owl-logo.png';
-      // Agregar clase para destacar que es un logo de respaldo
-      img.classList.add('fallback-logo');
-    }
-  }, []);
-  
-  // Handle preview reference setup with image error handling
-  const handlePreviewRef = useCallback((el: HTMLDivElement | null) => {
-    if (!el || !previewHtml) return;
-    
-    // Insertar HTML
-    el.innerHTML = previewHtml;
-    
-    console.log('Preview HTML renderizado, verificando imágenes...');
-    
-    // Procesar imágenes
-    const imgs = el.querySelectorAll('img');
-    if (imgs.length > 0) {
-      console.log(`Encontradas ${imgs.length} imágenes en el preview`);
-      imgs.forEach(img => {
-        // Verificar si la imagen ya está cargada
-        if (img.complete) {
-          // Si la imagen ya está completa pero tiene error, aplicar fallback
-          if (img.naturalWidth === 0) {
-            console.warn('Imagen cargada con errores:', img.src);
-            handleImageError(img);
-          } else {
-            console.log('Imagen precargada correctamente:', img.src);
-          }
-        }
-        
-        // Listener para cuando la imagen carga correctamente
-        img.onload = function() {
-          console.log('Imagen cargada correctamente:', img.src);
-        };
-        
-        // Listener para errores de carga
-        img.onerror = function() {
-          handleImageError(img);
-        };
-      });
-    } else {
-      console.warn('No se encontraron imágenes en el preview HTML');
-    }
-  }, [previewHtml, handleImageError]);
   
   // Load clients and materials when component mounts
   useEffect(() => {
@@ -351,62 +348,45 @@ export default function Estimates() {
     }));
   };
   
-  // Handle new material form changes
-  const handleMaterialChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    if (name === 'price') {
-      const numericValue = parseFloat(value);
-      setNewMaterial(prev => ({
-        ...prev,
-        [name]: isNaN(numericValue) ? 0 : numericValue
-      }));
-    } else {
-      setNewMaterial(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
-  };
-  
   // Save new material
   const handleSaveMaterial = async () => {
+    if (!currentUser) return;
+    
     if (!newMaterial.name || !newMaterial.category || !newMaterial.unit) {
       toast({
         title: 'Datos incompletos',
-        description: 'Por favor, completa los campos requeridos.',
+        description: 'Por favor, completa los campos obligatorios: Nombre, Categoría y Unidad.',
         variant: 'destructive'
       });
       return;
     }
     
     try {
-      // Save to Firebase
-      // Crear una copia del objeto sin el id
-      const { id, ...materialDocData } = newMaterial;
-      
-      // Añadir datos adicionales
-      const fullMaterialData = {
-        ...materialDocData,
-        userId: currentUser?.uid,
-        createdAt: new Date()
-      };
-      
-      const docRef = await addDoc(collection(db, 'materials'), fullMaterialData);
-      
-      const savedMaterial: Material = {
+      const materialData = {
         ...newMaterial,
-        id: docRef.id
+        price: typeof newMaterial.price === 'number' ? newMaterial.price : 0,
+        userId: currentUser.uid,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
       };
       
-      // Update local state
-      setMaterials(prev => [...prev, savedMaterial]);
-      setFilteredMaterials(prev => [...prev, savedMaterial]);
+      const docRef = await addDoc(collection(db, 'materials'), materialData);
       
-      // Reset form
+      const newMaterialWithId: Material = {
+        id: docRef.id,
+        ...materialData,
+        price: materialData.price as number
+      } as Material;
+      
+      setMaterials(prev => [...prev, newMaterialWithId]);
+      
+      // Use the new material as the selected material
+      setTempSelectedMaterial(newMaterialWithId);
+      
+      // Reset the form
       setNewMaterial({
-        id: '',
         name: '',
-        category: 'wood',
+        category: '',
         description: '',
         unit: 'pieza',
         price: 0
@@ -415,8 +395,8 @@ export default function Estimates() {
       setShowAddMaterialDialog(false);
       
       toast({
-        title: 'Material guardado',
-        description: 'El material se ha guardado correctamente.'
+        title: 'Material agregado',
+        description: `Se ha agregado el material "${newMaterial.name}" correctamente.`
       });
     } catch (error) {
       console.error('Error al guardar material:', error);
@@ -463,7 +443,6 @@ export default function Estimates() {
           color: #333;
           max-width: 100%;
           margin: 0 auto;
-          background-color: #f8fafc;
         }
         
         .estimate-header {
@@ -587,15 +566,7 @@ export default function Estimates() {
       <div class="estimate-preview">
         <div class="estimate-header">
           <div class="company-info">
-            <div style="display: flex; align-items: center; margin-bottom: 10px;">
-              <img 
-                src="${profile?.logo || '/owl-logo.png'}" 
-                alt="Logo" 
-                style="max-height: 60px; max-width: 180px; margin-right: 15px;" 
-                onerror="this.onerror=null; this.src='/owl-logo.png'; console.log('Fallback a logo local');"
-              />
-              <h1>${profile?.companyName || 'Owl Fence'}</h1>
-            </div>
+            <h1>${profile?.companyName || 'Owl Fence'}</h1>
             <p>${profile?.address || '123 Fence Avenue'}, ${profile?.city || 'San Diego'}, ${profile?.state || 'CA'} ${profile?.zipCode || '92101'}</p>
             <p>${profile?.email || 'info@owlfence.com'} | ${profile?.phone || profile?.mobilePhone || '(555) 123-4567'}</p>
             <p>${profile?.website || 'www.owlfence.com'}</p>
@@ -678,35 +649,70 @@ export default function Estimates() {
         title: estimate.title,
         clientId: estimate.clientId,
         clientName: client.name,
+        clientEmail: client.email || '',
+        clientPhone: client.phone || '',
+        clientAddress: client.address || '',
         items: estimate.items,
         subtotal: estimate.subtotal,
         total: estimate.total,
         notes: estimate.notes,
         status: estimate.status,
-        html: estimateHtml,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        userId: currentUser.uid
+        userId: currentUser.uid,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        estimateHtml: estimateHtml // Guardamos el HTML del estimado
       };
       
-      // Guardar en Firebase
-      const docRef = await addDoc(collection(db, 'estimates'), estimateData);
+      // Guardar el estimado en la colección de estimates
+      const estimateDocRef = await addDoc(collection(db, 'estimates'), estimateData);
+      
+      // Crear o actualizar el proyecto relacionado con este estimado
+      const projectData = {
+        projectId: `EST-${Date.now().toString().slice(-6)}`,
+        clientName: client.name,
+        clientEmail: client.email || '',
+        clientPhone: client.phone || '',
+        address: client.address || '',
+        city: client.city || '',
+        state: client.state || '',
+        zipCode: client.zipCode || '',
+        estimateHtml: estimateHtml,
+        totalPrice: estimate.total,
+        status: 'draft',
+        projectProgress: 'estimate_created',
+        projectType: 'Residencial', // Valor por defecto, se podría personalizar
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        userId: currentUser.uid,
+        estimateId: estimateDocRef.id, // Referencia al estimado creado
+        clientNotes: estimate.notes || ''
+      };
+      
+      // Guardar el proyecto en la colección de projects
+      await addDoc(collection(db, 'projects'), projectData);
       
       toast({
         title: 'Estimado guardado',
-        description: 'El estimado se ha guardado correctamente.'
+        description: 'El estimado se ha guardado correctamente y está disponible en Proyectos.'
       });
       
-      // Redirigir al usuario o mostrar el PDF para descargar
-      // Por ahora simplemente mostramos la vista previa
-      setPreviewHtml(estimateHtml);
-      setShowPreviewDialog(true);
-      
+      // Reset the form
+      setEstimate({
+        title: 'Nuevo Estimado',
+        clientId: '',
+        client: null,
+        items: [],
+        subtotal: 0,
+        total: 0,
+        notes: '',
+        status: 'draft'
+      });
+      setSelectedClient(null);
     } catch (error) {
       console.error('Error al guardar estimado:', error);
       toast({
-        title: 'Error',
-        description: 'No se pudo guardar el estimado.',
+        title: 'Error al guardar',
+        description: 'No se pudo guardar el estimado. Por favor, inténtalo de nuevo.',
         variant: 'destructive'
       });
     } finally {
@@ -714,229 +720,275 @@ export default function Estimates() {
     }
   };
   
-  // Handle estimate preview
-  const handlePreview = () => {
+  // Generate Preview
+  const handleGeneratePreview = async () => {
     if (!estimate.client) {
       toast({
-        title: 'Cliente no seleccionado',
-        description: 'Por favor, selecciona un cliente antes de generar la vista previa.',
+        title: 'Incomplete Data',
+        description: 'Please select a client before generating the preview.',
         variant: 'destructive'
       });
       return;
     }
     
+    if (estimate.items.length === 0) {
+      toast({
+        title: 'No Materials',
+        description: 'Please add at least one material to the estimate.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    console.log('Generando preview del estimado...');
+    setIsEditingPreview(false); // Aseguramos que comenzamos en modo vista
+    
     // En este punto sabemos que estimate.client no es null
     const client = estimate.client;
     
-    const html = `
-    <style>
-      .estimate-preview {
-        font-family: 'Arial', sans-serif;
-        color: #333;
-        max-width: 100%;
-        margin: 0 auto;
-        padding: 20px;
-        background-color: #f8fafc;
-      }
-      
-      .estimate-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 30px;
-        padding-bottom: 20px;
-        border-bottom: 1px solid #ddd;
-      }
-      
-      .company-info h1 {
-        margin: 0 0 10px 0;
-        color: #1e3a8a;
-        font-size: 24px;
-      }
-      
-      .company-info p {
-        margin: 5px 0;
-        font-size: 14px;
-      }
-      
-      .estimate-title {
-        text-align: right;
-      }
-      
-      .estimate-title h2 {
-        margin: 0 0 10px 0;
-        color: #1e3a8a;
-        font-size: 28px;
-      }
-      
-      .estimate-title p {
-        margin: 5px 0;
-        font-size: 14px;
-      }
-      
-      .section {
-        margin-bottom: 25px;
-      }
-      
-      .section h3 {
-        margin: 0 0 15px 0;
-        color: #1e3a8a;
-        font-size: 18px;
-        padding-bottom: 8px;
-        border-bottom: 1px solid #eee;
-      }
-      
-      .section p {
-        margin: 5px 0;
-        font-size: 14px;
-      }
-      
-      .grid-container {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
-        margin-bottom: 20px;
-      }
-      
-      .grid-item strong {
-        display: inline-block;
-        min-width: 100px;
-        color: #555;
-      }
-      
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-bottom: 20px;
-      }
-      
-      th {
-        text-align: left;
-        padding: 10px;
-        background-color: #f4f4f8;
-        font-weight: 600;
-        border-bottom: 2px solid #ddd;
-      }
-      
-      td {
-        padding: 10px;
-        border-bottom: 1px solid #eee;
-      }
-      
-      .summary {
-        margin-top: 20px;
-        text-align: right;
-      }
-      
-      .summary-item {
-        margin: 5px 0;
-        font-size: 14px;
-      }
-      
-      .total {
-        font-size: 18px;
-        font-weight: bold;
-        color: #1e3a8a;
-        margin-top: 10px;
-      }
-      
-      .estimate-footer {
-        margin-top: 30px;
-        padding-top: 15px;
-        border-top: 1px solid #ddd;
-        font-size: 12px;
-        color: #777;
-        text-align: center;
-      }
-    </style>
+    // Determinamos la URL del logo
+    let logoUrl = '/owl-logo.png'; // Logo por defecto
     
-    <div class="estimate-preview">
-      <div class="estimate-header">
-        <div class="company-info">
-          <div style="display: flex; align-items: center; margin-bottom: 10px;">
-            <img 
-              src="${profile?.logo || '/owl-logo.png'}" 
-              alt="Logo" 
-              style="max-height: 60px; max-width: 180px; margin-right: 15px;" 
-              onerror="this.onerror=null; this.src='/owl-logo.png'; console.log('Fallback a logo local');"
-            />
-            <h1>${profile?.companyName || 'Owl Fence'}</h1>
-          </div>
-          <p>${profile?.address || '123 Fence Avenue'}, ${profile?.city || 'San Diego'}, ${profile?.state || 'CA'} ${profile?.zipCode || '92101'}</p>
-          <p>${profile?.email || 'info@owlfence.com'} | ${profile?.phone || profile?.mobilePhone || '(555) 123-4567'}</p>
-          <p>${profile?.website || 'www.owlfence.com'}</p>
-        </div>
-        <div class="estimate-title">
-          <h2>ESTIMADO</h2>
-          <p><strong>Fecha:</strong> ${new Date().toLocaleDateString()}</p>
-          <p><strong>Estimado #:</strong> EST-${Date.now().toString().slice(-6)}</p>
-          <p><strong>Válido hasta:</strong> ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}</p>
-        </div>
-      </div>
-      
-      <div class="section">
-        <h3>Cliente</h3>
-        <div class="grid-container">
-          <div class="grid-item">
-            <p><strong>Nombre:</strong> ${client.name}</p>
-            <p><strong>Email:</strong> ${client.email || 'N/A'}</p>
-            <p><strong>Teléfono:</strong> ${client.phone || 'N/A'}</p>
-          </div>
-          <div class="grid-item">
-            <p><strong>Dirección:</strong> ${client.address || 'N/A'}</p>
-            <p><strong>Ciudad:</strong> ${client.city || 'N/A'}</p>
-            <p><strong>Estado/CP:</strong> ${client.state || 'N/A'} ${client.zipCode ? ', ' + client.zipCode : ''}</p>
-          </div>
-        </div>
-      </div>
-      
-      <div class="section">
-        <h3>Detalles y Descripción del Proyecto</h3>
-        <p>${estimate.notes || 'Sin descripción detallada del proyecto.'}</p>
-      </div>
-      
-      <div class="section">
-        <h3>Materiales y Servicios</h3>
-        <table>
-          <thead>
-            <tr>
-              <th style="width: 40%">Descripción</th>
-              <th style="width: 15%">Cantidad</th>
-              <th style="width: 15%">Unidad</th>
-              <th style="width: 15%">Precio</th>
-              <th style="width: 15%">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${estimate.items.map(item => `
-              <tr>
-                <td>${item.name}${item.description ? `<br><span style="color: #666; font-size: 12px;">${item.description}</span>` : ''}</td>
-                <td>${item.quantity}</td>
-                <td>${item.unit}</td>
-                <td>${formatCurrency(item.price)}</td>
-                <td>${formatCurrency(item.total)}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
+    // Si el perfil tiene un logo personalizado, lo usamos
+    if (profile?.logo) {
+      console.log('Usando logo del perfil de la empresa:', profile.logo);
+      // Verificar si el logo es una URL externa o relativa
+      if (profile.logo.startsWith('http') || profile.logo.startsWith('data:')) {
+        logoUrl = profile.logo;
+      } else {
+        // Si es una ruta relativa, asegurarnos de que tenga el formato correcto
+        logoUrl = profile.logo.startsWith('/') ? profile.logo : `/${profile.logo}`;
+      }
+    } else {
+      console.log('Usando logo por defecto:', logoUrl);
+    }
+    
+    // Precargamos la imagen para verificar si puede cargarse correctamente
+    const logoImg = new Image();
+    logoImg.onload = () => console.log('Logo precargado correctamente:', logoUrl);
+    logoImg.onerror = () => {
+      console.warn('Error precargando logo, usando logo por defecto');
+      logoUrl = '/owl-logo.png';
+    };
+    logoImg.src = logoUrl;
+    
+    console.log('Preparando plantilla HTML con logo...');
+    
+    // Generar una plantilla HTML mejorada con el logo
+    const html = `
+      <style>
+        .estimate-preview {
+          font-family: 'Arial', sans-serif;
+          color: #333;
+          max-width: 100%;
+          margin: 0 auto;
+        }
         
-        <div class="summary">
-          <div class="summary-item">
-            <strong>Subtotal:</strong>
-            <span>${formatCurrency(estimate.subtotal)}</span>
+        .company-logo {
+          max-width: 200px;
+          max-height: 80px;
+          margin-bottom: 10px;
+          object-fit: contain;
+        }
+        
+        .estimate-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 30px;
+          padding-bottom: 20px;
+          border-bottom: 1px solid #ddd;
+        }
+        
+        .company-info h1 {
+          margin: 0 0 10px 0;
+          color: #1e3a8a;
+          font-size: 24px;
+        }
+        
+        .company-info p {
+          margin: 5px 0;
+          font-size: 14px;
+        }
+        
+        .estimate-title {
+          text-align: right;
+        }
+        
+        .estimate-title h2 {
+          margin: 0 0 10px 0;
+          color: #1e3a8a;
+          font-size: 28px;
+        }
+        
+        .estimate-title p {
+          margin: 5px 0;
+          font-size: 14px;
+        }
+        
+        .section {
+          margin-bottom: 25px;
+        }
+        
+        .section h3 {
+          margin: 0 0 15px 0;
+          color: #1e3a8a;
+          font-size: 18px;
+          padding-bottom: 8px;
+          border-bottom: 1px solid #eee;
+        }
+        
+        .section p {
+          margin: 5px 0;
+          font-size: 14px;
+        }
+        
+        .grid-container {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+          margin-bottom: 20px;
+        }
+        
+        .grid-item strong {
+          display: inline-block;
+          min-width: 100px;
+          color: #555;
+        }
+        
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 20px;
+        }
+        
+        th {
+          text-align: left;
+          padding: 10px;
+          background-color: #f4f4f8;
+          font-weight: 600;
+          border-bottom: 2px solid #ddd;
+        }
+        
+        td {
+          padding: 10px;
+          border-bottom: 1px solid #eee;
+        }
+        
+        .summary {
+          margin-top: 20px;
+          text-align: right;
+        }
+        
+        .summary-item {
+          margin: 5px 0;
+          font-size: 14px;
+        }
+        
+        .total {
+          font-size: 18px;
+          font-weight: bold;
+          color: #1e3a8a;
+          margin-top: 10px;
+        }
+        
+        .notes {
+          margin-top: 30px;
+          padding: 15px;
+          background-color: #f9f9f9;
+          border-radius: 4px;
+        }
+        
+        .estimate-footer {
+          margin-top: 30px;
+          padding-top: 15px;
+          border-top: 1px solid #ddd;
+          font-size: 12px;
+          color: #777;
+          text-align: center;
+        }
+      </style>
+      
+      <div class="estimate-preview">
+        <div class="estimate-header">
+          <div class="company-info">
+            <img src="${logoUrl}" alt="Logo" class="company-logo" crossorigin="anonymous" onerror="this.style.display='none'; console.error('Error cargando logo en preview');" />
+            <h1>${profile?.companyName || 'Owl Fence'}</h1>
+            <p>${profile?.address || '123 Fence Avenue'}, ${profile?.city || 'San Diego'}, ${profile?.state || 'CA'} ${profile?.zipCode || '92101'}</p>
+            <p>${profile?.email || 'info@owlfence.com'} | ${profile?.phone || profile?.mobilePhone || '(555) 123-4567'}</p>
+            <p>${profile?.website || 'www.owlfence.com'}</p>
           </div>
-          <div class="summary-item total">
-            <strong>Total:</strong>
-            <span>${formatCurrency(estimate.total)}</span>
+          <div class="estimate-title">
+            <h2>ESTIMADO</h2>
+            <p><strong>Fecha:</strong> ${new Date().toLocaleDateString()}</p>
+            <p><strong>Estimado #:</strong> EST-${Date.now().toString().slice(-6)}</p>
+            <p><strong>Válido hasta:</strong> ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}</p>
           </div>
         </div>
+        
+        <div class="section">
+          <h3>Cliente</h3>
+          <div class="grid-container">
+            <div class="grid-item">
+              <p><strong>Nombre:</strong> ${client.name}</p>
+              <p><strong>Email:</strong> ${client.email || 'N/A'}</p>
+              <p><strong>Teléfono:</strong> ${client.phone || 'N/A'}</p>
+            </div>
+            <div class="grid-item">
+              <p><strong>Dirección:</strong> ${client.address || 'N/A'}</p>
+              <p><strong>Ciudad:</strong> ${client.city || 'N/A'}</p>
+              <p><strong>Estado/CP:</strong> ${client.state || 'N/A'} ${client.zipCode ? ', ' + client.zipCode : ''}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="section">
+          <h3>Detalles y Descripción del Proyecto</h3>
+          <p>${estimate.notes || 'Sin descripción detallada del proyecto.'}</p>
+        </div>
+        
+        <div class="section">
+          <h3>Materiales y Servicios</h3>
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 40%">Descripción</th>
+                <th style="width: 15%">Cantidad</th>
+                <th style="width: 15%">Unidad</th>
+                <th style="width: 15%">Precio</th>
+                <th style="width: 15%">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${estimate.items.map(item => `
+                <tr>
+                  <td>${item.name}${item.description ? `<br><span style="color: #666; font-size: 12px;">${item.description}</span>` : ''}</td>
+                  <td>${item.quantity}</td>
+                  <td>${item.unit}</td>
+                  <td>${formatCurrency(item.price)}</td>
+                  <td>${formatCurrency(item.total)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          
+          <div class="summary">
+            <div class="summary-item">
+              <strong>Subtotal:</strong>
+              <span>${formatCurrency(estimate.subtotal)}</span>
+            </div>
+            <div class="summary-item total">
+              <strong>Total:</strong>
+              <span>${formatCurrency(estimate.total)}</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="estimate-footer">
+          <p>Este estimado es válido por 30 días a partir de la fecha de emisión. Precios sujetos a cambios después de este período.</p>
+          <p>Para aprobar este estimado, por favor contáctenos por teléfono o email para programar el inicio del proyecto.</p>
+        </div>
       </div>
-      
-      <div class="estimate-footer">
-        <p>Este estimado es válido por 30 días a partir de la fecha de emisión. Precios sujetos a cambios después de este período.</p>
-        <p>Para aprobar este estimado, por favor contáctenos por teléfono o email para programar el inicio del proyecto.</p>
-      </div>
-    </div>
     `;
     
     console.log('HTML para preview generado correctamente');
@@ -948,14 +1000,13 @@ export default function Estimates() {
   const handleSendEmail = () => {
     if (!estimate.client || !estimate.client.email) {
       toast({
-        title: 'Email no disponible',
-        description: 'El cliente seleccionado no tiene un email registrado.',
+        title: 'Sin correo electrónico',
+        description: 'El cliente no tiene un correo electrónico registrado.',
         variant: 'destructive'
       });
       return;
     }
     
-    // En este punto sabemos que estimate.client y estimate.client.email no son null
     const clientEmail = estimate.client.email;
     
     setIsSendingEmail(true);
@@ -982,400 +1033,491 @@ export default function Estimates() {
         return;
       }
       
-      const previewElement = document.querySelector('.estimate-preview');
-      if (!previewElement) {
-        console.error('No se pudo encontrar el elemento de vista previa');
-        return;
+      if (!previewHtml) {
+        console.log('No hay HTML de vista previa, generando primero...');
+        // Si no hay HTML de vista previa, generarlo primero sin mostrar el diálogo
+        // Esto ejecutará handleGeneratePreview internamente
+        await handleGeneratePreview();
+        
+        // Cerramos el diálogo ya que solo queremos el HTML, no mostrar el preview
+        setShowPreviewDialog(false);
+        
+        if (!previewHtml) {
+          console.error('No se pudo generar el HTML para el PDF después de intentar');
+          toast({
+            title: 'Error en la Generación',
+            description: 'No se pudo generar el contenido del PDF. Por favor intente nuevamente.',
+            variant: 'destructive'
+          });
+          return;
+        }
       }
-      
-      // Use html2canvas to convert the preview div to a canvas
-      const canvas = await html2canvas(previewElement as HTMLElement, {
-        scale: 2, // Higher scale for better quality
-        useCORS: true, // This is needed if you have images from external sources
-        logging: true // Enable logging for debugging
-      });
-      
-      // Create a new PDF with the dimensions of the canvas
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      });
-      
-      // Calculate the dimensions to fit the PDF page
-      const imgWidth = 210; // A4 width in mm (297 is height)
-      const pageHeight = 297;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 0;
-      
-      // Add the image to the PDF
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-      
-      // If the content is longer than one page, add more pages as needed
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-      
-      // Generate a filename based on the client name and date
-      const clientName = estimate.client?.name || 'Cliente';
-      const date = new Date().toISOString().split('T')[0];
-      const filename = `Estimado_${clientName.replace(/\s+/g, '_')}_${date}.pdf`;
-      
-      // Save the PDF
-      pdf.save(filename);
       
       toast({
-        title: 'PDF descargado',
-        description: 'El estimado se ha descargado como PDF correctamente.'
+        title: 'Descarga iniciada',
+        description: 'El PDF del estimado se está generando.'
+      });
+      
+      console.log('Preparando descarga de PDF...');
+      
+      // Importar la función de generación client-side de PDF
+      const { generateClientSidePDF } = await import('../lib/pdf');
+      
+      // Generar un nombre de archivo para el PDF
+      const fileName = `Estimado-${estimate.client?.name?.replace(/\s+/g, '-') || 'Sin-Cliente'}-${Date.now()}`;
+      
+      console.log('Generando PDF en el navegador...');
+      
+      // Si estamos en modo de edición, asegurarnos de formatear correctamente el HTML
+      let finalHtml = previewHtml;
+      
+      // Asegurarnos de que el logo esté correctamente incluido en el HTML final
+      if (!finalHtml.includes('img src=') && profile) {
+        console.log('El HTML no incluye imagen de logo, intentando añadirla...');
+        
+        // Determinamos la URL del logo
+        let logoUrl = '/owl-logo.png'; // Logo por defecto
+        
+        // Si el perfil tiene un logo personalizado, lo usamos
+        if (profile?.logo) {
+          console.log('Usando logo del perfil de la empresa:', profile.logo);
+          // Verificar si el logo es una URL externa o relativa
+          if (profile.logo.startsWith('http') || profile.logo.startsWith('data:')) {
+            logoUrl = profile.logo;
+          } else {
+            // Si es una ruta relativa, asegurarnos de que tenga el formato correcto
+            logoUrl = profile.logo.startsWith('/') ? profile.logo : `/${profile.logo}`;
+          }
+        }
+        
+        // Verificar si el logo se puede cargar
+        const preloadImg = new Image();
+        preloadImg.onload = () => console.log('Logo para PDF verificado correctamente');
+        preloadImg.onerror = () => {
+          console.warn('Error verificando logo para PDF, usando alternativa');
+          logoUrl = '/owl-logo.png';
+        };
+        preloadImg.src = logoUrl;
+        
+        // Añadir el logo al inicio del HTML
+        const logoTag = `<img src="${logoUrl}" alt="Logo" class="company-logo" crossorigin="anonymous" 
+          style="max-width: 200px; max-height: 80px; margin-bottom: 10px; object-fit: contain;" 
+          onerror="if(this.src !== '/owl-logo.png') this.src='/owl-logo.png'; else this.style.display='none';" />`;
+        
+        // Intentar insertar el logo en el HTML existente
+        finalHtml = finalHtml.replace(/<div class="company-info">/g, 
+          `<div class="company-info">${logoTag}`);
+      }
+      
+      // Llamar a la función para generar y descargar el PDF en el cliente
+      await generateClientSidePDF(finalHtml, fileName);
+      
+      toast({
+        title: 'PDF Generated',
+        description: 'The estimate PDF has been successfully downloaded.'
       });
     } catch (error) {
-      console.error('Error al generar PDF:', error);
+      console.error('Error descargando PDF:', error);
       toast({
         title: 'Error',
-        description: 'No se pudo generar el PDF. Por favor, inténtalo de nuevo.',
+        description: 'Could not download the PDF. ' + (error instanceof Error ? error.message : 'Please try again.'),
         variant: 'destructive'
       });
     }
   };
   
-  // Handle enhancing the notes with AI
-  const handleEnhancedNotes = (enhancedText: string) => {
-    setEstimate(prev => ({
-      ...prev,
-      notes: enhancedText
-    }));
-    
-    toast({
-      title: 'Texto mejorado',
-      description: 'La descripción del proyecto ha sido mejorada.'
-    });
-  };
-  
   return (
-    <div className="container mx-auto p-4 max-w-5xl">
-      <h1 className="text-2xl font-bold mb-6">Crear Estimado</h1>
+    <div className="container py-6">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">Nuevo Estimado</h1>
+      </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Estimate Details */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-slate-100 shadow rounded-lg p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Detalles del Estimado</h2>
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={handlePreview}
-                >
-                  Vista Previa
-                </Button>
-                <Button 
-                  size="sm"
-                  disabled={isSaving || !estimate.client || estimate.items.length === 0}
-                  onClick={handleSaveEstimate}
-                >
-                  {isSaving ? 'Guardando...' : 'Guardar Estimado'}
-                </Button>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Estimate Information */}
+        <Card className="lg:col-span-1">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Estimate Information</CardTitle>
+          </CardHeader>
+          <CardContent className="pb-4">
+            <div className="space-y-3">
               <div>
-                <Label htmlFor="estimateTitle">Título del Estimado</Label>
+                <Label htmlFor="estimate-title" className="text-xs">Título</Label>
                 <Input 
-                  id="estimateTitle" 
-                  value={estimate.title}
+                  id="estimate-title" 
+                  value={estimate.title} 
                   onChange={(e) => setEstimate(prev => ({ ...prev, title: e.target.value }))}
-                  placeholder="Nuevo Estimado"
+                  placeholder="Título del estimado"
+                  className="h-9"
                 />
               </div>
               
               <div>
-                <Label>Cliente</Label>
-                <div className="flex items-center gap-2 mt-1">
-                  {estimate.client ? (
-                    <div className="flex-1 p-3 border rounded-md">
-                      <div className="font-medium">{estimate.client.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {estimate.client.email || 'Sin email'} | {estimate.client.phone || 'Sin teléfono'}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {estimate.client.address || 'Sin dirección'}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex-1 p-3 border rounded-md text-muted-foreground italic">
-                      No se ha seleccionado un cliente
-                    </div>
+                <Label className="text-xs">Fecha</Label>
+                <Input
+                  type="date"
+                  defaultValue={new Date().toISOString().split('T')[0]}
+                  disabled
+                  className="h-9"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        {/* Contractor Information */}
+        <Card className="lg:col-span-1">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Contractor Information</CardTitle>
+          </CardHeader>
+          <CardContent className="pb-4">
+            <div className="grid grid-cols-1 gap-3">
+              {profile?.logo && (
+                <div className="flex justify-center mb-2">
+                  <img 
+                    src={profile.logo} 
+                    alt="Company Logo" 
+                    className="max-h-16 object-contain" 
+                  />
+                </div>
+              )}
+              <h3 className="font-medium text-sm">{profile?.companyName || ""}</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-medium">Email:</span> {profile?.email || ""}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-medium">Teléfono:</span> {profile?.phone || profile?.mobilePhone || ""}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-medium">Dirección:</span> {profile?.address || ""}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-medium">Website:</span> {profile?.website || ""}
+                </p>
+              </div>
+              {(!profile?.companyName || !profile?.email || !profile?.phone) && (
+                <div className="mt-2 bg-amber-50 p-2 rounded text-xs text-amber-700 border border-amber-200">
+                  <p>Información incompleta. Actualiza tu <Link href="/settings/profile">perfil de empresa</Link> para mostrar datos correctos en tus estimados.</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+        
+        {/* Client Information */}
+        <Card className="lg:col-span-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex justify-between items-center">
+              <span>Client Information</span>
+              <Button variant="ghost" size="sm" onClick={() => setShowClientSearchDialog(true)} className="h-8">
+                <Search className="h-4 w-4 mr-1" />
+                Search
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pb-4">
+            {estimate.client ? (
+              <div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 mb-3">
+                  <h3 className="font-medium text-sm md:col-span-2 mb-1">{estimate.client.name}</h3>
+                  {estimate.client.email && (
+                    <p className="text-xs text-muted-foreground">
+                      <span className="font-medium">Email:</span> {estimate.client.email}
+                    </p>
                   )}
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setShowClientSearchDialog(true)}
-                  >
-                    <Search className="mr-2 h-4 w-4" />
-                    Buscar
-                  </Button>
+                  {estimate.client.phone && (
+                    <p className="text-xs text-muted-foreground">
+                      <span className="font-medium">Teléfono:</span> {estimate.client.phone}
+                    </p>
+                  )}
+                  {estimate.client.address && (
+                    <p className="text-xs text-muted-foreground">
+                      <span className="font-medium">Dirección:</span> {estimate.client.address}
+                    </p>
+                  )}
+                  {estimate.client.city && estimate.client.state && (
+                    <p className="text-xs text-muted-foreground">
+                      <span className="font-medium">Ciudad/Estado:</span> {estimate.client.city}, {estimate.client.state} {estimate.client.zipCode || ''}
+                    </p>
+                  )}
                 </div>
-              </div>
-              
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label htmlFor="notes">Descripción del Proyecto</Label>
-                  <div className="flex items-center">
-                    <MervinAssistant 
-                      originalText={estimate.notes}
-                      projectType="fencing"
-                      onTextEnhanced={handleEnhancedNotes}
-                      className="mr-1"
-                    />
-                    <span className="text-xs text-muted-foreground">Mejorar con IA</span>
-                  </div>
-                </div>
-                <Textarea 
-                  id="notes" 
-                  value={estimate.notes}
-                  onChange={(e) => setEstimate(prev => ({ ...prev, notes: e.target.value }))}
-                  placeholder="Descripción detallada del proyecto..."
-                  rows={5}
-                />
-                {estimate.notes && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {estimate.notes.length} caracteres
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-slate-100 shadow rounded-lg p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Materiales y Servicios</h2>
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setShowAddMaterialDialog(true)}
-                >
-                  Nuevo Material
+                <Button variant="outline" size="sm" onClick={() => setShowClientSearchDialog(true)} className="h-7 text-xs px-2">
+                  Cambiar cliente
                 </Button>
-                <Button 
-                  size="sm"
-                  onClick={() => setShowMaterialSearchDialog(true)}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Añadir Material
-                </Button>
-              </div>
-            </div>
-            
-            {estimate.items.length === 0 ? (
-              <div className="text-center py-8 border border-dashed rounded-md">
-                <p className="text-muted-foreground">
-                  No hay materiales añadidos al estimado
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Haz clic en "Añadir Material" para comenzar
-                </p>
               </div>
             ) : (
+              <div className="text-center py-4">
+                <p className="mb-2 text-muted-foreground text-sm">No hay un cliente seleccionado</p>
+                <Button onClick={() => setShowClientSearchDialog(true)} size="sm">
+                  <Search className="h-4 w-4 mr-1" />
+                  Seleccionar cliente
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        
+        {/* Project details and description */}
+        <Card className="lg:col-span-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex justify-between items-center">
+              <span>Detalles y Descripción del Proyecto</span>
+              <MervinAssistant 
+                originalText={estimate.notes}
+                onTextEnhanced={(enhancedText) => setEstimate(prev => ({ ...prev, notes: enhancedText }))}
+                className="ml-2"
+              />
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pb-4">
+            <div>
+              <Textarea 
+                id="estimate-notes" 
+                value={estimate.notes} 
+                onChange={(e) => setEstimate(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder="Descripción detallada del proyecto y notas adicionales para el cliente"
+                rows={3}
+                className="resize-none text-sm"
+              />
+            </div>
+          </CardContent>
+        </Card>
+        
+        {/* Materials List */}
+        <Card className="lg:col-span-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex justify-between items-center">
+              <span>Materials and Services</span>
+              <Button size="sm" onClick={() => setShowMaterialSearchDialog(true)} className="h-8">
+                <PlusCircle className="h-4 w-4 mr-1" />
+                Add
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pb-4">
+            {estimate.items.length > 0 ? (
               <div className="overflow-x-auto">
-                <Table>
+                <Table className="text-xs">
                   <TableHeader>
                     <TableRow>
-                      <TableHead style={{ width: '40%' }}>Descripción</TableHead>
-                      <TableHead style={{ width: '15%' }}>Cantidad</TableHead>
-                      <TableHead style={{ width: '15%' }}>Precio</TableHead>
-                      <TableHead style={{ width: '15%' }}>Total</TableHead>
-                      <TableHead style={{ width: '15%' }}>Acciones</TableHead>
+                      <TableHead style={{ width: 45 }} className="px-1"></TableHead>
+                      <TableHead className="px-2">Nombre</TableHead>
+                      <TableHead className="px-2 whitespace-nowrap">Unidad</TableHead>
+                      <TableHead className="px-2 whitespace-nowrap">Precio</TableHead>
+                      <TableHead className="px-2 whitespace-nowrap">Cant.</TableHead>
+                      <TableHead className="px-2 whitespace-nowrap">Total</TableHead>
+                      <TableHead style={{ width: 40 }} className="px-1"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {estimate.items.map((item, index) => (
+                    {estimate.items.map(item => (
                       <TableRow key={item.id}>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{item.name}</div>
-                            {item.description && (
-                              <div className="text-sm text-muted-foreground">
-                                {item.description}
-                              </div>
-                            )}
+                        <TableCell className="align-middle p-1">
+                          <div className="flex">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    size="icon" 
+                                    variant="ghost" 
+                                    onClick={() => moveItem(item.id, "up")}
+                                    className="h-5 w-5"
+                                  >
+                                    <MoveVertical className="h-3 w-3 rotate-180" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="right">
+                                  <p>Mover arriba</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    size="icon" 
+                                    variant="ghost" 
+                                    onClick={() => moveItem(item.id, "down")}
+                                    className="h-5 w-5 -ml-1"
+                                  >
+                                    <MoveVertical className="h-3 w-3" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="right">
+                                  <p>Mover abajo</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <div className="flex items-center">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                              disabled={item.quantity <= 1}
-                            >
-                              <Minus className="h-4 w-4" />
-                            </Button>
-                            <span className="w-12 text-center">{item.quantity}</span>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                            >
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                            <span className="ml-1 text-xs text-muted-foreground">{item.unit}</span>
-                          </div>
+                        <TableCell className="p-2 font-medium">
+                          {item.name}
+                          {item.description && (
+                            <p className="text-xs text-muted-foreground truncate max-w-[150px]">{item.description}</p>
+                          )}
                         </TableCell>
-                        <TableCell>
-                          {formatCurrency(item.price)}
+                        <TableCell className="p-2">{item.unit}</TableCell>
+                        <TableCell className="p-2">{formatCurrency(item.price)}</TableCell>
+                        <TableCell className="p-2">
+                          <Input 
+                            type="number"
+                            value={item.quantity}
+                            onChange={(e) => handleUpdateQuantity(item.id, Number(e.target.value))}
+                            min={1}
+                            className="w-16 h-7 text-xs"
+                          />
                         </TableCell>
-                        <TableCell>
-                          {formatCurrency(item.total)}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => moveItem(item.id, 'up')}
-                              disabled={index === 0}
-                            >
-                              <ArrowUp className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => moveItem(item.id, 'down')}
-                              disabled={index === estimate.items.length - 1}
-                            >
-                              <ArrowDown className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-destructive"
-                              onClick={() => handleRemoveItem(item.id)}
-                            >
-                              <Trash className="h-4 w-4" />
-                            </Button>
-                          </div>
+                        <TableCell className="p-2 font-medium">{formatCurrency(item.total)}</TableCell>
+                        <TableCell className="p-1">
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => handleRemoveItem(item.id)}
+                            className="h-5 w-5"
+                          >
+                            <Trash2 className="h-3 w-3 text-destructive" />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </div>
+            ) : (
+              <div className="text-center py-6">
+                <p className="mb-2 text-muted-foreground text-sm">No materials added</p>
+                <Button onClick={() => setShowMaterialSearchDialog(true)} size="sm">
+                  <PlusCircle className="h-4 w-4 mr-1" />
+                  Add Material
+                </Button>
+              </div>
             )}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
         
-        {/* Right Column - Summary */}
-        <div>
-          <div className="bg-slate-100 shadow rounded-lg p-6 sticky top-4">
-            <h2 className="text-xl font-semibold mb-4">Resumen</h2>
-            
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Subtotal:</span>
-                  <span>{formatCurrency(estimate.subtotal)}</span>
-                </div>
-                <div className="flex justify-between mt-2 text-lg font-medium">
-                  <span>Total:</span>
-                  <span>{formatCurrency(estimate.total)}</span>
-                </div>
+        {/* Summary */}
+        <Card className="lg:col-span-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Resumen</CardTitle>
+          </CardHeader>
+          <CardContent className="pb-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+              <div className="flex-1 mb-3 md:mb-0">
+                <p className="text-sm mb-1">
+                  <span className="font-medium">Subtotal:</span> {formatCurrency(estimate.subtotal)}
+                </p>
+                <p className="text-lg font-bold">
+                  <span>Total:</span> {formatCurrency(estimate.total)}
+                </p>
               </div>
               
-              <div className="pt-4 border-t">
-                <p className="text-sm text-muted-foreground mb-4">
-                  Este estimado incluye {estimate.items.length} materiales o servicios.
-                </p>
+              <div className="grid grid-cols-2 gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={handleGeneratePreview}
+                  disabled={!estimate.client || estimate.items.length === 0}
+                  size="sm"
+                  className="h-9"
+                >
+                  <ArrowRight className="mr-1 h-4 w-4" />
+                  Preview
+                </Button>
                 
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    className="flex-1"
-                    onClick={handlePreview}
-                  >
-                    Vista Previa
-                  </Button>
-                  <Button 
-                    className="flex-1"
-                    disabled={isSendingEmail || !estimate.client || !estimate.client.email}
-                    onClick={handleSendEmail}
-                  >
-                    {isSendingEmail ? 'Enviando...' : (
-                      <>
-                        <Mail className="mr-2 h-4 w-4" />
-                        Email
-                      </>
-                    )}
-                  </Button>
-                </div>
+                <Button 
+                  variant="outline" 
+                  onClick={handleDownloadPdf}
+                  disabled={estimate.items.length === 0 || !estimate.client}
+                  size="sm"
+                  className="h-9"
+                >
+                  <FileDown className="mr-1 h-4 w-4" />
+                  PDF
+                </Button>
+                
+                <Button 
+                  onClick={handleSendEmail}
+                  disabled={isSendingEmail || estimate.items.length === 0 || !estimate.client || !estimate.client.email}
+                  size="sm"
+                  className="h-9"
+                >
+                  {isSendingEmail ? (
+                    <>
+                      <RotateCcw className="mr-1 h-4 w-4 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="mr-1 h-4 w-4" />
+                      Email
+                    </>
+                  )}
+                </Button>
+                
+                <Button 
+                  onClick={handleSaveEstimate} 
+                  disabled={isSaving || !estimate.client || estimate.items.length === 0}
+                  size="sm"
+                  className="h-9"
+                >
+                  {isSaving ? (
+                    <>
+                      <RotateCcw className="mr-1 h-4 w-4 animate-spin" />
+                      Guardando...
+                    </>
+                  ) : (
+                    <>
+                      <CalendarCheck className="mr-1 h-4 w-4" />
+                      Save
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
       
       {/* Client Search Dialog */}
       <Dialog open={showClientSearchDialog} onOpenChange={setShowClientSearchDialog}>
         <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Buscar Cliente</DialogTitle>
-            <DialogDescription>
-              Busca y selecciona un cliente para este estimado.
+          <DialogHeader className="pb-3">
+            <DialogTitle className="text-lg">Select Client</DialogTitle>
+            <DialogDescription className="text-sm">
+              Search and select a client for the estimate.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4 py-4">
-            <div className="flex items-center gap-2">
-              <Input 
-                placeholder="Buscar por nombre, email, teléfono..." 
-                value={searchClientTerm}
-                onChange={(e) => setSearchClientTerm(e.target.value)}
-                className="flex-1"
-              />
-              <Button variant="outline" size="icon">
-                <Search className="h-4 w-4" />
-              </Button>
-            </div>
+          <div>
+            <Input
+              placeholder="Search by name, email or phone..."
+              value={searchClientTerm}
+              onChange={(e) => setSearchClientTerm(e.target.value)}
+              className="mb-3"
+            />
             
-            <div className="border rounded-md overflow-hidden">
+            <div className="max-h-[300px] overflow-y-auto border rounded-md">
               {filteredClients.length > 0 ? (
-                <Table>
+                <Table className="text-sm">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Nombre</TableHead>
-                      <TableHead>Contacto</TableHead>
-                      <TableHead>Acción</TableHead>
+                      <TableHead className="py-2">Name</TableHead>
+                      <TableHead className="py-2">Email</TableHead>
+                      <TableHead className="py-2">Phone</TableHead>
+                      <TableHead className="py-2 w-[100px]"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredClients.map(client => (
                       <TableRow key={client.id}>
-                        <TableCell>
-                          <div className="font-medium">{client.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {client.address || 'Sin dirección'}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div>{client.email || 'Sin email'}</div>
-                          <div>{client.phone || 'Sin teléfono'}</div>
-                        </TableCell>
-                        <TableCell>
+                        <TableCell className="py-1.5 font-medium">{client.name}</TableCell>
+                        <TableCell className="py-1.5">{client.email || '-'}</TableCell>
+                        <TableCell className="py-1.5">{client.phone || '-'}</TableCell>
+                        <TableCell className="py-1.5">
                           <Button 
                             size="sm" 
                             onClick={() => handleSelectClient(client)}
+                            className="h-7 text-xs px-2"
                           >
                             Seleccionar
                           </Button>
@@ -1385,16 +1527,16 @@ export default function Estimates() {
                   </TableBody>
                 </Table>
               ) : (
-                <div className="p-4 text-center text-muted-foreground">
-                  No se encontraron clientes
+                <div className="text-center py-6">
+                  <p className="text-sm text-muted-foreground">No se encontraron clientes</p>
                 </div>
               )}
             </div>
           </div>
           
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowClientSearchDialog(false)}>
-              Cancelar
+          <DialogFooter className="pt-2">
+            <Button variant="outline" size="sm" onClick={() => setShowClientSearchDialog(false)}>
+              Cancel
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1402,56 +1544,59 @@ export default function Estimates() {
       
       {/* Material Search Dialog */}
       <Dialog open={showMaterialSearchDialog} onOpenChange={setShowMaterialSearchDialog}>
-        <DialogContent className="sm:max-w-[700px]">
-          <DialogHeader>
-            <DialogTitle>Buscar Material</DialogTitle>
-            <DialogDescription>
-              Busca y selecciona un material para añadir al estimado.
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader className="pb-3">
+            <DialogTitle className="text-lg">Select Material</DialogTitle>
+            <DialogDescription className="text-sm">
+              Search for an existing material or add a new one.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4 py-4">
-            <div className="flex items-center gap-2">
-              <Input 
-                placeholder="Buscar por nombre, categoría..." 
+          <div>
+            <div className="flex justify-between items-center mb-3">
+              <Input
+                placeholder="Search materials..."
                 value={searchMaterialTerm}
                 onChange={(e) => setSearchMaterialTerm(e.target.value)}
-                className="flex-1"
+                className="flex-1 mr-2"
               />
-              <Button variant="outline" size="icon">
-                <Search className="h-4 w-4" />
+              <Button 
+                size="sm" 
+                onClick={() => {
+                  setShowAddMaterialDialog(true);
+                  setShowMaterialSearchDialog(false);
+                }}
+                className="h-9"
+              >
+                <PlusCircle className="h-4 w-4 mr-1" />
+                Nuevo
               </Button>
             </div>
             
-            <div className="border rounded-md overflow-hidden max-h-[400px] overflow-y-auto">
+            <div className="max-h-[200px] overflow-y-auto border rounded-md mb-4">
               {filteredMaterials.length > 0 ? (
-                <Table>
-                  <TableHeader className="sticky top-0 bg-background">
+                <Table className="text-sm">
+                  <TableHeader>
                     <TableRow>
-                      <TableHead>Nombre</TableHead>
-                      <TableHead>Categoría</TableHead>
-                      <TableHead>Precio</TableHead>
-                      <TableHead>Acción</TableHead>
+                      <TableHead className="py-2">Nombre</TableHead>
+                      <TableHead className="py-2">Categoría</TableHead>
+                      <TableHead className="py-2">Precio</TableHead>
+                      <TableHead className="py-2 w-[100px]"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredMaterials.map(material => (
                       <TableRow key={material.id}>
-                        <TableCell>
-                          <div className="font-medium">{material.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {material.description || 'Sin descripción'}
-                          </div>
+                        <TableCell className="py-1.5 font-medium">
+                          {material.name}
+                          {material.description && (
+                            <p className="text-xs text-muted-foreground truncate max-w-[180px]">
+                              {material.description}
+                            </p>
+                          )}
                         </TableCell>
-                        <TableCell>
-                          <div className="capitalize">{material.category}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {material.unit}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {formatCurrency(material.price)}
-                        </TableCell>
+                        <TableCell className="py-1.5">{material.category}</TableCell>
+                        <TableCell className="py-1.5">{formatCurrency(material.price)}</TableCell>
                         <TableCell className="py-1.5">
                           <Button 
                             size="sm" 
@@ -1475,7 +1620,7 @@ export default function Estimates() {
             </div>
           </div>
           
-          {tempSelectedMaterial ? (
+          {tempSelectedMaterial && (
             <div className="bg-muted p-3 rounded-md mb-3">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2">
                 <div>
@@ -1484,11 +1629,11 @@ export default function Estimates() {
                     {tempSelectedMaterial.description || 'No description'}
                   </p>
                   <p className="text-xs mt-1">
-                    <span className="font-medium">Precio:</span> {formatCurrency(tempSelectedMaterial.price)}
+                    <span className="font-medium">Price:</span> {formatCurrency(tempSelectedMaterial.price)}
                   </p>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Label htmlFor="quantity" className="whitespace-nowrap text-xs">Cantidad:</Label>
+                  <Label htmlFor="quantity" className="whitespace-nowrap text-xs">Quantity:</Label>
                   <Input
                     id="quantity"
                     type="number"
@@ -1504,16 +1649,21 @@ export default function Estimates() {
                 <div>
                   <p className="text-sm font-medium">Total: {formatCurrency(tempSelectedMaterial.price * tempQuantity)}</p>
                 </div>
-                <Button size="sm" onClick={handleAddItemToEstimate}>
-                  Añadir a Estimado
+                <Button 
+                  size="sm"
+                  onClick={handleAddItemToEstimate}
+                  className="h-8"
+                >
+                  <PlusCircle className="h-4 w-4 mr-1" />
+                  Agregar
                 </Button>
               </div>
             </div>
-          ) : null}
+          )}
           
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowMaterialSearchDialog(false)}>
-              Cancelar
+          <DialogFooter className="pt-2">
+            <Button variant="outline" size="sm" onClick={() => setShowMaterialSearchDialog(false)}>
+              Cancel
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1522,120 +1672,102 @@ export default function Estimates() {
       {/* Add Material Dialog */}
       <Dialog open={showAddMaterialDialog} onOpenChange={setShowAddMaterialDialog}>
         <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Añadir Nuevo Material</DialogTitle>
-            <DialogDescription>
-              Agregar un nuevo material a tu inventario.
+          <DialogHeader className="pb-3">
+            <DialogTitle className="text-lg">New Material</DialogTitle>
+            <DialogDescription className="text-sm">
+              Add a new material to your inventory.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Nombre
-              </Label>
-              <Input
-                id="name"
-                name="name"
-                value={newMaterial.name}
-                onChange={handleMaterialChange}
-                placeholder="Nombre del material"
-                className="col-span-3"
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="material-name" className="text-xs">Name*</Label>
+              <Input 
+                id="material-name" 
+                value={newMaterial.name} 
+                onChange={(e) => setNewMaterial(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Material name"
+                required
+                className="h-9"
               />
             </div>
             
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="category" className="text-right">
-                Categoría
-              </Label>
-              <Select
-                name="category"
-                value={newMaterial.category}
-                onValueChange={(value) => setNewMaterial(prev => ({ ...prev, category: value }))}
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Selecciona una categoría" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="wood">Madera</SelectItem>
-                  <SelectItem value="metal">Metal</SelectItem>
-                  <SelectItem value="concrete">Concreto</SelectItem>
-                  <SelectItem value="tool">Herramienta</SelectItem>
-                  <SelectItem value="hardware">Ferretería</SelectItem>
-                  <SelectItem value="labor">Mano de obra</SelectItem>
-                  <SelectItem value="other">Otro</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="description" className="text-right">
-                Descripción
-              </Label>
-              <Textarea
-                id="description"
-                name="description"
-                value={newMaterial.description || ''}
-                onChange={handleMaterialChange}
-                placeholder="Descripción opcional"
-                className="col-span-3"
-                rows={3}
+            <div>
+              <Label htmlFor="material-category" className="text-xs">Category*</Label>
+              <Input 
+                id="material-category" 
+                value={newMaterial.category} 
+                onChange={(e) => setNewMaterial(prev => ({ ...prev, category: e.target.value }))}
+                placeholder="Material category"
+                required
+                className="h-9"
               />
             </div>
             
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="price" className="text-right">
-                Precio
-              </Label>
-              <Input
-                id="price"
-                name="price"
-                type="number"
-                value={newMaterial.price}
-                onChange={handleMaterialChange}
-                min={0}
-                step={0.01}
-                className="col-span-3"
+            <div>
+              <Label htmlFor="material-description" className="text-xs">Description</Label>
+              <Textarea 
+                id="material-description" 
+                value={newMaterial.description} 
+                onChange={(e) => setNewMaterial(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Detailed description"
+                className="text-sm resize-none"
+                rows={2}
               />
             </div>
             
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="unit" className="text-right">
-                Unidad
-              </Label>
-              <Select
-                name="unit"
-                value={newMaterial.unit}
-                onValueChange={(value) => setNewMaterial(prev => ({ ...prev, unit: value }))}
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Selecciona una unidad" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pieza">Piece</SelectItem>
-                  <SelectItem value="pie">Foot</SelectItem>
-                  <SelectItem value="pie2">Square Foot</SelectItem>
-                  <SelectItem value="pie3">Cubic Foot</SelectItem>
-                  <SelectItem value="metro">Meter</SelectItem>
-                  <SelectItem value="metro2">Square Meter</SelectItem>
-                  <SelectItem value="metro3">Cubic Meter</SelectItem>
-                  <SelectItem value="kg">Kilogram</SelectItem>
-                  <SelectItem value="galón">Gallon</SelectItem>
-                  <SelectItem value="litro">Liter</SelectItem>
-                  <SelectItem value="bolsa">Bag</SelectItem>
-                  <SelectItem value="caja">Box</SelectItem>
-                  <SelectItem value="juego">Set</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="material-price" className="text-xs">Price*</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2">
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                  </span>
+                  <Input 
+                    id="material-price" 
+                    type="number"
+                    value={newMaterial.price} 
+                    onChange={(e) => setNewMaterial(prev => ({ ...prev, price: Number(e.target.value) }))}
+                    min={0}
+                    step={0.01}
+                    className="pl-9 h-9"
+                    required
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="material-unit" className="text-xs">Unit*</Label>
+                <Select 
+                  value={newMaterial.unit} 
+                  onValueChange={(value: string) => setNewMaterial(prev => ({ ...prev, unit: value }))}
+                >
+                  <SelectTrigger id="material-unit" className="h-9">
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pieza">Piece</SelectItem>
+                    <SelectItem value="metro">Meter</SelectItem>
+                    <SelectItem value="metro2">Square Meter</SelectItem>
+                    <SelectItem value="metro3">Cubic Meter</SelectItem>
+                    <SelectItem value="kg">Kilogram</SelectItem>
+                    <SelectItem value="galón">Gallon</SelectItem>
+                    <SelectItem value="litro">Liter</SelectItem>
+                    <SelectItem value="bolsa">Bag</SelectItem>
+                    <SelectItem value="caja">Box</SelectItem>
+                    <SelectItem value="juego">Set</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
           
-          <DialogFooter>
+          <DialogFooter className="pt-3">
             <Button variant="outline" size="sm" onClick={() => setShowAddMaterialDialog(false)}>
-              Cancelar
+              Cancel
             </Button>
             <Button size="sm" onClick={handleSaveMaterial}>
-              Guardar Material
+              Save Material
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1645,7 +1777,7 @@ export default function Estimates() {
       <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
         <DialogContent className="sm:max-w-[800px] h-[85vh] flex flex-col">
           <DialogHeader className="pb-3 shrink-0">
-            <DialogTitle className="text-lg">Vista Previa del Estimado</DialogTitle>
+            <DialogTitle className="text-lg">Estimate Preview</DialogTitle>
           </DialogHeader>
           
           <div className="flex-grow overflow-y-auto mb-4">
@@ -1659,15 +1791,34 @@ export default function Estimates() {
                 />
               </div>
             ) : (
-              previewHtml ? (
+              previewHtml && (
                 <div 
-                  className="estimate-preview border rounded-md p-4 bg-slate-50 shadow-inner"
-                  ref={handlePreviewRef}
+                  className="estimate-preview border rounded-md p-4 bg-white"
+                  dangerouslySetInnerHTML={{ __html: previewHtml as string }}
+                  ref={(el) => {
+                    // Esta función se ejecuta cuando el componente se monta o actualiza
+                    if (el) {
+                      console.log('Preview HTML renderizado, verificando imágenes...');
+                      // Verificar si hay imágenes y añadir manejadores de error
+                      const imgs = el.querySelectorAll('img');
+                      if (imgs.length > 0) {
+                        console.log(`Encontradas ${imgs.length} imágenes en el preview`);
+                        imgs.forEach(img => {
+                          // Asegurarse de que las imágenes tengan manejo de errores
+                          img.onerror = function() {
+                            console.error('Error cargando imagen en preview:', img.src);
+                            if (img.alt === 'Logo' && !img.src.includes('owl-logo.png')) {
+                              console.log('Intentando cargar logo alternativo en preview');
+                              img.src = '/owl-logo.png';
+                            }
+                          };
+                        });
+                      } else {
+                        console.warn('No se encontraron imágenes en el preview HTML');
+                      }
+                    }
+                  }}
                 />
-              ) : (
-                <div className="border rounded-md p-4 bg-slate-50 shadow-inner text-center py-8 text-muted-foreground">
-                  No hay contenido para previsualizar
-                </div>
               )
             )}
           </div>
@@ -1708,72 +1859,31 @@ export default function Estimates() {
                   }
                 }}
               >
-                <Edit className="mr-2 h-4 w-4" />
-                {isEditingPreview ? 'Guardar cambios' : 'Editar texto'}
+                {isEditingPreview ? "Save Changes" : "Edit Text"}
               </Button>
             </div>
             
-            <Button variant="outline" onClick={() => setShowPreviewDialog(false)}>
-              Cerrar
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => {
+                setIsEditingPreview(false);
+                setShowPreviewDialog(false);
+              }}
+            >
+              Close
             </Button>
-            <Button onClick={handleDownloadPdf}>
-              <FileDown className="mr-2 h-4 w-4" />
-              Descargar PDF
+            <Button 
+              size="sm" 
+              onClick={handleDownloadPdf}
+              disabled={isEditingPreview}
+            >
+              <FileDown className="mr-1 h-4 w-4" />
+              Download PDF
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
   );
-}
-
-// Types
-interface Client {
-  id: string;
-  clientId: string;
-  name: string;
-  email?: string | null;
-  phone?: string | null;
-  mobilePhone?: string | null;
-  address?: string | null;
-  city?: string | null;
-  state?: string | null;
-  zipCode?: string | null;
-}
-
-interface Material {
-  id: string;
-  name: string;
-  category: string;
-  description?: string;
-  unit: string;
-  price: number;
-  supplier?: string;
-  sku?: string;
-  stock?: number;
-}
-
-interface EstimateItem {
-  id: string;
-  materialId: string;
-  name: string;
-  description?: string;
-  price: number;
-  quantity: number;
-  unit: string;
-  total: number;
-}
-
-interface Estimate {
-  id?: string;
-  title: string;
-  clientId: string;
-  client: Client | null;
-  items: EstimateItem[];
-  subtotal: number;
-  total: number;
-  notes: string;
-  status: 'draft' | 'sent' | 'approved' | 'rejected';
-  createdAt?: Date;
-  updatedAt?: Date;
 }

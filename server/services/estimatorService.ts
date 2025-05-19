@@ -952,16 +952,9 @@ export class EstimatorService {
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
               ${estimateData.contractor?.logo ? 
                 `<div style="max-width: 200px; max-height: 80px;">
-                   <img src="${estimateData.contractor.logo}" 
-                        alt="Logo de la empresa" 
-                        style="max-width: 100%; max-height: 100%; object-fit: contain;"
-                        onerror="this.onerror=null; this.src='/owl-logo.png'; console.log('Error cargando logo principal, usando logo alternativo');" />
+                   <img src="${estimateData.contractor.logo}" alt="Logo" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
                  </div>` : 
-                `<div style="max-width: 200px; max-height: 80px;">
-                   <img src="/owl-logo.png" 
-                        alt="Logo de Owl Fence" 
-                        style="max-width: 100%; max-height: 100%; object-fit: contain;" />
-                 </div>`}
+                '<div style="width: 200px;"></div>'}
               <div>
                 <h1>Estimado de Proyecto</h1>
                 <p>Fecha: ${new Date().toLocaleDateString()}</p>

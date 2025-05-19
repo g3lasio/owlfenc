@@ -1,8 +1,7 @@
 import OpenAI from "openai";
 
-// OpenAI client configuration
+// Permitir uso condicional de openai para evitar errores cuando la API key no está disponible
 let openai: OpenAI | null = null;
-let isUsingServerEndpoint = false;
 
 // Función para obtener o crear la instancia de OpenAI
 function getOpenAI() {
@@ -11,17 +10,25 @@ function getOpenAI() {
     const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
     
     if (apiKey) {
-      // Usar API key directamente desde el cliente 
       openai = new OpenAI({ apiKey });
-      console.log("OpenAI inicializado con clave de API local");
     } else {
-      // Si no tenemos API key local, intentaremos usar el endpoint del servidor
-      console.log("No se encuentra OPENAI_API_KEY local, intentando usar el endpoint del servidor...");
-      isUsingServerEndpoint = true;
-      
-      // No necesitamos un cliente OpenAI en este caso, ya que haremos 
-      // peticiones a nuestro servidor que tiene las claves configuradas
-      return null;
+      // Si estamos en modo desarrollo y no hay clave, usar una instancia simulada
+      if (import.meta.env.DEV) {
+        console.warn("⚠️ No se encontró OPENAI_API_KEY. Las funciones de IA tendrán respuestas simuladas.");
+        
+        // Crear una versión simulada para desarrollo
+        openai = {
+          chat: {
+            completions: {
+              create: async () => ({
+                choices: [{ message: { content: "Esta es una respuesta simulada porque no hay API key configurada." } }]
+              })
+            }
+          }
+        } as unknown as OpenAI;
+      } else {
+        console.error("Error: OPENAI_API_KEY no está definida en el entorno.");
+      }
     }
   }
   
@@ -45,111 +52,39 @@ export async function enhanceDescriptionWithAI(description: string, projectType:
       return '';
     }
     
-    // Obtener instancia de OpenAI o verificar si usamos el endpoint del servidor
+    // Obtener instancia de OpenAI
     const ai = getOpenAI();
+    if (!ai) {
+      console.warn("No se pudo inicializar OpenAI. Devolviendo texto original.");
+      return description;
+    }
     
     // Crear el prompt específico según el tipo de proyecto
     const systemPrompt = getSystemPromptForProjectType(projectType);
     
-    // Primero intentar con OpenAI directo si está disponible
-    if (ai) {
-      console.log("Intentando usar API de OpenAI directamente...");
-      
-      try {
-        // Realizar la llamada a la API de OpenAI
-        const response = await ai.chat.completions.create({
-          model: GPT_MODEL,
-          messages: [
-            {
-              role: "system",
-              content: systemPrompt
-            },
-            {
-              role: "user",
-              content: description
-            }
-          ],
-          temperature: 0.7,
-          max_tokens: 800
-        });
-        
-        // Extraer y retornar el texto mejorado
-        const enhancedText = response.choices[0].message.content || description;
-        console.log("Descripción mejorada exitosamente con OpenAI directo");
-        return enhancedText;
-      } catch (directError) {
-        console.warn("Error al usar OpenAI directo, intentando con servidor:", directError);
-        // Si falla la conexión directa, usaremos el endpoint del servidor como fallback
-        isUsingServerEndpoint = true;
-      }
-    }
+    // Realizar la llamada a la API de OpenAI
+    const response = await ai.chat.completions.create({
+      model: GPT_MODEL,
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt
+        },
+        {
+          role: "user",
+          content: description
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 800
+    });
     
-    // Si llegamos aquí, o bien falló OpenAI directo o estamos configurados para usar el endpoint del servidor
-    if (isUsingServerEndpoint) {
-      console.log("Usando endpoint del servidor para mejorar descripción...");
-      
-      try {
-        // Llamar al endpoint del servidor que maneja la comunicación con OpenAI
-        const response = await fetch('/api/enhance-description', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            description,
-            projectType,
-            systemPrompt
-          }),
-        });
-        
-        if (!response.ok) {
-          const errorText = await response.text().catch(() => 'No se pudo leer el mensaje de error');
-          console.error(`Error del servidor (${response.status}):`, errorText);
-          throw new Error(`Error del servidor: ${response.status}. ${errorText}`);
-        }
-        
-        const data = await response.json();
-        if (!data.enhancedDescription) {
-          console.warn("La respuesta del servidor no incluye descripción mejorada:", data);
-        }
-        console.log("Descripción mejorada exitosamente con endpoint del servidor");
-        return data.enhancedDescription || description;
-      } catch (serverError) {
-        console.error("Error al comunicarse con el servidor:", serverError);
-        
-        // Mensaje de error más detallado
-        let errorMsg = "No se pudo procesar la descripción. ";
-        
-        if (serverError instanceof Error) {
-          if (serverError.message.includes('Failed to fetch') || serverError.message.includes('NetworkError')) {
-            errorMsg += 'Hay un problema de conexión con el servidor. Verifica tu conexión a internet.';
-          } else if (serverError.message.includes('401') || serverError.message.includes('403')) {
-            errorMsg += 'El servicio no está autorizado. La API key podría no ser válida.';
-          } else if (serverError.message.includes('500')) {
-            errorMsg += 'Error interno en el servidor. Por favor, inténtalo más tarde.';
-          } else {
-            errorMsg += `Error: ${serverError.message}`;
-          }
-        } else {
-          errorMsg += 'Error desconocido al procesar tu solicitud.';
-        }
-        
-        throw new Error(errorMsg);
-      }
-    }
-    
-    // Si llegamos aquí es que no pudimos usar ninguno de los métodos
-    console.error("No se pudo establecer conexión con ningún servicio de IA.");
-    throw new Error("No se pudo establecer conexión con el servicio de IA. Contacte al administrador o revise la configuración de la app.");
+    // Extraer y retornar el texto mejorado
+    return response.choices[0].message.content || description;
   } catch (error) {
     console.error("Error al mejorar la descripción con IA:", error);
-    // Agregar datos de diagnóstico al error para mejor solución de problemas
-    const diagError = new Error(
-      error instanceof Error ? 
-      `${error.message} (AI Enhancement Error - ${new Date().toISOString()})` : 
-      "Error desconocido al mejorar la descripción"
-    );
-    throw diagError;
+    // En caso de error, devolver la descripción original
+    return description;
   }
 }
 

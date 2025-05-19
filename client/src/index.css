@@ -13,20 +13,20 @@
   .animate-pulse {
     animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
-
+  
   .animate-flash {
     animation: flash 1s ease-in-out;
     animation-iteration-count: 1;
   }
-
+  
   .animate-transformer-glow {
     animation: transformerGlow 1.5s ease-in-out infinite alternate;
   }
-
+  
   .ease-spring {
     transition-timing-function: cubic-bezier(0.5, 0, 0.25, 1.25);
   }
-
+  
   /* Estilos para el efecto de escritura sin temblores */
   .typewriter-text {
     position: relative;
@@ -38,7 +38,7 @@
     white-space: pre-wrap;
     visibility: visible;
   }
-
+  
   /* Contenedor de mensaje con altura estable */
   .message-container {
     position: relative;
@@ -46,20 +46,20 @@
     min-height: 1.5em;
     transition: min-height 0.2s ease-out;
   }
-
+  
   /* Evitar cambios bruscos de altura durante la animación */
   .chat-area {
     scroll-behavior: smooth;
     overflow-anchor: auto;
   }
-
+  
   /* Asegurar que los mensajes no causen saltos */
   .message-card {
     contain: content;
     transform: translateZ(0);
     backface-visibility: hidden;
   }
-
+  
   .particle {
     position: absolute;
     border-radius: 50%;
@@ -67,15 +67,15 @@
     box-shadow: 0 0 10px rgb(40, 230, 230, 0.5);
     opacity: 0.6;
   }
-
+  
   .bg-grid-white\/5 {
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' width='32' height='32' fill='none' stroke='rgb(255 255 255 / 0.05)'%3e%3cpath d='M0 .5H31.5V32'/%3e%3c/svg%3e");
   }
-
+  
   .bg-grid-2 {
     mask-image: linear-gradient(to bottom, transparent, black, transparent);
   }
-
+  
   @keyframes float {
     0% {
       transform: translateY(0px) translateX(0px);
@@ -98,7 +98,7 @@
       opacity: 0.2;
     }
   }
-
+  
   @keyframes flash {
     0% {
       opacity: 0;
@@ -309,13 +309,13 @@
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
+    --background: 0 0% 7%;
     --foreground: 210 40% 98%;
 
-    --card: 210 20% 96%;
+    --card: 0 0% 10%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 210 20% 98%;
+    --popover: 0 0% 7%;
     --popover-foreground: 210 40% 98%;
 
     --primary: 180 100% 50%;
@@ -382,7 +382,7 @@
     position: relative;
     -webkit-overflow-scrolling: touch;
   }
-
+  
   /* Fix scrolling issues in mobile devices */
   .dialog-scroll-fix {
     height: 100%;
@@ -390,7 +390,7 @@
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
   }
-
+  
   /* Fix para diálogos con scrolling */
   [role="dialog"] {
     -webkit-overflow-scrolling: touch;
@@ -400,7 +400,7 @@
     max-height: 95vh !important;
     margin: auto !important;
   }
-
+  
   /* Asegura que los contenidos anidados dentro del diálogo puedan hacer scroll */
   [role="dialog"] > div {
     max-height: 100%;
@@ -408,7 +408,7 @@
     flex-direction: column;
     overflow: hidden;
   }
-
+  
   /* Scrollable areas inside dialogs */
   .dialog-scroll-container {
     flex: 1;
@@ -418,7 +418,7 @@
     overscroll-behavior: contain !important;
     position: relative;
   }
-
+  
   /* Forzar scrolling en toda la aplicación - Solución extrema */
   html, body {
     overflow-x: hidden;
@@ -430,11 +430,11 @@
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
   }
-
+  
   body {
     overflow-y: auto !important;
   }
-
+  
   /* Estilo para contenedores principales con scroll */
   .page-scroll-container {
     min-height: 100vh;
@@ -446,7 +446,7 @@
     overscroll-behavior: contain;
     touch-action: pan-y;
   }
-
+  
   /* Aplicar scroll automáticamente a cada página */
   main, [role="main"], .main-content, #root > div {
     min-height: 100vh;
@@ -455,7 +455,7 @@
     overscroll-behavior: contain;
     position: relative;
   }
-
+  
   /* Forzar scrolling en tablas */
   .table-scroll-container {
     overflow-x: auto !important;
@@ -463,7 +463,7 @@
     max-width: 100%;
     touch-action: pan-x;
   }
-
+  
   /* Safe area para dispositivos móviles */
   @supports (padding-bottom: env(safe-area-inset-bottom)) {
     .dialog-content-mobile-safe {
@@ -711,7 +711,7 @@
     width: auto;
     max-width: calc(100% - 240px);
   }
-
+  
   @media (max-width: 768px) {
     .chat-input {
       left: 0;
@@ -835,7 +835,7 @@
     width: auto;
     max-width: calc(100% - 240px);
   }
-
+  
   @media (max-width: 768px) {
     .chat-input.with-footer {
       left: 0;

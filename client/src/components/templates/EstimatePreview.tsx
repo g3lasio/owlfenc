@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 interface EstimatePreviewProps {
   html: string;
@@ -6,16 +6,10 @@ interface EstimatePreviewProps {
 
 export default function EstimatePreview({ html }: EstimatePreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [hasLogError, setHasLogError] = useState(false);
   
   useEffect(() => {
     // Asegurarse de que el contenedor existe y que hay HTML para mostrar
     if (containerRef.current && html) {
-      // Iniciar carga
-      setIsLoading(true);
-      setHasLogError(false);
-      
       // Limpiar cualquier contenido previo
       containerRef.current.innerHTML = '';
       
@@ -34,45 +28,15 @@ export default function EstimatePreview({ html }: EstimatePreviewProps) {
       // Agregar clases CSS para mayor estilo
       previewContainer.className = 'estimate-preview-inner';
       
-      // Manejar la carga de imágenes
-      const images = previewContainer.querySelectorAll('img');
-      console.log(`Encontradas ${images.length} imágenes en el HTML del estimado`);
-      
-      // Verificar si hay imágenes en el HTML
-      if (images.length > 0) {
-        // Añadir event listeners a todas las imágenes
-        images.forEach((img) => {
-          // Cuando una imagen se carga exitosamente
-          img.addEventListener('load', () => {
-            console.log(`Imagen cargada correctamente: ${img.src}`);
-          });
-          
-          // Cuando hay un error al cargar una imagen
-          img.addEventListener('error', (e) => {
-            console.warn(`Error al cargar imagen: ${img.src}`, e);
-            setHasLogError(true);
-            
-            // Intentar cargar el logo local como respaldo
-            if (img.alt.includes('Logo')) {
-              console.log('Intentando cargar logo alternativo...');
-              img.src = '/owl-logo.png';
-            }
-          });
-        });
-      }
-      
       // Insertar el contenedor en el DOM
       containerRef.current.appendChild(previewContainer);
-      
-      // Completar carga
-      setIsLoading(false);
     }
   }, [html]);
   
   return (
     <div 
       ref={containerRef} 
-      className="estimate-preview-container relative"
+      className="estimate-preview-container"
       style={{
         width: '100%',
         minHeight: '500px',
@@ -80,22 +44,6 @@ export default function EstimatePreview({ html }: EstimatePreviewProps) {
         padding: '20px 0',
       }}
     >
-      {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10">
-          <div className="flex flex-col items-center gap-2">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-            <p className="text-sm text-gray-600">Cargando vista previa...</p>
-          </div>
-        </div>
-      )}
-      
-      {hasLogError && (
-        <div className="absolute top-2 right-2 bg-amber-50 border border-amber-200 rounded p-2 text-xs text-amber-700 shadow-md z-20">
-          <p className="font-medium">Advertencia</p>
-          <p>Algunas imágenes no se pudieron cargar correctamente. Se están usando alternativas.</p>
-        </div>
-      )}
-      
       {!html && (
         <div className="empty-preview-message" style={{ textAlign: 'center', padding: '100px 0' }}>
           <p>No hay contenido para previsualizar. Genera un estimado primero.</p>
