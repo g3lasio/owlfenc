@@ -48,7 +48,10 @@ import {
   Search, 
   RotateCcw, 
   DollarSign,
-  MoveVertical
+  MoveVertical,
+  Edit,
+  Save,
+  X
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
