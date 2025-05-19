@@ -29,6 +29,15 @@ export interface UserProfile {
   socialMedia: Record<string, string>;
   documents: Record<string, string>;
   logo: string;
+  
+  // Datos estructurados de la empresa para uso en contratos
+  company?: {
+    name?: string;
+    address?: string;
+    phone?: string;
+    email?: string;
+    license?: string;
+  };
 }
 
 export function useProfile() {

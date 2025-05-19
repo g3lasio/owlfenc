@@ -5,7 +5,9 @@ export type QuestionType =
   | 'multiline' 
   | 'date' 
   | 'number' 
-  | 'choice';
+  | 'choice'
+  | 'address'
+  | 'ai-enhanced';
 
 export interface Question {
   /** Identificador único de la pregunta */
@@ -20,47 +22,92 @@ export interface Question {
   options?: string[];
   /** Indicador si es obligatoria */
   required?: boolean;
+  /** Indicador para utilizar datos de la empresa/perfil */
+  useCompanyProfile?: boolean;
+  /** Descripción adicional o ayuda */
+  description?: string;
+  /** Tipo de proyecto al que aplica, null o empty para todos */
+  projectTypes?: string[];
 }
 
 /**
- * Preguntas específicas para contratos de cercas
+ * Categorías generales de tipos de trabajo para contratistas
  */
-export const fenceContractQuestions: Question[] = [
-  // Datos del contratista
+export const projectCategories = [
+  { id: 'fencing', name: 'Cercas y Vallado', icon: 'fence' },
+  { id: 'roofing', name: 'Techado', icon: 'home' },
+  { id: 'plumbing', name: 'Plomería', icon: 'droplet' },
+  { id: 'electrical', name: 'Eléctrico', icon: 'zap' },
+  { id: 'carpentry', name: 'Carpintería', icon: 'hammer' },
+  { id: 'concrete', name: 'Concreto', icon: 'square' },
+  { id: 'landscaping', name: 'Paisajismo', icon: 'tree' },
+  { id: 'painting', name: 'Pintura', icon: 'paint-bucket' },
+  { id: 'flooring', name: 'Pisos', icon: 'grid' },
+  { id: 'hvac', name: 'Calefacción y Aire', icon: 'thermometer' },
+  { id: 'general', name: 'Contratista General', icon: 'tool' },
+  { id: 'other', name: 'Otro', icon: 'more-horizontal' }
+];
+
+/**
+ * Preguntas generales para cualquier tipo de contrato de servicios de construcción
+ */
+export const generalContractQuestions: Question[] = [
+  // Selección de tipo de proyecto
+  {
+    id: 'project_category',
+    field: 'project.category',
+    prompt: '¿Qué tipo de trabajo o especialidad abarca este contrato?',
+    type: 'choice',
+    options: projectCategories.map(cat => cat.name),
+    required: true,
+    description: 'Selecciona la categoría que mejor describa el tipo de trabajo a realizar',
+  },
+  
+  // Datos del contratista - Usaremos datos del perfil de la compañía
   {
     id: 'contractor_name',
     field: 'contractor.name',
-    prompt: '¿Cuál es el nombre completo de tu empresa o nombre comercial?',
+    prompt: 'Nombre de tu empresa o nombre comercial',
     type: 'text',
     required: true,
+    useCompanyProfile: true,
+    description: 'Se utilizará el nombre registrado en tu perfil de empresa',
   },
   {
     id: 'contractor_address',
     field: 'contractor.address',
-    prompt: '¿Cuál es la dirección completa de tu empresa?',
-    type: 'multiline',
+    prompt: 'Dirección de tu empresa',
+    type: 'address',
     required: true,
+    useCompanyProfile: true,
+    description: 'Se utilizará la dirección registrada en tu perfil de empresa',
   },
   {
     id: 'contractor_phone',
     field: 'contractor.phone',
-    prompt: '¿Cuál es el número telefónico de contacto de tu empresa?',
+    prompt: 'Teléfono de contacto de tu empresa',
     type: 'text',
     required: true,
+    useCompanyProfile: true,
+    description: 'Se utilizará el teléfono registrado en tu perfil de empresa',
   },
   {
     id: 'contractor_email',
     field: 'contractor.email',
-    prompt: '¿Cuál es el correo electrónico de contacto de tu empresa?',
+    prompt: 'Correo electrónico de contacto de tu empresa',
     type: 'text',
     required: true,
+    useCompanyProfile: true,
+    description: 'Se utilizará el email registrado en tu perfil de empresa',
   },
   {
     id: 'contractor_license',
     field: 'contractor.license',
-    prompt: '¿Cuál es tu número de licencia de contratista?',
+    prompt: 'Número de licencia de contratista',
     type: 'text',
     required: true,
+    useCompanyProfile: true,
+    description: 'Se utilizará el número de licencia registrado en tu perfil de empresa',
   },
   
   // Datos del cliente
@@ -75,8 +122,9 @@ export const fenceContractQuestions: Question[] = [
     id: 'client_address',
     field: 'client.address',
     prompt: '¿Cuál es la dirección completa del cliente o del proyecto?',
-    type: 'multiline',
+    type: 'address',
     required: true,
+    description: 'Escribe la dirección o utiliza la función de autocompletado',
   },
   {
     id: 'client_phone',
@@ -93,63 +141,29 @@ export const fenceContractQuestions: Question[] = [
     required: false,
   },
   
-  // Detalles del proyecto
+  // Detalles del proyecto - Generales para cualquier tipo
   {
-    id: 'fence_type',
-    field: 'project.fenceType',
-    prompt: '¿Qué tipo de cerca se instalará?',
-    type: 'choice',
-    options: ['Privacidad', 'Residencial', 'Comercial', 'Seguridad', 'Picket', 'Split Rail', 'Vinilo', 'Madera', 'Aluminio', 'Acero', 'Otro'],
-    required: true,
-  },
-  {
-    id: 'fence_material',
-    field: 'project.fenceMaterial',
-    prompt: '¿De qué material será la cerca?',
+    id: 'project_title',
+    field: 'project.title',
+    prompt: '¿Cuál es el título o nombre de este proyecto?',
     type: 'text',
     required: true,
+    description: 'Ej: Renovación de cocina, Instalación de cerca, Remodelación de baño',
   },
   {
-    id: 'fence_height',
-    field: 'project.fenceHeight',
-    prompt: '¿Cuál será la altura de la cerca (en pies)?',
-    type: 'number',
+    id: 'project_description',
+    field: 'project.description',
+    prompt: 'Describe el alcance y detalles principales del proyecto',
+    type: 'ai-enhanced',
     required: true,
-  },
-  {
-    id: 'fence_length',
-    field: 'project.fenceLength',
-    prompt: '¿Cuál es la longitud total de la cerca (en pies lineales)?',
-    type: 'number',
-    required: true,
-  },
-  {
-    id: 'gates',
-    field: 'project.gates',
-    prompt: '¿Cuántos portones o puertas incluirá la cerca?',
-    type: 'number',
-    required: true,
-  },
-  {
-    id: 'gate_details',
-    field: 'project.gateDetails',
-    prompt: 'Describe los detalles de los portones (tamaños, ubicaciones, cerraduras, etc.):',
-    type: 'multiline',
-    required: false,
-  },
-  {
-    id: 'scope_details',
-    field: 'project.scopeDetails',
-    prompt: '¿Hay detalles adicionales sobre el alcance del trabajo? (preparación del terreno, remoción de cerca existente, etc.)',
-    type: 'multiline',
-    required: false,
+    description: 'Describe en detalle el trabajo a realizar. Usa el asistente AI para mejorar la descripción.',
   },
   
   // Fechas y plazos
   {
     id: 'start_date',
     field: 'project.startDate',
-    prompt: '¿Cuál es la fecha de inicio prevista para el proyecto? (DD/MM/AAAA)',
+    prompt: '¿Cuál es la fecha de inicio prevista para el proyecto?',
     type: 'date',
     required: true,
   },
@@ -179,9 +193,10 @@ export const fenceContractQuestions: Question[] = [
   {
     id: 'payment_schedule',
     field: 'payment.schedule',
-    prompt: '¿Cuál será el calendario de pagos? (Por ejemplo: 50% al inicio, 50% al finalizar)',
+    prompt: '¿Cuál será el calendario de pagos?',
     type: 'multiline',
     required: true,
+    description: 'Ej: 50% al inicio, 25% al completar la mitad del trabajo, 25% al finalizar',
   },
   
   // Garantías y términos adicionales
@@ -213,6 +228,62 @@ export const fenceContractQuestions: Question[] = [
     prompt: '¿Hay términos adicionales que deseas incluir en el contrato?',
     type: 'multiline',
     required: false,
+  },
+];
+
+/**
+ * Preguntas específicas para contratos de cercas
+ * Estas se mostrarán solo cuando el tipo de proyecto sea "Cercas y Vallado"
+ */
+export const fencingSpecificQuestions: Question[] = [
+  {
+    id: 'fence_type',
+    field: 'project.details.fenceType',
+    prompt: '¿Qué tipo de cerca se instalará?',
+    type: 'choice',
+    options: ['Privacidad', 'Residencial', 'Comercial', 'Seguridad', 'Picket', 'Split Rail', 'Vinilo', 'Madera', 'Aluminio', 'Acero', 'Otro'],
+    required: true,
+    projectTypes: ['fencing'],
+  },
+  {
+    id: 'fence_material',
+    field: 'project.details.fenceMaterial',
+    prompt: '¿De qué material será la cerca?',
+    type: 'text',
+    required: true,
+    projectTypes: ['fencing'],
+  },
+  {
+    id: 'fence_height',
+    field: 'project.details.fenceHeight',
+    prompt: '¿Cuál será la altura de la cerca (en pies)?',
+    type: 'number',
+    required: true,
+    projectTypes: ['fencing'],
+  },
+  {
+    id: 'fence_length',
+    field: 'project.details.fenceLength',
+    prompt: '¿Cuál es la longitud total de la cerca (en pies lineales)?',
+    type: 'number',
+    required: true,
+    projectTypes: ['fencing'],
+  },
+  {
+    id: 'gates',
+    field: 'project.details.gates',
+    prompt: '¿Cuántos portones o puertas incluirá la cerca?',
+    type: 'number',
+    required: true,
+    projectTypes: ['fencing'],
+  },
+  {
+    id: 'gate_details',
+    field: 'project.details.gateDetails',
+    prompt: 'Describe los detalles de los portones (tamaños, ubicaciones, cerraduras, etc.):',
+    type: 'multiline',
+    required: false,
+    projectTypes: ['fencing'],
   },
 ];
 
