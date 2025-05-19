@@ -109,12 +109,19 @@ interface Estimate {
   updatedAt?: Date;
 }
 
+// Importar el componente de dashboard
+import EstimatesDashboard from '@/components/estimates/EstimatesDashboard';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 export default function Estimates() {
   // Set English as the default language
   const defaultLanguage = 'en';
   const { currentUser } = useAuth();
   const { toast } = useToast();
   const { profile } = useProfile();
+  
+  // Estado para controlar la pestaña activa
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'create'>('dashboard');
   
   // States for clients
   const [clients, setClients] = useState<Client[]>([]);
@@ -162,7 +169,10 @@ export default function Estimates() {
   const [isEditingPreview, setIsEditingPreview] = useState(false);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   
-  // Load clients and materials when component mounts
+  // Estado para almacenar los estimados existentes
+  const [savedEstimates, setSavedEstimates] = useState<EstimateForDashboard[]>([]);
+
+  // Load clients, materials and existing estimates when component mounts
   useEffect(() => {
     if (!currentUser) return;
     
@@ -203,6 +213,27 @@ export default function Estimates() {
         });
         
         setMaterials(materialsData);
+        
+        // Cargar estimados existentes
+        const estimatesRef = collection(db, 'estimates');
+        const estimatesQuery = query(estimatesRef, where('userId', '==', currentUser.uid));
+        const estimatesSnapshot = await getDocs(estimatesQuery);
+        
+        const estimatesData: Array<any> = [];
+        estimatesSnapshot.forEach((doc) => {
+          const data = doc.data();
+          estimatesData.push({
+            id: doc.id,
+            title: data.title || 'Sin título',
+            clientName: data.client?.name || 'Sin cliente',
+            clientId: data.clientId || '',
+            total: typeof data.total === 'number' ? data.total : 0,
+            status: data.status || 'draft',
+            createdAt: data.createdAt ? data.createdAt.toDate() : new Date()
+          });
+        });
+        
+        setSavedEstimates(estimatesData);
       } catch (error) {
         console.error('Error loading data:', error);
         toast({
