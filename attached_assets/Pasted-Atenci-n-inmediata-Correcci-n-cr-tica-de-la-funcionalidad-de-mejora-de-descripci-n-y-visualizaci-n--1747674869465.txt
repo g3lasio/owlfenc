@@ -1,0 +1,22 @@
+Atención inmediata: Corrección crítica de la funcionalidad de mejora de descripción y visualización de íconos en Estimate Generator
+
+La funcionalidad de mejora de descripción del trabajo utilizando OpenAI no está operativa. El sistema actualmente no procesa ni devuelve resultados profesionales, y esto es un obstáculo inaceptable en la experiencia de usuario y el estándar que exijo para el producto.
+
+Además, existe un problema grave de duplicación y visualización del ícono de Mervin AI; el logo aparece varias veces o, directamente, no se muestra como corresponde. Esto impacta la percepción de calidad y la confiabilidad de la plataforma. Adjunto una imagen de referencia para mayor contexto y evidencia visual del problema.
+
+Requerimientos innegociables:
+
+Solución total del procesamiento con OpenAI:
+Implementa y asegura que la integración con OpenAI funcione perfectamente para la mejora y reformulación profesional de la descripción del trabajo. El sistema debe transformar el texto de manera impecable, presentando los resultados en un formato profesional, visualmente ordenado (idealmente con viñetas y estructura clara) y directamente usable por el usuario final.
+
+Eliminación de problemas de íconos:
+Corrige de inmediato la duplicación y cualquier defecto de visualización del ícono de Mervin AI. El logo debe mostrarse una única vez, correctamente alineado, y con la funcionalidad exacta que corresponde.
+
+Diagnóstico completo y logs detallados:
+Agrega los logs y herramientas de diagnóstico necesarias para identificar la raíz de cualquier error futuro en este flujo. No acepto parches superficiales ni soluciones temporales.
+
+Enfoque y precisión:
+Limita los cambios exclusivamente a la solución de estos problemas. No se debe alterar ninguna otra funcionalidad ni introducir regresiones en el sistema.
+
+Resumen:
+Espero una solución de nivel profesional, sin excusas ni medias tintas. La experiencia de mejora de descripción debe ser impecable y el branding visual debe transmitir confianza y calidad. No tolero fallos persistentes en áreas tan críticas para la percepción y funcionamiento del producto.

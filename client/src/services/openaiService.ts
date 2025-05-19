@@ -62,6 +62,8 @@ export async function enhanceDescriptionWithAI(description: string, projectType:
     // Crear el prompt específico según el tipo de proyecto
     const systemPrompt = getSystemPromptForProjectType(projectType);
     
+    console.log("Enviando petición a OpenAI con prompt para tipo de proyecto:", projectType);
+    
     // Realizar la llamada a la API de OpenAI
     const response = await ai.chat.completions.create({
       model: GPT_MODEL,
@@ -79,12 +81,27 @@ export async function enhanceDescriptionWithAI(description: string, projectType:
       max_tokens: 800
     });
     
-    // Extraer y retornar el texto mejorado
-    return response.choices[0].message.content || description;
+    if (!response.choices || response.choices.length === 0) {
+      console.error("La respuesta de OpenAI no contiene choices:", response);
+      throw new Error("Formato de respuesta inválido de OpenAI");
+    }
+    
+    // Extraer el contenido mejorado
+    const enhancedContent = response.choices[0].message?.content;
+    
+    if (!enhancedContent) {
+      console.error("No se recibió contenido en la respuesta de OpenAI:", response.choices[0]);
+      throw new Error("No se recibió contenido mejorado");
+    }
+    
+    console.log("Texto mejorado recibido de OpenAI:", enhancedContent.substring(0, 100) + "...");
+    
+    // Retornar el texto mejorado
+    return enhancedContent;
   } catch (error) {
     console.error("Error al mejorar la descripción con IA:", error);
-    // En caso de error, devolver la descripción original
-    return description;
+    // Propagar el error para que el componente pueda manejarlo apropiadamente
+    throw error;
   }
 }
 
@@ -92,123 +109,150 @@ export async function enhanceDescriptionWithAI(description: string, projectType:
  * Obtener el prompt específico para cada tipo de proyecto
  */
 function getSystemPromptForProjectType(projectType: string): string {
-  const basePrompt = `Eres un asistente experto en la redacción de descripciones profesionales para contratos en el sector construcción. 
-Tu tarea es mejorar la descripción de un proyecto que proporcionará el usuario. 
-La descripción debe ser clara, detallada, precisa y profesional. 
-Debes mantener toda la información original proporcionada, pero mejorarla añadiendo:
-1. Terminología técnica apropiada
-2. Especificaciones más detalladas cuando sea apropiado
-3. Mejor estructura y claridad
-4. Mencionar importantes aspectos que pudieran faltar
-5. Un tono profesional y formal apropiado para un contrato
+  const basePrompt = `Eres un asistente experto en la redacción de descripciones profesionales para presupuestos y contratos en el sector construcción.
 
-NO inventes información específica que no esté en la descripción original, como medidas exactas, materiales o fechas.
-Mejora el formato y la presentación para facilitar la lectura.`;
+Tu objetivo es mejorar la descripción de un proyecto proporcionada por el usuario, transformándola en un texto profesional, bien estructurado y visualmente atractivo.
 
-  // Prompts específicos según el tipo de proyecto
+INSTRUCCIONES IMPORTANTES DE FORMATO:
+- ESTRUCTURA el texto con viñetas claras para los puntos principales
+- ORGANIZA la información en secciones lógicas (Alcance del trabajo, Materiales, Proceso, etc.)
+- USA subtítulos en negrita para mejorar la organización
+- DESTACA los aspectos más importantes
+
+CONTENIDO A MEJORAR:
+1. Añade terminología técnica apropiada y precisa
+2. Incluye especificaciones más detalladas donde sea relevante
+3. Mejora la estructura y claridad del texto original
+4. Destaca aspectos importantes que puedan faltar
+5. Adopta un tono profesional y de confianza
+
+RESTRICCIONES IMPORTANTES:
+- NO inventes información específica (medidas, materiales, fechas) que no esté en el texto original
+- MANTÉN toda la información fáctica del texto original
+- CONSERVA el idioma del texto original (español/inglés)
+
+Tu respuesta debe ser un texto bien organizado, con formato profesional, que transmita experiencia y confianza.`;
+
+  // Prompts específicos según el tipo de proyecto con mayor énfasis en formato profesional
   switch (projectType) {
     case 'fencing':
       return `${basePrompt}
-Para este proyecto de cercas o vallado, asegúrate de incluir términos apropiados como:
-- Acabados y tratamientos (galvanizado, pintado, sellado)
-- Profundidad de cimentación de postes
-- Sujeciones y herrajes
-- Consideraciones de nivelación y pendiente
-- Medidas de seguridad
-- Aspectos de durabilidad y mantenimiento`;
+
+PARA ESTE PROYECTO DE CERCAS/VALLADO:
+Estructura la descripción en las siguientes secciones:
+
+1. **Resumen del Proyecto** - Breve descripción general del trabajo de cercado
+2. **Especificaciones Técnicas** - Incluye detalles sobre:
+   - Tipo de cerca y materiales
+   - Dimensiones y medidas
+   - Acabados y tratamientos (galvanizado, pintado, sellado)
+   - Profundidad de cimentación y especificaciones de postes
+   - Sistemas de sujeción y herrajes
+
+3. **Proceso de Instalación** - Describe las etapas clave:
+   - Preparación del terreno
+   - Consideraciones de nivelación y pendiente
+   - Métodos de instalación
+   - Control de calidad
+
+4. **Valor Añadido** - Destaca aspectos como:
+   - Durabilidad y vida útil
+   - Mantenimiento recomendado
+   - Garantías aplicables
+   - Cumplimiento normativo
+
+5. **Notas Adicionales** - Cualquier consideración especial relevante
+
+Usa terminología técnica apropiada y presenta la información de manera visualmente clara con viñetas y secciones bien definidas.`;
       
     case 'roofing':
       return `${basePrompt}
-Para este proyecto de techado, asegúrate de incluir términos apropiados como:
-- Sistemas de membrana o impermeabilización
-- Ventilación y aislamiento
-- Detalles de inclinación y drenaje
-- Tapajuntas y sellado
-- Garantía de materiales
-- Procedimientos de remoción (si aplica)`;
+
+PARA ESTE PROYECTO DE TECHOS:
+Estructura la descripción en las siguientes secciones:
+
+1. **Resumen del Proyecto** - Breve descripción general del trabajo de techado
+2. **Especificaciones Técnicas** - Incluye detalles sobre:
+   - Sistema de techado y materiales
+   - Sistemas de membrana o impermeabilización
+   - Aislamiento y ventilación
+   - Detalles de inclinación y drenaje
+   - Tapajuntas y sellado
+
+3. **Proceso de Instalación** - Describe las etapas clave:
+   - Preparación y remoción (si aplica)
+   - Métodos de instalación
+   - Tratamiento de áreas críticas
+   - Control de calidad
+
+4. **Valor Añadido** - Destaca aspectos como:
+   - Eficiencia energética
+   - Durabilidad y vida útil
+   - Garantías de materiales y mano de obra
+   - Cumplimiento normativo
+
+5. **Notas Adicionales** - Cualquier consideración especial relevante
+
+Usa terminología técnica apropiada y presenta la información de manera visualmente clara con viñetas y secciones bien definidas.`;
       
-    case 'plumbing':
+    case 'general':
       return `${basePrompt}
-Para este proyecto de plomería, asegúrate de incluir términos apropiados como:
-- Tipos de tuberías y conexiones
-- Presión y flujo de agua
-- Sistemas de drenaje y ventilación
-- Pruebas de presión y fugas
-- Códigos y regulaciones aplicables
-- Procedimientos de cierres temporales de agua`;
-      
-    case 'electrical':
-      return `${basePrompt}
-Para este proyecto eléctrico, asegúrate de incluir términos apropiados como:
-- Capacidad de amperaje y voltaje
-- Tipos de cableado y conductos
-- Protección de circuitos
-- Cumplimiento de código eléctrico
-- Consideraciones de seguridad específicas
-- Pruebas y certificación`;
-      
-    case 'carpentry':
-      return `${basePrompt}
-Para este proyecto de carpintería, asegúrate de incluir términos apropiados como:
-- Tipos y grados de madera
-- Métodos de unión y fijación
-- Acabados y tratamientos
-- Tolerancias y ajustes
-- Aspectos estéticos y funcionales
-- Técnicas de instalación`;
-      
-    case 'concrete':
-      return `${basePrompt}
-Para este proyecto de concreto, asegúrate de incluir términos apropiados como:
-- Resistencia del concreto (PSI/MPa)
-- Métodos de preparación y colocación
-- Refuerzo (varillas, malla, fibra)
-- Juntas de expansión y control
-- Curado y acabado
-- Consideraciones climáticas`;
-      
-    case 'landscaping':
-      return `${basePrompt}
-Para este proyecto de paisajismo, asegúrate de incluir términos apropiados como:
-- Preparación del terreno y nivelación
-- Selección de plantas y distribución
-- Sistemas de riego y drenaje
-- Elementos decorativos y funcionales
-- Mantenimiento inicial
-- Garantía de supervivencia de plantas`;
-      
-    case 'painting':
-      return `${basePrompt}
-Para este proyecto de pintura, asegúrate de incluir términos apropiados como:
-- Preparación de superficies
-- Tipos de pintura y acabados
-- Número de capas y espesor
-- Técnicas de aplicación
-- Protección de áreas adyacentes
-- Tiempos de secado`;
-      
-    case 'flooring':
-      return `${basePrompt}
-Para este proyecto de pisos, asegúrate de incluir términos apropiados como:
-- Preparación del subsuelo
-- Material y especificaciones
-- Patrón de instalación
-- Sistemas de adhesión
-- Acabados y selladores
-- Expansión y contracción`;
-      
-    case 'hvac':
-      return `${basePrompt}
-Para este proyecto de calefacción/aire acondicionado, asegúrate de incluir términos apropiados como:
-- Capacidad y dimensionamiento
-- Eficiencia energética
-- Distribución de aire o fluido
-- Controles y termostatos
-- Pruebas y balanceo
-- Permisos y cumplimiento normativo`;
-    
+
+PARA ESTE PROYECTO DE CONSTRUCCIÓN:
+Estructura la descripción en las siguientes secciones:
+
+1. **Resumen del Proyecto** - Breve descripción general del alcance del trabajo
+2. **Especificaciones Técnicas** - Incluye detalles sobre:
+   - Materiales principales a utilizar
+   - Dimensiones y características fundamentales
+   - Acabados y calidades
+   - Sistemas y elementos críticos
+
+3. **Proceso de Ejecución** - Describe las etapas clave:
+   - Preparación y trabajos preliminares
+   - Secuencia de actividades principales
+   - Métodos constructivos relevantes
+   - Control de calidad y supervisión
+
+4. **Valor Añadido** - Destaca aspectos como:
+   - Durabilidad y calidad
+   - Eficiencia y optimización
+   - Garantías aplicables
+   - Cumplimiento normativo y permisos
+
+5. **Notas Adicionales** - Cualquier consideración especial relevante
+
+Usa terminología técnica apropiada y presenta la información de manera visualmente clara con viñetas y secciones bien definidas. Enfócate en crear un documento que transmita profesionalismo y confianza al cliente.`;
+            
+    // Incluye los otros tipos de proyecto con el mismo formato mejorado
     default:
-      return basePrompt; // Prompt genérico para otros tipos de proyecto
+      return `${basePrompt}
+
+PARA ESTE PROYECTO:
+Estructura la descripción en las siguientes secciones:
+
+1. **Resumen del Proyecto** - Breve descripción general del alcance del trabajo
+2. **Especificaciones Técnicas** - Incluye detalles sobre:
+   - Materiales principales a utilizar
+   - Dimensiones y características fundamentales
+   - Acabados y calidades
+   - Sistemas y elementos críticos
+
+3. **Proceso de Ejecución** - Describe las etapas clave:
+   - Preparación y trabajos preliminares
+   - Secuencia de actividades principales
+   - Métodos constructivos relevantes
+   - Control de calidad y supervisión
+
+4. **Valor Añadido** - Destaca aspectos como:
+   - Durabilidad y calidad
+   - Eficiencia y optimización
+   - Garantías aplicables
+   - Cumplimiento normativo y permisos
+
+5. **Notas Adicionales** - Cualquier consideración especial relevante
+
+Usa terminología técnica apropiada y presenta la información de manera visualmente clara con viñetas y secciones bien definidas. Enfócate en crear un documento que transmita profesionalismo y confianza al cliente.`;
   }
 }
 
