@@ -55,7 +55,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, saveEstimate, devMode } from '../lib/firebase';
 import { getClients, Client as FirebaseClient } from '../lib/clientFirebase';
 
 // Types
@@ -671,8 +671,12 @@ export default function Estimates() {
       
       console.log('Datos del estimado a guardar:', estimateData);
       
-      // Guardar el estimado en la colección de estimates
-      const estimateDocRef = await addDoc(collection(db, 'estimates'), estimateData);
+      // Guardar el estimado utilizando nuestra función compatible con desarrollo/producción
+      console.log('Utilizando la función saveEstimate para guardar el estimado');
+      const savedEstimate = await saveEstimate(estimateData);
+      const estimateId = savedEstimate.id;
+      
+      console.log('Estimado guardado con éxito. ID:', estimateId);
       
       // Crear o actualizar el proyecto relacionado con este estimado
       const projectData = {
@@ -692,7 +696,7 @@ export default function Estimates() {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         userId: currentUser.uid,
-        estimateId: estimateDocRef.id, // Referencia al estimado creado
+        estimateId: estimateId, // Referencia al estimado creado
         clientNotes: estimate.notes || ''
       };
       
@@ -700,7 +704,7 @@ export default function Estimates() {
       await addDoc(collection(db, 'projects'), projectData);
       
       // Agregar log una vez guardado el estimado
-      console.log('Estimado guardado exitosamente con ID:', estimateDocRef.id);
+      console.log('Estimado guardado exitosamente con ID:', estimateId);
       
       toast({
         title: 'Estimado guardado',

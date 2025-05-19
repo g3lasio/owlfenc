@@ -3,7 +3,7 @@ import { Link } from 'wouter';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, getEstimates as fetchEstimates } from '../lib/firebase';
 import {
   Card,
   CardContent,
