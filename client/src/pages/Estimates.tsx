@@ -740,13 +740,26 @@ export default function Estimates() {
       return;
     }
     
+    console.log('Generando preview del estimado...');
     setIsEditingPreview(false); // Aseguramos que comenzamos en modo vista
     
     // En este punto sabemos que estimate.client no es null
     const client = estimate.client;
     
-    // In a real app, you would call an API to generate the HTML
-    // For this example, we'll create a better styled HTML template
+    // Determinamos la URL del logo
+    let logoUrl = '/owl-logo.png'; // Logo por defecto
+    
+    // Si el perfil tiene un logo personalizado, lo usamos
+    if (profile?.logo) {
+      console.log('Usando logo del perfil de la empresa:', profile.logo);
+      logoUrl = profile.logo;
+    } else {
+      console.log('Usando logo por defecto:', logoUrl);
+    }
+    
+    console.log('Preparando plantilla HTML con logo...');
+    
+    // Generar una plantilla HTML mejorada con el logo
     const html = `
       <style>
         .estimate-preview {
@@ -754,6 +767,13 @@ export default function Estimates() {
           color: #333;
           max-width: 100%;
           margin: 0 auto;
+        }
+        
+        .company-logo {
+          max-width: 200px;
+          max-height: 80px;
+          margin-bottom: 10px;
+          object-fit: contain;
         }
         
         .estimate-header {
@@ -877,6 +897,7 @@ export default function Estimates() {
       <div class="estimate-preview">
         <div class="estimate-header">
           <div class="company-info">
+            <img src="${logoUrl}" alt="Logo" class="company-logo" crossorigin="anonymous" onerror="this.style.display='none'; console.error('Error cargando logo en preview');" />
             <h1>${profile?.companyName || 'Owl Fence'}</h1>
             <p>${profile?.address || '123 Fence Avenue'}, ${profile?.city || 'San Diego'}, ${profile?.state || 'CA'} ${profile?.zipCode || '92101'}</p>
             <p>${profile?.email || 'info@owlfence.com'} | ${profile?.phone || profile?.mobilePhone || '(555) 123-4567'}</p>
@@ -955,6 +976,7 @@ export default function Estimates() {
       </div>
     `;
     
+    console.log('HTML para preview generado correctamente');
     setPreviewHtml(html);
     setShowPreviewDialog(true);
   };
