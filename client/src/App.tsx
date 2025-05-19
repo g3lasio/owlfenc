@@ -143,8 +143,14 @@ function Router() {
       <Route path="/contracts">
         {() => <ProtectedRoute component={ContractGenerator} />}
       </Route>
-      <Route path="/estimates">
+      <Route path="/estimates/dashboard">
+        {() => <ProtectedRoute component={EstimatesDashboard} />}
+      </Route>
+      <Route path="/estimates/new">
         {() => <ProtectedRoute component={Estimates} />}
+      </Route>
+      <Route path="/estimates">
+        {() => <ProtectedRoute component={EstimatesDashboard} />}
       </Route>
 
       {/* Página no encontrada */}
