@@ -70,40 +70,31 @@ export default function EstimatesDashboard() {
       console.log('Cargando estimados para usuario:', currentUser.uid);
       setIsLoading(true);
       try {
-        const estimatesRef = collection(db, 'estimates');
-        console.log('Colección de estimados referenciada:', { path: estimatesRef.path });
-        
-        const userEstimatesQuery = query(
-          estimatesRef,
-          where('userId', '==', currentUser.uid),
-          orderBy('createdAt', 'desc')
-        );
-        console.log('Consulta preparada para user ID:', currentUser.uid);
-        
-        const snapshot = await getDocs(userEstimatesQuery);
+        console.log('Utilizando la función fetchEstimates para cargar estimados');
+        // Usar nuestra función optimizada para cargar estimados
+        const userEstimates = await fetchEstimates(currentUser.uid);
         console.log('Consulta ejecutada, verificando resultados...');
         const estimatesList: Estimate[] = [];
         
-        if (snapshot.empty) {
+        if (!userEstimates || userEstimates.length === 0) {
           console.log('No se encontraron estimados para este usuario');
         } else {
-          console.log(`Se encontraron ${snapshot.size} estimados`);
+          console.log(`Se encontraron ${userEstimates.length} estimados`);
           
-          snapshot.forEach((doc) => {
-            const data = doc.data();
-            console.log('Datos del estimado recuperados:', { id: doc.id, data });
+          userEstimates.forEach((estimate: any) => {
+            console.log('Datos del estimado recuperados:', { id: estimate.id, data: estimate });
             
             // Convertir timestamps a fechas
-            const createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
-            const updatedAt = data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date();
+            const createdAt = estimate.createdAt?.toDate ? estimate.createdAt.toDate() : new Date();
+            const updatedAt = estimate.updatedAt?.toDate ? estimate.updatedAt.toDate() : new Date();
             
             estimatesList.push({
-              id: doc.id,
-              title: data.title || 'Sin título',
-              clientId: data.clientId || '',
-              clientName: data.clientName || data.client?.name || 'Cliente no especificado',
-              total: data.total || 0,
-              status: data.status || 'draft',
+              id: estimate.id,
+              title: estimate.title || 'Sin título',
+              clientId: estimate.clientId || '',
+              clientName: estimate.clientName || estimate.client?.name || 'Cliente no especificado',
+              total: estimate.total || 0,
+              status: estimate.status || 'draft',
               createdAt: createdAt,
               updatedAt: updatedAt
             });
