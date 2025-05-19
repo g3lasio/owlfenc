@@ -566,7 +566,15 @@ export default function Estimates() {
       <div class="estimate-preview">
         <div class="estimate-header">
           <div class="company-info">
-            <h1>${profile?.companyName || 'Owl Fence'}</h1>
+            <div style="display: flex; align-items: center; margin-bottom: 10px;">
+              <img 
+                src="${profile?.logo || '/owl-logo.png'}" 
+                alt="Logo" 
+                style="max-height: 60px; max-width: 180px; margin-right: 15px;" 
+                onerror="this.onerror=null; this.src='/owl-logo.png'; console.log('Fallback a logo local');"
+              />
+              <h1>${profile?.companyName || 'Owl Fence'}</h1>
+            </div>
             <p>${profile?.address || '123 Fence Avenue'}, ${profile?.city || 'San Diego'}, ${profile?.state || 'CA'} ${profile?.zipCode || '92101'}</p>
             <p>${profile?.email || 'info@owlfence.com'} | ${profile?.phone || profile?.mobilePhone || '(555) 123-4567'}</p>
             <p>${profile?.website || 'www.owlfence.com'}</p>
@@ -1794,27 +1802,53 @@ export default function Estimates() {
               previewHtml && (
                 <div 
                   className="estimate-preview border rounded-md p-4 bg-white"
-                  dangerouslySetInnerHTML={{ __html: previewHtml as string }}
                   ref={(el) => {
                     // Esta función se ejecuta cuando el componente se monta o actualiza
                     if (el) {
+                      // Primero insertar el HTML
+                      el.innerHTML = previewHtml as string;
+                      
                       console.log('Preview HTML renderizado, verificando imágenes...');
                       // Verificar si hay imágenes y añadir manejadores de error
                       const imgs = el.querySelectorAll('img');
                       if (imgs.length > 0) {
                         console.log(`Encontradas ${imgs.length} imágenes en el preview`);
                         imgs.forEach(img => {
-                          // Asegurarse de que las imágenes tengan manejo de errores
-                          img.onerror = function() {
-                            console.error('Error cargando imagen en preview:', img.src);
-                            if (img.alt === 'Logo' && !img.src.includes('owl-logo.png')) {
-                              console.log('Intentando cargar logo alternativo en preview');
-                              img.src = '/owl-logo.png';
+                          // Verificar si la imagen ya está cargada
+                          if (img.complete) {
+                            // Si la imagen ya está completa pero tiene error, aplicar fallback
+                            if (img.naturalWidth === 0) {
+                              console.warn('Imagen cargada con errores:', img.src);
+                              handleImageError(img);
+                            } else {
+                              console.log('Imagen precargada correctamente:', img.src);
                             }
+                          }
+                          
+                          // Listener para cuando la imagen carga correctamente
+                          img.onload = function() {
+                            console.log('Imagen cargada correctamente:', img.src);
+                          };
+                          
+                          // Listener para errores de carga
+                          img.onerror = function() {
+                            handleImageError(img);
                           };
                         });
                       } else {
                         console.warn('No se encontraron imágenes en el preview HTML');
+                      }
+                      
+                      // Función helper para manejar errores de imagen
+                      function handleImageError(img: HTMLImageElement): void {
+                        console.error('Error cargando imagen en preview:', img.src);
+                        // Si es el logo de la empresa, intentar con el logo local
+                        if ((img.alt.includes('Logo') || img.alt.includes('logo')) && !img.src.includes('owl-logo.png')) {
+                          console.log('Intentando cargar logo alternativo en preview');
+                          img.src = '/owl-logo.png';
+                          // Agregar clase para destacar que es un logo de respaldo
+                          img.classList.add('fallback-logo');
+                        }
                       }
                     }
                   }}
