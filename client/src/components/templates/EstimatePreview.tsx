@@ -72,7 +72,7 @@ export default function EstimatePreview({ html }: EstimatePreviewProps) {
   return (
     <div 
       ref={containerRef} 
-      className="estimate-preview-container"
+      className="estimate-preview-container relative"
       style={{
         width: '100%',
         minHeight: '500px',
@@ -80,6 +80,22 @@ export default function EstimatePreview({ html }: EstimatePreviewProps) {
         padding: '20px 0',
       }}
     >
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10">
+          <div className="flex flex-col items-center gap-2">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+            <p className="text-sm text-gray-600">Cargando vista previa...</p>
+          </div>
+        </div>
+      )}
+      
+      {hasLogError && (
+        <div className="absolute top-2 right-2 bg-amber-50 border border-amber-200 rounded p-2 text-xs text-amber-700 shadow-md z-20">
+          <p className="font-medium">Advertencia</p>
+          <p>Algunas imágenes no se pudieron cargar correctamente. Se están usando alternativas.</p>
+        </div>
+      )}
+      
       {!html && (
         <div className="empty-preview-message" style={{ textAlign: 'center', padding: '100px 0' }}>
           <p>No hay contenido para previsualizar. Genera un estimado primero.</p>
