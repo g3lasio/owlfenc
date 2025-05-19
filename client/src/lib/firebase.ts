@@ -345,6 +345,157 @@ export const updateProjectProgress = async (id: string, progress: string) => {
 };
 
 // **************************************
+// FUNCIONES DE MANEJO DE ESTIMADOS
+// **************************************
+
+// Guardar un estimado
+export const saveEstimate = async (estimateData: any) => {
+  try {
+    // Verificar modo de desarrollo
+    if (devMode) {
+      console.log("Guardando estimado en modo desarrollo:", estimateData);
+      
+      // Generar un ID único para el estimado
+      const estimateId = `estimate-${Date.now()}`;
+      
+      // Obtener estimados existentes de localStorage o inicializar un array vacío
+      const savedEstimatesStr = localStorage.getItem('owlFenceEstimates');
+      const savedEstimates = savedEstimatesStr ? JSON.parse(savedEstimatesStr) : [];
+      
+      // Preparar el estimado con timestamps
+      const estimateWithTimestamp = {
+        ...estimateData,
+        id: estimateId,
+        createdAt: typeof Timestamp.now === 'function' ? 
+          Timestamp.now() : 
+          { toDate: () => new Date(), toMillis: () => Date.now() },
+        updatedAt: typeof Timestamp.now === 'function' ? 
+          Timestamp.now() : 
+          { toDate: () => new Date(), toMillis: () => Date.now() }
+      };
+      
+      // Añadir el nuevo estimado al array
+      savedEstimates.push(estimateWithTimestamp);
+      
+      // Guardar el array actualizado en localStorage
+      localStorage.setItem('owlFenceEstimates', JSON.stringify(savedEstimates));
+      
+      console.log("Estimado guardado exitosamente en localStorage con ID:", estimateId);
+      return estimateWithTimestamp;
+    } else {
+      // En producción, usar Firestore
+      const estimateWithTimestamp = {
+        ...estimateData,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now()
+      };
+      
+      const docRef = await addDoc(collection(db, "estimates"), estimateWithTimestamp);
+      console.log("Estimado guardado exitosamente en Firestore con ID:", docRef.id);
+      return { id: docRef.id, ...estimateWithTimestamp };
+    }
+  } catch (error) {
+    console.error("Error al guardar estimado:", error);
+    throw error;
+  }
+};
+
+// Obtener todos los estimados
+export const getEstimates = async (userId: string) => {
+  try {
+    console.log("Obteniendo estimados para usuario:", userId);
+    
+    // Verificar modo de desarrollo
+    if (devMode) {
+      console.log("Obteniendo estimados desde localStorage en modo desarrollo");
+      
+      // Obtener estimados de localStorage
+      const savedEstimatesStr = localStorage.getItem('owlFenceEstimates');
+      
+      if (!savedEstimatesStr) {
+        console.log("No hay estimados guardados en localStorage");
+        return [];
+      }
+      
+      // Parsear los estimados y filtrar por userId
+      const allEstimates = JSON.parse(savedEstimatesStr);
+      const userEstimates = allEstimates.filter((est: any) => est.userId === userId);
+      
+      // Ordenar por fecha de creación (más reciente primero)
+      userEstimates.sort((a: any, b: any) => {
+        const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
+        const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+        return dateB.getTime() - dateA.getTime();
+      });
+      
+      console.log(`Encontrados ${userEstimates.length} estimados para el usuario`);
+      return userEstimates;
+    } else {
+      // En producción, usar Firestore
+      const estimatesRef = collection(db, "estimates");
+      const q = query(
+        estimatesRef,
+        where("userId", "==", userId),
+        orderBy("createdAt", "desc")
+      );
+      
+      const querySnapshot = await getDocs(q);
+      console.log(`Encontrados ${querySnapshot.size} estimados en Firestore`);
+      
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+    }
+  } catch (error) {
+    console.error("Error al obtener estimados:", error);
+    throw error;
+  }
+};
+
+// Obtener un estimado por su ID
+export const getEstimateById = async (id: string) => {
+  try {
+    console.log("Buscando estimado con ID:", id);
+    
+    // Verificar modo de desarrollo
+    if (devMode) {
+      console.log("Buscando estimado en localStorage");
+      
+      // Obtener estimados de localStorage
+      const savedEstimatesStr = localStorage.getItem('owlFenceEstimates');
+      
+      if (!savedEstimatesStr) {
+        throw new Error("No hay estimados guardados");
+      }
+      
+      // Buscar el estimado por ID
+      const allEstimates = JSON.parse(savedEstimatesStr);
+      const estimate = allEstimates.find((est: any) => est.id === id);
+      
+      if (!estimate) {
+        throw new Error("Estimado no encontrado");
+      }
+      
+      return estimate;
+    } else {
+      // En producción, usar Firestore
+      const docRef = doc(db, "estimates", id);
+      const docSnap = await getDoc(docRef);
+      
+      if (!docSnap.exists()) {
+        throw new Error("Estimado no encontrado");
+      }
+      
+      return { id: docSnap.id, ...docSnap.data() };
+    }
+  } catch (error) {
+    console.error("Error al obtener estimado:", error);
+    throw error;
+  }
+};
+
+// **************************************
 // FUNCIONES DE MANEJO DE MATERIALES
 // **************************************
 

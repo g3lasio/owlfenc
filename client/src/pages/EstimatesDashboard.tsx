@@ -13,6 +13,12 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
   Table,
   TableBody,
   TableCell,
@@ -56,18 +62,26 @@ export default function EstimatesDashboard() {
   // Load estimates from Firestore
   useEffect(() => {
     const loadEstimates = async () => {
-      if (!currentUser) return;
+      if (!currentUser) {
+        console.log('No hay usuario autenticado, no se pueden cargar estimados');
+        return;
+      }
       
+      console.log('Cargando estimados para usuario:', currentUser.uid);
       setIsLoading(true);
       try {
         const estimatesRef = collection(db, 'estimates');
+        console.log('Colección de estimados referenciada:', { path: estimatesRef.path });
+        
         const userEstimatesQuery = query(
           estimatesRef,
           where('userId', '==', currentUser.uid),
           orderBy('createdAt', 'desc')
         );
+        console.log('Consulta preparada para user ID:', currentUser.uid);
         
         const snapshot = await getDocs(userEstimatesQuery);
+        console.log('Consulta ejecutada, verificando resultados...');
         const estimatesList: Estimate[] = [];
         
         if (snapshot.empty) {
@@ -221,38 +235,15 @@ export default function EstimatesDashboard() {
                       <TableCell>{getStatusBadge(estimate.status)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end space-x-2">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Ver estimado</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <FileDown className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Descargar PDF</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <Mail className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Enviar por email</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
+                          <Button variant="ghost" size="icon" title="Ver estimado">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" title="Descargar PDF">
+                            <FileDown className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" title="Enviar por email">
+                            <Mail className="h-4 w-4" />
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
