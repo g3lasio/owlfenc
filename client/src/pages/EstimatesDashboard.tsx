@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'wouter';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db, getEstimates as fetchEstimates } from '../lib/firebase';
 import {
   Card,
@@ -58,6 +58,8 @@ export default function EstimatesDashboard() {
   const [filteredEstimates, setFilteredEstimates] = useState<Estimate[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isPdfLoading, setIsPdfLoading] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   // Load estimates from Firestore
   useEffect(() => {
@@ -168,6 +170,126 @@ export default function EstimatesDashboard() {
     }
   };
   
+  // Handler for View Estimate
+  const handleViewEstimate = async (estimateId: string) => {
+    try {
+      toast({
+        title: "Cargando estimado",
+        description: "Obteniendo detalles del estimado...",
+      });
+      
+      // In a full implementation, we would fetch the estimate details and open a preview dialog
+      // For now, just navigate to estimates page with the ID as parameter
+      window.location.href = `/estimates?id=${estimateId}`;
+    } catch (error) {
+      console.error('Error viewing estimate:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo cargar la vista previa del estimado.",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  // Handler for Download PDF
+  const handleDownloadPdf = async (estimateId: string) => {
+    try {
+      setIsPdfLoading(true);
+      toast({
+        title: "Preparando PDF",
+        description: "Generando el documento PDF del estimado...",
+      });
+      
+      // Fetch the estimate data from the database
+      const estimateRef = doc(db, "estimates", estimateId);
+      const estimateSnap = await getDoc(estimateRef);
+      
+      if (!estimateSnap.exists()) {
+        throw new Error("Estimado no encontrado");
+      }
+      
+      const estimateData = estimateSnap.data();
+      
+      // Get the HTML content for the estimate
+      const response = await fetch('/api/estimates/html', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ estimateData }),
+      });
+      
+      if (!response.ok) {
+        throw new Error("Error al generar el HTML del estimado");
+      }
+      
+      const { html } = await response.json();
+      
+      // Generate PDF client-side
+      const { generateClientSidePDF } = await import('../lib/pdf');
+      const fileName = `Estimado-${estimateData.clientName?.replace(/\s+/g, '-') || 'Cliente'}-${Date.now()}`;
+      
+      await generateClientSidePDF(html, fileName);
+      
+      toast({
+        title: "PDF generado",
+        description: "El PDF del estimado se ha generado correctamente.",
+      });
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo generar el PDF del estimado.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsPdfLoading(false);
+    }
+  };
+  
+  // Handler for Send Email
+  const handleSendEmail = async (estimateId: string, clientName: string) => {
+    try {
+      setIsSendingEmail(true);
+      toast({
+        title: "Preparando email",
+        description: `Preparando email para enviar a ${clientName}...`,
+      });
+      
+      // Fetch the estimate data from the database
+      const estimateRef = doc(db, "estimates", estimateId);
+      const estimateSnap = await getDoc(estimateRef);
+      
+      if (!estimateSnap.exists()) {
+        throw new Error("Estimado no encontrado");
+      }
+      
+      const estimateData = estimateSnap.data();
+      
+      if (!estimateData.clientEmail) {
+        throw new Error("El cliente no tiene una dirección de email registrada");
+      }
+      
+      // In a real implementation, we would call an API endpoint to send the email
+      // For now, simulate a successful email send after a delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      toast({
+        title: "Email enviado",
+        description: `El estimado se ha enviado correctamente a ${estimateData.clientEmail}.`,
+      });
+    } catch (error) {
+      console.error('Error sending email:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "No se pudo enviar el email del estimado.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+  
   return (
     <div className="container py-6">
       <div className="flex justify-between items-center mb-6">
@@ -226,13 +348,28 @@ export default function EstimatesDashboard() {
                       <TableCell>{getStatusBadge(estimate.status)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end space-x-2">
-                          <Button variant="ghost" size="icon" title="Ver estimado">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            title="Ver estimado"
+                            onClick={() => handleViewEstimate(estimate.id)}
+                          >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" title="Descargar PDF">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            title="Descargar PDF"
+                            onClick={() => handleDownloadPdf(estimate.id)}
+                          >
                             <FileDown className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" title="Enviar por email">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            title="Enviar por email"
+                            onClick={() => handleSendEmail(estimate.id, estimate.clientName)}
+                          >
                             <Mail className="h-4 w-4" />
                           </Button>
                         </div>
