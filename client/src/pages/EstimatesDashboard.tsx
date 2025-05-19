@@ -331,11 +331,13 @@ export default function EstimatesDashboard() {
       
       {/* Status Distribution Chart */}
       {estimatesByStatus.length > 0 && (
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>Distribución por Estado</CardTitle>
+        <Card className="mb-8 overflow-hidden border-0 shadow-lg bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-800">
+          <CardHeader className="border-b border-slate-100 dark:border-slate-800">
+            <CardTitle className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-cyan-600">
+              Distribución por Estado
+            </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-6">
             <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -343,18 +345,39 @@ export default function EstimatesDashboard() {
                     data={estimatesByStatus}
                     cx="50%"
                     cy="50%"
-                    outerRadius={100}
+                    outerRadius={120}
+                    innerRadius={60}
                     fill="#8884d8"
                     dataKey="value"
                     nameKey="name"
+                    paddingAngle={3}
                     label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                   >
                     {estimatesByStatus.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={entry.color} 
+                        stroke="rgba(255,255,255,0.3)"
+                        strokeWidth={2}
+                      />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value) => [`${value} estimados`, '']} />
-                  <Legend />
+                  <Tooltip 
+                    formatter={(value) => [`${value} estimados`, '']} 
+                    contentStyle={{ 
+                      borderRadius: '8px', 
+                      boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)', 
+                      border: 'none',
+                      background: 'rgba(255,255,255,0.95)'
+                    }}
+                  />
+                  <Legend 
+                    iconType="circle" 
+                    layout="horizontal" 
+                    verticalAlign="bottom" 
+                    align="center"
+                    wrapperStyle={{ paddingTop: '20px' }} 
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -363,26 +386,31 @@ export default function EstimatesDashboard() {
       )}
       
       {/* Filters */}
-      <Card className="mb-8">
-        <CardContent className="pt-6">
+      <Card className="mb-8 overflow-hidden border-0 shadow-lg bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-800">
+        <CardHeader className="border-b border-slate-100 dark:border-slate-800 pb-3">
+          <CardTitle className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-cyan-600">
+            Filtros y Ordenamiento
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-4">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-500 dark:text-blue-400" />
                 <Input
                   placeholder="Buscar por cliente o título..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8"
+                  className="pl-8 border-blue-100 dark:border-blue-900 focus:border-blue-300 bg-blue-50/30 dark:bg-blue-900/20 focus:ring-blue-200"
                 />
               </div>
             </div>
             
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                className="h-10 rounded-md border border-blue-100 dark:border-blue-900 bg-blue-50/30 dark:bg-blue-900/20 px-3 py-2 text-sm focus:border-blue-300 focus:ring-blue-200"
               >
                 <option value="all">Todos los estados</option>
                 <option value="draft">Borradores</option>
@@ -393,19 +421,19 @@ export default function EstimatesDashboard() {
               
               <Button
                 variant="outline"
-                className="gap-1"
+                className="gap-1 border-blue-100 dark:border-blue-900 bg-blue-50/30 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-800/30"
                 onClick={() => handleSortChange('createdAt')}
               >
-                <ArrowDownUp className="h-4 w-4" />
+                <ArrowDownUp className="h-4 w-4 text-blue-500" />
                 Fecha {sortField === 'createdAt' && (sortDirection === 'asc' ? '↑' : '↓')}
               </Button>
               
               <Button
                 variant="outline"
-                className="gap-1"
+                className="gap-1 border-blue-100 dark:border-blue-900 bg-blue-50/30 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-800/30"
                 onClick={() => handleSortChange('total')}
               >
-                <ArrowDownUp className="h-4 w-4" />
+                <ArrowDownUp className="h-4 w-4 text-blue-500" />
                 Total {sortField === 'total' && (sortDirection === 'asc' ? '↑' : '↓')}
               </Button>
             </div>
@@ -414,24 +442,35 @@ export default function EstimatesDashboard() {
       </Card>
       
       {/* Estimates List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Tus Estimados</CardTitle>
+      <Card className="overflow-hidden border-0 shadow-lg bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-800">
+        <CardHeader className="border-b border-slate-100 dark:border-slate-800">
+          <CardTitle className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-cyan-600">
+            Tus Estimados
+          </CardTitle>
           <CardDescription>
             {filteredEstimates.length} estimados encontrados
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {filteredEstimates.length === 0 ? (
-            <div className="text-center py-8">
-              <h3 className="text-lg font-medium mb-2">No hay estimados disponibles</h3>
+            <div className="flex flex-col items-center justify-center py-16 px-4 bg-slate-50/50 dark:bg-slate-800/50">
+              <div className="w-24 h-24 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-6">
+                <FileText className="h-12 w-12 text-blue-500 dark:text-blue-400" />
+              </div>
+              <h3 className="text-xl font-medium mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-cyan-600">
+                No hay estimados disponibles
+              </h3>
               {searchTerm || statusFilter !== 'all' ? (
-                <p className="text-muted-foreground mb-4">Prueba ajustando los filtros de búsqueda</p>
+                <p className="text-muted-foreground mb-6 text-center max-w-md">
+                  Prueba ajustando los filtros de búsqueda para encontrar lo que necesitas
+                </p>
               ) : (
-                <p className="text-muted-foreground mb-4">Crea tu primer estimado para comenzar</p>
+                <p className="text-muted-foreground mb-6 text-center max-w-md">
+                  Crea tu primer estimado para comenzar a llevar un control de tus proyectos
+                </p>
               )}
               <Link href="/estimates/new">
-                <Button>
+                <Button className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 shadow-md">
                   <PlusCircle className="h-4 w-4 mr-2" />
                   Crear Nuevo Estimado
                 </Button>
@@ -441,35 +480,43 @@ export default function EstimatesDashboard() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Título</TableHead>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead>Fecha</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
+                  <TableRow className="bg-gradient-to-r from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-800/50 border-b-0">
+                    <TableHead className="font-semibold">Título</TableHead>
+                    <TableHead className="font-semibold">Cliente</TableHead>
+                    <TableHead className="font-semibold">Fecha</TableHead>
+                    <TableHead className="font-semibold">Estado</TableHead>
+                    <TableHead className="text-right font-semibold">Total</TableHead>
+                    <TableHead className="text-right font-semibold">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredEstimates.map((estimate) => {
+                  {filteredEstimates.map((estimate, index) => {
                     const statusStyle = getStatusStyle(estimate.status);
+                    const isEven = index % 2 === 0;
                     
                     return (
-                      <TableRow key={estimate.id} className="hover:bg-muted/50">
+                      <TableRow 
+                        key={estimate.id} 
+                        className={`${isEven ? 'bg-slate-50/70 dark:bg-slate-800/30' : 'bg-white/70 dark:bg-slate-900/30'} hover:bg-blue-50/30 dark:hover:bg-blue-900/20 transition-colors`}
+                      >
                         <TableCell className="font-medium">{estimate.title}</TableCell>
                         <TableCell>{estimate.clientName}</TableCell>
                         <TableCell>{formatDate(estimate.createdAt)}</TableCell>
                         <TableCell>
-                          <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusStyle.bg} ${statusStyle.text}`}>
+                          <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusStyle.bg} ${statusStyle.text} shadow-sm`}>
                             {statusStyle.icon}
                             {getStatusLabel(estimate.status)}
                           </div>
                         </TableCell>
-                        <TableCell className="text-right">{formatCurrency(estimate.total)}</TableCell>
+                        <TableCell className="text-right font-semibold">{formatCurrency(estimate.total)}</TableCell>
                         <TableCell className="text-right">
                           <Link href={`/estimates/${estimate.id}`}>
-                            <Button variant="outline" size="sm" className="h-8">
-                              <ChevronRight className="h-4 w-4" />
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="h-8 border-blue-100 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-800/30 transition-colors"
+                            >
+                              <ChevronRight className="h-4 w-4 text-blue-500" />
                               Ver
                             </Button>
                           </Link>
