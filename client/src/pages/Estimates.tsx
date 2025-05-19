@@ -1775,113 +1775,158 @@ export default function Estimates() {
       </Dialog>
       
       {/* Preview Dialog */}
-      <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
-        <DialogContent className="sm:max-w-[800px] h-[85vh] flex flex-col">
+      <Dialog open={showPreviewDialog} onOpenChange={(open) => {
+        // Only allow closing the dialog if not in edit mode
+        if (!isEditingPreview || !open) {
+          setShowPreviewDialog(open);
+        } else if (isEditingPreview && !open) {
+          // Show warning if trying to close while editing
+          toast({
+            title: 'Unsaved Changes',
+            description: 'Please save or discard your changes before closing.',
+            variant: 'destructive'
+          });
+        }
+      }}>
+        <DialogContent className="sm:max-w-[800px] md:max-w-[900px] h-[85vh] flex flex-col">
           <DialogHeader className="pb-3 shrink-0">
             <DialogTitle className="text-lg">Estimate Preview</DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
+              Review your estimate and make any necessary changes before generating the PDF.
+            </DialogDescription>
           </DialogHeader>
           
           <div className="flex-grow overflow-y-auto mb-4">
-            {isEditingPreview ? (
-              <div className="border rounded-md bg-white">
-                <textarea 
-                  className="w-full h-full min-h-[500px] p-4 font-sans text-sm resize-none focus:outline-none focus:ring-1 focus:ring-primary"
-                  value={editableHtml || ""}
-                  onChange={(e) => setEditableHtml(e.target.value)}
-                  style={{ fontFamily: 'Arial, sans-serif' }}
-                />
-              </div>
-            ) : (
-              previewHtml && (
-                <div 
-                  className="estimate-preview border rounded-md p-4 bg-white"
-                  dangerouslySetInnerHTML={{ __html: previewHtml as string }}
-                  ref={(el) => {
-                    // Esta función se ejecuta cuando el componente se monta o actualiza
-                    if (el) {
-                      console.log('Preview HTML renderizado, verificando imágenes...');
-                      // Verificar si hay imágenes y añadir manejadores de error
-                      const imgs = el.querySelectorAll('img');
-                      if (imgs.length > 0) {
-                        console.log(`Encontradas ${imgs.length} imágenes en el preview`);
-                        imgs.forEach(img => {
-                          // Asegurarse de que las imágenes tengan manejo de errores
-                          img.onerror = function() {
-                            console.error('Error cargando imagen en preview:', img.src);
-                            if (img.alt === 'Logo' && !img.src.includes('owl-logo.png')) {
-                              console.log('Intentando cargar logo alternativo en preview');
-                              img.src = '/owl-logo.png';
-                            }
-                          };
-                        });
-                      } else {
-                        console.warn('No se encontraron imágenes en el preview HTML');
+            {/* Use our new component that handles both viewing and editing */}
+            {previewHtml && (
+              <div className="estimate-preview-wrapper">
+                {isEditingPreview ? (
+                  <div className="border rounded-md bg-white p-4">
+                    <Textarea 
+                      className="w-full min-h-[500px] font-mono text-sm"
+                      value={editableHtml || ""}
+                      onChange={(e) => setEditableHtml(e.target.value)}
+                      placeholder="Edit the HTML content of your estimate..."
+                    />
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Edit the content directly. HTML tags are supported.
+                    </p>
+                  </div>
+                ) : (
+                  <div 
+                    className="estimate-preview border rounded-md p-4 bg-white"
+                    dangerouslySetInnerHTML={{ __html: previewHtml as string }}
+                    ref={(el) => {
+                      if (el) {
+                        // Process all images to ensure they load correctly
+                        setTimeout(() => {
+                          console.log('Preview HTML rendered, checking images...');
+                          const imgs = el.querySelectorAll('img');
+                          
+                          if (imgs.length > 0) {
+                            console.log(`Found ${imgs.length} images in the preview`);
+                            
+                            imgs.forEach(img => {
+                              // Add crossorigin attribute
+                              img.setAttribute('crossorigin', 'anonymous');
+                              
+                              // Add error handler
+                              img.onerror = function() {
+                                console.error('Error loading image in preview:', img.src);
+                                
+                                // Try fallback for logo
+                                if (img.alt === 'Logo') {
+                                  console.log('Attempting to load fallback logo');
+                                  img.src = '/owl-logo.png';
+                                } else {
+                                  // Hide non-logo images that fail to load
+                                  img.style.display = 'none';
+                                }
+                              };
+                            });
+                          } else {
+                            console.warn('No images found in the preview HTML');
+                          }
+                        }, 100);
                       }
-                    }
-                  }}
-                />
-              )
+                    }}
+                  />
+                )}
+              </div>
             )}
           </div>
           
           <DialogFooter className="pt-3 mt-auto shrink-0 border-t">
-            <div className="flex items-center mr-auto">
+            <div className="flex items-center justify-between w-full">
               <Button 
                 variant={isEditingPreview ? "default" : "outline"} 
-                size="sm" 
                 onClick={() => {
                   if (isEditingPreview) {
-                    // Guardar cambios y salir del modo edición
-                    // Creamos una versión HTML básica con el texto editado
-                    const formattedHtml = `
-                      <div class="estimate-preview">
-                        <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.5;">
-                          ${editableHtml?.split('\n').map(line => `<p>${line}</p>`).join('') || ''}
-                        </div>
-                      </div>
-                    `;
-                    setPreviewHtml(formattedHtml);
-                    setIsEditingPreview(false);
+                    // Save changes and exit edit mode
+                    try {
+                      // Use the edited HTML content directly
+                      setPreviewHtml(editableHtml || "");
+                      setIsEditingPreview(false);
+                      
+                      toast({
+                        title: 'Changes Saved',
+                        description: 'Your estimate has been updated successfully.'
+                      });
+                    } catch (error) {
+                      console.error('Error saving edited content:', error);
+                      toast({
+                        title: 'Error Saving Changes',
+                        description: 'There was a problem updating your estimate.',
+                        variant: 'destructive'
+                      });
+                    }
                   } else {
-                    // Entrar en modo edición
-                    // Extraemos el texto del HTML, preservando los saltos de línea
-                    const plainText = previewHtml?.replace(/<p[^>]*>/gi, '')
-                                                 .replace(/<\/p>/gi, '\n')
-                                                 .replace(/<br\s*\/?>/gi, '\n')
-                                                 .replace(/<[^>]*>/g, '')
-                                                 .replace(/&nbsp;/g, ' ')
-                                                 .replace(/&amp;/g, '&')
-                                                 .replace(/&lt;/g, '<')
-                                                 .replace(/&gt;/g, '>')
-                                                 .replace(/&quot;/g, '"')
-                                                 .trim() || "";
-                    setEditableHtml(plainText);
+                    // Enter edit mode - prepare HTML for editing
+                    setEditableHtml(previewHtml);
                     setIsEditingPreview(true);
                   }
                 }}
               >
-                {isEditingPreview ? "Save Changes" : "Edit Text"}
+                {isEditingPreview ? (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Changes
+                  </>
+                ) : (
+                  <>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit Text
+                  </>
+                )}
               </Button>
+              
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    if (isEditingPreview) {
+                      // Confirm before discarding changes
+                      if (confirm('Discard your changes?')) {
+                        setIsEditingPreview(false);
+                        setEditableHtml(previewHtml); // Reset to original
+                      }
+                    } else {
+                      setShowPreviewDialog(false);
+                    }
+                  }}
+                >
+                  {isEditingPreview ? 'Cancel' : 'Close'}
+                </Button>
+                
+                <Button 
+                  onClick={handleDownloadPdf}
+                  disabled={isEditingPreview}
+                >
+                  <FileDown className="h-4 w-4 mr-2" />
+                  Download PDF
+                </Button>
+              </div>
             </div>
-            
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => {
-                setIsEditingPreview(false);
-                setShowPreviewDialog(false);
-              }}
-            >
-              Close
-            </Button>
-            <Button 
-              size="sm" 
-              onClick={handleDownloadPdf}
-              disabled={isEditingPreview}
-            >
-              <FileDown className="mr-1 h-4 w-4" />
-              Download PDF
-            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
