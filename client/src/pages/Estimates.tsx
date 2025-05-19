@@ -1270,7 +1270,7 @@ export default function Estimates() {
             </CardTitle>
           </CardHeader>
           <CardContent className="pb-4">
-            <div>
+            <div className="relative">
               <Textarea 
                 id="estimate-notes" 
                 value={estimate.notes} 
@@ -1279,6 +1279,12 @@ export default function Estimates() {
                 rows={3}
                 className="resize-none text-sm"
               />
+              <div className="absolute right-2 top-2">
+                <MervinAssistant 
+                  originalText={estimate.notes} 
+                  onTextEnhanced={(enhancedText) => setEstimate(prev => ({ ...prev, notes: enhancedText }))}
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
