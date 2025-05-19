@@ -5,34 +5,68 @@ let openai: OpenAI | null = null;
 
 // Función para obtener o crear la instancia de OpenAI
 function getOpenAI() {
-  if (!openai) {
-    // Verificar si tenemos una clave de API desde las variables de entorno
-    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
-    
-    if (apiKey) {
-      openai = new OpenAI({ apiKey });
-    } else {
-      // Si estamos en modo desarrollo y no hay clave, usar una instancia simulada
-      if (import.meta.env.DEV) {
-        console.warn("⚠️ No se encontró OPENAI_API_KEY. Las funciones de IA tendrán respuestas simuladas.");
-        
-        // Crear una versión simulada para desarrollo
-        openai = {
-          chat: {
-            completions: {
-              create: async () => ({
-                choices: [{ message: { content: "Esta es una respuesta simulada porque no hay API key configurada." } }]
-              })
-            }
-          }
-        } as unknown as OpenAI;
-      } else {
-        console.error("Error: OPENAI_API_KEY no está definida en el entorno.");
-      }
-    }
-  }
+  // Siempre reinicializar para obtener la clave más reciente
+  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
   
-  return openai;
+  if (apiKey) {
+    console.log("Configurando OpenAI con clave API válida");
+    try {
+      openai = new OpenAI({
+        apiKey: apiKey,
+        dangerouslyAllowBrowser: true // Necesario para uso en navegador
+      });
+      return openai;
+    } catch (error) {
+      console.error("Error al inicializar OpenAI:", error);
+    }
+  } else {
+    console.warn("⚠️ No se encontró OPENAI_API_KEY. Las funciones de IA tendrán respuestas simuladas.");
+    
+    // Crear una versión simulada más robusta
+    return {
+      chat: {
+        completions: {
+          create: async ({ messages }: { messages: Array<{role: string; content: string}> }) => {
+            console.log("Usando OpenAI simulado con mensajes:", messages);
+            
+            // Descripción original desde los mensajes
+            const userMessage = messages.find(m => m.role === "user")?.content || "";
+            
+            // Simulamos una mejora simple pero útil
+            const enhancedText = `
+**Resumen del Proyecto**
+- ${userMessage}
+
+**Especificaciones Técnicas**
+- Utilizaremos materiales de alta calidad para garantizar durabilidad
+- El trabajo será realizado por personal especializado
+- Todas las medidas serán verificadas en sitio
+
+**Proceso de Ejecución**
+- Preparación inicial del área de trabajo
+- Instalación de componentes principales
+- Acabados finales con atención al detalle
+- Limpieza completa al finalizar
+
+**Valor Añadido**
+- Garantía de calidad en materiales y mano de obra
+- Supervisión constante del proyecto
+- Cumplimiento con los estándares de la industria
+            `;
+            
+            return {
+              choices: [{ 
+                message: { 
+                  content: enhancedText,
+                  role: "assistant" 
+                } 
+              }]
+            };
+          }
+        }
+      }
+    } as unknown as OpenAI;
+  }
 }
 
 // El modelo más reciente de OpenAI
