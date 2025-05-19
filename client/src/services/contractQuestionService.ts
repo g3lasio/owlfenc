@@ -331,12 +331,12 @@ export async function getNextQuestion(currentQuestionId: string | null, answers:
     
     // Si no hay pregunta actual, comenzar desde el principio
     if (!currentQuestionId) {
-      return fenceContractQuestions[0];
+      return generalContractQuestions[0];
     }
     
     // Encontrar índice de la pregunta actual
-    const currentIndex = fenceContractQuestions.findIndex(q => q.id === currentQuestionId);
-    if (currentIndex === -1 || currentIndex >= fenceContractQuestions.length - 1) {
+    const currentIndex = generalContractQuestions.findIndex((q: SurveyQuestion) => q.id === currentQuestionId);
+    if (currentIndex === -1 || currentIndex >= generalContractQuestions.length - 1) {
       return null; // No hay más preguntas
     }
     
@@ -344,14 +344,14 @@ export async function getNextQuestion(currentQuestionId: string | null, answers:
     // Por ejemplo, si no hay puertas, saltar los detalles de puertas
     if (currentQuestionId === 'gates' && answers['project.gates'] === 0) {
       // Encontrar índice de gate_details para saltarlo
-      const gateDetailsIndex = fenceContractQuestions.findIndex(q => q.id === 'gate_details');
+      const gateDetailsIndex = generalContractQuestions.findIndex((q: SurveyQuestion) => q.id === 'gate_details');
       if (gateDetailsIndex > -1 && gateDetailsIndex === currentIndex + 1) {
-        return fenceContractQuestions[gateDetailsIndex + 1];
+        return generalContractQuestions[gateDetailsIndex + 1];
       }
     }
     
     // Devolver la siguiente pregunta en secuencia
-    return fenceContractQuestions[currentIndex + 1];
+    return generalContractQuestions[currentIndex + 1];
   }
 }
 

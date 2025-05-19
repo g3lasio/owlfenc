@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Loader2 } from 'lucide-react';
-import { enhanceProjectDescription } from '@/services/openaiService';
+import { enhanceDescriptionWithAI } from '@/services/openaiService';
 import { useToast } from '@/hooks/use-toast';
 
 // URL de la imagen de Mervin
@@ -31,7 +31,8 @@ export function MervinAssistant({ originalText, onTextEnhanced, className = '' }
     setIsLoading(true);
     
     try {
-      const enhancedText = await enhanceProjectDescription(originalText);
+      // Usando la función correcta con el tipo de proyecto general
+      const enhancedText = await enhanceDescriptionWithAI(originalText, 'general');
       onTextEnhanced(enhancedText);
       
       toast({
