@@ -1040,6 +1040,7 @@ export default function Estimates() {
   // Handle download PDF
   const handleDownloadPdf = async () => {
     try {
+      // No permitir descargar si el usuario está editando
       if (isEditingPreview) {
         toast({
           title: 'Guardar cambios',
@@ -1048,14 +1049,10 @@ export default function Estimates() {
         return;
       }
       
+      // Si no hay HTML de vista previa, generarlo primero
       if (!previewHtml) {
         console.log('No hay HTML de vista previa, generando primero...');
-        // Si no hay HTML de vista previa, generarlo primero sin mostrar el diálogo
-        // Esto ejecutará handleGeneratePreview internamente
         await handleGeneratePreview();
-        
-        // Cerramos el diálogo ya que solo queremos el HTML, no mostrar el preview
-        setShowPreviewDialog(false);
         
         if (!previewHtml) {
           console.error('No se pudo generar el HTML para el PDF después de intentar');
@@ -1073,69 +1070,83 @@ export default function Estimates() {
         description: 'El PDF del estimado se está generando.'
       });
       
-      console.log('Preparando descarga de PDF...');
+      console.log('Generando PDF...');
       
-      // Importar la función de generación client-side de PDF
-      const { generateClientSidePDF } = await import('../lib/pdf');
+      // Usar una imagen base64 para el logo para evitar problemas de carga en el PDF
+      const logoBase64 = "data:image/png;base64,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";
+
+      // Obtener el HTML final para el PDF
+      let finalHtml = previewHtml;
+      
+      // Si estamos generando desde cero o editando, asegurar que se incluya el logo
+      if ((!finalHtml.includes('<img src=') || finalHtml.includes('Error cargando imagen')) && profile) {
+        console.log('Preparando plantilla HTML con logo...');
+        
+        // Buscar el mejor lugar para insertar o reemplazar el logo en el HTML con la versión base64
+        if (finalHtml.includes('<div class="company-info">')) {
+          // Reemplazar cualquier imagen existente o insertar una nueva al inicio de company-info
+          const companyInfoRegex = /<div class="company-info">([\s\S]*?)<\/div>/;
+          const companyInfoMatch = finalHtml.match(companyInfoRegex);
+          
+          if (companyInfoMatch) {
+            const companyInfoContent = companyInfoMatch[1];
+            let newContent;
+            
+            if (companyInfoContent.includes('<img')) {
+              // Reemplazar la imagen existente
+              newContent = companyInfoContent.replace(
+                /<img[^>]*>/,
+                `<img src="${logoBase64}" alt="Logo" class="company-logo" />`
+              );
+            } else {
+              // Insertar nueva imagen
+              newContent = `\n<img src="${logoBase64}" alt="Logo" class="company-logo" />${companyInfoContent}`;
+            }
+            
+            finalHtml = finalHtml.replace(
+              companyInfoRegex,
+              `<div class="company-info">${newContent}</div>`
+            );
+          }
+        }
+      }
+      
+      console.log('HTML para PDF generado correctamente');
       
       // Generar un nombre de archivo para el PDF
       const fileName = `Estimado-${estimate.client?.name?.replace(/\s+/g, '-') || 'Sin-Cliente'}-${Date.now()}`;
       
-      console.log('Generando PDF en el navegador...');
-      
-      // Si estamos en modo de edición, asegurarnos de formatear correctamente el HTML
-      let finalHtml = previewHtml;
-      
-      // Asegurarnos de que el logo esté correctamente incluido en el HTML final
-      if (!finalHtml.includes('img src=') && profile) {
-        console.log('El HTML no incluye imagen de logo, intentando añadirla...');
+      // Intenta primero con downloadHTMLAsPDF que usa el servidor
+      try {
+        const { downloadHTMLAsPDF } = await import('../lib/pdf');
+        await downloadHTMLAsPDF(finalHtml, fileName);
         
-        // Determinamos la URL del logo
-        let logoUrl = '/owl-logo.png'; // Logo por defecto
+        toast({
+          title: 'PDF generado',
+          description: 'El PDF se ha generado y descargado correctamente.'
+        });
+      } catch (downloadError) {
+        console.error('Error con downloadHTMLAsPDF, intentando con generateClientSidePDF:', downloadError);
         
-        // Si el perfil tiene un logo personalizado, lo usamos
-        if (profile?.logo) {
-          console.log('Usando logo del perfil de la empresa:', profile.logo);
-          // Verificar si el logo es una URL externa o relativa
-          if (profile.logo.startsWith('http') || profile.logo.startsWith('data:')) {
-            logoUrl = profile.logo;
-          } else {
-            // Si es una ruta relativa, asegurarnos de que tenga el formato correcto
-            logoUrl = profile.logo.startsWith('/') ? profile.logo : `/${profile.logo}`;
-          }
+        // Si falla, intentar con el método alternativo generateClientSidePDF
+        try {
+          const { generateClientSidePDF } = await import('../lib/pdf');
+          await generateClientSidePDF(finalHtml, fileName);
+          
+          toast({
+            title: 'PDF generado',
+            description: 'El PDF se ha generado y descargado correctamente.'
+          });
+        } catch (clientSideError) {
+          console.error('Error con generateClientSidePDF:', clientSideError);
+          throw new Error("No se pudo generar el PDF por ningún método");
         }
-        
-        // Verificar si el logo se puede cargar
-        const preloadImg = new Image();
-        preloadImg.onload = () => console.log('Logo para PDF verificado correctamente');
-        preloadImg.onerror = () => {
-          console.warn('Error verificando logo para PDF, usando alternativa');
-          logoUrl = '/owl-logo.png';
-        };
-        preloadImg.src = logoUrl;
-        
-        // Añadir el logo al inicio del HTML
-        const logoTag = `<img src="${logoUrl}" alt="Logo" class="company-logo" crossorigin="anonymous" 
-          style="max-width: 200px; max-height: 80px; margin-bottom: 10px; object-fit: contain;" 
-          onerror="if(this.src !== '/owl-logo.png') this.src='/owl-logo.png'; else this.style.display='none';" />`;
-        
-        // Intentar insertar el logo en el HTML existente
-        finalHtml = finalHtml.replace(/<div class="company-info">/g, 
-          `<div class="company-info">${logoTag}`);
       }
-      
-      // Llamar a la función para generar y descargar el PDF en el cliente
-      await generateClientSidePDF(finalHtml, fileName);
-      
-      toast({
-        title: 'PDF Generated',
-        description: 'The estimate PDF has been successfully downloaded.'
-      });
     } catch (error) {
-      console.error('Error descargando PDF:', error);
+      console.error('Error al generar PDF:', error);
       toast({
         title: 'Error',
-        description: 'Could not download the PDF. ' + (error instanceof Error ? error.message : 'Please try again.'),
+        description: 'Hubo un problema al generar el PDF. Por favor, intente nuevamente.',
         variant: 'destructive'
       });
     }
