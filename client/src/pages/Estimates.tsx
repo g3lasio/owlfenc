@@ -1133,6 +1133,12 @@ export default function Estimates() {
     <div className="container py-6">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">Nuevo Estimado</h1>
+        <Link href="/estimates-dashboard">
+          <Button variant="outline" size="sm" className="h-9">
+            <CalendarCheck className="mr-1 h-4 w-4" />
+            My Estimates
+          </Button>
+        </Link>
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
