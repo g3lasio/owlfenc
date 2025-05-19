@@ -70,19 +70,31 @@ export default function EstimatesDashboard() {
         const snapshot = await getDocs(userEstimatesQuery);
         const estimatesList: Estimate[] = [];
         
-        snapshot.forEach((doc) => {
-          const data = doc.data();
-          estimatesList.push({
-            id: doc.id,
-            title: data.title || 'Sin título',
-            clientId: data.clientId || '',
-            clientName: data.client?.name || 'Cliente no especificado',
-            total: data.total || 0,
-            status: data.status || 'draft',
-            createdAt: data.createdAt?.toDate() || new Date(),
-            updatedAt: data.updatedAt?.toDate() || new Date()
+        if (snapshot.empty) {
+          console.log('No se encontraron estimados para este usuario');
+        } else {
+          console.log(`Se encontraron ${snapshot.size} estimados`);
+          
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            console.log('Datos del estimado recuperados:', { id: doc.id, data });
+            
+            // Convertir timestamps a fechas
+            const createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
+            const updatedAt = data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date();
+            
+            estimatesList.push({
+              id: doc.id,
+              title: data.title || 'Sin título',
+              clientId: data.clientId || '',
+              clientName: data.clientName || data.client?.name || 'Cliente no especificado',
+              total: data.total || 0,
+              status: data.status || 'draft',
+              createdAt: createdAt,
+              updatedAt: updatedAt
+            });
           });
-        });
+        }
         
         setEstimates(estimatesList);
         setFilteredEstimates(estimatesList);
