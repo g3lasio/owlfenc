@@ -1809,20 +1809,20 @@ export default function Estimates() {
           });
         }
       }}>
-        <DialogContent className="sm:max-w-[800px] md:max-w-[900px] h-[85vh] flex flex-col">
-          <DialogHeader className="pb-3 shrink-0">
+        <DialogContent className="sm:max-w-[800px] lg:max-w-[900px] max-h-[90vh] flex flex-col overflow-hidden">
+          <DialogHeader className="shrink-0">
             <DialogTitle className="text-lg">Estimate Preview</DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground">
               Review your estimate and make any necessary changes before generating the PDF.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="flex-grow overflow-y-auto mb-4">
+          <div className="flex-grow overflow-y-auto overflow-x-auto my-4 border rounded-md p-4 bg-white">
             {/* Use our new component that handles both viewing and editing */}
             {previewHtml && (
               <div className="estimate-preview-wrapper">
                 {isEditingPreview ? (
-                  <div className="border rounded-md bg-white p-4">
+                  <div className="bg-white">
                     <Textarea 
                       className="w-full min-h-[500px] font-mono text-sm"
                       value={editableHtml || ""}
@@ -1835,7 +1835,11 @@ export default function Estimates() {
                   </div>
                 ) : (
                   <div 
-                    className="estimate-preview border rounded-md p-4 bg-white"
+                    className="estimate-preview w-full"
+                    style={{ 
+                      minWidth: "600px",  /* Asegura un ancho mínimo para evitar que el contenido se comprima */
+                      height: "auto"      /* Permite que la altura se ajuste al contenido */
+                    }}
                     dangerouslySetInnerHTML={{ __html: previewHtml as string }}
                     ref={(el) => {
                       if (el) {
