@@ -1064,7 +1064,7 @@ export default function Estimates() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Estimate Details */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white shadow rounded-lg p-6">
+          <div className="bg-slate-100 shadow rounded-lg p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">Detalles del Estimado</h2>
               <div className="flex gap-2">
@@ -1154,7 +1154,7 @@ export default function Estimates() {
             </div>
           </div>
           
-          <div className="bg-white shadow rounded-lg p-6">
+          <div className="bg-slate-100 shadow rounded-lg p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">Materiales y Servicios</h2>
               <div className="flex gap-2">
@@ -1279,7 +1279,7 @@ export default function Estimates() {
         
         {/* Right Column - Summary */}
         <div>
-          <div className="bg-white shadow rounded-lg p-6 sticky top-4">
+          <div className="bg-slate-100 shadow rounded-lg p-6 sticky top-4">
             <h2 className="text-xl font-semibold mb-4">Resumen</h2>
             
             <div className="space-y-4">
