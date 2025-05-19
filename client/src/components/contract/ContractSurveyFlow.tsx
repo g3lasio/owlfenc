@@ -605,7 +605,7 @@ const ContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
           
           {/* Información de perfil de empresa si está cargando */}
           {isProfileLoading && currentGroup?.questions.some(q => q.useCompanyProfile) && (
-            <Alert variant="info" className="mt-4">
+            <Alert className="mt-4">
               <AlertDescription className="flex items-center">
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Cargando información del perfil de tu empresa...
