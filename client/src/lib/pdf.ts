@@ -100,17 +100,69 @@ export async function generateClientSidePDF(html: string, fileName = 'documento'
     const images = container.querySelectorAll('img');
     if (images.length > 0) {
       console.log(`Procesando ${images.length} imágenes para PDF...`);
-      images.forEach((img) => {
-        // Asegurarse de que las imágenes tengan atributos de carga correctos
+      
+      // Verificar si ya existe una imagen con alt="Logo"
+      let hasLogo = false;
+      
+      images.forEach((img, index) => {
+        // Agregar atributos y estilos para la carga correcta de imágenes
         img.setAttribute('crossorigin', 'anonymous');
         
-        // Aplicar estilos explícitos para las imágenes
+        // Verificar si esta imagen es un logo
         if (img.alt === 'Logo') {
+          hasLogo = true;
+          console.log(`Imagen de logo encontrada en posición ${index}`);
+          
+          // Asegurarse de que el logo tenga los estilos adecuados
           img.style.maxWidth = '200px';
           img.style.maxHeight = '80px';
           img.style.objectFit = 'contain';
+          
+          // Hacer que si hay error en la carga, la imagen no rompa el layout
+          img.onerror = function() {
+            console.error('Error cargando logo en PDF, src:', img.src);
+            
+            // Intentar una URL alternativa si la original falla
+            if (img.src.startsWith('http') && !img.src.includes('owl-logo.png')) {
+              console.log('Intentando cargar logo alternativo');
+              img.src = '/owl-logo.png';
+            } else {
+              // Si aún falla, ocultar la imagen
+              this.style.display = 'none';
+            }
+          };
         }
       });
+      
+      // Si no se encontró ningún logo y debería tenerlo, intentamos añadir uno
+      if (!hasLogo) {
+        console.log('No se encontró logo en el HTML, intentando agregar uno por defecto');
+        try {
+          // Buscar un buen lugar para insertar el logo (al inicio del contenido)
+          const companyInfo = container.querySelector('.company-info');
+          
+          if (companyInfo) {
+            // Crear elemento de imagen para el logo
+            const logoImg = document.createElement('img');
+            logoImg.src = '/owl-logo.png';
+            logoImg.alt = 'Logo';
+            logoImg.className = 'company-logo';
+            logoImg.setAttribute('crossorigin', 'anonymous');
+            logoImg.style.maxWidth = '200px';
+            logoImg.style.maxHeight = '80px';
+            logoImg.style.marginBottom = '10px';
+            logoImg.style.objectFit = 'contain';
+            
+            // Insertar al inicio del div de info de compañía
+            companyInfo.insertBefore(logoImg, companyInfo.firstChild);
+            console.log('Logo insertado en el contenido HTML');
+          }
+        } catch (logoError) {
+          console.error('Error intentando añadir logo:', logoError);
+        }
+      }
+    } else {
+      console.warn('No se encontraron imágenes en el HTML para el PDF');
     }
     
     document.body.appendChild(container);
@@ -129,18 +181,28 @@ export async function generateClientSidePDF(html: string, fileName = 'documento'
           img.onload = () => resolve(true);
           img.onerror = () => {
             console.warn('Error cargando imagen:', img.src);
-            resolve(false);
+            
+            // Si es el logo, intentar con una URL de fallback
+            if (img.alt === 'Logo' && img.src.startsWith('http')) {
+              console.log('Intentando URL alternativa para el logo');
+              img.src = '/owl-logo.png';
+              // No resolvemos aquí, esperamos a que cargue o falle la alternativa
+            } else {
+              // Para cualquier otra imagen, o si ya estamos en la imagen fallback, continuar
+              resolve(false);
+            }
           };
         }
       });
     }));
     
-    // Convertir el HTML a canvas
+    // Convertir el HTML a canvas con opciones mejoradas
     const canvas = await html2canvas(container, {
       scale: 2, // Mayor calidad
       useCORS: true,
       logging: false,
       allowTaint: true,
+      imageTimeout: 5000, // Tiempo de espera más largo para imágenes
       backgroundColor: '#FFFFFF'
     });
     

@@ -752,10 +752,25 @@ export default function Estimates() {
     // Si el perfil tiene un logo personalizado, lo usamos
     if (profile?.logo) {
       console.log('Usando logo del perfil de la empresa:', profile.logo);
-      logoUrl = profile.logo;
+      // Verificar si el logo es una URL externa o relativa
+      if (profile.logo.startsWith('http') || profile.logo.startsWith('data:')) {
+        logoUrl = profile.logo;
+      } else {
+        // Si es una ruta relativa, asegurarnos de que tenga el formato correcto
+        logoUrl = profile.logo.startsWith('/') ? profile.logo : `/${profile.logo}`;
+      }
     } else {
       console.log('Usando logo por defecto:', logoUrl);
     }
+    
+    // Precargamos la imagen para verificar si puede cargarse correctamente
+    const logoImg = new Image();
+    logoImg.onload = () => console.log('Logo precargado correctamente:', logoUrl);
+    logoImg.onerror = () => {
+      console.warn('Error precargando logo, usando logo por defecto');
+      logoUrl = '/owl-logo.png';
+    };
+    logoImg.src = logoUrl;
     
     console.log('Preparando plantilla HTML con logo...');
     
@@ -1010,11 +1025,31 @@ export default function Estimates() {
   // Handle download PDF
   const handleDownloadPdf = async () => {
     try {
+      if (isEditingPreview) {
+        toast({
+          title: 'Guardar cambios',
+          description: 'Por favor, guarde los cambios antes de descargar el PDF.',
+        });
+        return;
+      }
+      
       if (!previewHtml) {
-        // Si no hay HTML de vista previa, generarlo primero
+        console.log('No hay HTML de vista previa, generando primero...');
+        // Si no hay HTML de vista previa, generarlo primero sin mostrar el diálogo
+        // Esto ejecutará handleGeneratePreview internamente
         await handleGeneratePreview();
+        
+        // Cerramos el diálogo ya que solo queremos el HTML, no mostrar el preview
+        setShowPreviewDialog(false);
+        
         if (!previewHtml) {
-          return; // Si aún no hay HTML, handleGeneratePreview ya mostró un toast de error
+          console.error('No se pudo generar el HTML para el PDF después de intentar');
+          toast({
+            title: 'Error en la Generación',
+            description: 'No se pudo generar el contenido del PDF. Por favor intente nuevamente.',
+            variant: 'destructive'
+          });
+          return;
         }
       }
       
@@ -1033,8 +1068,49 @@ export default function Estimates() {
       
       console.log('Generando PDF en el navegador...');
       
+      // Si estamos en modo de edición, asegurarnos de formatear correctamente el HTML
+      let finalHtml = previewHtml;
+      
+      // Asegurarnos de que el logo esté correctamente incluido en el HTML final
+      if (!finalHtml.includes('img src=') && profile) {
+        console.log('El HTML no incluye imagen de logo, intentando añadirla...');
+        
+        // Determinamos la URL del logo
+        let logoUrl = '/owl-logo.png'; // Logo por defecto
+        
+        // Si el perfil tiene un logo personalizado, lo usamos
+        if (profile?.logo) {
+          console.log('Usando logo del perfil de la empresa:', profile.logo);
+          // Verificar si el logo es una URL externa o relativa
+          if (profile.logo.startsWith('http') || profile.logo.startsWith('data:')) {
+            logoUrl = profile.logo;
+          } else {
+            // Si es una ruta relativa, asegurarnos de que tenga el formato correcto
+            logoUrl = profile.logo.startsWith('/') ? profile.logo : `/${profile.logo}`;
+          }
+        }
+        
+        // Verificar si el logo se puede cargar
+        const preloadImg = new Image();
+        preloadImg.onload = () => console.log('Logo para PDF verificado correctamente');
+        preloadImg.onerror = () => {
+          console.warn('Error verificando logo para PDF, usando alternativa');
+          logoUrl = '/owl-logo.png';
+        };
+        preloadImg.src = logoUrl;
+        
+        // Añadir el logo al inicio del HTML
+        const logoTag = `<img src="${logoUrl}" alt="Logo" class="company-logo" crossorigin="anonymous" 
+          style="max-width: 200px; max-height: 80px; margin-bottom: 10px; object-fit: contain;" 
+          onerror="if(this.src !== '/owl-logo.png') this.src='/owl-logo.png'; else this.style.display='none';" />`;
+        
+        // Intentar insertar el logo en el HTML existente
+        finalHtml = finalHtml.replace(/<div class="company-info">/g, 
+          `<div class="company-info">${logoTag}`);
+      }
+      
       // Llamar a la función para generar y descargar el PDF en el cliente
-      await generateClientSidePDF(previewHtml, fileName);
+      await generateClientSidePDF(finalHtml, fileName);
       
       toast({
         title: 'PDF Generated',
@@ -1719,6 +1795,29 @@ export default function Estimates() {
                 <div 
                   className="estimate-preview border rounded-md p-4 bg-white"
                   dangerouslySetInnerHTML={{ __html: previewHtml as string }}
+                  ref={(el) => {
+                    // Esta función se ejecuta cuando el componente se monta o actualiza
+                    if (el) {
+                      console.log('Preview HTML renderizado, verificando imágenes...');
+                      // Verificar si hay imágenes y añadir manejadores de error
+                      const imgs = el.querySelectorAll('img');
+                      if (imgs.length > 0) {
+                        console.log(`Encontradas ${imgs.length} imágenes en el preview`);
+                        imgs.forEach(img => {
+                          // Asegurarse de que las imágenes tengan manejo de errores
+                          img.onerror = function() {
+                            console.error('Error cargando imagen en preview:', img.src);
+                            if (img.alt === 'Logo' && !img.src.includes('owl-logo.png')) {
+                              console.log('Intentando cargar logo alternativo en preview');
+                              img.src = '/owl-logo.png';
+                            }
+                          };
+                        });
+                      } else {
+                        console.warn('No se encontraron imágenes en el preview HTML');
+                      }
+                    }
+                  }}
                 />
               )
             )}
