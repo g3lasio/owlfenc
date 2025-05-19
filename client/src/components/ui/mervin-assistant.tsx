@@ -120,7 +120,11 @@ export function MervinAssistant({
                     // Manejar errores de carga de imagen con un fallback
                     console.warn('Error al cargar imagen de Mervin, usando fallback');
                     const target = e.target as HTMLImageElement;
-                    target.src = '/logo.png'; // Usar logo local como respaldo
+                    target.src = '/owl-logo.png'; // Usar logo local como respaldo
+                    // Agregar clase para indicar que es un fallback
+                    target.classList.add('mervin-fallback');
+                    // Mensaje en consola para diagnóstico
+                    console.log('Usada imagen fallback para Mervin:', target.src);
                   }}
                 />
               )}

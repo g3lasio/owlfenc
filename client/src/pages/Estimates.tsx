@@ -1,13 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { useProfile } from '@/hooks/use-profile';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { MervinAssistant } from '@/components/ui/mervin-assistant';
 import { 
   Table, 
   TableBody, 
@@ -107,11 +104,8 @@ interface Estimate {
 }
 
 export default function Estimates() {
-  // Set English as the default language
-  const defaultLanguage = 'en';
   const { currentUser } = useAuth();
   const { toast } = useToast();
-  const { profile } = useProfile();
   
   // States for clients
   const [clients, setClients] = useState<Client[]>([]);
@@ -136,7 +130,7 @@ export default function Estimates() {
   
   // States for the estimate
   const [estimate, setEstimate] = useState<Estimate>({
-    title: 'New Estimate',
+    title: 'Nuevo Estimado',
     clientId: '',
     client: null,
     items: [],
@@ -155,8 +149,6 @@ export default function Estimates() {
   const [tempQuantity, setTempQuantity] = useState<number>(1);
   const [tempSelectedMaterial, setTempSelectedMaterial] = useState<Material | null>(null);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
-  const [editableHtml, setEditableHtml] = useState<string | null>(null);
-  const [isEditingPreview, setIsEditingPreview] = useState(false);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   
   // Load clients and materials when component mounts
@@ -283,7 +275,7 @@ export default function Estimates() {
       id: `item_${Date.now()}`,
       materialId: tempSelectedMaterial.id,
       name: tempSelectedMaterial.name,
-      description: tempSelectedMaterial.description || "",
+      description: tempSelectedMaterial.description,
       price: tempSelectedMaterial.price,
       quantity: tempQuantity,
       unit: tempSelectedMaterial.unit,
@@ -434,225 +426,8 @@ export default function Estimates() {
       // En este punto sabemos que estimate.client no es null
       const client = estimate.client;
       
-      // Primero, vamos a generar el HTML del estimado usando la misma lógica 
-      // que usamos para la vista previa
-      const estimateHtml = `
-      <style>
-        .estimate-preview {
-          font-family: 'Arial', sans-serif;
-          color: #333;
-          max-width: 100%;
-          margin: 0 auto;
-        }
-        
-        .estimate-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 30px;
-          padding-bottom: 20px;
-          border-bottom: 1px solid #ddd;
-        }
-        
-        .company-info h1 {
-          margin: 0 0 10px 0;
-          color: #1e3a8a;
-          font-size: 24px;
-        }
-        
-        .company-info p {
-          margin: 5px 0;
-          font-size: 14px;
-        }
-        
-        .estimate-title {
-          text-align: right;
-        }
-        
-        .estimate-title h2 {
-          margin: 0 0 10px 0;
-          color: #1e3a8a;
-          font-size: 28px;
-        }
-        
-        .estimate-title p {
-          margin: 5px 0;
-          font-size: 14px;
-        }
-        
-        .section {
-          margin-bottom: 25px;
-        }
-        
-        .section h3 {
-          margin: 0 0 15px 0;
-          color: #1e3a8a;
-          font-size: 18px;
-          padding-bottom: 8px;
-          border-bottom: 1px solid #eee;
-        }
-        
-        .section p {
-          margin: 5px 0;
-          font-size: 14px;
-        }
-        
-        .grid-container {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 20px;
-          margin-bottom: 20px;
-        }
-        
-        .grid-item strong {
-          display: inline-block;
-          min-width: 100px;
-          color: #555;
-        }
-        
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          margin-bottom: 20px;
-        }
-        
-        th {
-          text-align: left;
-          padding: 10px;
-          background-color: #f4f4f8;
-          font-weight: 600;
-          border-bottom: 2px solid #ddd;
-        }
-        
-        td {
-          padding: 10px;
-          border-bottom: 1px solid #eee;
-        }
-        
-        .summary {
-          margin-top: 20px;
-          text-align: right;
-        }
-        
-        .summary-item {
-          margin: 5px 0;
-          font-size: 14px;
-        }
-        
-        .total {
-          font-size: 18px;
-          font-weight: bold;
-          color: #1e3a8a;
-          margin-top: 10px;
-        }
-        
-        .notes {
-          margin-top: 30px;
-          padding: 15px;
-          background-color: #f9f9f9;
-          border-radius: 4px;
-        }
-        
-        .estimate-footer {
-          margin-top: 30px;
-          padding-top: 15px;
-          border-top: 1px solid #ddd;
-          font-size: 12px;
-          color: #777;
-          text-align: center;
-        }
-      </style>
-      
-      <div class="estimate-preview">
-        <div class="estimate-header">
-          <div class="company-info">
-            <div style="display: flex; align-items: center; margin-bottom: 10px;">
-              <img 
-                src="${profile?.logo || '/owl-logo.png'}" 
-                alt="Logo" 
-                style="max-height: 60px; max-width: 180px; margin-right: 15px;" 
-                onerror="this.onerror=null; this.src='/owl-logo.png'; console.log('Fallback a logo local');"
-              />
-              <h1>${profile?.companyName || 'Owl Fence'}</h1>
-            </div>
-            <p>${profile?.address || '123 Fence Avenue'}, ${profile?.city || 'San Diego'}, ${profile?.state || 'CA'} ${profile?.zipCode || '92101'}</p>
-            <p>${profile?.email || 'info@owlfence.com'} | ${profile?.phone || profile?.mobilePhone || '(555) 123-4567'}</p>
-            <p>${profile?.website || 'www.owlfence.com'}</p>
-          </div>
-          <div class="estimate-title">
-            <h2>ESTIMADO</h2>
-            <p><strong>Fecha:</strong> ${new Date().toLocaleDateString()}</p>
-            <p><strong>Estimado #:</strong> EST-${Date.now().toString().slice(-6)}</p>
-            <p><strong>Válido hasta:</strong> ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}</p>
-          </div>
-        </div>
-        
-        <div class="section">
-          <h3>Cliente</h3>
-          <div class="grid-container">
-            <div class="grid-item">
-              <p><strong>Nombre:</strong> ${client.name}</p>
-              <p><strong>Email:</strong> ${client.email || 'N/A'}</p>
-              <p><strong>Teléfono:</strong> ${client.phone || 'N/A'}</p>
-            </div>
-            <div class="grid-item">
-              <p><strong>Dirección:</strong> ${client.address || 'N/A'}</p>
-              <p><strong>Ciudad:</strong> ${client.city || 'N/A'}</p>
-              <p><strong>Estado/CP:</strong> ${client.state || 'N/A'} ${client.zipCode ? ', ' + client.zipCode : ''}</p>
-            </div>
-          </div>
-        </div>
-        
-        <div class="section">
-          <h3>Detalles y Descripción del Proyecto</h3>
-          <p>${estimate.notes || 'Sin descripción detallada del proyecto.'}</p>
-        </div>
-        
-        <div class="section">
-          <h3>Materiales y Servicios</h3>
-          <table>
-            <thead>
-              <tr>
-                <th style="width: 40%">Descripción</th>
-                <th style="width: 15%">Cantidad</th>
-                <th style="width: 15%">Unidad</th>
-                <th style="width: 15%">Precio</th>
-                <th style="width: 15%">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${estimate.items.map(item => `
-                <tr>
-                  <td>${item.name}${item.description ? `<br><span style="color: #666; font-size: 12px;">${item.description}</span>` : ''}</td>
-                  <td>${item.quantity}</td>
-                  <td>${item.unit}</td>
-                  <td>${formatCurrency(item.price)}</td>
-                  <td>${formatCurrency(item.total)}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-          
-          <div class="summary">
-            <div class="summary-item">
-              <strong>Subtotal:</strong>
-              <span>${formatCurrency(estimate.subtotal)}</span>
-            </div>
-            <div class="summary-item total">
-              <strong>Total:</strong>
-              <span>${formatCurrency(estimate.total)}</span>
-            </div>
-          </div>
-        </div>
-        
-        <div class="estimate-footer">
-          <p>Este estimado es válido por 30 días a partir de la fecha de emisión. Precios sujetos a cambios después de este período.</p>
-          <p>Para aprobar este estimado, por favor contáctenos por teléfono o email para programar el inicio del proyecto.</p>
-        </div>
-      </div>
-      `;
-      
-      // Preparar los datos del estimado para guardar
+      // In a real application, you would call an API endpoint to generate HTML
+      // For now, we'll just prepare the structure for Firebase
       const estimateData = {
         title: estimate.title,
         clientId: estimate.clientId,
@@ -667,41 +442,14 @@ export default function Estimates() {
         status: estimate.status,
         userId: currentUser.uid,
         createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        estimateHtml: estimateHtml // Guardamos el HTML del estimado
+        updatedAt: serverTimestamp()
       };
       
-      // Guardar el estimado en la colección de estimates
-      const estimateDocRef = await addDoc(collection(db, 'estimates'), estimateData);
-      
-      // Crear o actualizar el proyecto relacionado con este estimado
-      const projectData = {
-        projectId: `EST-${Date.now().toString().slice(-6)}`,
-        clientName: client.name,
-        clientEmail: client.email || '',
-        clientPhone: client.phone || '',
-        address: client.address || '',
-        city: client.city || '',
-        state: client.state || '',
-        zipCode: client.zipCode || '',
-        estimateHtml: estimateHtml,
-        totalPrice: estimate.total,
-        status: 'draft',
-        projectProgress: 'estimate_created',
-        projectType: 'Residencial', // Valor por defecto, se podría personalizar
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        userId: currentUser.uid,
-        estimateId: estimateDocRef.id, // Referencia al estimado creado
-        clientNotes: estimate.notes || ''
-      };
-      
-      // Guardar el proyecto en la colección de projects
-      await addDoc(collection(db, 'projects'), projectData);
+      const docRef = await addDoc(collection(db, 'estimates'), estimateData);
       
       toast({
         title: 'Estimado guardado',
-        description: 'El estimado se ha guardado correctamente y está disponible en Proyectos.'
+        description: 'El estimado se ha guardado correctamente.'
       });
       
       // Reset the form
@@ -732,8 +480,8 @@ export default function Estimates() {
   const handleGeneratePreview = async () => {
     if (!estimate.client) {
       toast({
-        title: 'Incomplete Data',
-        description: 'Please select a client before generating the preview.',
+        title: 'Datos incompletos',
+        description: 'Por favor, selecciona un cliente antes de generar la vista previa.',
         variant: 'destructive'
       });
       return;
@@ -741,236 +489,56 @@ export default function Estimates() {
     
     if (estimate.items.length === 0) {
       toast({
-        title: 'No Materials',
-        description: 'Please add at least one material to the estimate.',
+        title: 'Sin materiales',
+        description: 'Por favor, agrega al menos un material al estimado.',
         variant: 'destructive'
       });
       return;
     }
     
-    console.log('Generando preview del estimado...');
-    setIsEditingPreview(false); // Aseguramos que comenzamos en modo vista
-    
     // En este punto sabemos que estimate.client no es null
     const client = estimate.client;
     
-    // Determinamos la URL del logo
-    let logoUrl = '/owl-logo.png'; // Logo por defecto
-    
-    // Si el perfil tiene un logo personalizado, lo usamos
-    if (profile?.logo) {
-      console.log('Usando logo del perfil de la empresa:', profile.logo);
-      // Verificar si el logo es una URL externa o relativa
-      if (profile.logo.startsWith('http') || profile.logo.startsWith('data:')) {
-        logoUrl = profile.logo;
-      } else {
-        // Si es una ruta relativa, asegurarnos de que tenga el formato correcto
-        logoUrl = profile.logo.startsWith('/') ? profile.logo : `/${profile.logo}`;
-      }
-    } else {
-      console.log('Usando logo por defecto:', logoUrl);
-    }
-    
-    // Precargamos la imagen para verificar si puede cargarse correctamente
-    const logoImg = new Image();
-    logoImg.onload = () => console.log('Logo precargado correctamente:', logoUrl);
-    logoImg.onerror = () => {
-      console.warn('Error precargando logo, usando logo por defecto');
-      logoUrl = '/owl-logo.png';
-    };
-    logoImg.src = logoUrl;
-    
-    console.log('Preparando plantilla HTML con logo...');
-    
-    // Generar una plantilla HTML mejorada con el logo
+    // In a real app, you would call an API to generate the HTML
+    // For this example, we'll create a simple HTML template
     const html = `
-      <style>
-        .estimate-preview {
-          font-family: 'Arial', sans-serif;
-          color: #333;
-          max-width: 100%;
-          margin: 0 auto;
-        }
-        
-        .company-logo {
-          max-width: 200px;
-          max-height: 80px;
-          margin-bottom: 10px;
-          object-fit: contain;
-        }
-        
-        .estimate-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 30px;
-          padding-bottom: 20px;
-          border-bottom: 1px solid #ddd;
-        }
-        
-        .company-info h1 {
-          margin: 0 0 10px 0;
-          color: #1e3a8a;
-          font-size: 24px;
-        }
-        
-        .company-info p {
-          margin: 5px 0;
-          font-size: 14px;
-        }
-        
-        .estimate-title {
-          text-align: right;
-        }
-        
-        .estimate-title h2 {
-          margin: 0 0 10px 0;
-          color: #1e3a8a;
-          font-size: 28px;
-        }
-        
-        .estimate-title p {
-          margin: 5px 0;
-          font-size: 14px;
-        }
-        
-        .section {
-          margin-bottom: 25px;
-        }
-        
-        .section h3 {
-          margin: 0 0 15px 0;
-          color: #1e3a8a;
-          font-size: 18px;
-          padding-bottom: 8px;
-          border-bottom: 1px solid #eee;
-        }
-        
-        .section p {
-          margin: 5px 0;
-          font-size: 14px;
-        }
-        
-        .grid-container {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 20px;
-          margin-bottom: 20px;
-        }
-        
-        .grid-item strong {
-          display: inline-block;
-          min-width: 100px;
-          color: #555;
-        }
-        
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          margin-bottom: 20px;
-        }
-        
-        th {
-          text-align: left;
-          padding: 10px;
-          background-color: #f4f4f8;
-          font-weight: 600;
-          border-bottom: 2px solid #ddd;
-        }
-        
-        td {
-          padding: 10px;
-          border-bottom: 1px solid #eee;
-        }
-        
-        .summary {
-          margin-top: 20px;
-          text-align: right;
-        }
-        
-        .summary-item {
-          margin: 5px 0;
-          font-size: 14px;
-        }
-        
-        .total {
-          font-size: 18px;
-          font-weight: bold;
-          color: #1e3a8a;
-          margin-top: 10px;
-        }
-        
-        .notes {
-          margin-top: 30px;
-          padding: 15px;
-          background-color: #f9f9f9;
-          border-radius: 4px;
-        }
-        
-        .estimate-footer {
-          margin-top: 30px;
-          padding-top: 15px;
-          border-top: 1px solid #ddd;
-          font-size: 12px;
-          color: #777;
-          text-align: center;
-        }
-      </style>
-      
       <div class="estimate-preview">
         <div class="estimate-header">
           <div class="company-info">
-            <img src="${logoUrl}" alt="Logo" class="company-logo" crossorigin="anonymous" onerror="this.style.display='none'; console.error('Error cargando logo en preview');" />
-            <h1>${profile?.companyName || 'Owl Fence'}</h1>
-            <p>${profile?.address || '123 Fence Avenue'}, ${profile?.city || 'San Diego'}, ${profile?.state || 'CA'} ${profile?.zipCode || '92101'}</p>
-            <p>${profile?.email || 'info@owlfence.com'} | ${profile?.phone || profile?.mobilePhone || '(555) 123-4567'}</p>
-            <p>${profile?.website || 'www.owlfence.com'}</p>
+            <h1>Owl Fence</h1>
+            <p>Expertos en cercas</p>
+            <p>info@owlfence.com | (555) 123-4567</p>
           </div>
           <div class="estimate-title">
             <h2>ESTIMADO</h2>
-            <p><strong>Fecha:</strong> ${new Date().toLocaleDateString()}</p>
-            <p><strong>Estimado #:</strong> EST-${Date.now().toString().slice(-6)}</p>
-            <p><strong>Válido hasta:</strong> ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}</p>
+            <p>Fecha: ${new Date().toLocaleDateString()}</p>
           </div>
         </div>
         
-        <div class="section">
+        <div class="client-info">
           <h3>Cliente</h3>
-          <div class="grid-container">
-            <div class="grid-item">
-              <p><strong>Nombre:</strong> ${client.name}</p>
-              <p><strong>Email:</strong> ${client.email || 'N/A'}</p>
-              <p><strong>Teléfono:</strong> ${client.phone || 'N/A'}</p>
-            </div>
-            <div class="grid-item">
-              <p><strong>Dirección:</strong> ${client.address || 'N/A'}</p>
-              <p><strong>Ciudad:</strong> ${client.city || 'N/A'}</p>
-              <p><strong>Estado/CP:</strong> ${client.state || 'N/A'} ${client.zipCode ? ', ' + client.zipCode : ''}</p>
-            </div>
-          </div>
+          <p><strong>Nombre:</strong> ${client.name}</p>
+          <p><strong>Email:</strong> ${client.email || 'N/A'}</p>
+          <p><strong>Teléfono:</strong> ${client.phone || 'N/A'}</p>
+          <p><strong>Dirección:</strong> ${client.address || 'N/A'}</p>
         </div>
         
-        <div class="section">
-          <h3>Detalles y Descripción del Proyecto</h3>
-          <p>${estimate.notes || 'Sin descripción detallada del proyecto.'}</p>
-        </div>
-        
-        <div class="section">
+        <div class="estimate-items">
           <h3>Materiales y Servicios</h3>
           <table>
             <thead>
               <tr>
-                <th style="width: 40%">Descripción</th>
-                <th style="width: 15%">Cantidad</th>
-                <th style="width: 15%">Unidad</th>
-                <th style="width: 15%">Precio</th>
-                <th style="width: 15%">Total</th>
+                <th>Descripción</th>
+                <th>Cantidad</th>
+                <th>Unidad</th>
+                <th>Precio</th>
+                <th>Total</th>
               </tr>
             </thead>
             <tbody>
               ${estimate.items.map(item => `
                 <tr>
-                  <td>${item.name}${item.description ? `<br><span style="color: #666; font-size: 12px;">${item.description}</span>` : ''}</td>
+                  <td>${item.name}${item.description ? ` - ${item.description}` : ''}</td>
                   <td>${item.quantity}</td>
                   <td>${item.unit}</td>
                   <td>${formatCurrency(item.price)}</td>
@@ -979,27 +547,33 @@ export default function Estimates() {
               `).join('')}
             </tbody>
           </table>
-          
-          <div class="summary">
-            <div class="summary-item">
-              <strong>Subtotal:</strong>
-              <span>${formatCurrency(estimate.subtotal)}</span>
-            </div>
-            <div class="summary-item total">
-              <strong>Total:</strong>
-              <span>${formatCurrency(estimate.total)}</span>
-            </div>
+        </div>
+        
+        <div class="estimate-summary">
+          <div class="summary-item">
+            <strong>Subtotal:</strong>
+            <span>${formatCurrency(estimate.subtotal)}</span>
+          </div>
+          <div class="summary-item total">
+            <strong>Total:</strong>
+            <span>${formatCurrency(estimate.total)}</span>
           </div>
         </div>
         
+        ${estimate.notes ? `
+          <div class="estimate-notes">
+            <h3>Notas</h3>
+            <p>${estimate.notes}</p>
+          </div>
+        ` : ''}
+        
         <div class="estimate-footer">
-          <p>Este estimado es válido por 30 días a partir de la fecha de emisión. Precios sujetos a cambios después de este período.</p>
-          <p>Para aprobar este estimado, por favor contáctenos por teléfono o email para programar el inicio del proyecto.</p>
+          <p>Este estimado es válido por 30 días.</p>
+          <p>Para aceptar este estimado, por favor contacte a Owl Fence.</p>
         </div>
       </div>
     `;
     
-    console.log('HTML para preview generado correctamente');
     setPreviewHtml(html);
     setShowPreviewDialog(true);
   };
@@ -1008,13 +582,14 @@ export default function Estimates() {
   const handleSendEmail = () => {
     if (!estimate.client || !estimate.client.email) {
       toast({
-        title: 'Sin correo electrónico',
-        description: 'El cliente no tiene un correo electrónico registrado.',
+        title: 'Email no disponible',
+        description: 'El cliente seleccionado no tiene un email registrado.',
         variant: 'destructive'
       });
       return;
     }
     
+    // En este punto sabemos que estimate.client y estimate.client.email no son null
     const clientEmail = estimate.client.email;
     
     setIsSendingEmail(true);
@@ -1031,520 +606,405 @@ export default function Estimates() {
   };
   
   // Handle download PDF
-  const handleDownloadPdf = async () => {
-    try {
-      if (isEditingPreview) {
-        toast({
-          title: 'Guardar cambios',
-          description: 'Por favor, guarde los cambios antes de descargar el PDF.',
-        });
-        return;
-      }
-      
-      if (!previewHtml) {
-        console.log('No hay HTML de vista previa, generando primero...');
-        // Si no hay HTML de vista previa, generarlo primero sin mostrar el diálogo
-        // Esto ejecutará handleGeneratePreview internamente
-        await handleGeneratePreview();
-        
-        // Cerramos el diálogo ya que solo queremos el HTML, no mostrar el preview
-        setShowPreviewDialog(false);
-        
-        if (!previewHtml) {
-          console.error('No se pudo generar el HTML para el PDF después de intentar');
-          toast({
-            title: 'Error en la Generación',
-            description: 'No se pudo generar el contenido del PDF. Por favor intente nuevamente.',
-            variant: 'destructive'
-          });
-          return;
-        }
-      }
-      
+  const handleDownloadPdf = () => {
+    toast({
+      title: 'Descarga iniciada',
+      description: 'El PDF del estimado se está generando.'
+    });
+    
+    // In a real app, you would call an API to generate and download the PDF
+    // For this example, we'll just show a success message after a delay
+    setTimeout(() => {
       toast({
-        title: 'Descarga iniciada',
-        description: 'El PDF del estimado se está generando.'
+        title: 'PDF generado',
+        description: 'El PDF del estimado se ha generado correctamente.'
       });
-      
-      console.log('Preparando descarga de PDF...');
-      
-      // Importar la función de generación client-side de PDF
-      const { generateClientSidePDF } = await import('../lib/pdf');
-      
-      // Generar un nombre de archivo para el PDF
-      const fileName = `Estimado-${estimate.client?.name?.replace(/\s+/g, '-') || 'Sin-Cliente'}-${Date.now()}`;
-      
-      console.log('Generando PDF en el navegador...');
-      
-      // Si estamos en modo de edición, asegurarnos de formatear correctamente el HTML
-      let finalHtml = previewHtml;
-      
-      // Asegurarnos de que el logo esté correctamente incluido en el HTML final
-      if (!finalHtml.includes('img src=') && profile) {
-        console.log('El HTML no incluye imagen de logo, intentando añadirla...');
-        
-        // Determinamos la URL del logo
-        let logoUrl = '/owl-logo.png'; // Logo por defecto
-        
-        // Si el perfil tiene un logo personalizado, lo usamos
-        if (profile?.logo) {
-          console.log('Usando logo del perfil de la empresa:', profile.logo);
-          // Verificar si el logo es una URL externa o relativa
-          if (profile.logo.startsWith('http') || profile.logo.startsWith('data:')) {
-            logoUrl = profile.logo;
-          } else {
-            // Si es una ruta relativa, asegurarnos de que tenga el formato correcto
-            logoUrl = profile.logo.startsWith('/') ? profile.logo : `/${profile.logo}`;
-          }
-        }
-        
-        // Verificar si el logo se puede cargar
-        const preloadImg = new Image();
-        preloadImg.onload = () => console.log('Logo para PDF verificado correctamente');
-        preloadImg.onerror = () => {
-          console.warn('Error verificando logo para PDF, usando alternativa');
-          logoUrl = '/owl-logo.png';
-        };
-        preloadImg.src = logoUrl;
-        
-        // Añadir el logo al inicio del HTML
-        const logoTag = `<img src="${logoUrl}" alt="Logo" class="company-logo" crossorigin="anonymous" 
-          style="max-width: 200px; max-height: 80px; margin-bottom: 10px; object-fit: contain;" 
-          onerror="if(this.src !== '/owl-logo.png') this.src='/owl-logo.png'; else this.style.display='none';" />`;
-        
-        // Intentar insertar el logo en el HTML existente
-        finalHtml = finalHtml.replace(/<div class="company-info">/g, 
-          `<div class="company-info">${logoTag}`);
-      }
-      
-      // Llamar a la función para generar y descargar el PDF en el cliente
-      await generateClientSidePDF(finalHtml, fileName);
-      
-      toast({
-        title: 'PDF Generated',
-        description: 'The estimate PDF has been successfully downloaded.'
-      });
-    } catch (error) {
-      console.error('Error descargando PDF:', error);
-      toast({
-        title: 'Error',
-        description: 'Could not download the PDF. ' + (error instanceof Error ? error.message : 'Please try again.'),
-        variant: 'destructive'
-      });
-    }
+    }, 1500);
   };
   
   return (
-    <div className="container py-6">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Nuevo Estimado</h1>
-      </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Estimate Information */}
-        <Card className="lg:col-span-1">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Estimate Information</CardTitle>
-          </CardHeader>
-          <CardContent className="pb-4">
-            <div className="space-y-3">
-              <div>
-                <Label htmlFor="estimate-title" className="text-xs">Título</Label>
-                <Input 
-                  id="estimate-title" 
-                  value={estimate.title} 
-                  onChange={(e) => setEstimate(prev => ({ ...prev, title: e.target.value }))}
-                  placeholder="Título del estimado"
-                  className="h-9"
-                />
-              </div>
-              
-              <div>
-                <Label className="text-xs">Fecha</Label>
-                <Input
-                  type="date"
-                  defaultValue={new Date().toISOString().split('T')[0]}
-                  disabled
-                  className="h-9"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Contractor Information */}
-        <Card className="lg:col-span-1">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Contractor Information</CardTitle>
-          </CardHeader>
-          <CardContent className="pb-4">
-            <div className="grid grid-cols-1 gap-3">
-              {profile?.logo && (
-                <div className="flex justify-center mb-2">
-                  <img 
-                    src={profile.logo} 
-                    alt="Company Logo" 
-                    className="max-h-16 object-contain" 
-                  />
-                </div>
+      <div className="container py-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Nuevo Estimado</h1>
+          <div className="flex space-x-2">
+            <Button 
+              variant="outline" 
+              onClick={handleGeneratePreview}
+              disabled={!estimate.client || estimate.items.length === 0}
+            >
+              <ArrowRight className="mr-2 h-4 w-4" />
+              Vista previa
+            </Button>
+            
+            <Button 
+              onClick={handleSaveEstimate} 
+              disabled={isSaving || !estimate.client || estimate.items.length === 0}
+            >
+              {isSaving ? (
+                <>
+                  <RotateCcw className="mr-2 h-4 w-4 animate-spin" />
+                  Guardando...
+                </>
+              ) : (
+                <>
+                  <CalendarCheck className="mr-2 h-4 w-4" />
+                  Guardar Estimado
+                </>
               )}
-              <h3 className="font-medium text-sm">{profile?.companyName || ""}</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
-                <p className="text-xs text-muted-foreground">
-                  <span className="font-medium">Email:</span> {profile?.email || ""}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  <span className="font-medium">Teléfono:</span> {profile?.phone || profile?.mobilePhone || ""}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  <span className="font-medium">Dirección:</span> {profile?.address || ""}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  <span className="font-medium">Website:</span> {profile?.website || ""}
-                </p>
-              </div>
-              {(!profile?.companyName || !profile?.email || !profile?.phone) && (
-                <div className="mt-2 bg-amber-50 p-2 rounded text-xs text-amber-700 border border-amber-200">
-                  <p>Información incompleta. Actualiza tu <Link href="/settings/profile">perfil de empresa</Link> para mostrar datos correctos en tus estimados.</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+            </Button>
+          </div>
+        </div>
         
-        {/* Client Information */}
-        <Card className="lg:col-span-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex justify-between items-center">
-              <span>Client Information</span>
-              <Button variant="ghost" size="sm" onClick={() => setShowClientSearchDialog(true)} className="h-8">
-                <Search className="h-4 w-4 mr-1" />
-                Search
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pb-4">
-            {estimate.client ? (
-              <div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 mb-3">
-                  <h3 className="font-medium text-sm md:col-span-2 mb-1">{estimate.client.name}</h3>
-                  {estimate.client.email && (
-                    <p className="text-xs text-muted-foreground">
-                      <span className="font-medium">Email:</span> {estimate.client.email}
-                    </p>
-                  )}
-                  {estimate.client.phone && (
-                    <p className="text-xs text-muted-foreground">
-                      <span className="font-medium">Teléfono:</span> {estimate.client.phone}
-                    </p>
-                  )}
-                  {estimate.client.address && (
-                    <p className="text-xs text-muted-foreground">
-                      <span className="font-medium">Dirección:</span> {estimate.client.address}
-                    </p>
-                  )}
-                  {estimate.client.city && estimate.client.state && (
-                    <p className="text-xs text-muted-foreground">
-                      <span className="font-medium">Ciudad/Estado:</span> {estimate.client.city}, {estimate.client.state} {estimate.client.zipCode || ''}
-                    </p>
-                  )}
-                </div>
-                <Button variant="outline" size="sm" onClick={() => setShowClientSearchDialog(true)} className="h-7 text-xs px-2">
-                  Cambiar cliente
-                </Button>
-              </div>
-            ) : (
-              <div className="text-center py-4">
-                <p className="mb-2 text-muted-foreground text-sm">No hay un cliente seleccionado</p>
-                <Button onClick={() => setShowClientSearchDialog(true)} size="sm">
-                  <Search className="h-4 w-4 mr-1" />
-                  Seleccionar cliente
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-        
-        {/* Project details and description */}
-        <Card className="lg:col-span-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex justify-between items-center">
-              <span>Detalles y Descripción del Proyecto</span>
-              <MervinAssistant 
-                originalText={estimate.notes}
-                onTextEnhanced={(enhancedText) => setEstimate(prev => ({ ...prev, notes: enhancedText }))}
-                className="ml-2"
-              />
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pb-4">
-            <div>
-              <Textarea 
-                id="estimate-notes" 
-                value={estimate.notes} 
-                onChange={(e) => setEstimate(prev => ({ ...prev, notes: e.target.value }))}
-                placeholder="Descripción detallada del proyecto y notas adicionales para el cliente"
-                rows={3}
-                className="resize-none text-sm"
-              />
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Materials List */}
-        <Card className="lg:col-span-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex justify-between items-center">
-              <span>Materials and Services</span>
-              <Button size="sm" onClick={() => setShowMaterialSearchDialog(true)} className="h-8">
-                <PlusCircle className="h-4 w-4 mr-1" />
-                Add
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pb-4">
-            {estimate.items.length > 0 ? (
-              <div className="overflow-x-auto">
-                <Table className="text-xs">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead style={{ width: 45 }} className="px-1"></TableHead>
-                      <TableHead className="px-2">Nombre</TableHead>
-                      <TableHead className="px-2 whitespace-nowrap">Unidad</TableHead>
-                      <TableHead className="px-2 whitespace-nowrap">Precio</TableHead>
-                      <TableHead className="px-2 whitespace-nowrap">Cant.</TableHead>
-                      <TableHead className="px-2 whitespace-nowrap">Total</TableHead>
-                      <TableHead style={{ width: 40 }} className="px-1"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {estimate.items.map(item => (
-                      <TableRow key={item.id}>
-                        <TableCell className="align-middle p-1">
-                          <div className="flex">
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button 
-                                    size="icon" 
-                                    variant="ghost" 
-                                    onClick={() => moveItem(item.id, "up")}
-                                    className="h-5 w-5"
-                                  >
-                                    <MoveVertical className="h-3 w-3 rotate-180" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent side="right">
-                                  <p>Mover arriba</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                            
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button 
-                                    size="icon" 
-                                    variant="ghost" 
-                                    onClick={() => moveItem(item.id, "down")}
-                                    className="h-5 w-5 -ml-1"
-                                  >
-                                    <MoveVertical className="h-3 w-3" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent side="right">
-                                  <p>Mover abajo</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+          {/* Left column - Client and Estimate Details */}
+          <div className="lg:col-span-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Información del Cliente</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {selectedClient ? (
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <h3 className="font-semibold text-lg">{selectedClient.name}</h3>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => setShowClientSearchDialog(true)}
+                        >
+                          Cambiar
+                        </Button>
+                      </div>
+                      
+                      <div className="text-sm space-y-1 text-muted-foreground">
+                        {selectedClient.email && (
+                          <div className="flex items-center">
+                            <Mail className="h-4 w-4 mr-2" />
+                            <span>{selectedClient.email}</span>
                           </div>
-                        </TableCell>
-                        <TableCell className="p-2 font-medium">
-                          {item.name}
-                          {item.description && (
-                            <p className="text-xs text-muted-foreground truncate max-w-[150px]">{item.description}</p>
-                          )}
-                        </TableCell>
-                        <TableCell className="p-2">{item.unit}</TableCell>
-                        <TableCell className="p-2">{formatCurrency(item.price)}</TableCell>
-                        <TableCell className="p-2">
-                          <Input 
-                            type="number"
-                            value={item.quantity}
-                            onChange={(e) => handleUpdateQuantity(item.id, Number(e.target.value))}
-                            min={1}
-                            className="w-16 h-7 text-xs"
-                          />
-                        </TableCell>
-                        <TableCell className="p-2 font-medium">{formatCurrency(item.total)}</TableCell>
-                        <TableCell className="p-1">
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            onClick={() => handleRemoveItem(item.id)}
-                            className="h-5 w-5"
-                          >
-                            <Trash2 className="h-3 w-3 text-destructive" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            ) : (
-              <div className="text-center py-6">
-                <p className="mb-2 text-muted-foreground text-sm">No materials added</p>
-                <Button onClick={() => setShowMaterialSearchDialog(true)} size="sm">
-                  <PlusCircle className="h-4 w-4 mr-1" />
-                  Add Material
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-        
-        {/* Summary */}
-        <Card className="lg:col-span-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Resumen</CardTitle>
-          </CardHeader>
-          <CardContent className="pb-4">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
-              <div className="flex-1 mb-3 md:mb-0">
-                <p className="text-sm mb-1">
-                  <span className="font-medium">Subtotal:</span> {formatCurrency(estimate.subtotal)}
-                </p>
-                <p className="text-lg font-bold">
-                  <span>Total:</span> {formatCurrency(estimate.total)}
-                </p>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-2">
-                <Button 
-                  variant="outline" 
-                  onClick={handleGeneratePreview}
-                  disabled={!estimate.client || estimate.items.length === 0}
-                  size="sm"
-                  className="h-9"
-                >
-                  <ArrowRight className="mr-1 h-4 w-4" />
-                  Preview
-                </Button>
-                
-                <Button 
-                  variant="outline" 
-                  onClick={handleDownloadPdf}
-                  disabled={estimate.items.length === 0 || !estimate.client}
-                  size="sm"
-                  className="h-9"
-                >
-                  <FileDown className="mr-1 h-4 w-4" />
-                  PDF
-                </Button>
-                
-                <Button 
-                  onClick={handleSendEmail}
-                  disabled={isSendingEmail || estimate.items.length === 0 || !estimate.client || !estimate.client.email}
-                  size="sm"
-                  className="h-9"
-                >
-                  {isSendingEmail ? (
-                    <>
-                      <RotateCcw className="mr-1 h-4 w-4 animate-spin" />
-                      Sending...
-                    </>
+                        )}
+                        
+                        {selectedClient.phone && (
+                          <div className="flex items-center">
+                            <span className="ri-phone-line mr-2"></span>
+                            <span>{selectedClient.phone}</span>
+                          </div>
+                        )}
+                        
+                        {selectedClient.address && (
+                          <div className="flex items-start">
+                            <span className="ri-map-pin-line mr-2 mt-0.5"></span>
+                            <span>
+                              {selectedClient.address}
+                              {selectedClient.city && `, ${selectedClient.city}`}
+                              {selectedClient.state && `, ${selectedClient.state}`}
+                              {selectedClient.zipCode && ` ${selectedClient.zipCode}`}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   ) : (
-                    <>
-                      <Mail className="mr-1 h-4 w-4" />
-                      Email
-                    </>
+                    <div className="text-center py-6">
+                      <div className="mx-auto h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                        <span className="ri-user-line text-xl"></span>
+                      </div>
+                      <h3 className="font-medium mb-2">Ningún cliente seleccionado</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Selecciona un cliente para este estimado
+                      </p>
+                      <Button onClick={() => setShowClientSearchDialog(true)}>
+                        <Search className="mr-2 h-4 w-4" />
+                        Buscar Cliente
+                      </Button>
+                    </div>
                   )}
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle>Detalles del Estimado</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="estimate-title">Título</Label>
+                    <Input
+                      id="estimate-title"
+                      value={estimate.title}
+                      onChange={(e) => setEstimate(prev => ({ ...prev, title: e.target.value }))}
+                      placeholder="Título del estimado"
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="estimate-notes">Notas</Label>
+                    <Textarea
+                      id="estimate-notes"
+                      value={estimate.notes}
+                      onChange={(e) => setEstimate(prev => ({ ...prev, notes: e.target.value }))}
+                      placeholder="Detalles adicionales o notas importantes..."
+                      className="mt-1"
+                      rows={6}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle>Resumen</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex justify-between text-base">
+                    <span>Subtotal:</span>
+                    <span>{formatCurrency(estimate.subtotal)}</span>
+                  </div>
+                  
+                  <Separator />
+                  
+                  <div className="flex justify-between font-medium text-lg">
+                    <span>Total:</span>
+                    <span>{formatCurrency(estimate.total)}</span>
+                  </div>
+                  
+                  <div className="pt-4 flex flex-col gap-2">
+                    <Button 
+                      onClick={handleDownloadPdf}
+                      disabled={!estimate.client || estimate.items.length === 0}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      <FileDown className="mr-2 h-4 w-4" />
+                      Descargar PDF
+                    </Button>
+                    
+                    <Button 
+                      onClick={handleSendEmail}
+                      disabled={!estimate.client || !estimate.client.email || estimate.items.length === 0 || isSendingEmail}
+                      className="w-full"
+                    >
+                      {isSendingEmail ? (
+                        <>
+                          <RotateCcw className="mr-2 h-4 w-4 animate-spin" />
+                          Enviando...
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="mr-2 h-4 w-4" />
+                          Enviar por Email
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          {/* Right column - Materials Table */}
+          <div className="lg:col-span-8">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Materiales y Servicios</CardTitle>
+                <Button onClick={() => setShowMaterialSearchDialog(true)}>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Agregar Material
                 </Button>
-                
-                <Button 
-                  onClick={handleSaveEstimate} 
-                  disabled={isSaving || !estimate.client || estimate.items.length === 0}
-                  size="sm"
-                  className="h-9"
-                >
-                  {isSaving ? (
-                    <>
-                      <RotateCcw className="mr-1 h-4 w-4 animate-spin" />
-                      Guardando...
-                    </>
-                  ) : (
-                    <>
-                      <CalendarCheck className="mr-1 h-4 w-4" />
-                      Save
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              </CardHeader>
+              <CardContent>
+                {estimate.items.length === 0 ? (
+                  <div className="text-center py-10 border border-dashed rounded-md">
+                    <div className="mx-auto h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                      <DollarSign className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                    <h3 className="font-medium mb-2">No hay materiales agregados</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Agrega materiales para crear tu estimado
+                    </p>
+                    <Button onClick={() => setShowMaterialSearchDialog(true)}>
+                      <PlusCircle className="mr-2 h-4 w-4" />
+                      Agregar Material
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[40px]"></TableHead>
+                          <TableHead>Material</TableHead>
+                          <TableHead className="w-[120px]">Precio</TableHead>
+                          <TableHead className="w-[120px]">Cantidad</TableHead>
+                          <TableHead className="w-[120px]">Total</TableHead>
+                          <TableHead className="w-[80px] text-right">Acciones</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {estimate.items.map((item) => (
+                          <TableRow key={item.id}>
+                            <TableCell>
+                              <div className="flex flex-col">
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="h-8 w-8"
+                                        onClick={() => moveItem(item.id, 'up')}
+                                        disabled={estimate.items.indexOf(item) === 0}
+                                      >
+                                        <span className="ri-arrow-up-s-line"></span>
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Mover arriba</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                                
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="h-8 w-8"
+                                        onClick={() => moveItem(item.id, 'down')}
+                                        disabled={estimate.items.indexOf(item) === estimate.items.length - 1}
+                                      >
+                                        <span className="ri-arrow-down-s-line"></span>
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Mover abajo</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-medium">{item.name}</div>
+                              {item.description && (
+                                <div className="text-sm text-muted-foreground">{item.description}</div>
+                              )}
+                            </TableCell>
+                            <TableCell>{formatCurrency(item.price)}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  value={item.quantity}
+                                  onChange={(e) => handleUpdateQuantity(item.id, parseInt(e.target.value) || 1)}
+                                  className="w-20"
+                                />
+                                <span className="text-sm text-muted-foreground">{item.unit}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="font-medium">{formatCurrency(item.total)}</TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleRemoveItem(item.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
       
       {/* Client Search Dialog */}
       <Dialog open={showClientSearchDialog} onOpenChange={setShowClientSearchDialog}>
         <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader className="pb-3">
-            <DialogTitle className="text-lg">Select Client</DialogTitle>
-            <DialogDescription className="text-sm">
-              Search and select a client for the estimate.
+          <DialogHeader>
+            <DialogTitle>Buscar Cliente</DialogTitle>
+            <DialogDescription>
+              Busca y selecciona un cliente para este estimado.
             </DialogDescription>
           </DialogHeader>
           
-          <div>
-            <Input
-              placeholder="Search by name, email or phone..."
-              value={searchClientTerm}
-              onChange={(e) => setSearchClientTerm(e.target.value)}
-              className="mb-3"
-            />
-            
-            <div className="max-h-[300px] overflow-y-auto border rounded-md">
-              {filteredClients.length > 0 ? (
-                <Table className="text-sm">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="py-2">Name</TableHead>
-                      <TableHead className="py-2">Email</TableHead>
-                      <TableHead className="py-2">Phone</TableHead>
-                      <TableHead className="py-2 w-[100px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredClients.map(client => (
-                      <TableRow key={client.id}>
-                        <TableCell className="py-1.5 font-medium">{client.name}</TableCell>
-                        <TableCell className="py-1.5">{client.email || '-'}</TableCell>
-                        <TableCell className="py-1.5">{client.phone || '-'}</TableCell>
-                        <TableCell className="py-1.5">
-                          <Button 
-                            size="sm" 
-                            onClick={() => handleSelectClient(client)}
-                            className="h-7 text-xs px-2"
-                          >
-                            Seleccionar
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : (
-                <div className="text-center py-6">
-                  <p className="text-sm text-muted-foreground">No se encontraron clientes</p>
-                </div>
-              )}
+          <div className="mt-4">
+            <div className="flex gap-2 mb-4">
+              <Input
+                placeholder="Buscar por nombre, email o teléfono..."
+                value={searchClientTerm}
+                onChange={(e) => setSearchClientTerm(e.target.value)}
+                className="flex-1"
+              />
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon">
+                      <Search className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Buscar</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
+            
+            {isLoading ? (
+              <div className="text-center py-8">
+                <RotateCcw className="h-8 w-8 animate-spin mx-auto mb-2 text-primary" />
+                <p>Cargando clientes...</p>
+              </div>
+            ) : filteredClients.length === 0 ? (
+              <div className="text-center py-8 border border-dashed rounded-md">
+                <p className="text-muted-foreground mb-2">No se encontraron clientes</p>
+                <Button variant="outline">
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Crear Nuevo Cliente
+                </Button>
+              </div>
+            ) : (
+              <div className="overflow-y-auto max-h-96">
+                <div className="grid gap-2">
+                  {filteredClients.map((client) => (
+                    <div
+                      key={client.id}
+                      className="flex items-center justify-between p-3 border rounded-md hover:bg-accent cursor-pointer"
+                      onClick={() => handleSelectClient(client)}
+                    >
+                      <div>
+                        <p className="font-medium">{client.name}</p>
+                        <div className="text-sm text-muted-foreground">
+                          {client.email && <span>{client.email} · </span>}
+                          {client.phone && <span>{client.phone}</span>}
+                        </div>
+                      </div>
+                      <Button size="sm" variant="ghost">
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           
-          <DialogFooter className="pt-2">
-            <Button variant="outline" size="sm" onClick={() => setShowClientSearchDialog(false)}>
-              Cancel
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowClientSearchDialog(false)}>
+              Cancelar
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1553,125 +1013,138 @@ export default function Estimates() {
       {/* Material Search Dialog */}
       <Dialog open={showMaterialSearchDialog} onOpenChange={setShowMaterialSearchDialog}>
         <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader className="pb-3">
-            <DialogTitle className="text-lg">Select Material</DialogTitle>
-            <DialogDescription className="text-sm">
-              Search for an existing material or add a new one.
+          <DialogHeader>
+            <DialogTitle>Agregar Material</DialogTitle>
+            <DialogDescription>
+              Busca y selecciona un material para agregar al estimado.
             </DialogDescription>
           </DialogHeader>
           
-          <div>
-            <div className="flex justify-between items-center mb-3">
-              <Input
-                placeholder="Search materials..."
-                value={searchMaterialTerm}
-                onChange={(e) => setSearchMaterialTerm(e.target.value)}
-                className="flex-1 mr-2"
-              />
-              <Button 
-                size="sm" 
-                onClick={() => {
-                  setShowAddMaterialDialog(true);
-                  setShowMaterialSearchDialog(false);
-                }}
-                className="h-9"
-              >
-                <PlusCircle className="h-4 w-4 mr-1" />
-                Nuevo
+          <div className="mt-4">
+            <div className="flex gap-2 mb-4 justify-between">
+              <div className="flex-1 flex gap-2">
+                <Input
+                  placeholder="Buscar materiales..."
+                  value={searchMaterialTerm}
+                  onChange={(e) => setSearchMaterialTerm(e.target.value)}
+                  className="flex-1"
+                />
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline" size="icon">
+                        <Search className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Buscar</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              
+              <Button onClick={() => setShowAddMaterialDialog(true)}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Nuevo Material
               </Button>
             </div>
             
-            <div className="max-h-[200px] overflow-y-auto border rounded-md mb-4">
-              {filteredMaterials.length > 0 ? (
-                <Table className="text-sm">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="py-2">Nombre</TableHead>
-                      <TableHead className="py-2">Categoría</TableHead>
-                      <TableHead className="py-2">Precio</TableHead>
-                      <TableHead className="py-2 w-[100px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredMaterials.map(material => (
-                      <TableRow key={material.id}>
-                        <TableCell className="py-1.5 font-medium">
-                          {material.name}
-                          {material.description && (
-                            <p className="text-xs text-muted-foreground truncate max-w-[180px]">
-                              {material.description}
-                            </p>
-                          )}
-                        </TableCell>
-                        <TableCell className="py-1.5">{material.category}</TableCell>
-                        <TableCell className="py-1.5">{formatCurrency(material.price)}</TableCell>
-                        <TableCell className="py-1.5">
-                          <Button 
-                            size="sm" 
-                            onClick={() => {
-                              setTempSelectedMaterial(material);
-                            }}
-                            className="h-7 text-xs px-2"
-                          >
-                            Seleccionar
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : (
-                <div className="text-center py-4">
-                  <p className="text-sm text-muted-foreground">No se encontraron materiales</p>
+            {tempSelectedMaterial ? (
+              <div className="mb-4 p-4 border rounded-md">
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <h3 className="font-medium">{tempSelectedMaterial.name}</h3>
+                    {tempSelectedMaterial.description && (
+                      <p className="text-sm text-muted-foreground">{tempSelectedMaterial.description}</p>
+                    )}
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => setTempSelectedMaterial(null)}>
+                    Cambiar
+                  </Button>
                 </div>
-              )}
-            </div>
-          </div>
-          
-          {tempSelectedMaterial && (
-            <div className="bg-muted p-3 rounded-md mb-3">
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2">
-                <div>
-                  <h3 className="font-medium text-sm">{tempSelectedMaterial.name}</h3>
-                  <p className="text-xs text-muted-foreground">
-                    {tempSelectedMaterial.description || 'No description'}
-                  </p>
-                  <p className="text-xs mt-1">
-                    <span className="font-medium">Price:</span> {formatCurrency(tempSelectedMaterial.price)}
-                  </p>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="material-price">Precio</Label>
+                    <Input
+                      id="material-price"
+                      type="number"
+                      value={tempSelectedMaterial.price}
+                      readOnly
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="material-quantity">Cantidad</Label>
+                    <div className="flex gap-2 items-center mt-1">
+                      <Input
+                        id="material-quantity"
+                        type="number"
+                        min="1"
+                        value={tempQuantity}
+                        onChange={(e) => setTempQuantity(parseInt(e.target.value) || 1)}
+                      />
+                      <span className="text-sm text-muted-foreground w-16">{tempSelectedMaterial.unit}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Label htmlFor="quantity" className="whitespace-nowrap text-xs">Quantity:</Label>
-                  <Input
-                    id="quantity"
-                    type="number"
-                    value={tempQuantity}
-                    onChange={(e) => setTempQuantity(Number(e.target.value))}
-                    min={1}
-                    className="w-20 h-8 text-sm"
-                  />
+                
+                <div className="flex justify-between items-center mt-4 pt-3 border-t">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total:</p>
+                    <p className="font-medium">{formatCurrency(tempSelectedMaterial.price * tempQuantity)}</p>
+                  </div>
+                  
+                  <Button onClick={handleAddItemToEstimate}>
+                    Agregar a Estimado
+                  </Button>
                 </div>
               </div>
-              
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-sm font-medium">Total: {formatCurrency(tempSelectedMaterial.price * tempQuantity)}</p>
-                </div>
-                <Button 
-                  size="sm"
-                  onClick={handleAddItemToEstimate}
-                  className="h-8"
-                >
-                  <PlusCircle className="h-4 w-4 mr-1" />
-                  Agregar
+            ) : isLoading ? (
+              <div className="text-center py-8">
+                <RotateCcw className="h-8 w-8 animate-spin mx-auto mb-2 text-primary" />
+                <p>Cargando materiales...</p>
+              </div>
+            ) : filteredMaterials.length === 0 ? (
+              <div className="text-center py-8 border border-dashed rounded-md">
+                <p className="text-muted-foreground mb-2">No se encontraron materiales</p>
+                <Button onClick={() => setShowAddMaterialDialog(true)}>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Crear Nuevo Material
                 </Button>
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="overflow-y-auto max-h-96">
+                <div className="grid gap-2">
+                  {filteredMaterials.map((material) => (
+                    <div
+                      key={material.id}
+                      className="flex items-center justify-between p-3 border rounded-md hover:bg-accent cursor-pointer"
+                      onClick={() => setTempSelectedMaterial(material)}
+                    >
+                      <div>
+                        <p className="font-medium">{material.name}</p>
+                        {material.description && (
+                          <p className="text-sm text-muted-foreground">{material.description}</p>
+                        )}
+                        <div className="text-sm font-medium mt-1">
+                          {formatCurrency(material.price)} / {material.unit}
+                        </div>
+                      </div>
+                      <Button size="sm" variant="ghost">
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
           
-          <DialogFooter className="pt-2">
-            <Button variant="outline" size="sm" onClick={() => setShowMaterialSearchDialog(false)}>
-              Cancel
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowMaterialSearchDialog(false)}>
+              Cancelar
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1680,102 +1153,105 @@ export default function Estimates() {
       {/* Add Material Dialog */}
       <Dialog open={showAddMaterialDialog} onOpenChange={setShowAddMaterialDialog}>
         <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader className="pb-3">
-            <DialogTitle className="text-lg">New Material</DialogTitle>
-            <DialogDescription className="text-sm">
-              Add a new material to your inventory.
+          <DialogHeader>
+            <DialogTitle>Agregar Nuevo Material</DialogTitle>
+            <DialogDescription>
+              Completa los datos del nuevo material.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-3">
+          <div className="space-y-4 mt-4">
             <div>
-              <Label htmlFor="material-name" className="text-xs">Name*</Label>
-              <Input 
-                id="material-name" 
-                value={newMaterial.name} 
+              <Label htmlFor="new-material-name">Nombre *</Label>
+              <Input
+                id="new-material-name"
+                value={newMaterial.name}
                 onChange={(e) => setNewMaterial(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Material name"
-                required
-                className="h-9"
+                placeholder="Nombre del material"
+                className="mt-1"
               />
             </div>
             
             <div>
-              <Label htmlFor="material-category" className="text-xs">Category*</Label>
-              <Input 
-                id="material-category" 
-                value={newMaterial.category} 
-                onChange={(e) => setNewMaterial(prev => ({ ...prev, category: e.target.value }))}
-                placeholder="Material category"
-                required
-                className="h-9"
-              />
+              <Label htmlFor="new-material-category">Categoría *</Label>
+              <Select
+                value={newMaterial.category}
+                onValueChange={(value) => setNewMaterial(prev => ({ ...prev, category: value }))}
+              >
+                <SelectTrigger id="new-material-category" className="mt-1">
+                  <SelectValue placeholder="Selecciona una categoría" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Madera">Madera</SelectItem>
+                  <SelectItem value="Metal">Metal</SelectItem>
+                  <SelectItem value="Cercas">Cercas</SelectItem>
+                  <SelectItem value="Concreto">Concreto</SelectItem>
+                  <SelectItem value="Tornillería">Tornillería</SelectItem>
+                  <SelectItem value="Herramientas">Herramientas</SelectItem>
+                  <SelectItem value="Acabados">Acabados</SelectItem>
+                  <SelectItem value="Otro">Otro</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             
             <div>
-              <Label htmlFor="material-description" className="text-xs">Description</Label>
-              <Textarea 
-                id="material-description" 
-                value={newMaterial.description} 
+              <Label htmlFor="new-material-description">Descripción</Label>
+              <Textarea
+                id="new-material-description"
+                value={newMaterial.description}
                 onChange={(e) => setNewMaterial(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Detailed description"
-                className="text-sm resize-none"
-                rows={2}
+                placeholder="Descripción del material"
+                className="mt-1"
               />
             </div>
             
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="material-price" className="text-xs">Price*</Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-2">
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                  </span>
-                  <Input 
-                    id="material-price" 
-                    type="number"
-                    value={newMaterial.price} 
-                    onChange={(e) => setNewMaterial(prev => ({ ...prev, price: Number(e.target.value) }))}
-                    min={0}
-                    step={0.01}
-                    className="pl-9 h-9"
-                    required
-                  />
-                </div>
+                <Label htmlFor="new-material-price">Precio *</Label>
+                <Input
+                  id="new-material-price"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={newMaterial.price}
+                  onChange={(e) => setNewMaterial(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
+                  placeholder="0.00"
+                  className="mt-1"
+                />
               </div>
               
               <div>
-                <Label htmlFor="material-unit" className="text-xs">Unit*</Label>
-                <Select 
-                  value={newMaterial.unit} 
-                  onValueChange={(value: string) => setNewMaterial(prev => ({ ...prev, unit: value }))}
+                <Label htmlFor="new-material-unit">Unidad *</Label>
+                <Select
+                  value={newMaterial.unit}
+                  onValueChange={(value) => setNewMaterial(prev => ({ ...prev, unit: value }))}
                 >
-                  <SelectTrigger id="material-unit" className="h-9">
-                    <SelectValue placeholder="Select" />
+                  <SelectTrigger id="new-material-unit" className="mt-1">
+                    <SelectValue placeholder="Selecciona una unidad" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pieza">Piece</SelectItem>
-                    <SelectItem value="metro">Meter</SelectItem>
-                    <SelectItem value="metro2">Square Meter</SelectItem>
-                    <SelectItem value="metro3">Cubic Meter</SelectItem>
-                    <SelectItem value="kg">Kilogram</SelectItem>
-                    <SelectItem value="galón">Gallon</SelectItem>
-                    <SelectItem value="litro">Liter</SelectItem>
-                    <SelectItem value="bolsa">Bag</SelectItem>
-                    <SelectItem value="caja">Box</SelectItem>
-                    <SelectItem value="juego">Set</SelectItem>
+                    <SelectItem value="pieza">Pieza</SelectItem>
+                    <SelectItem value="metro">Metro</SelectItem>
+                    <SelectItem value="pie">Pie</SelectItem>
+                    <SelectItem value="kg">Kilogramo</SelectItem>
+                    <SelectItem value="lb">Libra</SelectItem>
+                    <SelectItem value="galón">Galón</SelectItem>
+                    <SelectItem value="litro">Litro</SelectItem>
+                    <SelectItem value="bolsa">Bolsa</SelectItem>
+                    <SelectItem value="caja">Caja</SelectItem>
+                    <SelectItem value="juego">Juego</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
           </div>
           
-          <DialogFooter className="pt-3">
-            <Button variant="outline" size="sm" onClick={() => setShowAddMaterialDialog(false)}>
-              Cancel
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddMaterialDialog(false)}>
+              Cancelar
             </Button>
-            <Button size="sm" onClick={handleSaveMaterial}>
-              Save Material
+            <Button onClick={handleSaveMaterial}>
+              Guardar Material
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1783,141 +1259,28 @@ export default function Estimates() {
       
       {/* Preview Dialog */}
       <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
-        <DialogContent className="sm:max-w-[800px] h-[85vh] flex flex-col">
-          <DialogHeader className="pb-3 shrink-0">
-            <DialogTitle className="text-lg">Estimate Preview</DialogTitle>
+        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Vista Previa del Estimado</DialogTitle>
           </DialogHeader>
           
-          <div className="flex-grow overflow-y-auto mb-4">
-            {isEditingPreview ? (
-              <div className="border rounded-md bg-white">
-                <textarea 
-                  className="w-full h-full min-h-[500px] p-4 font-sans text-sm resize-none focus:outline-none focus:ring-1 focus:ring-primary"
-                  value={editableHtml || ""}
-                  onChange={(e) => setEditableHtml(e.target.value)}
-                  style={{ fontFamily: 'Arial, sans-serif' }}
-                />
-              </div>
-            ) : (
-              previewHtml && (
-                <div 
-                  className="estimate-preview border rounded-md p-4 bg-white"
-                  ref={(el) => {
-                    // Esta función se ejecuta cuando el componente se monta o actualiza
-                    if (el) {
-                      // Primero insertar el HTML
-                      el.innerHTML = previewHtml as string;
-                      
-                      console.log('Preview HTML renderizado, verificando imágenes...');
-                      // Verificar si hay imágenes y añadir manejadores de error
-                      const imgs = el.querySelectorAll('img');
-                      if (imgs.length > 0) {
-                        console.log(`Encontradas ${imgs.length} imágenes en el preview`);
-                        imgs.forEach(img => {
-                          // Verificar si la imagen ya está cargada
-                          if (img.complete) {
-                            // Si la imagen ya está completa pero tiene error, aplicar fallback
-                            if (img.naturalWidth === 0) {
-                              console.warn('Imagen cargada con errores:', img.src);
-                              handleImageError(img);
-                            } else {
-                              console.log('Imagen precargada correctamente:', img.src);
-                            }
-                          }
-                          
-                          // Listener para cuando la imagen carga correctamente
-                          img.onload = function() {
-                            console.log('Imagen cargada correctamente:', img.src);
-                          };
-                          
-                          // Listener para errores de carga
-                          img.onerror = function() {
-                            handleImageError(img);
-                          };
-                        });
-                      } else {
-                        console.warn('No se encontraron imágenes en el preview HTML');
-                      }
-                      
-                      // Función helper para manejar errores de imagen
-                      function handleImageError(img: HTMLImageElement): void {
-                        console.error('Error cargando imagen en preview:', img.src);
-                        // Si es el logo de la empresa, intentar con el logo local
-                        if ((img.alt.includes('Logo') || img.alt.includes('logo')) && !img.src.includes('owl-logo.png')) {
-                          console.log('Intentando cargar logo alternativo en preview');
-                          img.src = '/owl-logo.png';
-                          // Agregar clase para destacar que es un logo de respaldo
-                          img.classList.add('fallback-logo');
-                        }
-                      }
-                    }
-                  }}
-                />
-              )
-            )}
-          </div>
+          {previewHtml && (
+            <div 
+              className="estimate-preview border rounded-md p-6 bg-white"
+              dangerouslySetInnerHTML={{ __html: previewHtml }}
+            />
+          )}
           
-          <DialogFooter className="pt-3 mt-auto shrink-0 border-t">
-            <div className="flex items-center mr-auto">
-              <Button 
-                variant={isEditingPreview ? "default" : "outline"} 
-                size="sm" 
-                onClick={() => {
-                  if (isEditingPreview) {
-                    // Guardar cambios y salir del modo edición
-                    // Creamos una versión HTML básica con el texto editado
-                    const formattedHtml = `
-                      <div class="estimate-preview">
-                        <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.5;">
-                          ${editableHtml?.split('\n').map(line => `<p>${line}</p>`).join('') || ''}
-                        </div>
-                      </div>
-                    `;
-                    setPreviewHtml(formattedHtml);
-                    setIsEditingPreview(false);
-                  } else {
-                    // Entrar en modo edición
-                    // Extraemos el texto del HTML, preservando los saltos de línea
-                    const plainText = previewHtml?.replace(/<p[^>]*>/gi, '')
-                                                 .replace(/<\/p>/gi, '\n')
-                                                 .replace(/<br\s*\/?>/gi, '\n')
-                                                 .replace(/<[^>]*>/g, '')
-                                                 .replace(/&nbsp;/g, ' ')
-                                                 .replace(/&amp;/g, '&')
-                                                 .replace(/&lt;/g, '<')
-                                                 .replace(/&gt;/g, '>')
-                                                 .replace(/&quot;/g, '"')
-                                                 .trim() || "";
-                    setEditableHtml(plainText);
-                    setIsEditingPreview(true);
-                  }
-                }}
-              >
-                {isEditingPreview ? "Save Changes" : "Edit Text"}
-              </Button>
-            </div>
-            
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => {
-                setIsEditingPreview(false);
-                setShowPreviewDialog(false);
-              }}
-            >
-              Close
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPreviewDialog(false)}>
+              Cerrar
             </Button>
-            <Button 
-              size="sm" 
-              onClick={handleDownloadPdf}
-              disabled={isEditingPreview}
-            >
-              <FileDown className="mr-1 h-4 w-4" />
-              Download PDF
+            <Button onClick={handleDownloadPdf}>
+              <FileDown className="mr-2 h-4 w-4" />
+              Descargar PDF
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
   );
 }
