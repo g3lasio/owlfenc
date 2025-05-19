@@ -463,6 +463,7 @@ export default function Estimates() {
           color: #333;
           max-width: 100%;
           margin: 0 auto;
+          background-color: #f8fafc;
         }
         
         .estimate-header {
@@ -735,6 +736,7 @@ export default function Estimates() {
         max-width: 100%;
         margin: 0 auto;
         padding: 20px;
+        background-color: #f8fafc;
       }
       
       .estimate-header {
@@ -1659,11 +1661,11 @@ export default function Estimates() {
             ) : (
               previewHtml ? (
                 <div 
-                  className="estimate-preview border rounded-md p-4 bg-white"
+                  className="estimate-preview border rounded-md p-4 bg-slate-50 shadow-inner"
                   ref={handlePreviewRef}
                 />
               ) : (
-                <div className="border rounded-md p-4 bg-white text-center py-8 text-muted-foreground">
+                <div className="border rounded-md p-4 bg-slate-50 shadow-inner text-center py-8 text-muted-foreground">
                   No hay contenido para previsualizar
                 </div>
               )
