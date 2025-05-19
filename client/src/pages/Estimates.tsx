@@ -1260,13 +1260,8 @@ export default function Estimates() {
         {/* Project details and description */}
         <Card className="lg:col-span-2">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base flex justify-between items-center">
-              <span>Detalles y Descripción del Proyecto</span>
-              <MervinAssistant 
-                originalText={estimate.notes}
-                onTextEnhanced={(enhancedText) => setEstimate(prev => ({ ...prev, notes: enhancedText }))}
-                className="ml-2"
-              />
+            <CardTitle className="text-base">
+              Detalles y Descripción del Proyecto
             </CardTitle>
           </CardHeader>
           <CardContent className="pb-4">
