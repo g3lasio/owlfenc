@@ -97,33 +97,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Endpoint para mejorar descripciones con OpenAI
   app.post("/api/enhance-description", async (req: Request, res: Response) => {
     try {
-      const { description } = req.body;
+      const { description, projectType, systemPrompt } = req.body;
       
       if (!description) {
         return res.status(400).json({ error: "No se proporcionó una descripción" });
       }
+
+      // Verificar que tenemos la API key de OpenAI configurada
+      if (!process.env.OPENAI_API_KEY) {
+        console.error("Error: API key de OpenAI no configurada en el servidor");
+        return res.status(500).json({ 
+          error: "Error de configuración del servicio de IA", 
+          details: "API key no configurada" 
+        });
+      }
       
-      const prompt = `
+      // Usar el prompt específico proporcionado o crear uno genérico
+      const finalSystemPrompt = systemPrompt || `
       Eres Mervin, un asistente virtual especializado en proyectos de construcción, cercas y mejoras para el hogar.
       
-      Por favor, mejora la siguiente descripción de proyecto para que sea más profesional, clara y detallada.
+      Tu tarea es mejorar la siguiente descripción de proyecto para que sea más profesional, clara y detallada.
       
-      Añade información técnica relevante si es necesario y organiza el texto para que sea fácil de entender.
+      Estructura la descripción en estos componentes:
+      1. Resumen general del proyecto
+      2. Descripción de materiales y especificaciones técnicas
+      3. Proceso de instalación/desarrollo
+      4. Tiempos estimados y condiciones especiales
       
-      Mantén el mismo idioma (español) y usa un tono profesional pero accesible.
+      Organiza el texto en viñetas ordenadas para facilitar la lectura.
+      Enfatiza los puntos clave del proyecto.
+      Añade detalles técnicos relevantes para mostrar profesionalismo.
       
-      Descripción original:
-      ${description || 'Sin descripción proporcionada.'}
+      Mantén el mismo idioma original (español o inglés) y usa un tono profesional pero accesible.
       `;
+      
+      // Determinar el tipo de proyecto para personalizar la respuesta
+      const projectTypeFormatted = projectType || 'general';
+      
+      console.log(`Procesando mejora de descripción para proyecto tipo: ${projectTypeFormatted}`);
       
       const response = await openai.chat.completions.create({
         model: GPT_MODEL,
         messages: [
-          { role: "system", content: "Eres Mervin, un asistente especializado en mejoras de descripciones para proyectos de construcción." },
-          { role: "user", content: prompt }
+          { role: "system", content: finalSystemPrompt },
+          { role: "user", content: description }
         ],
         temperature: 0.7,
-        max_tokens: 500,
+        max_tokens: 800,
       });
       
       const enhancedDescription = response.choices[0].message.content || "No se pudo mejorar la descripción.";
