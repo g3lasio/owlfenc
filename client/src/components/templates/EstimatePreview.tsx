@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface EstimatePreviewProps {
   html: string;
@@ -6,10 +6,16 @@ interface EstimatePreviewProps {
 
 export default function EstimatePreview({ html }: EstimatePreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasLogError, setHasLogError] = useState(false);
   
   useEffect(() => {
     // Asegurarse de que el contenedor existe y que hay HTML para mostrar
     if (containerRef.current && html) {
+      // Iniciar carga
+      setIsLoading(true);
+      setHasLogError(false);
+      
       // Limpiar cualquier contenido previo
       containerRef.current.innerHTML = '';
       
@@ -28,8 +34,38 @@ export default function EstimatePreview({ html }: EstimatePreviewProps) {
       // Agregar clases CSS para mayor estilo
       previewContainer.className = 'estimate-preview-inner';
       
+      // Manejar la carga de imágenes
+      const images = previewContainer.querySelectorAll('img');
+      console.log(`Encontradas ${images.length} imágenes en el HTML del estimado`);
+      
+      // Verificar si hay imágenes en el HTML
+      if (images.length > 0) {
+        // Añadir event listeners a todas las imágenes
+        images.forEach((img) => {
+          // Cuando una imagen se carga exitosamente
+          img.addEventListener('load', () => {
+            console.log(`Imagen cargada correctamente: ${img.src}`);
+          });
+          
+          // Cuando hay un error al cargar una imagen
+          img.addEventListener('error', (e) => {
+            console.warn(`Error al cargar imagen: ${img.src}`, e);
+            setHasLogError(true);
+            
+            // Intentar cargar el logo local como respaldo
+            if (img.alt.includes('Logo')) {
+              console.log('Intentando cargar logo alternativo...');
+              img.src = '/owl-logo.png';
+            }
+          });
+        });
+      }
+      
       // Insertar el contenedor en el DOM
       containerRef.current.appendChild(previewContainer);
+      
+      // Completar carga
+      setIsLoading(false);
     }
   }, [html]);
   
