@@ -1,7 +1,39 @@
 import OpenAI from "openai";
 
-// Crear instancia de OpenAI con la API key del entorno
-const openai = new OpenAI({ apiKey: import.meta.env.VITE_OPENAI_API_KEY });
+// Permitir uso condicional de openai para evitar errores cuando la API key no está disponible
+let openai: OpenAI | null = null;
+
+// Función para obtener o crear la instancia de OpenAI
+function getOpenAI() {
+  if (!openai) {
+    // Verificar si tenemos una clave de API desde las variables de entorno
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+    
+    if (apiKey) {
+      openai = new OpenAI({ apiKey });
+    } else {
+      // Si estamos en modo desarrollo y no hay clave, usar una instancia simulada
+      if (import.meta.env.DEV) {
+        console.warn("⚠️ No se encontró OPENAI_API_KEY. Las funciones de IA tendrán respuestas simuladas.");
+        
+        // Crear una versión simulada para desarrollo
+        openai = {
+          chat: {
+            completions: {
+              create: async () => ({
+                choices: [{ message: { content: "Esta es una respuesta simulada porque no hay API key configurada." } }]
+              })
+            }
+          }
+        } as unknown as OpenAI;
+      } else {
+        console.error("Error: OPENAI_API_KEY no está definida en el entorno.");
+      }
+    }
+  }
+  
+  return openai;
+}
 
 // El modelo más reciente de OpenAI
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
@@ -20,11 +52,18 @@ export async function enhanceDescriptionWithAI(description: string, projectType:
       return '';
     }
     
+    // Obtener instancia de OpenAI
+    const ai = getOpenAI();
+    if (!ai) {
+      console.warn("No se pudo inicializar OpenAI. Devolviendo texto original.");
+      return description;
+    }
+    
     // Crear el prompt específico según el tipo de proyecto
     const systemPrompt = getSystemPromptForProjectType(projectType);
     
     // Realizar la llamada a la API de OpenAI
-    const response = await openai.chat.completions.create({
+    const response = await ai.chat.completions.create({
       model: GPT_MODEL,
       messages: [
         {
@@ -180,7 +219,14 @@ Para este proyecto de calefacción/aire acondicionado, asegúrate de incluir té
  */
 export async function analyzeContract(contractData: Record<string, any>): Promise<string> {
   try {
-    const response = await openai.chat.completions.create({
+    // Obtener instancia de OpenAI
+    const ai = getOpenAI();
+    if (!ai) {
+      console.warn("No se pudo inicializar OpenAI para análisis de contrato.");
+      return "No se pudo realizar el análisis debido a un error de conexión con el servicio de IA.";
+    }
+    
+    const response = await ai.chat.completions.create({
       model: GPT_MODEL,
       messages: [
         {

@@ -19,8 +19,7 @@ import {
   Sparkles, 
   Info, 
   Loader2,
-  MapPin,
-  Eye
+  MapPin
 } from "lucide-react";
 import { 
   generalContractQuestions,
@@ -105,98 +104,52 @@ const ContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
     
     return questions;
   };
-
-  // Actualizar categoría seleccionada cuando cambie en las respuestas
-  useEffect(() => {
-    if (answers['project.category'] && answers['project.category'] !== selectedCategory) {
-      setSelectedCategory(answers['project.category']);
-    }
-  }, [answers]);
-
-  // Prellenar datos del perfil de empresa cuando esté disponible
-  useEffect(() => {
-    if (profile && !isProfileLoading) {
-      const companyData: Record<string, any> = {};
-      
-      if (profile.company?.name) {
-        companyData['contractor.name'] = profile.company.name;
-      }
-      
-      if (profile.company?.address) {
-        companyData['contractor.address'] = profile.company.address;
-      }
-      
-      if (profile.company?.phone) {
-        companyData['contractor.phone'] = profile.company.phone;
-      }
-      
-      if (profile.company?.email) {
-        companyData['contractor.email'] = profile.company.email;
-      }
-      
-      if (profile.company?.license) {
-        companyData['contractor.license'] = profile.company.license;
-      }
-      
-      // Actualizar respuestas solo si hay datos disponibles
-      if (Object.keys(companyData).length > 0) {
-        setAnswers(prev => ({
-          ...prev,
-          ...companyData
-        }));
-      }
-    }
-  }, [profile, isProfileLoading]);
-
-  // Crear grupos de preguntas dinámicamente según el tipo de proyecto
+  
+  // Crear grupos de preguntas para mostrar 2 a la vez cuando sea posible
   const createQuestionGroups = (): QuestionGroup[] => {
-    const allQuestions = getQuestionsForCategory();
     const groups: QuestionGroup[] = [];
+    const allQuestions = getQuestionsForCategory();
     
-    // Primera pregunta siempre sola: selección de categoría
-    groups.push({
-      title: "Tipo de Proyecto",
-      description: "Selecciona el tipo de trabajo que realizarás",
-      questions: allQuestions.filter(q => q.id === 'project_category')
-    });
-    
-    // Información de la empresa - Agrupadas (solo muestra para confirmar si ya están en el perfil)
-    const contractorQuestions = allQuestions.filter(q => 
-      q.field.startsWith('contractor.') && 
-      q.id !== 'contractor_license'
-    );
-    
-    if (contractorQuestions.length > 0) {
+    // Categoría de proyecto (primera pantalla)
+    const categoryQuestion = allQuestions.find(q => q.id === 'project_category');
+    if (categoryQuestion) {
       groups.push({
-        title: "Información del Contratista",
-        description: "Verifica los datos de tu empresa para el contrato",
-        questions: contractorQuestions
+        title: "Tipo de Proyecto",
+        description: "Selecciona el tipo de proyecto para el que necesitas un contrato",
+        questions: [categoryQuestion]
       });
     }
     
-    // Licencia del contratista (separada para mejor flujo)
-    const licenseQuestion = allQuestions.find(q => q.id === 'contractor_license');
-    if (licenseQuestion) {
-      groups.push({
-        title: "Licencia del Contratista",
-        questions: [licenseQuestion]
-      });
+    // Solo continuar si se ha seleccionado una categoría
+    if (!selectedCategory) {
+      return groups;
     }
     
-    // Datos del cliente - Nombre y dirección juntos
+    // Datos del cliente (agrupar nombre, apellido, empresa en una pantalla)
     const clientBasicQuestions = allQuestions.filter(q => 
-      q.id === 'client_name' || q.id === 'client_address'
+      q.id === 'client_name' || q.id === 'client_company'
     );
     
     if (clientBasicQuestions.length > 0) {
       groups.push({
         title: "Información del Cliente",
-        description: "Datos del cliente para el contrato",
         questions: clientBasicQuestions
       });
     }
     
-    // Contacto del cliente - Teléfono y email juntos
+    // Dirección del cliente
+    const clientAddressQuestions = allQuestions.filter(q => 
+      q.id === 'client_address'
+    );
+    
+    if (clientAddressQuestions.length > 0) {
+      groups.push({
+        title: "Dirección del Cliente",
+        questions: clientAddressQuestions
+      });
+    }
+    
+    // Contacto del cliente
     const clientContactQuestions = allQuestions.filter(q => 
       q.id === 'client_phone' || q.id === 'client_email'
     );
@@ -251,51 +204,27 @@ const ContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
       }
     }
     
-    // Fechas del proyecto
+    // Fechas de proyecto
     const dateQuestions = allQuestions.filter(q => 
-      q.id === 'start_date' || q.id === 'estimated_duration'
+      q.id === 'start_date' || q.id === 'completion_date'
     );
     
     if (dateQuestions.length > 0) {
       groups.push({
-        title: "Cronograma del Proyecto",
-        description: "Fechas y plazos de ejecución",
+        title: "Fechas del Proyecto",
         questions: dateQuestions
       });
     }
     
-    // Pagos del proyecto
-    const paymentQuestions = allQuestions.filter(q => 
-      q.id === 'total_cost' || q.id === 'deposit_amount'
+    // Precios y pagos
+    const pricingQuestions = allQuestions.filter(q => 
+      q.id === 'total_price' || q.id === 'deposit' || q.id === 'payment_schedule'
     );
     
-    if (paymentQuestions.length > 0) {
+    if (pricingQuestions.length > 0) {
       groups.push({
-        title: "Información de Pago",
-        description: "Costos y estructura de pagos",
-        questions: paymentQuestions
-      });
-    }
-    
-    // Calendario de pagos (separado para mejor flujo)
-    const scheduleQuestion = allQuestions.find(q => q.id === 'payment_schedule');
-    if (scheduleQuestion) {
-      groups.push({
-        title: "Calendario de Pagos",
-        questions: [scheduleQuestion]
-      });
-    }
-    
-    // Garantías
-    const warrantyQuestions = allQuestions.filter(q => 
-      q.id === 'warranty_period' || q.id === 'warranty_coverage'
-    );
-    
-    if (warrantyQuestions.length > 0) {
-      groups.push({
-        title: "Garantías",
-        description: "Términos de garantía ofrecidos",
-        questions: warrantyQuestions
+        title: "Detalles de Pago",
+        questions: pricingQuestions
       });
     }
     
@@ -367,6 +296,11 @@ const ContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
       'project.description': enhancedDescription
     });
     setIsAIDialogOpen(false);
+    
+    toast({
+      title: "Descripción mejorada",
+      description: "Se ha aplicado la descripción mejorada por IA."
+    });
   };
 
   // Validar el grupo de preguntas actual
@@ -417,8 +351,6 @@ const ContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
       [field]: value
     });
   };
-  
-  // Las funciones handleEnhanceDescription y applyEnhancedDescription ya están definidas anteriormente
 
   // Manejar cambio de dirección con autocompletado
   const handleAddressChange = (field: string, value: string) => {
@@ -502,8 +434,8 @@ const ContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
       
       case 'choice':
         return (
-          <Select 
-            value={value ? String(value) : undefined} 
+          <Select
+            value={String(value)}
             onValueChange={(val) => handleInputChange(question.field, val)}
           >
             <SelectTrigger className="w-full">
@@ -685,67 +617,26 @@ const ContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
               variant="outline" 
               onClick={handlePreview}
             >
-              <CheckSquare className="mr-2 h-4 w-4" />
+              <Eye className="mr-2 h-4 w-4" />
               Vista Previa
             </Button>
           )}
           
           <Button onClick={handleNext}>
-            {isLastStep ? 'Completar' : 'Siguiente'}
-            {!isLastStep && <ChevronRight className="ml-2 h-4 w-4" />}
+            {isLastStep ? (
+              <>
+                <CheckSquare className="mr-2 h-4 w-4" />
+                Finalizar
+              </>
+            ) : (
+              <>
+                Siguiente
+                <ChevronRight className="ml-2 h-4 w-4" />
+              </>
+            )}
           </Button>
         </div>
       </div>
-      
-      {/* Diálogo para mejora de descripción con IA */}
-      <Dialog open={isAIDialogOpen} onOpenChange={setIsAIDialogOpen}>
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center">
-              <Sparkles className="h-5 w-5 mr-2 text-primary" />
-              Mejora de descripción con Inteligencia Artificial
-            </DialogTitle>
-          </DialogHeader>
-          
-          {isAIEnhancingDescription ? (
-            <div className="py-12 flex flex-col items-center justify-center">
-              <Loader2 className="h-10 w-10 text-primary mb-4 animate-spin" />
-              <p>La IA está mejorando tu descripción...</p>
-              <p className="text-sm text-muted-foreground mt-2">
-                Esto puede tomar unos segundos
-              </p>
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Descripción Original</Label>
-                  <div className="border rounded-md p-3 bg-muted/30 text-sm min-h-[200px] overflow-y-auto">
-                    {originalDescription || "Sin descripción"}
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Descripción Mejorada</Label>
-                  <div className="border rounded-md p-3 bg-primary/5 text-sm min-h-[200px] overflow-y-auto">
-                    {enhancedDescription || "No hay mejoras disponibles"}
-                  </div>
-                </div>
-              </div>
-              
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsAIDialogOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button onClick={applyEnhancedDescription}>
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Aplicar Mejoras
-                </Button>
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
