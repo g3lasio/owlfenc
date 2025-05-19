@@ -648,6 +648,9 @@ export default function Estimates() {
       `;
       
       // Preparar los datos del estimado para guardar
+      // Agregar logs para depuración
+      console.log('Guardando estimado para cliente:', client.name);
+      
       const estimateData = {
         title: estimate.title,
         clientId: estimate.clientId,
@@ -665,6 +668,8 @@ export default function Estimates() {
         updatedAt: serverTimestamp(),
         estimateHtml: estimateHtml // Guardamos el HTML del estimado
       };
+      
+      console.log('Datos del estimado a guardar:', estimateData);
       
       // Guardar el estimado en la colección de estimates
       const estimateDocRef = await addDoc(collection(db, 'estimates'), estimateData);
@@ -694,9 +699,12 @@ export default function Estimates() {
       // Guardar el proyecto en la colección de projects
       await addDoc(collection(db, 'projects'), projectData);
       
+      // Agregar log una vez guardado el estimado
+      console.log('Estimado guardado exitosamente con ID:', estimateDocRef.id);
+      
       toast({
         title: 'Estimado guardado',
-        description: 'El estimado se ha guardado correctamente y está disponible en Proyectos.'
+        description: 'El estimado se ha guardado correctamente y está disponible en My Estimates.'
       });
       
       // Reset the form
