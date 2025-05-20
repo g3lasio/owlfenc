@@ -1,0 +1,40 @@
+Solicitud de solución avanzada para importación y mapeo inteligente de datos en la página de Clients
+
+Problema actual:
+El sistema de importación de datos en la página de Clients presenta errores críticos de mapeo:
+
+El campo “dirección” frecuentemente recibe números de teléfono en lugar de direcciones.
+
+El campo de “teléfono” contiene fragmentos de dirección o datos combinados incorrectamente.
+
+Los emails rara vez se importan correctamente; el sistema no los reconoce ni los asigna al campo adecuado.
+
+Esta desorganización genera registros poco fiables y pérdida de información clave.
+
+Requerimientos y expectativas:
+
+Se necesita una solución robusta y escalable que identifique, ajuste y reorganice automáticamente los campos importados, incluso si vienen desordenados o mal etiquetados.
+
+Evalúa e implementa tecnologías avanzadas, como procesamiento inteligente con IA, NLP (procesamiento de lenguaje natural) o lógica de patrones, para analizar tanto los encabezados como el contenido de cada columna, y reasignar los datos correctamente.
+
+El proceso debe ser capaz de:
+
+Detectar números de teléfono, direcciones, nombres y emails aunque estén mezclados o en posiciones incorrectas.
+
+Corregir errores de importación, acomodar los datos en sus respectivos campos y garantizar que ningún dato se pierda o sobrescriba.
+
+Ofrecer al usuario una vista previa editable antes de la importación final, permitiendo revisar y ajustar el mapeo propuesto por el sistema.
+
+La solución debe integrarse perfectamente al flujo existente, sin crear fricción ni complicar la experiencia de usuario.
+
+Tecnologías sugeridas:
+Considera integrar librerías de IA o módulos de reconocimiento inteligente como:
+
+OpenAI o Google Cloud Natural Language API para reconocimiento de patrones y entidades.
+
+Algoritmos de regex avanzados para detección de emails y teléfonos.
+
+Lógica de validación y autocompletado basada en contexto.
+
+Resultado esperado:
+Un proceso de importación inteligente, automático y preciso, capaz de organizar los datos correctamente sin pérdida de información, elevando la calidad y fiabilidad de la base de clientes.
