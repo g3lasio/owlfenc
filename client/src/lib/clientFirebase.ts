@@ -94,13 +94,28 @@ export const getClients = async (filters?: { tag?: string, source?: string }) =>
     }
 
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      // Convertir Firestore Timestamp a Date
-      createdAt: doc.data().createdAt?.toDate(),
-      updatedAt: doc.data().updatedAt?.toDate(),
-    })) as Client[];
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      // Verificar si createdAt/updatedAt son Timestamps válidos antes de llamar a toDate()
+      const createdAt = data.createdAt && typeof data.createdAt.toDate === 'function' 
+        ? data.createdAt.toDate() 
+        : data.createdAt instanceof Date 
+          ? data.createdAt 
+          : new Date();
+      
+      const updatedAt = data.updatedAt && typeof data.updatedAt.toDate === 'function'
+        ? data.updatedAt.toDate()
+        : data.updatedAt instanceof Date
+          ? data.updatedAt
+          : new Date();
+          
+      return {
+        id: doc.id,
+        ...data,
+        createdAt,
+        updatedAt
+      };
+    }) as Client[];
   } catch (error) {
     console.error("Error al obtener clientes:", error);
     throw error;
@@ -115,12 +130,25 @@ export const getClientById = async (id: string) => {
 
     if (docSnap.exists()) {
       const data = docSnap.data();
+      
+      // Verificar si createdAt/updatedAt son Timestamps válidos antes de llamar a toDate()
+      const createdAt = data.createdAt && typeof data.createdAt.toDate === 'function' 
+        ? data.createdAt.toDate() 
+        : data.createdAt instanceof Date 
+          ? data.createdAt 
+          : new Date();
+      
+      const updatedAt = data.updatedAt && typeof data.updatedAt.toDate === 'function'
+        ? data.updatedAt.toDate()
+        : data.updatedAt instanceof Date
+          ? data.updatedAt
+          : new Date();
+          
       return {
         id: docSnap.id,
         ...data,
-        // Convertir Firestore Timestamp a Date
-        createdAt: data.createdAt?.toDate(),
-        updatedAt: data.updatedAt?.toDate(),
+        createdAt,
+        updatedAt
       } as Client;
     } else {
       throw new Error("Cliente no encontrado");

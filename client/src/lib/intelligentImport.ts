@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { Client } from '@/types/client';
+import type { Client } from '@/types/client'; // Usar 'type' para evitar duplicación
 
 // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
 const anthropic = new Anthropic({
@@ -213,21 +213,8 @@ export const CLIENT_FIELD_OPTIONS = [
   { label: 'Clasificación', value: 'classification' },
   { label: 'No importar', value: 'unknown' }
 ];
-import { Client } from '@/types/client';
-
-/**
- * Tipos de campo que podemos detectar e identificar
- */
-type FieldType = 'name' | 'email' | 'phone' | 'address' | 'city' | 'state' | 'zipcode' | 'country' | 'unknown';
-
-/**
- * Interfaz para representar el mapeo de campos
- */
-interface FieldMapping {
-  sourceIndex: number;  // Índice de la columna en el CSV
-  targetField: string;  // Nombre del campo en el objeto Cliente
-  confidence: number;   // Nivel de confianza de 0 a 1
-  detectedType: FieldType; // Tipo de campo detectado
+// Ya importado arriba
+// Tipos ya definidos arriba
 }
 
 /**
