@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -626,4 +627,6 @@ const ContactImportWizard = () => {
   );
 };
 
+// Make sure to export the component correctly
 export default ContactImportWizard;
+export { ContactImportWizard };
