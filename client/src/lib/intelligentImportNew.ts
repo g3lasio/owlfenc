@@ -17,10 +17,10 @@ export interface CSVAnalysisResult {
 }
 
 // Tipos de campos que podemos identificar
-type FieldType = 'name' | 'email' | 'phone' | 'address' | 'city' | 'state' | 'zipcode' | 'country' | 'unknown';
+export type FieldType = 'name' | 'email' | 'phone' | 'address' | 'city' | 'state' | 'zipcode' | 'country' | 'unknown';
 
 // Interface para mapeo interno de campos
-interface FieldMapping {
+export interface FieldMapping {
   sourceIndex: number;
   targetField: string;
   confidence: number;

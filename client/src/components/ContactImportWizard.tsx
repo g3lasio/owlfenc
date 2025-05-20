@@ -49,6 +49,7 @@ const ContactImportWizard = () => {
   const [fileName, setFileName] = useState('');
   const [step, setStep] = useState(1);
   const [previewData, setPreviewData] = useState<Partial<Client>[]>([]);
+  const [editablePreviewData, setEditablePreviewData] = useState<Partial<Client>[]>([]);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [importStats, setImportStats] = useState({
     total: 0,
@@ -236,7 +237,7 @@ const ContactImportWizard = () => {
       } catch (error) {
         console.error("Error preparing data with intelligent mapping:", error);
         toast({
-          variant: "warning",
+          variant: "destructive",
           title: t('general.warning'),
           description: t('clients.intelligentMappingFailed')
         });
@@ -515,12 +516,22 @@ const ContactImportWizard = () => {
                   <p className="text-sm font-medium mb-2">
                     {t('clients.dataPreview')}
                   </p>
-                  <Badge variant={useIntelligentMapping ? "default" : "outline"} className="mb-2">
-                    {useIntelligentMapping ? "Mapeo Inteligente" : "Mapeo Manual"}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={useIntelligentMapping ? "default" : "outline"} className="mb-2">
+                      {useIntelligentMapping ? "Mapeo Inteligente Activo" : "Mapeo Manual"}
+                    </Badge>
+                    {useIntelligentMapping && (
+                      <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-200 mb-2">
+                        <ShieldAlert className="h-3 w-3 mr-1" />
+                        Auto-corrección activada
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 <p className="text-sm text-muted-foreground mb-4">
-                  {t('clients.dataPreviewDescription')}
+                  {useIntelligentMapping 
+                    ? "Vista previa con mapeo inteligente. Los datos han sido analizados y corregidos automáticamente para asegurar que estén en los campos correctos."
+                    : "Vista previa con mapeo manual. Verifique que los datos estén correctamente asignados a cada campo."}
                 </p>
               </div>
 
@@ -528,30 +539,107 @@ const ContactImportWizard = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t('clients.fields.name')}</TableHead>
-                      <TableHead>{t('clients.fields.email')}</TableHead>
-                      <TableHead>{t('clients.fields.phone')}</TableHead>
-                      <TableHead>{t('clients.fields.address')}</TableHead>
+                      <TableHead className="w-1/5">
+                        <div className="flex items-center space-x-1">
+                          <span>{t('clients.fields.name')}</span>
+                          {useIntelligentMapping && mappings.find(m => m.targetField === 'name') && (
+                            renderConfidenceBadge(mappings.find(m => m.targetField === 'name')!.confidence)
+                          )}
+                        </div>
+                      </TableHead>
+                      <TableHead className="w-1/5">
+                        <div className="flex items-center space-x-1">
+                          <span>{t('clients.fields.email')}</span>
+                          {useIntelligentMapping && mappings.find(m => m.targetField === 'email') && (
+                            renderConfidenceBadge(mappings.find(m => m.targetField === 'email')!.confidence)
+                          )}
+                        </div>
+                      </TableHead>
+                      <TableHead className="w-1/5">
+                        <div className="flex items-center space-x-1">
+                          <span>{t('clients.fields.phone')}</span>
+                          {useIntelligentMapping && mappings.find(m => m.targetField === 'phone') && (
+                            renderConfidenceBadge(mappings.find(m => m.targetField === 'phone')!.confidence)
+                          )}
+                        </div>
+                      </TableHead>
+                      <TableHead className="w-2/5">
+                        <div className="flex items-center space-x-1">
+                          <span>{t('clients.fields.address')}</span>
+                          {useIntelligentMapping && mappings.find(m => m.targetField === 'address') && (
+                            renderConfidenceBadge(mappings.find(m => m.targetField === 'address')!.confidence)
+                          )}
+                        </div>
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {previewData.map((client, index) => (
-                      <TableRow key={index}>
-                        <TableCell className="font-medium">{client.name || '-'}</TableCell>
-                        <TableCell>{client.email || '-'}</TableCell>
-                        <TableCell>{client.phone || '-'}</TableCell>
-                        <TableCell>{client.address || '-'}</TableCell>
+                      <TableRow key={index} className={index % 2 === 0 ? 'bg-muted/50' : ''}>
+                        <TableCell className="font-medium">
+                          {client.name || '-'}
+                          {client.name && client.name.length > 20 && (
+                            <div className="text-xs text-muted-foreground mt-1">
+                              {client.name.length > 40 ? `${client.name.substring(0, 40)}...` : client.name}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {client.email ? (
+                            <div className={client.email.includes('@') ? 'text-green-600' : 'text-red-600'}>
+                              {client.email}
+                            </div>
+                          ) : '-'}
+                        </TableCell>
+                        <TableCell>
+                          {client.phone ? (
+                            <div className={client.phone.length >= 8 ? 'text-green-600' : 'text-yellow-600'}>
+                              {client.phone}
+                            </div>
+                          ) : '-'}
+                        </TableCell>
+                        <TableCell>
+                          {client.address || '-'}
+                          {client.address && client.address.length > 30 && (
+                            <div className="text-xs text-muted-foreground mt-1">
+                              {client.address.length > 60 ? `${client.address.substring(0, 60)}...` : client.address}
+                            </div>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </div>
 
-              <div className="mt-4 p-3 bg-muted rounded-md">
-                <p className="text-sm">
-                  <AlertCircle className="h-4 w-4 inline-block mr-2 text-yellow-500" />
-                  {t('clients.importWarning', { count: csvData.length })}
-                </p>
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-3 bg-muted rounded-md">
+                  <p className="text-sm flex items-start">
+                    <AlertCircle className="h-4 w-4 inline-block mr-2 text-yellow-500 mt-0.5" />
+                    <span>
+                      {t('clients.importWarning', { count: csvData.length })}
+                      <br />
+                      <span className="text-xs text-muted-foreground mt-1">
+                        Solo se muestran los primeros 10 registros para previsualización.
+                      </span>
+                    </span>
+                  </p>
+                </div>
+                
+                <div className="p-3 bg-blue-50 rounded-md">
+                  <p className="text-sm flex items-start">
+                    <CheckCircle2 className="h-4 w-4 inline-block mr-2 text-blue-500 mt-0.5" />
+                    <span>
+                      El sistema ha analizado inteligentemente sus datos {useIntelligentMapping ? 'y ha corregido campos mal ubicados.' : 'pero el mapeo manual está activo.'}
+                      <br />
+                      <span className="text-xs text-muted-foreground mt-1">
+                        {useIntelligentMapping 
+                          ? 'Los números telefónicos, emails y direcciones han sido detectados y ubicados en sus campos correspondientes.'
+                          : 'Puede activar el mapeo inteligente para mejorar la precisión de los campos.'}
+                      </span>
+                    </span>
+                  </p>
+                </div>
               </div>
             </div>
           )}
