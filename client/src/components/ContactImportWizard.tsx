@@ -185,8 +185,9 @@ const ContactImportWizard = () => {
         }
         setManualMappings(manualMap);
         
-        // Establecemos los datos de vista previa
+        // Establecemos los datos de vista previa y también su versión editable
         setPreviewData(clients);
+        setEditablePreviewData(JSON.parse(JSON.stringify(clients))); // Copia profunda para edición
       } else {
         // Con el mapeo manual, convertimos los datos CSV en objetos de cliente
         const preview: Partial<Client>[] = csvData.slice(0, 10).map((row, index) => {
@@ -214,6 +215,7 @@ const ContactImportWizard = () => {
         });
 
         setPreviewData(preview);
+        setEditablePreviewData(JSON.parse(JSON.stringify(preview))); // Copia profunda para edición
       }
     } catch (error) {
       console.error("Error generating preview:", error);
@@ -285,7 +287,29 @@ const ContactImportWizard = () => {
     }
 
     setIsLoading(true);
-    const clientsToImport = prepareDataForImport();
+    
+    // Determinar qué datos usar para la importación
+    let clientsToImport: Partial<Client>[];
+    
+    if (step === 3 && editablePreviewData.length > 0) {
+      // Si estamos en la vista previa y hay datos editados, los usamos como base
+      // pero necesitamos generar datos completos para todo el conjunto
+      const allClients = prepareDataForImport();
+      
+      // Aplicar las correcciones manuales del usuario (de los datos de vista previa) 
+      // a todo el conjunto completo
+      for (let i = 0; i < Math.min(editablePreviewData.length, allClients.length); i++) {
+        allClients[i].name = editablePreviewData[i].name;
+        allClients[i].email = editablePreviewData[i].email;
+        allClients[i].phone = editablePreviewData[i].phone;
+        allClients[i].address = editablePreviewData[i].address;
+      }
+      
+      clientsToImport = allClients;
+    } else {
+      // Si no hay datos editados o no estamos en la vista previa, usamos el procesamiento normal
+      clientsToImport = prepareDataForImport();
+    }
 
     // Estadísticas de importación
     const stats = {
@@ -574,37 +598,55 @@ const ContactImportWizard = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {previewData.map((client, index) => (
+                    {editablePreviewData.map((client, index) => (
                       <TableRow key={index} className={index % 2 === 0 ? 'bg-muted/50' : ''}>
                         <TableCell className="font-medium">
-                          {client.name || '-'}
-                          {client.name && client.name.length > 20 && (
-                            <div className="text-xs text-muted-foreground mt-1">
-                              {client.name.length > 40 ? `${client.name.substring(0, 40)}...` : client.name}
-                            </div>
-                          )}
+                          <Input 
+                            value={client.name || ''} 
+                            onChange={(e) => {
+                              const newData = [...editablePreviewData];
+                              newData[index].name = e.target.value;
+                              setEditablePreviewData(newData);
+                            }}
+                            className={client.name ? "border-green-200" : "border-yellow-200"}
+                            placeholder="Nombre del cliente"
+                          />
                         </TableCell>
                         <TableCell>
-                          {client.email ? (
-                            <div className={client.email.includes('@') ? 'text-green-600' : 'text-red-600'}>
-                              {client.email}
-                            </div>
-                          ) : '-'}
+                          <Input 
+                            value={client.email || ''} 
+                            onChange={(e) => {
+                              const newData = [...editablePreviewData];
+                              newData[index].email = e.target.value;
+                              setEditablePreviewData(newData);
+                            }}
+                            className={client.email && client.email.includes('@') ? "border-green-200" : "border-red-200"}
+                            placeholder="correo@ejemplo.com"
+                          />
                         </TableCell>
                         <TableCell>
-                          {client.phone ? (
-                            <div className={client.phone.length >= 8 ? 'text-green-600' : 'text-yellow-600'}>
-                              {client.phone}
-                            </div>
-                          ) : '-'}
+                          <Input 
+                            value={client.phone || ''} 
+                            onChange={(e) => {
+                              const newData = [...editablePreviewData];
+                              newData[index].phone = e.target.value;
+                              setEditablePreviewData(newData);
+                            }}
+                            className={client.phone && client.phone.length >= 8 ? "border-green-200" : "border-yellow-200"}
+                            placeholder="(xx) xxxx-xxxx"
+                          />
                         </TableCell>
                         <TableCell>
-                          {client.address || '-'}
-                          {client.address && client.address.length > 30 && (
-                            <div className="text-xs text-muted-foreground mt-1">
-                              {client.address.length > 60 ? `${client.address.substring(0, 60)}...` : client.address}
-                            </div>
-                          )}
+                          <Input 
+                            value={client.address || ''} 
+                            onChange={(e) => {
+                              const newData = [...editablePreviewData];
+                              newData[index].address = e.target.value;
+                              setEditablePreviewData(newData);
+                            }}
+                            className={client.address ? "border-green-200" : "border-yellow-200"}
+                            placeholder="Dirección completa"
+                          />
                         </TableCell>
                       </TableRow>
                     ))}
@@ -620,7 +662,7 @@ const ContactImportWizard = () => {
                       {t('clients.importWarning', { count: csvData.length })}
                       <br />
                       <span className="text-xs text-muted-foreground mt-1">
-                        Solo se muestran los primeros 10 registros para previsualización.
+                        Solo se muestran los primeros 10 registros para previsualización. Puede editar directamente los valores si requiere algún ajuste.
                       </span>
                     </span>
                   </p>
@@ -634,12 +676,25 @@ const ContactImportWizard = () => {
                       <br />
                       <span className="text-xs text-muted-foreground mt-1">
                         {useIntelligentMapping 
-                          ? 'Los números telefónicos, emails y direcciones han sido detectados y ubicados en sus campos correspondientes.'
-                          : 'Puede activar el mapeo inteligente para mejorar la precisión de los campos.'}
+                          ? 'Los números telefónicos, emails y direcciones han sido detectados y ubicados en sus campos correspondientes, incluso si estaban en columnas incorrectas.'
+                          : 'Puede activar el mapeo inteligente para mejorar la precisión de los campos y corregir automáticamente datos mal posicionados.'}
                       </span>
                     </span>
                   </p>
                 </div>
+              </div>
+              
+              <div className="mt-4 p-3 bg-green-50 rounded-md border border-green-200">
+                <p className="text-sm flex items-start">
+                  <ShieldAlert className="h-4 w-4 inline-block mr-2 text-green-600 mt-0.5" />
+                  <span>
+                    <span className="font-medium">Sistema mejorado de importación</span>: Ahora puede editar los datos directamente en esta vista previa antes de importarlos.
+                    <br />
+                    <span className="text-xs text-muted-foreground mt-1">
+                      Los cambios que realice en esta pantalla se aplicarán a todos los registros importados. Las correcciones específicas y problemas comunes como emails en campo de teléfono, o teléfonos en campo de dirección, se detectan y corrigen automáticamente.
+                    </span>
+                  </span>
+                </p>
               </div>
             </div>
           )}
