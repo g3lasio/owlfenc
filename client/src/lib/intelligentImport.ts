@@ -508,13 +508,13 @@ function resolveConflicts(mappings: FieldMapping[]): FieldMapping[] {
   const resolvedMappings: FieldMapping[] = [];
   
   // Para cada grupo de mapeos al mismo campo
-  for (const [field, fieldMappings] of targetFields.entries()) {
+  targetFields.forEach((fieldMappings, field) => {
     if (fieldMappings.length === 1) {
       // No hay conflicto
       resolvedMappings.push(fieldMappings[0]);
     } else {
       // Ordenar por confianza descendente
-      fieldMappings.sort((a, b) => b.confidence - a.confidence);
+      fieldMappings.sort((a: FieldMapping, b: FieldMapping) => b.confidence - a.confidence);
       
       // El mapping con más confianza mantiene el campo original
       resolvedMappings.push(fieldMappings[0]);
@@ -537,7 +537,7 @@ function resolveConflicts(mappings: FieldMapping[]): FieldMapping[] {
         resolvedMappings.push(mapping);
       }
     }
-  }
+  });
   
   return resolvedMappings;
 }
@@ -615,9 +615,6 @@ export function processImportedData(
   return { mappings, processedData };
 }
 
-/**
- * Corrige campos mal clasificados después del mapeo inicial
- */
 /**
  * Corrige campos mal clasificados con análisis contextual avanzado
  * 

@@ -14,7 +14,7 @@ import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { processCSVToClients, FieldMapping } from '@/lib/intelligentImport';
+import { processCSVToClients, FieldMapping, CLIENT_FIELD_OPTIONS } from '@/lib/intelligentImportNew';
 
 interface Client {
   id?: string;
@@ -167,48 +167,60 @@ const ContactImportWizard = () => {
     setUseIntelligentMapping(!useIntelligentMapping);
   };
 
-  // Generar datos de vista previa
+  // Generar datos de vista previa con información de confianza
   const generatePreview = () => {
-    if (useIntelligentMapping) {
-      // Con el mapeo inteligente, ya tenemos los datos procesados
-      try {
-        const { clients } = processCSVToClients(headers, csvData.slice(0, 10));
+    try {
+      if (useIntelligentMapping) {
+        // Con el mapeo inteligente, generamos datos y mostramos la confianza del mapeo
+        const { clients, mappings: detectedMappings } = processCSVToClients(headers, csvData.slice(0, 10));
+        
+        // Guardamos los mapeos detectados para mostrar niveles de confianza
+        setMappings(detectedMappings);
+        
+        // También actualizamos los mapeos manuales como respaldo
+        const manualMap: { [key: string]: string } = {};
+        for (const mapping of detectedMappings) {
+          manualMap[headers[mapping.sourceIndex]] = mapping.targetField;
+        }
+        setManualMappings(manualMap);
+        
+        // Establecemos los datos de vista previa
         setPreviewData(clients);
-      } catch (error) {
-        console.error("Error generating preview with intelligent mapping:", error);
-        toast({
-          variant: "destructive",
-          title: t('general.error'),
-          description: t('clients.previewError')
+      } else {
+        // Con el mapeo manual, convertimos los datos CSV en objetos de cliente
+        const preview: Partial<Client>[] = csvData.slice(0, 10).map((row, index) => {
+          const client: Partial<Client> = {
+            clientId: `preview_${index}`,
+            name: '',
+            email: '',
+            phone: '',
+            address: '',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            source: 'CSV Import',
+            classification: 'cliente'
+          };
+
+          // Aplicar mapeos manuales a cada fila
+          headers.forEach((header, colIndex) => {
+            const field = manualMappings[header];
+            if (field !== 'none' && field !== 'unknown' && field in client) {
+              (client as any)[field] = row[colIndex] || '';
+            }
+          });
+
+          return client;
         });
+
+        setPreviewData(preview);
       }
-    } else {
-      // Con el mapeo manual, convertimos los datos CSV en objetos de cliente
-      const preview: Partial<Client>[] = csvData.slice(0, 10).map((row, index) => {
-        const client: Partial<Client> = {
-          clientId: `preview_${index}`,
-          name: '',
-          email: '',
-          phone: '',
-          address: '',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          source: 'CSV Import',
-          classification: 'cliente'
-        };
-
-        // Aplicar mapeos manuales a cada fila
-        headers.forEach((header, colIndex) => {
-          const field = manualMappings[header];
-          if (field !== 'none' && field in client) {
-            (client as any)[field] = row[colIndex] || '';
-          }
-        });
-
-        return client;
+    } catch (error) {
+      console.error("Error generating preview:", error);
+      toast({
+        variant: "destructive",
+        title: t('general.error'),
+        description: t('clients.previewError')
       });
-
-      setPreviewData(preview);
     }
 
     setStep(3);
