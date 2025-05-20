@@ -30,10 +30,10 @@ import { apiRequest } from "@/lib/queryClient";
 import { ScrollArea } from "@/components/ui/scroll-area";
 // Importaciones de Firebase
 import { 
-  getClients as getFirebaseClients, 
-  saveClient as saveFirebaseClient, 
-  updateClient as updateFirebaseClient, 
-  deleteClient as deleteFirebaseClient,
+  getClients, 
+  saveClient, 
+  updateClient, 
+  deleteClient,
   importClientsFromCsv,
   importClientsFromVcf
 } from "../lib/clientFirebase";
@@ -173,7 +173,7 @@ export default function NuevoClientes() {
   // Mutation para actualizar un cliente usando Firebase
   const updateClientMutation = useMutation({
     mutationFn: ({ id, data }: { id: string, data: any }) => 
-      updateFirebaseClient(id, data),
+      updateClient(id, data),
     onSuccess: () => {
       toast({
         title: "Cliente actualizado",
