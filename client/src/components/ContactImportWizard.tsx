@@ -14,7 +14,7 @@ import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { processCSVToClients, FieldMapping, CLIENT_FIELD_OPTIONS } from '@/lib/intelligentImportNew';
+import { processCSVToClients, FieldMapping, CLIENT_FIELD_OPTIONS } from '@/lib/intelligentImport';
 
 interface Client {
   id?: string;

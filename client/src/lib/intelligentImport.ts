@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { Client } from '@/types/client';
 
 // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
 const anthropic = new Anthropic({
@@ -6,6 +7,7 @@ const anthropic = new Anthropic({
   dangerouslyAllowBrowser: true // Permitir uso en el navegador
 });
 
+// Interfaces para el manejo de mapeos y análisis
 export interface ColumnMapping {
   originalHeader: string;
   detectedType: string;
@@ -19,6 +21,17 @@ export interface CSVAnalysisResult {
   headerRow: string[];
   sampleRows: string[][];
   hasHeaderRow: boolean;
+}
+
+// Tipos de campos que podemos identificar
+export type FieldType = 'name' | 'email' | 'phone' | 'address' | 'city' | 'state' | 'zipcode' | 'country' | 'unknown';
+
+// Interface para mapeo interno de campos
+export interface FieldMapping {
+  sourceIndex: number;
+  targetField: string;
+  confidence: number;
+  detectedType: FieldType;
 }
 
 /**
