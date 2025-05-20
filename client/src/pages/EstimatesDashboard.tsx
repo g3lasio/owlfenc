@@ -201,34 +201,51 @@ export default function EstimatesDashboard() {
       }
       
       // Generar HTML para la vista previa (similar al que usamos para el PDF)
+      // Logo en base64 para garantizar que siempre se cargue (pequeño logo genérico)
+      const defaultLogoBase64 = 'data:image/png;base64,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';
+      
+      // Intentamos preparar el logo personalizado si está disponible
+      let logoSrc = defaultLogoBase64;
+      
       const html = `
-      <html>
+      <!DOCTYPE html>
+      <html lang="es">
         <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>Vista Previa - ${estimateData.title || 'Sin título'}</title>
           <style>
-            body {
+            * {
+              box-sizing: border-box;
+              margin: 0;
+              padding: 0;
               font-family: Arial, sans-serif;
-              margin: 20px;
+            }
+            body {
+              padding: 15px;
               color: #333;
               line-height: 1.5;
+              font-size: 14px;
+              max-width: 100%;
             }
             .estimate-header {
               display: flex;
-              justify-content: space-between;
+              flex-direction: column;
               margin-bottom: 20px;
               border-bottom: 1px solid #ddd;
               padding-bottom: 15px;
             }
             .company-info {
-              flex: 1;
+              margin-bottom: 15px;
             }
             .company-logo {
-              max-width: 150px;
-              max-height: 60px;
+              max-width: 120px;
+              max-height: 50px;
               margin-bottom: 10px;
             }
             .estimate-title {
-              text-align: right;
+              text-align: left;
+              margin-top: 15px;
             }
             .estimate-title h2 {
               font-size: 20px;
@@ -245,37 +262,80 @@ export default function EstimatesDashboard() {
               border-bottom: 1px solid #eee;
               padding-bottom: 4px;
               margin-bottom: 8px;
+              font-size: 16px;
+            }
+            .table-responsive {
+              overflow-x: auto;
+              display: block;
+              width: 100%;
+              -webkit-overflow-scrolling: touch;
             }
             table {
               width: 100%;
               border-collapse: collapse;
               margin-bottom: 20px;
-              font-size: 14px;
+              font-size: 13px;
+              min-width: 500px; /* Asegura que la tabla no se haga demasiado angosta */
             }
             th {
               background-color: #f9fafb;
               text-align: left;
-              padding: 8px;
+              padding: 6px;
             }
             td {
-              padding: 8px;
+              padding: 6px;
               border-bottom: 1px solid #eee;
             }
             .total-row {
               font-weight: bold;
             }
             .footer {
-              margin-top: 30px;
-              font-size: 12px;
+              margin-top: 20px;
+              font-size: 11px;
               color: #777;
               text-align: center;
+            }
+            
+            /* Media queries para hacer el diseño responsive */
+            @media (min-width: 640px) {
+              body {
+                padding: 20px;
+                font-size: 16px;
+              }
+              .estimate-header {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: flex-start;
+              }
+              .company-info {
+                flex: 1;
+                margin-bottom: 0;
+              }
+              .company-logo {
+                max-width: 150px;
+                max-height: 60px;
+              }
+              .estimate-title {
+                text-align: right;
+                margin-top: 0;
+              }
+              th, td {
+                padding: 8px;
+              }
+              table {
+                font-size: 14px;
+              }
+              .footer {
+                margin-top: 30px;
+                font-size: 12px;
+              }
             }
           </style>
         </head>
         <body>
           <div class="estimate-header">
             <div class="company-info">
-              <img src="/owl-logo.png" alt="Logo" class="company-logo" crossorigin="anonymous" />
+              <img src="${logoSrc}" alt="Logo" class="company-logo" />
               <h1>Owl Fence</h1>
               <p>123 Fence Avenue, San Diego, CA 92101</p>
               <p>info@owlfence.com | (555) 123-4567</p>
@@ -297,34 +357,36 @@ export default function EstimatesDashboard() {
           
           <div class="section">
             <h3>Detalles del Estimado</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>Descripción</th>
-                  <th>Cantidad</th>
-                  <th>Precio unitario</th>
-                  <th>Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Materiales y Mano de Obra</td>
-                  <td>1</td>
-                  <td>$${estimateData.total ? (estimateData.total * 0.85).toFixed(2) : '0.00'}</td>
-                  <td>$${estimateData.total ? (estimateData.total * 0.85).toFixed(2) : '0.00'}</td>
-                </tr>
-                <tr>
-                  <td>Instalación</td>
-                  <td>1</td>
-                  <td>$${estimateData.total ? (estimateData.total * 0.15).toFixed(2) : '0.00'}</td>
-                  <td>$${estimateData.total ? (estimateData.total * 0.15).toFixed(2) : '0.00'}</td>
-                </tr>
-                <tr class="total-row">
-                  <td colspan="3">Total</td>
-                  <td>$${estimateData.total ? estimateData.total.toFixed(2) : '0.00'}</td>
-                </tr>
-              </tbody>
-            </table>
+            <div class="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Descripción</th>
+                    <th>Cantidad</th>
+                    <th>Precio unitario</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Materiales y Mano de Obra</td>
+                    <td>1</td>
+                    <td>$${estimateData.total ? (estimateData.total * 0.85).toFixed(2) : '0.00'}</td>
+                    <td>$${estimateData.total ? (estimateData.total * 0.85).toFixed(2) : '0.00'}</td>
+                  </tr>
+                  <tr>
+                    <td>Instalación</td>
+                    <td>1</td>
+                    <td>$${estimateData.total ? (estimateData.total * 0.15).toFixed(2) : '0.00'}</td>
+                    <td>$${estimateData.total ? (estimateData.total * 0.15).toFixed(2) : '0.00'}</td>
+                  </tr>
+                  <tr class="total-row">
+                    <td colspan="3">Total</td>
+                    <td>$${estimateData.total ? estimateData.total.toFixed(2) : '0.00'}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
           
           <div class="section">
