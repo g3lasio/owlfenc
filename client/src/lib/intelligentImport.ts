@@ -218,14 +218,23 @@ interface FieldMapping {
 }
 
 /**
- * Patrones para detectar diferentes tipos de datos
+ * Patrones mejorados para detectar diferentes tipos de datos
  */
 const patterns = {
-  email: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-  phone: /^(\+\d{1,3}[\s-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$|^\d{10}$|^\d{3}[\s.-]?\d{3}[\s.-]?\d{4}$/,
-  zipcode: /^\d{5}(-\d{4})?$/,
-  name: /^[A-Za-zÀ-ÖØ-öø-ÿ\s\.'-]{2,}$/,
-  address: /^[A-Za-z0-9\s,\.#'-]{5,}$/
+  // Patrón mejorado de email: más flexible con puntos y caracteres especiales
+  email: /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/i,
+  
+  // Patrón mejorado de teléfono: soporta más formatos internacionales y mexicanos
+  phone: /^(?:\+?(?:[0-9] ?){1,3})?[- (]?(?:[0-9]{2,3})[- )]?(?:[0-9]{2,4})[- ]?(?:[0-9]{2,4})[- ]?(?:[0-9]{2,4})$|^\d{10}$|^(?:\+?52|0052)?[- ]?(?:1|01)?[- ]?(?:[0-9]{2})[- ]?(?:[0-9]{4})[- ]?(?:[0-9]{4})$/,
+  
+  // Patrón mejorado de código postal: soporta formatos internacionales (5-6 dígitos) y México
+  zipcode: /^\d{4,6}(-\d{4})?$/,
+  
+  // Patrón mejorado de nombre: más inclusivo con caracteres internacionales
+  name: /^[A-Za-zÀ-ÖØ-öø-ÿ\s\.'\-,]+(?:\s+[A-Za-zÀ-ÖØ-öø-ÿ\s\.'\-,]+)*$/,
+  
+  // Patrón mejorado de dirección: detecta direcciones con números, letras y símbolos comunes
+  address: /^.*(calle|avenida|av|blvd|boulevard|carretera|carr|plaza|calzada|paseo|camino|colonia|col\.|#|num|número|no\.|cp|c\.p\.).*$/i
 };
 
 /**
@@ -302,42 +311,91 @@ function identifyFieldType(header: string, samples: string[]): FieldType {
 }
 
 /**
- * Infiere el tipo de campo basado en su contenido
+ * Funciones auxiliares para detectar patrones específicos
+ */
+
+/**
+ * Infiere el tipo de campo basado en su contenido con análisis contextual mejorado
  */
 function inferTypeFromContent(samples: string[]): FieldType {
   // Filtramos valores vacíos
   const validSamples = samples.filter(sample => sample && sample.trim());
   if (validSamples.length === 0) return 'unknown';
   
-  // Contamos cuántas muestras coinciden con cada patrón
+  // Preparamos análisis avanzado de contenido
   const counts = {
     email: 0,
     phone: 0,
     name: 0,
     address: 0,
     zipcode: 0,
+    city: 0,
+    state: 0,
+    country: 0,
     unknown: 0
   };
   
+  // Detectores contextuales mejorados
+  const cityIndicators = ['ciudad', 'city', 'localidad', 'municipio'];
+  const stateIndicators = ['estado', 'state', 'provincia', 'province'];
+  const countryIndicators = ['país', 'pais', 'country', 'nación', 'nation'];
+  
+  // Analizamos cada muestra con múltiples niveles de detección
   for (const sample of validSamples) {
-    if (patterns.email.test(sample)) {
+    // Limpiamos el texto para análisis
+    const cleanSample = sample.trim();
+    
+    // Aplicamos detección secuencial con prioridad (email y teléfono son más distintivos)
+    if (detectEmailPattern(cleanSample)) {
       counts.email++;
-    } else if (patterns.phone.test(sample)) {
+    } 
+    else if (detectPhonePattern(cleanSample)) {
       counts.phone++;
-    } else if (patterns.zipcode.test(sample)) {
+    }
+    else if (patterns.zipcode.test(cleanSample)) {
       counts.zipcode++;
-    } else if (patterns.name.test(sample)) {
-      counts.name++;
-    } else if (patterns.address.test(sample)) {
+    }
+    else if (patterns.address.test(cleanSample) || detectAddressPattern(cleanSample)) {
       counts.address++;
-    } else {
-      counts.unknown++;
+    }
+    else if (patterns.name.test(cleanSample) && cleanSample.length < 40) {
+      // Nombres típicamente no son extremadamente largos
+      counts.name++;
+    }
+    // Detección de ciudad, estado y país por coincidencia de términos conocidos
+    else if (cityIndicators.some(term => cleanSample.toLowerCase().includes(term))) {
+      counts.city++;
+    }
+    else if (stateIndicators.some(term => cleanSample.toLowerCase().includes(term))) {
+      counts.state++;
+    }
+    else if (countryIndicators.some(term => cleanSample.toLowerCase().includes(term))) {
+      counts.country++;
+    }
+    else {
+      // Análisis secundario para datos que no coinciden con patrones principales
+      
+      // Si contiene solo letras y espacios y tiene entre 2-30 caracteres, probablemente es un nombre
+      if (/^[A-Za-zÀ-ÖØ-öø-ÿ\s\.'\-,]+$/.test(cleanSample) && cleanSample.length > 2 && cleanSample.length < 30) {
+        counts.name++;
+      }
+      // Si contiene números y letras mezclados, es más probable que sea una dirección
+      else if (/[0-9].*[A-Za-z]|[A-Za-z].*[0-9]/.test(cleanSample) && cleanSample.length > 5) {
+        counts.address++;
+      }
+      else {
+        counts.unknown++;
+      }
     }
   }
   
-  // Determinar el tipo más frecuente
+  // Determinamos el tipo más frecuente con ponderación mejorada
   let maxCount = 0;
   let maxType: FieldType = 'unknown';
+  
+  // Ponderamos ciertos tipos con mayor peso por su importancia
+  counts.email *= 1.3;    // Damos prioridad a la detección de email por su unicidad
+  counts.phone *= 1.2;    // Los teléfonos también son bastante distintivos
   
   for (const [type, count] of Object.entries(counts)) {
     if (count > maxCount) {
@@ -346,8 +404,13 @@ function inferTypeFromContent(samples: string[]): FieldType {
     }
   }
   
-  // Calculamos un umbral mínimo para clasificar (30% de las muestras válidas)
-  const threshold = validSamples.length * 0.3;
+  // Umbral adaptativo basado en la cantidad de muestras
+  const baseThreshold = 0.25; // Reducimos el umbral para mayor sensibilidad
+  const dynamicThreshold = validSamples.length <= 3 ? 
+                          baseThreshold / 2 : // Para pocas muestras, somos más permisivos
+                          baseThreshold;
+  
+  const threshold = validSamples.length * dynamicThreshold;
   
   return maxCount >= threshold ? maxType : 'unknown';
 }
@@ -555,61 +618,154 @@ export function processImportedData(
 /**
  * Corrige campos mal clasificados después del mapeo inicial
  */
+/**
+ * Corrige campos mal clasificados con análisis contextual avanzado
+ * 
+ * Esta función mejorada analiza el contexto completo de los datos del cliente
+ * y utiliza análisis de patrón y heurísticas para detectar y corregir problemas
+ * comunes de clasificación errónea de datos entre campos.
+ */
 function correctMisclassifiedFields(data: Record<string, string>): void {
-  // Verificar si hay campos que probablemente estén mal clasificados
+  // Guardar una copia de los datos originales para comparar
+  const originalData = { ...data };
   
-  // Verificar teléfono en campo de dirección
-  if (data.address && detectPhonePattern(data.address)) {
-    // Si no hay teléfono o el campo de teléfono ya tiene otro valor
-    if (!data.phone || !detectPhonePattern(data.phone)) {
-      data.phone = data.address;
-      // No borramos la dirección por si contiene otros datos
-      if (data.address2) {
-        data.address = data.address2;
-        data.address2 = '';
-      } else {
-        data.address = '';
-      }
-    }
-  }
+  // PASO 1: IDENTIFICACIÓN Y EXTRACCIÓN DE CORREOS ELECTRÓNICOS
+  // Los emails son los más distintivos y fáciles de identificar correctamente
+  let foundEmailInOtherField = false;
   
-  // Verificar email en otros campos
   for (const [field, value] of Object.entries(data)) {
-    if (field !== 'email' && detectEmailPattern(value)) {
-      if (!data.email) {
-        data.email = value;
-        // Si el valor está en un campo importante como nombre o dirección,
-        // no lo borramos completamente para preservar datos potencialmente útiles
-        if (field !== 'name' && field !== 'address') {
-          data[field] = '';
+    if (field !== 'email' && value && detectEmailPattern(value)) {
+      // Extraer solo la parte del email si está mezclada con otros datos
+      const emailMatch = value.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/i);
+      
+      if (emailMatch && emailMatch[0]) {
+        // Si el campo email está vacío o si hemos encontrado un email mejor formado
+        if (!data.email || (data.email && !detectEmailPattern(data.email))) {
+          data.email = emailMatch[0];
+          foundEmailInOtherField = true;
+          
+          // Eliminar solo el email del campo original, preservando el resto del contenido
+          data[field] = value.replace(emailMatch[0], '').trim();
         }
       }
     }
   }
   
-  // Verificar direcciones en campo de teléfono
-  if (data.phone && detectAddressPattern(data.phone)) {
-    if (!data.address || data.address.length < data.phone.length) {
-      // Si no hay dirección o la que hay es menos detallada
-      data.address = data.phone;
-      data.phone = '';
+  // PASO 2: IDENTIFICACIÓN Y EXTRACCIÓN DE NÚMEROS TELEFÓNICOS
+  // Los teléfonos también son bastante distintivos
+  let foundPhoneInOtherField = false;
+  
+  for (const [field, value] of Object.entries(data)) {
+    if (field !== 'phone' && field !== 'mobilePhone' && value) {
+      // Primero verificamos si toda la cadena es un teléfono
+      if (detectPhonePattern(value)) {
+        if (!data.phone) {
+          data.phone = value;
+          foundPhoneInOtherField = true;
+          data[field] = '';
+        } else if (!data.mobilePhone) {
+          // Si ya hay un teléfono principal, usamos este como móvil
+          data.mobilePhone = value;
+          foundPhoneInOtherField = true;
+          data[field] = '';
+        }
+      } else {
+        // Intentamos extraer teléfonos mezclados con otros datos
+        // Patrones comunes de teléfono que podemos encontrar en texto
+        const phonePatterns = [
+          /\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g,  // (555) 123-4567 o 555-123-4567
+          /\+\d{1,3}[-.\s]?\d{2,3}[-.\s]?\d{3,4}[-.\s]?\d{3,4}/g, // +1 555 123 4567
+          /\b\d{10}\b/g  // 10 dígitos juntos
+        ];
+        
+        for (const pattern of phonePatterns) {
+          const matches = value.match(pattern);
+          if (matches && matches.length > 0) {
+            if (!data.phone) {
+              data.phone = matches[0];
+              foundPhoneInOtherField = true;
+            } else if (!data.mobilePhone && matches[0] !== data.phone) {
+              data.mobilePhone = matches[0];
+              foundPhoneInOtherField = true;
+            }
+            
+            // Eliminamos los teléfonos encontrados del texto original
+            data[field] = value.replace(pattern, '').trim();
+          }
+        }
+      }
     }
   }
   
-  // Buscar partes de dirección en campos incorrectos
+  // PASO 3: ANÁLISIS Y CORRECCIÓN DE DIRECCIONES
+  
+  // Verificar si hay direcciones en campos no apropiados (incluido teléfono)
   if (!data.address || data.address.trim() === '') {
-    // Buscar en otros campos
-    for (const [field, value] of Object.entries(data)) {
-      if (['name', 'email', 'phone'].includes(field)) continue;
-      
-      if (detectAddressPattern(value)) {
-        data.address = value;
-        // Solo eliminar el valor si no es un campo esencial
-        if (!['city', 'state', 'zipcode', 'country'].includes(field)) {
+    // Buscar direcciones en otros campos con prioridad
+    const fieldPriority = ['notes', 'alternativeAddress', 'phone', 'mobilePhone', 'name'];
+    
+    for (const field of fieldPriority) {
+      if (data[field] && detectAddressPattern(data[field])) {
+        data.address = data[field];
+        
+        // Si el campo era phone o mobilePhone y hemos movido su contenido a dirección, 
+        // lo limpiamos solo si previamente encontramos un teléfono en otro campo
+        if ((field === 'phone' && foundPhoneInOtherField) || 
+            (field === 'mobilePhone' && foundPhoneInOtherField)) {
+          data[field] = '';
+        }
+        // Para otros campos, preservamos el contenido para no perder datos
+        else if (field !== 'name') {
           data[field] = '';
         }
         break;
       }
+    }
+  }
+  
+  // PASO 4: ANÁLISIS Y CORRECCIÓN DE NOMBRES
+  
+  // Si no hay nombre pero tenemos otros campos que podrían contenerlo
+  if (!data.name || data.name.trim() === '') {
+    for (const [field, value] of Object.entries(data)) {
+      if (field !== 'email' && field !== 'phone' && field !== 'address' && 
+          field !== 'mobilePhone' && value) {
+        
+        // Si parece un nombre (solo letras, no demasiado largo)
+        if (/^[A-Za-zÀ-ÖØ-öø-ÿ\s\.'\-,]+$/.test(value) && 
+            value.length > 2 && value.length < 50 &&
+            !detectAddressPattern(value)) {
+          data.name = value;
+          data[field] = '';
+          break;
+        }
+      }
+    }
+  }
+  
+  // PASO 5: LIMPIEZA FINAL Y VALIDACIÓN
+  
+  // Eliminar campos vacíos que no son esenciales
+  for (const field in data) {
+    if (data[field] === '') {
+      // Mantener los campos principales incluso si están vacíos
+      if (!['name', 'email', 'phone', 'address'].includes(field)) {
+        delete data[field];
+      }
+    }
+  }
+  
+  // Si después de todo el procesamiento, seguimos sin nombre, creamos uno temporal
+  if (!data.name || data.name.trim() === '') {
+    if (data.email) {
+      // Usar parte del email como nombre temporal
+      const emailParts = data.email.split('@');
+      data.name = `Cliente ${emailParts[0]}`;
+    } else if (data.phone) {
+      // Usar teléfono como identificador temporal
+      data.name = `Cliente ${data.phone.substring(Math.max(0, data.phone.length - 6))}`;
+    } else {
+      data.name = 'Cliente sin identificar';
     }
   }
 }
