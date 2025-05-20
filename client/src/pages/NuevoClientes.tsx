@@ -139,7 +139,7 @@ export default function NuevoClientes() {
     queryFn: async () => {
       try {
         console.log("Obteniendo clientes desde Firebase...");
-        const data = await getFirebaseClients();
+        const data = await getClients();
         console.log("Clientes obtenidos:", data);
         return data;
       } catch (err) {
@@ -151,7 +151,7 @@ export default function NuevoClientes() {
 
   // Mutation para crear un cliente usando Firebase
   const createClientMutation = useMutation({
-    mutationFn: (newClient: any) => saveFirebaseClient(newClient),
+    mutationFn: (newClient: any) => saveClient(newClient),
     onSuccess: () => {
       toast({
         title: "Cliente añadido",
@@ -194,7 +194,7 @@ export default function NuevoClientes() {
 
   // Mutation para eliminar un cliente usando Firebase
   const deleteClientMutation = useMutation({
-    mutationFn: (id: string) => deleteFirebaseClient(id),
+    mutationFn: (id: string) => deleteClient(id),
     onSuccess: () => {
       toast({
         title: "Cliente eliminado",
@@ -529,7 +529,7 @@ export default function NuevoClientes() {
       
       // Guardar los clientes en Firebase
       for (const client of clientsWithUserId) {
-        await saveFirebaseClient(client);
+        await saveClient(client);
       }
       
       // Actualizar la lista de clientes
@@ -647,7 +647,7 @@ export default function NuevoClientes() {
       
       // Eliminar cada cliente seleccionado
       for (const clientId of selectedClients) {
-        await deleteFirebaseClient(clientId);
+        await deleteClient(clientId);
       }
       
       // Actualizar lista de clientes
