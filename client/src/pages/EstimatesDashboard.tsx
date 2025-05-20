@@ -654,7 +654,7 @@ export default function EstimatesDashboard() {
           setShowPreviewDialog(open);
         }
       }}>
-        <DialogContent className="sm:max-w-[800px] lg:max-w-[900px] max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogContent className="sm:max-w-[90vw] md:max-w-[85vw] lg:max-w-[80vw] xl:max-w-[75vw] max-h-[90vh] flex flex-col overflow-hidden">
           <DialogHeader className="shrink-0">
             <DialogTitle>Vista Previa del Estimado</DialogTitle>
             <DialogDescription>
@@ -662,31 +662,36 @@ export default function EstimatesDashboard() {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="flex-grow overflow-y-auto overflow-x-auto my-4 border rounded-md p-4 bg-white">
+          <div className="flex-grow overflow-y-auto overflow-x-auto my-4 border rounded-md p-2 sm:p-4 bg-white">
             {previewHtml && (
               <div 
                 dangerouslySetInnerHTML={{ __html: previewHtml }}
                 className="estimate-preview w-full"
                 style={{ 
-                  minWidth: "600px",  /* Asegura un ancho mínimo para evitar que el contenido se comprima */
-                  height: "auto"      /* Permite que la altura se ajuste al contenido */
+                  width: "100%",
+                  height: "auto",
+                  overflowX: "auto",
+                  overflowY: "auto",
+                  maxWidth: "100%"
                 }}
               />
             )}
           </div>
           
-          <DialogFooter className="flex justify-between sm:justify-between">
+          <DialogFooter className="flex flex-col sm:flex-row justify-between sm:justify-between gap-2">
             <Button 
               variant="outline" 
               onClick={handleClosePreview}
+              className="w-full sm:w-auto order-3 sm:order-1"
             >
               Cerrar
             </Button>
-            <div className="flex space-x-2">
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto order-1 sm:order-2">
               <Button 
                 variant="outline"
                 onClick={handleDownloadFromPreview}
                 disabled={isPdfLoading}
+                className="w-full sm:w-auto"
               >
                 {isPdfLoading ? (
                   <RotateCcw className="h-4 w-4 mr-2 animate-spin" />
@@ -698,6 +703,7 @@ export default function EstimatesDashboard() {
               <Button 
                 onClick={() => currentEstimateId && handleSendEmail(currentEstimateId, "Cliente")}
                 disabled={isSendingEmail}
+                className="w-full sm:w-auto"
               >
                 {isSendingEmail ? (
                   <RotateCcw className="h-4 w-4 mr-2 animate-spin" />
