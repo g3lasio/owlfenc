@@ -449,137 +449,260 @@ export default function EstimatesDashboard() {
         <head>
           <title>Estimado - ${estimateData.title || 'Sin título'}</title>
           <style>
-            body {
-              font-family: Arial, sans-serif;
-              margin: 40px;
+            @page {
+              size: letter;
+              margin: 25mm 20mm; /* Márgenes superior/inferior y laterales */
+            }
+            html, body {
+              font-family: 'Helvetica', 'Arial', sans-serif;
+              margin: 0;
+              padding: 0;
               color: #333;
-              line-height: 1.5;
+              line-height: 1.6;
+              font-size: 11pt;
+              background-color: #ffffff;
+            }
+            body {
+              padding: 0;
+              box-sizing: border-box;
+            }
+            * {
+              box-sizing: border-box;
+            }
+            h1 {
+              font-size: 22pt;
+              margin: 0 0 8px 0;
+              color: #2a3f5f;
+            }
+            h2 {
+              font-size: 18pt;
+              margin: 0 0 8px 0;
+              color: #2563eb;
+            }
+            h3 {
+              font-size: 14pt;
+              margin: 0 0 8px 0;
+              color: #2a3f5f;
+              border-bottom: 1px solid #ddd;
+              padding-bottom: 5px;
+            }
+            p {
+              margin: 0 0 8px 0;
+            }
+            /* Layout principal */
+            .container {
+              width: 100%;
+              max-width: 100%;
             }
             .estimate-header {
               display: flex;
               justify-content: space-between;
-              margin-bottom: 30px;
-              border-bottom: 1px solid #ddd;
+              margin-bottom: 25px;
+              border-bottom: 2px solid #eaecef;
               padding-bottom: 20px;
             }
             .company-info {
               flex: 1;
+              padding-right: 20px;
             }
             .company-logo {
               max-width: 200px;
-              max-height: 80px;
+              max-height: 70px;
               margin-bottom: 15px;
+              object-fit: contain;
             }
             .estimate-title {
               text-align: right;
+              flex: 1;
             }
             .estimate-title h2 {
-              font-size: 24px;
-              color: #2563eb;
-              margin: 0 0 10px 0;
+              margin-bottom: 15px;
             }
+            .estimate-title p {
+              margin-bottom: 7px;
+              font-size: 11pt;
+            }
+            /* Información del cliente */
             .client-info {
-              margin-bottom: 30px;
+              margin-bottom: 25px;
+              padding: 15px;
+              background-color: #f8f9fa;
+              border-radius: 6px;
             }
+            .client-info p {
+              margin-bottom: 6px;
+            }
+            /* Secciones */
             .section {
-              margin-bottom: 30px;
+              margin-bottom: 25px;
+              page-break-inside: avoid;
             }
-            .section h3 {
-              border-bottom: 1px solid #eee;
-              padding-bottom: 5px;
-              margin-bottom: 10px;
+            /* Tabla de estimados */
+            .estimate-table-container {
+              margin-bottom: 15px;
+              overflow: visible;
             }
             table {
               width: 100%;
               border-collapse: collapse;
-              margin-bottom: 30px;
+              table-layout: fixed;
+              margin-bottom: 20px;
+            }
+            thead {
+              background-color: #f0f5ff;
+              display: table-header-group; /* Repetir encabezados en nuevas páginas */
             }
             th {
-              background-color: #f9fafb;
               text-align: left;
-              padding: 10px;
+              padding: 12px 10px;
+              font-weight: 600;
+              border-bottom: 2px solid #ddd;
+              color: #2a3f5f;
+              font-size: 11pt;
             }
             td {
-              padding: 10px;
-              border-bottom: 1px solid #eee;
+              padding: 12px 10px;
+              border-bottom: 1px solid #eaecef;
+              vertical-align: top;
+              font-size: 11pt;
+            }
+            tr:nth-child(even) {
+              background-color: #f9fafb;
             }
             .total-row {
               font-weight: bold;
+              background-color: #f0f5ff !important;
+              font-size: 12pt;
             }
+            .total-row td {
+              border-top: 2px solid #ddd;
+              border-bottom: none;
+            }
+            /* Términos y condiciones */
+            .terms {
+              padding: 15px;
+              background-color: #f8f9fa;
+              border-radius: 6px;
+              margin-bottom: 25px;
+              page-break-inside: avoid;
+            }
+            .terms p {
+              margin-bottom: 5px;
+              font-size: 10pt;
+            }
+            /* Pie de página */
             .footer {
-              margin-top: 50px;
-              font-size: 12px;
-              color: #777;
+              margin-top: 30px;
+              padding-top: 15px;
+              font-size: 10pt;
+              color: #6c757d;
               text-align: center;
+              border-top: 1px solid #eaecef;
+              page-break-inside: avoid;
+            }
+            /* Columnas */
+            .columns {
+              display: flex;
+              justify-content: space-between;
+              gap: 20px;
+            }
+            .column {
+              flex: 1;
+            }
+            /* Responsividad */
+            @media print {
+              body {
+                width: 100%;
+                font-size: 11pt;
+              }
+              .page-break {
+                page-break-before: always;
+              }
             }
           </style>
         </head>
         <body>
-          <div class="estimate-header">
-            <div class="company-info">
-              <img src="${logoBase64}" alt="Logo" class="company-logo" />
-              <h1>Owl Fence</h1>
-              <p>123 Fence Avenue, San Diego, CA 92101</p>
-              <p>info@owlfence.com | (555) 123-4567</p>
+          <div class="container">
+            <div class="estimate-header">
+              <div class="company-info">
+                <img src="${logoBase64}" alt="Logo" class="company-logo" />
+                <h1>Owl Fence</h1>
+                <p>123 Fence Avenue, San Diego, CA 92101</p>
+                <p>info@owlfence.com | (555) 123-4567</p>
+              </div>
+              <div class="estimate-title">
+                <h2>ESTIMADO</h2>
+                <p><strong>Fecha:</strong> ${new Date().toLocaleDateString()}</p>
+                <p><strong>Estimado #:</strong> EST-${estimateId.slice(-6)}</p>
+                <p><strong>Válido hasta:</strong> ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}</p>
+              </div>
             </div>
-            <div class="estimate-title">
-              <h2>ESTIMADO</h2>
-              <p><strong>Fecha:</strong> ${new Date().toLocaleDateString()}</p>
-              <p><strong>Estimado #:</strong> EST-${estimateId.slice(-6)}</p>
-              <p><strong>Válido hasta:</strong> ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}</p>
+            
+            <div class="section">
+              <h3>Información del Cliente</h3>
+              <div class="client-info">
+                <div class="columns">
+                  <div class="column">
+                    <p><strong>Nombre:</strong> ${estimateData.clientName || 'N/A'}</p>
+                    <p><strong>Email:</strong> ${estimateData.clientEmail || 'N/A'}</p>
+                  </div>
+                  <div class="column">
+                    <p><strong>Teléfono:</strong> ${estimateData.clientPhone || 'N/A'}</p>
+                    <p><strong>Dirección:</strong> ${estimateData.clientAddress || 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-          
-          <div class="section client-info">
-            <h3>Cliente</h3>
-            <p><strong>Nombre:</strong> ${estimateData.clientName || 'N/A'}</p>
-            <p><strong>Email:</strong> ${estimateData.clientEmail || 'N/A'}</p>
-            <p><strong>Teléfono:</strong> ${estimateData.clientPhone || 'N/A'}</p>
-            <p><strong>Dirección:</strong> ${estimateData.clientAddress || 'N/A'}</p>
-          </div>
-          
-          <div class="section">
-            <h3>Detalles del Estimado</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>Descripción</th>
-                  <th>Cantidad</th>
-                  <th>Precio unitario</th>
-                  <th>Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Materiales y Mano de Obra</td>
-                  <td>1</td>
-                  <td>$${estimateData.total ? (estimateData.total * 0.85).toFixed(2) : '0.00'}</td>
-                  <td>$${estimateData.total ? (estimateData.total * 0.85).toFixed(2) : '0.00'}</td>
-                </tr>
-                <tr>
-                  <td>Instalación</td>
-                  <td>1</td>
-                  <td>$${estimateData.total ? (estimateData.total * 0.15).toFixed(2) : '0.00'}</td>
-                  <td>$${estimateData.total ? (estimateData.total * 0.15).toFixed(2) : '0.00'}</td>
-                </tr>
-                <tr class="total-row">
-                  <td colspan="3">Total</td>
-                  <td>$${estimateData.total ? estimateData.total.toFixed(2) : '0.00'}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          
-          <div class="section">
-            <h3>Términos y Condiciones</h3>
-            <p>1. Este estimado tiene validez por 30 días.</p>
-            <p>2. Se requiere un depósito del 50% para iniciar el trabajo.</p>
-            <p>3. El balance restante se pagará al completar el trabajo.</p>
-            <p>4. Garantía de 1 año en materiales y mano de obra.</p>
-          </div>
-          
-          <div class="footer">
-            <p>Gracias por su confianza en Owl Fence. ¡Esperamos trabajar con usted!</p>
+            
+            <div class="section">
+              <h3>Detalles del Estimado</h3>
+              <div class="estimate-table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th width="45%">Descripción</th>
+                      <th width="15%">Cantidad</th>
+                      <th width="20%">Precio unitario</th>
+                      <th width="20%">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Materiales y Mano de Obra</td>
+                      <td>1</td>
+                      <td>$${estimateData.total ? (estimateData.total * 0.85).toFixed(2) : '0.00'}</td>
+                      <td>$${estimateData.total ? (estimateData.total * 0.85).toFixed(2) : '0.00'}</td>
+                    </tr>
+                    <tr>
+                      <td>Instalación</td>
+                      <td>1</td>
+                      <td>$${estimateData.total ? (estimateData.total * 0.15).toFixed(2) : '0.00'}</td>
+                      <td>$${estimateData.total ? (estimateData.total * 0.15).toFixed(2) : '0.00'}</td>
+                    </tr>
+                    <tr class="total-row">
+                      <td colspan="3"><strong>Total</strong></td>
+                      <td><strong>$${estimateData.total ? estimateData.total.toFixed(2) : '0.00'}</strong></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            <div class="section">
+              <h3>Términos y Condiciones</h3>
+              <div class="terms">
+                <p>1. Este estimado tiene validez por 30 días.</p>
+                <p>2. Se requiere un depósito del 50% para iniciar el trabajo.</p>
+                <p>3. El balance restante se pagará al completar el trabajo.</p>
+                <p>4. Garantía de 1 año en materiales y mano de obra.</p>
+                <p>5. Los precios pueden variar si las condiciones del proyecto cambian.</p>
+              </div>
+            </div>
+            
+            <div class="footer">
+              <p>Gracias por su confianza en Owl Fence. ¡Esperamos trabajar con usted!</p>
+              <p>Si tiene alguna pregunta sobre este estimado, no dude en contactarnos.</p>
+            </div>
           </div>
         </body>
       </html>
