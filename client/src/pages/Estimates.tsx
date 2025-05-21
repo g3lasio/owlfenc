@@ -1404,7 +1404,6 @@ export default function Estimates() {
             <div className="space-y-3">
               <div>
                 <div className="flex justify-between items-center mb-1">
-                  <Label htmlFor="estimate-title" className="text-xs">Título</Label>
                   <div className="flex items-center">
                     <Label htmlFor="template-style" className="text-xs mr-2">Plantilla:</Label>
                     <Select 
@@ -1433,13 +1432,6 @@ export default function Estimates() {
                     </Select>
                   </div>
                 </div>
-                <Input 
-                  id="estimate-title" 
-                  value={estimate.title} 
-                  onChange={(e) => setEstimate(prev => ({ ...prev, title: e.target.value }))}
-                  placeholder="Título del estimado"
-                  className="h-9"
-                />
               </div>
               
               <div>
