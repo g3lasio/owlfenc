@@ -1216,6 +1216,7 @@ export class EstimatorService {
       throw error;
     }
   }
+  }
   
   /**
    * Formatea las dimensiones del proyecto para mostrar en el HTML

@@ -16,29 +16,46 @@ export async function loadTemplateHTML(templateStyle: string = 'standard'): Prom
     
     console.log(`Cargando plantilla: ${templateFileName}`);
     
-    // Construir la URL para la plantilla - intentar diferentes rutas
-    const templateUrls = [
-      `/templates/${templateFileName}`,
+    // ESTRATEGIA 1: Cargar usando el endpoint dedicado que configuramos en el servidor
+    try {
+      const url = `/templates/${templateFileName}`;
+      console.log(`Intentando cargar plantilla desde endpoint dedicado: ${url}`);
+      
+      const response = await fetch(url, { 
+        method: 'GET',
+        headers: { 'Accept': 'text/html' },
+        cache: 'no-store' // Evitar cache para desarrollo
+      });
+      
+      if (response.ok) {
+        console.log(`✅ Plantilla cargada exitosamente desde endpoint dedicado`);
+        const html = await response.text();
+        return html;
+      } else {
+        console.log(`❌ Fallo cargando desde endpoint dedicado: ${response.status} ${response.statusText}`);
+      }
+    } catch (err) {
+      console.error(`Error intentando cargar desde endpoint dedicado:`, err);
+    }
+    
+    // ESTRATEGIA 2: Intentar rutas alternativas si el endpoint principal falla
+    const alternativeUrls = [
       `/static/templates/${templateFileName}`,
       `/public/templates/${templateFileName}`,
       `/public/static/templates/${templateFileName}`
     ];
     
-    console.log(`Intentando cargar plantilla desde múltiples rutas posibles`);
+    console.log(`Intentando cargar plantilla desde rutas alternativas`);
     
-    // Intentar cargar desde varias rutas
-    let response;
-    let loaded = false;
-    
-    for (const url of templateUrls) {
+    for (const url of alternativeUrls) {
       try {
         console.log(`Intentando cargar plantilla desde: ${url}`);
-        response = await fetch(url);
+        const response = await fetch(url);
         
         if (response.ok) {
           console.log(`✅ Plantilla cargada exitosamente desde: ${url}`);
-          loaded = true;
-          break;
+          const html = await response.text();
+          return html;
         } else {
           console.log(`❌ Fallo cargando desde ${url}: ${response.status} ${response.statusText}`);
         }
@@ -47,25 +64,96 @@ export async function loadTemplateHTML(templateStyle: string = 'standard'): Prom
       }
     }
     
-    if (!loaded) {
-      console.error('No se pudo cargar la plantilla desde ninguna ruta');
-      response = new Response(null, { status: 404, statusText: 'No se encontró ninguna plantilla' });
+    // ESTRATEGIA 3: Si no pudimos cargar la plantilla solicitada, intentar con la básica
+    if (templateFileName !== 'basictemplateestimate.html') {
+      console.log('🔄 Intentando cargar plantilla básica como respaldo');
+      return loadTemplateHTML('standard');
     }
     
-    if (!response.ok) {
-      console.error(`Error cargando plantilla ${templateFileName}:`, response.statusText);
-      
-      // Intentar cargar la plantilla básica como respaldo
-      if (templateFileName !== 'basictemplateestimate.html') {
-        console.log('Intentando cargar plantilla básica como respaldo');
-        return loadTemplateHTML('standard');
-      }
-      
-      throw new Error(`No se pudo cargar la plantilla: ${response.statusText}`);
-    }
-    
-    const html = await response.text();
-    return html;
+    // ESTRATEGIA 4: Si todo lo demás falla, usar una plantilla de emergencia integrada
+    console.warn('⚠️ Usando plantilla de emergencia integrada en el código');
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Presupuesto</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h1 { color: #333; }
+    .company-info { margin-bottom: 20px; }
+    .client-info { margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+    th { background-color: #f2f2f2; }
+    .footer { margin-top: 30px; }
+  </style>
+</head>
+<body>
+  <div style="background-color: #ffeeee; border: 1px solid #ffaaaa; padding: 10px; margin-bottom: 20px;">
+    <strong>Aviso:</strong> Usando plantilla de emergencia desde el cliente.
+  </div>
+  
+  <div class="company-info">
+    <h1>[COMPANY_NAME]</h1>
+    <p>[COMPANY_ADDRESS]</p>
+    <p>Tel: [COMPANY_PHONE] | Email: [COMPANY_EMAIL]</p>
+    <p>Licencia: [COMPANY_LICENSE]</p>
+  </div>
+  
+  <div class="estimate-header">
+    <h2>Presupuesto #[ESTIMATE_NUMBER]</h2>
+    <p>Fecha: [ESTIMATE_DATE]</p>
+  </div>
+  
+  <div class="client-info">
+    <h3>Cliente:</h3>
+    <p>[CLIENT_NAME]</p>
+    <p>[CLIENT_ADDRESS]</p>
+    <p>[CLIENT_CITY_STATE_ZIP]</p>
+    <p>Tel: [CLIENT_PHONE] | Email: [CLIENT_EMAIL]</p>
+  </div>
+  
+  <div class="project-info">
+    <h3>Proyecto:</h3>
+    <p>Tipo: [PROJECT_TYPE]</p>
+    <p>Dirección: [PROJECT_ADDRESS]</p>
+    <p>Dimensiones: [PROJECT_DIMENSIONS]</p>
+    <p>Notas: [PROJECT_NOTES]</p>
+  </div>
+  
+  <h3>Detalle de Costos:</h3>
+  <table>
+    <tr>
+      <th>Descripción</th>
+      <th>Cantidad</th>
+      <th>Unidad</th>
+      <th>Precio Unitario</th>
+      <th>Total</th>
+    </tr>
+    [COST_TABLE_ROWS]
+    <tr>
+      <td colspan="4" style="text-align: right;"><strong>Subtotal:</strong></td>
+      <td>[SUBTOTAL]</td>
+    </tr>
+    <tr>
+      <td colspan="4" style="text-align: right;"><strong>Impuesto ([TAX_RATE]):</strong></td>
+      <td>[TAX_AMOUNT]</td>
+    </tr>
+    <tr>
+      <td colspan="4" style="text-align: right;"><strong>TOTAL:</strong></td>
+      <td>[TOTAL]</td>
+    </tr>
+  </table>
+  
+  <div class="completion-info">
+    <p><strong>Tiempo estimado de finalización:</strong> [COMPLETION_TIME] días</p>
+  </div>
+  
+  <div class="footer">
+    <p>Este presupuesto es válido por 30 días desde la fecha de emisión.</p>
+  </div>
+</body>
+</html>`;
   } catch (error) {
     console.error('Error al cargar la plantilla:', error);
     
