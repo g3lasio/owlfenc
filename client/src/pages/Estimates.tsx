@@ -760,6 +760,66 @@ export default function Estimates() {
     console.log('Generando preview del estimado...');
     setIsEditingPreview(false); // Aseguramos que comenzamos en modo vista
     
+    try {
+      // Convertir el estilo seleccionado al ID de template correspondiente
+      const templateId = styleToTemplateId[selectedTemplateStyle] || 999001;
+      setSelectedTemplateId(templateId);
+      
+      console.log(`Generando preview con estilo: ${selectedTemplateStyle}, templateId: ${templateId}`);
+      
+      // Llamar a la API para generar el HTML usando la plantilla estática
+      const response = await fetch('/api/estimates/html', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          estimateData: {
+            client: estimate.client,
+            contractor: profile,
+            project: {
+              type: estimate.title,
+              subtype: estimate.title,
+              dimensions: { area: 0 },
+              notes: estimate.notes
+            },
+            items: estimate.items.map(item => ({
+              description: item.name,
+              quantity: item.quantity,
+              unit: item.unit,
+              price: item.price,
+              totalCost: item.total
+            })),
+            subtotal: estimate.subtotal,
+            tax: estimate.tax,
+            total: estimate.total
+          },
+          templateId: templateId
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error generando HTML para previsualización');
+      }
+      
+      const { html } = await response.json();
+      console.log('HTML para preview generado correctamente con plantilla estática');
+      
+      setPreviewHtml(html);
+      setShowPreviewDialog(true);
+      return;
+    } catch (error) {
+      console.error('Error generando previsualización con plantilla estática:', error);
+      toast({
+        title: 'Aviso',
+        description: 'Usando plantilla local de respaldo para la vista previa.',
+        variant: 'default'
+      });
+    }
+    
+    // Fallback si la API falla: usar generación local
+    console.log('Usando método local para previsualización');
+    
     // En este punto sabemos que estimate.client no es null
     const client = estimate.client;
     
@@ -1201,6 +1261,72 @@ export default function Estimates() {
       
       console.log('HTML para PDF generado correctamente');
       
+      // Intentar generar PDF usando la API con la plantilla estática
+      try {
+        // Usar el mismo ID de template que se usó en preview
+        const templateId = styleToTemplateId[selectedTemplateStyle] || 999001;
+        console.log(`Generando PDF con templateId: ${templateId}, estilo: ${selectedTemplateStyle}`);
+        
+        // Preparar los datos para la API
+        const response = await fetch('/api/estimates/pdf', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            estimateData: {
+              client: estimate.client,
+              contractor: profile,
+              project: {
+                type: estimate.title,
+                subtype: estimate.title,
+                dimensions: { area: 0 },
+                notes: estimate.notes
+              },
+              items: estimate.items.map(item => ({
+                description: item.name,
+                quantity: item.quantity,
+                unit: item.unit,
+                price: item.price,
+                totalCost: item.total
+              })),
+              subtotal: estimate.subtotal,
+              tax: estimate.tax,
+              total: estimate.total
+            },
+            templateId: templateId,
+            fileName: `Estimado-${estimate.client?.name?.replace(/\s+/g, '-') || 'Sin-Cliente'}-${Date.now()}`
+          }),
+        });
+        
+        if (response.ok) {
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `Estimado-${estimate.client?.name?.replace(/\s+/g, '-') || 'Sin-Cliente'}-${Date.now()}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          
+          // Limpiar
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+          
+          toast({
+            title: 'PDF generado',
+            description: 'El PDF se ha generado y descargado correctamente usando la plantilla seleccionada.'
+          });
+          
+          return; // Terminar si la API funciona correctamente
+        } else {
+          console.warn('Error generando PDF con la API, usando método alternativo');
+        }
+      } catch (apiError) {
+        console.error('Error llamando a la API de generación de PDF:', apiError);
+        console.log('Usando métodos alternativos de generación de PDF');
+      }
+      
+      // Fallback: Generación del lado del cliente con HTML existente
       // Generar un nombre de archivo para el PDF
       const fileName = `Estimado-${estimate.client?.name?.replace(/\s+/g, '-') || 'Sin-Cliente'}-${Date.now()}`;
       
