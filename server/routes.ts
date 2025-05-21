@@ -38,6 +38,7 @@ import { registerPropertyRoutes } from './routes/property-routes';
 import contractRoutes from './routes/contract-routes';
 import clientRoutes from './routes/clientRoutes';
 import quickbooksRoutes from './routes/quickbooks-routes';
+import contactRoutes from './routes/contact-route';
 import anthropicRoutes from './routes/anthropic';
 import pdfRoutes from './routes/pdf-routes';
 import paymentRoutes from './routes/payment-routes'; // Import payment routes
@@ -354,6 +355,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Registrar rutas de Anthropic (Claude)
   app.use('/api/anthropic', anthropicRoutes);
+  
+  // Registrar ruta de contacto
+  app.use('/api/contact', contactRoutes);
   
   // Registrar rutas de generación de PDF
   app.use('/api/pdf', pdfRoutes);
