@@ -149,12 +149,18 @@ export function registerEstimateRoutes(app: Express): void {
   app.post('/api/estimates/html', async (req: Request, res: Response) => {
     try {
       const schema = z.object({
-        estimateData: z.record(z.any())
+        estimateData: z.record(z.any()),
+        templateId: z.number().optional()
       });
       
-      const { estimateData } = schema.parse(req.body);
+      const { estimateData, templateId } = schema.parse(req.body);
       
-      // Generar HTML
+      // Incluir el ID de la plantilla en los datos si se proporcionó
+      if (templateId) {
+        estimateData.templateId = templateId;
+      }
+      
+      // Generar HTML usando la plantilla especificada
       const html = await estimatorService.generateEstimateHtml(estimateData);
       
       res.json({ html });

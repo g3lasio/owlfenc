@@ -882,152 +882,82 @@ export class EstimatorService {
    */
   async generateEstimateHtml(estimateData: any): Promise<string> {
     try {
-      // En una implementación real, usaríamos un motor de plantillas como Handlebars
-      // Por ahora, generamos un HTML básico
+      // Determinar qué plantilla usar basado en el tipo de estimado
+      // Por defecto, usamos la plantilla 'standard'
+      let templateStyle = 'standard';
       
-      const html = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <title>Estimado de Proyecto</title>
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              line-height: 1.6;
-              color: #333;
-              max-width: 800px;
-              margin: 0 auto;
-              padding: 20px;
-            }
-            h1, h2, h3 {
-              color: #0066cc;
-            }
-            .header {
-              text-align: center;
-              margin-bottom: 30px;
-              border-bottom: 1px solid #ddd;
-              padding-bottom: 20px;
-            }
-            .info-section {
-              display: flex;
-              justify-content: space-between;
-              margin-bottom: 30px;
-            }
-            .info-box {
-              width: 48%;
-            }
-            .project-details {
-              margin-bottom: 30px;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-bottom: 20px;
-            }
-            th, td {
-              border: 1px solid #ddd;
-              padding: 8px;
-              text-align: left;
-            }
-            th {
-              background-color: #f2f2f2;
-            }
-            .totals {
-              margin-top: 20px;
-              text-align: right;
-            }
-            .footer {
-              margin-top: 40px;
-              font-size: 0.9em;
-              text-align: center;
-              color: #666;
-              border-top: 1px solid #ddd;
-              padding-top: 20px;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-              ${estimateData.contractor?.logo ? 
-                `<div style="max-width: 200px; max-height: 80px;">
-                   <img src="${estimateData.contractor.logo}" alt="Logo" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
-                 </div>` : 
-                '<div style="width: 200px;"></div>'}
-              <div>
-                <h1>Estimado de Proyecto</h1>
-                <p>Fecha: ${new Date().toLocaleDateString()}</p>
-                <p>Número de Estimado: ${estimateData.projectId || 'N/A'}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div class="info-section">
-            <div class="info-box">
-              <h3>Contratista</h3>
-              <p>
-                <strong>${estimateData.contractor?.name || ''}</strong><br>
-                ${estimateData.contractor?.company || ''}<br>
-                ${estimateData.contractor?.address || ''}<br>
-                Teléfono: ${estimateData.contractor?.phone || ''}<br>
-                Email: ${estimateData.contractor?.email || ''}<br>
-                Licencia: ${estimateData.contractor?.license || ''}
-              </p>
-            </div>
-            
-            <div class="info-box">
-              <h3>Cliente</h3>
-              <p>
-                <strong>${estimateData.client?.name || ''}</strong><br>
-                ${estimateData.client?.address || ''}<br>
-                ${estimateData.client?.city || ''} ${estimateData.client?.state || ''} ${estimateData.client?.zip || ''}<br>
-                Teléfono: ${estimateData.client?.phone || ''}<br>
-                Email: ${estimateData.client?.email || ''}
-              </p>
-            </div>
-          </div>
-          
-          <div class="project-details">
-            <h3>Detalles del Proyecto</h3>
-            <p>
-              <strong>Tipo:</strong> ${estimateData.project?.type || ''} - ${estimateData.project?.subtype || ''}<br>
-              <strong>Dirección del Proyecto:</strong> ${estimateData.client?.address || ''}<br>
-              <strong>Dimensiones:</strong> ${this.formatDimensions(estimateData.project?.dimensions)}<br>
-              ${estimateData.project?.notes ? `<strong>Notas:</strong> ${estimateData.project.notes}` : ''}
-            </p>
-          </div>
-          
-          <h3>Desglose de Costos</h3>
-          
-          <table>
-            <thead>
-              <tr>
-                <th>Descripción</th>
-                <th>Cantidad</th>
-                <th>Unidad</th>
-                <th>Precio Unitario</th>
-                <th>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${this.generateEstimateTableRows(estimateData)}
-            </tbody>
-          </table>
-          
-          <div class="totals">
-            <p><strong>Subtotal:</strong> $${this.formatCurrency(this.getEstimateSubtotal(estimateData))}</p>
-            <p><strong>Impuestos (${DEFAULT_TAX_RATE * 100}%):</strong> $${this.formatCurrency(this.getEstimateTax(estimateData))}</p>
-            <p><strong>Total:</strong> $${this.formatCurrency(this.getEstimateTotal(estimateData))}</p>
-          </div>
-          
-          <div class="footer">
-            <p>Este estimado es válido por 30 días.</p>
-            <p>Tiempo estimado de finalización: ${this.getEstimateCompletionTime(estimateData)}</p>
-          </div>
-        </body>
-        </html>
-      `;
+      // Si hay un ID de plantilla específico en los datos, determinar el estilo basado en él
+      if (estimateData.templateId) {
+        // Mapeo de IDs a estilos (esto debería coincidir con la lógica del frontend)
+        const templateMap: Record<number, string> = {
+          1: 'standard',
+          2: 'professional',
+          3: 'luxury'
+        };
+        
+        templateStyle = templateMap[estimateData.templateId] || 'standard';
+      }
+      
+      // Cargar el archivo de template HTML desde el sistema de archivos
+      const templatePath = `./public/templates/${templateStyle === 'standard' ? 'basictemplateestimate.html' : 
+                                             templateStyle === 'professional' ? 'Premiumtemplateestimate.html' : 
+                                             'luxurytemplate.html'}`;
+      
+      // Leer el contenido del archivo
+      const fs = require('fs');
+      let templateHtml = '';
+      try {
+        templateHtml = fs.readFileSync(templatePath, 'utf8');
+        console.log(`Template cargado: ${templatePath}`);
+      } catch (fsError) {
+        console.error(`Error cargando template desde ${templatePath}:`, fsError);
+        throw new Error(`No se pudo cargar la plantilla HTML: ${fsError.message}`);
+      }
+      
+      // Reemplazar placeholders en el template con los datos del estimado
+      let html = templateHtml;
+      
+      // Reemplazar datos básicos
+      const replacements: Record<string, string> = {
+        '[COMPANY_NAME]': estimateData.contractor?.name || 'Nombre de la Empresa',
+        '[COMPANY_ADDRESS]': estimateData.contractor?.address || 'Dirección de la Empresa',
+        '[COMPANY_PHONE]': estimateData.contractor?.phone || 'Teléfono',
+        '[COMPANY_EMAIL]': estimateData.contractor?.email || 'Email',
+        '[COMPANY_LICENSE]': estimateData.contractor?.license || 'Licencia',
+        '[ESTIMATE_DATE]': new Date().toLocaleDateString(),
+        '[ESTIMATE_NUMBER]': estimateData.projectId || 'N/A',
+        '[CLIENT_NAME]': estimateData.client?.name || 'Cliente',
+        '[CLIENT_ADDRESS]': estimateData.client?.address || 'Dirección',
+        '[CLIENT_CITY_STATE_ZIP]': `${estimateData.client?.city || ''} ${estimateData.client?.state || ''} ${estimateData.client?.zip || ''}`,
+        '[CLIENT_PHONE]': estimateData.client?.phone || 'Teléfono',
+        '[CLIENT_EMAIL]': estimateData.client?.email || 'Email',
+        '[PROJECT_TYPE]': `${estimateData.project?.type || ''} - ${estimateData.project?.subtype || ''}`,
+        '[PROJECT_ADDRESS]': estimateData.client?.address || '',
+        '[PROJECT_DIMENSIONS]': this.formatDimensions(estimateData.project?.dimensions),
+        '[PROJECT_NOTES]': estimateData.project?.notes || '',
+        '[SUBTOTAL]': '$' + this.formatCurrency(this.getEstimateSubtotal(estimateData)),
+        '[TAX_RATE]': (DEFAULT_TAX_RATE * 100) + '%',
+        '[TAX_AMOUNT]': '$' + this.formatCurrency(this.getEstimateTax(estimateData)),
+        '[TOTAL]': '$' + this.formatCurrency(this.getEstimateTotal(estimateData)),
+        '[COMPLETION_TIME]': this.getEstimateCompletionTime(estimateData)
+      };
+      
+      // Reemplazar cada placeholder en el template
+      Object.entries(replacements).forEach(([placeholder, value]) => {
+        html = html.replace(new RegExp(placeholder, 'g'), value);
+      });
+      
+      // Para el logo de la empresa, necesitamos un enfoque diferente ya que es una imagen
+      if (estimateData.contractor?.logo) {
+        html = html.replace('[COMPANY_LOGO]', 
+          `<img src="${estimateData.contractor.logo}" alt="Logo" style="max-width: 100%; max-height: 100px; object-fit: contain;" />`);
+      } else {
+        html = html.replace('[COMPANY_LOGO]', '');
+      }
+      
+      // Generar las filas de la tabla de costos
+      const tableRowsHtml = this.generateEstimateTableRows(estimateData);
+      html = html.replace('[COST_TABLE_ROWS]', tableRowsHtml);
       
       return html;
     } catch (error) {

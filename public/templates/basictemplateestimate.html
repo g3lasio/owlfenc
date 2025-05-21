@@ -1,307 +1,138 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Basic Estimate Template - Powered by Mervin AI</title>
-    <style>
-      body {
-        font-family: "Segoe UI", Arial, sans-serif;
-        background: #fafbfc;
-        margin: 0;
-        padding: 0;
-        color: #222;
-      }
-      .container {
-        max-width: 730px;
-        margin: 40px auto;
-        background: #fff;
-        border-radius: 12px;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-        padding: 28px 24px 16px 24px;
-        border: 1.2px solid #e2e4e8;
-        position: relative;
-        overflow: hidden;
-      }
-      /* Watermark Mervin AI */
-      .watermark {
-        position: absolute;
-        top: 38%;
-        left: 50%;
-        transform: translate(-50%, -50%) rotate(-16deg);
-        opacity: 0.16;
-        z-index: 0;
-        width: 60%;
-        pointer-events: none;
-        filter: grayscale(0.9) blur(0.2px);
-        user-select: none;
-      }
-      .header,
-      .footer {
-        position: relative;
-        z-index: 2;
-      }
-      .header {
-        border-bottom: 1.2px solid #e2e4e8;
-        padding-bottom: 15px;
-        margin-bottom: 16px;
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-      }
-      .company-details {
-        line-height: 1.6;
-      }
-      .logo {
-        max-width: 90px;
-        max-height: 54px;
-        margin-bottom: 4px;
-        background: #f5f6fa;
-        border-radius: 7px;
-        border: 1px solid #e2e4e8;
-        display: block;
-      }
-      .company-name {
-        font-size: 1.08rem;
-        font-weight: 600;
-        color: #232323;
-        margin-bottom: 2px;
-      }
-      .company-address {
-        font-size: 0.97rem;
-        color: #444;
-      }
-      .estimate-title {
-        text-align: right;
-        font-size: 1.42rem;
-        color: #2a2a2a;
-        font-weight: 600;
-        letter-spacing: 0.7px;
-      }
-      .estimate-meta {
-        text-align: right;
-        font-size: 0.97rem;
-        color: #6c6c6c;
-        line-height: 1.44;
-      }
-      .section {
-        margin-bottom: 15px;
-        position: relative;
-        z-index: 2;
-      }
-      .section-title {
-        font-size: 1.06rem;
-        font-weight: bold;
-        color: #292929;
-        margin-bottom: 3px;
-        letter-spacing: 0.3px;
-        background: #f6f8fa;
-        padding: 2px 10px;
-        border-left: 4px solid #c0c3c9;
-        border-radius: 4px 0 0 4px;
-        display: inline-block;
-      }
-      .details-table {
-        width: 100%;
-        border-collapse: collapse;
-        background: #f8fafc;
-        border-radius: 6px;
-        overflow: hidden;
-        margin-bottom: 4px;
-        border: 1px solid #e2e4e8;
-        font-size: 0.98rem;
-      }
-      .details-table th,
-      .details-table td {
-        padding: 9px 7px;
-        text-align: left;
-        color: #212121;
-      }
-      .details-table th {
-        background: #f3f4f7;
-        color: #242424;
-        font-size: 1.01rem;
-        font-weight: 600;
-        border-bottom: 1px solid #ececec;
-      }
-      .details-table td {
-        border-bottom: 1px solid #ececec;
-      }
-      .details-table tr:last-child td {
-        border-bottom: none;
-      }
-      .totals-row {
-        font-weight: 700;
-        background: #f4f4f4;
-        font-size: 1.03rem;
-        color: #252525;
-      }
-      .project-details {
-        font-size: 0.99rem;
-        color: #313131;
-        margin: 10px 0 18px 0;
-        padding: 10px 13px 8px 13px;
-        background: #f6f8fa;
-        border-radius: 7px;
-        border-left: 3px solid #bdbdbd;
-      }
-      .client-contact a,
-      .company-details a {
-        display: inline-block;
-        margin-right: 8px;
-        padding: 3px 8px;
-        color: #383838;
-        background: #f6f8fa;
-        border-radius: 6px;
-        text-decoration: none;
-        font-weight: 500;
-        font-size: 0.99rem;
-        border: 1px solid #e2e4e8;
-      }
-      .client-contact a:hover,
-      .company-details a:hover {
-        background: #e2e4e8;
-        color: #242424;
-      }
-      .footer {
-        text-align: center;
-        margin-top: 13px;
-        font-size: 0.93rem;
-        color: #8c8c8c;
-        padding-top: 5px;
-        border-top: 1px solid #e2e4e8;
-        letter-spacing: 0.08px;
-        font-family: "Segoe UI", Arial, sans-serif;
-        background: #fafbfc;
-      }
-      .powered {
-        display: block;
-        color: #b2b2b2;
-        font-size: 0.97rem;
-        margin-top: 5px;
-        letter-spacing: 0.09em;
-        font-weight: 500;
-      }
-      @media (max-width: 650px) {
-        .container {
-          padding: 10px 2px 10px 2px;
-        }
-        .header,
-        .estimate-meta,
-        .company-details {
-          flex-direction: column;
-          text-align: left;
-        }
-        .logo {
-          margin-bottom: 8px;
-        }
-        .footer {
-          text-align: center;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <!-- Watermark logo -->
-      <img
-        src="https://i.postimg.cc/G3ZFZTjy/logo-mervin.png"
-        alt="Mervin AI Watermark"
-        class="watermark"
-      />
-
-      <div class="header">
-        <div class="company-details">
-          <img src="[COMPANY_LOGO_URL]" alt="Company Logo" class="logo" />
-          <div class="company-name">[Company Name]</div>
-          <div class="company-address">[Company Address, City, State, ZIP]</div>
-          <div>
-            <a href="mailto:[COMPANY_EMAIL]">[COMPANY_EMAIL]</a>
-            <a href="tel:[COMPANY_PHONE]">[COMPANY_PHONE]</a>
-          </div>
-        </div>
-        <div>
-          <div class="estimate-title">ESTIMATE</div>
-          <div class="estimate-meta">
-            <div><strong>Date:</strong> [Estimate Date]</div>
-            <div><strong>Estimate #:</strong> [Estimate Number]</div>
-            <div><strong>Valid Until:</strong> [Estimate Valid Until]</div>
-          </div>
-        </div>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Estimado de Proyecto</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1, h2, h3 {
+      color: #0066cc;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 20px;
+    }
+    .info-section {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 30px;
+    }
+    .info-box {
+      width: 48%;
+    }
+    .project-details {
+      margin-bottom: 30px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    .totals {
+      margin-top: 20px;
+      text-align: right;
+    }
+    .footer {
+      margin-top: 40px;
+      font-size: 0.9em;
+      text-align: center;
+      color: #666;
+      border-top: 1px solid #ddd;
+      padding-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+      <div style="max-width: 200px; max-height: 80px;">
+        [COMPANY_LOGO]
       </div>
-
-      <div class="section">
-        <div class="section-title">Client</div>
-        <table class="details-table">
-          <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Phone</th>
-            <th>Address</th>
-          </tr>
-          <tr>
-            <td>[Client Name]</td>
-            <td><a href="mailto:[Client Email]">[Client Email]</a></td>
-            <td><a href="tel:[Client Phone]">[Client Phone]</a></td>
-            <td>[Client Address]</td>
-          </tr>
-        </table>
-      </div>
-
-      <div class="section">
-        <div class="section-title">Estimate Details</div>
-        <table class="details-table">
-          <tr>
-            <th>Item</th>
-            <th>Description</th>
-            <th>Quantity</th>
-            <th>Unit Price</th>
-            <th>Total</th>
-          </tr>
-          <!-- Repeat this row for each item -->
-          <tr>
-            <td>[Item Name]</td>
-            <td>[Item Description]</td>
-            <td>[Qty]</td>
-            <td>[Unit Price]</td>
-            <td>[Total]</td>
-          </tr>
-          <tr class="totals-row">
-            <td colspan="4" style="text-align: right">Total</td>
-            <td>[Grand Total]</td>
-          </tr>
-        </table>
-      </div>
-
-      <div class="section project-details">
-        <b>Scope:</b> [Scope of Work]<br />
-        <b>Timeline:</b> [Estimated Completion Timeframe]<br />
-        <b>Process:</b> [Work Process/Steps]<br />
-        <b>Includes:</b> [Included Services or Materials]<br />
-        <b>Excludes:</b> [Excluded Services or Materials]
-      </div>
-
-      <div class="section">
-        <div class="section-title">Terms & Conditions</div>
-        <div class="terms">
-          <ul style="margin: 0 0 0 1.4em; padding: 0; color: #181818">
-            <li>
-              This estimate is valid for 30 days from the issue date. Prices may
-              change after this period due to fluctuations in materials, labor,
-              or market conditions.
-            </li>
-            <li>
-              Project execution, specific terms, and additional conditions will
-              be detailed in the formal contract to be signed by both parties.
-            </li>
-            <li>For questions, please contact us directly.</li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="footer">
-        <span class="powered">Powered by Mervin AI</span>
+      <div>
+        <h1>Estimado de Proyecto</h1>
+        <p>Fecha: [ESTIMATE_DATE]</p>
+        <p>Número de Estimado: [ESTIMATE_NUMBER]</p>
       </div>
     </div>
-  </body>
+  </div>
+  
+  <div class="info-section">
+    <div class="info-box">
+      <h3>Contratista</h3>
+      <p>
+        <strong>[COMPANY_NAME]</strong><br>
+        [COMPANY_ADDRESS]<br>
+        Teléfono: [COMPANY_PHONE]<br>
+        Email: [COMPANY_EMAIL]<br>
+        Licencia: [COMPANY_LICENSE]
+      </p>
+    </div>
+    
+    <div class="info-box">
+      <h3>Cliente</h3>
+      <p>
+        <strong>[CLIENT_NAME]</strong><br>
+        [CLIENT_ADDRESS]<br>
+        [CLIENT_CITY_STATE_ZIP]<br>
+        Teléfono: [CLIENT_PHONE]<br>
+        Email: [CLIENT_EMAIL]
+      </p>
+    </div>
+  </div>
+  
+  <div class="project-details">
+    <h3>Detalles del Proyecto</h3>
+    <p>
+      <strong>Tipo:</strong> [PROJECT_TYPE]<br>
+      <strong>Dirección del Proyecto:</strong> [PROJECT_ADDRESS]<br>
+      <strong>Dimensiones:</strong> [PROJECT_DIMENSIONS]<br>
+      <strong>Notas:</strong> [PROJECT_NOTES]
+    </p>
+  </div>
+  
+  <h3>Desglose de Costos</h3>
+  
+  <table>
+    <thead>
+      <tr>
+        <th>Descripción</th>
+        <th>Cantidad</th>
+        <th>Unidad</th>
+        <th>Precio Unitario</th>
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      [COST_TABLE_ROWS]
+    </tbody>
+  </table>
+  
+  <div class="totals">
+    <p><strong>Subtotal:</strong> [SUBTOTAL]</p>
+    <p><strong>Impuestos ([TAX_RATE]):</strong> [TAX_AMOUNT]</p>
+    <p><strong>Total:</strong> [TOTAL]</p>
+  </div>
+  
+  <div class="footer">
+    <p>Este estimado es válido por 30 días.</p>
+    <p>Tiempo estimado de finalización: [COMPLETION_TIME]</p>
+  </div>
+</body>
 </html>
