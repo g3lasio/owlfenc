@@ -19,6 +19,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { ClientValidator } from "@/components/client/ClientValidator";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import TemplateSelector from "./TemplateSelector";
+import EstimatePreview from "./EstimatePreview";
 
 interface Client {
   id: number;
@@ -1043,6 +1044,29 @@ export default function ManualEstimateForm({ onEstimateGenerated, onGenerate }: 
                     onTemplateSelect={(id) => setSelectedTemplateId(id)}
                   />
                 </div>
+              </div>
+            </div>
+            
+            {/* Previsualización del estimado usando la plantilla seleccionada */}
+            <div className="mt-8">
+              <h3 className="text-lg font-medium mb-4">Vista Previa</h3>
+              <div className="border rounded-lg shadow-sm overflow-hidden">
+                <EstimatePreview 
+                  estimateData={{
+                    client: validatedClient,
+                    contractor: profile,
+                    project: {
+                      type: form.getValues('projectType'),
+                      subtype: form.getValues('projectSubtype'),
+                      dimensions: form.getValues('dimensions'),
+                      notes: form.getValues('notes')
+                    },
+                    rulesBasedEstimate: estimateResult,
+                    projectId: estimateResult.projectId || 'NEW',
+                  }}
+                  templateId={selectedTemplateId || 999001}
+                  className="w-full"
+                />
               </div>
             </div>
           </CardContent>
