@@ -794,17 +794,26 @@ export default function Estimates() {
     // Generar una plantilla HTML mejorada con el logo
     const html = `
       <style>
-        .estimate-preview {
+        /* Estilos base */
+        body {
+          margin: 0;
+          padding: 0;
           font-family: 'Arial', sans-serif;
           color: #333;
-          max-width: 100%;
+          background-color: #fff;
+          line-height: 1.6;
+        }
+        
+        .estimate-preview {
+          max-width: 900px;
           margin: 0 auto;
+          padding: 30px;
         }
         
         .company-logo {
           max-width: 200px;
           max-height: 80px;
-          margin-bottom: 10px;
+          margin-bottom: 15px;
           object-fit: contain;
         }
         
@@ -814,14 +823,178 @@ export default function Estimates() {
           align-items: flex-start;
           margin-bottom: 30px;
           padding-bottom: 20px;
-          border-bottom: 1px solid #ddd;
         }
         
         .company-info h1 {
           margin: 0 0 10px 0;
-          color: #1e3a8a;
           font-size: 24px;
         }
+        
+        /* Estilos específicos para cada tipo de template */
+        ${selectedTemplateStyle === 'standard' ? `
+          .estimate-preview {
+            border: 1px solid #ddd;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+          }
+          
+          .estimate-header {
+            border-bottom: 1px solid #ddd;
+          }
+          
+          .company-info h1, .estimate-title h2, .section h3 {
+            color: #444;
+          }
+          
+          th {
+            background-color: #f0f0f0;
+            color: #333;
+          }
+          
+          .total {
+            color: #444;
+          }
+        ` : selectedTemplateStyle === 'professional' ? `
+          .estimate-preview {
+            border: none;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.08);
+            border-radius: 8px;
+          }
+          
+          .estimate-header {
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 25px;
+          }
+          
+          .company-info h1, .estimate-title h2, .section h3 {
+            color: #3498db;
+            font-weight: 600;
+          }
+          
+          th {
+            background-color: #3498db;
+            color: white;
+          }
+          
+          .total {
+            color: #3498db;
+            font-size: 20px;
+          }
+          
+          .signature-area {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 50px;
+            margin-bottom: 30px;
+          }
+          
+          .signature-line {
+            width: 40%;
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+            text-align: center;
+          }
+          
+          .approval-button {
+            text-align: center;
+            margin-top: 20px;
+          }
+          
+          .approval-button a {
+            display: inline-block;
+            background-color: #3498db;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+          }
+        ` : `
+          .estimate-preview {
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            border-radius: 12px;
+            padding: 40px;
+            position: relative;
+          }
+          
+          .estimate-preview:before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            bottom: 20px;
+            border: 2px solid #d4af37;
+            border-radius: 8px;
+            pointer-events: none;
+            z-index: 0;
+          }
+          
+          .estimate-content {
+            position: relative;
+            z-index: 1;
+          }
+          
+          .estimate-header {
+            border-bottom: 3px double #d4af37;
+            padding-bottom: 30px;
+          }
+          
+          .company-info h1, .estimate-title h2, .section h3 {
+            color: #483d8b;
+            font-family: Georgia, serif;
+            font-weight: 400;
+          }
+          
+          th {
+            background-color: #483d8b;
+            color: white;
+            font-weight: normal;
+            letter-spacing: 1px;
+          }
+          
+          tr:nth-child(even) td {
+            background-color: #fafafa;
+          }
+          
+          .total {
+            color: #483d8b;
+            font-size: 22px;
+            font-family: Georgia, serif;
+          }
+          
+          .signature-area {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 50px;
+            margin-bottom: 30px;
+          }
+          
+          .signature-line {
+            width: 45%;
+            border-top: 1px solid #483d8b;
+            padding-top: 15px;
+            text-align: center;
+            color: #483d8b;
+            font-style: italic;
+          }
+          
+          .approval-button {
+            text-align: center;
+            margin-top: 30px;
+          }
+          
+          .approval-button a {
+            display: inline-block;
+            background-color: #483d8b;
+            color: white;
+            padding: 12px 25px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            letter-spacing: 1px;
+          }
+        `}
         
         .company-info p {
           margin: 5px 0;
@@ -1173,7 +1346,21 @@ export default function Estimates() {
   return (
     <div className="container py-6">
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Nuevo Estimado</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-bold">Nuevo Estimado</h1>
+          <div className="relative">
+            <select 
+              id="template-select"
+              className="h-9 border rounded px-3 py-1.5 text-sm bg-white"
+              defaultValue={selectedTemplateStyle}
+              onChange={(e) => setSelectedTemplateStyle(e.target.value)}
+            >
+              <option value="standard">Estándar</option>
+              <option value="professional">Profesional</option>
+              <option value="luxury">Premium</option>
+            </select>
+          </div>
+        </div>
         <Link href="/estimates-dashboard">
           <Button variant="outline" size="sm" className="h-9">
             <CalendarCheck className="mr-1 h-4 w-4" />
