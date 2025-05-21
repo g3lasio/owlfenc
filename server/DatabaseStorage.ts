@@ -153,13 +153,34 @@ export class DatabaseStorage implements IStorage {
     return template;
   }
 
-  async getTemplatesByType(userId: number, type: string): Promise<Template[]> {
+  async getTemplatesByType(type: string): Promise<Template[]> {
+    return db.select()
+      .from(templates)
+      .where(eq(templates.type, type))
+      .orderBy(asc(templates.name));
+  }
+  
+  async getTemplatesByTypeAndUser(type: string, userId: number): Promise<Template[]> {
     return db.select()
       .from(templates)
       .where(and(
         eq(templates.userId, userId),
         eq(templates.type, type)
-      ));
+      ))
+      .orderBy(asc(templates.name));
+  }
+  
+  async getTemplatesByUser(userId: number): Promise<Template[]> {
+    return db.select()
+      .from(templates)
+      .where(eq(templates.userId, userId))
+      .orderBy(asc(templates.name));
+  }
+  
+  async getAllTemplates(): Promise<Template[]> {
+    return db.select()
+      .from(templates)
+      .orderBy(asc(templates.name));
   }
 
   async getDefaultTemplate(userId: number, type: string): Promise<Template | undefined> {
@@ -174,11 +195,40 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTemplate(insertTemplate: InsertTemplate): Promise<Template> {
+    // Si esta plantilla está marcada como predeterminada, desmarcar cualquier otra del mismo tipo
+    if (insertTemplate.isDefault) {
+      await db
+        .update(templates)
+        .set({ isDefault: false })
+        .where(and(
+          eq(templates.userId, insertTemplate.userId),
+          eq(templates.type, insertTemplate.type),
+          eq(templates.isDefault, true)
+        ));
+    }
+    
     const [template] = await db.insert(templates).values(insertTemplate).returning();
     return template;
   }
 
   async updateTemplate(id: number, templateData: Partial<Template>): Promise<Template> {
+    // Si esta plantilla se está marcando como predeterminada, desmarcar cualquier otra del mismo tipo
+    if (templateData.isDefault) {
+      const [currentTemplate] = await db.select().from(templates).where(eq(templates.id, id));
+      
+      if (currentTemplate) {
+        await db
+          .update(templates)
+          .set({ isDefault: false })
+          .where(and(
+            eq(templates.userId, currentTemplate.userId),
+            eq(templates.type, currentTemplate.type),
+            eq(templates.isDefault, true),
+            sql`${templates.id} != ${id}`
+          ));
+      }
+    }
+    
     const [template] = await db
       .update(templates)
       .set(templateData)
@@ -190,6 +240,14 @@ export class DatabaseStorage implements IStorage {
     }
     
     return template;
+  }
+  
+  async deleteTemplate(id: number): Promise<boolean> {
+    await db
+      .delete(templates)
+      .where(eq(templates.id, id));
+    
+    return true;
   }
 
   // Settings methods

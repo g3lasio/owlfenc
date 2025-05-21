@@ -825,13 +825,20 @@ export function setupTemplatesRoutes(router: Router) {
       
       let templateList;
       if (type && userId) {
-        templateList = await storage.getTemplatesByTypeAndUser(type, parseInt(userId));
+        // Para la compatibilidad actual, simplemente obtenemos las plantillas por tipo
+        templateList = await storage.getTemplatesByType(userId ? parseInt(userId) : 1, type);
       } else if (type) {
-        templateList = await storage.getTemplatesByType(type);
+        templateList = await storage.getTemplatesByType(1, type);
       } else if (userId) {
-        templateList = await storage.getTemplatesByUser(parseInt(userId));
+        // Crear consulta personalizada para obtener las plantillas de un usuario
+        const templates = await db.select()
+          .from(templates)
+          .where(eq(templates.userId, parseInt(userId)));
+        templateList = templates;
       } else {
-        templateList = await storage.getAllTemplates();
+        // Obtener todas las plantillas
+        const allTemplates = await db.select().from(templates);
+        templateList = allTemplates;
       }
       
       res.status(200).json(templateList);
