@@ -917,24 +917,30 @@ export class EstimatorService {
       
       console.log(`Intentando cargar plantilla HTML: ${templateFileName}`);
       
-      // ESTRATEGIA 1: Intentar cargar la plantilla usando el endpoint HTTP que configuramos
+      // ESTRATEGIA 1: Intentar cargar la plantilla directamente desde el sistema de archivos
       let templateHtml = '';
       let templateFound = false;
       
+      // Ir directo al sistema de archivos primero para mayor confiabilidad
+      console.log(`Intentando cargar plantilla directamente desde el sistema de archivos...`);
+      
+      const projectRoot = process.cwd();
+      console.log(`Directorio raíz del proyecto: ${projectRoot}`);
+      
+      // Priorizar la carga desde public/templates
+      const templatePath = path.join(projectRoot, 'public', 'templates', templateFileName);
+      
       try {
-        // Usar la URL del endpoint que configuramos anteriormente
-        const url = `http://localhost:5000/templates/${templateFileName}`;
-        console.log(`Intentando cargar plantilla desde URL: ${url}`);
-        
-        const response = await axios.get(url, { timeout: 3000 });
-        
-        if (response.status === 200 && response.data) {
-          console.log(`✅ Plantilla cargada exitosamente vía HTTP`);
-          templateHtml = response.data;
+        if (fs.existsSync(templatePath)) {
+          console.log(`✅ Plantilla encontrada en: ${templatePath}`);
+          templateHtml = fs.readFileSync(templatePath, 'utf8');
+          console.log(`✅ Plantilla cargada correctamente desde: ${templatePath}`);
           templateFound = true;
+        } else {
+          console.log(`❌ No se encontró la plantilla en: ${templatePath}`);
         }
-      } catch (httpError) {
-        console.log(`⚠️ No se pudo cargar la plantilla vía HTTP: ${httpError.message}`);
+      } catch (fsError) {
+        console.log(`❌ Error al acceder a ${templatePath}: ${fsError.message}`);
       }
       
       // ESTRATEGIA 2: Si la carga HTTP falló, intentar cargar desde el sistema de archivos

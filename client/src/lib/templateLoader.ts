@@ -21,7 +21,10 @@ export async function loadTemplateHTML(templateStyle: string = 'standard'): Prom
       const url = `/templates/${templateFileName}`;
       console.log(`Intentando cargar plantilla desde endpoint dedicado: ${url}`);
       
-      const response = await fetch(url, { 
+      // Añadir timestamp para evitar caching
+      const urlWithTimestamp = `${url}?t=${Date.now()}`;
+      
+      const response = await fetch(urlWithTimestamp, { 
         method: 'GET',
         headers: { 'Accept': 'text/html' },
         cache: 'no-store' // Evitar cache para desarrollo
@@ -30,6 +33,7 @@ export async function loadTemplateHTML(templateStyle: string = 'standard'): Prom
       if (response.ok) {
         console.log(`✅ Plantilla cargada exitosamente desde endpoint dedicado`);
         const html = await response.text();
+        console.log(`Contenido HTML cargado (primeros 100 caracteres): ${html.substring(0, 100)}...`);
         return html;
       } else {
         console.log(`❌ Fallo cargando desde endpoint dedicado: ${response.status} ${response.statusText}`);

@@ -101,26 +101,70 @@ const setupTemplateServing = (app: Express) => {
     const templateName = req.params.templateName;
     const projectRoot = process.cwd();
     
-    console.log(`Solicitando template: ${templateName}`);
+    console.log(`⭐⭐⭐ Solicitando template: ${templateName}`);
     
-    // Lista de posibles rutas donde buscar el template
-    const possiblePaths = [
-      path.join(projectRoot, 'public', 'templates', templateName),
+    // Priorizar la ruta principal de templates
+    const mainTemplatePath = path.join(projectRoot, 'public', 'templates', templateName);
+    console.log(`Buscando primero en ruta principal: ${mainTemplatePath}`);
+    
+    try {
+      if (fs.existsSync(mainTemplatePath)) {
+        console.log(`✅ Template encontrado en ruta principal: ${mainTemplatePath}`);
+        const templateContent = fs.readFileSync(mainTemplatePath, 'utf8');
+        console.log(`✅ Contenido cargado correctamente, enviando al cliente...`);
+        // Añadir cabeceras para evitar caché
+        res.set({
+          'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        });
+        return res.type('html').send(templateContent);
+      } else {
+        console.log(`❌ No se encontró el template en la ruta principal`);
+      }
+    } catch (error) {
+      console.error(`Error accediendo a ${mainTemplatePath}:`, error);
+    }
+    
+    // Si no se encuentra en la ruta principal, buscar en rutas alternativas
+    const alternativePaths = [
       path.join(projectRoot, 'public', 'static', 'templates', templateName),
       path.join(projectRoot, 'templates', templateName)
     ];
     
-    // Buscar el archivo en las posibles rutas
-    for (const templatePath of possiblePaths) {
+    console.log(`Buscando en rutas alternativas...`);
+    
+    for (const templatePath of alternativePaths) {
       try {
         if (fs.existsSync(templatePath)) {
-          console.log(`✅ Template encontrado en: ${templatePath}`);
+          console.log(`✅ Template encontrado en ruta alternativa: ${templatePath}`);
           const templateContent = fs.readFileSync(templatePath, 'utf8');
+          console.log(`✅ Contenido cargado correctamente, enviando al cliente...`);
+          // Añadir cabeceras para evitar caché
+          res.set({
+            'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          });
           return res.type('html').send(templateContent);
         }
       } catch (error) {
         console.error(`Error accediendo a ${templatePath}:`, error);
       }
+    }
+    
+    // Verificar contenido del directorio para debugging
+    console.log(`❌ Template no encontrado en ninguna ruta, verificando directorio...`);
+    try {
+      const templatesDir = path.join(projectRoot, 'public', 'templates');
+      if (fs.existsSync(templatesDir)) {
+        const files = fs.readdirSync(templatesDir);
+        console.log(`Contenido de ${templatesDir}:`, files);
+      } else {
+        console.log(`Directorio de templates no encontrado: ${templatesDir}`);
+      }
+    } catch (dirError) {
+      console.error(`Error al listar directorio:`, dirError);
     }
     
     // Si no se encuentra, enviar un template de respaldo
@@ -142,9 +186,10 @@ const setupTemplateServing = (app: Express) => {
   </style>
 </head>
 <body>
-  <div style="background-color: #000; color: #fff; padding: 10px; margin-bottom: 20px;">
-    <strong>Aviso</strong>
-    <p>Usando plantilla local de respaldo para la vista previa.</p>
+  <div style="background-color: #ff0000; color: #fff; padding: 10px; margin-bottom: 20px;">
+    <strong>⚠️ AVISO IMPORTANTE ⚠️</strong>
+    <p>Usando plantilla de respaldo porque no se encontró la plantilla estática.</p>
+    <p>Nombre de plantilla solicitada: "${templateName}"</p>
   </div>
   
   <div class="company-info">
@@ -209,6 +254,12 @@ const setupTemplateServing = (app: Express) => {
 </body>
 </html>`;
     
+    // Añadir cabeceras para evitar caché
+    res.set({
+      'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
     res.type('html').send(fallbackTemplate);
   });
 };
