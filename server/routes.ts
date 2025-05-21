@@ -38,6 +38,7 @@ import quickbooksRoutes from './routes/quickbooks-routes';
 import anthropicRoutes from './routes/anthropic';
 import pdfRoutes from './routes/pdf-routes';
 import paymentRoutes from './routes/payment-routes'; // Import payment routes
+import { setupTemplatesRoutes } from './routes/templates';
 import express from 'express'; // Import express to use express.raw
 
 // Initialize OpenAI API
@@ -155,6 +156,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerPromptTemplateRoutes(app);
   registerEstimateRoutes(app);
   registerPropertyRoutes(app);
+  setupTemplatesRoutes(app);
   
   // Registrar rutas de PDF
   app.use('/api/pdf', pdfRoutes);

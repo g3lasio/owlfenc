@@ -58,10 +58,14 @@ export interface IStorage {
 
   // Template methods
   getTemplate(id: number): Promise<Template | undefined>;
-  getTemplatesByType(userId: number, type: string): Promise<Template[]>;
+  getTemplatesByType(type: string): Promise<Template[]>;
+  getTemplatesByTypeAndUser(type: string, userId: number): Promise<Template[]>;
+  getTemplatesByUser(userId: number): Promise<Template[]>;
+  getAllTemplates(): Promise<Template[]>;
   getDefaultTemplate(userId: number, type: string): Promise<Template | undefined>;
   createTemplate(template: InsertTemplate): Promise<Template>;
   updateTemplate(id: number, template: Partial<Template>): Promise<Template>;
+  deleteTemplate(id: number): Promise<boolean>;
 
   // Settings methods
   getSettings(userId: number): Promise<Settings | undefined>;
@@ -414,12 +418,42 @@ export class StorageManager implements IStorage {
     );
   }
 
-  async getTemplatesByType(userId: number, type: string): Promise<Template[]> {
+  async getTemplatesByType(type: string): Promise<Template[]> {
     return this.executeWithFailover<Template[]>(
       'getTemplatesByType',
-      () => this.primaryStorage.getTemplatesByType(userId, type),
-      () => this.backupStorage!.getTemplatesByType(userId, type),
+      () => this.primaryStorage.getTemplatesByType(type),
+      () => this.backupStorage!.getTemplatesByType(type),
+      `templates_type_${type}`,
+      this.CACHE_TTL
+    );
+  }
+  
+  async getTemplatesByTypeAndUser(type: string, userId: number): Promise<Template[]> {
+    return this.executeWithFailover<Template[]>(
+      'getTemplatesByTypeAndUser',
+      () => this.primaryStorage.getTemplatesByTypeAndUser(type, userId),
+      () => this.backupStorage!.getTemplatesByTypeAndUser(type, userId),
       `templates_${userId}_${type}`,
+      this.CACHE_TTL
+    );
+  }
+  
+  async getTemplatesByUser(userId: number): Promise<Template[]> {
+    return this.executeWithFailover<Template[]>(
+      'getTemplatesByUser',
+      () => this.primaryStorage.getTemplatesByUser(userId),
+      () => this.backupStorage!.getTemplatesByUser(userId),
+      `templates_user_${userId}`,
+      this.CACHE_TTL
+    );
+  }
+  
+  async getAllTemplates(): Promise<Template[]> {
+    return this.executeWithFailover<Template[]>(
+      'getAllTemplates',
+      () => this.primaryStorage.getAllTemplates(),
+      () => this.backupStorage!.getAllTemplates(),
+      'templates_all',
       this.CACHE_TTL
     );
   }
