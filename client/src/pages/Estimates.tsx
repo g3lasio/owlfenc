@@ -1207,15 +1207,13 @@ export default function Estimates() {
       console.log('Preparando generación de PDF con el template seleccionado');
       console.log('Tamaño del HTML para PDF:', finalHtml.length, 'caracteres');
       
-      // Obtener el template seleccionado desde el selector
-      const templateSelectElement = document.getElementById('template-select') as HTMLSelectElement;
-      const selectedTemplate = templateSelectElement ? templateSelectElement.value : 'professional';
-      console.log('Template seleccionado para PDF:', selectedTemplate);
+      // Usar directamente el estado de selectedTemplateStyle
+      console.log('Template seleccionado para PDF:', selectedTemplateStyle);
       
       // Asegurarse de que el HTML incluye la información del template
-      if (!finalHtml.includes(`data-template="${selectedTemplate}"`)) {
+      if (!finalHtml.includes(`data-template="${selectedTemplateStyle}"`)) {
         console.log('Agregando información de template al HTML');
-        finalHtml = finalHtml.replace('<body', `<body data-template="${selectedTemplate}" `);
+        finalHtml = finalHtml.replace('<body', `<body data-template="${selectedTemplateStyle}" `);
       }
       
       // Intenta primero con generateClientSidePDF que es más confiable
