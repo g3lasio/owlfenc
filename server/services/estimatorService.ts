@@ -889,13 +889,20 @@ export class EstimatorService {
       // Si hay un ID de plantilla específico en los datos, determinar el estilo basado en él
       if (estimateData.templateId) {
         // Mapeo de IDs a estilos (esto debería coincidir con la lógica del frontend)
+        // IDs del frontend para DEFAULT_TEMPLATES: 999001 (basic), 999002 (professional), 999003 (luxury)
         const templateMap: Record<number, string> = {
           1: 'standard',
           2: 'professional',
-          3: 'luxury'
+          3: 'luxury',
+          // Añadir mapeo para los IDs del frontend DEFAULT_TEMPLATES
+          999001: 'standard',
+          999002: 'professional',
+          999003: 'luxury'
         };
         
+        // Si el ID existe en el mapa, usar ese estilo; de lo contrario, usar 'standard'
         templateStyle = templateMap[estimateData.templateId] || 'standard';
+        console.log(`Usando estilo de plantilla: ${templateStyle} para templateId: ${estimateData.templateId}`);
       }
       
       // Cargar el archivo de template HTML desde el sistema de archivos
@@ -911,11 +918,52 @@ export class EstimatorService {
       const fs = require('fs');
       let templateHtml = '';
       try {
+        // Intentar cargar la plantilla solicitada
         templateHtml = fs.readFileSync(templatePath, 'utf8');
         console.log(`Template cargado: ${templatePath}`);
       } catch (fsError) {
         console.error(`Error cargando template desde ${templatePath}:`, fsError);
-        throw new Error(`No se pudo cargar la plantilla HTML: ${fsError.message}`);
+        
+        // Si no se pudo cargar la plantilla solicitada, intentar cargar la plantilla básica como respaldo
+        try {
+          const fallbackPath = path.join(process.cwd(), 'public', 'templates', 'basictemplateestimate.html');
+          templateHtml = fs.readFileSync(fallbackPath, 'utf8');
+          console.log(`Cargando plantilla básica como respaldo: ${fallbackPath}`);
+        } catch (fallbackError) {
+          // Si también falla la plantilla básica, generar una plantilla mínima emergencia
+          console.error(`Error cargando plantilla de respaldo:`, fallbackError);
+          templateHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Presupuesto</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h1 { color: #333; }
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+    th { background-color: #f2f2f2; }
+  </style>
+</head>
+<body>
+  <h1>Presupuesto para [CLIENT_NAME]</h1>
+  <p>Proyecto: [PROJECT_TYPE]</p>
+  <p>Dirección: [PROJECT_ADDRESS]</p>
+  <p>Dimensiones: [PROJECT_DIMENSIONS]</p>
+  <table>
+    <tr>
+      <th>Descripción</th>
+      <th>Cantidad</th>
+      <th>Precio</th>
+      <th>Total</th>
+    </tr>
+    [COST_TABLE_ROWS]
+  </table>
+  <p><strong>Total:</strong> [TOTAL]</p>
+</body>
+</html>`;
+          console.log("Usando plantilla de emergencia generada en código");
+        }
       }
       
       // Reemplazar placeholders en el template con los datos del estimado
