@@ -119,6 +119,9 @@ function Router() {
       <Route path="/owl-funding">
         {() => <ProtectedRoute component={OwlFunding} />}
       </Route>
+      <Route path="/owlfunding">
+        {() => <ProtectedRoute component={OwlFunding} />}
+      </Route>
       <Route path="/ar-fence-estimator">
         {() => <ProtectedRoute component={ARFenceEstimator} />}
       </Route>
