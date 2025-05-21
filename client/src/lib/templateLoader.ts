@@ -2,7 +2,7 @@
  * Utility for loading HTML templates from static files
  */
 
-// Template file paths
+// Template file paths (archivos en carpeta pública)
 const TEMPLATE_PATHS = {
   'standard': '/templates/basictemplateestimate.html',
   'professional': '/templates/Premiumtemplateestimate.html', 

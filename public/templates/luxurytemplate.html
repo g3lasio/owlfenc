@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Futurist Estimate Template - Navy/Neon Contrast</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Quantico:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Segoe UI", Arial, sans-serif;
+        background: linear-gradient(135deg, #3a3e43 70%, #1b222a 100%);
+        margin: 0;
+        padding: 0;
+        color: #d8fdff;
+      }
+      .container {
+        max-width: 840px;
+        margin: 42px auto;
+        background: rgba(23, 33, 43, 0.99);
+        border-radius: 22px 8px 22px 8px;
+        box-shadow:
+          0 6px 32px 0 #0de7b4b5,
+          0 0.5px 18px 0 #0c0f1050;
+        padding: 46px 38px 26px 38px;
+        border: 2.5px solid #0de7b4;
+        position: relative;
+        overflow: hidden;
+      }
+      .header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        border-bottom: 2.5px solid #0de7b4;
+        padding-bottom: 22px;
+        margin-bottom: 28px;
+      }
+      .company-details {
+        line-height: 1.65;
+      }
+      .logo {
+        max-width: 124px;
+        max-height: 68px;
+        margin-bottom: 10px;
+        background: #222831;
+        border-radius: 11px;
+        border: 1.6px solid #2fd9c0;
+        display: block;
+        box-shadow: 0 0 10px #0de7b460;
+      }
+      .company-name {
+        font-size: 1.38rem;
+        font-family: "Quantico", Arial, sans-serif;
+        color: #24ffe5;
+        font-weight: 700;
+        margin-bottom: 3px;
+        letter-spacing: 1.2px;
+      }
+      .company-address {
+        font-size: 1.07rem;
+        color: #8cf3f1;
+        margin-bottom: 2px;
+      }
+      .estimate-title {
+        text-align: right;
+        font-size: 2.25rem;
+        font-family: "Quantico", Arial, sans-serif;
+        color: #0de7b4;
+        font-weight: 900;
+        letter-spacing: 2.1px;
+        text-shadow: 0 2px 12px #24ffe550;
+        margin-bottom: 2px;
+      }
+      .estimate-meta {
+        text-align: right;
+        font-size: 1.12rem;
+        color: #8cf3f1;
+        line-height: 1.45;
+      }
+      .section {
+        margin-bottom: 30px;
+      }
+      .section-title {
+        font-family: "Quantico", Arial, sans-serif;
+        font-size: 1.17rem;
+        font-weight: 700;
+        color: #21e8c5;
+        margin-bottom: 8px;
+        letter-spacing: 1.1px;
+        text-shadow: 0 1.5px 8px #13ba8850;
+        background: linear-gradient(90deg, #25303e 40%, #0de7b4 200%);
+        padding: 4px 18px 4px 15px;
+        border-left: 8px solid #0de7b4;
+        border-radius: 8px 2px 12px 2px;
+        display: inline-block;
+        box-shadow: 0 2px 7px 0 #0de7b425;
+      }
+      .details-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 12px;
+        background: none;
+        border-radius: 14px;
+        overflow: hidden;
+        margin-bottom: 8px;
+      }
+      .details-table th,
+      .details-table td {
+        padding: 13px 11px;
+        text-align: left;
+        font-family: "Quantico", Arial, sans-serif;
+        color: #25f1da;
+      }
+      .details-table th {
+        background: linear-gradient(90deg, #14222e 40%, #0de7b4 210%);
+        color: #fff;
+        font-size: 1.05rem;
+        font-weight: 900;
+        border-bottom: 2px solid #0de7b4;
+        border-top-left-radius: 7px;
+        border-top-right-radius: 7px;
+        box-shadow: 0 2px 8px #0de7b425;
+      }
+      .details-table td {
+        background: #1c2835;
+        border-radius: 7px;
+        font-size: 1.05rem;
+        border-bottom: none;
+        box-shadow: 0 2px 8px 0 #0de7b422;
+      }
+      .details-table tr:last-child td {
+        border-bottom: none;
+      }
+      .totals-row {
+        font-weight: 900;
+        background: linear-gradient(90deg, #0de7b4 40%, #25303e 130%);
+        font-size: 1.11rem;
+        color: #181f1e;
+        border-radius: 7px;
+        box-shadow: 0 2px 10px 0 #0de7b430;
+      }
+      .project-details {
+        font-size: 1.09rem;
+        color: #c6fdff;
+        margin: 20px 0 30px 0;
+        padding: 16px 22px 11px 22px;
+        background: linear-gradient(90deg, #1c2835 60%, #0de7b4 170%);
+        border-radius: 11px;
+        border-left: 5px solid #24ffe5;
+        box-shadow: 0 2px 15px 0 #0de7b41c;
+        font-family: "Segoe UI", Arial, sans-serif;
+      }
+      .client-contact a,
+      .company-details a {
+        display: inline-block;
+        margin-right: 10px;
+        padding: 5px 13px;
+        color: #19ffd2;
+        background: #14222e;
+        border-radius: 7px;
+        text-decoration: none;
+        font-weight: 700;
+        font-family: "Quantico", Arial, sans-serif;
+        font-size: 1.01rem;
+        border: 2px solid #0de7b4;
+        box-shadow: 0 0 9px 0 #0de7b47a;
+        transition:
+          background 0.22s,
+          color 0.22s;
+      }
+      .client-contact a:hover,
+      .company-details a:hover {
+        background: #0de7b4;
+        color: #162123;
+      }
+      .footer {
+        text-align: center;
+        margin-top: 21px;
+        font-size: 1.05rem;
+        color: #12f2b7;
+        padding-top: 9px;
+        border-top: 2.2px solid #0de7b4;
+        letter-spacing: 0.14px;
+        font-family: "Quantico", Arial, sans-serif;
+        text-shadow: 0 0 10px #0de7b470;
+        background: #18222c;
+        border-radius: 0 0 13px 13px;
+        box-shadow: 0 2px 14px #0de7b41a;
+      }
+      @media (max-width: 700px) {
+        .container {
+          padding: 8px 2vw 18px 2vw;
+        }
+        .header,
+        .estimate-meta,
+        .company-details {
+          flex-direction: column;
+          text-align: left;
+        }
+        .logo {
+          margin-bottom: 16px;
+        }
+        .footer {
+          text-align: center;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="company-details">
+          <img src="[COMPANY_LOGO_URL]" alt="Company Logo" class="logo" />
+          <div class="company-name">[Company Name]</div>
+          <div class="company-address">[Company Address, City, State, ZIP]</div>
+          <div>
+            <a href="mailto:[COMPANY_EMAIL]">[COMPANY_EMAIL]</a>
+            <a href="tel:[COMPANY_PHONE]">[COMPANY_PHONE]</a>
+          </div>
+        </div>
+        <div>
+          <div class="estimate-title">ESTIMATE</div>
+          <div class="estimate-meta">
+            <div><strong>Date:</strong> [Estimate Date]</div>
+            <div><strong>Estimate #:</strong> [Estimate Number]</div>
+            <div><strong>Valid Until:</strong> [Estimate Valid Until]</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Client</div>
+        <table class="details-table">
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Address</th>
+          </tr>
+          <tr>
+            <td>[Client Name]</td>
+            <td><a href="mailto:[Client Email]">[Client Email]</a></td>
+            <td><a href="tel:[Client Phone]">[Client Phone]</a></td>
+            <td>[Client Address]</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Estimate Details</div>
+        <table class="details-table">
+          <tr>
+            <th>Item</th>
+            <th>Description</th>
+            <th>Quantity</th>
+            <th>Unit Price</th>
+            <th>Total</th>
+          </tr>
+          <!-- Repeat this row for each item -->
+          <tr>
+            <td>[Item Name]</td>
+            <td>[Item Description]</td>
+            <td>[Qty]</td>
+            <td>[Unit Price]</td>
+            <td>[Total]</td>
+          </tr>
+          <tr class="totals-row">
+            <td colspan="4" style="text-align: right">Total</td>
+            <td>[Grand Total]</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="section project-details">
+        <b>Scope:</b> [Scope of Work]<br />
+        <b>Timeline:</b> [Estimated Completion Timeframe]<br />
+        <b>Process:</b> [Work Process/Steps]<br />
+        <b>Includes:</b> [Included Services or Materials]<br />
+        <b>Excludes:</b> [Excluded Services or Materials]
+      </div>
+
+      <div class="section">
+        <div class="section-title">Terms & Conditions</div>
+        <div class="terms">
+          <ul style="margin: 0 0 0 1.4em; padding: 0; color: #bffcf7">
+            <li>
+              This estimate is valid for 30 days from the issue date. Prices may
+              change after this period due to fluctuations in materials, labor,
+              or market conditions.
+            </li>
+            <li>
+              Project execution, specific terms, and additional conditions will
+              be detailed in the formal contract to be signed by both parties.
+            </li>
+            <li>For questions, please contact us directly.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer">
+        Powered by <b style="color: #24ffe5">Futurist AI</b>
+      </div>
+    </div>
+  </body>
+</html>

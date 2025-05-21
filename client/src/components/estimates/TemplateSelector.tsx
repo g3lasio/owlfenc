@@ -50,6 +50,8 @@ interface TemplateSelectorProps {
   onTemplateSelect: (templateId: number) => void;
 }
 
+import { loadTemplateHTML } from "../../lib/templateLoader";
+
 export default function TemplateSelector({
   templates,
   selectedTemplateId,
@@ -61,40 +63,61 @@ export default function TemplateSelector({
 
   // Inicializar templates, combinando los que vienen de props con los default
   useEffect(() => {
-    setIsLoading(true);
-    
-    // Fusionar templates del backend con los predeterminados
-    let merged = [...templates];
-    
-    // Asignar un estilo a los templates que vienen del backend
-    merged = merged.map(t => ({
-      ...t,
-      style: t.name.toLowerCase().includes("profesional") || t.name.toLowerCase().includes("professional") 
-        ? "professional" 
-        : t.name.toLowerCase().includes("premium") || t.name.toLowerCase().includes("luxury")
-          ? "luxury"
-          : "standard"
-    }));
-    
-    // Añadir templates predeterminados solo si no hay templates de ese estilo
-    const hasStandard = merged.some(t => t.style === "standard");
-    const hasProfessional = merged.some(t => t.style === "professional");
-    const hasLuxury = merged.some(t => t.style === "luxury");
-    
-    if (!hasStandard) merged.push(DEFAULT_TEMPLATES[0]);
-    if (!hasProfessional) merged.push(DEFAULT_TEMPLATES[1]);
-    if (!hasLuxury) merged.push(DEFAULT_TEMPLATES[2]);
-    
-    setAllTemplates(merged);
-    setIsLoading(false);
-    
-    // Si no hay un template seleccionado, seleccionar el primero del estilo actual
-    if (selectedTemplateId === null) {
-      const defaultTemplate = merged.find(t => t.style === templateStyle);
-      if (defaultTemplate) {
-        onTemplateSelect(defaultTemplate.id);
+    const initializeTemplates = async () => {
+      setIsLoading(true);
+      
+      try {
+        // Cargar los HTML de los templates desde los archivos
+        const standardHTML = await loadTemplateHTML('standard');
+        const professionalHTML = await loadTemplateHTML('professional'); 
+        const luxuryHTML = await loadTemplateHTML('luxury');
+        
+        // Actualizar templates predeterminados con HTML cargado
+        const updatedDefaultTemplates = [
+          { ...DEFAULT_TEMPLATES[0], html: standardHTML },
+          { ...DEFAULT_TEMPLATES[1], html: professionalHTML },
+          { ...DEFAULT_TEMPLATES[2], html: luxuryHTML }
+        ];
+        
+        // Fusionar templates del backend con los predeterminados
+        let merged = [...templates];
+        
+        // Asignar un estilo a los templates que vienen del backend
+        merged = merged.map(t => ({
+          ...t,
+          style: t.name.toLowerCase().includes("profesional") || t.name.toLowerCase().includes("professional") 
+            ? "professional" 
+            : t.name.toLowerCase().includes("premium") || t.name.toLowerCase().includes("luxury")
+              ? "luxury"
+              : "standard"
+        }));
+        
+        // Añadir templates predeterminados solo si no hay templates de ese estilo
+        const hasStandard = merged.some(t => t.style === "standard");
+        const hasProfessional = merged.some(t => t.style === "professional");
+        const hasLuxury = merged.some(t => t.style === "luxury");
+        
+        if (!hasStandard) merged.push(updatedDefaultTemplates[0]);
+        if (!hasProfessional) merged.push(updatedDefaultTemplates[1]);
+        if (!hasLuxury) merged.push(updatedDefaultTemplates[2]);
+        
+        setAllTemplates(merged);
+        
+        // Si no hay un template seleccionado, seleccionar el primero del estilo actual
+        if (selectedTemplateId === null) {
+          const defaultTemplate = merged.find(t => t.style === templateStyle);
+          if (defaultTemplate) {
+            onTemplateSelect(defaultTemplate.id);
+          }
+        }
+      } catch (error) {
+        console.error("Error cargando los templates HTML:", error);
+      } finally {
+        setIsLoading(false);
       }
-    }
+    };
+    
+    initializeTemplates();
   }, [templates, selectedTemplateId, templateStyle, onTemplateSelect]);
 
   // Group templates by their intended style
