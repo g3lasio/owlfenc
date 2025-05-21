@@ -911,18 +911,62 @@ export class EstimatorService {
                               templateStyle === 'professional' ? 'Premiumtemplateestimate.html' : 
                               'luxurytemplate.html';
       
-      // Construir la ruta absoluta al archivo de plantilla
-      const templatePath = path.join(process.cwd(), 'public', 'templates', templateFileName);
+      // Construir la ruta absoluta al archivo de plantilla - probar diferentes rutas
+      const projectRoot = process.cwd();
+      console.log(`Directorio raíz del proyecto: ${projectRoot}`);
       
-      // Leer el contenido del archivo
+      // Listar directorios para debug
       const fs = require('fs');
-      let templateHtml = '';
+      
+      // Listar la carpeta public
       try {
-        // Intentar cargar la plantilla solicitada
-        templateHtml = fs.readFileSync(templatePath, 'utf8');
-        console.log(`Template cargado: ${templatePath}`);
-      } catch (fsError) {
-        console.error(`Error cargando template desde ${templatePath}:`, fsError);
+        const publicFiles = fs.readdirSync(path.join(projectRoot, 'public'));
+        console.log('Archivos en /public:', publicFiles);
+      } catch (err) {
+        console.warn('No se pudo listar directorio /public:', err.message);
+      }
+      
+      // Listar la carpeta de templates si existe
+      try {
+        if (fs.existsSync(path.join(projectRoot, 'public', 'templates'))) {
+          const templateFiles = fs.readdirSync(path.join(projectRoot, 'public', 'templates'));
+          console.log('Archivos en /public/templates:', templateFiles);
+        } else {
+          console.warn('El directorio /public/templates no existe');
+        }
+      } catch (err) {
+        console.warn('No se pudo listar directorio /public/templates:', err.message);
+      }
+      
+      // Intentar varias rutas posibles
+      const templatePaths = [
+        path.join(projectRoot, 'public', 'templates', templateFileName),
+        path.join(projectRoot, 'public', 'templates', templateFileName.toLowerCase()),
+        path.join(projectRoot, 'templates', templateFileName),
+        path.join('public', 'templates', templateFileName),
+        path.join(projectRoot, '..', 'public', 'templates', templateFileName),
+        path.join(projectRoot, 'dist', 'public', 'templates', templateFileName)
+      ];
+      
+      let templateHtml = '';
+      let templateFound = false;
+      
+      // Intentar cargar desde las diferentes rutas
+      for (const templatePath of templatePaths) {
+        try {
+          if (fs.existsSync(templatePath)) {
+            templateHtml = fs.readFileSync(templatePath, 'utf8');
+            console.log(`✅ Plantilla cargada correctamente desde: ${templatePath}`);
+            templateFound = true;
+            break;
+          }
+        } catch (fsError) {
+          console.log(`❌ No se pudo cargar la plantilla desde: ${templatePath}`);
+        }
+      }
+      
+      if (!templateFound) {
+        console.error(`Error cargando template desde todas las rutas probadas`);
         
         // Si no se pudo cargar la plantilla solicitada, intentar cargar la plantilla básica como respaldo
         try {
