@@ -161,6 +161,8 @@ export default function Estimates() {
   const [editableHtml, setEditableHtml] = useState<string | null>(null);
   const [isEditingPreview, setIsEditingPreview] = useState(false);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<number>(999002); // Default to professional template
+  const [selectedTemplateStyle, setSelectedTemplateStyle] = useState<string>("professional");
   
   // Load clients and materials when component mounts
   useEffect(() => {
