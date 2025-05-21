@@ -22,7 +22,7 @@ const DEFAULT_TEMPLATES = [
     id: 999001,
     name: "Estimado Básico",
     type: "estimate",
-    html: "", // HTML simplificado, el backend lo generará
+    html: "", // El HTML se cargará dinámicamente desde archivo
     isDefault: true,
     style: "standard"
   },
@@ -30,7 +30,7 @@ const DEFAULT_TEMPLATES = [
     id: 999002,
     name: "Estimado Profesional",
     type: "estimate",
-    html: "", // HTML simplificado, el backend lo generará
+    html: "", // El HTML se cargará dinámicamente desde archivo
     isDefault: false,
     style: "professional"
   },
@@ -38,7 +38,7 @@ const DEFAULT_TEMPLATES = [
     id: 999003,
     name: "Estimado Premium",
     type: "estimate",
-    html: "", // HTML simplificado, el backend lo generará
+    html: "", // El HTML se cargará dinámicamente desde archivo
     isDefault: false,
     style: "luxury"
   }
