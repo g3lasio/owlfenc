@@ -791,23 +791,109 @@ export default function Estimates() {
     
     console.log('Preparando plantilla HTML con logo...');
     
+    // Definir estilos de plantilla basados en el tipo seleccionado
+    let templateStyles = '';
+    let bodyBgColor = '#ffffff';
+    let primaryColor = '#1e3a8a';
+    let borderColor = '#dddddd';
+    let tableBgColor = '#f4f4f8';
+    let tableTextColor = '#333333';
+    let fontFamily = "'Arial', sans-serif";
+    let boxShadow = '0 0 10px rgba(0,0,0,0.1)';
+    let border = '1px solid #dddddd';
+    let borderRadius = '0px';
+    let signatureArea = '';
+    
+    // Configurar estilos según el template seleccionado
+    if (selectedTemplateStyle === 'professional') {
+      primaryColor = '#3498db';
+      borderColor = '#3498db';
+      tableBgColor = '#3498db';
+      tableTextColor = '#ffffff';
+      boxShadow = '0 5px 25px rgba(0,0,0,0.08)';
+      border = 'none';
+      borderRadius = '8px';
+      
+      // Agregar área de firma para profesional
+      signatureArea = `
+        <div style="display: flex; justify-content: space-between; margin-top: 50px; margin-bottom: 30px;">
+          <div style="width: 40%; border-top: 1px solid #ccc; padding-top: 10px; text-align: center;">
+            <p>Firma del Cliente</p>
+          </div>
+          <div style="width: 40%; border-top: 1px solid #ccc; padding-top: 10px; text-align: center;">
+            <p>Fecha de Aprobación</p>
+          </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px;">
+          <a href="mailto:${profile?.email || 'info@owlfence.com'}?subject=Aprobación de Estimado #EST-${Date.now().toString().slice(-6)}" 
+             style="display: inline-block; background-color: #3498db; color: white; padding: 10px 20px; 
+                    text-decoration: none; border-radius: 5px; font-weight: bold;">
+            Aprobar Estimado
+          </a>
+        </div>
+      `;
+    } 
+    else if (selectedTemplateStyle === 'luxury') {
+      primaryColor = '#483d8b';
+      borderColor = '#d4af37';
+      tableBgColor = '#483d8b';
+      tableTextColor = '#ffffff';
+      fontFamily = "'Georgia', serif";
+      boxShadow = '0 10px 30px rgba(0,0,0,0.08)';
+      border = '1px solid #e0e0e0';
+      borderRadius = '12px';
+      
+      // Agregar área de firma para luxury
+      signatureArea = `
+        <div style="display: flex; justify-content: space-between; margin-top: 50px; margin-bottom: 30px;">
+          <div style="width: 45%; border-top: 1px solid #483d8b; padding-top: 15px; text-align: center; color: #483d8b; font-style: italic;">
+            <p>Firma del Cliente</p>
+          </div>
+          <div style="width: 45%; border-top: 1px solid #483d8b; padding-top: 15px; text-align: center; color: #483d8b; font-style: italic;">
+            <p>Fecha de Aprobación</p>
+          </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px;">
+          <a href="mailto:${profile?.email || 'info@owlfence.com'}?subject=Aprobación de Estimado Premium #EST-${Date.now().toString().slice(-6)}" 
+             style="display: inline-block; background-color: #483d8b; color: white; padding: 12px 25px; 
+                    text-decoration: none; border-radius: 5px; font-weight: bold; letter-spacing: 1px;">
+            Aprobar Estimado Premium
+          </a>
+        </div>
+      `;
+    }
+    
     // Generar una plantilla HTML mejorada con el logo
     const html = `
       <style>
-        /* Estilos base */
         body {
           margin: 0;
           padding: 0;
-          font-family: 'Arial', sans-serif;
+          font-family: ${fontFamily};
           color: #333;
-          background-color: #fff;
+          background-color: ${bodyBgColor};
           line-height: 1.6;
         }
         
-        .estimate-preview {
+        .estimate-container {
           max-width: 900px;
-          margin: 0 auto;
+          margin: 20px auto;
           padding: 30px;
+          background-color: #fff;
+          box-shadow: ${boxShadow};
+          border: ${border};
+          border-radius: ${borderRadius};
+        }
+        
+        .estimate-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 30px;
+          padding-bottom: 20px;
+          border-bottom: 2px solid ${borderColor};
         }
         
         .company-logo {
@@ -817,184 +903,11 @@ export default function Estimates() {
           object-fit: contain;
         }
         
-        .estimate-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 30px;
-          padding-bottom: 20px;
-        }
-        
         .company-info h1 {
           margin: 0 0 10px 0;
+          color: ${primaryColor};
           font-size: 24px;
         }
-        
-        /* Estilos específicos para cada tipo de template */
-        ${selectedTemplateStyle === 'standard' ? `
-          .estimate-preview {
-            border: 1px solid #ddd;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-          }
-          
-          .estimate-header {
-            border-bottom: 1px solid #ddd;
-          }
-          
-          .company-info h1, .estimate-title h2, .section h3 {
-            color: #444;
-          }
-          
-          th {
-            background-color: #f0f0f0;
-            color: #333;
-          }
-          
-          .total {
-            color: #444;
-          }
-        ` : selectedTemplateStyle === 'professional' ? `
-          .estimate-preview {
-            border: none;
-            box-shadow: 0 5px 25px rgba(0,0,0,0.08);
-            border-radius: 8px;
-          }
-          
-          .estimate-header {
-            border-bottom: 2px solid #3498db;
-            padding-bottom: 25px;
-          }
-          
-          .company-info h1, .estimate-title h2, .section h3 {
-            color: #3498db;
-            font-weight: 600;
-          }
-          
-          th {
-            background-color: #3498db;
-            color: white;
-          }
-          
-          .total {
-            color: #3498db;
-            font-size: 20px;
-          }
-          
-          .signature-area {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 50px;
-            margin-bottom: 30px;
-          }
-          
-          .signature-line {
-            width: 40%;
-            border-top: 1px solid #ccc;
-            padding-top: 10px;
-            text-align: center;
-          }
-          
-          .approval-button {
-            text-align: center;
-            margin-top: 20px;
-          }
-          
-          .approval-button a {
-            display: inline-block;
-            background-color: #3498db;
-            color: white;
-            padding: 10px 20px;
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-          }
-        ` : `
-          .estimate-preview {
-            border: 1px solid #e0e0e0;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-            border-radius: 12px;
-            padding: 40px;
-            position: relative;
-          }
-          
-          .estimate-preview:before {
-            content: '';
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            right: 20px;
-            bottom: 20px;
-            border: 2px solid #d4af37;
-            border-radius: 8px;
-            pointer-events: none;
-            z-index: 0;
-          }
-          
-          .estimate-content {
-            position: relative;
-            z-index: 1;
-          }
-          
-          .estimate-header {
-            border-bottom: 3px double #d4af37;
-            padding-bottom: 30px;
-          }
-          
-          .company-info h1, .estimate-title h2, .section h3 {
-            color: #483d8b;
-            font-family: Georgia, serif;
-            font-weight: 400;
-          }
-          
-          th {
-            background-color: #483d8b;
-            color: white;
-            font-weight: normal;
-            letter-spacing: 1px;
-          }
-          
-          tr:nth-child(even) td {
-            background-color: #fafafa;
-          }
-          
-          .total {
-            color: #483d8b;
-            font-size: 22px;
-            font-family: Georgia, serif;
-          }
-          
-          .signature-area {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 50px;
-            margin-bottom: 30px;
-          }
-          
-          .signature-line {
-            width: 45%;
-            border-top: 1px solid #483d8b;
-            padding-top: 15px;
-            text-align: center;
-            color: #483d8b;
-            font-style: italic;
-          }
-          
-          .approval-button {
-            text-align: center;
-            margin-top: 30px;
-          }
-          
-          .approval-button a {
-            display: inline-block;
-            background-color: #483d8b;
-            color: white;
-            padding: 12px 25px;
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-            letter-spacing: 1px;
-          }
-        `}
         
         .company-info p {
           margin: 5px 0;
