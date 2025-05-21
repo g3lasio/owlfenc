@@ -1296,9 +1296,10 @@ export default function Estimates() {
                   <div className="flex items-center">
                     <Label htmlFor="template-select" className="text-xs mr-2">Plantilla:</Label>
                     <Select 
-                      defaultValue="professional" 
+                      defaultValue={selectedTemplateStyle}
+                      value={selectedTemplateStyle}
                       onValueChange={(value) => {
-                        // Aquí actualizarías el template seleccionado
+                        setSelectedTemplateStyle(value as 'standard' | 'professional' | 'luxury');
                         console.log("Template seleccionado:", value);
                       }}
                     >
@@ -1308,7 +1309,7 @@ export default function Estimates() {
                       <SelectContent>
                         <SelectItem value="standard">Estándar</SelectItem>
                         <SelectItem value="professional">Profesional</SelectItem>
-                        <SelectItem value="premium">Premium</SelectItem>
+                        <SelectItem value="luxury">Premium</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
