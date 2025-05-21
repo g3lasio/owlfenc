@@ -942,6 +942,7 @@ export class EstimatorService {
       const templatePaths = [
         path.join(projectRoot, 'public', 'templates', templateFileName),
         path.join(projectRoot, 'public', 'templates', templateFileName.toLowerCase()),
+        path.join(projectRoot, 'public', 'static', 'templates', templateFileName),
         path.join(projectRoot, 'templates', templateFileName),
         path.join('public', 'templates', templateFileName),
         path.join(projectRoot, '..', 'public', 'templates', templateFileName),
@@ -955,18 +956,124 @@ export class EstimatorService {
       for (const templatePath of templatePaths) {
         try {
           if (fs.existsSync(templatePath)) {
-            templateHtml = fs.readFileSync(templatePath, 'utf8');
-            console.log(`✅ Plantilla cargada correctamente desde: ${templatePath}`);
-            templateFound = true;
-            break;
+            console.log(`✅ Plantilla encontrada en: ${templatePath}`);
+            try {
+              templateHtml = fs.readFileSync(templatePath, 'utf8');
+              console.log(`✅ Plantilla cargada correctamente`);
+              templateFound = true;
+              break;
+            } catch (readError) {
+              console.error(`Error leyendo archivo existente: ${templatePath}`, readError);
+            }
+          } else {
+            console.log(`❌ No existe archivo en ruta: ${templatePath}`);
           }
         } catch (fsError) {
-          console.log(`❌ No se pudo cargar la plantilla desde: ${templatePath}`);
+          console.log(`❌ Error verificando existencia de: ${templatePath}`, fsError);
         }
       }
       
       if (!templateFound) {
         console.error(`Error cargando template desde todas las rutas probadas`);
+        
+        // Como último recurso, intentar hacer una copia en caliente de las plantillas originales
+        try {
+          const fallbackPath = path.join(projectRoot, 'public', 'templates', 'basictemplateestimate.html');
+          const emergencyContent = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Presupuesto</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h1 { color: #333; }
+    .company-info { margin-bottom: 20px; }
+    .client-info { margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+    th { background-color: #f2f2f2; }
+    .footer { margin-top: 30px; }
+  </style>
+</head>
+<body>
+  <div class="company-info">
+    <h1>[COMPANY_NAME]</h1>
+    <p>[COMPANY_ADDRESS]</p>
+    <p>Tel: [COMPANY_PHONE] | Email: [COMPANY_EMAIL]</p>
+    <p>Licencia: [COMPANY_LICENSE]</p>
+  </div>
+  
+  <div class="estimate-header">
+    <h2>Presupuesto #[ESTIMATE_NUMBER]</h2>
+    <p>Fecha: [ESTIMATE_DATE]</p>
+  </div>
+  
+  <div class="client-info">
+    <h3>Cliente:</h3>
+    <p>[CLIENT_NAME]</p>
+    <p>[CLIENT_ADDRESS]</p>
+    <p>[CLIENT_CITY_STATE_ZIP]</p>
+    <p>Tel: [CLIENT_PHONE] | Email: [CLIENT_EMAIL]</p>
+  </div>
+  
+  <div class="project-info">
+    <h3>Proyecto:</h3>
+    <p>Tipo: [PROJECT_TYPE]</p>
+    <p>Dirección: [PROJECT_ADDRESS]</p>
+    <p>Dimensiones: [PROJECT_DIMENSIONS]</p>
+    <p>Notas: [PROJECT_NOTES]</p>
+  </div>
+  
+  <h3>Detalle de Costos:</h3>
+  <table>
+    <tr>
+      <th>Descripción</th>
+      <th>Cantidad</th>
+      <th>Unidad</th>
+      <th>Precio Unitario</th>
+      <th>Total</th>
+    </tr>
+    [COST_TABLE_ROWS]
+    <tr>
+      <td colspan="4" style="text-align: right;"><strong>Subtotal:</strong></td>
+      <td>[SUBTOTAL]</td>
+    </tr>
+    <tr>
+      <td colspan="4" style="text-align: right;"><strong>Impuesto ([TAX_RATE]):</strong></td>
+      <td>[TAX_AMOUNT]</td>
+    </tr>
+    <tr>
+      <td colspan="4" style="text-align: right;"><strong>TOTAL:</strong></td>
+      <td>[TOTAL]</td>
+    </tr>
+  </table>
+  
+  <div class="completion-info">
+    <p><strong>Tiempo estimado de finalización:</strong> [COMPLETION_TIME] días</p>
+  </div>
+  
+  <div class="footer">
+    <p>Este presupuesto es válido por 30 días desde la fecha de emisión.</p>
+  </div>
+</body>
+</html>`;
+          
+          if (!fs.existsSync(path.dirname(fallbackPath))) {
+            fs.mkdirSync(path.dirname(fallbackPath), { recursive: true });
+            console.log(`Creado directorio: ${path.dirname(fallbackPath)}`);
+          }
+          
+          try {
+            fs.writeFileSync(fallbackPath, emergencyContent);
+            console.log(`⚠️ Creada plantilla de emergencia en: ${fallbackPath}`);
+            templateHtml = emergencyContent;
+            templateFound = true;
+          } catch (writeError) {
+            console.error(`Error creando plantilla de emergencia: ${writeError}`);
+          }
+        } catch (finalError) {
+          console.error(`Error fatal intentando generar plantilla de emergencia:`, finalError);
+        }
         
         // Si no se pudo cargar la plantilla solicitada, intentar cargar la plantilla básica como respaldo
         try {

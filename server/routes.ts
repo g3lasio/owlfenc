@@ -9,6 +9,8 @@ import {
   insertPermitSearchHistorySchema,
   insertPropertySearchHistorySchema
 } from "@shared/schema";
+import * as path from 'path';
+import * as fs from 'fs';
 import OpenAI from "openai";
 import { z } from "zod";
 import puppeteer from "puppeteer";
@@ -92,7 +94,128 @@ function calculateCompletionTime(length: number): string {
   return '10-14';
 }
 
+// Función para servir templates HTML estáticos
+const setupTemplateServing = (app: Express) => {
+  // Endpoint para servir templates estáticos desde carpetas del proyecto
+  app.get('/templates/:templateName', (req: Request, res: Response) => {
+    const templateName = req.params.templateName;
+    const projectRoot = process.cwd();
+    
+    console.log(`Solicitando template: ${templateName}`);
+    
+    // Lista de posibles rutas donde buscar el template
+    const possiblePaths = [
+      path.join(projectRoot, 'public', 'templates', templateName),
+      path.join(projectRoot, 'public', 'static', 'templates', templateName),
+      path.join(projectRoot, 'templates', templateName)
+    ];
+    
+    // Buscar el archivo en las posibles rutas
+    for (const templatePath of possiblePaths) {
+      try {
+        if (fs.existsSync(templatePath)) {
+          console.log(`✅ Template encontrado en: ${templatePath}`);
+          const templateContent = fs.readFileSync(templatePath, 'utf8');
+          return res.type('html').send(templateContent);
+        }
+      } catch (error) {
+        console.error(`Error accediendo a ${templatePath}:`, error);
+      }
+    }
+    
+    // Si no se encuentra, enviar un template de respaldo
+    console.log('⚠️ Template no encontrado, enviando respaldo');
+    const fallbackTemplate = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Presupuesto</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h1 { color: #333; }
+    .company-info { margin-bottom: 20px; }
+    .client-info { margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+    th { background-color: #f2f2f2; }
+    .footer { margin-top: 30px; }
+  </style>
+</head>
+<body>
+  <div style="background-color: #000; color: #fff; padding: 10px; margin-bottom: 20px;">
+    <strong>Aviso</strong>
+    <p>Usando plantilla local de respaldo para la vista previa.</p>
+  </div>
+  
+  <div class="company-info">
+    <h1>[COMPANY_NAME]</h1>
+    <p>[COMPANY_ADDRESS]</p>
+    <p>Tel: [COMPANY_PHONE] | Email: [COMPANY_EMAIL]</p>
+    <p>Licencia: [COMPANY_LICENSE]</p>
+  </div>
+  
+  <div class="estimate-header">
+    <h2>Presupuesto #[ESTIMATE_NUMBER]</h2>
+    <p>Fecha: [ESTIMATE_DATE]</p>
+  </div>
+  
+  <div class="client-info">
+    <h3>Cliente:</h3>
+    <p>[CLIENT_NAME]</p>
+    <p>[CLIENT_ADDRESS]</p>
+    <p>[CLIENT_CITY_STATE_ZIP]</p>
+    <p>Tel: [CLIENT_PHONE] | Email: [CLIENT_EMAIL]</p>
+  </div>
+  
+  <div class="project-info">
+    <h3>Proyecto:</h3>
+    <p>Tipo: [PROJECT_TYPE]</p>
+    <p>Dirección: [PROJECT_ADDRESS]</p>
+    <p>Dimensiones: [PROJECT_DIMENSIONS]</p>
+    <p>Notas: [PROJECT_NOTES]</p>
+  </div>
+  
+  <h3>Detalle de Costos:</h3>
+  <table>
+    <tr>
+      <th>Descripción</th>
+      <th>Cantidad</th>
+      <th>Unidad</th>
+      <th>Precio Unitario</th>
+      <th>Total</th>
+    </tr>
+    [COST_TABLE_ROWS]
+    <tr>
+      <td colspan="4" style="text-align: right;"><strong>Subtotal:</strong></td>
+      <td>[SUBTOTAL]</td>
+    </tr>
+    <tr>
+      <td colspan="4" style="text-align: right;"><strong>Impuesto ([TAX_RATE]):</strong></td>
+      <td>[TAX_AMOUNT]</td>
+    </tr>
+    <tr>
+      <td colspan="4" style="text-align: right;"><strong>TOTAL:</strong></td>
+      <td>[TOTAL]</td>
+    </tr>
+  </table>
+  
+  <div class="completion-info">
+    <p><strong>Tiempo estimado de finalización:</strong> [COMPLETION_TIME] días</p>
+  </div>
+  
+  <div class="footer">
+    <p>Este presupuesto es válido por 30 días desde la fecha de emisión.</p>
+  </div>
+</body>
+</html>`;
+    
+    res.type('html').send(fallbackTemplate);
+  });
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Configurar el endpoint para servir templates HTML
+  setupTemplateServing(app);
   // Use payment routes
   app.use('/api', paymentRoutes);
   // Endpoint para mejorar descripciones con OpenAI

@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Presupuesto Premium</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+    
+    body {
+      font-family: 'Montserrat', sans-serif;
+      line-height: 1.8;
+      color: #2d3748;
+      max-width: 850px;
+      margin: 0 auto;
+      padding: 30px;
+      background-color: #ffffff;
+      position: relative;
+    }
+    
+    /* Decoración de fondo elegante */
+    body::before {
+      content: '';
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      right: 15px;
+      bottom: 15px;
+      border: 1px solid #d4af37;
+      z-index: -1;
+      pointer-events: none;
+    }
+    
+    .luxury-container {
+      background-color: #fff;
+      padding: 40px;
+      position: relative;
+    }
+    
+    .gold-accent {
+      color: #d4af37;
+    }
+    
+    h1, h2, h3 {
+      font-family: 'Playfair Display', serif;
+      color: #1a202c;
+      letter-spacing: 0.5px;
+    }
+    
+    h1 {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 15px;
+      color: #1a202c;
+      border-bottom: 2px solid #d4af37;
+      padding-bottom: 10px;
+      display: inline-block;
+    }
+    
+    h3 {
+      font-size: 22px;
+      margin-top: 40px;
+      margin-bottom: 20px;
+      position: relative;
+      padding-left: 15px;
+    }
+    
+    h3::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 5px;
+      background-color: #d4af37;
+      border-radius: 3px;
+    }
+    
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 50px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .company-info {
+      max-width: 350px;
+    }
+    
+    .company-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 24px;
+      font-weight: 600;
+      color: #1a202c;
+      margin-bottom: 5px;
+    }
+    
+    .estimate-title {
+      text-align: right;
+    }
+    
+    .info-section {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 50px;
+    }
+    
+    .info-box {
+      width: 48%;
+      padding: 25px;
+      background-color: #f8fafc;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+    
+    .info-box h3 {
+      margin-top: 0;
+      padding-left: 0;
+    }
+    
+    .info-box h3::before {
+      display: none;
+    }
+    
+    .project-details {
+      margin-bottom: 40px;
+      padding: 30px;
+      background-color: #f8fafc;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 30px;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    }
+    
+    th, td {
+      padding: 15px 18px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    
+    th {
+      background-color: #1a202c;
+      color: white;
+      font-weight: 500;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    tr:last-child td {
+      border-bottom: none;
+    }
+    
+    tr:nth-child(even) {
+      background-color: #f8fafc;
+    }
+    
+    .totals {
+      margin-top: 30px;
+      text-align: right;
+      padding: 25px;
+      background-color: #f8fafc;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+    
+    .total-row {
+      font-size: 24px;
+      font-weight: 600;
+      color: #d4af37;
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid #e2e8f0;
+    }
+    
+    .signature-area {
+      margin-top: 80px;
+      display: flex;
+      justify-content: space-between;
+    }
+    
+    .signature-line {
+      width: 45%;
+      border-top: 1px solid #1a202c;
+      padding-top: 10px;
+      font-size: 14px;
+      color: #4a5568;
+    }
+    
+    .footer {
+      margin-top: 80px;
+      text-align: center;
+      font-size: 14px;
+      color: #718096;
+      position: relative;
+      padding-top: 30px;
+    }
+    
+    .footer::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100px;
+      height: 2px;
+      background-color: #d4af37;
+    }
+    
+    @media print {
+      body {
+        padding: 0;
+      }
+      
+      body::before {
+        border: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="luxury-container">
+    <div class="header">
+      <div class="company-info">
+        [COMPANY_LOGO]
+        <div class="company-name">[COMPANY_NAME]</div>
+        <p>
+          [COMPANY_ADDRESS]<br>
+          <span class="gold-accent">T:</span> [COMPANY_PHONE] | <span class="gold-accent">E:</span> [COMPANY_EMAIL]<br>
+          <span class="gold-accent">Licencia:</span> [COMPANY_LICENSE]
+        </p>
+      </div>
+      
+      <div class="estimate-title">
+        <h1>Presupuesto <span class="gold-accent">Premium</span></h1>
+        <p><span class="gold-accent">Fecha:</span> [ESTIMATE_DATE]</p>
+        <p><span class="gold-accent">Presupuesto #:</span> [ESTIMATE_NUMBER]</p>
+      </div>
+    </div>
+    
+    <div class="info-section">
+      <div class="info-box">
+        <h3>Cliente</h3>
+        <p>
+          <strong>[CLIENT_NAME]</strong><br>
+          [CLIENT_ADDRESS]<br>
+          [CLIENT_CITY_STATE_ZIP]<br>
+          <span class="gold-accent">T:</span> [CLIENT_PHONE]<br>
+          <span class="gold-accent">E:</span> [CLIENT_EMAIL]
+        </p>
+      </div>
+      
+      <div class="info-box">
+        <h3>Detalles del Proyecto</h3>
+        <p>
+          <strong>[PROJECT_TYPE]</strong><br>
+          <span class="gold-accent">Ubicación:</span> [PROJECT_ADDRESS]<br>
+          <span class="gold-accent">Dimensiones:</span> [PROJECT_DIMENSIONS]
+        </p>
+      </div>
+    </div>
+    
+    <div class="project-details">
+      <h3>Descripción del Proyecto</h3>
+      <p>[PROJECT_NOTES]</p>
+    </div>
+    
+    <h3>Inversión Detallada</h3>
+    
+    <table>
+      <thead>
+        <tr>
+          <th>Descripción</th>
+          <th>Cantidad</th>
+          <th>Unidad</th>
+          <th>Precio Unitario</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        [COST_TABLE_ROWS]
+      </tbody>
+    </table>
+    
+    <div class="totals">
+      <p><strong>Subtotal:</strong> [SUBTOTAL]</p>
+      <p><strong>Impuestos ([TAX_RATE]):</strong> [TAX_AMOUNT]</p>
+      <p class="total-row"><strong>Inversión Total:</strong> [TOTAL]</p>
+    </div>
+    
+    <div class="signature-area">
+      <div class="signature-line">
+        <strong>[CLIENT_NAME]</strong><br>
+        Fecha: ___________________
+      </div>
+      <div class="signature-line">
+        <strong>[COMPANY_NAME]</strong><br>
+        Fecha: ___________________
+      </div>
+    </div>
+    
+    <div class="footer">
+      <p>Este presupuesto es válido por 30 días a partir de la fecha indicada.</p>
+      <p>Tiempo estimado de finalización: [COMPLETION_TIME]</p>
+      <p>Gracias por considerar nuestros servicios premium para su proyecto.</p>
+    </div>
+  </div>
+</body>
+</html>

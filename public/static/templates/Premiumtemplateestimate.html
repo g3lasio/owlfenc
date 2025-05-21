@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Estimado de Proyecto Profesional</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f9f9f9;
+    }
+    .estimate-container {
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      padding: 30px;
+    }
+    h1, h2, h3 {
+      color: #2563eb;
+      font-weight: 600;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 40px;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 20px;
+    }
+    .header-left {
+      max-width: 250px;
+    }
+    .header-right {
+      text-align: right;
+    }
+    .header-right h1 {
+      font-size: 28px;
+      margin: 0 0 8px 0;
+    }
+    .info-section {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 40px;
+    }
+    .info-box {
+      width: 48%;
+      background-color: #f3f4f6;
+      border-radius: 6px;
+      padding: 20px;
+    }
+    .info-box h3 {
+      margin-top: 0;
+      font-size: 18px;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 8px;
+    }
+    .project-details {
+      margin-bottom: 40px;
+      background-color: #f3f4f6;
+      border-radius: 6px;
+      padding: 20px;
+    }
+    .project-details h3 {
+      margin-top: 0;
+      font-size: 18px;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 30px;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    th, td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    th {
+      background-color: #2563eb;
+      color: white;
+      font-weight: 500;
+    }
+    tr:nth-child(even) {
+      background-color: #f3f4f6;
+    }
+    tr:hover {
+      background-color: #e5e7eb;
+    }
+    .totals {
+      margin-top: 30px;
+      text-align: right;
+      font-size: 16px;
+    }
+    .totals p {
+      margin: 8px 0;
+    }
+    .total-row {
+      font-size: 20px;
+      font-weight: bold;
+      color: #2563eb;
+    }
+    .footer {
+      margin-top: 40px;
+      font-size: 0.9em;
+      text-align: center;
+      color: #6b7280;
+      border-top: 2px solid #e5e7eb;
+      padding-top: 20px;
+    }
+    .note {
+      font-style: italic;
+      font-size: 14px;
+    }
+    .signature-area {
+      margin-top: 60px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .signature-line {
+      width: 45%;
+      border-top: 1px solid #000;
+      padding-top: 5px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="estimate-container">
+    <div class="header">
+      <div class="header-left">
+        [COMPANY_LOGO]
+        <h3>[COMPANY_NAME]</h3>
+        <p>
+          [COMPANY_ADDRESS]<br>
+          Teléfono: [COMPANY_PHONE]<br>
+          Email: [COMPANY_EMAIL]
+        </p>
+      </div>
+      <div class="header-right">
+        <h1>Estimado de Proyecto</h1>
+        <p><strong>Fecha:</strong> [ESTIMATE_DATE]</p>
+        <p><strong>Estimado #:</strong> [ESTIMATE_NUMBER]</p>
+        <p><strong>Licencia:</strong> [COMPANY_LICENSE]</p>
+      </div>
+    </div>
+    
+    <div class="info-section">
+      <div class="info-box">
+        <h3>Cliente</h3>
+        <p>
+          <strong>[CLIENT_NAME]</strong><br>
+          [CLIENT_ADDRESS]<br>
+          [CLIENT_CITY_STATE_ZIP]<br>
+          Teléfono: [CLIENT_PHONE]<br>
+          Email: [CLIENT_EMAIL]
+        </p>
+      </div>
+      
+      <div class="info-box">
+        <h3>Proyecto</h3>
+        <p>
+          <strong>Tipo:</strong> [PROJECT_TYPE]<br>
+          <strong>Ubicación:</strong> [PROJECT_ADDRESS]<br>
+          <strong>Dimensiones:</strong> [PROJECT_DIMENSIONS]
+        </p>
+      </div>
+    </div>
+    
+    <div class="project-details">
+      <h3>Detalles del Proyecto</h3>
+      <p>[PROJECT_NOTES]</p>
+    </div>
+    
+    <h3>Desglose de Costos</h3>
+    
+    <table>
+      <thead>
+        <tr>
+          <th>Descripción</th>
+          <th>Cantidad</th>
+          <th>Unidad</th>
+          <th>Precio Unitario</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        [COST_TABLE_ROWS]
+      </tbody>
+    </table>
+    
+    <div class="totals">
+      <p><strong>Subtotal:</strong> [SUBTOTAL]</p>
+      <p><strong>Impuestos ([TAX_RATE]):</strong> [TAX_AMOUNT]</p>
+      <p class="total-row"><strong>Total:</strong> [TOTAL]</p>
+    </div>
+    
+    <div class="note">
+      <p>Este estimado es válido por 30 días a partir de la fecha indicada arriba.</p>
+      <p>Tiempo estimado de finalización: [COMPLETION_TIME]</p>
+    </div>
+    
+    <div class="signature-area">
+      <div class="signature-line">
+        Cliente
+      </div>
+      <div class="signature-line">
+        Contratista
+      </div>
+    </div>
+    
+    <div class="footer">
+      <p>Gracias por su confianza. Esperamos trabajar con usted en este proyecto.</p>
+    </div>
+  </div>
+</body>
+</html>

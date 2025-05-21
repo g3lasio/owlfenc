@@ -16,11 +16,41 @@ export async function loadTemplateHTML(templateStyle: string = 'standard'): Prom
     
     console.log(`Cargando plantilla: ${templateFileName}`);
     
-    // Construir la URL para la plantilla
-    const templateUrl = `/templates/${templateFileName}`;
+    // Construir la URL para la plantilla - intentar diferentes rutas
+    const templateUrls = [
+      `/templates/${templateFileName}`,
+      `/static/templates/${templateFileName}`,
+      `/public/templates/${templateFileName}`,
+      `/public/static/templates/${templateFileName}`
+    ];
     
-    // Cargar la plantilla
-    const response = await fetch(templateUrl);
+    console.log(`Intentando cargar plantilla desde múltiples rutas posibles`);
+    
+    // Intentar cargar desde varias rutas
+    let response;
+    let loaded = false;
+    
+    for (const url of templateUrls) {
+      try {
+        console.log(`Intentando cargar plantilla desde: ${url}`);
+        response = await fetch(url);
+        
+        if (response.ok) {
+          console.log(`✅ Plantilla cargada exitosamente desde: ${url}`);
+          loaded = true;
+          break;
+        } else {
+          console.log(`❌ Fallo cargando desde ${url}: ${response.status} ${response.statusText}`);
+        }
+      } catch (err) {
+        console.error(`Error intentando cargar desde ${url}:`, err);
+      }
+    }
+    
+    if (!loaded) {
+      console.error('No se pudo cargar la plantilla desde ninguna ruta');
+      response = new Response(null, { status: 404, statusText: 'No se encontró ninguna plantilla' });
+    }
     
     if (!response.ok) {
       console.error(`Error cargando plantilla ${templateFileName}:`, response.statusText);
