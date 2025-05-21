@@ -1385,18 +1385,6 @@ export default function Estimates() {
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-4">
           <h1 className="text-2xl font-bold">Nuevo Estimado</h1>
-          <div className="relative">
-            <select 
-              id="template-select"
-              className="h-9 border rounded px-3 py-1.5 text-sm bg-white"
-              defaultValue={selectedTemplateStyle}
-              onChange={(e) => setSelectedTemplateStyle(e.target.value)}
-            >
-              <option value="standard">Estándar</option>
-              <option value="professional">Profesional</option>
-              <option value="luxury">Premium</option>
-            </select>
-          </div>
         </div>
         <Link href="/estimates-dashboard">
           <Button variant="outline" size="sm" className="h-9">
