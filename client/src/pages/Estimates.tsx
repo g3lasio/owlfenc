@@ -1965,12 +1965,12 @@ export default function Estimates() {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="flex-grow overflow-y-auto overflow-x-auto my-4 border rounded-md p-4 bg-white">
+          <div className="flex-grow overflow-y-auto overflow-x-auto my-4 border rounded-md p-4 bg-white relative">
             {/* Use our new component that handles both viewing and editing */}
             {previewHtml && (
-              <div className="estimate-preview-wrapper">
+              <div className="estimate-preview-wrapper w-full h-full">
                 {isEditingPreview ? (
-                  <div className="bg-white">
+                  <div className="bg-white h-full">
                     <Textarea 
                       className="w-full min-h-[500px] font-mono text-sm"
                       value={editableHtml || ""}
@@ -1983,10 +1983,14 @@ export default function Estimates() {
                   </div>
                 ) : (
                   <div 
-                    className="estimate-preview w-full"
+                    className="estimate-preview w-full overflow-y-auto overflow-x-auto"
                     style={{ 
-                      minWidth: "600px",  /* Asegura un ancho mínimo para evitar que el contenido se comprima */
-                      height: "auto"      /* Permite que la altura se ajuste al contenido */
+                      minWidth: "600px",
+                      height: "auto",
+                      maxHeight: "60vh",
+                      overflowY: "auto",
+                      overscrollBehavior: "contain",
+                      WebkitOverflowScrolling: "touch"
                     }}
                     dangerouslySetInnerHTML={{ __html: previewHtml as string }}
                     ref={(el) => {

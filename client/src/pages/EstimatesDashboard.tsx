@@ -917,7 +917,7 @@ export default function EstimatesDashboard() {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="flex-grow overflow-y-auto overflow-x-auto my-4 border rounded-md p-2 sm:p-4 bg-white">
+          <div className="flex-grow overflow-hidden my-4 border rounded-md p-2 sm:p-4 bg-white relative">
             {previewHtml && (
               <div 
                 dangerouslySetInnerHTML={{ __html: previewHtml }}
@@ -925,9 +925,13 @@ export default function EstimatesDashboard() {
                 style={{ 
                   width: "100%",
                   height: "auto",
+                  maxHeight: "60vh",
                   overflowX: "auto",
                   overflowY: "auto",
-                  maxWidth: "100%"
+                  overscrollBehavior: "contain",
+                  WebkitOverflowScrolling: "touch",
+                  position: "relative",
+                  paddingBottom: "20px"
                 }}
               />
             )}
