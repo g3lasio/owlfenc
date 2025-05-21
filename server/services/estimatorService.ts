@@ -882,6 +882,11 @@ export class EstimatorService {
    */
   async generateEstimateHtml(estimateData: any): Promise<string> {
     try {
+      // Importar módulos necesarios
+      const path = require('path');
+      const fs = require('fs');
+      const axios = require('axios');
+      
       // Determinar qué plantilla usar basado en el tipo de estimado
       // Por defecto, usamos la plantilla 'standard'
       let templateStyle = 'standard';
@@ -905,81 +910,85 @@ export class EstimatorService {
         console.log(`Usando estilo de plantilla: ${templateStyle} para templateId: ${estimateData.templateId}`);
       }
       
-      // Cargar el archivo de template HTML desde el sistema de archivos
-      const path = require('path');
+      // Obtener el nombre de archivo de la plantilla según el estilo seleccionado
       const templateFileName = templateStyle === 'standard' ? 'basictemplateestimate.html' : 
                               templateStyle === 'professional' ? 'Premiumtemplateestimate.html' : 
                               'luxurytemplate.html';
       
-      // Construir la ruta absoluta al archivo de plantilla - probar diferentes rutas
-      const projectRoot = process.cwd();
-      console.log(`Directorio raíz del proyecto: ${projectRoot}`);
+      console.log(`Intentando cargar plantilla HTML: ${templateFileName}`);
       
-      // Listar directorios para debug
-      const fs = require('fs');
-      
-      // Listar la carpeta public
-      try {
-        const publicFiles = fs.readdirSync(path.join(projectRoot, 'public'));
-        console.log('Archivos en /public:', publicFiles);
-      } catch (err) {
-        console.warn('No se pudo listar directorio /public:', err.message);
-      }
-      
-      // Listar la carpeta de templates si existe
-      try {
-        if (fs.existsSync(path.join(projectRoot, 'public', 'templates'))) {
-          const templateFiles = fs.readdirSync(path.join(projectRoot, 'public', 'templates'));
-          console.log('Archivos en /public/templates:', templateFiles);
-        } else {
-          console.warn('El directorio /public/templates no existe');
-        }
-      } catch (err) {
-        console.warn('No se pudo listar directorio /public/templates:', err.message);
-      }
-      
-      // Intentar varias rutas posibles
-      const templatePaths = [
-        path.join(projectRoot, 'public', 'templates', templateFileName),
-        path.join(projectRoot, 'public', 'templates', templateFileName.toLowerCase()),
-        path.join(projectRoot, 'public', 'static', 'templates', templateFileName),
-        path.join(projectRoot, 'templates', templateFileName),
-        path.join('public', 'templates', templateFileName),
-        path.join(projectRoot, '..', 'public', 'templates', templateFileName),
-        path.join(projectRoot, 'dist', 'public', 'templates', templateFileName)
-      ];
-      
+      // ESTRATEGIA 1: Intentar cargar la plantilla usando el endpoint HTTP que configuramos
       let templateHtml = '';
       let templateFound = false;
       
-      // Intentar cargar desde las diferentes rutas
-      for (const templatePath of templatePaths) {
-        try {
-          if (fs.existsSync(templatePath)) {
-            console.log(`✅ Plantilla encontrada en: ${templatePath}`);
-            try {
+      try {
+        // Usar la URL del endpoint que configuramos anteriormente
+        const url = `http://localhost:5000/templates/${templateFileName}`;
+        console.log(`Intentando cargar plantilla desde URL: ${url}`);
+        
+        const response = await axios.get(url, { timeout: 3000 });
+        
+        if (response.status === 200 && response.data) {
+          console.log(`✅ Plantilla cargada exitosamente vía HTTP`);
+          templateHtml = response.data;
+          templateFound = true;
+        }
+      } catch (httpError) {
+        console.log(`⚠️ No se pudo cargar la plantilla vía HTTP: ${httpError.message}`);
+      }
+      
+      // ESTRATEGIA 2: Si la carga HTTP falló, intentar cargar desde el sistema de archivos
+      if (!templateFound) {
+        console.log(`Intentando cargar plantilla desde el sistema de archivos...`);
+        
+        const projectRoot = process.cwd();
+        console.log(`Directorio raíz del proyecto: ${projectRoot}`);
+        
+        // Intentar varias rutas posibles
+        const templatePaths = [
+          path.join(projectRoot, 'public', 'templates', templateFileName),
+          path.join(projectRoot, 'public', 'templates', templateFileName.toLowerCase()),
+          path.join(projectRoot, 'public', 'static', 'templates', templateFileName),
+          path.join(projectRoot, 'templates', templateFileName)
+        ];
+        
+        // Intentar cargar desde las diferentes rutas
+        for (const templatePath of templatePaths) {
+          try {
+            if (fs.existsSync(templatePath)) {
+              console.log(`✅ Plantilla encontrada en: ${templatePath}`);
               templateHtml = fs.readFileSync(templatePath, 'utf8');
-              console.log(`✅ Plantilla cargada correctamente`);
+              console.log(`✅ Plantilla cargada correctamente desde: ${templatePath}`);
               templateFound = true;
               break;
-            } catch (readError) {
-              console.error(`Error leyendo archivo existente: ${templatePath}`, readError);
             }
-          } else {
-            console.log(`❌ No existe archivo en ruta: ${templatePath}`);
+          } catch (fsError) {
+            console.log(`❌ Error al acceder a ${templatePath}: ${fsError.message}`);
           }
-        } catch (fsError) {
-          console.log(`❌ Error verificando existencia de: ${templatePath}`, fsError);
         }
       }
       
+      // ESTRATEGIA 3: Si sigue sin encontrarse, intentar usar una plantilla básica de respaldo
       if (!templateFound) {
-        console.error(`Error cargando template desde todas las rutas probadas`);
+        console.log(`⚠️ No se encontró la plantilla, intentando usar plantilla básica como respaldo...`);
         
-        // Como último recurso, intentar hacer una copia en caliente de las plantillas originales
         try {
-          const fallbackPath = path.join(projectRoot, 'public', 'templates', 'basictemplateestimate.html');
-          const emergencyContent = `<!DOCTYPE html>
+          const basicTemplatePath = path.join(process.cwd(), 'public', 'templates', 'basictemplateestimate.html');
+          
+          if (fs.existsSync(basicTemplatePath)) {
+            templateHtml = fs.readFileSync(basicTemplatePath, 'utf8');
+            console.log(`✅ Usando plantilla básica como respaldo`);
+            templateFound = true;
+          }
+        } catch (basicError) {
+          console.error(`Error cargando plantilla básica de respaldo: ${basicError.message}`);
+        }
+      }
+      
+      // ESTRATEGIA 4: Último recurso - usar la plantilla integrada en el código
+      if (!templateFound) {
+        console.log(`⚠️ Usando plantilla de emergencia integrada en el código`);
+        templateHtml = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -996,6 +1005,10 @@ export class EstimatorService {
   </style>
 </head>
 <body>
+  <div style="background-color: #ffeeee; border: 1px solid #ffaaaa; padding: 10px; margin-bottom: 20px;">
+    <strong>Aviso:</strong> Usando plantilla de emergencia integrada.
+  </div>
+  
   <div class="company-info">
     <h1>[COMPANY_NAME]</h1>
     <p>[COMPANY_ADDRESS]</p>
@@ -1057,64 +1070,6 @@ export class EstimatorService {
   </div>
 </body>
 </html>`;
-          
-          if (!fs.existsSync(path.dirname(fallbackPath))) {
-            fs.mkdirSync(path.dirname(fallbackPath), { recursive: true });
-            console.log(`Creado directorio: ${path.dirname(fallbackPath)}`);
-          }
-          
-          try {
-            fs.writeFileSync(fallbackPath, emergencyContent);
-            console.log(`⚠️ Creada plantilla de emergencia en: ${fallbackPath}`);
-            templateHtml = emergencyContent;
-            templateFound = true;
-          } catch (writeError) {
-            console.error(`Error creando plantilla de emergencia: ${writeError}`);
-          }
-        } catch (finalError) {
-          console.error(`Error fatal intentando generar plantilla de emergencia:`, finalError);
-        }
-        
-        // Si no se pudo cargar la plantilla solicitada, intentar cargar la plantilla básica como respaldo
-        try {
-          const fallbackPath = path.join(process.cwd(), 'public', 'templates', 'basictemplateestimate.html');
-          templateHtml = fs.readFileSync(fallbackPath, 'utf8');
-          console.log(`Cargando plantilla básica como respaldo: ${fallbackPath}`);
-        } catch (fallbackError) {
-          // Si también falla la plantilla básica, generar una plantilla mínima emergencia
-          console.error(`Error cargando plantilla de respaldo:`, fallbackError);
-          templateHtml = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Presupuesto</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    h1 { color: #333; }
-    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
-    th { background-color: #f2f2f2; }
-  </style>
-</head>
-<body>
-  <h1>Presupuesto para [CLIENT_NAME]</h1>
-  <p>Proyecto: [PROJECT_TYPE]</p>
-  <p>Dirección: [PROJECT_ADDRESS]</p>
-  <p>Dimensiones: [PROJECT_DIMENSIONS]</p>
-  <table>
-    <tr>
-      <th>Descripción</th>
-      <th>Cantidad</th>
-      <th>Precio</th>
-      <th>Total</th>
-    </tr>
-    [COST_TABLE_ROWS]
-  </table>
-  <p><strong>Total:</strong> [TOTAL]</p>
-</body>
-</html>`;
-          console.log("Usando plantilla de emergencia generada en código");
-        }
       }
       
       // Reemplazar placeholders en el template con los datos del estimado
