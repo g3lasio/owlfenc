@@ -21,21 +21,67 @@ export default function OwlFunding() {
     }));
   };
 
-  const handleContactSubmit = (e: React.FormEvent) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // En un entorno real, aquí enviaríamos la información al equipo
-    // Por ahora solo mostramos un toast de confirmación
-    toast({
-      title: "Mensaje enviado",
-      description: "Nos pondremos en contacto contigo pronto.",
-    });
     
-    // Limpiamos el formulario
-    setContactFormData({
-      name: "",
-      email: "",
-      message: ""
-    });
+    try {
+      setIsSubmitting(true);
+      
+      // Validación básica
+      if (!contactFormData.name || !contactFormData.email || !contactFormData.message) {
+        toast({
+          title: "Error en el formulario",
+          description: "Por favor completa todos los campos.",
+          variant: "destructive"
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Enviar los datos al servidor
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(contactFormData),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        // Mostrar confirmación de éxito
+        toast({
+          title: "Mensaje enviado",
+          description: "Nos pondremos en contacto contigo pronto.",
+        });
+        
+        // Limpiar el formulario
+        setContactFormData({
+          name: "",
+          email: "",
+          message: ""
+        });
+      } else {
+        // Mostrar error
+        toast({
+          title: "Error al enviar",
+          description: data.message || "Ha ocurrido un error. Por favor intenta más tarde.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error enviando formulario:", error);
+      toast({
+        title: "Error de conexión",
+        description: "No pudimos procesar tu solicitud. Comprueba tu conexión e intenta de nuevo.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import emailService from '../services/emailService';
+import { sendEmail, sendContactFormEmail } from '../services/emailService';
 import { z } from 'zod';
 
 const router = Router();
@@ -25,7 +25,25 @@ router.post('/welcome', async (req: Request, res: Response) => {
   try {
     const { to, name, companyName } = welcomeEmailSchema.parse(req.body);
 
-    const success = await emailService.sendWelcomeEmail(to, name, companyName);
+    // Crear el contenido del email de bienvenida
+    const subject = `¡Bienvenido${name ? ' ' + name : ''} a Owl Funding!`;
+    const text = `Hola ${name || 'estimado cliente'},\n\nGracias por unirte a ${companyName || 'Owl Funding'}. Estamos emocionados de tenerte con nosotros.\n\nSaludos cordiales,\nEl equipo de Owl Funding`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>¡Bienvenido a Owl Funding!</h2>
+        <p>Hola ${name || 'estimado cliente'},</p>
+        <p>Gracias por unirte a ${companyName || 'Owl Funding'}. Estamos emocionados de tenerte con nosotros.</p>
+        <p>Saludos cordiales,<br>El equipo de Owl Funding</p>
+      </div>
+    `;
+    
+    const success = await sendEmail({
+      to,
+      from: 'no-reply@0wlfunding.com',
+      subject,
+      text,
+      html
+    });
     
     if (success) {
       res.json({ success: true, message: 'Correo de bienvenida enviado con éxito' });
@@ -58,7 +76,29 @@ router.post('/password-reset', async (req: Request, res: Response) => {
   try {
     const { to, resetLink } = passwordResetEmailSchema.parse(req.body);
 
-    const success = await emailService.sendPasswordResetEmail(to, resetLink);
+    // Crear el contenido del email de restablecimiento de contraseña
+    const subject = `Restablecimiento de contraseña - Owl Funding`;
+    const text = `Hola,\n\nRecibimos una solicitud para restablecer tu contraseña. Haz clic en el siguiente enlace para continuar:\n\n${resetLink}\n\nSi no solicitaste restablecer tu contraseña, ignora este mensaje.\n\nSaludos cordiales,\nEl equipo de Owl Funding`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Restablecimiento de contraseña</h2>
+        <p>Hola,</p>
+        <p>Recibimos una solicitud para restablecer tu contraseña. Haz clic en el siguiente enlace para continuar:</p>
+        <p><a href="${resetLink}" style="display: inline-block; background-color: #2C3E50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">Restablecer contraseña</a></p>
+        <p>Si el botón no funciona, copia y pega este enlace en tu navegador:</p>
+        <p><a href="${resetLink}">${resetLink}</a></p>
+        <p>Si no solicitaste restablecer tu contraseña, ignora este mensaje.</p>
+        <p>Saludos cordiales,<br>El equipo de Owl Funding</p>
+      </div>
+    `;
+    
+    const success = await sendEmail({
+      to,
+      from: 'no-reply@0wlfunding.com',
+      subject,
+      text,
+      html
+    });
     
     if (success) {
       res.json({ success: true, message: 'Correo de restablecimiento enviado con éxito' });

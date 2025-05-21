@@ -2,7 +2,7 @@ import { Express, Request, Response } from "express";
 import { z } from "zod";
 import { storage } from "../storage";
 import { estimatorService, ProjectInput } from "../services/estimatorService";
-import emailService from "../services/emailService";
+import { sendEmail } from "../services/emailService";
 
 export function registerEstimateRoutes(app: Express): void {
   // Endpoint para validar datos de entrada
@@ -258,12 +258,12 @@ export function registerEstimateRoutes(app: Express): void {
       };
       
       // Adaptamos los parámetros para usar sendEmail
-      const emailSent = await emailService.sendEmail({
+      const emailSent = await sendEmail({
         to: emailData.to,
+        from: 'no-reply@0wlfunding.com',
         subject: emailData.subject,
         html: emailData.html,
-        text: emailData.message,
-        templateId: emailData.templateId ? String(emailData.templateId) : undefined
+        text: emailData.message
       });
       
       if (emailSent) {
