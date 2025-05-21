@@ -9,8 +9,33 @@
  */
 export async function loadTemplateHTML(templateStyle: string = 'standard'): Promise<string> {
   try {
-    console.log(`Seleccionando plantilla integrada para el estilo: ${templateStyle}`);
+    console.log(`Cargando plantilla para el estilo: ${templateStyle}`);
     
+    // Intentar cargar la plantilla desde la ruta pública primero
+    const templateMap: Record<string, string> = {
+      'standard': '/templates/basictemplateestimate.html',
+      'professional': '/templates/Premiumtemplateestimate.html',
+      'luxury': '/templates/luxurytemplate.html'
+    };
+    
+    const templatePath = templateMap[templateStyle] || templateMap['standard'];
+    
+    try {
+      // Intentar cargar el archivo utilizando fetch
+      const response = await fetch(templatePath);
+      
+      if (response.ok) {
+        const templateContent = await response.text();
+        console.log(`Plantilla cargada exitosamente desde: ${templatePath}`);
+        return templateContent;
+      } else {
+        console.warn(`No se pudo cargar la plantilla desde ${templatePath}, utilizando plantilla integrada.`);
+      }
+    } catch (fetchError) {
+      console.warn(`Error fetching plantilla desde ${templatePath}:`, fetchError);
+    }
+    
+    // Si no se puede cargar la plantilla, usar versiones integradas como respaldo
     // SOLUCIÓN RADICAL: Retornar plantillas predefinidas directamente
     if (templateStyle === 'standard') {
       console.log('Usando plantilla ESTÁNDAR INTEGRADA (basictemplateestimate.html)');
