@@ -1173,7 +1173,28 @@ export default function Estimates() {
           <CardContent className="pb-4">
             <div className="space-y-3">
               <div>
-                <Label htmlFor="estimate-title" className="text-xs">Título</Label>
+                <div className="flex justify-between items-center mb-1">
+                  <Label htmlFor="estimate-title" className="text-xs">Título</Label>
+                  <div className="flex items-center">
+                    <Label htmlFor="template-select" className="text-xs mr-2">Plantilla:</Label>
+                    <Select 
+                      defaultValue="professional" 
+                      onValueChange={(value) => {
+                        // Aquí actualizarías el template seleccionado
+                        console.log("Template seleccionado:", value);
+                      }}
+                    >
+                      <SelectTrigger id="template-select" className="h-7 w-[120px]">
+                        <SelectValue placeholder="Selecciona" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="standard">Estándar</SelectItem>
+                        <SelectItem value="professional">Profesional</SelectItem>
+                        <SelectItem value="premium">Premium</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
                 <Input 
                   id="estimate-title" 
                   value={estimate.title} 
