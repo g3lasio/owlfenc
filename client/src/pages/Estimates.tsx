@@ -1116,29 +1116,45 @@ export default function Estimates() {
       // Generar un nombre de archivo para el PDF
       const fileName = `Estimado-${estimate.client?.name?.replace(/\s+/g, '-') || 'Sin-Cliente'}-${Date.now()}`;
       
-      // Intenta primero con downloadHTMLAsPDF que usa el servidor
+      console.log('Preparando generación de PDF con el template seleccionado');
+      console.log('Tamaño del HTML para PDF:', finalHtml.length, 'caracteres');
+      
+      // Obtener el template seleccionado desde el selector
+      const templateSelectElement = document.getElementById('template-select') as HTMLSelectElement;
+      const selectedTemplate = templateSelectElement ? templateSelectElement.value : 'professional';
+      console.log('Template seleccionado para PDF:', selectedTemplate);
+      
+      // Asegurarse de que el HTML incluye la información del template
+      if (!finalHtml.includes(`data-template="${selectedTemplate}"`)) {
+        console.log('Agregando información de template al HTML');
+        finalHtml = finalHtml.replace('<body', `<body data-template="${selectedTemplate}" `);
+      }
+      
+      // Intenta primero con generateClientSidePDF que es más confiable
       try {
-        const { downloadHTMLAsPDF } = await import('../lib/pdf');
-        await downloadHTMLAsPDF(finalHtml, fileName);
+        console.log('Intentando generar PDF usando método del cliente...');
+        const { generateClientSidePDF } = await import('../lib/pdf');
+        await generateClientSidePDF(finalHtml, fileName);
         
         toast({
           title: 'PDF generado',
           description: 'El PDF se ha generado y descargado correctamente.'
         });
-      } catch (downloadError) {
-        console.error('Error con downloadHTMLAsPDF, intentando con generateClientSidePDF:', downloadError);
+      } catch (clientSideError) {
+        console.error('Error con generateClientSidePDF, intentando con método del servidor:', clientSideError);
         
-        // Si falla, intentar con el método alternativo generateClientSidePDF
+        // Si falla, intentar con el método alternativo del servidor
         try {
-          const { generateClientSidePDF } = await import('../lib/pdf');
-          await generateClientSidePDF(finalHtml, fileName);
+          console.log('Intentando generar PDF usando método del servidor...');
+          const { downloadHTMLAsPDF } = await import('../lib/pdf');
+          await downloadHTMLAsPDF(finalHtml, fileName);
           
           toast({
             title: 'PDF generado',
             description: 'El PDF se ha generado y descargado correctamente.'
           });
-        } catch (clientSideError) {
-          console.error('Error con generateClientSidePDF:', clientSideError);
+        } catch (downloadError) {
+          console.error('Error con downloadHTMLAsPDF:', downloadError);
           throw new Error("No se pudo generar el PDF por ningún método");
         }
       }
