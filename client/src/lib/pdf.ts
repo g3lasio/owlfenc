@@ -95,10 +95,14 @@ export async function generateClientSidePDF(html: string, fileName = 'documento'
     container.style.left = '-9999px';
     container.style.top = '0';
     container.style.width = '794px'; // ~A4
+    container.style.paddingBottom = '50px'; // Asegurar margen inferior
     
     // Aplicar estilos específicos basados en el data-template del HTML
     const templateType = container.querySelector('body')?.getAttribute('data-template') || 'professional';
     console.log('Generando PDF con plantilla:', templateType);
+    
+    // Precargar logo como imagen base64 para evitar problemas de carga
+    const logoBase64 = 'data:image/png;base64,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';
     
     // Buscar todas las imágenes, incluyendo el logo, y prepararlas para el PDF
     const images = container.querySelectorAll('img');
@@ -126,17 +130,13 @@ export async function generateClientSidePDF(html: string, fileName = 'documento'
           hasLogo = true;
           console.log(`Imagen de logo encontrada en posición ${i}`);
           
+          // Reemplazar directamente con base64 para evitar problemas de carga
+          img.src = logoBase64;
+          
           // Asegurarse de que el logo tenga los estilos adecuados
           img.style.maxWidth = '200px';
           img.style.maxHeight = '80px';
           img.style.objectFit = 'contain';
-          
-          // Mejor manejo de errores para las imágenes de logo
-          img.onerror = function() {
-            console.error('Error cargando logo en PDF, src:', img.src);
-            // Usar una imagen base64 como respaldo
-            this.src = 'data:image/png;base64,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';
-          };
         }
       }
       
@@ -150,7 +150,7 @@ export async function generateClientSidePDF(html: string, fileName = 'documento'
           if (companyInfo) {
             // Crear elemento de imagen para el logo
             const logoImg = document.createElement('img');
-            logoImg.src = '/owl-logo.png';
+            logoImg.src = logoBase64;
             logoImg.alt = 'Logo';
             logoImg.className = 'company-logo';
             logoImg.setAttribute('crossorigin', 'anonymous');
@@ -171,77 +171,146 @@ export async function generateClientSidePDF(html: string, fileName = 'documento'
       console.warn('No se encontraron imágenes en el HTML para el PDF');
     }
     
+    // Añadir el contenedor al DOM para poder renderizarlo
     document.body.appendChild(container);
-
-    // Crear una instancia de jsPDF
-    const pdf = new jsPDF('p', 'pt', 'a4');
     
-    console.log('Renderizando HTML...');
+    console.log('Renderizando HTML para PDF...');
     
-    // Esperar a que todas las imágenes se carguen antes de continuar
-    await Promise.all(Array.from(container.querySelectorAll('img')).map(img => {
-      return new Promise((resolve) => {
-        if (img.complete) {
-          resolve(true);
-        } else {
-          img.onload = () => resolve(true);
-          img.onerror = () => {
-            console.warn('Error cargando imagen:', img.src);
-            
-            // Si es el logo, intentar con una URL de fallback
-            if (img.alt === 'Logo' && img.src.startsWith('http')) {
-              console.log('Intentando URL alternativa para el logo');
-              img.src = '/owl-logo.png';
-              // No resolvemos aquí, esperamos a que cargue o falle la alternativa
-            } else {
-              // Para cualquier otra imagen, o si ya estamos en la imagen fallback, continuar
-              resolve(false);
-            }
-          };
-        }
+    try {
+      // Convertir el HTML a canvas con opciones mejoradas
+      const canvas = await html2canvas(container, {
+        scale: 1.5, // Calidad balanceada
+        useCORS: true,
+        logging: false,
+        allowTaint: true,
+        imageTimeout: 3000,
+        backgroundColor: '#FFFFFF'
       });
-    }));
-    
-    // Convertir el HTML a canvas con opciones mejoradas
-    const canvas = await html2canvas(container, {
-      scale: 2, // Mayor calidad
-      useCORS: true,
-      logging: false,
-      allowTaint: true,
-      imageTimeout: 5000, // Tiempo de espera más largo para imágenes
-      backgroundColor: '#FFFFFF'
-    });
-    
-    console.log('HTML renderizado, generando PDF...');
-    
-    // Obtener la imagen del canvas
-    const imgData = canvas.toDataURL('image/png');
-    
-    // Establecer el tamaño de página
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-    
-    // Calcular la altura proporcional 
-    const imgWidth = canvas.width;
-    const imgHeight = canvas.height;
-    const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-    const imgX = (pdfWidth - imgWidth * ratio) / 2;
-    
-    // Añadir la imagen al PDF
-    pdf.addImage(imgData, 'PNG', imgX, 0, imgWidth * ratio, imgHeight * ratio);
-    
-    // Si el contenido es más alto que una página, agregar más páginas
-    let remainingHeight = imgHeight * ratio;
-    const pageHeight = pdfHeight;
-    
-    // Eliminar el contenedor temporal
-    document.body.removeChild(container);
-    
-    // Guardar el PDF
-    console.log('Descargando PDF...');
-    pdf.save(`${fileName}.pdf`);
-    
-    console.log('PDF generado y descargado con éxito');
+      
+      console.log('HTML renderizado correctamente, generando PDF...');
+      
+      // Obtener la imagen del canvas
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      
+      // Calcular dimensiones
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 295; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      // Crear el PDF con la orientación correcta
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      let position = 0;
+      
+      // Añadir la primera página
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+      
+      // Si el contenido es más alto que una página, añadir más páginas
+      const heightLeft = imgHeight - pageHeight;
+      
+      // Agregar páginas adicionales si el contenido es más largo que una página
+      if (heightLeft > 0) {
+        let heightRemaining = heightLeft;
+        while (heightRemaining > 0) {
+          position = -pageHeight * (pdf.getNumberOfPages());
+          pdf.addPage();
+          pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+          heightRemaining -= pageHeight;
+        }
+      }
+      
+      // Eliminar el contenedor temporal
+      document.body.removeChild(container);
+      
+      // Guardar el PDF
+      console.log('Descargando PDF...');
+      pdf.save(`${fileName}.pdf`);
+      
+      console.log('PDF generado y descargado con éxito');
+    } catch (renderError) {
+      console.error('Error renderizando HTML para PDF:', renderError);
+      
+      // Método alternativo: Dividir el contenido en secciones más pequeñas
+      try {
+        console.log('Intentando método alternativo para PDF...');
+        
+        // Crear un nuevo documento PDF
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        
+        // Crear una instancia de jsPDF
+        const contentSections = Array.from(container.querySelectorAll('.section, .estimate-header, .estimate-footer, table, .signature-area'));
+        
+        if (contentSections.length === 0) {
+          // Si no hay secciones, intenta con todo el contenido
+          const canvas = await html2canvas(container, {
+            scale: 1,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#FFFFFF'
+          });
+          
+          const imgData = canvas.toDataURL('image/jpeg', 0.8);
+          pdf.addImage(imgData, 'JPEG', 10, 10, pageWidth - 20, 0);
+        } else {
+          // Procesar cada sección individualmente
+          let yPosition = 10;
+          
+          for (const section of contentSections) {
+            const canvas = await html2canvas(section as HTMLElement, {
+              scale: 1,
+              useCORS: true,
+              allowTaint: true,
+              backgroundColor: null
+            });
+            
+            const imgData = canvas.toDataURL('image/jpeg', 0.8);
+            const imgHeight = (canvas.height * (pageWidth - 20)) / canvas.width;
+            
+            // Si la sección no cabe en la página actual, añadir una nueva
+            if (yPosition + imgHeight > pageHeight - 10) {
+              pdf.addPage();
+              yPosition = 10;
+            }
+            
+            // Añadir la sección al PDF
+            pdf.addImage(imgData, 'JPEG', 10, yPosition, pageWidth - 20, imgHeight);
+            yPosition += imgHeight + 5;
+          }
+        }
+        
+        // Eliminar el contenedor temporal
+        document.body.removeChild(container);
+        
+        // Guardar el PDF
+        pdf.save(`${fileName}.pdf`);
+        console.log('PDF generado mediante método alternativo');
+      } catch (alternativeError) {
+        console.error('Error en método alternativo:', alternativeError);
+        
+        // Método final de emergencia: usar solo texto
+        try {
+          console.log('Intentando método de emergencia para PDF...');
+          const pdf = new jsPDF('p', 'mm', 'a4');
+          
+          // Extraer y formatear texto
+          const textContent = container.innerText;
+          pdf.setFontSize(10);
+          pdf.text(textContent, 10, 10, { maxWidth: 190 });
+          
+          // Eliminar el contenedor temporal
+          document.body.removeChild(container);
+          
+          // Guardar el PDF
+          pdf.save(`${fileName}.pdf`);
+          console.log('PDF de emergencia generado (solo texto)');
+        } catch (emergencyError) {
+          console.error('Error en método de emergencia:', emergencyError);
+          document.body.removeChild(container);
+          throw new Error('No se pudo generar el PDF por ningún método');
+        }
+      }
+    }
   } catch (error) {
     console.error('Error al generar PDF en cliente:', error);
     throw error;
