@@ -899,9 +899,13 @@ export class EstimatorService {
       }
       
       // Cargar el archivo de template HTML desde el sistema de archivos
-      const templatePath = `./public/templates/${templateStyle === 'standard' ? 'basictemplateestimate.html' : 
-                                             templateStyle === 'professional' ? 'Premiumtemplateestimate.html' : 
-                                             'luxurytemplate.html'}`;
+      const path = require('path');
+      const templateFileName = templateStyle === 'standard' ? 'basictemplateestimate.html' : 
+                              templateStyle === 'professional' ? 'Premiumtemplateestimate.html' : 
+                              'luxurytemplate.html';
+      
+      // Construir la ruta absoluta al archivo de plantilla
+      const templatePath = path.join(process.cwd(), 'public', 'templates', templateFileName);
       
       // Leer el contenido del archivo
       const fs = require('fs');
