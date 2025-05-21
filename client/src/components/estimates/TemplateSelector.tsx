@@ -13,6 +13,7 @@ interface Template {
   type: string;
   html: string;
   isDefault: boolean;
+  style?: string;
 }
 
 // Plantillas hardcodeadas para asegurar funcionamiento cuando el backend no devuelva datos

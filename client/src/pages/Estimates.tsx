@@ -1294,16 +1294,15 @@ export default function Estimates() {
                 <div className="flex justify-between items-center mb-1">
                   <Label htmlFor="estimate-title" className="text-xs">Título</Label>
                   <div className="flex items-center">
-                    <Label htmlFor="template-select" className="text-xs mr-2">Plantilla:</Label>
+                    <Label htmlFor="template-style" className="text-xs mr-2">Plantilla:</Label>
                     <Select 
-                      defaultValue={selectedTemplateStyle}
                       value={selectedTemplateStyle}
                       onValueChange={(value) => {
                         setSelectedTemplateStyle(value as 'standard' | 'professional' | 'luxury');
                         console.log("Template seleccionado:", value);
                       }}
                     >
-                      <SelectTrigger id="template-select" className="h-7 w-[120px]">
+                      <SelectTrigger id="template-style" className="h-7 w-[120px]">
                         <SelectValue placeholder="Selecciona" />
                       </SelectTrigger>
                       <SelectContent>
