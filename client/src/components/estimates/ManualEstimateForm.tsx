@@ -18,6 +18,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { ClientValidator } from "@/components/client/ClientValidator";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import TemplateSelector from "./TemplateSelector";
 
 interface Client {
   id: number;
@@ -1034,23 +1035,13 @@ export default function ManualEstimateForm({ onEstimateGenerated, onGenerate }: 
                   </div>
                 </div>
                 
-                <div>
-                  <Label htmlFor="templateSelect">Plantilla</Label>
-                  <Select
-                    value={selectedTemplateId?.toString() || ''}
-                    onValueChange={(value) => setSelectedTemplateId(parseInt(value))}
-                  >
-                    <SelectTrigger id="templateSelect" className="mt-1">
-                      <SelectValue placeholder="Seleccionar plantilla" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {templates.map((template) => (
-                        <SelectItem key={template.id} value={template.id.toString()}>
-                          {template.name} {template.isDefault ? '(Predeterminada)' : ''}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="mt-4">
+                  <h3 className="text-md font-medium mb-2">Estilo de Estimado</h3>
+                  <TemplateSelector 
+                    templates={templates}
+                    selectedTemplateId={selectedTemplateId}
+                    onTemplateSelect={(id) => setSelectedTemplateId(id)}
+                  />
                 </div>
               </div>
             </div>
