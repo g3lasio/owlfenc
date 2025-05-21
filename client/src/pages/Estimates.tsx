@@ -1296,8 +1296,16 @@ export default function Estimates() {
                     <Select 
                       value={selectedTemplateStyle}
                       onValueChange={(value) => {
-                        setSelectedTemplateStyle(value as 'standard' | 'professional' | 'luxury');
-                        console.log("Template seleccionado:", value);
+                        const style = value as 'standard' | 'professional' | 'luxury';
+                        setSelectedTemplateStyle(style);
+                        // Actualizar también el ID del template
+                        const templateId = {
+                          'standard': 999001,
+                          'professional': 999002,
+                          'luxury': 999003
+                        }[style] || 999001;
+                        setSelectedTemplateId(templateId);
+                        console.log(`Template seleccionado: ${value}, templateId: ${templateId}`);
                       }}
                     >
                       <SelectTrigger id="template-style" className="h-7 w-[120px]">
