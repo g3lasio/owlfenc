@@ -29,7 +29,6 @@ import {
   projectCategories
 } from "@/services/newContractQuestionService";
 import { AIEnhancedField } from "@/components/contract/AIEnhancedField";
-import { generateEnhancedContent } from "@/services/openaiService";
 import { useToast } from "@/hooks/use-toast";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { useProfile } from "@/hooks/use-profile";
