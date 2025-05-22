@@ -25,11 +25,11 @@ type Message = {
 
 // Botones de acción principales con iconos
 const actionButtons = [
-  { id: "estimates", text: "Estimates", action: "estimates", icon: <FileSpreadsheet className="h-5 w-5" /> },
-  { id: "contracts", text: "Contracts", action: "contracts", icon: <ClipboardList className="h-5 w-5" /> },
-  { id: "permits", text: "Permits", action: "permits", icon: <ClipboardCheck className="h-5 w-5" /> },
-  { id: "properties", text: "Properties", action: "properties", icon: <Building className="h-5 w-5" /> },
-  { id: "analytics", text: "Analytics", action: "analytics", icon: <BarChart4 className="h-5 w-5" /> }
+  { id: "estimates", text: "Generate Estimates", action: "estimates", icon: <FileSpreadsheet className="h-5 w-5" /> },
+  { id: "contracts", text: "Generate Contracts", action: "contracts", icon: <ClipboardList className="h-5 w-5" /> },
+  { id: "permits", text: "Permit Advisor", action: "permits", icon: <ClipboardCheck className="h-5 w-5" /> },
+  { id: "properties", text: "Verify Ownership", action: "properties", icon: <Building className="h-5 w-5" /> },
+  { id: "analytics", text: "Payment Tracker", action: "analytics", icon: <BarChart4 className="h-5 w-5" /> }
 ];
 
 export default function Mervin() {
@@ -47,7 +47,7 @@ export default function Mervin() {
       sender: "assistant",
       action: "menu"
     };
-    
+
     setMessages([welcomeMessage]);
   }, []);
 
@@ -61,11 +61,11 @@ export default function Mervin() {
       content: inputValue,
       sender: "user"
     };
-    
+
     setMessages(prev => [...prev, userMessage]);
     setInputValue("");
     setIsLoading(true);
-    
+
     // Simular respuesta
     setTimeout(() => {
       const assistantMessage: Message = {
@@ -73,10 +73,10 @@ export default function Mervin() {
         content: "Estoy aquí para ayudarte. ¿Te gustaría generar un contrato, verificar una propiedad, consultar permisos, gestionar clientes o revisar facturación?",
         sender: "assistant"
       };
-      
+
       setMessages(prev => [...prev, assistantMessage]);
       setIsLoading(false);
-      
+
       // Desplazar al final
       setTimeout(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -87,7 +87,7 @@ export default function Mervin() {
   // Manejar selección de acción
   const handleAction = (action: string) => {
     setIsLoading(true);
-    
+
     // Mensaje temporal "Analizando..."
     const thinkingMessage: Message = {
       id: `thinking-${Date.now()}`,
@@ -95,19 +95,19 @@ export default function Mervin() {
       sender: "assistant",
       state: "analyzing"
     };
-    
+
     setMessages(prev => [...prev, thinkingMessage]);
-    
+
     // Desplazar al final
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, 100);
-    
+
     // Simular respuesta
     setTimeout(() => {
       // Eliminar mensaje de pensando
       setMessages(prev => prev.filter(m => m.id !== thinkingMessage.id));
-      
+
       // Determinar respuesta según acción
       let response = "";
       switch(action) {
@@ -129,16 +129,16 @@ export default function Mervin() {
         default:
           response = "¿En qué puedo ayudarte hoy?";
       }
-      
+
       const assistantMessage: Message = {
         id: `assistant-${Date.now()}`,
         content: response,
         sender: "assistant"
       };
-      
+
       setMessages(prev => [...prev, assistantMessage]);
       setIsLoading(false);
-      
+
       // Desplazar al final
       setTimeout(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -179,7 +179,7 @@ export default function Mervin() {
                     />
                   </div>
                   <span className="text-cyan-400 font-semibold">Mervin AI</span>
-                  
+
                   {/* Estado de análisis */}
                   {message.state === "analyzing" && (
                     <div className="ml-2 text-xs text-blue-400 flex items-center">
@@ -188,17 +188,17 @@ export default function Mervin() {
                   )}
                 </div>
               )}
-              
+
               {/* Nombre para mensajes del usuario */}
               {message.sender === "user" && (
                 <div className="text-right mb-1">
                   <span className="text-blue-400 font-semibold">You</span>
                 </div>
               )}
-              
+
               {/* Contenido del mensaje */}
               <div className="whitespace-pre-wrap">{message.content}</div>
-              
+
               {/* Botones de acción - solo en el mensaje inicial o cuando se solicita menú */}
               {message.action === "menu" && (
                 <div className="grid grid-cols-3 gap-2 mt-4">
@@ -218,7 +218,7 @@ export default function Mervin() {
               )}
             </div>
           ))}
-          
+
           {/* Mensaje de carga */}
           {isLoading && (
             <div className="max-w-[85%] rounded-lg p-3 bg-gray-900 mr-auto">
@@ -239,12 +239,12 @@ export default function Mervin() {
               </div>
             </div>
           )}
-          
+
           {/* Elemento para scroll automático */}
           <div ref={messagesEndRef} />
         </div>
       </div>
-      
+
       {/* Área de input FIJA en la parte inferior, fuera del scroll */}
       <div className="fixed bottom-8 left-0 right-0 p-3 bg-black border-t border-cyan-900/30">
         <div className="flex gap-2 max-w-screen-lg mx-auto">
@@ -255,7 +255,7 @@ export default function Mervin() {
           >
             <Paperclip className="h-4 w-4" />
           </Button>
-          
+
           <input
             type="text"
             value={inputValue}
@@ -265,7 +265,7 @@ export default function Mervin() {
             className="flex-1 bg-gray-800 border border-cyan-900/50 rounded-full px-4 py-2 text-white focus:outline-none focus:border-cyan-500"
             disabled={isLoading}
           />
-          
+
           <Button
             variant="default"
             className="rounded-full bg-cyan-600 hover:bg-cyan-700"
@@ -276,7 +276,7 @@ export default function Mervin() {
           </Button>
         </div>
       </div>
-      
+
       {/* Footer fijo y minimalista */}
       <div className="fixed bottom-0 left-0 right-0 bg-black text-center p-1 text-xs text-gray-500 border-t border-gray-900/20">
         <div className="flex justify-between px-4">
