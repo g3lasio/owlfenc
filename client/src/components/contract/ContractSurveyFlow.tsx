@@ -39,7 +39,7 @@ import {
   DialogTitle, 
   DialogFooter
 } from "@/components/ui/dialog";
-import { enhanceDescriptionWithAI } from "@/services/openaiService";
+import { enhanceDescriptionWithAI, generateAdditionalClauses } from "@/services/openaiService";
 
 // Importar el tipo Question del servicio de preguntas
 import { Question as SurveyQuestion } from "@/services/contractQuestionService";
@@ -305,6 +305,11 @@ const ContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
     setProgress(((currentStep + 1) / totalSteps) * 100);
   }, [currentStep, questionGroups.length]);
 
+  // Estados para cláusulas generadas por IA
+  const [isGeneratingClauses, setIsGeneratingClauses] = useState(false);
+  const [aiGeneratedClauses, setAiGeneratedClauses] = useState('');
+  const [isClausesDialogOpen, setIsClausesDialogOpen] = useState(false);
+  
   // Mejorar descripción con IA
   const handleEnhanceDescription = async () => {
     const description = answers['project.description'] || '';
@@ -340,6 +345,54 @@ const ContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
     } finally {
       setIsAIEnhancingDescription(false);
     }
+  };
+  
+  // Generar cláusulas adicionales con IA
+  const handleGenerateClauses = async () => {
+    // Crear un conjunto de datos del contrato para enviar a la IA
+    const formattedData = formatAnswersForContract(answers);
+    
+    setIsClausesDialogOpen(true);
+    setIsGeneratingClauses(true);
+    
+    try {
+      const category = projectCategories.find(cat => cat.name === selectedCategory);
+      const generatedClauses = await generateAdditionalClauses(
+        formattedData,
+        category?.id || 'general'
+      );
+      
+      setAiGeneratedClauses(generatedClauses);
+    } catch (error) {
+      console.error("Error generando cláusulas:", error);
+      toast({
+        title: "Error de IA",
+        description: "No se pudieron generar cláusulas adicionales. Intenta de nuevo más tarde.",
+        variant: "destructive"
+      });
+      setIsClausesDialogOpen(false);
+    } finally {
+      setIsGeneratingClauses(false);
+    }
+  };
+  
+  // Aplicar cláusulas generadas
+  const applyGeneratedClauses = () => {
+    const currentTerms = answers['terms.additional'] || '';
+    const updatedTerms = currentTerms ? `${currentTerms}\n\n${aiGeneratedClauses}` : aiGeneratedClauses;
+    
+    setAnswers({
+      ...answers,
+      'terms.additional': updatedTerms
+    });
+    
+    setIsClausesDialogOpen(false);
+    
+    toast({
+      title: "Cláusulas aplicadas",
+      description: "Las cláusulas generadas se han añadido a los términos adicionales.",
+      variant: "default"
+    });
   };
 
   // Aplicar mejoras de IA
@@ -506,13 +559,27 @@ const ContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
     switch (question.type) {
       case 'multiline':
         return (
-          <Textarea
-            id={question.id}
-            value={value}
-            onChange={(e) => handleInputChange(question.field, e.target.value)}
-            placeholder={`Ingresa ${question.prompt.toLowerCase().replace('¿', '').replace('?', '')}`}
-            className="w-full"
-          />
+          <div className="space-y-2">
+            <Textarea
+              id={question.id}
+              value={value}
+              onChange={(e) => handleInputChange(question.field, e.target.value)}
+              placeholder={`Ingresa ${question.prompt.toLowerCase().replace('¿', '').replace('?', '')}`}
+              className="w-full"
+            />
+            {question.id === 'additional_terms' && (
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm" 
+                onClick={handleGenerateClauses}
+                className="flex items-center"
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                Generar Cláusulas con IA
+              </Button>
+            )}
+          </div>
         );
       
       case 'ai-enhanced':
@@ -664,6 +731,46 @@ const ContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
                 <Button onClick={applyEnhancedDescription}>
                   <Sparkles className="h-4 w-4 mr-2" />
                   Aplicar Mejoras
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+      
+      {/* Diálogo para cláusulas generadas con IA */}
+      <Dialog open={isClausesDialogOpen} onOpenChange={setIsClausesDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Cláusulas Adicionales Generadas con IA</DialogTitle>
+          </DialogHeader>
+          
+          {isGeneratingClauses ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin mb-4" />
+              <p className="text-sm text-muted-foreground">Generando cláusulas adicionales...</p>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-4 overflow-y-auto flex-1 p-1">
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    Estas son cláusulas adicionales sugeridas para tu contrato, basadas en el tipo de proyecto y los detalles proporcionados.
+                  </p>
+                  
+                  <div className="border rounded-md p-4 bg-primary/5 text-sm overflow-y-auto whitespace-pre-wrap">
+                    {aiGeneratedClauses || "No hay cláusulas disponibles"}
+                  </div>
+                </div>
+              </div>
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsClausesDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={applyGeneratedClauses}>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Aplicar Cláusulas
                 </Button>
               </DialogFooter>
             </>
