@@ -44,7 +44,7 @@ const ContractGenerator = () => {
     queryKey: ['contractTemplate'],
     queryFn: async () => {
       try {
-        // Cargar desde la carpeta public (accesible para el backend también)
+        // Cargar exclusivamente desde la carpeta public
         const response = await fetch('/templates/contract-template.html');
         if (!response.ok) {
           throw new Error('Error loading contract template from public folder');
@@ -53,38 +53,7 @@ const ContractGenerator = () => {
         return await response.text();
       } catch (error) {
         console.error("Error loading template from public folder:", error);
-        
-        // Intentar cargar desde la ruta alternativa
-        try {
-          console.log("Intentando cargar plantilla con ruta alternativa...");
-          const response = await fetch('/client/public/templates/contract-template.html');
-          if (!response.ok) {
-            throw new Error('Error loading contract template from alternative path');
-          }
-          return await response.text();
-        } catch (altError) {
-          console.error("Error loading template from alternative path:", altError);
-          throw new Error('No se pudo cargar la plantilla de contrato');
-        }
-      }
-    }
-          return templateModule.default;
-        } catch (secondError) {
-          console.error("Error loading template with direct import:", secondError);
-          
-          // Tercera opción: Intentar con ruta relativa
-          try {
-            const fallbackResponse = await fetch('/src/templates/contract-template.html');
-            if (!fallbackResponse.ok) {
-              throw new Error('Error loading contract template from src folder');
-            }
-            console.log("Plantilla cargada desde src/templates");
-            return await fallbackResponse.text();
-          } catch (thirdError) {
-            console.error("All template loading methods failed:", thirdError);
-            throw new Error("No se pudo cargar la plantilla del contrato por ningún método");
-          }
-        }
+        throw new Error('No se pudo cargar la plantilla de contrato');
       }
     }
   });
