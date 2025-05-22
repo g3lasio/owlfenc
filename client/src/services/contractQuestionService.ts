@@ -100,15 +100,7 @@ export const generalContractQuestions: Question[] = [
     useCompanyProfile: true,
     description: 'Se utilizará el email registrado en tu perfil de empresa',
   },
-  {
-    id: 'contractor_license',
-    field: 'contractor.license',
-    prompt: 'Número de licencia de contratista',
-    type: 'text',
-    required: true,
-    useCompanyProfile: true,
-    description: 'Se utilizará el número de licencia registrado en tu perfil de empresa',
-  },
+  // Campo de licencia del contratista eliminado según solicitud
   
   // Datos del cliente
   {

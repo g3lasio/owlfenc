@@ -25,8 +25,8 @@ export function AddressAutocomplete({
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // Simular búsqueda de direcciones (se conectaría a servicio real como Google Places API)
+  
+  // Función para buscar direcciones
   const searchAddresses = async (query: string) => {
     if (!query || query.length < 3) {
       setSuggestions([]);
@@ -36,25 +36,26 @@ export function AddressAutocomplete({
     setIsSearching(true);
 
     try {
-      // En una implementación real, esto se conectaría a un servicio de geocodificación
-      // como Google Places, Mapbox, etc.
-      
-      // Simulando resultados de ejemplo basados en la consulta
+      // Simulación mejorada con direcciones más realistas
       const mockSuggestions = [
-        `${query}, Calle Principal, Ciudad`,
-        `${query}, Avenida Central, Ciudad`,
-        `${query} Norte, Colonia Centro, Ciudad`,
-        `${query} #123, Fraccionamiento, Ciudad`
+        `${query} Main St, Los Angeles, CA 90001`,
+        `${query} Broadway Ave, New York, NY 10001`,
+        `${query} Lake Shore Dr, Chicago, IL 60611`,
+        `${query} Market St, San Francisco, CA 94103`,
+        `${query} Peachtree St, Atlanta, GA 30303`
       ];
       
-      // Simulando un poco de latencia
+      // En producción, aquí se conectaría a Google Places API
+      
+      // Simular latencia de red
       setTimeout(() => {
         setSuggestions(mockSuggestions);
         setIsSearching(false);
-      }, 500);
+      }, 300);
     } catch (error) {
       console.error("Error buscando direcciones:", error);
       setIsSearching(false);
+      setSuggestions([]);
     }
   };
 
@@ -117,7 +118,7 @@ export function AddressAutocomplete({
             )}
           </div>
         </PopoverTrigger>
-        <PopoverContent className="p-0" align="start" side="bottom" sideOffset={5}>
+        <PopoverContent className="p-0 w-[300px] max-h-[300px] overflow-y-auto" align="start" side="bottom" sideOffset={5}>
           <Command>
             <CommandList>
               <CommandEmpty>

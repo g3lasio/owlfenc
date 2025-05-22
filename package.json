@@ -77,7 +77,7 @@
     "memorystore": "^1.6.7",
     "multer": "^1.4.5-lts.2",
     "node-quickbooks": "^2.0.46",
-    "openai": "^4.100.0",
+    "openai": "^4.102.0",
     "papaparse": "^5.5.2",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",

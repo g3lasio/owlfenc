@@ -93,8 +93,31 @@ export async function enhanceDescriptionWithAI(description: string, projectType:
       return description;
     }
     
-    // Crear el prompt específico según el tipo de proyecto
-    const systemPrompt = getSystemPromptForProjectType(projectType);
+    // Crear el prompt específico según el tipo de proyecto con enfoque en inglés y más detalle
+    const systemPrompt = `
+You're an expert in construction project descriptions. Please enhance the following project description by:
+
+1. Creating an English language version (even if input is in Spanish)
+2. Structuring with clear bullet points for better readability
+3. Creating specific sections:
+   - Project Overview
+   - Materials & Specifications
+   - Timeline & Project Phases
+   - Quality Assurance
+   
+4. Be very specific about timeline and project development details
+5. Make it professional, detailed and easy to read
+6. Use technical terms appropriate for the construction industry
+7. Do not invent specific measurements or costs that aren't in the original text
+
+For ${projectType} projects specifically:
+- Include industry best practices
+- Reference relevant technical standards 
+- Add important safety considerations
+- Highlight quality control processes
+
+Format the response with clear headers in bold, bulleted lists, and good spacing.
+    `;
     
     console.log("Enviando petición a OpenAI con prompt para tipo de proyecto:", projectType);
     
@@ -112,7 +135,7 @@ export async function enhanceDescriptionWithAI(description: string, projectType:
         }
       ],
       temperature: 0.7,
-      max_tokens: 800
+      max_tokens: 1000
     });
     
     if (!response.choices || response.choices.length === 0) {
@@ -326,5 +349,62 @@ Ofrece sugerencias específicas pero concisas, en formato de lista con viñetas.
   } catch (error) {
     console.error("Error al analizar el contrato:", error);
     return "No se pudo completar el análisis del contrato.";
+  }
+}
+
+/**
+ * Genera cláusulas adicionales para un contrato específico utilizando IA
+ * @param contractData Datos del contrato actual
+ * @param projectType Tipo de proyecto (fencing, roofing, etc.)
+ * @returns Cláusulas adicionales recomendadas para el contrato
+ */
+export async function generateAdditionalClauses(contractData: Record<string, any>, projectType: string): Promise<string> {
+  try {
+    // Obtener instancia de OpenAI
+    const ai = getOpenAI();
+    if (!ai) {
+      console.warn("No se pudo inicializar OpenAI para generar cláusulas adicionales.");
+      return "No se pudieron generar cláusulas adicionales debido a un error de conexión con el servicio de IA.";
+    }
+    
+    const systemPrompt = `
+You are a legal expert specializing in construction contracts. Your task is to generate additional clauses that would benefit this ${projectType} project contract.
+
+Generate 5-7 specific contract clauses that:
+1. Protect the contractor from common risks and liabilities
+2. Address specific issues related to ${projectType} projects
+3. Cover important aspects that may be missing from standard contracts
+4. Clarify responsibilities and expectations
+5. Include industry-standard protections
+
+For each clause:
+- Provide a clear title in bold
+- Write the clause in formal legal language
+- Keep each clause concise yet comprehensive
+- Format in a way that's easy to read and incorporate into a contract
+
+The clauses should be specifically tailored to the project type and circumstances described in the contract data.
+`;
+    
+    const response = await ai.chat.completions.create({
+      model: GPT_MODEL,
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt
+        },
+        {
+          role: "user",
+          content: JSON.stringify(contractData, null, 2)
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 1000
+    });
+    
+    return response.choices[0].message.content || "No se pudieron generar cláusulas adicionales para este contrato.";
+  } catch (error) {
+    console.error("Error al generar cláusulas adicionales:", error);
+    return "No se pudieron generar cláusulas adicionales debido a un error.";
   }
 }
