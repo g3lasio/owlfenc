@@ -483,31 +483,22 @@ const ContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
   const renderInputControl = (question: SurveyQuestion) => {
     const value = answers[question.field] ?? '';
     
-    // Si la pregunta usa el perfil de la empresa y hay datos disponibles, mostrar campo prellenado
-    if (question.useCompanyProfile && profile && !isProfileLoading) {
-      // Check if we have an actual value from the profile
-      const hasValidProfileValue = value && value !== 'No disponible' && String(value).trim() !== '';
-      
+    // Ahora SIEMPRE permitimos la edición manual de campos de la empresa
+    if (question.useCompanyProfile) {
       return (
         <div className="relative">
           <Input
             id={question.id}
-            value={hasValidProfileValue ? value : ''}
+            value={value}
             onChange={(e) => handleInputChange(question.field, e.target.value)}
             className="pr-8"
-            disabled={hasValidProfileValue}
-            placeholder={hasValidProfileValue ? '' : `Enter your ${question.prompt.toLowerCase()}`}
+            disabled={false}
+            placeholder={`Ingresa ${question.prompt.toLowerCase()}`}
           />
           <Info className="absolute right-2 top-2 h-4 w-4 text-muted-foreground" />
-          {hasValidProfileValue ? (
-            <p className="text-xs text-muted-foreground mt-1">
-              This information is from your company profile. To edit it, go to your profile settings.
-            </p>
-          ) : (
-            <p className="text-xs text-muted-foreground mt-1">
-              This field will be stored in your company profile for future contracts.
-            </p>
-          )}
+          <p className="text-xs text-muted-foreground mt-1">
+            Esta información se guardará en tu perfil de empresa para futuros contratos.
+          </p>
         </div>
       );
     }
