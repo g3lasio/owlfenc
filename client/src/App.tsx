@@ -37,6 +37,7 @@ import EmailLinkCallback from "@/pages/EmailLinkCallback";
 import AppleCallback from "@/pages/AppleCallback";
 import SecuritySettings from "@/pages/SecuritySettings";
 import ContractGenerator from "@/pages/ContractGenerator";
+import AITestingPage from "@/pages/AITestingPage";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 
@@ -145,6 +146,9 @@ function Router() {
       </Route>
       <Route path="/contracts">
         {() => <ProtectedRoute component={ContractGenerator} />}
+      </Route>
+      <Route path="/ai-testing">
+        {() => <ProtectedRoute component={AITestingPage} />}
       </Route>
       <Route path="/estimates">
         {() => <ProtectedRoute component={Estimates} />}
