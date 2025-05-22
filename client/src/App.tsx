@@ -40,6 +40,7 @@ import ContractGenerator from "@/pages/ContractGenerator";
 import AITestingPage from "@/pages/AITestingPage";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import AuthDiagnostic from './pages/AuthDiagnostic';
 
 // Componente para páginas protegidas
 import { useAuth } from "@/contexts/AuthContext";
@@ -80,6 +81,7 @@ function Router() {
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/login/email-link-callback" component={EmailLinkCallback} />
       <Route path="/apple-callback" component={AppleCallback} />
+      <Route path="/auth-diagnostic" component={AuthDiagnostic} />
       <Route path="/about-owlfenc" component={AboutOwlFence} />
       <Route path="/about-mervin" component={AboutMervin} />
       <Route path="/legal-policy" component={LegalPolicy} />

@@ -50,8 +50,11 @@ const isReplitDev = window.location.hostname.includes('.replit.dev') ||
                    window.location.hostname === 'localhost' ||
                    window.location.hostname.includes('replit.app');
 
-// Activar modo de desarrollo si estamos en Replit
-export const devMode = isReplitDev;
+// Opción para forzar el uso de Firebase real incluso en entorno de desarrollo
+const useRealFirebase = localStorage.getItem('useRealFirebase') === 'true';
+
+// Activar modo de desarrollo si estamos en Replit y no estamos forzando Firebase real
+export const devMode = isReplitDev && !useRealFirebase;
 
 // Auto login en modo desarrollo
 if (devMode) {
@@ -63,7 +66,18 @@ if (devMode) {
       detail: { user: devUser }
     }));
   }, 1000);
+} else {
+  console.log("Usando autenticación real de Firebase.");
 }
+
+// Función para alternar entre modo de desarrollo y Firebase real
+export const toggleFirebaseMode = () => {
+  const currentMode = localStorage.getItem('useRealFirebase') === 'true';
+  localStorage.setItem('useRealFirebase', (!currentMode).toString());
+  console.log(`Modo Firebase actualizado. Usando ${!currentMode ? 'Firebase real' : 'modo de desarrollo'}.`);
+  // Recarga la página para aplicar los cambios
+  window.location.reload();
+};
 
 // Crear un usuario simulado para modo de desarrollo
 export const createDevUser = () => {
@@ -688,11 +702,31 @@ export const saveUserProfile = async (userId: string, profileData: any) => {
 // Registrar un nuevo usuario
 export const registerUser = async (email: string, password: string) => {
   try {
+    // Verificar si no estamos en modo de desarrollo antes de intentar el registro
+    if (!devMode) {
+      console.log("Intentando registrar usuario real en Firebase:", email);
+    }
+    
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    console.log("Usuario registrado exitosamente:", userCredential.user.uid);
     return userCredential.user;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error registrando usuario:", error);
-    throw error;
+    
+    // Traducir errores de Firebase a mensajes más amigables
+    if (error.code === 'auth/email-already-in-use') {
+      throw new Error('Ya existe una cuenta con este correo electrónico. Por favor, inicia sesión o usa otro correo.');
+    } else if (error.code === 'auth/invalid-email') {
+      throw new Error('El formato del correo electrónico es inválido. Por favor, verifica e intenta de nuevo.');
+    } else if (error.code === 'auth/weak-password') {
+      throw new Error('La contraseña es demasiado débil. Usa al menos 6 caracteres que incluyan letras y números.');
+    } else if (error.code === 'auth/operation-not-allowed') {
+      throw new Error('El registro con email y contraseña no está habilitado. Contacta al administrador.');
+    } else if (error.code === 'auth/network-request-failed') {
+      throw new Error('Problema de conexión. Verifica tu internet e intenta de nuevo.');
+    } else {
+      throw new Error(error.message || 'Error al crear cuenta. Por favor, intenta de nuevo más tarde.');
+    }
   }
 };
 
@@ -701,9 +735,23 @@ export const loginUser = async (email: string, password: string) => {
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     return userCredential.user;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error iniciando sesión:", error);
-    throw error;
+    
+    // Traducir errores de Firebase a mensajes más amigables
+    if (error.code === 'auth/user-not-found') {
+      throw new Error('No existe una cuenta con este correo electrónico. Por favor, regístrate primero.');
+    } else if (error.code === 'auth/wrong-password') {
+      throw new Error('Contraseña incorrecta. Por favor, intenta de nuevo o usa "Olvidé mi contraseña".');
+    } else if (error.code === 'auth/too-many-requests') {
+      throw new Error('Demasiados intentos fallidos. Por favor, intenta más tarde o restablece tu contraseña.');
+    } else if (error.code === 'auth/invalid-email') {
+      throw new Error('El formato del correo electrónico es inválido. Por favor, revisa e intenta de nuevo.');
+    } else if (error.code === 'auth/invalid-credential') {
+      throw new Error('Credenciales inválidas. Por favor, verifica tu correo y contraseña.');
+    } else {
+      throw new Error(error.message || 'Error al iniciar sesión. Por favor, intenta de nuevo más tarde.');
+    }
   }
 };
 

@@ -99,9 +99,24 @@ export default function AuthPage() {
     try {
       clearError();
       if (loginMethod === "email") {
+        console.log("Intentando iniciar sesión con:", data.email);
+        
+        // Verificar que los campos no estén vacíos antes de intentar login
+        if (!data.email.trim() || !data.password.trim()) {
+          throw new Error("Por favor completa todos los campos");
+        }
+        
         await login(data.email, data.password);
+        console.log("Login exitoso para:", data.email);
         showSuccessEffect();
       } else if (loginMethod === "emailLink") {
+        console.log("Enviando enlace de inicio de sesión a:", data.email);
+        
+        // Verificar que el correo no esté vacío
+        if (!data.email.trim()) {
+          throw new Error("Por favor ingresa tu correo electrónico");
+        }
+        
         await sendEmailLoginLink(data.email);
         toast({
           title: "Enlace enviado",
@@ -110,10 +125,24 @@ export default function AuthPage() {
       }
     } catch (err: any) {
       console.error("Error de inicio de sesión:", err);
+      
+      // Manejo específico de errores comunes
+      let errorMessage = err.message || "Ocurrió un error al iniciar sesión. Intenta de nuevo.";
+      
+      // Simplificar mensajes de error para mejor experiencia de usuario
+      if (errorMessage.includes("user-not-found") || errorMessage.includes("wrong-password") || 
+          errorMessage.includes("invalid-credential")) {
+        errorMessage = "Correo electrónico o contraseña incorrectos. Verifica tus datos e intenta de nuevo.";
+      } else if (errorMessage.includes("too-many-requests")) {
+        errorMessage = "Demasiados intentos fallidos. Por favor espera unos minutos antes de intentar de nuevo.";
+      } else if (errorMessage.includes("network")) {
+        errorMessage = "Problema de conexión. Verifica tu internet e intenta de nuevo.";
+      }
+      
       toast({
         variant: "destructive",
         title: "Error de inicio de sesión",
-        description: err.message || "Ocurrió un error al iniciar sesión. Intenta de nuevo.",
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);
@@ -573,6 +602,14 @@ export default function AuthPage() {
                       </>
                     )}
                   </button>
+                </div>
+                <div>
+                  <a 
+                    href="/auth-diagnostic" 
+                    className="text-xs text-primary/70 hover:text-primary"
+                  >
+                    Diagnóstico Auth
+                  </a>
                 </div>
               </>
             ) : (
