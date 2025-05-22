@@ -329,10 +329,21 @@ const NewContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
     return isValid;
   };
 
+  // State for contract preview dialog
+  const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
+  const [previewContractData, setPreviewContractData] = useState<Record<string, any>>({});
+  
   // Show preview of the contract
   const handlePreview = () => {
+    // Format the answers for the contract with all provided data
     const formattedData = formatAnswersForContract(answers);
-    onPreview(formattedData);
+    setPreviewContractData(formattedData);
+    setIsPreviewDialogOpen(true);
+    
+    // Also call the onPreview prop if provided
+    if (onPreview) {
+      onPreview(formattedData);
+    }
   };
 
   // Render the appropriate input control based on question type
@@ -623,6 +634,177 @@ const NewContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
               </DialogFooter>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+      
+      {/* Dialog for Contract Preview */}
+      <Dialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Vista Previa del Contrato</DialogTitle>
+          </DialogHeader>
+          
+          <div className="overflow-y-auto flex-1 p-4 bg-white rounded-md border">
+            <h2 className="text-2xl font-bold mb-6 text-center">CONTRATO DE SERVICIOS PROFESIONALES</h2>
+            
+            <div className="space-y-6">
+              {/* Información de las partes */}
+              <section className="space-y-3">
+                <h3 className="text-lg font-bold">1. PARTES DEL CONTRATO</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="font-semibold">CONTRATISTA:</h4>
+                    <p>{previewContractData.contractor?.companyName || "No especificado"}</p>
+                    <p>{previewContractData.contractor?.contactName || "No especificado"}</p>
+                    <p>{previewContractData.contractor?.address || "No especificado"}</p>
+                    <p>Teléfono: {previewContractData.contractor?.phone || "No especificado"}</p>
+                    <p>Email: {previewContractData.contractor?.email || "No especificado"}</p>
+                    {previewContractData.contractor?.license && (
+                      <p>Licencia: {previewContractData.contractor.license}</p>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-semibold">CLIENTE:</h4>
+                    <p>{previewContractData.client?.name || "No especificado"}</p>
+                    <p>{previewContractData.client?.address || "No especificado"}</p>
+                    <p>Teléfono: {previewContractData.client?.phone || "No especificado"}</p>
+                    <p>Email: {previewContractData.client?.email || "No especificado"}</p>
+                  </div>
+                </div>
+              </section>
+              
+              {/* Fechas y detalles del contrato */}
+              <section className="space-y-3">
+                <h3 className="text-lg font-bold">2. INFORMACIÓN DEL CONTRATO</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p><strong>Fecha de emisión:</strong> {previewContractData.contract?.issueDate || "No especificada"}</p>
+                    <p><strong>Fecha de inicio:</strong> {previewContractData.contract?.startDate || "No especificada"}</p>
+                    <p><strong>Fecha estimada de finalización:</strong> {previewContractData.contract?.completionDate || "No especificada"}</p>
+                  </div>
+                  <div>
+                    <p><strong>Tipo de proyecto:</strong> {previewContractData.project?.type || "No especificado"}</p>
+                    <p><strong>Dirección del proyecto:</strong> {previewContractData.project?.propertyAddress || "No especificada"}</p>
+                  </div>
+                </div>
+              </section>
+              
+              {/* Alcance del trabajo */}
+              <section className="space-y-3">
+                <h3 className="text-lg font-bold">3. ALCANCE DEL TRABAJO</h3>
+                <div className="whitespace-pre-wrap bg-gray-50 p-3 rounded-md border">
+                  {previewContractData.project?.scope || "No especificado"}
+                </div>
+                
+                {previewContractData.project?.materialRequirements && (
+                  <div>
+                    <h4 className="font-semibold">Requisitos de materiales:</h4>
+                    <div className="whitespace-pre-wrap bg-gray-50 p-3 rounded-md border">
+                      {previewContractData.project.materialRequirements}
+                    </div>
+                  </div>
+                )}
+              </section>
+              
+              {/* Términos de pago */}
+              <section className="space-y-3">
+                <h3 className="text-lg font-bold">4. TÉRMINOS DE PAGO</h3>
+                <div>
+                  <p><strong>Monto total del contrato:</strong> {previewContractData.payment?.totalAmount || "No especificado"}</p>
+                  <p><strong>Esquema de pago:</strong> {previewContractData.payment?.splitFiftyFifty === "Yes" ? 
+                    "50% al firmar, 50% al completar" : 
+                    (previewContractData.payment?.schedule || "No especificado")}
+                  </p>
+                  <p><strong>Penalización por pagos tardíos:</strong> {previewContractData.payment?.latePenalty || "No especificado"}</p>
+                </div>
+                
+                {previewContractData.expenses?.details && (
+                  <div>
+                    <h4 className="font-semibold">Gastos reembolsables:</h4>
+                    <p>{previewContractData.expenses.details}</p>
+                  </div>
+                )}
+              </section>
+              
+              {/* Equipos y materiales */}
+              <section className="space-y-3">
+                <h3 className="text-lg font-bold">5. EQUIPOS Y MATERIALES</h3>
+                <div>
+                  <p><strong>Responsable de proveer equipos:</strong> {previewContractData.equipment?.provider || "No especificado"}</p>
+                  {previewContractData.equipment?.clientOwnedTools && (
+                    <p><strong>Herramientas propiedad del cliente:</strong> {previewContractData.equipment.clientOwnedTools}</p>
+                  )}
+                </div>
+              </section>
+              
+              {/* Información legal */}
+              <section className="space-y-3">
+                <h3 className="text-lg font-bold">6. INFORMACIÓN LEGAL</h3>
+                <div>
+                  <p><strong>Estado que rige:</strong> {previewContractData.legal?.governingState || "No especificado"}</p>
+                  
+                  {previewContractData.legal?.requirements && (
+                    <div>
+                      <h4 className="font-semibold">Requisitos legales especiales:</h4>
+                      <p>{previewContractData.legal.requirements}</p>
+                    </div>
+                  )}
+                  
+                  {previewContractData.legal?.confidentialityClause && (
+                    <div>
+                      <h4 className="font-semibold">Cláusulas de confidencialidad:</h4>
+                      <p>{previewContractData.legal.confidentialityClause}</p>
+                    </div>
+                  )}
+                  
+                  {previewContractData.legal?.restrictions && (
+                    <div>
+                      <h4 className="font-semibold">Restricciones de subcontratación:</h4>
+                      <p>{previewContractData.legal.restrictions}</p>
+                    </div>
+                  )}
+                </div>
+              </section>
+              
+              {/* Cláusulas especiales */}
+              {previewContractData.legal?.specialClauses && (
+                <section className="space-y-3">
+                  <h3 className="text-lg font-bold">7. CLÁUSULAS ESPECIALES</h3>
+                  <div className="whitespace-pre-wrap bg-gray-50 p-3 rounded-md border">
+                    {previewContractData.legal.specialClauses}
+                  </div>
+                </section>
+              )}
+              
+              {/* Firmas */}
+              <section className="space-y-3">
+                <h3 className="text-lg font-bold">8. FIRMAS</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                  <div className="border-t pt-4">
+                    <p className="text-center">____________________________</p>
+                    <p className="text-center font-semibold">{previewContractData.signatures?.contractorName || "Contratista"}</p>
+                    <p className="text-center text-sm">Fecha: _________________</p>
+                  </div>
+                  
+                  <div className="border-t pt-4">
+                    <p className="text-center">____________________________</p>
+                    <p className="text-center font-semibold">{previewContractData.signatures?.clientName || "Cliente"}</p>
+                    <p className="text-center text-sm">Fecha: _________________</p>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
+          
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setIsPreviewDialogOpen(false)}>
+              Cerrar
+            </Button>
+            <Button onClick={() => setIsPreviewDialogOpen(false)}>
+              Aceptar
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
