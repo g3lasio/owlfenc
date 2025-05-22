@@ -44,7 +44,7 @@ const ContractGenerator = () => {
     queryKey: ['contractTemplate'],
     queryFn: async () => {
       try {
-        // Primera opción: Cargar desde la carpeta public (accesible para el backend también)
+        // Cargar desde la carpeta public (accesible para el backend también)
         const response = await fetch('/templates/contract-template.html');
         if (!response.ok) {
           throw new Error('Error loading contract template from public folder');
@@ -54,11 +54,20 @@ const ContractGenerator = () => {
       } catch (error) {
         console.error("Error loading template from public folder:", error);
         
-        // Segunda opción: Importar directamente con Vite
+        // Intentar cargar desde la ruta alternativa
         try {
-          console.log("Intentando cargar plantilla con import directo...");
-          const templateModule = await import('../templates/contract-template.html?raw');
-          console.log("Plantilla cargada con import");
+          console.log("Intentando cargar plantilla con ruta alternativa...");
+          const response = await fetch('/client/public/templates/contract-template.html');
+          if (!response.ok) {
+            throw new Error('Error loading contract template from alternative path');
+          }
+          return await response.text();
+        } catch (altError) {
+          console.error("Error loading template from alternative path:", altError);
+          throw new Error('No se pudo cargar la plantilla de contrato');
+        }
+      }
+    },");
           return templateModule.default;
         } catch (secondError) {
           console.error("Error loading template with direct import:", secondError);

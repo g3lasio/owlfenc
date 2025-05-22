@@ -1011,12 +1011,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Intentar leer la plantilla desde el sistema de archivos
           // (la plantilla debería estar en la carpeta public/templates)
           const templateFilePath = path.join(process.cwd(), 'client/public', templatePath);
+          const fallbackPath = path.join(process.cwd(), 'public/templates/contract-template.html');
           
-          if (fs.existsSync(templateFilePath)) {
-            console.log(`Usando plantilla desde: ${templateFilePath}`);
-            
-            // Leer la plantilla
-            let templateHtml = fs.readFileSync(templateFilePath, 'utf-8');
+          let templateFilePaths = [
+            templateFilePath,
+            fallbackPath,
+            path.join(process.cwd(), 'client/src/components/templates/contract-template.html')
+          ];
+          
+          let templateHtml = '';
+          let usedPath = '';
+          
+          // Intentar cada ruta posible
+          for (const filePath of templateFilePaths) {
+            if (fs.existsSync(filePath)) {
+              templateHtml = fs.readFileSync(filePath, 'utf-8');
+              usedPath = filePath;
+              break;
+            }
+          }
+          
+          if (templateHtml) {
+            console.log(`Usando plantilla desde: ${usedPath}`);
             
             // Procesar la plantilla con los datos del contrato
             if (contractData) {
