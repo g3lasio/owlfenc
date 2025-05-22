@@ -21,6 +21,16 @@ export function AddressAutocomplete({
 }: AddressAutocompleteProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteInstance = useRef<any>(null);
+  const [internalValue, setInternalValue] = useState(value);
+  const isAutocompleteChange = useRef(false);
+
+  // Sincronizar el valor interno cuando cambia el valor externo
+  useEffect(() => {
+    if (!isAutocompleteChange.current) {
+      setInternalValue(value);
+    }
+    isAutocompleteChange.current = false;
+  }, [value]);
 
   // Inicializar Google Places Autocomplete de forma no invasiva
   useEffect(() => {
@@ -45,6 +55,8 @@ export function AddressAutocomplete({
           const place = autocompleteInstance.current.getPlace();
           
           if (place?.formatted_address) {
+            isAutocompleteChange.current = true;
+            setInternalValue(place.formatted_address);
             onChange(place.formatted_address);
             
             // Extraer el estado si está disponible
@@ -91,11 +103,18 @@ export function AddressAutocomplete({
     };
   }, [onChange, onStateExtracted]);
 
+  // Manejar cambio de entrada
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setInternalValue(newValue);
+    onChange(newValue);
+  };
+
   // Limpiar dirección
   const handleClearAddress = () => {
+    setInternalValue('');
     onChange('');
     if (inputRef.current) {
-      inputRef.current.value = '';
       inputRef.current.focus();
     }
   };
@@ -105,15 +124,12 @@ export function AddressAutocomplete({
       <Input
         ref={inputRef}
         type="text"
-        value={value}
-        onChange={(e) => {
-          // Permitir que el usuario escriba libremente
-          onChange(e.target.value);
-        }}
+        value={internalValue}
+        onChange={handleInputChange}
         placeholder={placeholder}
         className="w-full pr-8"
       />
-      {value && (
+      {internalValue && (
         <button
           type="button"
           className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
