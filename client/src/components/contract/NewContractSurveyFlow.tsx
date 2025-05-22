@@ -376,7 +376,7 @@ const NewContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
                 className="flex items-center"
               >
                 <Sparkles className="h-4 w-4 mr-2" />
-                Generate Clauses with AI
+                Generate Clauses with Mervin AI
               </Button>
             )}
           </div>

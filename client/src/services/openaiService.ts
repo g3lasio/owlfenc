@@ -384,20 +384,26 @@ export async function generateAdditionalClauses(contractData: Record<string, any
     }
     
     const systemPrompt = `
-You are a legal expert specializing in construction contracts. Your task is to generate additional clauses that would benefit this ${projectType} project contract.
+You are a legal expert specializing in construction contracts. Your task is to generate actual legal clauses (not descriptions or summaries) that would benefit this ${projectType} project contract.
 
-Generate 5-7 specific contract clauses that:
+Generate 5-6 specific legally binding contract clauses that:
 1. Protect the contractor from common risks and liabilities
 2. Address specific issues related to ${projectType} projects
 3. Cover important aspects that may be missing from standard contracts
 4. Clarify responsibilities and expectations
 5. Include industry-standard protections
 
+IMPORTANT: Write ACTUAL legal contract clauses in proper legal format, not descriptions of what clauses should contain.
+
 For each clause:
-- Provide a clear title in bold
-- Write the clause in formal legal language
-- Keep each clause concise yet comprehensive
-- Format in a way that's easy to read and incorporate into a contract
+- Provide a numbered heading (e.g., "11. CHANGE ORDERS")
+- Write the clause in formal, binding legal language using complete sentences
+- Include all necessary legal details and conditions
+- Use proper legal terminology and formatting
+- Make clauses ready to insert directly into a contract document
+
+Example format for each clause:
+"11. CHANGE ORDERS. Any alteration or deviation from the above specifications involving extra costs will be executed only upon written orders and will become an extra charge over and above the estimate. All agreements must be made in writing."
 
 The clauses should be specifically tailored to the project type and circumstances described in the contract data.
 `;
