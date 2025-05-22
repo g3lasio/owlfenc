@@ -408,3 +408,113 @@ The clauses should be specifically tailored to the project type and circumstance
     return "No se pudieron generar cláusulas adicionales debido a un error.";
   }
 }
+
+/**
+ * Generates enhanced content for contract fields such as scope descriptions or legal clauses
+ * @param prompt The user's prompt or description to enhance
+ * @param projectType The type of project (fencing, roofing, etc.)
+ * @returns Enhanced professional content for the contract
+ */
+export async function generateEnhancedContent(prompt: string, projectType: string): Promise<string> {
+  try {
+    // Get OpenAI instance
+    const ai = getOpenAI();
+    if (!ai) {
+      console.warn("Could not initialize OpenAI for content enhancement");
+      return "Could not generate enhanced content due to a connection error with the AI service.";
+    }
+    
+    // Determine what type of content we're generating based on keywords in the prompt
+    let contentType = "general";
+    if (prompt.toLowerCase().includes("scope") || prompt.toLowerCase().includes("work") || prompt.toLowerCase().includes("project")) {
+      contentType = "scope";
+    } else if (prompt.toLowerCase().includes("clause") || prompt.toLowerCase().includes("legal") || prompt.toLowerCase().includes("term")) {
+      contentType = "clause";
+    } else if (prompt.toLowerCase().includes("background") || prompt.toLowerCase().includes("context")) {
+      contentType = "background";
+    }
+    
+    // Create appropriate system prompt based on content type
+    let systemPrompt = "";
+    switch (contentType) {
+      case "scope":
+        systemPrompt = `
+You are an expert in construction project specifications. Create a detailed scope of work for a ${projectType} project based on the provided information.
+
+Your response should:
+1. Be well-structured with clear sections using bullet points
+2. Include detailed specifications relevant to ${projectType} projects
+3. Cover materials, methods, timelines, and deliverables
+4. Be written in professional English appropriate for a legal contract
+5. Include specific timeline and project development details
+6. Be comprehensive yet clear and easy to understand
+
+Format with clear headers, bullet points for key items, and good spacing for readability.
+`;
+        break;
+      case "clause":
+        systemPrompt = `
+You are a legal expert specializing in construction contracts. Create additional legal clauses for a ${projectType} project contract.
+
+Your response should include:
+1. 3-5 clearly titled sections with specific clauses
+2. Formal legal language appropriate for contracts
+3. Clauses that protect the contractor from common risks
+4. Specific considerations for ${projectType} projects
+5. Clear definition of responsibilities and expectations
+
+Format each clause with a clear title, concise professional language, and maintain a formal tone throughout.
+`;
+        break;
+      case "background":
+        systemPrompt = `
+You are a professional contract writer. Create a background/context section for a ${projectType} contract.
+
+Your response should:
+1. Establish the purpose and context of the agreement
+2. Reference the relationship between the parties
+3. Briefly describe the nature of the ${projectType} project
+4. Set the foundation for the detailed terms that follow
+5. Use formal language appropriate for a legal document
+
+Keep the response concise but informative, with professional contract language.
+`;
+        break;
+      default:
+        systemPrompt = `
+You are a professional contract writer specializing in construction agreements. Generate well-written content for a ${projectType} project contract based on the provided prompt.
+
+Your response should:
+1. Use formal language appropriate for legal contracts
+2. Be well-structured with clear organization
+3. Include specific details where appropriate
+4. Be comprehensive yet concise
+5. Maintain a professional tone throughout
+
+Format the response with appropriate sections, bullet points where helpful, and clear organization.
+`;
+    }
+    
+    // Call OpenAI API
+    const response = await ai.chat.completions.create({
+      model: GPT_MODEL,
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 1000
+    });
+    
+    return response.choices[0].message.content || "Could not generate enhanced content.";
+  } catch (error) {
+    console.error("Error generating enhanced content:", error);
+    return "An error occurred while generating the enhanced content.";
+  }
+}

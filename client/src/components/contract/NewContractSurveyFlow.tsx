@@ -28,6 +28,8 @@ import {
   createQuestionGroups,
   projectCategories
 } from "@/services/newContractQuestionService";
+import { AIEnhancedField } from "@/components/contract/AIEnhancedField";
+import { generateEnhancedContent } from "@/services/openaiService";
 import { useToast } from "@/hooks/use-toast";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { useProfile } from "@/hooks/use-profile";
@@ -353,27 +355,20 @@ const NewContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
         );
       
       case 'ai-enhanced':
+        // Get current project type for better AI context
+        const projectType = answers['project.type'] || answers['project.category'] || 'general';
+        const projectTypeId = projectCategories.find(cat => cat.name === projectType)?.id || 'general';
+        
         return (
-          <div className="space-y-2">
-            <Textarea
-              id={question.id}
-              value={value}
-              onChange={(e) => handleInputChange(question.field, e.target.value)}
-              placeholder={`Enter ${question.prompt.toLowerCase().replace('?', '')}`}
-              className="w-full"
-              rows={5}
-            />
-            <Button 
-              type="button" 
-              variant="outline" 
-              size="sm" 
-              onClick={handleEnhanceDescription}
-              className="flex items-center"
-            >
-              <Sparkles className="h-4 w-4 mr-2" />
-              Enhance with AI
-            </Button>
-          </div>
+          <AIEnhancedField
+            value={value || ''}
+            onChange={(newValue) => handleInputChange(question.field, newValue)}
+            label={question.prompt}
+            description={question.description}
+            placeholder={`Enter ${question.prompt.toLowerCase().replace('?', '')}`}
+            projectType={projectTypeId}
+            field={question.field}
+          />
         );
       
       case 'address':
