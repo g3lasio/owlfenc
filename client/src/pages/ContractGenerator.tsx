@@ -436,12 +436,6 @@ const ContractGenerator = () => {
               Crea, gestiona y envía contratos profesionales a tus clientes
             </p>
           </div>
-          {view === "dashboard" && (
-            <Button onClick={handleCreateNew}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Nuevo Contrato
-            </Button>
-          )}
           {view !== "dashboard" && (
             <Button variant="outline" onClick={() => setView("dashboard")}>
               Volver al Dashboard
