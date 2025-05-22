@@ -838,7 +838,7 @@ export const loginWithGoogle = async () => {
 // Iniciar sesión con Apple
 export const loginWithApple = async () => {
   try {
-    // Si estamos en modo de desarrollo y hay problemas de dominio, usar autenticación simulada
+    // Si estamos en modo de desarrollo, usar autenticación simulada
     if (devMode) {
       console.log("Usando login de desarrollo (sin Firebase - Apple)");
       const devUser = createDevUser();
@@ -853,170 +853,149 @@ export const loginWithApple = async () => {
     }
     
     // Logs mejorados para diagnóstico
-    console.log("=== DIAGNÓSTICO APPLE LOGIN (INICIO) ===");
-    console.log("1. Navegador detectado:", navigator.userAgent);
-    console.log("2. URL actual:", window.location.href);
-    console.log("3. Dominio actual:", window.location.hostname);
-    console.log("4. Firebase authDomain configurado:", auth.app.options.authDomain);
+    console.log("=== INICIANDO AUTENTICACIÓN APPLE ===");
+    console.log("Navegador:", navigator.userAgent);
+    console.log("Dominio:", window.location.hostname);
+    console.log("Auth Domain configurado:", auth.app.options.authDomain);
     
-    // Recreamos el proveedor de Apple en cada intento para evitar problemas de estado
-    console.log("5. Creando nueva instancia del proveedor Apple");
-    const freshAppleProvider = new OAuthProvider('apple.com');
+    // ID único para esta sesión de autenticación
+    const authSessionId = Date.now().toString(36) + Math.random().toString(36).substring(2);
     
-    // Datos del usuario actual (si existe) para diagnóstico
-    const currentUser = auth.currentUser;
-    console.log("6. Estado de usuario antes de login:", currentUser ? 
-      "Usuario ya autenticado (UID: " + currentUser.uid + ")" : "No hay usuario autenticado");
-    
-    // Configurar el proveedor de Apple con todos los scopes necesarios
-    console.log("7. Configurando scopes del proveedor Apple");
-    freshAppleProvider.addScope('email');
-    freshAppleProvider.addScope('name');
-    
-    // Agregar parámetros personalizados que pueden mejorar la experiencia
-    console.log("8. Configurando parámetros adicionales del proveedor Apple");
-    freshAppleProvider.setCustomParameters({
-      // Forzar siempre la selección de cuenta
-      prompt: 'select_account',
-      // Establecer idioma preferido
-      locale: 'es_ES'
-    });
-    
-    // Establecemos cookies de rastreo para diagnóstico
-    console.log("9. Estableciendo datos para diagnosticar el flujo de autenticación");
-    sessionStorage.setItem('appleAuth_attempt_start', JSON.stringify({
+    // Guardar información de diagnóstico
+    sessionStorage.setItem('appleAuth_session_' + authSessionId, JSON.stringify({
       timestamp: Date.now(),
       url: window.location.href,
       domain: window.location.hostname,
       authDomain: auth.app.options.authDomain
     }));
     
-    // Verificar soporte del navegador y estrategia preferida
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    console.log("10. Dispositivo móvil detectado:", isMobile);
+    // Crear una nueva instancia del proveedor de Apple para evitar problemas de estado
+    const appleProvider = new OAuthProvider('apple.com');
     
-    // CAMBIO CLAVE: Siempre intentar primero con popup (que es directo) tanto en móvil como en escritorio
-    try {
-      console.log("11. Intentando autenticación con popup...");
-      freshAppleProvider.setCustomParameters({
-        prompt: 'consent', // Forzar mostrar pantalla de consentimiento 
-        locale: 'es_ES'
+    // Configurar los scopes necesarios
+    appleProvider.addScope('email');
+    appleProvider.addScope('name');
+    
+    // Determinar si estamos en móvil para estrategia óptima
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    console.log("Dispositivo móvil:", isMobile);
+    
+    // En dispositivos móviles, usar directamente redirección que funciona mejor
+    if (isMobile) {
+      console.log("Iniciando autenticación con redirección en dispositivo móvil");
+      
+      // Configurar parámetros optimizados para móvil
+      appleProvider.setCustomParameters({
+        // Forzar consentimiento para asegurar que se muestren las opciones de Apple
+        prompt: 'consent',
+        // Establecer idioma preferido
+        locale: 'es_ES',
+        // Usar ID de sesión para rastreo
+        state: 'apple-auth-mobile-' + authSessionId
       });
       
-      const result = await signInWithPopup(auth, freshAppleProvider);
-      console.log("12. Login con popup exitoso! UID:", result.user.uid);
+      // Guardar tipo de flujo para referencia
+      sessionStorage.setItem('appleAuth_flow_type', 'mobile_redirect');
       
-      // Datos completos del usuario para diagnóstico
-      console.log("13. Datos del usuario autenticado:");
-      console.log("   - Email:", result.user.email);
-      console.log("   - Nombre:", result.user.displayName);
-      console.log("   - Verificado:", result.user.emailVerified);
-      console.log("   - Método:", result.user.providerData[0]?.providerId);
+      // Usar redirección que es más estable en móvil
+      await signInWithRedirect(auth, appleProvider);
+      console.log("Redirección iniciada");
+      return null; // La función termina aquí, el usuario será redirigido
+    }
+    
+    // Para escritorio, intentar primero con popup
+    try {
+      console.log("Intentando autenticación con popup en escritorio");
       
+      // Configurar para experiencia óptima en popup
+      appleProvider.setCustomParameters({
+        prompt: 'consent',
+        locale: 'es_ES',
+        state: 'apple-auth-popup-' + authSessionId
+      });
+      
+      // Guardar tipo de flujo
+      sessionStorage.setItem('appleAuth_flow_type', 'desktop_popup');
+      
+      // Autenticar con popup
+      const result = await signInWithPopup(auth, appleProvider);
+      console.log("Login con popup exitoso! Usuario:", result.user.uid);
       return result.user;
+      
     } catch (popupError: any) {
-      console.warn("12. Error con popup:", popupError.code, popupError.message);
+      console.warn("Error en popup:", popupError.code, popupError.message);
       
-      // Si es un error de popup (bloqueado o cerrado), intentamos con redirección
-      // También usamos redirección si estamos en móvil y hay errores relacionados
-      if (
-        popupError.code === 'auth/popup-blocked' || 
-        popupError.code === 'auth/popup-closed-by-user' ||
-        popupError.code === 'auth/cancelled-popup-request' ||
-        popupError.code === 'auth/operation-not-supported-in-this-environment' ||
-        isMobile // Siempre fallback a redirección en móvil ante cualquier error
-      ) {
-        console.log("13. Cambiando a modo de redirección después de error de popup");
-        
-        // Guardamos información del intento para diagnóstico
-        sessionStorage.setItem('appleAuth_redirect_reason', 'popup_' + popupError.code);
-        sessionStorage.setItem('appleAuth_popup_error', JSON.stringify({
-          code: popupError.code,
-          message: popupError.message,
-          timestamp: Date.now()
-        }));
-        
-        // Resetear configuración para redirección para evitar problemas
-        freshAppleProvider.setCustomParameters({
-          prompt: 'consent',
-          locale: 'es_ES',
-          // Incluir el URL de redirección y el estado puede mejorar la compatibilidad
-          state: 'apple-auth-' + Date.now()
-        });
-        
-        console.log("14. Iniciando redirección a Apple...");
-        
-        // CAMBIO IMPORTANTE: Redirección a la página de callback específica
-        await signInWithRedirect(auth, freshAppleProvider);
-        console.log("15. Redirección iniciada, no se debería ver este mensaje");
-        return null;
-      }
-      
-      // Si el error no está relacionado con popups, registramos datos para diagnóstico
-      sessionStorage.setItem('appleAuth_fatal_error', JSON.stringify({
+      // Guardar detalles del error
+      sessionStorage.setItem('appleAuth_popup_error', JSON.stringify({
         code: popupError.code,
         message: popupError.message,
         timestamp: Date.now()
       }));
       
-      // Si es error de dominio no autorizado y estamos en Replit, usar modo desarrollo
-      if ((popupError.code === 'auth/unauthorized-domain' || 
-           popupError.message?.includes('domain not authorized')) && isReplitDev) {
-        console.log("13. Dominio no autorizado en Replit, usando autenticación simulada");
-        const devUser = createDevUser();
+      // Si es un error de popup conocido, intentar con redirección
+      const fallbackToRedirect = 
+        popupError.code === 'auth/popup-blocked' || 
+        popupError.code === 'auth/popup-closed-by-user' ||
+        popupError.code === 'auth/cancelled-popup-request' ||
+        popupError.code === 'auth/operation-not-supported-in-this-environment' ||
+        popupError.code === 'auth/internal-error' ||
+        popupError.message?.includes('popup');
+      
+      if (fallbackToRedirect) {
+        console.log("Cambiando a modo de redirección después de error de popup");
         
-        setTimeout(() => {
-          const event = new CustomEvent('dev-auth-change', { detail: { user: devUser } });
-          window.dispatchEvent(event);
-        }, 500);
+        // Nueva instancia para evitar estado corrupto
+        const fallbackProvider = new OAuthProvider('apple.com');
+        fallbackProvider.addScope('email');
+        fallbackProvider.addScope('name');
         
-        return devUser;
+        // Configuración limpia para redirección
+        fallbackProvider.setCustomParameters({
+          prompt: 'consent',
+          locale: 'es_ES',
+          state: 'apple-auth-redirect-fallback-' + authSessionId
+        });
+        
+        // Guardar tipo de flujo
+        sessionStorage.setItem('appleAuth_flow_type', 'desktop_redirect_fallback');
+        
+        // Iniciar redirección
+        await signInWithRedirect(auth, fallbackProvider);
+        console.log("Redirección iniciada como fallback");
+        return null;
       }
       
-      // Si es otro tipo de error, lo propagamos
+      // Error específico de dominio no autorizado
+      if (popupError.code === 'auth/unauthorized-domain') {
+        console.error("Error: Dominio no autorizado en Firebase");
+        console.error("Debes agregar este dominio en la consola de Firebase:");
+        console.error("Firebase Console > Authentication > Sign-in method > Authorized domains");
+        
+        // Si estamos en Replit y hay error de dominio, usar autenticación simulada
+        if (isReplitDev) {
+          console.log("Dominio Replit no autorizado, usando autenticación simulada");
+          const devUser = createDevUser();
+          
+          setTimeout(() => {
+            const event = new CustomEvent('dev-auth-change', { detail: { user: devUser } });
+            window.dispatchEvent(event);
+          }, 500);
+          
+          return devUser;
+        }
+      }
+      
+      // Otros errores se propagan
       throw popupError;
     }
   } catch (error: any) {
-    console.error("=== ERROR FATAL EN APPLE LOGIN ===");
-    console.error("Error detallado:", error);
+    console.error("=== ERROR FATAL EN AUTENTICACIÓN APPLE ===");
     console.error("Código:", error.code || "No disponible");
     console.error("Mensaje:", error.message || "No disponible");
-    console.error("Stack:", error.stack || "No disponible");
     
-    // Diagnóstico avanzado según el tipo de error
-    if (error.code === 'auth/unauthorized-domain') {
-      console.error("DIAGNÓSTICO: Este dominio no está autorizado en la consola de Firebase");
-      console.error("- Dominio actual:", window.location.hostname);
-      console.error("- Debes agregar este dominio en la consola de Firebase:");
-      console.error("  Firebase Console > Authentication > Sign-in method > Authorized domains");
-      console.error("- También debes configurar el dominio en la consola de desarrollador de Apple:");
-      console.error("  https://developer.apple.com > Certificates, Identifiers & Profiles > Services IDs");
-    } else if (error.code === 'auth/operation-not-supported-in-this-environment') {
-      console.error("DIAGNÓSTICO: La operación no es compatible con este entorno");
-      console.error("- Verifica las restricciones de cookies de terceros en el navegador");
-      console.error("- Verifica que estás usando HTTPS");
-      console.error("- Este error puede ocurrir en navegadores antiguos o con restricciones");
-      
-      // CAMBIO: Si el popup falla por entorno no soportado, intentamos redirección
-      console.log("Intentando redirección como alternativa para entorno no soportado...");
-      try {
-        await signInWithRedirect(auth, new OAuthProvider('apple.com'));
-        return null;
-      } catch (redirectError) {
-        console.error("También falló la redirección:", redirectError);
-      }
-    } else if (error.message && error.message.includes('appleid.apple.com refused to connect')) {
-      console.error("DIAGNÓSTICO: Error de conexión con los servidores de Apple");
-      console.error("- Posibles causas:");
-      console.error("  1. La cuenta de desarrollador Apple no está configurada correctamente");
-      console.error("  2. El dominio de tu aplicación no está autorizado en Apple Developer Console");
-      console.error("  3. Hay restricciones de red que impiden la conexión con Apple");
-      console.error("  4. Los servicios de Apple pueden estar experimentando problemas");
-    }
-    
-    // Si estamos en modo de desarrollo y hay error, simular autenticación
+    // Si estamos en modo de desarrollo, simular autenticación
     if (devMode) {
-      console.log("Error en modo de desarrollo, simulando autenticación");
+      console.log("Simulando autenticación en modo desarrollo tras error");
       const devUser = createDevUser();
       
       setTimeout(() => {
@@ -1027,6 +1006,7 @@ export const loginWithApple = async () => {
       return devUser;
     }
     
+    // En producción, propagar el error
     throw error;
   }
 };

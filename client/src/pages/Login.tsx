@@ -193,34 +193,69 @@ export default function AuthPage() {
     setIsLoading(true);
     try {
       clearError();
+      
+      // Limpiar cualquier dato anterior de diagnóstico
+      Object.keys(sessionStorage)
+        .filter(key => key.startsWith('appleAuth_'))
+        .forEach(key => sessionStorage.removeItem(key));
+      
+      console.log("Iniciando autenticación con Apple desde Login");
       const result = await loginWithApple();
       
       if (result) {
+        // Si tenemos un resultado inmediato (modo desarrollo)
+        console.log("Login con Apple completado directamente:", result);
         showSuccessEffect();
       } else {
+        // En producción, se inicia redirección
+        console.log("Redirección a Apple iniciada");
         toast({
-          title: "Redirigiendo...",
-          description: "Estás siendo redirigido a Apple para autenticarte",
+          title: "Redirigiendo a Apple",
+          description: "Se abrirá la página de autenticación de Apple. Por favor, completa el proceso.",
         });
       }
     } catch (err: any) {
       console.error("Error de autenticación con Apple:", err);
       
-      let errorMessage = "Error al iniciar el proceso de autenticación con Apple. Por favor, verifica tu conexión e intenta de nuevo.";
+      // Almacenar error para diagnóstico
+      sessionStorage.setItem('appleAuth_login_error', JSON.stringify({
+        timestamp: Date.now(),
+        code: err.code || "unknown",
+        message: err.message || "Error desconocido"
+      }));
       
+      let errorMessage = "Error al iniciar la autenticación con Apple. Por favor, intenta de nuevo.";
+      let errorDetails = null;
+      
+      // Mensajes específicos según el tipo de error
       if (err.message && err.message.includes('appleid.apple.com refused to connect')) {
-        errorMessage = "No se puede conectar con los servidores de Apple. Esto puede deberse a: \n" +
-                      "1) El dominio no está autorizado en la consola de desarrollador de Apple, \n" +
-                      "2) Hay problemas con la configuración de Sign in with Apple en Firebase, o \n" +
-                      "3) Existen restricciones de red que impiden la conexión. \n\n" + 
-                      "Te recomendamos usar otro método de inicio de sesión mientras resolvemos este problema.";
+        errorMessage = "No se puede conectar con los servidores de Apple";
+        errorDetails = "Posibles causas:\n• El dominio no está autorizado en Apple Developer\n• Problemas de configuración en Firebase\n• Restricciones de red o firewall";
       } else if (err.code === 'auth/popup-closed-by-user') {
-        errorMessage = "Ventana de inicio de sesión cerrada. Por favor, intenta de nuevo.";
+        errorMessage = "Ventana de inicio de sesión cerrada";
+        errorDetails = "Cerraste la ventana antes de completar el proceso. Intenta nuevamente.";
+      } else if (err.code === 'auth/popup-blocked') {
+        errorMessage = "Popup bloqueado por el navegador";
+        errorDetails = "Tu navegador ha bloqueado la ventana emergente. Permite ventanas emergentes para este sitio e intenta nuevamente.";
+      } else if (err.code === 'auth/unauthorized-domain') {
+        errorMessage = "Dominio no autorizado";
+        errorDetails = "Este dominio no está registrado en la configuración de Firebase. Contacta al administrador.";
       }
       
       toast({
         variant: "destructive",
-        title: "Error de autenticación",
+        title: errorMessage,
+        description: errorDetails || "Por favor intenta con otro método de inicio de sesión o contacta a soporte.",
+        action: (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => navigate('/apple-auth-diagnostic')}
+            className="bg-background/80 backdrop-blur-sm"
+          >
+            Diagnosticar
+          </Button>
+        ),
         description: errorMessage,
       });
     } finally {

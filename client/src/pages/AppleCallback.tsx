@@ -16,41 +16,41 @@ export default function AppleCallback() {
   const [diagnosticInfo, setDiagnosticInfo] = useState<Record<string, any>>({});
 
   useEffect(() => {
-    // Recuperamos información de diagnóstico guardada durante el intento de autenticación
-    const attemptData = sessionStorage.getItem('appleAuth_attempt_start');
-    const redirectReason = sessionStorage.getItem('appleAuth_redirect_reason');
-    const popupError = sessionStorage.getItem('appleAuth_popup_error');
+    // Recuperar toda la información de diagnóstico disponible
+    const diagnosticKeys = Object.keys(sessionStorage).filter(key => 
+      key.startsWith('appleAuth_')
+    );
     
+    // Inicializar objeto de diagnóstico
     let diagnosticData: Record<string, any> = {
       timestamp: new Date().toISOString(),
       browserUserAgent: navigator.userAgent,
       currentURL: window.location.href,
+      flowType: sessionStorage.getItem('appleAuth_flow_type') || 'unknown',
+      allStorageKeys: diagnosticKeys
     };
     
-    if (attemptData) {
+    // Obtener y procesar cada pieza de información de diagnóstico
+    diagnosticKeys.forEach(key => {
       try {
-        diagnosticData.attemptData = JSON.parse(attemptData);
-        console.log("Datos del intento de autenticación recuperados:", diagnosticData.attemptData);
+        const value = sessionStorage.getItem(key);
+        if (value) {
+          // Intentar parsear como JSON
+          try {
+            diagnosticData[key] = JSON.parse(value);
+          } catch {
+            // Si no es JSON, guardar como string
+            diagnosticData[key] = value;
+          }
+        }
       } catch (e) {
-        console.error("Error al parsear datos del intento:", e);
+        console.error(`Error procesando clave ${key}:`, e);
       }
-    }
+    });
     
-    if (redirectReason) {
-      diagnosticData.redirectReason = redirectReason;
-      console.log("Razón de redirección:", redirectReason);
-    }
-    
-    if (popupError) {
-      try {
-        diagnosticData.popupError = JSON.parse(popupError);
-        console.log("Error de popup previo:", diagnosticData.popupError);
-      } catch (e) {
-        console.error("Error al parsear error de popup:", e);
-      }
-    }
-    
+    // Guardar para referencia
     setDiagnosticInfo(diagnosticData);
+    console.log("Datos de diagnóstico recuperados:", diagnosticData);
     
     // Si ya hay un usuario autenticado, redirigir a la página principal
     if (currentUser) {
@@ -58,7 +58,16 @@ export default function AppleCallback() {
       console.log("UID:", currentUser.uid);
       console.log("Email:", currentUser.email);
       console.log("Nombre:", currentUser.displayName);
-      navigate("/");
+      
+      // Limpiar datos de diagnóstico
+      diagnosticKeys.forEach(key => sessionStorage.removeItem(key));
+      
+      toast({
+        title: "Sesión iniciada",
+        description: "Ya tienes una sesión activa. Serás redirigido al inicio."
+      });
+      
+      setTimeout(() => navigate("/"), 1500);
       return;
     }
 
@@ -66,11 +75,10 @@ export default function AppleCallback() {
       const auth = getAuth();
       try {
         // Logs detallados para diagnóstico
-        console.log("=== DIAGNÓSTICO MEJORADO DE CALLBACK APPLE ===");
-        console.log("1. Iniciando procesamiento de redirección de Apple");
-        console.log("2. URL completa:", window.location.href);
-        console.log("3. Navegador:", navigator.userAgent);
-        console.log("4. Fecha y hora UTC:", new Date().toISOString());
+        console.log("=== PROCESANDO REDIRECCIÓN DE APPLE ===");
+        console.log("URL completa:", window.location.href);
+        console.log("Fecha y hora:", new Date().toISOString());
+        console.log("Tipo de flujo detectado:", diagnosticData.flowType);
         
         // Verificar todos los parámetros de la URL para diagnóstico
         const urlParams = new URLSearchParams(window.location.search);

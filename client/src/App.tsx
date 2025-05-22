@@ -1,3 +1,6 @@
+Adding a new route for the Apple authentication diagnostic page using lazy loading.
+```
+```replit_final_file
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -41,6 +44,7 @@ import AITestingPage from "@/pages/AITestingPage";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import AuthDiagnostic from './pages/AuthDiagnostic';
+import { lazy } from 'react';
 
 // Componente para páginas protegidas
 import { useAuth } from "@/contexts/AuthContext";
@@ -82,6 +86,7 @@ function Router() {
       <Route path="/login/email-link-callback" component={EmailLinkCallback} />
       <Route path="/apple-callback" component={AppleCallback} />
       <Route path="/auth-diagnostic" component={AuthDiagnostic} />
+      <Route path="/apple-auth-diagnostic" component={lazy(() => import('./pages/AppleAuthDiagnostic'))} />
       <Route path="/about-owlfenc" component={AboutOwlFence} />
       <Route path="/about-mervin" component={AboutMervin} />
       <Route path="/legal-policy" component={LegalPolicy} />
