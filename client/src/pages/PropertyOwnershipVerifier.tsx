@@ -680,8 +680,8 @@ export default function PropertyOwnershipVerifier() {
                   <div>
                     <span className="font-medium text-blue-800">Recuerda:</span>
                     <p className="text-blue-700">
-                      Tú eres un profesional - no te dejes engañar por
-                      intermediarios. ¡Tu trabajo vale lo que cobras!
+                      ¡No te dejes chingar, primo! Si eres chingón, cobra como chingón. 
+                      ¡No te dejes chamaquear!
                     </p>
                   </div>
                 </li>
