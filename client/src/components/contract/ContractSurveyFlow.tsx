@@ -525,6 +525,22 @@ const ContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
       [field]: value
     });
   };
+  
+  // Añadir botón de vista previa en cada paso
+  const renderPreviewButton = () => {
+    return (
+      <Button 
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={handlePreview}
+        className="ml-2"
+      >
+        <Eye className="h-4 w-4 mr-2" />
+        Vista Previa
+      </Button>
+    );
+  };
 
   // Ver vista previa antes de completar
   const handlePreview = () => {
@@ -835,15 +851,13 @@ const ContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
         </Button>
         
         <div className="space-x-2">
-          {isLastStep && (
-            <Button 
-              variant="outline" 
-              onClick={handlePreview}
-            >
-              <CheckSquare className="mr-2 h-4 w-4" />
-              Vista Previa
-            </Button>
-          )}
+          <Button 
+            variant="outline" 
+            onClick={handlePreview}
+          >
+            <Eye className="mr-2 h-4 w-4" />
+            Vista Previa
+          </Button>
           
           <Button onClick={handleNext}>
             {isLastStep ? 'Completar' : 'Siguiente'}

@@ -166,7 +166,7 @@ const ContractGenerator = () => {
     try {
       // Preparar datos para la generación del contrato
       const contractData = {
-        projectDetails: {
+        clientInfo: {
           clientName: data.client?.name || "",
           address: data.client?.address || "",
           email: data.client?.email || "",
@@ -182,7 +182,6 @@ const ContractGenerator = () => {
           address: data.contractor?.address || "",
           phone: data.contractor?.phone || "",
           email: data.contractor?.email || "",
-          license: data.contractor?.license || "",
         },
         projectDetails: {
           startDate: data.project?.startDate || "",
@@ -190,6 +189,7 @@ const ContractGenerator = () => {
           gates: data.project?.gates || "",
           gateDetails: data.project?.gateDetails || "",
           scopeDetails: data.project?.scopeDetails || "",
+          description: data.project?.description || "",
         },
         paymentDetails: {
           schedule: data.payment?.schedule || "",
