@@ -178,15 +178,7 @@ export const contractQuestions: Question[] = [
     required: true,
   },
   
-  // Group 8: Project Background & Scope (Part 1)
-  {
-    id: 'project_background',
-    field: 'project.background',
-    prompt: "Please provide a brief background or context for this project.",
-    type: 'multiline',
-    required: true,
-    description: "Context and general overview of the project"
-  },
+  // Group 8: Project Property Address
   {
     id: 'project_property_address',
     field: 'project.propertyAddress',
@@ -194,24 +186,32 @@ export const contractQuestions: Question[] = [
     type: 'address',
     required: true,
   },
+  {
+    id: 'project_state',
+    field: 'legal.governingState',
+    prompt: "In which state will the agreement be governed?",
+    type: 'text',
+    required: true,
+    description: "This will be automatically filled based on the address above"
+  },
   
-  // Group 9: Project Background & Scope (Part 2)
+  // Group 9: Project Scope (Combinado con background)
   {
     id: 'project_scope',
     field: 'project.scope',
-    prompt: "Please describe in detail the scope of work and all deliverables.",
+    prompt: "Please describe in detail the scope of work, including background and all deliverables.",
     type: 'ai-enhanced',
     required: true,
-    description: "Be specific about what will be done, materials, timelines, etc."
+    description: "Include context, what will be done, materials, timelines, etc."
   },
-  // Placeholder for 2nd question
+  // Placeholder - This question is intentionally left empty since we already ask for project type earlier
   {
-    id: 'project_category',
-    field: 'project.category',
-    prompt: "Select the category that best describes this project",
-    type: 'choice',
-    options: projectCategories.map(cat => cat.name),
-    required: true,
+    id: 'material_requirements',
+    field: 'project.materialRequirements',
+    prompt: "Are there any specific material requirements or specifications?",
+    type: 'multiline',
+    required: false,
+    description: "Specify any particular brands, qualities, or standards needed"
   },
   
   // Group 10: Payment Terms (Part 1)
