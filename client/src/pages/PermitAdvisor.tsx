@@ -367,7 +367,7 @@ export default function PermitAdvisor() {
   ];
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="container mx-auto py-6 pb-24 space-y-6">
       <div className="flex flex-col items-center text-center space-y-2">
         <div className="flex flex-col items-center gap-3">
           <div className="relative w-10 h-10 flex items-center justify-center bg-primary/10 rounded-lg">
