@@ -13,8 +13,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import ContractDashboard from "@/components/contract/ContractDashboard";
 import ContractPreview from "@/components/templates/ContractPreview";
 import ContractPreviewEditable from "@/components/contract/ContractPreviewEditable";
-import ContractSurveyFlow from "@/components/contract/ContractSurveyFlow";
-import { formatAnswersForContract } from "@/services/contractQuestionService";
+import NewContractSurveyFlow from "@/components/contract/NewContractSurveyFlow";
+import { formatAnswersForContract } from "@/services/newContractQuestionService";
 
 // Interfaces
 interface Contract {
@@ -39,6 +39,24 @@ const ContractGenerator = () => {
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   
+  // Load the contract template
+  const contractTemplateQuery = useQuery({
+    queryKey: ['contractTemplate'],
+    queryFn: async () => {
+      try {
+        const response = await fetch('/src/templates/contract-template.html');
+        if (!response.ok) {
+          throw new Error('Error loading contract template');
+        }
+        return await response.text();
+      } catch (error) {
+        console.error("Error loading contract template:", error);
+        // Return empty template in case of error
+        return "";
+      }
+    }
+  });
+
   // Consulta para obtener la lista de contratos
   const contractsQuery = useQuery({
     queryKey: ['/api/contracts'],
@@ -457,7 +475,7 @@ const ContractGenerator = () => {
         )}
 
         {view === "survey" && (
-          <ContractSurveyFlow 
+          <NewContractSurveyFlow 
             onComplete={handleSurveyComplete}
             onPreview={handleSurveyPreview}
           />
