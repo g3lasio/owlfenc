@@ -67,7 +67,7 @@ const ContractGenerator = () => {
           throw new Error('No se pudo cargar la plantilla de contrato');
         }
       }
-    },");
+    }
           return templateModule.default;
         } catch (secondError) {
           console.error("Error loading template with direct import:", secondError);
