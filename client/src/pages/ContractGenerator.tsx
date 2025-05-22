@@ -44,21 +44,37 @@ const ContractGenerator = () => {
     queryKey: ['contractTemplate'],
     queryFn: async () => {
       try {
-        // Vite allows importing HTML files directly
-        const templateModule = await import('../templates/contract-template.html?raw');
-        return templateModule.default;
+        // Primera opción: Cargar desde la carpeta public (accesible para el backend también)
+        const response = await fetch('/templates/contract-template.html');
+        if (!response.ok) {
+          throw new Error('Error loading contract template from public folder');
+        }
+        console.log("Plantilla cargada correctamente desde /public/templates");
+        return await response.text();
       } catch (error) {
-        console.error("Error loading contract template:", error);
-        // Try alternate method as backup
+        console.error("Error loading template from public folder:", error);
+        
+        // Segunda opción: Importar directamente con Vite
         try {
-          const response = await fetch('/src/templates/contract-template.html');
-          if (!response.ok) {
-            throw new Error('Error loading contract template');
-          }
-          return await response.text();
+          console.log("Intentando cargar plantilla con import directo...");
+          const templateModule = await import('../templates/contract-template.html?raw');
+          console.log("Plantilla cargada con import");
+          return templateModule.default;
         } catch (secondError) {
-          console.error("Both methods failed to load template:", secondError);
-          return "";
+          console.error("Error loading template with direct import:", secondError);
+          
+          // Tercera opción: Intentar con ruta relativa
+          try {
+            const fallbackResponse = await fetch('/src/templates/contract-template.html');
+            if (!fallbackResponse.ok) {
+              throw new Error('Error loading contract template from src folder');
+            }
+            console.log("Plantilla cargada desde src/templates");
+            return await fallbackResponse.text();
+          } catch (thirdError) {
+            console.error("All template loading methods failed:", thirdError);
+            throw new Error("No se pudo cargar la plantilla del contrato por ningún método");
+          }
         }
       }
     }
