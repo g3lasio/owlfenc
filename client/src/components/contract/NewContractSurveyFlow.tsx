@@ -151,6 +151,18 @@ const NewContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
       ...answers,
       [field]: value
     });
+
+    // Si es la dirección del proyecto, extraer el estado para autocompletar
+    if (field === 'project.propertyAddress') {
+      // Buscar el patrón de estado (2 letras mayúsculas)
+      const stateMatch = value.match(/,\s*([A-Z]{2})\s*\d{5}/) || value.match(/,\s*([A-Z]{2})$/);
+      if (stateMatch && stateMatch[1]) {
+        setAnswers(prev => ({
+          ...prev,
+          'legal.governingState': stateMatch[1]
+        }));
+      }
+    }
   };
 
   // Enhance description with AI

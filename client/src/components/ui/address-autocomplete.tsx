@@ -12,12 +12,14 @@ import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@
 interface AddressAutocompleteProps {
   value: string;
   onChange: (address: string) => void;
+  onStateExtracted?: (state: string) => void;
   placeholder?: string;
 }
 
 export function AddressAutocomplete({ 
   value, 
   onChange, 
+  onStateExtracted,
   placeholder = "Buscar dirección..."
 }: AddressAutocompleteProps) {
   const [open, setOpen] = useState(false);
@@ -70,11 +72,26 @@ export function AddressAutocomplete({
     };
   }, [searchQuery]);
 
+  // Función para extraer el estado de una dirección
+  const extractStateFromAddress = (address: string): string | null => {
+    // Buscar el patrón estándar de estado en EE.UU. (2 letras mayúsculas al final o antes del código postal)
+    const stateMatch = address.match(/,\s*([A-Z]{2})\s*\d{5}/) || address.match(/,\s*([A-Z]{2})$/);
+    return stateMatch ? stateMatch[1] : null;
+  };
+  
   // Manejar la selección de una dirección
   const handleSelectAddress = (address: string) => {
     onChange(address);
     setOpen(false);
     setSearchQuery('');
+    
+    // Extraer y propagar el estado si es posible
+    if (onStateExtracted) {
+      const state = extractStateFromAddress(address);
+      if (state) {
+        onStateExtracted(state);
+      }
+    }
   };
 
   // Limpiar la dirección seleccionada
