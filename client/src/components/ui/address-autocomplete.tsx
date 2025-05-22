@@ -94,9 +94,12 @@ export function AddressAutocomplete({
               ref={inputRef}
               value={value}
               onChange={(e) => {
-                onChange(e.target.value);
-                setSearchQuery(e.target.value);
-                if (!open) setOpen(true);
+                const newValue = e.target.value;
+                onChange(newValue);
+                setSearchQuery(newValue);
+                if (newValue.length > 2 && !open) {
+                  setOpen(true);
+                }
               }}
               onClick={() => setOpen(true)}
               placeholder={placeholder}

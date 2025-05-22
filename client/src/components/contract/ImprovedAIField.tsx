@@ -115,7 +115,7 @@ export function ImprovedAIField({
           onClick={() => setIsDialogOpen(true)}
         >
           <Wand2 className="mr-2 h-4 w-4" />
-          Mejorar con IA
+          Mejorar con Mervin AI
         </Button>
       </div>
       {description && (
