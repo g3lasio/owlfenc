@@ -77,6 +77,18 @@ function getOpenAI() {
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const GPT_MODEL = "gpt-4o";
 
+// Reintenta las peticiones de API cuando fallen
+async function withRetry<T>(fn: () => Promise<T>, retries = 2, delay = 1000): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    if (retries <= 0) throw error;
+    console.log(`Error en petición a OpenAI, reintentando en ${delay}ms...`, error);
+    await new Promise(resolve => setTimeout(resolve, delay));
+    return withRetry(fn, retries - 1, delay * 1.5);
+  }
+}
+
 /**
  * Mejora la descripción de un proyecto utilizando IA para añadir detalles profesionales
  * @param description Descripción original del proyecto

@@ -29,6 +29,7 @@ import {
   projectCategories
 } from "@/services/newContractQuestionService";
 import { AIEnhancedField } from "@/components/contract/AIEnhancedField";
+import { ImprovedAIField } from "@/components/contract/ImprovedAIField";
 import { useToast } from "@/hooks/use-toast";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { useProfile } from "@/hooks/use-profile";
@@ -331,13 +332,29 @@ const NewContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
       case 'multiline':
         return (
           <div className="space-y-2">
-            <Textarea
-              id={question.id}
-              value={value}
-              onChange={(e) => handleInputChange(question.field, e.target.value)}
-              placeholder={`Enter ${question.prompt.toLowerCase().replace('?', '')}`}
-              className="w-full"
-            />
+            {/* Si el campo es candidato para mejora con IA, usar el componente mejorado */}
+            {(question.field.includes('scope') || 
+              question.field.includes('clauses') || 
+              question.field.includes('background') || 
+              question.field.includes('terms') || 
+              question.field.includes('description')) ? (
+              <ImprovedAIField
+                value={value}
+                onChange={(newValue) => handleInputChange(question.field, newValue)}
+                label={question.prompt}
+                placeholder={`Enter ${question.prompt.toLowerCase().replace('?', '')}`}
+                field={question.field}
+                projectType={answers.project_type}
+              />
+            ) : (
+              <Textarea
+                id={question.id}
+                value={value}
+                onChange={(e) => handleInputChange(question.field, e.target.value)}
+                placeholder={`Enter ${question.prompt.toLowerCase().replace('?', '')}`}
+                className="w-full"
+              />
+            )}
             {question.id === 'legal_special_clauses' && (
               <Button 
                 type="button" 
