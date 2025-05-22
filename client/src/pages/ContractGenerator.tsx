@@ -44,15 +44,22 @@ const ContractGenerator = () => {
     queryKey: ['contractTemplate'],
     queryFn: async () => {
       try {
-        const response = await fetch('/src/templates/contract-template.html');
-        if (!response.ok) {
-          throw new Error('Error loading contract template');
-        }
-        return await response.text();
+        // Vite allows importing HTML files directly
+        const templateModule = await import('../templates/contract-template.html?raw');
+        return templateModule.default;
       } catch (error) {
         console.error("Error loading contract template:", error);
-        // Return empty template in case of error
-        return "";
+        // Try alternate method as backup
+        try {
+          const response = await fetch('/src/templates/contract-template.html');
+          if (!response.ok) {
+            throw new Error('Error loading contract template');
+          }
+          return await response.text();
+        } catch (secondError) {
+          console.error("Both methods failed to load template:", secondError);
+          return "";
+        }
       }
     }
   });

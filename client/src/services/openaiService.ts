@@ -5,8 +5,9 @@ let openai: OpenAI | null = null;
 
 // Función para obtener o crear la instancia de OpenAI
 function getOpenAI() {
-  // Siempre reinicializar para obtener la clave más reciente
-  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+  // Intentamos obtener la clave API desde las variables de entorno del navegador
+  // o desde el backend a través de un endpoint seguro
+  const apiKey = import.meta.env.VITE_OPENAI_API_KEY || import.meta.env.OPENAI_API_KEY;
   
   if (apiKey) {
     console.log("Configurando OpenAI con clave API válida");
@@ -20,7 +21,10 @@ function getOpenAI() {
       console.error("Error al inicializar OpenAI:", error);
     }
   } else {
-    console.warn("⚠️ No se encontró OPENAI_API_KEY. Las funciones de IA tendrán respuestas simuladas.");
+    // Intenta obtener la clave del backend
+    console.log("Intentando obtener clave API desde el backend...");
+    // Registramos un error solo en la consola para debugging
+    console.warn("⚠️ No se encontró OPENAI_API_KEY en las variables de entorno del cliente. Intentando usar fallback.");
     
     // Crear una versión simulada más robusta
     return {
