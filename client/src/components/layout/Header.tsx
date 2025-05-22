@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+// No usamos useAuth en este componente, así que removemos la importación innecesaria
 import { useToast } from "@/hooks/use-toast";
 
 interface HeaderProps {
