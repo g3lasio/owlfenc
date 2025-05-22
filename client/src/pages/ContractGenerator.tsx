@@ -178,63 +178,55 @@ const ContractGenerator = () => {
     }
   });
 
-  // Generar contrato a partir de los datos recopilados
+  // Generar contrato a partir de los datos recopilados y la plantilla
   const generateContract = async (data: Record<string, any>) => {
     setIsGeneratingContract(true);
     try {
-      // Preparar datos para la generación del contrato
-      const contractData = {
-        clientInfo: {
-          clientName: data.client?.name || "",
-          address: data.client?.address || "",
-          email: data.client?.email || "",
-          phone: data.client?.phone || "",
-          fenceType: data.project?.fenceType || "",
-          fenceHeight: data.project?.fenceHeight || "",
-          fenceLength: data.project?.fenceLength || "",
-          total: parseFloat(data.payment?.totalCost || "0"),
-          depositAmount: parseFloat(data.payment?.depositAmount || "0"),
-        },
-        contractorDetails: {
-          name: data.contractor?.name || "",
-          address: data.contractor?.address || "",
-          phone: data.contractor?.phone || "",
-          email: data.contractor?.email || "",
-        },
-        projectDetails: {
-          startDate: data.project?.startDate || "",
-          duration: data.project?.duration || "",
-          gates: data.project?.gates || "",
-          gateDetails: data.project?.gateDetails || "",
-          scopeDetails: data.project?.scopeDetails || "",
-          description: data.project?.description || "",
-        },
-        paymentDetails: {
-          schedule: data.payment?.schedule || "",
-        },
-        termsDetails: {
-          warrantyPeriod: data.terms?.warrantyPeriod || "",
-          warrantyCoverage: data.terms?.warrantyCoverage || "",
-          permits: data.terms?.permits || "",
-          additional: data.terms?.additional || "",
-        },
-      };
-
-      // Generar contrato con la API
-      const response = await fetch("/api/generate-contract", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(contractData),
-      });
-
-      if (!response.ok) {
-        throw new Error("Error al generar el contrato");
+      // Obtener la plantilla HTML
+      let templateHtml = contractTemplateQuery.data || "";
+      
+      if (!templateHtml) {
+        throw new Error("No se pudo cargar la plantilla del contrato");
       }
+      
+      // Formatear datos para la plantilla (usando el formato de la nueva plantilla)
+      const formattedData = formatAnswersForContract(data);
+      
+      // Guardar los datos del contrato para su uso posterior
+      setContractData(formattedData);
+      
+      // Reemplazar variables en la plantilla
+      Object.entries(formattedData).forEach(([section, sectionData]) => {
+        if (typeof sectionData === 'object' && sectionData !== null) {
+          Object.entries(sectionData).forEach(([key, value]) => {
+            const placeholder = `{{${section}.${key}}}`;
+            templateHtml = templateHtml.replace(new RegExp(placeholder, 'g'), value as string || "");
+          });
+        }
+      });
+      
+      // Intentar generar contrato con la API si está disponible
+      try {
+        const response = await fetch("/api/generate-contract", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formattedData),
+        });
 
-      const result = await response.json();
-      setContractHtml(result.html);
+        if (response.ok) {
+          const result = await response.json();
+          setContractHtml(result.html);
+        } else {
+          // Si la API falla, usar la plantilla procesada localmente
+          setContractHtml(templateHtml);
+        }
+      } catch (apiError) {
+        console.warn("Error en API de generación, usando plantilla local:", apiError);
+        // Usar la plantilla procesada localmente
+        setContractHtml(templateHtml);
+      }
       
       // Cambiar a la vista de previsualización
       setView("preview");

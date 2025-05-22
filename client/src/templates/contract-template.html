@@ -158,7 +158,7 @@
 <body>
   <div class="contract-container">
     <div class="contract-header">INDEPENDENT CONTRACTOR AGREEMENT</div>
-    <div><b>Date:</b> {{contract.issueDate}}</div>
+    <div><b>Date:</b> {{contract.date}}</div>
 
     <!-- Client/Contractor Info in Parallel -->
     <div class="info-row-parallel">
@@ -181,19 +181,17 @@
 
     <div class="section-title">Background</div>
     <div class="article-content">
-      {{project.background}}
+      {{background.description}}
     </div>
 
     <div class="section-title">Term of Agreement</div>
     <div class="article-content">
-      This Agreement shall commence on {{contract.startDate}} and continue until {{contract.completionDate}}, unless earlier terminated as provided herein.
+      This Agreement shall commence on {{dates.startDate}} and continue until {{dates.endDate}}, unless earlier terminated as provided herein.
     </div>
 
     <div class="section-title">Scope of Work</div>
     <div class="article-content">
-      <b>Property Address:</b> {{project.propertyAddress}}<br><br>
-      <b>Scope of Work:</b><br>
-      {{project.scope}}
+      {{scope.description}}
     </div>
 
     <div class="page-break"></div>
@@ -209,17 +207,15 @@
 
     <div class="section-title">Payment Terms</div>
     <div class="article-content">
-      <b>Total Contract Amount:</b> ${{payment.totalAmount}}<br>
-      <b>Payment Schedule:</b> {{payment.schedule}}<br>
-      <b>Late Payment Penalty:</b> {{payment.latePenalty}} per week<br>
-      <span class="alert">IMPORTANT: No further work, warranty, or release of project documents shall occur until all payments are received in full.</span>
+      <b>Total Cost:</b> {{payment.totalAmount}}<br>
+      <b>Initial Payment:</b> {{payment.initialPayment}} due upon contract signing.<br>
+      <b>Final Payment:</b> {{payment.finalPayment}} due upon project completion and approval.<br>
+      <span class="alert">IMPORTANT: No further work, warranty, or release of project documents shall occur until all payments are received in full. Late payments accrue a {{payment.lateFee}}% penalty per week.</span>
     </div>
 
     <div class="section-title">Reimbursement of Expenses</div>
     <div class="article-content">
-      {{expenses.details}}
-      <br>
-      Expense Approval Required: {{expenses.approvalRequired}}
+      {{expenses.description}}
     </div>
 
     <div class="section-title">Return of Property</div>
@@ -229,8 +225,7 @@
 
     <div class="section-title">Equipment and Materials</div>
     <div class="article-content">
-      <b>Equipment/Materials Provided By:</b> {{equipment.provider}}<br>
-      <b>Client-Owned Tools Used:</b> {{equipment.clientOwnedTools}}
+      {{equipment.description}}
     </div>
 
     <div class="section-title">Autonomy</div>
@@ -240,7 +235,7 @@
 
     <div class="section-title">Notice</div>
     <div class="article-content">
-      Any notices required under this Agreement shall be in writing and delivered to the parties at their addresses set forth above, by personal delivery, certified mail, or recognized courier service. Notices may also be sent to: {{legal.noticeAddress}}
+      {{legal.noticeTerms}}
     </div>
 
     <div class="section-title">Waiver</div>
@@ -248,33 +243,9 @@
       Failure by either party to enforce any provision of this Agreement shall not be deemed a waiver of future enforcement of that or any other provision.
     </div>
 
-    <div class="section-title">Ultimate Contractor Protections</div>
-    <div class="article">
-      <div class="article-title">A. Before Work Begins</div>
-      <ul class="clause-list">
-        <li>Contractor may conduct a pre-construction site survey; hidden issues, code violations, or hazardous conditions may trigger change orders and extra fees.</li>
-        <li>Work will not start until all permits and written client approvals are provided. Delays in permits or client documentation are at client's risk and cost.</li>
-        <li>Project start date is flexible if delayed by client or by force majeure; contractor may revise schedule and pricing at their sole discretion.</li>
-      </ul>
-    </div>
-    <div class="article">
-      <div class="article-title">B. During Work</div>
-      <ul class="clause-list">
-        <li>Client must keep site accessible and safe; failure to do so authorizes the contractor to suspend work and bill additional costs.</li>
-        <li>Any additional requests, upgrades, or changes from the client require a signed change order and payment for extra labor/materials before proceeding.</li>
-        <li>If hazardous material is found, work halts immediately; abatement is client's responsibility and billed separately. Contractor is held harmless for delays or extra costs due to hazardous conditions.</li>
-        <li>Contractor is not responsible for delays caused by weather, third-party vendors, supply chain shortages, government mandates, or events outside their control.</li>
-        <li>If client or others damage installed work, contractor will repair at client's expense.</li>
-      </ul>
-    </div>
-    <div class="article">
-      <div class="article-title">C. Upon and After Completion</div>
-      <ul class="clause-list">
-        <li>Upon completion, contractor notifies client. Client must inspect and approve within five (5) business days, or work is deemed accepted and final payment is due.</li>
-        <li>If client finds legitimate defects, contractor must be given the opportunity to repair. No payment may be withheld for cosmetic or non-contractual issues.</li>
-        <li>If final payment is delayed, contractor may place a lien, stop all warranty, or initiate collection/legal action with full recovery of fees and interest.</li>
-        <li>Warranty is void if the client or third parties alter, damage, or misuse the work, or if payment is not made in full.</li>
-      </ul>
+    <div class="section-title">Additional Terms</div>
+    <div class="article-content">
+      {{additional.terms}}
     </div>
 
     <div class="page-break"></div>
@@ -293,7 +264,7 @@
     </div>
     <div class="article">
       <div class="article-title">4. Confidentiality & Intellectual Property</div>
-      <div class="article-content">All proprietary designs and documents remain confidential. Intellectual property remains with the contractor until full payment is made, after which it transfers to client as specified. {{legal.confidentialityClause}}</div>
+      <div class="article-content">All proprietary designs and documents remain confidential. Intellectual property remains with the contractor until full payment is made, after which it transfers to client as specified.</div>
     </div>
     <div class="article">
       <div class="article-title">5. Dispute Resolution & Attorney Fees</div>
@@ -301,12 +272,7 @@
     </div>
     <div class="article">
       <div class="article-title">6. Governing Law, Severability, and Entire Agreement</div>
-      <div class="article-content">This contract is governed by the laws of {{legal.governingState}}. Invalid provisions do not affect the remainder. This contract is the entire agreement between the parties.</div>
-    </div>
-
-    <div class="section-title">Special Provisions</div>
-    <div class="article-content">
-      {{legal.specialClauses}}
+      <div class="article-content">This contract is governed by the laws of {{legal.state}}, USA. Invalid provisions do not affect the remainder. This contract is the entire agreement between the parties.</div>
     </div>
 
     <div class="section-title">In Witness Whereof</div>

@@ -450,6 +450,96 @@ export function formatAnswersForContract(answers: Record<string, any>): Record<s
     formatted.payment.schedule = '50% upon signing, 50% upon completion';
   }
   
+  // Set formated dates for the contract template
+  if (formatted.contract?.issueDate) {
+    formatted.contract.date = formatted.contract.issueDate;
+  }
+  
+  if (formatted.contract?.startDate) {
+    formatted.dates = formatted.dates || {};
+    formatted.dates.startDate = formatted.contract.startDate;
+  }
+  
+  if (formatted.contract?.completionDate) {
+    formatted.dates = formatted.dates || {};
+    formatted.dates.endDate = formatted.contract.completionDate;
+  }
+  
+  // Format payment information for the template
+  if (formatted.payment?.totalAmount) {
+    formatted.payment.initialPayment = formatted.payment.splitFiftyFifty === 'Yes' 
+      ? `$${(parseFloat(formatted.payment.totalAmount) * 0.5).toFixed(2)}` 
+      : '(See payment schedule)';
+      
+    formatted.payment.finalPayment = formatted.payment.splitFiftyFifty === 'Yes'
+      ? `$${(parseFloat(formatted.payment.totalAmount) * 0.5).toFixed(2)}`
+      : '(See payment schedule)';
+      
+    // Format total amount with dollar sign
+    if (!formatted.payment.totalAmount.includes('$')) {
+      formatted.payment.totalAmount = `$${formatted.payment.totalAmount}`;
+    }
+  }
+  
+  // Format penalty for late payments
+  if (formatted.payment?.latePenalty) {
+    formatted.payment.lateFee = formatted.payment.latePenalty.replace(/[^0-9.]/g, '');
+  } else {
+    formatted.payment.lateFee = '2'; // Default value
+  }
+  
+  // Format background information
+  if (formatted.project?.background) {
+    formatted.background = formatted.background || {};
+    formatted.background.description = formatted.project.background;
+  }
+  
+  // Format scope description
+  if (formatted.project?.scope) {
+    formatted.scope = formatted.scope || {};
+    formatted.scope.description = formatted.project.scope;
+  }
+  
+  // Format equipment description
+  if (formatted.equipment?.provider) {
+    formatted.equipment = formatted.equipment || {};
+    let equipmentDescription = `${formatted.equipment.provider} will provide all tools, equipment, and materials required to perform the work.`;
+    
+    if (formatted.equipment.clientOwnedTools) {
+      equipmentDescription += ` The client will provide the following: ${formatted.equipment.clientOwnedTools}.`;
+    }
+    
+    formatted.equipment.description = equipmentDescription;
+  }
+  
+  // Format expenses description
+  if (formatted.expenses) {
+    let expensesDescription = 'Client agrees to reimburse Contractor for all reasonable and necessary expenses incurred during the performance of work';
+    
+    if (formatted.expenses.approvalRequired === 'Yes') {
+      expensesDescription += ', provided such expenses have prior written approval from Client.';
+    } else {
+      expensesDescription += '.';
+    }
+    
+    if (formatted.expenses.details) {
+      expensesDescription += ` Anticipated reimbursable expenses include: ${formatted.expenses.details}`;
+    }
+    
+    formatted.expenses.description = expensesDescription;
+  }
+  
+  // Format legal notices
+  if (formatted.legal?.noticeAddress) {
+    formatted.legal.noticeTerms = `Any notices required under this Agreement shall be in writing and delivered to the parties at their addresses set forth above, or to the following alternative address: ${formatted.legal.noticeAddress}, by personal delivery, certified mail, or recognized courier service.`;
+  }
+  
+  // Format additional terms
+  if (formatted.legal?.specialClauses) {
+    formatted.additional = formatted.additional || {};
+    formatted.additional.terms = formatted.legal.specialClauses;
+  }
+  
   return formatted;
 }
 
