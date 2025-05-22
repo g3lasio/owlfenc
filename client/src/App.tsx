@@ -1,6 +1,4 @@
-Adding a new route for the Apple authentication diagnostic page using lazy loading.
-```
-```replit_final_file
+
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
