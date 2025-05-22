@@ -445,12 +445,61 @@ export function formatAnswersForContract(answers: Record<string, any>): Record<s
     current[parts[parts.length - 1]] = value;
   }
   
-  // Handle default payment schedule based on 50/50 selection
-  if (formatted.payment?.splitFiftyFifty === 'Yes' && (!formatted.payment?.schedule || formatted.payment?.schedule.trim() === '')) {
-    formatted.payment.schedule = '50% upon signing, 50% upon completion';
+  // ===== MEJORAS PARA LA VISTA PREVIA DEL CONTRATO =====
+  
+  // Usar el perfil de la empresa si está disponible y datos están faltantes
+  try {
+    // Inicializar contratista si no existe
+    if (!formatted.contractor) {
+      formatted.contractor = {};
+    }
+    
+    // Intentar obtener datos del perfil del localStorage
+    const profileString = localStorage.getItem('companyProfile');
+    if (profileString) {
+      const profile = JSON.parse(profileString);
+      
+      // Completar información del contratista si falta
+      if (!formatted.contractor.companyName) {
+        formatted.contractor.companyName = profile.companyName || '';
+      }
+      
+      if (!formatted.contractor.contactName) {
+        formatted.contractor.contactName = profile.ownerName || '';
+      }
+      
+      if (!formatted.contractor.address && profile.address) {
+        formatted.contractor.address = [
+          profile.address,
+          profile.city,
+          profile.state,
+          profile.zip
+        ].filter(Boolean).join(', ');
+      }
+      
+      if (!formatted.contractor.phone) {
+        formatted.contractor.phone = profile.phone || profile.mobilePhone || '';
+      }
+      
+      if (!formatted.contractor.email) {
+        formatted.contractor.email = profile.email || '';
+      }
+      
+      if (!formatted.contractor.license) {
+        formatted.contractor.license = profile.licenseNumber || '';
+      }
+    }
+  } catch (error) {
+    console.error('Error al procesar datos del perfil:', error);
+    // Continuar sin datos del perfil
   }
   
-  // Set formated dates for the contract template
+  // Handle default payment schedule based on 50/50 selection
+  if (formatted.payment?.splitFiftyFifty === 'Yes' && (!formatted.payment?.schedule || formatted.payment?.schedule.trim() === '')) {
+    formatted.payment.schedule = '50% al firmar, 50% al completar';
+  }
+  
+  // Set formatted dates for the contract template
   if (formatted.contract?.issueDate) {
     formatted.contract.date = formatted.contract.issueDate;
   }
@@ -467,17 +516,28 @@ export function formatAnswersForContract(answers: Record<string, any>): Record<s
   
   // Format payment information for the template
   if (formatted.payment?.totalAmount) {
-    formatted.payment.initialPayment = formatted.payment.splitFiftyFifty === 'Yes' 
-      ? `$${(parseFloat(formatted.payment.totalAmount) * 0.5).toFixed(2)}` 
-      : '(See payment schedule)';
-      
-    formatted.payment.finalPayment = formatted.payment.splitFiftyFifty === 'Yes'
-      ? `$${(parseFloat(formatted.payment.totalAmount) * 0.5).toFixed(2)}`
-      : '(See payment schedule)';
-      
-    // Format total amount with dollar sign
-    if (!formatted.payment.totalAmount.includes('$')) {
-      formatted.payment.totalAmount = `$${formatted.payment.totalAmount}`;
+    // Asegurar que el monto total es un número válido
+    let totalAmount = formatted.payment.totalAmount;
+    if (typeof totalAmount === 'string') {
+      // Eliminar caracteres no numéricos excepto el punto decimal
+      totalAmount = totalAmount.replace(/[^0-9.]/g, '');
+    }
+    
+    const numericAmount = parseFloat(totalAmount);
+    
+    if (!isNaN(numericAmount)) {
+      formatted.payment.initialPayment = formatted.payment.splitFiftyFifty === 'Yes' 
+        ? `$${(numericAmount * 0.5).toFixed(2)}` 
+        : '(Ver cronograma de pagos)';
+        
+      formatted.payment.finalPayment = formatted.payment.splitFiftyFifty === 'Yes'
+        ? `$${(numericAmount * 0.5).toFixed(2)}`
+        : '(Ver cronograma de pagos)';
+        
+      // Format total amount with dollar sign
+      if (typeof formatted.payment.totalAmount === 'string' && !formatted.payment.totalAmount.includes('$')) {
+        formatted.payment.totalAmount = `$${numericAmount.toFixed(2)}`;
+      }
     }
   }
   
@@ -503,10 +563,10 @@ export function formatAnswersForContract(answers: Record<string, any>): Record<s
   // Format equipment description
   if (formatted.equipment?.provider) {
     formatted.equipment = formatted.equipment || {};
-    let equipmentDescription = `${formatted.equipment.provider} will provide all tools, equipment, and materials required to perform the work.`;
+    let equipmentDescription = `${formatted.equipment.provider} proporcionará todas las herramientas, equipos y materiales necesarios para realizar el trabajo.`;
     
     if (formatted.equipment.clientOwnedTools) {
-      equipmentDescription += ` The client will provide the following: ${formatted.equipment.clientOwnedTools}.`;
+      equipmentDescription += ` El cliente proporcionará lo siguiente: ${formatted.equipment.clientOwnedTools}.`;
     }
     
     formatted.equipment.description = equipmentDescription;
@@ -514,16 +574,16 @@ export function formatAnswersForContract(answers: Record<string, any>): Record<s
   
   // Format expenses description
   if (formatted.expenses) {
-    let expensesDescription = 'Client agrees to reimburse Contractor for all reasonable and necessary expenses incurred during the performance of work';
+    let expensesDescription = 'El Cliente acepta reembolsar al Contratista todos los gastos razonables y necesarios incurridos durante la ejecución del trabajo';
     
     if (formatted.expenses.approvalRequired === 'Yes') {
-      expensesDescription += ', provided such expenses have prior written approval from Client.';
+      expensesDescription += ', siempre que dichos gastos tengan aprobación previa por escrito del Cliente.';
     } else {
       expensesDescription += '.';
     }
     
     if (formatted.expenses.details) {
-      expensesDescription += ` Anticipated reimbursable expenses include: ${formatted.expenses.details}`;
+      expensesDescription += ` Los gastos reembolsables anticipados incluyen: ${formatted.expenses.details}`;
     }
     
     formatted.expenses.description = expensesDescription;
@@ -531,7 +591,7 @@ export function formatAnswersForContract(answers: Record<string, any>): Record<s
   
   // Format legal notices
   if (formatted.legal?.noticeAddress) {
-    formatted.legal.noticeTerms = `Any notices required under this Agreement shall be in writing and delivered to the parties at their addresses set forth above, or to the following alternative address: ${formatted.legal.noticeAddress}, by personal delivery, certified mail, or recognized courier service.`;
+    formatted.legal.noticeTerms = `Cualquier notificación requerida bajo este Acuerdo deberá ser por escrito y entregada a las partes en sus direcciones establecidas anteriormente, o a la siguiente dirección alternativa: ${formatted.legal.noticeAddress}, mediante entrega personal, correo certificado o servicio de mensajería reconocido.`;
   }
   
   // Format additional terms
