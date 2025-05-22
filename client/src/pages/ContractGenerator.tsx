@@ -304,6 +304,8 @@ const ContractGenerator = () => {
   // Descargar contrato como PDF
   const handleDownloadPDF = async () => {
     try {
+      // Preparar los datos para generar PDF, enviando tanto el HTML como la plantilla
+      // para garantizar que el PDF se vea igual que la vista previa
       const response = await fetch("/api/generate-pdf", {
         method: "POST",
         headers: {
@@ -312,6 +314,8 @@ const ContractGenerator = () => {
         body: JSON.stringify({
           html: contractHtml,
           filename: `contrato-${Date.now()}.pdf`,
+          templatePath: '/templates/contract-template.html',
+          contractData: contractData, // Enviar los datos estructurados del contrato
         }),
       });
 

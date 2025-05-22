@@ -994,20 +994,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const schema = z.object({
         html: z.string(),
-        filename: z.string()
+        filename: z.string(),
+        templatePath: z.string().optional(),
+        contractData: z.record(z.any()).optional()
       });
 
-      const { html, filename } = schema.parse(req.body);
+      const { html, filename, templatePath, contractData } = schema.parse(req.body);
+
+      console.log('Generando PDF con los datos proporcionados');
+      
+      // Si recibimos un templatePath, intentamos usar esa plantilla (misma que frontend)
+      let finalHtml = html;
+      
+      if (templatePath && contractData) {
+        try {
+          // Intentar leer la plantilla desde el sistema de archivos
+          // (la plantilla debería estar en la carpeta public/templates)
+          const templateFilePath = path.join(process.cwd(), 'client/public', templatePath);
+          
+          if (fs.existsSync(templateFilePath)) {
+            console.log(`Usando plantilla desde: ${templateFilePath}`);
+            
+            // Leer la plantilla
+            let templateHtml = fs.readFileSync(templateFilePath, 'utf-8');
+            
+            // Procesar la plantilla con los datos del contrato
+            if (contractData) {
+              // Reemplazar variables en la plantilla
+              Object.entries(contractData).forEach(([section, sectionData]) => {
+                if (typeof sectionData === 'object' && sectionData !== null) {
+                  Object.entries(sectionData).forEach(([key, value]) => {
+                    const placeholder = `{{${section}.${key}}}`;
+                    templateHtml = templateHtml.replace(new RegExp(placeholder, 'g'), value?.toString() || "");
+                  });
+                }
+              });
+            }
+            
+            finalHtml = templateHtml;
+          } else {
+            console.log(`La plantilla no se encontró en ${templateFilePath}, usando HTML proporcionado`);
+          }
+        } catch (templateError) {
+          console.error('Error al procesar la plantilla:', templateError);
+          console.log('Usando el HTML proporcionado como alternativa');
+        }
+      }
 
       // Generate PDF from HTML
-      const pdfBuffer = await generatePDF(html, 'estimate');
+      const pdfBuffer = await generatePDF(finalHtml, 'contract');
 
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
       res.send(pdfBuffer);
     } catch (error) {
       console.error('Error generating PDF:', error);
-      res.status(400).json({ message: 'Failed to generate PDF' });
+      res.status(400).json({ 
+        message: 'Failed to generate PDF',
+        details: error instanceof Error ? error.message : 'Unknown error' 
+      });
     }
   });
   
