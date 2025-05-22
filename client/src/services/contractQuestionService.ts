@@ -31,21 +31,21 @@ export interface Question {
 }
 
 /**
- * Categorías generales de tipos de trabajo para contratistas
+ * General categories for contractor work types
  */
 export const projectCategories = [
-  { id: 'fencing', name: 'Cercas y Vallado', icon: 'fence' },
-  { id: 'roofing', name: 'Techado', icon: 'home' },
-  { id: 'plumbing', name: 'Plomería', icon: 'droplet' },
-  { id: 'electrical', name: 'Eléctrico', icon: 'zap' },
-  { id: 'carpentry', name: 'Carpintería', icon: 'hammer' },
-  { id: 'concrete', name: 'Concreto', icon: 'square' },
-  { id: 'landscaping', name: 'Paisajismo', icon: 'tree' },
-  { id: 'painting', name: 'Pintura', icon: 'paint-bucket' },
-  { id: 'flooring', name: 'Pisos', icon: 'grid' },
-  { id: 'hvac', name: 'Calefacción y Aire', icon: 'thermometer' },
-  { id: 'general', name: 'Contratista General', icon: 'tool' },
-  { id: 'other', name: 'Otro', icon: 'more-horizontal' }
+  { id: 'fencing', name: 'Fencing and Gates', icon: 'fence' },
+  { id: 'roofing', name: 'Roofing', icon: 'home' },
+  { id: 'plumbing', name: 'Plumbing', icon: 'droplet' },
+  { id: 'electrical', name: 'Electrical', icon: 'zap' },
+  { id: 'carpentry', name: 'Carpentry', icon: 'hammer' },
+  { id: 'concrete', name: 'Concrete', icon: 'square' },
+  { id: 'landscaping', name: 'Landscaping', icon: 'tree' },
+  { id: 'painting', name: 'Painting', icon: 'paint-bucket' },
+  { id: 'flooring', name: 'Flooring', icon: 'grid' },
+  { id: 'hvac', name: 'HVAC', icon: 'thermometer' },
+  { id: 'general', name: 'General Contractor', icon: 'tool' },
+  { id: 'other', name: 'Other', icon: 'more-horizontal' }
 ];
 
 /**

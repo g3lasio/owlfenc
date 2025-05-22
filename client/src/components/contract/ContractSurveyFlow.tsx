@@ -115,201 +115,183 @@ const ContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
 
   // Prellenar datos del perfil de empresa cuando esté disponible
   useEffect(() => {
-    if (profile && !isProfileLoading) {
+    if (!isProfileLoading) {
       const companyData: Record<string, any> = {};
       
-      if (profile.company?.name) {
-        companyData['contractor.name'] = profile.company.name;
+      // Use profile data if available, otherwise leave fields empty for manual entry
+      if (profile && profile.company) {
+        if (profile.company.name) {
+          companyData['contractor.name'] = profile.company.name;
+        }
+        
+        if (profile.company.address) {
+          companyData['contractor.address'] = profile.company.address;
+        }
+        
+        if (profile.company.phone) {
+          companyData['contractor.phone'] = profile.company.phone;
+        }
+        
+        if (profile.company.email) {
+          companyData['contractor.email'] = profile.company.email;
+        }
+        
+        if (profile.company.license) {
+          companyData['contractor.license'] = profile.company.license;
+        }
       }
       
-      if (profile.company?.address) {
-        companyData['contractor.address'] = profile.company.address;
-      }
+      // Create empty company data fields if not available in profile
+      // This ensures the form fields exist and can be filled manually
+      if (!companyData['contractor.name']) companyData['contractor.name'] = '';
+      if (!companyData['contractor.address']) companyData['contractor.address'] = '';
+      if (!companyData['contractor.phone']) companyData['contractor.phone'] = '';
+      if (!companyData['contractor.email']) companyData['contractor.email'] = '';
+      if (!companyData['contractor.license']) companyData['contractor.license'] = '';
       
-      if (profile.company?.phone) {
-        companyData['contractor.phone'] = profile.company.phone;
-      }
-      
-      if (profile.company?.email) {
-        companyData['contractor.email'] = profile.company.email;
-      }
-      
-      if (profile.company?.license) {
-        companyData['contractor.license'] = profile.company.license;
-      }
-      
-      // Actualizar respuestas solo si hay datos disponibles
-      if (Object.keys(companyData).length > 0) {
-        setAnswers(prev => ({
-          ...prev,
-          ...companyData
-        }));
-      }
+      // Update answers with the company data (filled or empty)
+      setAnswers(prev => ({
+        ...prev,
+        ...companyData
+      }));
     }
   }, [profile, isProfileLoading]);
 
-  // Crear grupos de preguntas dinámicamente según el tipo de proyecto
+  // Create question groups strictly following the two-questions-per-screen rule
   const createQuestionGroups = (): QuestionGroup[] => {
     const allQuestions = getQuestionsForCategory();
     const groups: QuestionGroup[] = [];
     
-    // Primera pregunta siempre sola: selección de categoría
-    groups.push({
-      title: "Tipo de Proyecto",
-      description: "Selecciona el tipo de trabajo que realizarás",
-      questions: allQuestions.filter(q => q.id === 'project_category')
+    // Create logical groupings of questions
+    const questionGroups: {[key: string]: {title: string, description?: string, questions: SurveyQuestion[]}} = {
+      projectType: {
+        title: "Project Type",
+        description: "Select the type of work for this contract",
+        questions: []
+      },
+      contractorInfo: {
+        title: "Contractor Information",
+        description: "Your company information for the contract",
+        questions: []
+      },
+      clientBasic: {
+        title: "Client Information",
+        description: "Basic information about your client",
+        questions: []
+      },
+      clientContact: {
+        title: "Client Contact Information",
+        questions: []
+      },
+      projectBasic: {
+        title: "Project Details",
+        questions: []
+      },
+      projectDates: {
+        title: "Project Timeline",
+        description: "Dates and timeframes",
+        questions: []
+      },
+      projectPayment: {
+        title: "Payment Information",
+        description: "Costs and payment structure",
+        questions: []
+      },
+      projectWarranty: {
+        title: "Warranty and Terms",
+        description: "Warranty information and additional terms",
+        questions: []
+      },
+      projectSpecific: {
+        title: selectedCategory ? `${selectedCategory} Details` : "Project Details",
+        questions: []
+      }
+    };
+    
+    // Sort questions into logical groups
+    allQuestions.forEach(question => {
+      if (question.id === 'project_category') {
+        questionGroups.projectType.questions.push(question);
+      } 
+      else if (question.field.startsWith('contractor.')) {
+        questionGroups.contractorInfo.questions.push(question);
+      }
+      else if (question.id === 'client_name' || question.id === 'client_address') {
+        questionGroups.clientBasic.questions.push(question);
+      }
+      else if (question.id === 'client_phone' || question.id === 'client_email') {
+        questionGroups.clientContact.questions.push(question);
+      }
+      else if (question.id === 'project_title' || question.id === 'project_description') {
+        questionGroups.projectBasic.questions.push(question);
+      }
+      else if (question.id === 'start_date' || question.id === 'estimated_duration') {
+        questionGroups.projectDates.questions.push(question);
+      }
+      else if (question.field.startsWith('payment.')) {
+        questionGroups.projectPayment.questions.push(question);
+      }
+      else if (question.field.startsWith('terms.')) {
+        questionGroups.projectWarranty.questions.push(question);
+      }
+      else if (question.projectTypes && question.projectTypes.length > 0) {
+        // This is a category-specific question
+        questionGroups.projectSpecific.questions.push(question);
+      }
     });
     
-    // Información de la empresa - Agrupadas (solo muestra para confirmar si ya están en el perfil)
-    const contractorQuestions = allQuestions.filter(q => 
-      q.field.startsWith('contractor.') && 
-      q.id !== 'contractor_license'
-    );
-    
-    if (contractorQuestions.length > 0) {
+    // First screen is always just the project type selection
+    if (questionGroups.projectType.questions.length > 0) {
       groups.push({
-        title: "Información del Contratista",
-        description: "Verifica los datos de tu empresa para el contrato",
-        questions: contractorQuestions
+        title: questionGroups.projectType.title,
+        description: questionGroups.projectType.description,
+        questions: [questionGroups.projectType.questions[0]] // Just one question for the first screen
       });
     }
     
-    // Licencia del contratista (separada para mejor flujo)
-    const licenseQuestion = allQuestions.find(q => q.id === 'contractor_license');
-    if (licenseQuestion) {
-      groups.push({
-        title: "Licencia del Contratista",
-        questions: [licenseQuestion]
-      });
-    }
-    
-    // Datos del cliente - Nombre y dirección juntos
-    const clientBasicQuestions = allQuestions.filter(q => 
-      q.id === 'client_name' || q.id === 'client_address'
-    );
-    
-    if (clientBasicQuestions.length > 0) {
-      groups.push({
-        title: "Información del Cliente",
-        description: "Datos del cliente para el contrato",
-        questions: clientBasicQuestions
-      });
-    }
-    
-    // Contacto del cliente - Teléfono y email juntos
-    const clientContactQuestions = allQuestions.filter(q => 
-      q.id === 'client_phone' || q.id === 'client_email'
-    );
-    
-    if (clientContactQuestions.length > 0) {
-      groups.push({
-        title: "Contacto del Cliente",
-        questions: clientContactQuestions
-      });
-    }
-    
-    // Título del proyecto
-    const titleQuestion = allQuestions.find(q => q.id === 'project_title');
-    if (titleQuestion) {
-      groups.push({
-        title: "Título del Proyecto",
-        questions: [titleQuestion]
-      });
-    }
-    
-    // Descripción del proyecto (con AI)
-    const descriptionQuestion = allQuestions.find(q => q.id === 'project_description');
-    if (descriptionQuestion) {
-      groups.push({
-        title: "Descripción del Proyecto",
-        description: "Describe en detalle el trabajo a realizar. Puedes usar AI para mejorar la descripción.",
-        questions: [descriptionQuestion]
-      });
-    }
-    
-    // Preguntas específicas según el tipo de proyecto seleccionado
-    if (selectedCategory) {
-      // Encontrar la categoría por nombre
-      const category = projectCategories.find(cat => cat.name === selectedCategory);
+    // Process all other question groups and split them into screens with max 2 questions
+    Object.entries(questionGroups).forEach(([groupKey, group]) => {
+      // Skip project type as we already handled it
+      if (groupKey === 'projectType') return;
       
-      if (category) {
-        // Filtrar preguntas específicas para esta categoría
-        const specificQuestions = allQuestions.filter(q => 
-          q.projectTypes && q.projectTypes.includes(category.id)
-        );
-        
-        // Agrupar preguntas específicas (2 por grupo cuando sea posible)
-        for (let i = 0; i < specificQuestions.length; i += 2) {
-          const groupQuestions = specificQuestions.slice(i, Math.min(i + 2, specificQuestions.length));
+      // Skip empty groups
+      if (group.questions.length === 0) return;
+      
+      // Process category-specific questions if we have a selected category
+      if (groupKey === 'projectSpecific' && selectedCategory) {
+        const category = projectCategories.find(cat => cat.name === selectedCategory);
+        if (category) {
+          // Only include questions for this specific category
+          const filteredQuestions = group.questions.filter(q => 
+            q.projectTypes && q.projectTypes.includes(category.id)
+          );
+          
+          // Split into groups of 2 questions
+          for (let i = 0; i < filteredQuestions.length; i += 2) {
+            const groupQuestions = filteredQuestions.slice(i, Math.min(i + 2, filteredQuestions.length));
+            if (groupQuestions.length > 0) {
+              groups.push({
+                title: `${selectedCategory} Details`,
+                questions: groupQuestions
+              });
+            }
+          }
+        }
+      } 
+      // For all other groups, split into groups of 2 questions
+      else {
+        for (let i = 0; i < group.questions.length; i += 2) {
+          const groupQuestions = group.questions.slice(i, Math.min(i + 2, group.questions.length));
           if (groupQuestions.length > 0) {
             groups.push({
-              title: `Detalles del ${selectedCategory}`,
+              title: group.title,
+              description: i === 0 ? group.description : undefined, // Only include description in first group
               questions: groupQuestions
             });
           }
         }
       }
-    }
-    
-    // Fechas del proyecto
-    const dateQuestions = allQuestions.filter(q => 
-      q.id === 'start_date' || q.id === 'estimated_duration'
-    );
-    
-    if (dateQuestions.length > 0) {
-      groups.push({
-        title: "Cronograma del Proyecto",
-        description: "Fechas y plazos de ejecución",
-        questions: dateQuestions
-      });
-    }
-    
-    // Pagos del proyecto
-    const paymentQuestions = allQuestions.filter(q => 
-      q.id === 'total_cost' || q.id === 'deposit_amount'
-    );
-    
-    if (paymentQuestions.length > 0) {
-      groups.push({
-        title: "Información de Pago",
-        description: "Costos y estructura de pagos",
-        questions: paymentQuestions
-      });
-    }
-    
-    // Calendario de pagos (separado para mejor flujo)
-    const scheduleQuestion = allQuestions.find(q => q.id === 'payment_schedule');
-    if (scheduleQuestion) {
-      groups.push({
-        title: "Calendario de Pagos",
-        questions: [scheduleQuestion]
-      });
-    }
-    
-    // Garantías
-    const warrantyQuestions = allQuestions.filter(q => 
-      q.id === 'warranty_period' || q.id === 'warranty_coverage'
-    );
-    
-    if (warrantyQuestions.length > 0) {
-      groups.push({
-        title: "Garantías",
-        description: "Términos de garantía ofrecidos",
-        questions: warrantyQuestions
-      });
-    }
-    
-    // Términos adicionales
-    const termsQuestions = allQuestions.filter(q => 
-      q.id === 'permits' || q.id === 'additional_terms'
-    );
-    
-    if (termsQuestions.length > 0) {
-      groups.push({
-        title: "Permisos y Términos Adicionales",
-        questions: termsQuestions
-      });
-    }
+    });
     
     return groups;
   };
@@ -369,21 +351,84 @@ const ContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
     setIsAIDialogOpen(false);
   };
 
-  // Validar el grupo de preguntas actual
+  // Enhanced validation for the current question group
   const validateCurrentGroup = (): boolean => {
     const group = questionGroups[currentStep];
     let isValid = true;
+    let firstInvalidField: string | null = null;
     
+    // Validate each question in the group
     group.questions.forEach(question => {
-      if (question.required && (!answers[question.field] || String(answers[question.field]).trim() === '')) {
+      const value = answers[question.field];
+      const stringValue = value !== undefined ? String(value).trim() : '';
+      
+      // Check for required fields
+      if (question.required && stringValue === '') {
+        if (!firstInvalidField) {
+          firstInvalidField = question.id;
+        }
+        
         toast({
-          title: "Campo requerido",
-          description: `Por favor completa el campo: ${question.prompt}`,
+          title: "Required Field",
+          description: `Please complete the field: ${question.prompt}`,
           variant: "destructive"
         });
         isValid = false;
       }
+      
+      // Additional validation based on field type
+      if (stringValue !== '') {
+        // Validate email format
+        if (question.field.includes('email') && !stringValue.includes('@')) {
+          if (!firstInvalidField) {
+            firstInvalidField = question.id;
+          }
+          
+          toast({
+            title: "Invalid Email Format",
+            description: "Please enter a valid email address",
+            variant: "destructive"
+          });
+          isValid = false;
+        }
+        
+        // Validate phone numbers
+        if (question.field.includes('phone') && !/^[\d\s\(\)\-\+]+$/.test(stringValue)) {
+          if (!firstInvalidField) {
+            firstInvalidField = question.id;
+          }
+          
+          toast({
+            title: "Invalid Phone Number",
+            description: "Please enter a valid phone number",
+            variant: "destructive"
+          });
+          isValid = false;
+        }
+        
+        // Validate numbers for number fields
+        if (question.type === 'number' && isNaN(Number(stringValue))) {
+          if (!firstInvalidField) {
+            firstInvalidField = question.id;
+          }
+          
+          toast({
+            title: "Invalid Number",
+            description: "Please enter a valid numeric value",
+            variant: "destructive"
+          });
+          isValid = false;
+        }
+      }
     });
+    
+    // Focus on the first invalid field if there's any
+    if (firstInvalidField) {
+      const element = document.getElementById(firstInvalidField);
+      if (element) {
+        element.focus();
+      }
+    }
     
     return isValid;
   };
@@ -438,19 +483,31 @@ const ContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
   const renderInputControl = (question: SurveyQuestion) => {
     const value = answers[question.field] ?? '';
     
-    // Si la pregunta usa el perfil de la empresa, mostrar un campo deshabilitado o mensaje
+    // Si la pregunta usa el perfil de la empresa y hay datos disponibles, mostrar campo prellenado
     if (question.useCompanyProfile && profile && !isProfileLoading) {
-      const fieldValue = value || 'No disponible';
+      // Check if we have an actual value from the profile
+      const hasValidProfileValue = value && value !== 'No disponible' && String(value).trim() !== '';
       
       return (
         <div className="relative">
           <Input
             id={question.id}
-            value={fieldValue}
+            value={hasValidProfileValue ? value : ''}
+            onChange={(e) => handleInputChange(question.field, e.target.value)}
             className="pr-8"
-            disabled={true}
+            disabled={hasValidProfileValue}
+            placeholder={hasValidProfileValue ? '' : `Enter your ${question.prompt.toLowerCase()}`}
           />
           <Info className="absolute right-2 top-2 h-4 w-4 text-muted-foreground" />
+          {hasValidProfileValue ? (
+            <p className="text-xs text-muted-foreground mt-1">
+              This information is from your company profile. To edit it, go to your profile settings.
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground mt-1">
+              This field will be stored in your company profile for future contracts.
+            </p>
+          )}
         </div>
       );
     }
