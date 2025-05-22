@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Input } from "@/components/ui/input";
 import { X } from "lucide-react";
 
@@ -10,29 +10,108 @@ interface AddressAutocompleteProps {
 }
 
 /**
- * Campo de dirección completamente básico SIN AUTOCOMPLETADO
- * Versión simplificada que solo permite al usuario escribir sin interrupciones
+ * Campo de dirección con autocompletado de Google Maps integrado
+ * Versión optimizada para permitir escritura fluida y sin mensajes intrusivos
  */
 export function AddressAutocomplete({ 
   value, 
   onChange, 
-  placeholder = "Escribir dirección..."
+  onStateExtracted,
+  placeholder = "Escribe la dirección completa..." 
 }: AddressAutocompleteProps) {
-  
-  // Limpiar la dirección
+  const inputRef = useRef<HTMLInputElement>(null);
+  const autocompleteInstance = useRef<any>(null);
+
+  // Inicializar Google Places Autocomplete de forma no invasiva
+  useEffect(() => {
+    // Solo inicializar si el input existe y Google Maps está disponible
+    const initAutocomplete = () => {
+      if (!inputRef.current || !window.google?.maps?.places) return;
+
+      try {
+        // Inicializar el autocompletado directamente en el campo de texto
+        const options = {
+          types: ['address'],
+          fields: ['address_components', 'formatted_address'],
+        };
+
+        autocompleteInstance.current = new window.google.maps.places.Autocomplete(
+          inputRef.current,
+          options
+        );
+
+        // Solo escuchar el evento place_changed - cuando el usuario selecciona una dirección
+        autocompleteInstance.current.addListener('place_changed', () => {
+          const place = autocompleteInstance.current.getPlace();
+          
+          if (place?.formatted_address) {
+            onChange(place.formatted_address);
+            
+            // Extraer el estado si está disponible
+            if (onStateExtracted && place.address_components) {
+              const stateComponent = place.address_components.find(
+                component => component.types.includes('administrative_area_level_1')
+              );
+              
+              if (stateComponent) {
+                onStateExtracted(stateComponent.short_name);
+              }
+            }
+          }
+        });
+      } catch (err) {
+        // Capturar silenciosamente cualquier error, sin interrumpir la experiencia del usuario
+        console.error('Error al inicializar autocompletado:', err);
+      }
+    };
+
+    // Intentar inicializar inmediatamente o esperar a que Google Maps se cargue
+    if (window.google?.maps?.places) {
+      initAutocomplete();
+    } else {
+      // Añadir un oyente que detecte cuando Google Maps esté disponible
+      const checkGoogleInterval = setInterval(() => {
+        if (window.google?.maps?.places) {
+          clearInterval(checkGoogleInterval);
+          initAutocomplete();
+        }
+      }, 200);
+
+      // Limpiar después de 5 segundos para no consumir recursos
+      setTimeout(() => clearInterval(checkGoogleInterval), 5000);
+      
+      return () => clearInterval(checkGoogleInterval);
+    }
+
+    // Limpieza
+    return () => {
+      if (autocompleteInstance.current && window.google?.maps?.event) {
+        window.google.maps.event.clearInstanceListeners(autocompleteInstance.current);
+      }
+    };
+  }, [onChange, onStateExtracted]);
+
+  // Limpiar dirección
   const handleClearAddress = () => {
     onChange('');
+    if (inputRef.current) {
+      inputRef.current.value = '';
+      inputRef.current.focus();
+    }
   };
 
   return (
     <div className="relative w-full">
       <Input
+        ref={inputRef}
         type="text"
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => {
+          // Permitir que el usuario escriba libremente
+          onChange(e.target.value);
+        }}
         placeholder={placeholder}
         className="w-full pr-8"
-        autoComplete="off"
       />
       {value && (
         <button
