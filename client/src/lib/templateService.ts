@@ -1,4 +1,3 @@
-
 /**
  * Servicio centralizado para gestionar los templates de la aplicación
  * Este enfoque elimina la necesidad de cargar archivos HTML externos
@@ -390,4 +389,131 @@ export function getTemplateHTML(): string {
  */
 export function addTemplate(name: string, html: string): void {
   console.log(`Solicitud de agregar template "${name}" ignorada - Usando únicamente template Premium`);
+}
+import { fetchWithErrorHandling } from './utils';
+
+export interface Template {
+  id: number;
+  name: string;
+  description: string;
+  type: string;
+  html: string;
+  isDefault?: boolean;
+  isPublic?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+// Usamos la plantilla Premium como predeterminada
+const PREMIUM_TEMPLATE_ID = 999001;
+
+export async function getTemplates(type: string): Promise<Template[]> {
+  try {
+    const response = await fetchWithErrorHandling(`/api/templates?type=${type}`);
+    return response.templates || [];
+  } catch (error) {
+    console.error('Error fetching templates:', error);
+    // Retornamos un array con la plantilla predeterminada
+    return [{
+      id: PREMIUM_TEMPLATE_ID,
+      name: 'Plantilla Premium',
+      description: 'Plantilla profesional para estimados',
+      type: 'estimate',
+      html: '',
+      isDefault: true
+    }];
+  }
+}
+
+export async function getTemplateById(id: number): Promise<Template | null> {
+  // Siempre retornamos la plantilla Premium
+  return getDefaultTemplate('estimate');
+}
+
+export async function getDefaultTemplate(type: string): Promise<Template | null> {
+  try {
+    if (type === 'estimate') {
+      // Para estimados siempre usamos la plantilla Premium
+      return {
+        id: PREMIUM_TEMPLATE_ID,
+        name: 'Plantilla Premium',
+        description: 'Plantilla profesional para estimados',
+        type: 'estimate',
+        html: '',
+        isDefault: true
+      };
+    }
+
+    const response = await fetchWithErrorHandling(`/api/templates/default?type=${type}`);
+    return response.template || null;
+  } catch (error) {
+    console.error(`Error fetching default template for type ${type}:`, error);
+    return null;
+  }
+}
+
+// Mantenemos las funciones restantes para otras plantillas (no de estimados)
+export async function createTemplate(template: Partial<Template>): Promise<Template | null> {
+  try {
+    const response = await fetchWithErrorHandling('/api/templates', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(template),
+    });
+    return response.template || null;
+  } catch (error) {
+    console.error('Error creating template:', error);
+    return null;
+  }
+}
+
+export async function updateTemplate(id: number, template: Partial<Template>): Promise<Template | null> {
+  try {
+    const response = await fetchWithErrorHandling(`/api/templates/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(template),
+    });
+    return response.template || null;
+  } catch (error) {
+    console.error(`Error updating template with id ${id}:`, error);
+    return null;
+  }
+}
+
+export async function deleteTemplate(id: number): Promise<boolean> {
+  try {
+    await fetchWithErrorHandling(`/api/templates/${id}`, {
+      method: 'DELETE',
+    });
+    return true;
+  } catch (error) {
+    console.error(`Error deleting template with id ${id}:`, error);
+    return false;
+  }
+}
+
+export async function setDefaultTemplate(id: number, type: string): Promise<boolean> {
+  // Para estimados, no permitimos cambiar la plantilla predeterminada
+  if (type === 'estimate') {
+    return true;
+  }
+
+  try {
+    await fetchWithErrorHandling(`/api/templates/${id}/default`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ type }),
+    });
+    return true;
+  } catch (error) {
+    console.error(`Error setting template ${id} as default:`, error);
+    return false;
+  }
 }
