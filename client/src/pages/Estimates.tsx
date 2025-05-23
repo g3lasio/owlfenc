@@ -129,12 +129,15 @@ export default function Estimates() {
   const [filteredMaterials, setFilteredMaterials] = useState<Material[]>([]);
   const [showMaterialSearchDialog, setShowMaterialSearchDialog] = useState(false);
   const [showAddMaterialDialog, setShowAddMaterialDialog] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [isLoadingMaterials, setIsLoadingMaterials] = useState(false);
   const [newMaterial, setNewMaterial] = useState<Partial<Material>>({
     name: '',
     category: '',
     description: '',
-    unit: 'pieza',
-    price: 0
+    unit: 'piece',
+    price: 0,
+    sku: ''
   });
   
   // States for the estimate
@@ -249,18 +252,26 @@ export default function Estimates() {
   
   // Filter materials when search term changes
   useEffect(() => {
-    if (searchMaterialTerm.trim() === '') {
-      setFilteredMaterials(materials);
-    } else {
+    let filtered = materials;
+    
+    // Filter by search term
+    if (searchMaterialTerm.trim() !== '') {
       const term = searchMaterialTerm.toLowerCase();
-      const filtered = materials.filter(material => 
+      filtered = filtered.filter(material => 
         material.name.toLowerCase().includes(term) || 
         material.description?.toLowerCase().includes(term) || 
-        material.category.toLowerCase().includes(term)
+        material.category.toLowerCase().includes(term) ||
+        material.sku?.toLowerCase().includes(term)
       );
-      setFilteredMaterials(filtered);
     }
-  }, [searchMaterialTerm, materials]);
+    
+    // Filter by category
+    if (selectedCategory) {
+      filtered = filtered.filter(material => material.category === selectedCategory);
+    }
+    
+    setFilteredMaterials(filtered);
+  }, [searchMaterialTerm, materials, selectedCategory]);
   
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -2245,10 +2256,10 @@ export default Estimates;
       {/* Add Material Dialog */}
       <Dialog open={showAddMaterialDialog} onOpenChange={setShowAddMaterialDialog}>
         <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader className="pb-3">
-            <DialogTitle className="text-lg">New Material</DialogTitle>
-            <DialogDescription className="text-sm">
-              Add a new material to your inventory.
+          <DialogHeader>
+            <DialogTitle>Add New Material</DialogTitle>
+            <DialogDescription>
+              Create a new material that will be added to your inventory and can be used in estimates.
             </DialogDescription>
           </DialogHeader>
           
@@ -2347,24 +2358,36 @@ export default Estimates;
       </Dialog>
       
       {/* Preview Dialog */}
-      <Dialog open={showPreviewDialog} onOpenChange={(open) => {
-        // Only allow closing the dialog if not in edit mode
-        if (!isEditingPreview || !open) {
-          setShowPreviewDialog(open);
-        } else if (isEditingPreview && !open) {
-          // Show warning if trying to close while editing
-          toast({
-            title: 'Unsaved Changes',
-            description: 'Please save or discard your changes before closing.',
-            variant: 'destructive'
-          });
-        }
-      }}>
-        <DialogContent className="sm:max-w-[800px] lg:max-w-[900px] max-h-[90vh] flex flex-col overflow-hidden">
-          <DialogHeader className="shrink-0">
-            <DialogTitle className="text-lg">Estimate Preview</DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground">
-              Review your estimate and make any necessary changes before generating the PDF.
+      <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Estimate Preview</DialogTitle>
+            <DialogDescription>
+              Preview how your estimate will look when sent to the client.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-auto border rounded-md">
+            <div 
+              dangerouslySetInnerHTML={{ __html: previewHtml || '' }} 
+              className="p-6"
+            />
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPreviewDialog(false)}>
+              Close
+            </Button>
+            <Button onClick={handleDownloadPdf}>
+              <FileDown className="h-4 w-4 mr-2" />
+              Download PDF
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
             </DialogDescription>
           </DialogHeader>
           
