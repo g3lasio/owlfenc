@@ -350,11 +350,19 @@ export default function EstimateGenerator() {
   // Obtener categorías dinámicamente
   const categories = getCategories();
 
-  // Calcular total del estimado
-  const calculateTotal = () => {
-    return estimate.items.reduce((total, item) => {
-      return total + (item.price * item.quantity);
-    }, 0);
+  // Calcular totales del estimado
+  const subtotal = estimate.items.reduce((total, item) => {
+    return total + (item.price * item.quantity);
+  }, 0);
+  
+  const taxRate = 0.08; // 8% tax rate, can be configurable
+  const taxAmount = subtotal * taxRate;
+  const total = subtotal + taxAmount;
+
+  // Función para limpiar filtros de búsqueda
+  const clearMaterialFilters = () => {
+    setMaterialSearch('');
+    setSelectedCategory('all');
   };
 
   // Función para cargar un cliente existente
@@ -947,12 +955,18 @@ export default function EstimateGenerator() {
                     ))}
                     
                     {/* Total Section */}
-                    <div className="border-t pt-4 mt-6">
-                      <div className="flex justify-between items-center text-lg font-bold">
-                        <span>Estimate Total:</span>
-                        <span className="text-2xl text-green-600">
-                          ${calculateTotal().toFixed(2)}
-                        </span>
+                    <div className="border-t pt-4 mt-6 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Subtotal:</span>
+                        <span className="font-medium">${subtotal.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Tax ({(taxRate * 100).toFixed(0)}%):</span>
+                        <span className="font-medium">${taxAmount.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-lg font-bold border-t pt-2">
+                        <span>Total:</span>
+                        <span className="text-2xl text-green-600">${total.toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
@@ -988,8 +1002,18 @@ export default function EstimateGenerator() {
                         placeholder="Search materials by name, description, or SKU..."
                         value={materialSearch}
                         onChange={(e) => setMaterialSearch(e.target.value)}
-                        className="pl-10"
+                        className="pl-10 pr-10"
                       />
+                      {materialSearch && (
+                        <Button
+                          onClick={() => setMaterialSearch('')}
+                          variant="ghost"
+                          size="sm"
+                          className="absolute top-2 right-2 h-6 w-6 p-0"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                     <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                       <SelectTrigger className="w-[180px]">
@@ -1003,6 +1027,15 @@ export default function EstimateGenerator() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {(materialSearch || selectedCategory !== 'all') && (
+                      <Button
+                        onClick={clearMaterialFilters}
+                        variant="outline"
+                        size="sm"
+                      >
+                        Clear Filters
+                      </Button>
+                    )}
                     <Button
                       onClick={() => setShowNewMaterialDialog(true)}
                       variant="outline"
@@ -1011,6 +1044,20 @@ export default function EstimateGenerator() {
                       Add Custom
                     </Button>
                   </div>
+                  
+                  {/* Results Summary */}
+                  {materials.length > 0 && (
+                    <div className="text-sm text-muted-foreground mb-3">
+                      Showing {filteredMaterials.length} of {materials.length} materials
+                      {(materialSearch || selectedCategory !== 'all') && (
+                        <span className="ml-2">
+                          {materialSearch && `matching "${materialSearch}"`}
+                          {materialSearch && selectedCategory !== 'all' && ' in '}
+                          {selectedCategory !== 'all' && `category "${selectedCategory}"`}
+                        </span>
+                      )}
+                    </div>
+                  )}
 
                   {/* Materials List */}
                   <div className="flex-1 overflow-y-auto border rounded-md">
