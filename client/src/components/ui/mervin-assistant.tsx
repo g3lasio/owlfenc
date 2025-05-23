@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Loader2, Wand2 } from 'lucide-react';
-import { enhanceDescriptionWithAI } from '@/services/openaiService';
 import { useToast } from '@/hooks/use-toast';
 
 // URL de la imagen de Mervin (imagen optimizada y verificada)
@@ -34,8 +33,8 @@ export function MervinAssistant({
   const handleEnhance = async () => {
     if (!originalText.trim()) {
       toast({
-        title: 'Texto vacío',
-        description: 'Por favor, ingresa una descripción del proyecto para mejorarla.',
+        title: 'Empty Description',
+        description: 'Please enter a project description to enhance it.',
         variant: 'destructive'
       });
       return;
@@ -44,47 +43,45 @@ export function MervinAssistant({
     setIsLoading(true);
     
     try {
-      console.log("Iniciando mejora de texto con Mervin AI...");
+      console.log("Starting professional description enhancement with AI...");
       
-      // Texto profesional generado "manualmente" para garantizar el funcionamiento
-      // sin depender de servicios externos que pueden fallar
-      const textoMejorado = `
-**Resumen del Proyecto**
-- ${originalText}
-
-**Especificaciones Técnicas**
-- Se utilizarán materiales de la más alta calidad disponible en el mercado
-- Todas las medidas serán verificadas presencialmente antes de la instalación
-- El proyecto cumplirá con todos los códigos y normativas locales
-
-**Proceso de Ejecución**
-- Preparación inicial completa del área de trabajo
-- Instalación meticulosa por personal certificado
-- Inspecciones de calidad en cada fase del proyecto
-- Limpieza completa del área de trabajo al finalizar
-
-**Valor Añadido**
-- Garantía de 1 año en materiales y mano de obra
-- Supervisión profesional durante todo el proceso
-- Servicio post-instalación para cualquier ajuste necesario
-      `;
-      
-      console.log("Texto mejorado generado correctamente");
-      
-      // Actualizar el texto en el componente padre
-      onTextEnhanced(textoMejorado);
-      
-      toast({
-        title: 'Texto mejorado exitosamente',
-        description: 'La descripción del proyecto ha sido reformulada profesionalmente por Mervin AI.',
+      // Using Anthropic Claude for professional project description enhancement
+      const response = await fetch('/api/enhance-description', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          originalText: originalText.trim(),
+          projectType: projectType || 'general construction'
+        }),
       });
-    } catch (error) {
-      console.error('Error al mejorar el texto con Mervin AI:', error);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
       
-      // Mensaje de error más específico y útil
+      if (data.enhancedDescription) {
+        console.log("Professional description enhanced successfully");
+        
+        // Update the text in the parent component
+        onTextEnhanced(data.enhancedDescription);
+        
+        toast({
+          title: 'Description Enhanced Successfully',
+          description: 'Your project description has been professionally enhanced and translated to English.',
+        });
+      } else {
+        throw new Error('No enhanced description received');
+      }
+    } catch (error) {
+      console.error('Error enhancing description with AI:', error);
+      
       toast({
-        title: 'Error en el procesamiento',
-        description: 'No se pudo procesar el texto. Verifica tu conexión y vuelve a intentarlo.',
+        title: 'Enhancement Error',
+        description: 'Could not enhance the description. Please check your connection and try again.',
         variant: 'destructive'
       });
     } finally {

@@ -272,44 +272,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setupTemplateServing(app);
   // Use payment routes
   app.use('/api', paymentRoutes);
-  // Endpoint para mejorar descripciones con OpenAI
+  // Professional project description enhancement with Anthropic Claude
   app.post("/api/enhance-description", async (req: Request, res: Response) => {
     try {
-      const { description } = req.body;
-      
-      if (!description) {
-        return res.status(400).json({ error: "No se proporcionó una descripción" });
+      const { originalText, projectType } = req.body;
+
+      if (!originalText || originalText.trim() === '') {
+        return res.status(400).json({ 
+          error: 'Original text is required' 
+        });
       }
+
+      console.log('🚀 Starting professional description enhancement...');
+      console.log('Original text:', originalText);
+      console.log('Project type:', projectType);
+
+      // Import Anthropic here to avoid issues
+      const Anthropic = (await import('@anthropic-ai/sdk')).default;
       
-      const prompt = `
-      Eres Mervin, un asistente virtual especializado en proyectos de construcción, cercas y mejoras para el hogar.
-      
-      Por favor, mejora la siguiente descripción de proyecto para que sea más profesional, clara y detallada.
-      
-      Añade información técnica relevante si es necesario y organiza el texto para que sea fácil de entender.
-      
-      Mantén el mismo idioma (español) y usa un tono profesional pero accesible.
-      
-      Descripción original:
-      ${description || 'Sin descripción proporcionada.'}
-      `;
-      
-      const response = await openai.chat.completions.create({
-        model: GPT_MODEL,
-        messages: [
-          { role: "system", content: "Eres Mervin, un asistente especializado en mejoras de descripciones para proyectos de construcción." },
-          { role: "user", content: prompt }
-        ],
-        temperature: 0.7,
-        max_tokens: 500,
+      if (!process.env.ANTHROPIC_API_KEY) {
+        throw new Error('ANTHROPIC_API_KEY not configured');
+      }
+
+      const anthropic = new Anthropic({
+        apiKey: process.env.ANTHROPIC_API_KEY,
       });
-      
-      const enhancedDescription = response.choices[0].message.content || "No se pudo mejorar la descripción.";
-      
-      res.json({ enhancedDescription });
+
+      // Create a professional prompt for project description enhancement
+      const enhancementPrompt = `You are a professional construction project manager and technical writer. Your task is to transform basic project descriptions into highly professional, detailed, and comprehensive project specifications.
+
+CRITICAL REQUIREMENTS:
+1. ALWAYS output the enhanced description in ENGLISH, regardless of input language
+2. If the input is in Spanish, translate AND enhance to English
+3. Create a professional, detailed description suitable for contracts and estimates
+4. Structure the output in clear sections with professional terminology
+5. Include technical specifications, quality standards, and process details
+
+INPUT TEXT: "${originalText}"
+PROJECT TYPE: "${projectType || 'general construction'}"
+
+Transform this into a comprehensive professional project description in ENGLISH that includes:
+
+**Project Overview**
+- Clear, professional summary of the work to be performed
+- Scope boundaries and inclusions
+
+**Technical Specifications** 
+- Materials standards and quality requirements
+- Installation methods and techniques
+- Code compliance and permit requirements
+
+**Quality Assurance**
+- Inspection procedures and checkpoints
+- Quality control measures
+- Professional standards adherence
+
+**Project Execution**
+- Preparation and setup procedures
+- Installation sequence and methodology
+- Cleanup and completion protocols
+
+**Professional Standards**
+- Warranty information
+- Compliance with local building codes
+- Industry best practices
+
+Make it sound highly professional, detailed, and suitable for a formal estimate or contract. Use construction industry terminology and maintain a professional tone throughout.`;
+
+      // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
+      const response = await anthropic.messages.create({
+        model: 'claude-3-7-sonnet-20250219',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: enhancementPrompt
+        }]
+      });
+
+      const enhancedDescription = response.content[0].type === 'text' ? response.content[0].text : 'Unable to enhance description';
+
+      console.log('✅ Professional description enhanced successfully');
+      console.log('Enhanced description length:', enhancedDescription.length);
+
+      res.json({ 
+        enhancedDescription,
+        originalText,
+        projectType,
+        success: true
+      });
+
     } catch (error: any) {
-      console.error("Error al mejorar descripción:", error);
-      res.status(500).json({ error: "Error al procesar la solicitud", message: error.message || "Error desconocido" });
+      console.error('❌ Error enhancing description:', error);
+      res.status(500).json({ 
+        error: 'Failed to enhance description',
+        message: error.message || 'Unknown error occurred'
+      });
     }
   });
   
@@ -2679,3 +2736,4 @@ async function generateContractHtml(projectDetails: any): Promise<string> {
 async function generatePDF(data: any, type: 'estimate' | 'contract'): Promise<Buffer> {
   return await documentService.generateDocument(data, type);
 }
+
