@@ -159,6 +159,9 @@ function Router() {
       <Route path="/estimates">
         {() => <ProtectedRoute component={EstimateGenerator} />}
       </Route>
+      <Route path="/estimate-generator">
+        {() => <ProtectedRoute component={EstimateGenerator} />}
+      </Route>
       <Route path="/estimates-dashboard">
         {() => <ProtectedRoute component={EstimatesDashboard} />}
       </Route>
