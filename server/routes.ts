@@ -42,6 +42,7 @@ import contactRoutes from './routes/contact-route';
 import anthropicRoutes from './routes/anthropic';
 import pdfRoutes from './routes/pdf-routes';
 import paymentRoutes from './routes/payment-routes'; // Import payment routes
+import estimatesRoutes from './routes/estimates'; // Import new estimates routes
 import { setupTemplatesRoutes } from './routes/templates';
 import express from 'express'; // Import express to use express.raw
 
@@ -333,6 +334,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerEstimateRoutes(app);
   registerPropertyRoutes(app);
   setupTemplatesRoutes(app);
+  
+  // Registrar la nueva API REST de estimados renovada
+  app.use('/api/estimates', estimatesRoutes);
   
   // Registrar rutas de PDF
   app.use('/api/pdf', pdfRoutes);
