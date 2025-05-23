@@ -1558,10 +1558,25 @@ export default function Estimates() {
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex justify-between items-center">
               <span>Materials and Services</span>
-              <Button size="sm" onClick={() => setShowMaterialSearchDialog(true)} className="h-8">
-                <PlusCircle className="h-4 w-4 mr-1" />
-                Add
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  onClick={() => setShowMaterialSearchDialog(true)} 
+                  className="h-8"
+                  variant="outline"
+                >
+                  <PlusCircle className="h-4 w-4 mr-1" />
+                  From Inventory
+                </Button>
+                <Button 
+                  size="sm" 
+                  onClick={() => setShowAddMaterialDialog(true)} 
+                  className="h-8"
+                >
+                  <PlusCircle className="h-4 w-4 mr-1" />
+                  Add New
+                </Button>
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent className="pb-4">
