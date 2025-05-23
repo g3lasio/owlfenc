@@ -983,54 +983,10 @@ export default function EstimateGenerator() {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                {/* Left sidebar with steps */}
-                <div className="lg:col-span-3 space-y-4">
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="space-y-2">
-                        <div 
-                          className={`p-3 rounded-md flex items-center cursor-pointer ${
-                            currentStep === 'client' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-                          }`}
-                          onClick={() => goToStep('client')}
-                        >
-                          <User className="h-5 w-5 mr-2" />
-                          <span>Client Information</span>
-                        </div>
-                        <div 
-                          className={`p-3 rounded-md flex items-center cursor-pointer ${
-                            currentStep === 'project' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-                          }`}
-                          onClick={() => goToStep('project')}
-                        >
-                          <User className="h-5 w-5 mr-2" />
-                          <span>Project Details</span>
-                        </div>
-                        <div 
-                          className={`p-3 rounded-md flex items-center cursor-pointer ${
-                            currentStep === 'items' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-                          }`}
-                          onClick={() => goToStep('items')}
-                        >
-                          <User className="h-5 w-5 mr-2" />
-                          <span>Items & Pricing</span>
-                        </div>
-                        <div 
-                          className={`p-3 rounded-md flex items-center cursor-pointer ${
-                            currentStep === 'review' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-                          }`}
-                          onClick={() => goToStep('review')}
-                        >
-                          <User className="h-5 w-5 mr-2" />
-                          <span>Review & Send</span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+                {/* Main content area takes full width now */}
 
-                {/* Main content area */}
-                <div className="lg:col-span-12">
+                {/* Main content area with full width */}
+                <div className="lg:col-span-12 w-full">
                   <Tabs defaultValue="client" className="mt-0 p-0">
                     <TabsList className="hidden">
                       <TabsTrigger value="client">Client</TabsTrigger>
