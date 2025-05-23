@@ -2388,68 +2388,6 @@ export default Estimates;
     </div>
   );
 }
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="flex-grow overflow-y-auto overflow-x-auto my-4 border rounded-md p-4 bg-white relative">
-            {/* Use our new component that handles both viewing and editing */}
-            {previewHtml && (
-              <div className="estimate-preview-wrapper w-full h-full">
-                {isEditingPreview ? (
-                  <div className="bg-white h-full">
-                    <Textarea 
-                      className="w-full min-h-[500px] font-mono text-sm"
-                      value={editableHtml || ""}
-                      onChange={(e) => setEditableHtml(e.target.value)}
-                      placeholder="Edit the HTML content of your estimate..."
-                    />
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Edit the content directly. HTML tags are supported.
-                    </p>
-                  </div>
-                ) : (
-                  <div 
-                    className="estimate-preview w-full overflow-y-auto overflow-x-auto"
-                    style={{ 
-                      minWidth: "600px",
-                      height: "auto",
-                      maxHeight: "60vh",
-                      overflowY: "auto",
-                      overscrollBehavior: "contain",
-                      WebkitOverflowScrolling: "touch"
-                    }}
-                    dangerouslySetInnerHTML={{ __html: previewHtml as string }}
-                    ref={(el) => {
-                      if (el) {
-                        // Process all images to ensure they load correctly
-                        setTimeout(() => {
-                          console.log('Preview HTML rendered, checking images...');
-                          const imgs = el.querySelectorAll('img');
-                          
-                          if (imgs.length > 0) {
-                            console.log(`Found ${imgs.length} images in the preview`);
-                            
-                            imgs.forEach(img => {
-                              // Add crossorigin attribute
-                              img.setAttribute('crossorigin', 'anonymous');
-                              
-                              // Add error handler
-                              img.onerror = function() {
-                                console.error('Error loading image in preview:', img.src);
-                                
-                                // Try fallback for logo
-                                if (img.alt === 'Logo') {
-                                  console.log('Attempting to load fallback logo');
-                                  img.src = '/owl-logo.png';
-                                } else {
-                                  // Hide non-logo images that fail to load
-                                  img.style.display = 'none';
-                                }
-                              };
-                            });
-                          } else {
-                            console.warn('No images found in the preview HTML');
-                          }
                         }, 100);
                       }
                     }}
