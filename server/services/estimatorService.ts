@@ -1137,3 +1137,33 @@ export class EstimatorService {
 
 // Exportar una instancia del servicio
 export const estimatorService = new EstimatorService();
+
+// Función procesadora de mensajes para el chat (requerida por chatService)
+export async function estimateMessageProcessor(
+  userId: number,
+  sessionId: string,
+  message: string,
+  history: any[],
+  req: any
+) {
+  try {
+    console.log(`Procesando mensaje de estimado para usuario ${userId}`);
+    
+    // Procesar el mensaje y extraer información relevante para el estimado
+    // Por ahora, devolver una respuesta básica
+    return {
+      text: `He recibido tu solicitud de estimado: "${message}". Te ayudo a crear un estimado detallado. ¿Podrías proporcionarme más detalles sobre el tipo de proyecto?`,
+      role: 'assistant',
+      sessionId,
+      userId
+    };
+  } catch (error) {
+    console.error('Error en estimateMessageProcessor:', error);
+    return {
+      text: 'Disculpa, hubo un error procesando tu solicitud de estimado. ¿Podrías intentar de nuevo?',
+      role: 'assistant',
+      sessionId,
+      userId
+    };
+  }
+}

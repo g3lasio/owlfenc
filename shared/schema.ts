@@ -445,6 +445,160 @@ export const insertPropertySearchHistorySchema = createInsertSchema(propertySear
 export type PropertySearchHistory = typeof propertySearchHistory.$inferSelect;
 export type InsertPropertySearchHistory = z.infer<typeof insertPropertySearchHistorySchema>;
 
+// ===== SISTEMA DE ESTIMADOS RENOVADO =====
+
+// Estimates table - Sistema centralizado de estimados
+export const estimates = pgTable("estimates", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  estimateNumber: text("estimate_number").notNull().unique(),
+  
+  // Client Information
+  clientId: integer("client_id").references(() => clients.id),
+  clientName: text("client_name").notNull(),
+  clientEmail: text("client_email"),
+  clientPhone: text("client_phone"),
+  clientAddress: text("client_address").notNull(),
+  
+  // Project Details
+  projectType: text("project_type").notNull(), // fence, roof, deck, patio, etc.
+  projectSubtype: text("project_subtype"), // wood fence, metal roof, etc.
+  projectDescription: text("project_description"),
+  scope: text("scope"), // Scope of work
+  timeline: text("timeline"), // Estimated completion timeframe
+  
+  // Estimate Items (JSON array)
+  items: jsonb("items").notNull(), // Array of estimate items
+  
+  // Financial Information
+  subtotal: integer("subtotal").notNull(), // Amount in cents
+  taxRate: integer("tax_rate").default(875), // Tax rate in basis points (8.75% = 875)
+  taxAmount: integer("tax_amount").notNull(), // Tax amount in cents
+  total: integer("total").notNull(), // Total amount in cents
+  
+  // Metadata
+  status: text("status").default("draft"), // draft, sent, approved, expired
+  validUntil: timestamp("valid_until"),
+  estimateDate: timestamp("estimate_date").defaultNow(),
+  sentDate: timestamp("sent_date"),
+  approvedDate: timestamp("approved_date"),
+  
+  // Generated Content
+  htmlContent: text("html_content"), // Generated HTML for PDF/preview
+  pdfUrl: text("pdf_url"), // URL to generated PDF
+  
+  // Notes and Additional Info
+  notes: text("notes"),
+  internalNotes: text("internal_notes"),
+  terms: text("terms"), // Terms and conditions
+  
+  // Tracking
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertEstimateSchema = createInsertSchema(estimates).pick({
+  userId: true,
+  estimateNumber: true,
+  clientId: true,
+  clientName: true,
+  clientEmail: true,
+  clientPhone: true,
+  clientAddress: true,
+  projectType: true,
+  projectSubtype: true,
+  projectDescription: true,
+  scope: true,
+  timeline: true,
+  items: true,
+  subtotal: true,
+  taxRate: true,
+  taxAmount: true,
+  total: true,
+  status: true,
+  validUntil: true,
+  estimateDate: true,
+  htmlContent: true,
+  notes: true,
+  internalNotes: true,
+  terms: true,
+});
+
+// Estimate Items table - Ítems individuales de estimados
+export const estimateItems = pgTable("estimate_items", {
+  id: serial("id").primaryKey(),
+  estimateId: integer("estimate_id").references(() => estimates.id),
+  
+  // Item Information
+  name: text("name").notNull(),
+  description: text("description"),
+  category: text("category"), // material, labor, additional
+  
+  // Quantity and Pricing
+  quantity: integer("quantity").notNull(), // Quantity in units (can be decimal * 100)
+  unit: text("unit").notNull(), // piece, sq ft, linear ft, hour, etc.
+  unitPrice: integer("unit_price").notNull(), // Price per unit in cents
+  totalPrice: integer("total_price").notNull(), // Total price in cents
+  
+  // Metadata
+  sortOrder: integer("sort_order").default(0),
+  isOptional: boolean("is_optional").default(false),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertEstimateItemSchema = createInsertSchema(estimateItems).pick({
+  estimateId: true,
+  name: true,
+  description: true,
+  category: true,
+  quantity: true,
+  unit: true,
+  unitPrice: true,
+  totalPrice: true,
+  sortOrder: true,
+  isOptional: true,
+});
+
+// Estimate Templates table - Plantillas de estimados
+export const estimateTemplates = pgTable("estimate_templates", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  
+  name: text("name").notNull(),
+  description: text("description"),
+  projectType: text("project_type").notNull(),
+  
+  // Template Items (JSON array)
+  defaultItems: jsonb("default_items").notNull(), // Default items for this template
+  
+  // Settings
+  isActive: boolean("is_active").default(true),
+  isDefault: boolean("is_default").default(false),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertEstimateTemplateSchema = createInsertSchema(estimateTemplates).pick({
+  userId: true,
+  name: true,
+  description: true,
+  projectType: true,
+  defaultItems: true,
+  isActive: true,
+  isDefault: true,
+});
+
+export type Estimate = typeof estimates.$inferSelect;
+export type InsertEstimate = z.infer<typeof insertEstimateSchema>;
+
+export type EstimateItem = typeof estimateItems.$inferSelect;
+export type InsertEstimateItem = z.infer<typeof insertEstimateItemSchema>;
+
+export type EstimateTemplate = typeof estimateTemplates.$inferSelect;
+export type InsertEstimateTemplate = z.infer<typeof insertEstimateTemplateSchema>;
+
 // User Materials table - for user-specific materials inventory
 export const userMaterials = pgTable("user_materials", {
   id: serial("id").primaryKey(),

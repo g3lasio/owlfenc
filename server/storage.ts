@@ -26,7 +26,13 @@ import {
   PermitSearchHistory,
   InsertPermitSearchHistory,
   PropertySearchHistory,
-  InsertPropertySearchHistory
+  InsertPropertySearchHistory,
+  Estimate,
+  InsertEstimate,
+  EstimateItem,
+  InsertEstimateItem,
+  EstimateTemplate,
+  InsertEstimateTemplate
 } from "@shared/schema";
 
 import { DatabaseStorage } from './DatabaseStorage';
@@ -127,6 +133,33 @@ export interface IStorage {
   getPropertySearchHistoryByUserId(userId: number): Promise<PropertySearchHistory[]>;
   createPropertySearchHistory(history: InsertPropertySearchHistory): Promise<PropertySearchHistory>;
   updatePropertySearchHistory(id: number, data: Partial<PropertySearchHistory>): Promise<PropertySearchHistory>;
+  
+  // ===== SISTEMA DE ESTIMADOS RENOVADO =====
+  
+  // Estimate methods
+  getEstimate(id: number): Promise<Estimate | undefined>;
+  getEstimateByNumber(estimateNumber: string): Promise<Estimate | undefined>;
+  getEstimatesByUserId(userId: number): Promise<Estimate[]>;
+  getEstimatesByClientId(clientId: number): Promise<Estimate[]>;
+  createEstimate(estimate: InsertEstimate): Promise<Estimate>;
+  updateEstimate(id: number, estimate: Partial<Estimate>): Promise<Estimate>;
+  deleteEstimate(id: number): Promise<boolean>;
+  
+  // Estimate Item methods
+  getEstimateItem(id: number): Promise<EstimateItem | undefined>;
+  getEstimateItemsByEstimateId(estimateId: number): Promise<EstimateItem[]>;
+  createEstimateItem(item: InsertEstimateItem): Promise<EstimateItem>;
+  updateEstimateItem(id: number, item: Partial<EstimateItem>): Promise<EstimateItem>;
+  deleteEstimateItem(id: number): Promise<boolean>;
+  
+  // Estimate Template methods
+  getEstimateTemplate(id: number): Promise<EstimateTemplate | undefined>;
+  getEstimateTemplatesByUserId(userId: number): Promise<EstimateTemplate[]>;
+  getEstimateTemplatesByProjectType(projectType: string, userId?: number): Promise<EstimateTemplate[]>;
+  getDefaultEstimateTemplate(projectType: string, userId: number): Promise<EstimateTemplate | undefined>;
+  createEstimateTemplate(template: InsertEstimateTemplate): Promise<EstimateTemplate>;
+  updateEstimateTemplate(id: number, template: Partial<EstimateTemplate>): Promise<EstimateTemplate>;
+  deleteEstimateTemplate(id: number): Promise<boolean>;
   
   // Sistema de salud
   healthCheck(): Promise<boolean>;
