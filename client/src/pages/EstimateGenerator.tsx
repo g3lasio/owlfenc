@@ -167,20 +167,11 @@ export default function EstimateGenerator() {
   const [materialSearch, setMaterialSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
 
-  // Categorías disponibles
-  const categories = ['all', 'Posts', 'Rails', 'Panels', 'Hardware', 'Labor', 'Equipment', 'Other'];
-
-  // Filtrar materiales
-  const filteredMaterials = materials.filter((material: any) => {
-    const matchesSearch = !materialSearch || 
-      material.name.toLowerCase().includes(materialSearch.toLowerCase()) ||
-      material.description?.toLowerCase().includes(materialSearch.toLowerCase()) ||
-      material.sku?.toLowerCase().includes(materialSearch.toLowerCase());
-    
-    const matchesCategory = selectedCategory === 'all' || material.category === selectedCategory;
-    
-    return matchesSearch && matchesCategory;
-  });
+  // Obtener categorías únicas de los materiales cargados
+  const getCategories = () => {
+    const uniqueCategories = ['all', ...new Set(materials.map(m => m.category).filter(Boolean))];
+    return uniqueCategories;
+  };
 
   // Tipos de proyecto disponibles
   const projectTypes = [
@@ -241,27 +232,40 @@ export default function EstimateGenerator() {
   // Funciones para manejar ítems
   const addItem = (material?: any) => {
     if (material) {
-      // Agregar material existente
-      const newItem = {
-        id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        name: material.name,
-        description: material.description || '',
-        unit: material.unit,
-        price: material.price,
-        quantity: 1,
-        total: material.price
-      };
+      // Verificar si el material ya existe en el estimado
+      const existingItem = estimate.items.find(item => item.name === material.name);
       
-      setEstimate(prev => ({
-        ...prev,
-        items: [...prev.items, newItem]
-      }));
+      if (existingItem) {
+        // Si existe, incrementar la cantidad
+        updateItemQuantity(existingItem.id, existingItem.quantity + 1);
+        toast({
+          title: "Cantidad Actualizada",
+          description: `Se incrementó la cantidad de ${material.name} a ${existingItem.quantity + 1}`
+        });
+      } else {
+        // Agregar material nuevo
+        const newItem = {
+          id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          name: material.name,
+          description: material.description || '',
+          unit: material.unit,
+          price: (material.price / 100) || material.price || 0, // Convertir de centavos si es necesario
+          quantity: 1,
+          total: (material.price / 100) || material.price || 0
+        };
+        
+        setEstimate(prev => ({
+          ...prev,
+          items: [...prev.items, newItem]
+        }));
+        
+        toast({
+          title: "Material Agregado",
+          description: `${material.name} ha sido agregado al estimado`
+        });
+      }
       
       setShowMaterialSearchDialog(false);
-      toast({
-        title: "Material Agregado",
-        description: `${material.name} ha sido agregado al estimado`
-      });
     }
   };
 
@@ -306,7 +310,11 @@ export default function EstimateGenerator() {
     setEstimate(prev => ({
       ...prev,
       items: prev.items.map(item => 
-        item.id === itemId ? { ...item, quantity } : item
+        item.id === itemId ? { 
+          ...item, 
+          quantity,
+          total: item.price * quantity 
+        } : item
       )
     }));
   };
@@ -317,24 +325,30 @@ export default function EstimateGenerator() {
     setEstimate(prev => ({
       ...prev,
       items: prev.items.map(item => 
-        item.id === itemId ? { ...item, price } : item
+        item.id === itemId ? { 
+          ...item, 
+          price,
+          total: price * item.quantity 
+        } : item
       )
     }));
   };
 
   // Filtrar materiales por búsqueda y categoría
   const filteredMaterials = materials.filter(material => {
-    const matchesSearch = material.name?.toLowerCase().includes(materialSearch.toLowerCase()) ||
-                         material.description?.toLowerCase().includes(materialSearch.toLowerCase()) ||
-                         material.category?.toLowerCase().includes(materialSearch.toLowerCase());
+    const matchesSearch = !materialSearch || 
+      material.name?.toLowerCase().includes(materialSearch.toLowerCase()) ||
+      material.description?.toLowerCase().includes(materialSearch.toLowerCase()) ||
+      material.sku?.toLowerCase().includes(materialSearch.toLowerCase()) ||
+      material.category?.toLowerCase().includes(materialSearch.toLowerCase());
     
     const matchesCategory = selectedCategory === 'all' || material.category === selectedCategory;
     
     return matchesSearch && matchesCategory;
   });
 
-  // Obtener categorías únicas
-  const categories = ['all', ...new Set(materials.map(m => m.category).filter(Boolean))];
+  // Obtener categorías dinámicamente
+  const categories = getCategories();
 
   // Calcular total del estimado
   const calculateTotal = () => {

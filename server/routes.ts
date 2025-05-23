@@ -2733,8 +2733,6 @@ async function generatePDF(data: any, type: 'estimate' | 'contract'): Promise<Bu
   return await documentService.generateDocument(data, type);
 }
 
-export function registerRoutes(app: Express): Server {
-  
   // Materials endpoint - returns sample materials for estimates
   app.get('/api/materials', async (req, res) => {
     try {
@@ -2788,4 +2786,13 @@ export function registerRoutes(app: Express): Server {
 
   // Continue with existing route registrations
   app.post("/api/ai-enhance", async (req: Request, res: Response) => {
+    try {
+      const { text } = req.body;
+      res.json({ enhancedText: text });
+    } catch (error) {
+      console.error('Error in AI enhance:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+}
 
