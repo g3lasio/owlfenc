@@ -67,15 +67,25 @@ export function MervinAssistant({
   };
 
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={enhanceText}
-      disabled={isEnhancing || !originalText}
-      className="flex items-center gap-1 text-xs py-1 h-7 px-2"
-    >
-      <Wand className="h-3 w-3" />
-      {isEnhancing ? "Mejorando..." : "Mejorar con IA"}
-    </Button>
+    <div className="relative inline-block">
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={enhanceText}
+        disabled={isEnhancing || !originalText}
+        className="h-7 w-7 rounded-full hover:bg-blue-100 hover:text-blue-600"
+        title="Enhance description with Mervin AI"
+      >
+        {isEnhancing ? (
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+        ) : (
+          <Wand className="h-4 w-4 text-blue-500" />
+        )}
+      </Button>
+      {/* Tooltip */}
+      <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none">
+        Enhance with Mervin AI
+      </span>
+    </div>
   );
 }
