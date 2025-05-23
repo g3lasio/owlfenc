@@ -1627,5 +1627,48 @@ export default function EstimateGenerator() {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {/* Material Search Dialog */}
+    <Dialog open={showMaterialSearchDialog} onOpenChange={setShowMaterialSearchDialog}>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>Search Materials</DialogTitle>
+          <DialogDescription>
+            Search your inventory for materials to add to this estimate
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="py-4">
+          <Input 
+            placeholder="Search materials..."
+            className="mb-4"
+          />
+          
+          <div className="max-h-[400px] overflow-y-auto">
+            {/* This would be populated with your actual material data */}
+            <div className="text-center py-10 text-muted-foreground">
+              <Package className="mx-auto h-12 w-12 mb-4 opacity-50" />
+              <p>No materials found in your inventory</p>
+              <Button 
+                variant="outline" 
+                className="mt-4"
+                onClick={() => {
+                  setShowMaterialSearchDialog(false);
+                  setShowAddMaterialDialog(true);
+                }}
+              >
+                Add New Material
+              </Button>
+            </div>
+          </div>
+        </div>
+        
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setShowMaterialSearchDialog(false)}>
+            Cancel
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
