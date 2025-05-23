@@ -510,7 +510,6 @@ export default function EstimateGenerator() {
     switch (currentStep) {
       case 'client':
         return (
-          
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -1076,6 +1075,7 @@ export default function EstimateGenerator() {
   };
 
   return (
+    <>
     <div className="flex h-screen bg-gray-50">
       {renderSidebar()}
       
@@ -1670,5 +1670,6 @@ export default function EstimateGenerator() {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    </>
   );
 }
