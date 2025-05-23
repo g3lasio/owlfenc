@@ -160,22 +160,108 @@
         font-family: "Segoe UI", Arial, sans-serif;
         text-shadow: 0 0 8px #10dbe233;
       }
-      @media (max-width: 650px) {
+      /* Responsive design mejorado */
+      @media (max-width: 768px) {
         .container {
-          padding: 12px 5px 18px 5px;
+          padding: 20px 15px;
+          margin: 10px;
+          max-width: calc(100vw - 20px);
         }
-        .header,
-        .estimate-meta,
-        .company-details {
+        .header {
           flex-direction: column;
+          align-items: flex-start;
+        }
+        .estimate-title {
           text-align: left;
+          font-size: 1.5rem;
+          margin-top: 15px;
+        }
+        .estimate-meta {
+          text-align: left;
+          margin-top: 10px;
+        }
+        .company-details {
+          width: 100%;
         }
         .logo {
           margin-bottom: 12px;
         }
+        
+        /* Scrolling horizontal para tablas */
+        .table-wrapper {
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          margin-bottom: 15px;
+          border-radius: 7px;
+          box-shadow: 0 2px 8px rgba(20, 240, 248, 0.1);
+        }
+        
+        .details-table {
+          min-width: 600px;
+          margin-bottom: 0;
+        }
+        
+        .details-table th,
+        .details-table td {
+          padding: 8px 6px;
+          font-size: 0.9rem;
+          white-space: nowrap;
+        }
+        
+        .section-title {
+          font-size: 1rem;
+          padding: 6px 10px;
+        }
+        
+        .project-details {
+          padding: 15px;
+          font-size: 1rem;
+        }
+        
         .footer {
           text-align: center;
+          font-size: 0.8rem;
         }
+      }
+      
+      /* Tablet adjustments */
+      @media (min-width: 769px) and (max-width: 1024px) {
+        .container {
+          max-width: 90%;
+          padding: 30px;
+        }
+        
+        .details-table th,
+        .details-table td {
+          padding: 10px 8px;
+        }
+      }
+      
+      /* Scrolling suave y optimizado */
+      .table-wrapper {
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        scrollbar-color: #14f0f8 #e9fdff;
+      }
+      
+      .table-wrapper::-webkit-scrollbar {
+        height: 8px;
+      }
+      
+      .table-wrapper::-webkit-scrollbar-track {
+        background: #e9fdff;
+        border-radius: 4px;
+      }
+      
+      .table-wrapper::-webkit-scrollbar-thumb {
+        background: #14f0f8;
+        border-radius: 4px;
+      }
+      
+      .table-wrapper::-webkit-scrollbar-thumb:hover {
+        background: #0bc5cc;
       }
     </style>
   </head>
@@ -203,45 +289,49 @@
 
       <div class="section">
         <div class="section-title">Client</div>
-        <table class="details-table">
-          <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Phone</th>
-            <th>Address</th>
-          </tr>
-          <tr>
-            <td>[Client Name]</td>
-            <td><a href="mailto:[Client Email]">[Client Email]</a></td>
-            <td><a href="tel:[Client Phone]">[Client Phone]</a></td>
-            <td>[Client Address]</td>
-          </tr>
-        </table>
+        <div class="table-wrapper">
+          <table class="details-table">
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Address</th>
+            </tr>
+            <tr>
+              <td>[Client Name]</td>
+              <td><a href="mailto:[Client Email]">[Client Email]</a></td>
+              <td><a href="tel:[Client Phone]">[Client Phone]</a></td>
+              <td>[Client Address]</td>
+            </tr>
+          </table>
+        </div>
       </div>
 
       <div class="section">
         <div class="section-title">Estimate Details</div>
-        <table class="details-table">
-          <tr>
-            <th>Item</th>
-            <th>Description</th>
-            <th>Quantity</th>
-            <th>Unit Price</th>
-            <th>Total</th>
-          </tr>
-          <!-- Repeat this row for each item -->
-          <tr>
-            <td>[Item Name]</td>
-            <td>[Item Description]</td>
-            <td>[Qty]</td>
-            <td>[Unit Price]</td>
-            <td>[Total]</td>
-          </tr>
-          <tr class="totals-row">
-            <td colspan="4" style="text-align: right">Total</td>
-            <td>[Grand Total]</td>
-          </tr>
-        </table>
+        <div class="table-wrapper">
+          <table class="details-table">
+            <tr>
+              <th>Item</th>
+              <th>Description</th>
+              <th>Quantity</th>
+              <th>Unit Price</th>
+              <th>Total</th>
+            </tr>
+            <!-- Repeat this row for each item -->
+            <tr>
+              <td>[Item Name]</td>
+              <td>[Item Description]</td>
+              <td>[Qty]</td>
+              <td>[Unit Price]</td>
+              <td>[Total]</td>
+            </tr>
+            <tr class="totals-row">
+              <td colspan="4" style="text-align: right">Total</td>
+              <td>[Grand Total]</td>
+            </tr>
+          </table>
+        </div>
       </div>
 
       <div class="section project-details">
