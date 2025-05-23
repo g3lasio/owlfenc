@@ -2794,5 +2794,4 @@ async function generatePDF(data: any, type: 'estimate' | 'contract'): Promise<Bu
       res.status(500).json({ error: 'Internal server error' });
     }
   });
-}
 
