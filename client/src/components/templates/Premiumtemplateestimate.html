@@ -224,6 +224,41 @@
         }
       }
       
+      /* Estilos para el selector de clientes */
+      .client-selection {
+        max-height: 400px;
+        overflow-y: auto;
+        margin-top: 10px;
+      }
+      
+      .client-item {
+        padding: 12px;
+        border-bottom: 1px solid #eaeaea;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: background-color 0.2s;
+      }
+      
+      .client-item:hover {
+        background-color: #f5f5f5;
+        cursor: pointer;
+      }
+      
+      .client-info span {
+        display: block;
+      }
+      
+      .client-name {
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+      
+      .client-details {
+        font-size: 0.85rem;
+        color: #666;
+      }
+      
       /* Tablet adjustments */
       @media (min-width: 769px) and (max-width: 1024px) {
         .container {
