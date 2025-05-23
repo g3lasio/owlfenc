@@ -2732,48 +2732,4 @@ async function generateContractHtml(projectDetails: any): Promise<string> {
 async function generatePDF(data: any, type: 'estimate' | 'contract'): Promise<Buffer> {
   return await documentService.generateDocument(data, type);
 }
-    try {
-      const { category } = req.query;
-    
-      // Sample materials data for the inventory browser
-      const allMaterials = [
-        // Wood Materials
-        { id: 1, name: "Cedar Fence Post 4x4x8", category: "Posts", description: "Pressure treated cedar post", unit: "piece", price: 1599, sku: "WP001", supplier: "Home Depot" },
-        { id: 2, name: "Pine Fence Post 4x4x8", category: "Posts", description: "Pressure treated pine post", unit: "piece", price: 1299, sku: "WP002", supplier: "Lowes" },
-        { id: 3, name: "Cedar Fence Rail 2x4x8", category: "Rails", description: "Cedar horizontal rail", unit: "piece", price: 899, sku: "WR001", supplier: "Home Depot" },
-        { id: 4, name: "Cedar Fence Picket 1x6x6", category: "Panels", description: "Cedar fence picket", unit: "piece", price: 450, sku: "WP003", supplier: "Home Depot" },
-        
-        // Vinyl Materials
-        { id: 5, name: "Vinyl Fence Post 5x5x8", category: "Posts", description: "White vinyl fence post", unit: "piece", price: 2599, sku: "VP001", supplier: "Lowes" },
-        { id: 6, name: "Vinyl Fence Rail 2x8", category: "Rails", description: "White vinyl horizontal rail", unit: "piece", price: 1299, sku: "VR001", supplier: "Lowes" },
-        { id: 7, name: "Vinyl Fence Panel 6x8", category: "Panels", description: "White vinyl privacy panel", unit: "piece", price: 4599, sku: "VP004", supplier: "Home Depot" },
-        
-        // Hardware
-        { id: 8, name: "Galvanized Screws 2.5in", category: "Hardware", description: "Deck screws for wood installation", unit: "box", price: 899, sku: "HW001", supplier: "Home Depot" },
-        { id: 9, name: "Post Brackets", category: "Hardware", description: "Metal post mounting brackets", unit: "piece", price: 1299, sku: "HW002", supplier: "Lowes" },
-        { id: 10, name: "Gate Hinges Heavy Duty", category: "Hardware", description: "Adjustable gate hinges", unit: "pair", price: 2499, sku: "HW003", supplier: "Home Depot" },
-        
-        // Labor
-        { id: 11, name: "Installation Labor", category: "Labor", description: "Professional fence installation per linear foot", unit: "linear foot", price: 1500, sku: "LAB001", supplier: "Internal" },
-        { id: 12, name: "Site Preparation", category: "Labor", description: "Land clearing and preparation", unit: "hour", price: 7500, sku: "LAB002", supplier: "Internal" },
-        
-        // Equipment
-        { id: 13, name: "Post Hole Digger Rental", category: "Equipment", description: "Gas powered auger rental", unit: "day", price: 8999, sku: "EQ001", supplier: "Equipment Rental" },
-        { id: 14, name: "Concrete Mix", category: "Other", description: "Fast-setting concrete for posts", unit: "bag", price: 599, sku: "OT001", supplier: "Home Depot" }
-      ];
-
-      // Filter by category if specified
-      const filteredMaterials = category && category !== 'all' 
-        ? allMaterials.filter(material => material.category === category)
-        : allMaterials;
-
-      res.json(filteredMaterials);
-    } catch (error) {
-      console.error('Error fetching materials:', error);
-      res.status(500).json({ error: 'Failed to fetch materials' });
-    }
-  });
-
-  return httpServer;
-}
 
