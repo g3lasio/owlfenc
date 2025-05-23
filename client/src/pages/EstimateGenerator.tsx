@@ -974,8 +974,9 @@ export default function EstimateGenerator() {
       {renderSidebar()}
       
       <div className="flex-1 overflow-auto p-6">
-          
-            
+        <div className="container mx-auto max-w-7xl">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+            <div className="lg:col-span-12">
               <div className="mb-6">
                 <h1 className="text-2xl font-bold">Create New Estimate</h1>
                 <p className="text-muted-foreground">Generate an estimate for your client</p>
@@ -1029,7 +1030,7 @@ export default function EstimateGenerator() {
                 </div>
 
                 {/* Main content area */}
-                <div className="lg:col-span-9">
+                <div className="lg:col-span-12">
                   <Tabs defaultValue="client" className="mt-0 p-0">
                     <TabsList className="hidden">
                       <TabsTrigger value="client">Client</TabsTrigger>
