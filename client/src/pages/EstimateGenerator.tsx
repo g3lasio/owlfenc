@@ -1,413 +1,46 @@
 import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
-import { Calculator, Save } from "lucide-react";
-
-// Importar los nuevos componentes refactorizados
-import { ClientInformationStep } from "@/components/estimate/ClientInformationStep";
-import { ProjectDetailsStep } from "@/components/estimate/ProjectDetailsStep";
-import { MaterialsAndCostsStep } from "@/components/estimate/MaterialsAndCostsStep";
-import { ReviewAndSendStep } from "@/components/estimate/ReviewAndSendStep";
-import { EstimateSidebar } from "@/components/estimate/EstimateSidebar";
-
-// Interfaces para tipado
-interface Client {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
-  company?: string;
-}
-
-interface Material {
-  id: string;
-  name: string;
-  description: string;
-  quantity: number;
-  unit: string;
-  price: number;
-  total: number;
-  category?: string;
-}
-
-interface Labor {
-  id: string;
-  description: string;
-  hours: number;
-  rate: number;
-  total: number;
-}
-
-interface EstimateData {
-  estimateNumber?: string;
-  projectType?: string;
-  projectSubtype?: string;
-  timeline?: string;
-  validUntil?: string;
-  scope?: string;
-  taxRate?: number;
-  taxAmount?: number;
-}
-
-export default function EstimateGenerator() {
-  const { toast } = useToast();
-  
-  // Estados principales
-  const [currentStep, setCurrentStep] = useState<string>('client');
-  const [clientData, setClientData] = useState<Client>({
-    id: '',
-    name: '',
-    email: '',
-    phone: '',
-    address: '',
-    company: ''
-  });
-  
-  const [estimateData, setEstimateData] = useState<EstimateData>({
-    estimateNumber: `EST-${Date.now()}`,
-    taxRate: 8.5
-  });
-  
-  const [materials, setMaterials] = useState<Material[]>([]);
-  const [labor, setLabor] = useState<Labor[]>([]);
-  
-  // Estados para diálogos
-  const [showClientDialog, setShowClientDialog] = useState(false);
-  const [showAddMaterialDialog, setShowAddMaterialDialog] = useState(false);
-  const [showMaterialSearchDialog, setShowMaterialSearchDialog] = useState(false);
-  
-  // Estados para nuevos elementos
-  const [newClientData, setNewClientData] = useState<Partial<Client>>({});
-  const [newMaterial, setNewMaterial] = useState<Partial<Material>>({});
-  
-  // Estados de carga
-  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Query para obtener clientes existentes
-  const { data: clients = [] } = useQuery({
-    queryKey: ['/api/clients'],
-    initialData: []
-  });
-
-  // Query para obtener materiales del inventario
-  const { data: inventoryMaterials = [] } = useQuery({
-    queryKey: ['/api/materials'],
-    initialData: []
-  });
-
-  // Funciones principales
-  const handleSaveNewClient = async () => {
-    if (!newClientData.name || !newClientData.email) {
-      toast({
-        title: "Error",
-        description: "Name and email are required",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const newClient: Client = {
-      id: Date.now().toString(),
-      name: newClientData.name,
-      email: newClientData.email,
-      phone: newClientData.phone || '',
-      address: newClientData.address || '',
-      company: newClientData.company || ''
-    };
-
-    setClientData(newClient);
-    setNewClientData({});
-    setShowClientDialog(false);
-    
-    toast({
-      title: "Success",
-      description: "Client information saved successfully"
-    });
-  };
-
-  const handleSaveNewMaterial = () => {
-    if (!newMaterial.name || !newMaterial.unit || !newMaterial.price) {
-      toast({
-        title: "Error",
-        description: "Name, unit, and price are required",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const material: Material = {
-      id: Date.now().toString(),
-      name: newMaterial.name,
-      description: newMaterial.description || '',
-      quantity: newMaterial.quantity || 0,
-      unit: newMaterial.unit,
-      price: newMaterial.price,
-      total: (newMaterial.quantity || 0) * (newMaterial.price || 0),
-      category: newMaterial.category
-    };
-
-    setMaterials([...materials, material]);
-    setNewMaterial({});
-    setShowAddMaterialDialog(false);
-    
-    toast({
-      title: "Success",
-      description: "Material added successfully"
-    });
-  };
-
-  const handleGenerateAI = async () => {
-    if (!estimateData.projectType) {
-      toast({
-        title: "Error",
-        description: "Please select a project type first",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsGeneratingAI(true);
-    
-    try {
-      // Simular generación AI (aquí conectarías con tu servicio AI real)
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const aiGeneratedScope = `Comprehensive ${estimateData.projectType.toLowerCase()} project including all necessary materials, labor, and safety considerations. This project will be completed according to local building codes and industry best practices.`;
-      
-      setEstimateData(prev => ({
-        ...prev,
-        scope: aiGeneratedScope
-      }));
-      
-      toast({
-        title: "Success",
-        description: "AI-generated project scope added"
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to generate AI content",
-        variant: "destructive"
-      });
-    } finally {
-      setIsGeneratingAI(false);
-    }
-  };
-
-  const handlePreview = () => {
-    toast({
-      title: "Preview",
-      description: "Opening estimate preview..."
-    });
-  };
-
-  const handleDownload = () => {
-    toast({
-      title: "Download",
-      description: "Generating PDF download..."
-    });
-  };
-
-  const handleSend = async () => {
-    setIsLoading(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      toast({
-        title: "Success",
-        description: `Estimate sent to ${clientData.email}`
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to send estimate",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSave = async () => {
-    setIsLoading(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast({
-        title: "Success",
-        description: "Estimate saved as draft"
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save estimate",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Navegación entre pasos
-  const handleNextStep = () => {
-    const steps = ['client', 'project', 'materials', 'review'];
-    const currentIndex = steps.indexOf(currentStep);
-    if (currentIndex < steps.length - 1) {
-      setCurrentStep(steps[currentIndex + 1]);
-    }
-  };
-
-  const handlePreviousStep = () => {
-    const steps = ['client', 'project', 'materials', 'review'];
-    const currentIndex = steps.indexOf(currentStep);
-    if (currentIndex > 0) {
-      setCurrentStep(steps[currentIndex - 1]);
-    }
-  };
-
-  // Render del contenido principal según el paso actual
-  const renderMainContent = () => {
-    switch (currentStep) {
-      case 'client':
-        return (
-          <ClientInformationStep
-            clientData={clientData}
-            setClientData={setClientData}
-            clients={clients}
-            showClientDialog={showClientDialog}
-            setShowClientDialog={setShowClientDialog}
-            newClientData={newClientData}
-            setNewClientData={setNewClientData}
-            onSaveNewClient={handleSaveNewClient}
-          />
-        );
-      
-      case 'project':
-        return (
-          <ProjectDetailsStep
-            estimateData={estimateData}
-            setEstimateData={setEstimateData}
-            onGenerateAI={handleGenerateAI}
-            isGeneratingAI={isGeneratingAI}
-          />
-        );
-      
-      case 'materials':
-        return (
-          <MaterialsAndCostsStep
-            materials={materials}
-            setMaterials={setMaterials}
-            labor={labor}
-            setLabor={setLabor}
-            estimateData={estimateData}
-            setEstimateData={setEstimateData}
-            showAddMaterialDialog={showAddMaterialDialog}
-            setShowAddMaterialDialog={setShowAddMaterialDialog}
-            showMaterialSearchDialog={showMaterialSearchDialog}
-            setShowMaterialSearchDialog={setShowMaterialSearchDialog}
-            newMaterial={newMaterial}
-            setNewMaterial={setNewMaterial}
-            onSaveNewMaterial={handleSaveNewMaterial}
-            inventoryMaterials={inventoryMaterials}
-          />
-        );
-      
-      case 'review':
-        return (
-          <ReviewAndSendStep
-            clientData={clientData}
-            estimateData={estimateData}
-            materials={materials}
-            labor={labor}
-            onPreview={handlePreview}
-            onDownload={handleDownload}
-            onSend={handleSend}
-            onSave={handleSave}
-            isLoading={isLoading}
-          />
-        );
-      
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
-      <EstimateSidebar
-        currentStep={currentStep}
-        setCurrentStep={setCurrentStep}
-        clientData={clientData}
-        estimateData={estimateData}
-        materials={materials}
-        labor={labor}
-      />
-      
-      {/* Main Content */}
-      <div className="flex-1 overflow-auto p-6">
-        <div className="container mx-auto max-w-7xl">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
-            <div className="lg:col-span-12">
-              {/* Header */}
-              <div className="mb-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                      <Calculator className="h-6 w-6" />
-                      Create Estimate
-                    </h1>
-                    <p className="text-gray-600 mt-1">
-                      {estimateData.estimateNumber} • Step {['client', 'project', 'materials', 'review'].indexOf(currentStep) + 1} of 4
-                    </p>
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={handleSave}
-                      disabled={isLoading}
-                      className="flex items-center gap-2"
-                    >
-                      <Save className="h-4 w-4" />
-                      Save Draft
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Main Content Area */}
-              <div className="space-y-6">
-                {renderMainContent()}
-                
-                {/* Navigation Buttons */}
-                <div className="flex justify-between pt-6">
-                  <Button
-                    variant="outline"
-                    onClick={handlePreviousStep}
-                    disabled={currentStep === 'client'}
-                  >
-                    Previous
-                  </Button>
-                  
-                  <Button
-                    onClick={handleNextStep}
-                    disabled={currentStep === 'review'}
-                  >
-                    Next Step
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+import { 
+  Calculator, 
+  FileText, 
+  User, 
+  MapPin, 
+  Plus, 
+  Trash2, 
+  Save, 
+  Send, 
+  Eye,
+  Download,
+  Building,
+  Clock,
+  DollarSign,
+  Wrench,
+  PlusCircle,
+  Edit3,
+  Target,
+  Calendar,
+  Search,
+  Users
+} from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  SelectGroup,
+  SelectLabel,
+} from '@/components/ui/select';
+import {
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { ProjectDescriptionEnhancer } from '@/components/ui/project-description-enhancer';
 import { X, Phone, Mail, Check } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -516,95 +149,15 @@ export default function EstimateGenerator() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
-  const [showMaterialSearchDialog, setShowMaterialSearchDialog] = useState(false);
-  
-  // Estados para los nuevos botones de materiales
-  const [showInventoryDialog, setShowInventoryDialog] = useState(false);
-  const [showAddMaterialDialog, setShowAddMaterialDialog] = useState(false);
-  const [newMaterial, setNewMaterial] = useState({
+  const [newItem, setNewItem] = useState<Partial<EstimateItem>>({
     name: '',
     description: '',
-    unit: '',
-    price: '',
-    supplier: ''
+    category: 'material',
+    quantity: 1,
+    unit: 'piece',
+    unitPrice: 0,
+    isOptional: false
   });
-
-  // Query para obtener materiales del inventario
-  const { data: inventoryMaterials = [] } = useQuery({
-    queryKey: ['/api/user-materials'],
-    enabled: showInventoryDialog
-  });
-
-  // Funciones para manejar materiales
-  const handleAddMaterialFromInventory = (material: any) => {
-    const newItem = {
-      id: Date.now().toString(),
-      name: material.name,
-      description: material.description || '',
-      quantity: 1,
-      unit: material.unit,
-      price: material.price / 100, // Convert from cents
-      total: material.price / 100
-    };
-    
-    setEstimate(prev => ({
-      ...prev,
-      items: [...prev.items, newItem]
-    }));
-    
-    setShowInventoryDialog(false);
-    toast({
-      title: "Material added",
-      description: `${material.name} has been added to your estimate.`,
-    });
-  };
-
-  const handleSaveNewMaterial = async () => {
-    try {
-      const materialData = {
-        name: newMaterial.name,
-        description: newMaterial.description,
-        unit: newMaterial.unit,
-        price: Math.round(parseFloat(newMaterial.price) * 100), // Convert to cents
-        supplier: newMaterial.supplier,
-        category: 'Materials',
-        userId: 1 // You might want to get this from auth context
-      };
-
-      const response = await fetch('/api/user-materials', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(materialData),
-      });
-
-      if (response.ok) {
-        // Reset form
-        setNewMaterial({
-          name: '',
-          description: '',
-          unit: '',
-          price: '',
-          supplier: ''
-        });
-        setShowAddMaterialDialog(false);
-        
-        toast({
-          title: "Material saved",
-          description: "New material has been added to your inventory.",
-        });
-      } else {
-        throw new Error('Failed to save material');
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save material. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
 
   // Tipos de proyecto disponibles
   const projectTypes = [
@@ -869,6 +422,7 @@ export default function EstimateGenerator() {
     switch (currentStep) {
       case 'client':
         return (
+          
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -1244,28 +798,10 @@ export default function EstimateGenerator() {
                   </div>
 
                   <div className="flex justify-end">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button>
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add Item
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setShowMaterialSearchDialog(true)}>
-                          <Search className="h-4 w-4 mr-2" />
-                          Search Inventory
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setShowAddMaterialDialog(true)}>
-                          <FileText className="h-4 w-4 mr-2" />
-                          Add New Material
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Sparkles className="h-4 w-4 mr-2" />
-                          Add Material with AI
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <Button onClick={addItem}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Item
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -1434,7 +970,6 @@ export default function EstimateGenerator() {
   };
 
   return (
-    <>
     <div className="flex h-screen bg-gray-50">
       {renderSidebar()}
       
@@ -1702,36 +1237,10 @@ export default function EstimateGenerator() {
                                 No items added yet. Click below to add materials or labor.
                               </p>
 
-                              {/* Three new buttons to replace the single Add Item button */}
-                              <div className="grid grid-cols-1 gap-3">
-                                <Button 
-                                  variant="outline" 
-                                  className="w-full"
-                                  onClick={() => setShowInventoryDialog(true)}
-                                >
-                                  <Package className="mr-2 h-4 w-4" />
-                                  Search Inventory
-                                </Button>
-                                
-                                <Button 
-                                  variant="outline" 
-                                  className="w-full"
-                                  onClick={() => setShowAddMaterialDialog(true)}
-                                >
-                                  <Plus className="mr-2 h-4 w-4" />
-                                  Add New Material
-                                </Button>
-                                
-                                <Button 
-                                  variant="outline" 
-                                  className="w-full"
-                                  disabled
-                                >
-                                  <Sparkles className="mr-2 h-4 w-4" />
-                                  Get Material with AI
-                                  <Badge variant="secondary" className="ml-2">Coming Soon</Badge>
-                                </Button>
-                              </div>
+                              <Button variant="outline" className="w-full">
+                                <Plus className="mr-2 h-4 w-4" />
+                                Add Item
+                              </Button>
 
                               <div className="border rounded-md p-4 mt-6 bg-muted/50">
                                 <div className="flex justify-between items-center mb-2">
@@ -1830,206 +1339,6 @@ export default function EstimateGenerator() {
           </div>
         </div>
       </div>
-
-      {/* Dialog for Search Inventory */}
-      <Dialog open={showInventoryDialog} onOpenChange={setShowInventoryDialog}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Search Inventory</DialogTitle>
-            <p className="text-sm text-muted-foreground">
-              Select materials from your inventory to add to the estimate
-            </p>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            {inventoryMaterials.length === 0 ? (
-              <div className="text-center py-8">
-                <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">No materials in inventory</h3>
-                <p className="text-muted-foreground mb-4">
-                  Add some materials to your inventory first to use this feature.
-                </p>
-                <Button onClick={() => {
-                  setShowInventoryDialog(false);
-                  setShowAddMaterialDialog(true);
-                }}>
-                  Add Your First Material
-                </Button>
-              </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {inventoryMaterials.map((material: any) => (
-                <Card key={material.id} className="cursor-pointer hover:shadow-md transition-shadow">
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-medium">{material.name}</h4>
-                      <Badge variant="secondary">{material.category}</Badge>
-                    </div>
-                    
-                    {material.description && (
-                      <p className="text-sm text-muted-foreground mb-2">
-                        {material.description}
-                      </p>
-                    )}
-                    
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground">
-                        Unit: {material.unit}
-                      </span>
-                      <span className="font-medium">
-                        ${(material.price / 100).toFixed(2)}
-                      </span>
-                    </div>
-                    
-                    {material.supplier && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Supplier: {material.supplier}
-                      </p>
-                    )}
-                    
-                    <Button 
-                      size="sm" 
-                      className="w-full mt-3"
-                      onClick={() => handleAddMaterialFromInventory(material)}
-                    >
-                      Add to Estimate
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
-
-    {/* Dialog for Add New Material */}
-    <Dialog open={showAddMaterialDialog} onOpenChange={setShowAddMaterialDialog}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Add New Material</DialogTitle>
-          <p className="text-sm text-muted-foreground">
-            Add a new material to your inventory
-          </p>
-        </DialogHeader>
-        
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="material-name">Item Name</Label>
-            <Input
-              id="material-name"
-              value={newMaterial.name}
-              onChange={(e) => setNewMaterial(prev => ({ ...prev, name: e.target.value }))}
-              placeholder="e.g., Wood Post 4x4x8"
-            />
-          </div>
-          
-          <div>
-            <Label htmlFor="material-description">Description</Label>
-            <Textarea
-              id="material-description"
-              value={newMaterial.description}
-              onChange={(e) => setNewMaterial(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="Optional description of the material"
-              rows={2}
-            />
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="material-unit">Price Unit</Label>
-              <Input
-                id="material-unit"
-                value={newMaterial.unit}
-                onChange={(e) => setNewMaterial(prev => ({ ...prev, unit: e.target.value }))}
-                placeholder="e.g., piece, sq ft, gallon"
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="material-price">Price ($)</Label>
-              <Input
-                id="material-price"
-                type="number"
-                step="0.01"
-                value={newMaterial.price}
-                onChange={(e) => setNewMaterial(prev => ({ ...prev, price: e.target.value }))}
-                placeholder="0.00"
-              />
-            </div>
-          </div>
-          
-          <div>
-            <Label htmlFor="material-supplier">Supplier</Label>
-            <Input
-              id="material-supplier"
-              value={newMaterial.supplier}
-              onChange={(e) => setNewMaterial(prev => ({ ...prev, supplier: e.target.value }))}
-              placeholder="e.g., Home Depot, Lowes"
-            />
-          </div>
-        </div>
-        
-        <DialogFooter>
-          <Button 
-            variant="outline" 
-            onClick={() => setShowAddMaterialDialog(false)}
-          >
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleSaveNewMaterial}
-            disabled={!newMaterial.name || !newMaterial.unit || !newMaterial.price}
-          >
-            Save Material
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-
-    {/* Material Search Dialog */}
-    <Dialog open={showMaterialSearchDialog} onOpenChange={setShowMaterialSearchDialog}>
-      <DialogContent className="max-w-3xl">
-        <DialogHeader>
-          <DialogTitle>Search Materials</DialogTitle>
-          <DialogDescription>
-            Search your inventory for materials to add to this estimate
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="py-4">
-          <Input 
-            placeholder="Search materials..."
-            className="mb-4"
-          />
-          
-          <div className="max-h-[400px] overflow-y-auto">
-            {/* This would be populated with your actual material data */}
-            <div className="text-center py-10 text-muted-foreground">
-              <Package className="mx-auto h-12 w-12 mb-4 opacity-50" />
-              <p>No materials found in your inventory</p>
-              <Button 
-                variant="outline" 
-                className="mt-4"
-                onClick={() => {
-                  setShowMaterialSearchDialog(false);
-                  setShowAddMaterialDialog(true);
-                }}
-              >
-                Add New Material
-              </Button>
-            </div>
-          </div>
-        </div>
-        
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setShowMaterialSearchDialog(false)}>
-            Cancel
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
     </div>
-    </>
   );
 }
