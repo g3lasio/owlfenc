@@ -7,7 +7,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
 import { 
   Calculator, 
   FileText, 
@@ -26,7 +28,9 @@ import {
   PlusCircle,
   Edit3,
   Target,
-  Calendar
+  Calendar,
+  Search,
+  Users
 } from "lucide-react";
 
 // Interfaces para el nuevo sistema
@@ -81,6 +85,8 @@ export default function EstimateGenerator() {
   
   // Estados principales
   const [currentStep, setCurrentStep] = useState<'client' | 'project' | 'items' | 'review'>('client');
+  const [showClientDialog, setShowClientDialog] = useState(false);
+  const [clientSearch, setClientSearch] = useState('');
   const [estimate, setEstimate] = useState<EstimateData>({
     estimateNumber: `EST-${Date.now()}`,
     clientName: '',
@@ -103,6 +109,12 @@ export default function EstimateGenerator() {
     internalNotes: ''
   });
   
+  // Query para obtener clientes existentes
+  const { data: clients = [] } = useQuery({
+    queryKey: ['/api/clients'],
+    enabled: showClientDialog
+  });
+
   // Estados de UI
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -203,6 +215,31 @@ export default function EstimateGenerator() {
       )
     }));
   };
+
+  // Función para cargar un cliente existente
+  const loadExistingClient = (client: any) => {
+    setEstimate(prev => ({
+      ...prev,
+      clientName: client.name || '',
+      clientEmail: client.email || '',
+      clientPhone: client.phone || '',
+      clientAddress: client.address || ''
+    }));
+    
+    setShowClientDialog(false);
+    
+    toast({
+      title: "Cliente Cargado",
+      description: `Información de ${client.name} cargada exitosamente`
+    });
+  };
+
+  // Filtrar clientes por búsqueda
+  const filteredClients = clients.filter((client: any) =>
+    client.name?.toLowerCase().includes(clientSearch.toLowerCase()) ||
+    client.email?.toLowerCase().includes(clientSearch.toLowerCase()) ||
+    client.phone?.includes(clientSearch)
+  );
 
   // Funciones de navegación
   const goToStep = (step: typeof currentStep) => {
@@ -342,10 +379,68 @@ export default function EstimateGenerator() {
         return (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Client Information
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Client Information
+                </CardTitle>
+                
+                <Dialog open={showClientDialog} onOpenChange={setShowClientDialog}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      <span>Load Existing Client</span>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle>Select Existing Client</DialogTitle>
+                    </DialogHeader>
+                    
+                    <div className="space-y-4">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Input
+                          placeholder="Search by name, email or phone..."
+                          value={clientSearch}
+                          onChange={(e) => setClientSearch(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                      
+                      <div className="max-h-96 overflow-y-auto space-y-2">
+                        {filteredClients.length > 0 ? (
+                          filteredClients.map((client: any) => (
+                            <div 
+                              key={client.id}
+                              onClick={() => loadExistingClient(client)}
+                              className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                            >
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <h3 className="font-medium text-gray-900">{client.name}</h3>
+                                  <p className="text-sm text-gray-600">{client.email}</p>
+                                  <p className="text-sm text-gray-600">{client.phone}</p>
+                                  {client.address && (
+                                    <p className="text-sm text-gray-500 mt-1">{client.address}</p>
+                                  )}
+                                </div>
+                                <Button variant="ghost" size="sm">
+                                  Select
+                                </Button>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-center py-8 text-gray-500">
+                            {clientSearch ? 'No clients found matching your search' : 'No clients available'}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
