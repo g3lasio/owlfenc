@@ -1484,19 +1484,19 @@ export default function EstimateGenerator() {
           
           <div className="space-y-4">
             {inventoryMaterials.length === 0 ? (
-            <div className="text-center py-8">
-              <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No materials in inventory</h3>
-              <p className="text-muted-foreground mb-4">
-                Add some materials to your inventory first to use this feature.
-              </p>
-              <Button onClick={() => {
-                setShowInventoryDialog(false);
-                setShowAddMaterialDialog(true);
-              }}>
-                Add Your First Material
-              </Button>
-            </div>
+              <div className="text-center py-8">
+                <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">No materials in inventory</h3>
+                <p className="text-muted-foreground mb-4">
+                  Add some materials to your inventory first to use this feature.
+                </p>
+                <Button onClick={() => {
+                  setShowInventoryDialog(false);
+                  setShowAddMaterialDialog(true);
+                }}>
+                  Add Your First Material
+                </Button>
+              </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {inventoryMaterials.map((material: any) => (
