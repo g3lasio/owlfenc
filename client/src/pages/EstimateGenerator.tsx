@@ -1471,20 +1471,19 @@ export default function EstimateGenerator() {
           </div>
         </div>
       </div>
-    </div>
 
-    {/* Dialog for Search Inventory */}
-    <Dialog open={showInventoryDialog} onOpenChange={setShowInventoryDialog}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Search Inventory</DialogTitle>
-          <p className="text-sm text-muted-foreground">
-            Select materials from your inventory to add to the estimate
-          </p>
-        </DialogHeader>
-        
-        <div className="space-y-4">
-          {inventoryMaterials.length === 0 ? (
+      {/* Dialog for Search Inventory */}
+      <Dialog open={showInventoryDialog} onOpenChange={setShowInventoryDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Search Inventory</DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              Select materials from your inventory to add to the estimate
+            </p>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {inventoryMaterials.length === 0 ? (
             <div className="text-center py-8">
               <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">No materials in inventory</h3>
