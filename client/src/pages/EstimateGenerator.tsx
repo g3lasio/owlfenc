@@ -1,54 +1,15 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
-import { 
-  Calculator, 
-  FileText, 
-  User, 
-  MapPin, 
-  Plus, 
-  Trash2, 
-  Save, 
-  Send, 
-  Eye,
-  Download,
-  Building,
-  Clock,
-  DollarSign,
-  Wrench,
-  PlusCircle,
-  Edit3,
-  Target,
-  Calendar,
-  Search,
-  Users,
-  Sparkles,
-  Package
-} from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  SelectGroup,
-  SelectLabel,
-} from '@/components/ui/select';
-import {
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { Calculator, Save } from "lucide-react";
+
+// Importar los nuevos componentes refactorizados
+import { ClientInformationStep } from "@/components/estimate/ClientInformationStep";
+import { ProjectDetailsStep } from "@/components/estimate/ProjectDetailsStep";
+import { MaterialsAndCostsStep } from "@/components/estimate/MaterialsAndCostsStep";
+import { ReviewAndSendStep } from "@/components/estimate/ReviewAndSendStep";
+import { EstimateSidebar } from "@/components/estimate/EstimateSidebar";
 import { ProjectDescriptionEnhancer } from '@/components/ui/project-description-enhancer';
 import { X, Phone, Mail, Check } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
