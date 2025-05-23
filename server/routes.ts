@@ -281,7 +281,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log('=== NEW AI ENHANCE ENDPOINT ===');
     console.log('📥 Full request received');
     console.log('📝 Body:', JSON.stringify(req.body, null, 2));
-    console.log('📋 Headers:', JSON.stringify(req.headers, null, 2));
     
     try {
       const body = req.body;
@@ -300,6 +299,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('🚀 Starting OpenAI enhancement...');
 
+      // Configurar OpenAI si aún no está configurado
+      if (!openai) {
+        console.error('❌ OpenAI no está configurado correctamente');
+        return res.status(500).json({ error: 'OpenAI configuration error' });
+      }
+
       // Create a professional prompt for project description enhancement
       const prompt = `Transform this construction project description into a highly professional, detailed specification in English:
 
@@ -315,23 +320,35 @@ Create a comprehensive professional description with:
 Output in English regardless of input language. Make it suitable for contracts and estimates.`;
 
       // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          { role: "system", content: "You are a professional construction project manager. Transform descriptions into detailed, professional English specifications." },
-          { role: "user", content: prompt }
-        ],
-        temperature: 0.7,
-        max_tokens: 1000,
-      });
+      try {
+        const response = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            { role: "system", content: "You are a professional construction project manager. Transform descriptions into detailed, professional English specifications." },
+            { role: "user", content: prompt }
+          ],
+          temperature: 0.7,
+          max_tokens: 1000,
+        });
 
-      const enhancedDescription = response.choices[0].message.content || "Unable to enhance description";
+        if (!response.choices || !response.choices[0] || !response.choices[0].message || !response.choices[0].message.content) {
+          throw new Error('Invalid OpenAI response format');
+        }
 
-      console.log('✅ OpenAI enhancement completed successfully');
-      console.log('📏 Enhanced description length:', enhancedDescription.length);
+        const enhancedDescription = response.choices[0].message.content;
+
+        console.log('✅ OpenAI enhancement completed successfully');
+        console.log('📏 Enhanced description length:', enhancedDescription.length);
+      } catch (openAiError) {
+        console.error('❌ Error during OpenAI processing:', openAiError);
+        return res.status(500).json({ 
+          error: 'Failed to process with AI service', 
+          message: openAiError.message || 'Unknown AI processing error'
+        });
+      }
 
       res.json({ 
-        enhancedDescription,
+        enhancedDescriptionancedDescription,
         originalText: text,
         success: true
       });

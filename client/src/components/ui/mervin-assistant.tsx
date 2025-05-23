@@ -1,120 +1,81 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Loader2, Wand2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-
-// URL de la imagen de Mervin (imagen optimizada y verificada)
-const MERVIN_IMAGE_URL = 'https://i.postimg.cc/jd0cwYWP/Chat-GPT-Image-May-10-2025-05-35-38-PM.png';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Wand } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import axios from "axios";
 
 interface MervinAssistantProps {
   originalText: string;
   onTextEnhanced: (enhancedText: string) => void;
-  className?: string;
   projectType?: string;
 }
 
-/**
- * Componente MervinAssistant
- * 
- * Proporciona funcionalidad para mejorar textos usando OpenAI
- * Muestra un botón con el icono de Mervin que al hacer clic procesa
- * y mejora el texto proporcionado
- */
-export function MervinAssistant({ 
-  originalText, 
-  onTextEnhanced, 
-  className = '',
-  projectType = 'general'
+export function MervinAssistant({
+  originalText,
+  onTextEnhanced,
+  projectType = "general"
 }: MervinAssistantProps) {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isEnhancing, setIsEnhancing] = useState(false);
   const { toast } = useToast();
-  
-  const handleEnhance = async () => {
-    if (!originalText.trim()) {
+
+  const enhanceText = async () => {
+    // Validación básica
+    if (!originalText || originalText.trim().length < 5) {
       toast({
-        title: 'Empty Description',
-        description: 'Please enter a project description to enhance it.',
-        variant: 'destructive'
+        title: "Texto muy corto",
+        description: "Por favor, introduce un texto más detallado para mejorar.",
+        variant: "destructive",
       });
       return;
     }
-    
-    setIsLoading(true);
-    
+
+    setIsEnhancing(true);
+
     try {
       console.log("Starting professional description enhancement with AI...");
-      
-      // NEW: Using OpenAI GPT-4o for professional project description enhancement
-      const response = await fetch('/api/ai-enhance', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          originalText: originalText.trim(),
-          projectType: projectType || 'general construction'
-        }),
+
+      // Usar el endpoint correcto y el formato adecuado para el backend
+      const response = await axios.post("/api/ai-enhance", {
+        originalText: originalText,
+        projectType: projectType
+      }, {
+        timeout: 30000 // 30 segundos de timeout
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      if (response.data && response.data.enhancedDescription) {
+        // Aplicar el texto mejorado
+        onTextEnhanced(response.data.enhancedDescription);
 
-      const data = await response.json();
-      
-      if (data.enhancedDescription) {
-        console.log("Professional description enhanced successfully");
-        
-        // Update the text in the parent component
-        onTextEnhanced(data.enhancedDescription);
-        
         toast({
-          title: 'Description Enhanced Successfully',
-          description: 'Your project description has been professionally enhanced and translated to English.',
+          title: "¡Descripción mejorada!",
+          description: "Se ha aplicado una versión mejorada y profesional de tu descripción.",
         });
       } else {
-        throw new Error('No enhanced description received');
+        throw new Error("Formato de respuesta incorrecto");
       }
     } catch (error) {
-      console.error('Error enhancing description with AI:', error);
-      
+      console.error("Error al mejorar la descripción:", error);
+
       toast({
-        title: 'Enhancement Error',
-        description: 'Could not enhance the description. Please check your connection and try again.',
-        variant: 'destructive'
+        title: "Enhancement Error",
+        description: "Could not enhance the description. Please check your connection and try again.",
+        variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsEnhancing(false);
     }
   };
-  
+
   return (
-    <TooltipProvider delayDuration={300}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className={`h-7 w-7 p-0.5 rounded-full overflow-hidden shadow-sm hover:shadow focus:ring-2 focus:ring-offset-1 focus:ring-primary-400 ${className}`}
-            onClick={handleEnhance}
-            disabled={isLoading || !originalText.trim()}
-            aria-label="Mejorar descripción con Mervin AI"
-          >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin text-primary" />
-            ) : (
-              <div className="relative w-full h-full flex items-center justify-center">
-                <Wand2 className="h-4 w-4 text-primary" />
-              </div>
-            )}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="top" className="bg-primary text-primary-foreground">
-          <p className="text-xs">Mejorar descripción profesionalmente</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={enhanceText}
+      disabled={isEnhancing || !originalText}
+      className="flex items-center gap-1 text-xs py-1 h-7 px-2"
+    >
+      <Wand className="h-3 w-3" />
+      {isEnhancing ? "Mejorando..." : "Mejorar con IA"}
+    </Button>
   );
 }
