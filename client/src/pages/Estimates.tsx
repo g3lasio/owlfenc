@@ -241,11 +241,17 @@ export default function Estimates() {
       const filtered = clients.filter(client => 
         client.name.toLowerCase().includes(term) || 
         client.email?.toLowerCase().includes(term) || 
-        client.phone?.includes(term)
+        client.phone?.includes(term) ||
+        client.mobilePhone?.includes(term)
       );
       setFilteredClients(filtered);
     }
   }, [searchClientTerm, clients]);
+
+  // Initialize filtered clients when clients load
+  useEffect(() => {
+    setFilteredClients(clients);
+  }, [clients]);
   
   // Filter materials when search term changes
   useEffect(() => {
@@ -1744,12 +1750,26 @@ export default function Estimates() {
           </DialogHeader>
           
           <div>
-            <Input
-              placeholder="Search by name, email or phone..."
-              value={searchClientTerm}
-              onChange={(e) => setSearchClientTerm(e.target.value)}
-              className="mb-3"
-            />
+            <div className="flex gap-2 mb-3">
+              <Input
+                placeholder="Search by name, email or phone..."
+                value={searchClientTerm}
+                onChange={(e) => setSearchClientTerm(e.target.value)}
+                className="flex-1"
+              />
+              <Button 
+                size="sm" 
+                onClick={() => {
+                  setShowClientSearchDialog(false);
+                  // Navigate to add client page or open add client dialog
+                  window.open('/clients', '_blank');
+                }}
+                className="h-9 whitespace-nowrap"
+              >
+                <PlusCircle className="h-4 w-4 mr-1" />
+                Add New
+              </Button>
+            </div>
             
             <div className="max-h-[300px] overflow-y-auto border rounded-md">
               {filteredClients.length > 0 ? (
