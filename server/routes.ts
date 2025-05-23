@@ -272,31 +272,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setupTemplateServing(app);
   // Use payment routes
   app.use('/api', paymentRoutes);
-  // Professional project description enhancement with Anthropic Claude
+  // Professional project description enhancement with OpenAI GPT-4
   app.post("/api/enhance-description", async (req: Request, res: Response) => {
     try {
-      const { originalText, projectType } = req.body;
+      const { originalText, projectType, description } = req.body;
+      
+      // Accept both 'originalText' and 'description' for compatibility
+      const textToEnhance = originalText || description;
 
-      if (!originalText || originalText.trim() === '') {
+      if (!textToEnhance || textToEnhance.trim() === '') {
         return res.status(400).json({ 
-          error: 'Original text is required' 
+          error: 'Text is required for enhancement' 
         });
       }
 
-      console.log('🚀 Starting professional description enhancement...');
-      console.log('Original text:', originalText);
+      console.log('🚀 Starting professional description enhancement with OpenAI...');
+      console.log('Original text:', textToEnhance);
       console.log('Project type:', projectType);
-
-      // Import Anthropic here to avoid issues
-      const Anthropic = (await import('@anthropic-ai/sdk')).default;
-      
-      if (!process.env.ANTHROPIC_API_KEY) {
-        throw new Error('ANTHROPIC_API_KEY not configured');
-      }
-
-      const anthropic = new Anthropic({
-        apiKey: process.env.ANTHROPIC_API_KEY,
-      });
 
       // Create a professional prompt for project description enhancement
       const enhancementPrompt = `You are a professional construction project manager and technical writer. Your task is to transform basic project descriptions into highly professional, detailed, and comprehensive project specifications.
@@ -308,7 +300,7 @@ CRITICAL REQUIREMENTS:
 4. Structure the output in clear sections with professional terminology
 5. Include technical specifications, quality standards, and process details
 
-INPUT TEXT: "${originalText}"
+INPUT TEXT: "${textToEnhance}"
 PROJECT TYPE: "${projectType || 'general construction'}"
 
 Transform this into a comprehensive professional project description in ENGLISH that includes:
@@ -339,30 +331,31 @@ Transform this into a comprehensive professional project description in ENGLISH 
 
 Make it sound highly professional, detailed, and suitable for a formal estimate or contract. Use construction industry terminology and maintain a professional tone throughout.`;
 
-      // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
-      const response = await anthropic.messages.create({
-        model: 'claude-3-7-sonnet-20250219',
+      // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: "You are a professional construction project manager and technical writer specializing in creating detailed, professional project specifications." },
+          { role: "user", content: enhancementPrompt }
+        ],
+        temperature: 0.7,
         max_tokens: 1000,
-        messages: [{
-          role: 'user',
-          content: enhancementPrompt
-        }]
       });
 
-      const enhancedDescription = response.content[0].type === 'text' ? response.content[0].text : 'Unable to enhance description';
+      const enhancedDescription = response.choices[0].message.content || "Unable to enhance description";
 
-      console.log('✅ Professional description enhanced successfully');
+      console.log('✅ Professional description enhanced successfully with OpenAI');
       console.log('Enhanced description length:', enhancedDescription.length);
 
       res.json({ 
         enhancedDescription,
-        originalText,
+        originalText: textToEnhance,
         projectType,
         success: true
       });
 
     } catch (error: any) {
-      console.error('❌ Error enhancing description:', error);
+      console.error('❌ Error enhancing description with OpenAI:', error);
       res.status(500).json({ 
         error: 'Failed to enhance description',
         message: error.message || 'Unknown error occurred'
