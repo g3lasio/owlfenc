@@ -275,14 +275,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Professional project description enhancement with OpenAI GPT-4
   app.post("/api/enhance-description", async (req: Request, res: Response) => {
     try {
+      console.log('🔍 Debugging request body:', JSON.stringify(req.body, null, 2));
+      
       const { originalText, projectType, description } = req.body;
       
       // Accept both 'originalText' and 'description' for compatibility
       const textToEnhance = originalText || description;
 
+      console.log('📝 Text to enhance:', textToEnhance);
+      console.log('🏗️ Project type:', projectType);
+
       if (!textToEnhance || textToEnhance.trim() === '') {
+        console.log('❌ No valid text provided');
         return res.status(400).json({ 
-          error: 'Text is required for enhancement' 
+          error: 'No se proporcionó una descripción válida para mejorar',
+          debug: {
+            originalText: originalText,
+            description: description,
+            receivedBody: req.body
+          }
         });
       }
 
