@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { clientStorage } from '../DatabaseStorageClient';
-import { insertClientSchema } from '@shared/schema';
+import { insertClientSchema, clients } from '@shared/schema';
+import { db } from '../db';
 
 const router = Router();
 
@@ -16,26 +17,31 @@ const updateClientSchema = insertClientSchema.partial();
 // Obtener todos los clientes de un usuario
 router.get('/', async (req, res) => {
   try {
-    // En modo desarrollo, usar un userId por defecto si no se proporciona
-    let userId = 1; // Usuario por defecto para desarrollo
+    console.log('=== INICIANDO CARGA DE CLIENTES ===');
+    console.log('Query params recibidos:', req.query);
     
-    // Si se proporciona userId en la query, usarlo
-    if (req.query.userId) {
-      try {
-        const parsed = getUserClientsSchema.parse(req.query);
-        userId = parsed.userId;
-      } catch (parseError) {
-        console.log('Error parsing userId, usando valor por defecto:', parseError);
-      }
-    }
+    // Para modo desarrollo, obtener clientes de todos los usuarios
+    console.log('Obteniendo clientes disponibles...');
+    // Usar una consulta directa para obtener todos los clientes
+    const allClients = await db.select().from(clients).limit(100);
+    console.log(`✅ Clientes encontrados en total: ${allClients.length}`);
     
-    console.log('Obteniendo clientes para userId:', userId);
-    const clients = await clientStorage.getClientsByUserId(userId);
-    console.log('Clientes encontrados:', clients.length);
-    res.json(clients);
+    // Mapear los datos para asegurar compatibilidad
+    const formattedClients = allClients.map(client => ({
+      id: client.id,
+      name: client.name || 'Sin nombre',
+      email: client.email || '',
+      phone: client.phone || '',
+      address: client.address || '',
+      company: client.company || '',
+      // Agregar más campos según tu estructura de datos
+    }));
+    
+    console.log('Primeros 3 clientes formateados:', formattedClients.slice(0, 3));
+    res.json(formattedClients);
   } catch (error) {
-    console.error('Error al obtener clientes:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    console.error('❌ Error al obtener clientes:', error);
+    res.status(500).json({ error: 'Error interno del servidor', details: error.message });
   }
 });
 

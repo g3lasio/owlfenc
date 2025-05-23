@@ -408,24 +408,61 @@ export default function EstimateGenerator() {
                         />
                       </div>
                       
+                      <div className="text-sm text-gray-600 mb-2">
+                        {clients.length > 0 && (
+                          <span>
+                            Showing {filteredClients.length} of {clients.length} clients
+                          </span>
+                        )}
+                      </div>
+                      
                       <div className="max-h-96 overflow-y-auto space-y-2">
-                        {filteredClients.length > 0 ? (
+                        {clients.length === 0 ? (
+                          <div className="text-center py-8 text-gray-500">
+                            <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                            <p>Loading clients...</p>
+                          </div>
+                        ) : filteredClients.length > 0 ? (
                           filteredClients.map((client: any) => (
                             <div 
                               key={client.id}
                               onClick={() => loadExistingClient(client)}
-                              className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                              className="p-3 border rounded-lg hover:bg-blue-50 cursor-pointer transition-colors group"
                             >
                               <div className="flex justify-between items-start">
-                                <div>
-                                  <h3 className="font-medium text-gray-900">{client.name}</h3>
-                                  <p className="text-sm text-gray-600">{client.email}</p>
-                                  <p className="text-sm text-gray-600">{client.phone}</p>
-                                  {client.address && (
-                                    <p className="text-sm text-gray-500 mt-1">{client.address}</p>
-                                  )}
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <h3 className="font-medium text-gray-900 group-hover:text-blue-700">
+                                      {client.name || 'Unnamed Client'}
+                                    </h3>
+                                    {client.company && (
+                                      <Badge variant="secondary" className="text-xs">
+                                        {client.company}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <div className="space-y-1">
+                                    {client.email && (
+                                      <p className="text-sm text-gray-600 flex items-center gap-1">
+                                        <span className="text-gray-400">📧</span>
+                                        {client.email}
+                                      </p>
+                                    )}
+                                    {client.phone && (
+                                      <p className="text-sm text-gray-600 flex items-center gap-1">
+                                        <span className="text-gray-400">📞</span>
+                                        {client.phone}
+                                      </p>
+                                    )}
+                                    {client.address && (
+                                      <p className="text-sm text-gray-500 flex items-center gap-1">
+                                        <span className="text-gray-400">📍</span>
+                                        {client.address}
+                                      </p>
+                                    )}
+                                  </div>
                                 </div>
-                                <Button variant="ghost" size="sm">
+                                <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
                                   Select
                                 </Button>
                               </div>
@@ -433,7 +470,9 @@ export default function EstimateGenerator() {
                           ))
                         ) : (
                           <div className="text-center py-8 text-gray-500">
-                            {clientSearch ? 'No clients found matching your search' : 'No clients available'}
+                            <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                            <p>No clients found matching "{clientSearch}"</p>
+                            <p className="text-sm mt-1">Try searching by name, email, or phone</p>
                           </div>
                         )}
                       </div>
