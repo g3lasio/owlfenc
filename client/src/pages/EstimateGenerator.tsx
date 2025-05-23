@@ -441,8 +441,8 @@ export default function EstimateGenerator() {
                   />
                   <div className="absolute top-2 right-2">
                     <ProjectDescriptionEnhancer
-                      currentDescription={estimate.projectDescription}
-                      onEnhanced={(enhancedDescription) => 
+                      originalText={estimate.projectDescription}
+                      onTextEnhanced={(enhancedDescription) => 
                         setEstimate(prev => ({ ...prev, projectDescription: enhancedDescription }))
                       }
                     />
