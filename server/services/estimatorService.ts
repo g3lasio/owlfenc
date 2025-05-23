@@ -1061,56 +1061,21 @@ export class EstimatorService {
       Object.entries(materials).forEach(([key, value]: [string, any]) => {
         if (key === 'roofing') {
           html += `
-            <tr>
-              <td>Roofing Material (${value.type || 'Standard'})</td>
-              <td>${value.type || 'Standard roofing material'}</td>
-              <td>${value.areaSqFt || 0} sq ft</td>
-              <td>${this.formatCurrency(value.costPerSqFt || 0)}</td>
-              <td>${this.formatCurrency(value.totalCost || 0)}</td>
-            </tr>
           `;
         } else if (key === 'posts') {
           html += `
-            <tr>
-              <td>Posts (${value.type || 'Standard'})</td>
-              <td>Structural posts for installation</td>
-              <td>${value.quantity || 0}</td>
-              <td>${this.formatCurrency(value.costPerUnit || 0)}</td>
-              <td>${this.formatCurrency(value.totalCost || 0)}</td>
-            </tr>
           `;
         } else if (key === 'rails') {
           html += `
-            <tr>
-              <td>Rails</td>
-              <td>Horizontal support rails</td>
-              <td>${value.quantity || 0}</td>
-              <td>${this.formatCurrency(value.costPerUnit || 0)}</td>
-              <td>${this.formatCurrency(value.totalCost || 0)}</td>
-            </tr>
           `;
         } else if (key === 'pickets' || key === 'panels' || key === 'mesh') {
           const itemName = key === 'pickets' ? 'Pickets' : key === 'panels' ? 'Panels' : 'Mesh';
           const description = key === 'pickets' ? 'Vertical fence pickets' : 
                             key === 'panels' ? 'Fence panels' : 'Wire mesh material';
           html += `
-            <tr>
-              <td>${itemName}</td>
-              <td>${description}</td>
-              <td>${value.quantity || value.feet || 0}</td>
-              <td>${this.formatCurrency(value.costPerUnit || value.costPerFoot || 0)}</td>
-              <td>${this.formatCurrency(value.totalCost || 0)}</td>
-            </tr>
           `;
         } else if (key === 'concrete') {
           html += `
-            <tr>
-              <td>Concrete</td>
-              <td>Concrete mix for post setting</td>
-              <td>${value.bags || 0} bags</td>
-              <td>${this.formatCurrency(value.costPerBag || 0)}</td>
-              <td>${this.formatCurrency(value.totalCost || 0)}</td>
-            </tr>
           `;
         } else if (key === 'underlayment' || key === 'flashing' || key === 'hardware') {
           const itemName = key === 'underlayment' ? 'Underlayment' : 
@@ -1118,13 +1083,6 @@ export class EstimatorService {
           const description = key === 'underlayment' ? 'Protective underlayment material' :
                             key === 'flashing' ? 'Weather protection flashing' : 'Installation hardware';
           html += `
-            <tr>
-              <td>${itemName}</td>
-              <td>${description}</td>
-              <td>${value.areaSqFt || value.quantity || 0}</td>
-              <td>${this.formatCurrency(value.costPerSqFt || value.costPerUnit || 0)}</td>
-              <td>${this.formatCurrency(value.totalCost || 0)}</td>
-            </tr>
           `;
         }
       });
@@ -1134,13 +1092,6 @@ export class EstimatorService {
     if (estimateData.rulesBasedEstimate?.labor) {
       const labor = estimateData.rulesBasedEstimate.labor;
       html += `
-        <tr>
-          <td>Labor</td>
-          <td>Professional installation service</td>
-          <td>${labor.hours || 0} hours</td>
-          <td>${this.formatCurrency(labor.hourlyRate || 0)}</td>
-          <td>${this.formatCurrency(labor.totalCost || 0)}</td>
-        </tr>
       `;
     }
 
@@ -1176,13 +1127,6 @@ export class EstimatorService {
         }
 
         html += `
-          <tr>
-            <td>${itemName}</td>
-            <td>${description}</td>
-            <td>1</td>
-            <td>${this.formatCurrency(value)}</td>
-            <td>${this.formatCurrency(value)}</td>
-          </tr>
         `;
       });
     }
@@ -1190,27 +1134,8 @@ export class EstimatorService {
     return html;
   }
 }
-      <td>[SUBTOTAL]</td>
-    </tr>
-    <tr>
-      <td colspan="4" style="text-align: right;"><strong>Impuesto ([TAX_RATE]):</strong></td>
-      <td>[TAX_AMOUNT]</td>
-    </tr>
-    <tr>
-      <td colspan="4" style="text-align: right;"><strong>TOTAL:</strong></td>
-      <td>[TOTAL]</td>
-    </tr>
-  </table>
   
-  <div class="completion-info">
-    <p><strong>Tiempo estimado de finalización:</strong> [COMPLETION_TIME] días</p>
-  </div>
   
-  <div class="footer">
-    <p>Este presupuesto es válido por 30 días desde la fecha de emisión.</p>
-  </div>
-</body>
-</html>`;
       }
       
       return this.processTemplateWithData(templateHtml, estimateData);
@@ -1251,12 +1176,6 @@ export class EstimatorService {
         if (estimateData.costs && Array.isArray(estimateData.costs)) {
           estimateData.costs.forEach((cost: any) => {
             rows += `<tr>
-              <td>${cost.description || ''}</td>
-              <td>${cost.quantity || ''}</td>
-              <td>${cost.unit || ''}</td>
-              <td>$${cost.unitPrice ? cost.unitPrice.toFixed(2) : '0.00'}</td>
-              <td>$${cost.total ? cost.total.toFixed(2) : '0.00'}</td>
-            </tr>`;
           });
         }
         
@@ -1392,39 +1311,18 @@ export class EstimatorService {
       
       materials.forEach((material: any) => {
         html += `
-          <tr>
-            <td>${material.item}</td>
-            <td>${material.quantity}</td>
-            <td>${material.unit}</td>
-            <td>$${this.formatCurrency(material.unitPrice)}</td>
-            <td>$${this.formatCurrency(material.totalPrice)}</td>
-          </tr>
         `;
       });
       
       // Mano de obra desde AI
       const labor = estimateData.aiEstimate.labor;
       html += `
-        <tr>
-          <td>Mano de obra</td>
-          <td>${labor.hours}</td>
-          <td>hora(s)</td>
-          <td>$${this.formatCurrency(labor.ratePerHour)}</td>
-          <td>$${this.formatCurrency(labor.totalCost)}</td>
-        </tr>
       `;
       
       // Costos adicionales desde AI
       if (estimateData.aiEstimate.additionalCosts) {
         estimateData.aiEstimate.additionalCosts.forEach((cost: any) => {
           html += `
-            <tr>
-              <td>${cost.description}</td>
-              <td>1</td>
-              <td>servicio</td>
-              <td>$${this.formatCurrency(cost.cost)}</td>
-              <td>$${this.formatCurrency(cost.cost)}</td>
-            </tr>
           `;
         });
       }
@@ -1435,162 +1333,71 @@ export class EstimatorService {
       // Cercas
       if (estimate.materials.posts) {
         html += `
-          <tr>
-            <td>Postes</td>
-            <td>${estimate.materials.posts.quantity}</td>
-            <td>unidad</td>
-            <td>$${this.formatCurrency(estimate.materials.posts.costPerUnit)}</td>
-            <td>$${this.formatCurrency(estimate.materials.posts.totalCost)}</td>
-          </tr>
         `;
       }
       
       if (estimate.materials.rails) {
         html += `
-          <tr>
-            <td>Rieles</td>
-            <td>${estimate.materials.rails.quantity}</td>
-            <td>unidad</td>
-            <td>$${this.formatCurrency(estimate.materials.rails.costPerUnit)}</td>
-            <td>$${this.formatCurrency(estimate.materials.rails.totalCost)}</td>
-          </tr>
         `;
       }
       
       if (estimate.materials.pickets) {
         html += `
-          <tr>
-            <td>Tablas</td>
-            <td>${estimate.materials.pickets.quantity}</td>
-            <td>unidad</td>
-            <td>$${this.formatCurrency(estimate.materials.pickets.costPerUnit)}</td>
-            <td>$${this.formatCurrency(estimate.materials.pickets.totalCost)}</td>
-          </tr>
         `;
       }
       
       if (estimate.materials.concrete) {
         html += `
-          <tr>
-            <td>Concreto</td>
-            <td>${estimate.materials.concrete.bags}</td>
-            <td>bolsa</td>
-            <td>$${this.formatCurrency(estimate.materials.concrete.costPerBag)}</td>
-            <td>$${this.formatCurrency(estimate.materials.concrete.totalCost)}</td>
-          </tr>
         `;
       }
       
       // Techos
       if (estimate.materials.roofing) {
         html += `
-          <tr>
-            <td>Material de techo (${estimate.materials.roofing.type})</td>
-            <td>${estimate.materials.roofing.areaSqFt}</td>
-            <td>pie²</td>
-            <td>$${this.formatCurrency(estimate.materials.roofing.costPerSqFt)}</td>
-            <td>$${this.formatCurrency(estimate.materials.roofing.totalCost)}</td>
-          </tr>
         `;
       }
       
       if (estimate.materials.underlayment) {
         html += `
-          <tr>
-            <td>Membrana base</td>
-            <td>${estimate.materials.underlayment.areaSqFt}</td>
-            <td>pie²</td>
-            <td>$${this.formatCurrency(estimate.materials.underlayment.costPerSqFt)}</td>
-            <td>$${this.formatCurrency(estimate.materials.underlayment.totalCost)}</td>
-          </tr>
         `;
       }
       
       // Decks
       if (estimate.materials.decking) {
         html += `
-          <tr>
-            <td>Superficie de deck (${estimate.materials.decking.type})</td>
-            <td>${estimate.materials.decking.areaSqFt}</td>
-            <td>pie²</td>
-            <td>$${this.formatCurrency(estimate.materials.decking.costPerSqFt)}</td>
-            <td>$${this.formatCurrency(estimate.materials.decking.totalCost)}</td>
-          </tr>
         `;
       }
       
       if (estimate.materials.structure) {
         html += `
-          <tr>
-            <td>Estructura</td>
-            <td>${estimate.materials.structure.areaSqFt}</td>
-            <td>pie²</td>
-            <td>$${this.formatCurrency(estimate.materials.structure.costPerSqFt)}</td>
-            <td>$${this.formatCurrency(estimate.materials.structure.totalCost)}</td>
-          </tr>
         `;
       }
       
       // Patios
       if (estimate.materials.surface) {
         html += `
-          <tr>
-            <td>Superficie de patio (${estimate.materials.surface.type})</td>
-            <td>${estimate.materials.surface.areaSqFt}</td>
-            <td>pie²</td>
-            <td>$${this.formatCurrency(estimate.materials.surface.costPerSqFt)}</td>
-            <td>$${this.formatCurrency(estimate.materials.surface.totalCost)}</td>
-          </tr>
         `;
       }
       
       if (estimate.materials.gravel) {
         html += `
-          <tr>
-            <td>Grava base</td>
-            <td>${estimate.materials.gravel.areaSqFt}</td>
-            <td>pie²</td>
-            <td>$${this.formatCurrency(estimate.materials.gravel.costPerSqFt)}</td>
-            <td>$${this.formatCurrency(estimate.materials.gravel.totalCost)}</td>
-          </tr>
         `;
       }
       
       if (estimate.materials.sand) {
         html += `
-          <tr>
-            <td>Arena</td>
-            <td>${estimate.materials.sand.areaSqFt}</td>
-            <td>pie²</td>
-            <td>$${this.formatCurrency(estimate.materials.sand.costPerSqFt)}</td>
-            <td>$${this.formatCurrency(estimate.materials.sand.totalCost)}</td>
-          </tr>
         `;
       }
       
       // Otros materiales comunes
       if (estimate.materials.hardware) {
         html += `
-          <tr>
-            <td>Herrajes y sujetadores</td>
-            <td>${estimate.materials.hardware.areaSqFt || 1}</td>
-            <td>${estimate.materials.hardware.areaSqFt ? 'pie²' : 'conjunto'}</td>
-            <td>$${this.formatCurrency(estimate.materials.hardware.costPerSqFt || estimate.materials.hardware.totalCost)}</td>
-            <td>$${this.formatCurrency(estimate.materials.hardware.totalCost)}</td>
-          </tr>
         `;
       }
       
       // Mano de obra
       if (estimate.labor) {
         html += `
-          <tr>
-            <td>Mano de obra</td>
-            <td>${estimate.labor.hours}</td>
-            <td>hora(s)</td>
-            <td>$${this.formatCurrency(estimate.labor.hourlyRate)}</td>
-            <td>$${this.formatCurrency(estimate.labor.totalCost)}</td>
-          </tr>
         `;
       }
       
@@ -1616,13 +1423,6 @@ export class EstimatorService {
           if (key === 'drainage') description = 'Sistema de desagüe';
           
           html += `
-            <tr>
-              <td>${description}</td>
-              <td>1</td>
-              <td>servicio</td>
-              <td>$${this.formatCurrency(value as number)}</td>
-              <td>$${this.formatCurrency(value as number)}</td>
-            </tr>
           `;
         });
       }

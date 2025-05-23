@@ -26,9 +26,9 @@ const EstimatePreview: React.FC<EstimatePreviewProps> = ({
           }
           templateHtml = await response.text();
           console.log(`Universal template loaded successfully. Length: ${templateHtml.length} characters`);
-        } catch (templateError) {
+        } catch (templateError: any) {
           console.error('Error loading template:', templateError);
-          setHtml(`<div class="error">Error loading template: ${templateError.message}</div>`);
+          setHtml(`<div class="error">Error loading template: ${templateError?.message || 'Unknown error'}</div>`);
           setLoading(false);
           return;
         }
