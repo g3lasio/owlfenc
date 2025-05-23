@@ -1,131 +1,147 @@
 import React, { useEffect, useState } from 'react';
-import { loadTemplateHTML } from '../../lib/templateLoader';
-import { getTemplateHTML } from '../../lib/templateService';
 
 interface EstimatePreviewProps {
   estimateData: any;
-  templateId?: number;
   className?: string;
 }
 
 const EstimatePreview: React.FC<EstimatePreviewProps> = ({ 
   estimateData, 
-  templateId = 999001, // ID por defecto para basic template
   className = '' 
 }) => {
   const [html, setHtml] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Siempre usamos el template premium independientemente del ID
-  const getTemplateStyle = (id: number): string => {
-    return 'professional'; // Siempre usamos el estilo professional (Premium)
-  };
-
-  // Cargar el HTML de la plantilla cada vez que cambia el templateId
   useEffect(() => {
     const fetchTemplate = async () => {
       try {
         setLoading(true);
 
-        // Siempre usamos el template premium
-        console.log(`Cargando plantilla Premium (ID: ${templateId} - ignorado)`);
-
-        // Cargar el HTML de la plantilla
+        // Load the universal template HTML
         let templateHtml;
         try {
-          templateHtml = await loadTemplateHTML('professional');
-          if (templateHtml) {
-            console.log(`Plantilla Premium cargada exitosamente. Longitud: ${templateHtml.length} caracteres`);
-          } else {
-            console.error('La función loadTemplateHTML devolvió un valor nulo o vacío');
+          const response = await fetch('/src/templates/universal-estimate-template.html');
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
           }
+          templateHtml = await response.text();
+          console.log(`Universal template loaded successfully. Length: ${templateHtml.length} characters`);
         } catch (templateError) {
-          console.error('Error al cargar la plantilla:', templateError);
-          setHtml(`<div class="error">Error al cargar la plantilla: ${templateError.message}</div>`);
+          console.error('Error loading template:', templateError);
+          setHtml(`<div class="error">Error loading template: ${templateError.message}</div>`);
           setLoading(false);
           return;
         }
 
         if (!templateHtml) {
-          console.error('No se pudo cargar la plantilla HTML');
+          console.error('Could not load template HTML');
           setHtml(`
             <div class="error" style="padding: 20px; background-color: #fff1f2; border-left: 4px solid #e11d48; margin: 20px 0;">
-              <h3 style="color: #be123c; margin-top: 0;">Error al cargar la plantilla</h3>
-              <p>No se pudo cargar la plantilla Premium</p>
+              <h3 style="color: #be123c; margin-top: 0;">Error loading template</h3>
+              <p>Could not load the universal estimate template</p>
             </div>
           `);
           setLoading(false);
           return;
         }
 
-        // Aplicar los datos del estimado al HTML
+        // Apply estimate data to HTML template
         let processedHtml = templateHtml;
 
-        // Reemplazar campos básicos
+        // Create comprehensive replacement map
         const replacements: Record<string, string> = {
-          '[COMPANY_NAME]': estimateData.contractor?.name || 'Nombre de la Empresa',
-          '[COMPANY_ADDRESS]': estimateData.contractor?.address || 'Dirección de la Empresa',
-          '[COMPANY_PHONE]': estimateData.contractor?.phone || 'Teléfono',
-          '[COMPANY_EMAIL]': estimateData.contractor?.email || 'Email',
-          '[COMPANY_LICENSE]': estimateData.contractor?.license || 'Licencia',
-          '[ESTIMATE_DATE]': new Date().toLocaleDateString(),
-          '[ESTIMATE_NUMBER]': estimateData.projectId || 'N/A',
-          '[CLIENT_NAME]': estimateData.client?.name || 'Cliente',
-          '[CLIENT_ADDRESS]': estimateData.client?.address || 'Dirección',
-          '[CLIENT_CITY_STATE_ZIP]': `${estimateData.client?.city || ''} ${estimateData.client?.state || ''} ${estimateData.client?.zip || ''}`,
-          '[CLIENT_PHONE]': estimateData.client?.phone || 'Teléfono',
-          '[CLIENT_EMAIL]': estimateData.client?.email || 'Email',
-          '[PROJECT_TYPE]': `${estimateData.project?.type || ''} - ${estimateData.project?.subtype || ''}`,
-          '[PROJECT_ADDRESS]': estimateData.client?.address || '',
-          '[PROJECT_DIMENSIONS]': formatDimensions(estimateData.project?.dimensions),
-          '[PROJECT_NOTES]': estimateData.project?.notes || '',
-          '[SUBTOTAL]': formatCurrency(getSubtotal(estimateData)),
-          '[TAX_RATE]': '8.75%',
-          '[TAX_AMOUNT]': formatCurrency(getTaxAmount(estimateData)),
-          '[TOTAL]': formatCurrency(getTotal(estimateData)),
-          '[COMPLETION_TIME]': getCompletionTime(estimateData)
+          // Company information
+          '\\[Company Name\\]': estimateData.contractor?.companyName || estimateData.contractor?.name || 'Your Company',
+          '\\[Company Address, City, State, ZIP\\]': formatFullAddress(estimateData.contractor?.address) || 'Company Address',
+          '\\[COMPANY_EMAIL\\]': estimateData.contractor?.email || 'company@email.com',
+          '\\[COMPANY_PHONE\\]': estimateData.contractor?.phone || '(555) 123-4567',
+          '\\[COMPANY_LOGO_URL\\]': estimateData.contractor?.logo || '/owl-logo.png',
+
+          // Client information
+          '\\[Client Name\\]': estimateData.client?.name || 'Client Name',
+          '\\[Client Email\\]': estimateData.client?.email || 'client@email.com',
+          '\\[Client Phone\\]': estimateData.client?.phone || '(555) 987-6543',
+          '\\[Client Address\\]': formatFullAddress(estimateData.client?.address) || 'Client Address',
+
+          // Estimate metadata
+          '\\[Estimate Date\\]': formatDate(estimateData.estimateDate) || new Date().toLocaleDateString(),
+          '\\[Estimate Number\\]': estimateData.estimateNumber || estimateData.projectId || `EST-${Date.now()}`,
+          '\\[Estimate Valid Until\\]': formatDate(estimateData.validUntil) || calculateValidUntil(),
+
+          // Project details
+          '\\[Scope of Work\\]': estimateData.scope || estimateData.project?.notes || 'Project scope to be defined',
+          '\\[Estimated Completion Timeframe\\]': estimateData.timeline || getCompletionTime(estimateData) || 'Timeline to be determined',
+          '\\[Work Process/Steps\\]': estimateData.process || 'Installation process to be defined',
+          '\\[Included Services or Materials\\]': estimateData.includes || 'All materials and labor as specified',
+          '\\[Excluded Services or Materials\\]': estimateData.excludes || 'Permits, site preparation (if not specified)',
+
+          // Financial totals
+          '\\[Grand Total\\]': formatCurrency(getTotal(estimateData)),
+
+          // Footer information
+          '\\[YEAR\\]': new Date().getFullYear().toString(),
+          '\\[Your Company Name\\]': estimateData.contractor?.companyName || estimateData.contractor?.name || 'Your Company',
         };
 
-        // Reemplazar cada placeholder en el template
+        // Apply all replacements to the template
         Object.entries(replacements).forEach(([placeholder, value]) => {
           processedHtml = processedHtml.replace(new RegExp(placeholder, 'g'), value);
         });
 
-        // Para el logo de la empresa
-        if (estimateData.contractor?.logo) {
-          processedHtml = processedHtml.replace('[COMPANY_LOGO]', 
-            `<img src="${estimateData.contractor.logo}" alt="Logo" style="max-width: 100%; max-height: 100px; object-fit: contain;" />`);
-        } else {
-          processedHtml = processedHtml.replace('[COMPANY_LOGO]', '');
-        }
-
-        // Generar las filas de la tabla
+        // Generate the estimate items table rows
         const tableRowsHtml = generateEstimateTableRows(estimateData);
-        processedHtml = processedHtml.replace('[COST_TABLE_ROWS]', tableRowsHtml);
+        processedHtml = processedHtml.replace('\\[ESTIMATE_ITEMS_ROWS\\]', tableRowsHtml);
 
         setHtml(processedHtml);
       } catch (error) {
-        console.error('Error generando la previsualización:', error);
-        setHtml('<div class="error">Error al generar la previsualización</div>');
+        console.error('Error generating preview:', error);
+        setHtml('<div class="error">Error generating preview</div>');
       } finally {
         setLoading(false);
       }
     };
 
     fetchTemplate();
-  }, [estimateData, templateId]);
+  }, [estimateData]);
 
-  // Funciones helper para formatear los datos
-  function formatDimensions(dimensions: any): string {
-    if (!dimensions) return 'N/A';
-
+  // Helper functions for formatting data
+  function formatFullAddress(address: any): string {
+    if (!address) return '';
+    
+    if (typeof address === 'string') return address;
+    
     const parts = [];
-    if (dimensions.length) parts.push(`Longitud: ${dimensions.length} pies`);
-    if (dimensions.width) parts.push(`Ancho: ${dimensions.width} pies`);
-    if (dimensions.height) parts.push(`Altura: ${dimensions.height} pies`);
-    if (dimensions.area) parts.push(`Área: ${dimensions.area} pies²`);
+    if (address.street) parts.push(address.street);
+    if (address.city) parts.push(address.city);
+    if (address.state) parts.push(address.state);
+    if (address.zip) parts.push(address.zip);
+    
+    return parts.join(', ');
+  }
 
-    return parts.join(', ') || 'N/A';
+  function formatDate(dateValue: any): string {
+    if (!dateValue) return '';
+    
+    try {
+      const date = new Date(dateValue);
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch {
+      return '';
+    }
+  }
+
+  function calculateValidUntil(): string {
+    const date = new Date();
+    date.setDate(date.getDate() + 30); // 30 days from now
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
   }
 
   function getSubtotal(data: any): number {
@@ -150,7 +166,11 @@ const EstimatePreview: React.FC<EstimatePreviewProps> = ({
   }
 
   function getCompletionTime(data: any): string {
-    return data.rulesBasedEstimate?.estimatedDays || 'N/A';
+    if (data.rulesBasedEstimate?.estimatedDays) {
+      const days = data.rulesBasedEstimate.estimatedDays;
+      return `${days} ${days === 1 ? 'day' : 'days'}`;
+    }
+    return '';
   }
 
   function formatCurrency(value: number): string {
@@ -165,7 +185,7 @@ const EstimatePreview: React.FC<EstimatePreviewProps> = ({
   function generateEstimateTableRows(data: any): string {
     let html = '';
 
-    // Materiales
+    // Materials section
     if (data.rulesBasedEstimate?.materials) {
       const materials = data.rulesBasedEstimate.materials;
 
@@ -173,9 +193,9 @@ const EstimatePreview: React.FC<EstimatePreviewProps> = ({
         if (key === 'roofing') {
           html += `
             <tr>
-              <td>Material de Techo (${value.type || ''})</td>
-              <td>${value.areaSqFt || 0} pies²</td>
-              <td>Pie²</td>
+              <td>Roofing Material (${value.type || 'Standard'})</td>
+              <td>${value.type || 'Standard roofing material'}</td>
+              <td>${value.areaSqFt || 0} sq ft</td>
               <td>${formatCurrency(value.costPerSqFt || 0)}</td>
               <td>${formatCurrency(value.totalCost || 0)}</td>
             </tr>
@@ -183,9 +203,9 @@ const EstimatePreview: React.FC<EstimatePreviewProps> = ({
         } else if (key === 'posts') {
           html += `
             <tr>
-              <td>Postes (${value.type || ''})</td>
+              <td>Posts (${value.type || 'Standard'})</td>
+              <td>Structural posts for installation</td>
               <td>${value.quantity || 0}</td>
-              <td>Pieza</td>
               <td>${formatCurrency(value.costPerUnit || 0)}</td>
               <td>${formatCurrency(value.totalCost || 0)}</td>
             </tr>
@@ -193,19 +213,22 @@ const EstimatePreview: React.FC<EstimatePreviewProps> = ({
         } else if (key === 'rails') {
           html += `
             <tr>
-              <td>Rieles</td>
+              <td>Rails</td>
+              <td>Horizontal support rails</td>
               <td>${value.quantity || 0}</td>
-              <td>Pieza</td>
               <td>${formatCurrency(value.costPerUnit || 0)}</td>
               <td>${formatCurrency(value.totalCost || 0)}</td>
             </tr>
           `;
         } else if (key === 'pickets' || key === 'panels' || key === 'mesh') {
+          const itemName = key === 'pickets' ? 'Pickets' : key === 'panels' ? 'Panels' : 'Mesh';
+          const description = key === 'pickets' ? 'Vertical fence pickets' : 
+                            key === 'panels' ? 'Fence panels' : 'Wire mesh material';
           html += `
             <tr>
-              <td>${key === 'pickets' ? 'Tablas' : key === 'panels' ? 'Paneles' : 'Malla'}</td>
+              <td>${itemName}</td>
+              <td>${description}</td>
               <td>${value.quantity || value.feet || 0}</td>
-              <td>${key === 'mesh' ? 'Pie' : 'Pieza'}</td>
               <td>${formatCurrency(value.costPerUnit || value.costPerFoot || 0)}</td>
               <td>${formatCurrency(value.totalCost || 0)}</td>
             </tr>
@@ -213,20 +236,24 @@ const EstimatePreview: React.FC<EstimatePreviewProps> = ({
         } else if (key === 'concrete') {
           html += `
             <tr>
-              <td>Concreto</td>
-              <td>${value.bags || 0}</td>
-              <td>Bolsa</td>
+              <td>Concrete</td>
+              <td>Concrete mix for post setting</td>
+              <td>${value.bags || 0} bags</td>
               <td>${formatCurrency(value.costPerBag || 0)}</td>
               <td>${formatCurrency(value.totalCost || 0)}</td>
             </tr>
           `;
         } else if (key === 'underlayment' || key === 'flashing' || key === 'hardware') {
+          const itemName = key === 'underlayment' ? 'Underlayment' : 
+                          key === 'flashing' ? 'Flashing' : 'Hardware';
+          const description = key === 'underlayment' ? 'Protective underlayment material' :
+                            key === 'flashing' ? 'Weather protection flashing' : 'Installation hardware';
           html += `
             <tr>
-              <td>${key === 'underlayment' ? 'Membrana' : key === 'flashing' ? 'Tapajuntas' : 'Herrajes'}</td>
-              <td>${value.areaSqFt || 0}</td>
-              <td>Pie²</td>
-              <td>${formatCurrency(value.costPerSqFt || 0)}</td>
+              <td>${itemName}</td>
+              <td>${description}</td>
+              <td>${value.areaSqFt || value.quantity || 0}</td>
+              <td>${formatCurrency(value.costPerSqFt || value.costPerUnit || 0)}</td>
               <td>${formatCurrency(value.totalCost || 0)}</td>
             </tr>
           `;
@@ -234,40 +261,56 @@ const EstimatePreview: React.FC<EstimatePreviewProps> = ({
       });
     }
 
-    // Mano de obra
+    // Labor section
     if (data.rulesBasedEstimate?.labor) {
       const labor = data.rulesBasedEstimate.labor;
       html += `
         <tr>
-          <td>Mano de Obra</td>
-          <td>${labor.hours || 0}</td>
-          <td>Hora</td>
+          <td>Labor</td>
+          <td>Professional installation service</td>
+          <td>${labor.hours || 0} hours</td>
           <td>${formatCurrency(labor.hourlyRate || 0)}</td>
           <td>${formatCurrency(labor.totalCost || 0)}</td>
         </tr>
       `;
     }
 
-    // Costos adicionales
+    // Additional costs section
     if (data.rulesBasedEstimate?.additionalCosts) {
       const additionalCosts = data.rulesBasedEstimate.additionalCosts;
 
       Object.entries(additionalCosts).forEach(([key, value]: [string, any]) => {
-        let description = key;
+        let itemName = key;
+        let description = 'Additional service';
 
-        if (key === 'demolition') description = 'Demolición/Remoción';
-        else if (key === 'painting') description = 'Pintura/Acabado';
-        else if (key === 'lattice') description = 'Celosía';
-        else if (key === 'gates') description = 'Puertas';
-        else if (key === 'roofRemoval') description = 'Remoción de Techo';
-        else if (key === 'ventilation') description = 'Ventilación';
-        else if (key === 'gutters') description = 'Canalones';
+        if (key === 'demolition') {
+          itemName = 'Demolition/Removal';
+          description = 'Removal of existing structures';
+        } else if (key === 'painting') {
+          itemName = 'Painting/Finishing';
+          description = 'Paint and finishing work';
+        } else if (key === 'lattice') {
+          itemName = 'Lattice Work';
+          description = 'Decorative lattice installation';
+        } else if (key === 'gates') {
+          itemName = 'Gates';
+          description = 'Gate installation and hardware';
+        } else if (key === 'roofRemoval') {
+          itemName = 'Roof Removal';
+          description = 'Existing roof removal';
+        } else if (key === 'ventilation') {
+          itemName = 'Ventilation';
+          description = 'Ventilation system installation';
+        } else if (key === 'gutters') {
+          itemName = 'Gutters';
+          description = 'Gutter system installation';
+        }
 
         html += `
           <tr>
+            <td>${itemName}</td>
             <td>${description}</td>
             <td>1</td>
-            <td>Servicio</td>
             <td>${formatCurrency(value)}</td>
             <td>${formatCurrency(value)}</td>
           </tr>
@@ -281,7 +324,7 @@ const EstimatePreview: React.FC<EstimatePreviewProps> = ({
   if (loading) {
     return (
       <div className={`estimate-preview ${className}`}>
-        <div className="loading-spinner">Cargando previsualización...</div>
+        <div className="loading-spinner">Loading preview...</div>
       </div>
     );
   }
@@ -290,9 +333,9 @@ const EstimatePreview: React.FC<EstimatePreviewProps> = ({
     <div className={`estimate-preview ${className}`}>
       <div className="w-full bg-card border rounded-lg shadow-sm overflow-hidden">
         <div className="p-4 bg-muted/20 border-b flex items-center justify-between">
-          <h3 className="text-md font-semibold">Vista previa del estimado</h3>
+          <h3 className="text-md font-semibold">Estimate Preview</h3>
           <span className="text-xs text-muted-foreground">
-            Plantilla Premium
+            Universal Template
           </span>
         </div>
         <div 

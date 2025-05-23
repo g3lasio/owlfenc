@@ -878,183 +878,318 @@ export class EstimatorService {
   }
   
   /**
-   * Genera el HTML para un estimado
+   * Genera el HTML para un estimado usando la plantilla universal única
    */
   async generateEstimateHtml(estimateData: any): Promise<string> {
     try {
-      // Importar módulos necesarios
       const path = require('path');
       const fs = require('fs');
-      const axios = require('axios');
       
-      // Determinar qué plantilla usar basado en el tipo de estimado
-      // Por defecto, usamos la plantilla 'standard'
-      let templateStyle = 'standard';
+      console.log('Generando HTML del estimado usando plantilla universal...');
       
-      // Si hay un ID de plantilla específico en los datos, determinar el estilo basado en él
-      if (estimateData.templateId) {
-        // Mapeo de IDs a estilos (esto debería coincidir con la lógica del frontend)
-        // IDs del frontend para DEFAULT_TEMPLATES: 999001 (basic), 999002 (professional), 999003 (luxury)
-        const templateMap: Record<number, string> = {
-          1: 'standard',
-          2: 'professional',
-          3: 'luxury',
-          // Añadir mapeo para los IDs del frontend DEFAULT_TEMPLATES
-          999001: 'standard',
-          999002: 'professional',
-          999003: 'luxury'
-        };
-        
-        // Si el ID existe en el mapa, usar ese estilo; de lo contrario, usar 'standard'
-        templateStyle = templateMap[estimateData.templateId] || 'standard';
-        console.log(`Usando estilo de plantilla: ${templateStyle} para templateId: ${estimateData.templateId}`);
-      }
-      
-      // Obtener el nombre de archivo de la plantilla según el estilo seleccionado
-      const templateFileName = templateStyle === 'standard' ? 'basictemplateestimate.html' : 
-                              templateStyle === 'professional' ? 'Premiumtemplateestimate.html' : 
-                              'luxurytemplate.html';
-      
-      console.log(`Intentando cargar plantilla HTML: ${templateFileName}`);
-      
-      // ESTRATEGIA 1: Intentar cargar la plantilla directamente desde el sistema de archivos
+      // Load the universal template HTML
       let templateHtml = '';
       let templateFound = false;
       
-      // Ir directo al sistema de archivos primero para mayor confiabilidad
-      console.log(`Intentando cargar plantilla directamente desde el sistema de archivos...`);
-      
       const projectRoot = process.cwd();
-      console.log(`Directorio raíz del proyecto: ${projectRoot}`);
-      
-      // Priorizar la carga desde public/templates
-      const templatePath = path.join(projectRoot, 'public', 'templates', templateFileName);
+      const universalTemplatePath = path.join(projectRoot, 'client', 'src', 'templates', 'universal-estimate-template.html');
       
       try {
-        if (fs.existsSync(templatePath)) {
-          console.log(`✅ Plantilla encontrada en: ${templatePath}`);
-          templateHtml = fs.readFileSync(templatePath, 'utf8');
-          console.log(`✅ Plantilla cargada correctamente desde: ${templatePath}`);
+        if (fs.existsSync(universalTemplatePath)) {
+          templateHtml = fs.readFileSync(universalTemplatePath, 'utf8');
+          console.log('✅ Universal template loaded successfully');
           templateFound = true;
         } else {
-          console.log(`❌ No se encontró la plantilla en: ${templatePath}`);
+          console.log(`❌ Universal template not found at: ${universalTemplatePath}`);
         }
       } catch (fsError) {
-        console.log(`❌ Error al acceder a ${templatePath}: ${fsError.message}`);
+        console.log(`❌ Error accessing universal template: ${fsError.message}`);
       }
       
-      // ESTRATEGIA 2: Si la carga HTTP falló, intentar cargar desde el sistema de archivos
       if (!templateFound) {
-        console.log(`Intentando cargar plantilla desde el sistema de archivos...`);
-        
-        const projectRoot = process.cwd();
-        console.log(`Directorio raíz del proyecto: ${projectRoot}`);
-        
-        // Intentar varias rutas posibles
-        const templatePaths = [
-          path.join(projectRoot, 'public', 'templates', templateFileName),
-          path.join(projectRoot, 'public', 'templates', templateFileName.toLowerCase()),
-          path.join(projectRoot, 'public', 'static', 'templates', templateFileName),
-          path.join(projectRoot, 'templates', templateFileName)
-        ];
-        
-        // Intentar cargar desde las diferentes rutas
-        for (const templatePath of templatePaths) {
-          try {
-            if (fs.existsSync(templatePath)) {
-              console.log(`✅ Plantilla encontrada en: ${templatePath}`);
-              templateHtml = fs.readFileSync(templatePath, 'utf8');
-              console.log(`✅ Plantilla cargada correctamente desde: ${templatePath}`);
-              templateFound = true;
-              break;
-            }
-          } catch (fsError) {
-            console.log(`❌ Error al acceder a ${templatePath}: ${fsError.message}`);
-          }
+        throw new Error('Universal estimate template not found. Please ensure the template file exists.');
+      }
+
+      // Create comprehensive replacement map for all placeholders
+      const replacements: Record<string, string> = {
+        // Company information
+        '\\[Company Name\\]': estimateData.contractor?.companyName || estimateData.contractor?.name || 'Your Company',
+        '\\[Company Address, City, State, ZIP\\]': this.formatFullAddress(estimateData.contractor?.address) || 'Company Address',
+        '\\[COMPANY_EMAIL\\]': estimateData.contractor?.email || 'company@email.com',
+        '\\[COMPANY_PHONE\\]': estimateData.contractor?.phone || '(555) 123-4567',
+        '\\[COMPANY_LOGO_URL\\]': estimateData.contractor?.logo || '/owl-logo.png',
+
+        // Client information
+        '\\[Client Name\\]': estimateData.client?.name || 'Client Name',
+        '\\[Client Email\\]': estimateData.client?.email || 'client@email.com',
+        '\\[Client Phone\\]': estimateData.client?.phone || '(555) 987-6543',
+        '\\[Client Address\\]': this.formatFullAddress(estimateData.client?.address) || 'Client Address',
+
+        // Estimate metadata
+        '\\[Estimate Date\\]': this.formatDate(estimateData.estimateDate) || new Date().toLocaleDateString(),
+        '\\[Estimate Number\\]': estimateData.estimateNumber || estimateData.projectId || `EST-${Date.now()}`,
+        '\\[Estimate Valid Until\\]': this.formatDate(estimateData.validUntil) || this.calculateValidUntil(),
+
+        // Project details
+        '\\[Scope of Work\\]': estimateData.scope || estimateData.project?.notes || 'Project scope to be defined',
+        '\\[Estimated Completion Timeframe\\]': estimateData.timeline || this.getCompletionTime(estimateData) || 'Timeline to be determined',
+        '\\[Work Process/Steps\\]': estimateData.process || 'Installation process to be defined',
+        '\\[Included Services or Materials\\]': estimateData.includes || 'All materials and labor as specified',
+        '\\[Excluded Services or Materials\\]': estimateData.excludes || 'Permits, site preparation (if not specified)',
+
+        // Financial totals
+        '\\[Grand Total\\]': this.formatCurrency(this.getEstimateTotal(estimateData)),
+
+        // Footer information
+        '\\[YEAR\\]': new Date().getFullYear().toString(),
+        '\\[Your Company Name\\]': estimateData.contractor?.companyName || estimateData.contractor?.name || 'Your Company',
+      };
+
+      // Apply all replacements to the template
+      let processedHtml = templateHtml;
+      Object.entries(replacements).forEach(([placeholder, value]) => {
+        processedHtml = processedHtml.replace(new RegExp(placeholder, 'g'), value);
+      });
+
+      // Generate the estimate items table rows
+      const tableRowsHtml = this.generateEstimateTableRows(estimateData);
+      processedHtml = processedHtml.replace('\\[ESTIMATE_ITEMS_ROWS\\]', tableRowsHtml);
+
+      return processedHtml;
+    } catch (error) {
+      console.error('Error generating estimate HTML:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Helper method to format addresses
+   */
+  private formatFullAddress(address: any): string {
+    if (!address) return '';
+    
+    if (typeof address === 'string') return address;
+    
+    const parts = [];
+    if (address.street) parts.push(address.street);
+    if (address.city) parts.push(address.city);
+    if (address.state) parts.push(address.state);
+    if (address.zip) parts.push(address.zip);
+    
+    return parts.join(', ');
+  }
+
+  /**
+   * Helper method to format dates
+   */
+  private formatDate(dateValue: any): string {
+    if (!dateValue) return '';
+    
+    try {
+      const date = new Date(dateValue);
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch {
+      return '';
+    }
+  }
+
+  /**
+   * Helper method to calculate valid until date
+   */
+  private calculateValidUntil(): string {
+    const date = new Date();
+    date.setDate(date.getDate() + 30); // 30 days from now
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }
+
+  /**
+   * Helper method to get completion time
+   */
+  private getCompletionTime(estimateData: any): string {
+    if (estimateData.rulesBasedEstimate?.estimatedDays) {
+      const days = estimateData.rulesBasedEstimate.estimatedDays;
+      return `${days} ${days === 1 ? 'day' : 'days'}`;
+    }
+    return '';
+  }
+
+  /**
+   * Helper method to get estimate total
+   */
+  private getEstimateTotal(estimateData: any): number {
+    if (!estimateData.rulesBasedEstimate) return 0;
+
+    const materialTotal = estimateData.rulesBasedEstimate.materialTotal || 0;
+    const laborTotal = estimateData.rulesBasedEstimate.labor?.totalCost || 0;
+    const additionalTotal = estimateData.rulesBasedEstimate.additionalTotal || 0;
+    const subtotal = materialTotal + laborTotal + additionalTotal;
+    const taxAmount = subtotal * 0.0875; // 8.75% tax rate
+
+    return subtotal + taxAmount;
+  }
+
+  /**
+   * Helper method to format currency
+   */
+  private formatCurrency(value: number): string {
+    return value.toLocaleString('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  /**
+   * Generate estimate table rows HTML
+   */
+  private generateEstimateTableRows(estimateData: any): string {
+    let html = '';
+
+    // Materials section
+    if (estimateData.rulesBasedEstimate?.materials) {
+      const materials = estimateData.rulesBasedEstimate.materials;
+
+      Object.entries(materials).forEach(([key, value]: [string, any]) => {
+        if (key === 'roofing') {
+          html += `
+            <tr>
+              <td>Roofing Material (${value.type || 'Standard'})</td>
+              <td>${value.type || 'Standard roofing material'}</td>
+              <td>${value.areaSqFt || 0} sq ft</td>
+              <td>${this.formatCurrency(value.costPerSqFt || 0)}</td>
+              <td>${this.formatCurrency(value.totalCost || 0)}</td>
+            </tr>
+          `;
+        } else if (key === 'posts') {
+          html += `
+            <tr>
+              <td>Posts (${value.type || 'Standard'})</td>
+              <td>Structural posts for installation</td>
+              <td>${value.quantity || 0}</td>
+              <td>${this.formatCurrency(value.costPerUnit || 0)}</td>
+              <td>${this.formatCurrency(value.totalCost || 0)}</td>
+            </tr>
+          `;
+        } else if (key === 'rails') {
+          html += `
+            <tr>
+              <td>Rails</td>
+              <td>Horizontal support rails</td>
+              <td>${value.quantity || 0}</td>
+              <td>${this.formatCurrency(value.costPerUnit || 0)}</td>
+              <td>${this.formatCurrency(value.totalCost || 0)}</td>
+            </tr>
+          `;
+        } else if (key === 'pickets' || key === 'panels' || key === 'mesh') {
+          const itemName = key === 'pickets' ? 'Pickets' : key === 'panels' ? 'Panels' : 'Mesh';
+          const description = key === 'pickets' ? 'Vertical fence pickets' : 
+                            key === 'panels' ? 'Fence panels' : 'Wire mesh material';
+          html += `
+            <tr>
+              <td>${itemName}</td>
+              <td>${description}</td>
+              <td>${value.quantity || value.feet || 0}</td>
+              <td>${this.formatCurrency(value.costPerUnit || value.costPerFoot || 0)}</td>
+              <td>${this.formatCurrency(value.totalCost || 0)}</td>
+            </tr>
+          `;
+        } else if (key === 'concrete') {
+          html += `
+            <tr>
+              <td>Concrete</td>
+              <td>Concrete mix for post setting</td>
+              <td>${value.bags || 0} bags</td>
+              <td>${this.formatCurrency(value.costPerBag || 0)}</td>
+              <td>${this.formatCurrency(value.totalCost || 0)}</td>
+            </tr>
+          `;
+        } else if (key === 'underlayment' || key === 'flashing' || key === 'hardware') {
+          const itemName = key === 'underlayment' ? 'Underlayment' : 
+                          key === 'flashing' ? 'Flashing' : 'Hardware';
+          const description = key === 'underlayment' ? 'Protective underlayment material' :
+                            key === 'flashing' ? 'Weather protection flashing' : 'Installation hardware';
+          html += `
+            <tr>
+              <td>${itemName}</td>
+              <td>${description}</td>
+              <td>${value.areaSqFt || value.quantity || 0}</td>
+              <td>${this.formatCurrency(value.costPerSqFt || value.costPerUnit || 0)}</td>
+              <td>${this.formatCurrency(value.totalCost || 0)}</td>
+            </tr>
+          `;
         }
-      }
-      
-      // ESTRATEGIA 3: Si sigue sin encontrarse, intentar usar una plantilla básica de respaldo
-      if (!templateFound) {
-        console.log(`⚠️ No se encontró la plantilla, intentando usar plantilla básica como respaldo...`);
-        
-        try {
-          const basicTemplatePath = path.join(process.cwd(), 'public', 'templates', 'basictemplateestimate.html');
-          
-          if (fs.existsSync(basicTemplatePath)) {
-            templateHtml = fs.readFileSync(basicTemplatePath, 'utf8');
-            console.log(`✅ Usando plantilla básica como respaldo`);
-            templateFound = true;
-          }
-        } catch (basicError) {
-          console.error(`Error cargando plantilla básica de respaldo: ${basicError.message}`);
+      });
+    }
+
+    // Labor section
+    if (estimateData.rulesBasedEstimate?.labor) {
+      const labor = estimateData.rulesBasedEstimate.labor;
+      html += `
+        <tr>
+          <td>Labor</td>
+          <td>Professional installation service</td>
+          <td>${labor.hours || 0} hours</td>
+          <td>${this.formatCurrency(labor.hourlyRate || 0)}</td>
+          <td>${this.formatCurrency(labor.totalCost || 0)}</td>
+        </tr>
+      `;
+    }
+
+    // Additional costs section
+    if (estimateData.rulesBasedEstimate?.additionalCosts) {
+      const additionalCosts = estimateData.rulesBasedEstimate.additionalCosts;
+
+      Object.entries(additionalCosts).forEach(([key, value]: [string, any]) => {
+        let itemName = key;
+        let description = 'Additional service';
+
+        if (key === 'demolition') {
+          itemName = 'Demolition/Removal';
+          description = 'Removal of existing structures';
+        } else if (key === 'painting') {
+          itemName = 'Painting/Finishing';
+          description = 'Paint and finishing work';
+        } else if (key === 'lattice') {
+          itemName = 'Lattice Work';
+          description = 'Decorative lattice installation';
+        } else if (key === 'gates') {
+          itemName = 'Gates';
+          description = 'Gate installation and hardware';
+        } else if (key === 'roofRemoval') {
+          itemName = 'Roof Removal';
+          description = 'Existing roof removal';
+        } else if (key === 'ventilation') {
+          itemName = 'Ventilation';
+          description = 'Ventilation system installation';
+        } else if (key === 'gutters') {
+          itemName = 'Gutters';
+          description = 'Gutter system installation';
         }
-      }
-      
-      // ESTRATEGIA 4: Último recurso - usar la plantilla integrada en el código
-      if (!templateFound) {
-        console.log(`⚠️ Usando plantilla de emergencia integrada en el código`);
-        templateHtml = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Presupuesto</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    h1 { color: #333; }
-    .company-info { margin-bottom: 20px; }
-    .client-info { margin-bottom: 20px; }
-    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
-    th { background-color: #f2f2f2; }
-    .footer { margin-top: 30px; }
-  </style>
-</head>
-<body>
-  <div style="background-color: #ffeeee; border: 1px solid #ffaaaa; padding: 10px; margin-bottom: 20px;">
-    <strong>Aviso:</strong> Usando plantilla de emergencia integrada.
-  </div>
-  
-  <div class="company-info">
-    <h1>[COMPANY_NAME]</h1>
-    <p>[COMPANY_ADDRESS]</p>
-    <p>Tel: [COMPANY_PHONE] | Email: [COMPANY_EMAIL]</p>
-    <p>Licencia: [COMPANY_LICENSE]</p>
-  </div>
-  
-  <div class="estimate-header">
-    <h2>Presupuesto #[ESTIMATE_NUMBER]</h2>
-    <p>Fecha: [ESTIMATE_DATE]</p>
-  </div>
-  
-  <div class="client-info">
-    <h3>Cliente:</h3>
-    <p>[CLIENT_NAME]</p>
-    <p>[CLIENT_ADDRESS]</p>
-    <p>[CLIENT_CITY_STATE_ZIP]</p>
-    <p>Tel: [CLIENT_PHONE] | Email: [CLIENT_EMAIL]</p>
-  </div>
-  
-  <div class="project-info">
-    <h3>Proyecto:</h3>
-    <p>Tipo: [PROJECT_TYPE]</p>
-    <p>Dirección: [PROJECT_ADDRESS]</p>
-    <p>Dimensiones: [PROJECT_DIMENSIONS]</p>
-    <p>Notas: [PROJECT_NOTES]</p>
-  </div>
-  
-  <h3>Detalle de Costos:</h3>
-  <table>
-    <tr>
-      <th>Descripción</th>
-      <th>Cantidad</th>
-      <th>Unidad</th>
-      <th>Precio Unitario</th>
-      <th>Total</th>
-    </tr>
-    [COST_TABLE_ROWS]
-    <tr>
-      <td colspan="4" style="text-align: right;"><strong>Subtotal:</strong></td>
+
+        html += `
+          <tr>
+            <td>${itemName}</td>
+            <td>${description}</td>
+            <td>1</td>
+            <td>${this.formatCurrency(value)}</td>
+            <td>${this.formatCurrency(value)}</td>
+          </tr>
+        `;
+      });
+    }
+
+    return html;
+  }
+}
       <td>[SUBTOTAL]</td>
     </tr>
     <tr>
