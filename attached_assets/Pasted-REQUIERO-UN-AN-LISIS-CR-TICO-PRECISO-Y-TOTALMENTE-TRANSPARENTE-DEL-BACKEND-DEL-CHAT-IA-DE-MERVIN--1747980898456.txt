@@ -1,0 +1,38 @@
+REQUIERO UN ANÁLISIS CRÍTICO, PRECISO Y TOTALMENTE TRANSPARENTE DEL BACKEND DEL CHAT IA DE MERVIN – ACCIÓN URGENTE
+
+Solicito un análisis exhaustivo del código y la arquitectura detrás del backend de Mervin (el chat con IA). Necesito saber, con lujo de detalle técnico y sin adornos:
+
+¿Qué tipo de lógica y flujos se han implementado realmente?
+
+¿El sistema sigue un patrón claro (ej. MVC, event-driven, microservicios), o es un revoltijo de funciones dispersas?
+
+¿Existen controladores centralizados, servicios bien definidos, o todo está mezclado en archivos monolíticos?
+
+¿Hay separación real entre lógica de negocio, manejo de estado, y control de la IA? ¿O el código está acoplado y espaguetizado?
+
+¿Qué tipo de estructura de datos y módulos se están utilizando?
+
+¿Dónde y cómo se gestiona el estado conversacional?
+
+¿Qué componentes se comunican con la IA, y cómo lo hacen?
+
+¿Existen middlewares, colas, sistemas de logging, o todo es improvisado?
+
+¿Qué archivos y rutas del proyecto están involucrados DIRECTAMENTE en el funcionamiento del chat?
+
+Lista clara de archivos clave (ejemplo: controladores, modelos, routers, handlers, utils, integraciones externas, etc.).
+
+¿Hay archivos muertos, duplicados, o lógicas redundantes que solo añaden confusión?
+
+MI DIAGNÓSTICO ACTUAL:
+La plataforma, siendo sincero, no está operativa ni en condiciones mínimas aceptables. El código transmite desorden, falta de dirección y ausencia total de principios de ingeniería de software modernos.
+
+LO QUE EXIJO:
+
+Un informe directo, objetivo y sin filtros sobre el estado real del backend: ¿es rescatable, o es mejor rehacer desde cero?
+
+Identifica los cuellos de botella, errores de arquitectura y cualquier mala práctica presente.
+
+No quiero excusas ni respuestas a medias: solo hechos, rutas de archivos, y diagnóstico técnico serio para tomar decisiones estratégicas.
+
+NECESITO ESTA RADIOGRAFÍA DEL CÓDIGO YA – de lo contrario, no puedo invertir más tiempo ni recursos sin saber la magnitud real del problema.
