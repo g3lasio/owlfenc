@@ -30,8 +30,15 @@ import {
   Target,
   Calendar,
   Search,
-  Users
+  Users,
+  Sparkles
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   SelectGroup,
@@ -149,6 +156,8 @@ export default function EstimateGenerator() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [showMaterialSearchDialog, setShowMaterialSearchDialog] = useState(false);
+  const [showAddMaterialDialog, setShowAddMaterialDialog] = useState(false);
   const [newItem, setNewItem] = useState<Partial<EstimateItem>>({
     name: '',
     description: '',
@@ -798,10 +807,28 @@ export default function EstimateGenerator() {
                   </div>
 
                   <div className="flex justify-end">
-                    <Button onClick={addItem}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Item
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Item
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setShowMaterialSearchDialog(true)}>
+                          <Search className="h-4 w-4 mr-2" />
+                          Search Inventory
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setShowAddMaterialDialog(true)}>
+                          <FileText className="h-4 w-4 mr-2" />
+                          Add New Material
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          Add Material with AI
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </CardContent>
               </Card>
