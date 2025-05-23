@@ -212,6 +212,48 @@ export default function EstimateGenerator() {
   };
 
   // Función para cargar un cliente existente
+  // Función para guardar automáticamente nuevos clientes
+  const saveNewClientAuto = async (clientData: any) => {
+    try {
+      if (!clientData.name || clientData.name.trim() === '') return null;
+      
+      const clientToSave = {
+        name: clientData.name,
+        email: clientData.email || null,
+        phone: clientData.phone || null,
+        address: clientData.address || null,
+        company: clientData.company || null,
+        userId: 1 // Usuario por defecto para desarrollo
+      };
+
+      const response = await fetch('/api/clients', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(clientToSave),
+      });
+
+      if (response.ok) {
+        const newClient = await response.json();
+        console.log('✅ Cliente guardado automáticamente:', newClient);
+        
+        // Actualizar la lista de clientes en memoria
+        setClients(prev => [...prev, newClient]);
+        
+        toast({
+          title: "Cliente Guardado",
+          description: `${clientData.name} ha sido guardado en tu lista de clientes`
+        });
+        
+        return newClient;
+      }
+    } catch (error) {
+      console.error('Error al guardar cliente:', error);
+    }
+    return null;
+  };
+
   const loadExistingClient = (client: ClientType) => {
     setEstimate(prev => ({
       ...prev,
@@ -242,9 +284,32 @@ export default function EstimateGenerator() {
     setCurrentStep(step);
   };
 
-  const nextStep = () => {
+  const nextStep = async () => {
     const steps: typeof currentStep[] = ['client', 'project', 'items', 'review'];
     const currentIndex = steps.indexOf(currentStep);
+    
+    // Si estamos saliendo del paso del cliente, guardar automáticamente si es un cliente nuevo
+    if (currentStep === 'client' && estimate.clientName.trim() !== '') {
+      const clientData = {
+        name: estimate.clientName,
+        email: estimate.clientEmail || '',
+        phone: estimate.clientPhone || '',
+        address: estimate.clientAddress || '',
+        company: estimate.company || ''
+      };
+      
+      // Verificar si es un cliente nuevo (no está en la lista)
+      const existingClient = clients.find(client => 
+        client.name?.toLowerCase() === clientData.name.toLowerCase() ||
+        (client.email && clientData.email && client.email.toLowerCase() === clientData.email.toLowerCase())
+      );
+      
+      if (!existingClient && clientData.name.trim() !== '') {
+        console.log('🔄 Guardando cliente nuevo automáticamente...');
+        await saveNewClientAuto(clientData);
+      }
+    }
+    
     if (currentIndex < steps.length - 1) {
       setCurrentStep(steps[currentIndex + 1]);
     }
@@ -905,11 +970,10 @@ export default function EstimateGenerator() {
   };
 
   return (
-    
+    <div className="flex h-screen bg-gray-50">
+      {renderSidebar()}
       
-        {renderSidebar()}
-        
-        <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-auto p-6">
           
             
               <div className="mb-6">
@@ -1296,10 +1360,10 @@ export default function EstimateGenerator() {
                   </Tabs>
                 </div>
               </div>
-            
-          
-        
-      
-    
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

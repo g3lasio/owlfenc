@@ -33,7 +33,9 @@ router.get('/', async (req, res) => {
       email: client.email || '',
       phone: client.phone || '',
       address: client.address || '',
-      company: client.company || '',
+      city: client.city || '',
+      state: client.state || '',
+      zipCode: client.zipCode || '',
       // Agregar más campos según tu estructura de datos
     }));
     
