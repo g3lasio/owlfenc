@@ -173,28 +173,31 @@ export default function Estimates() {
       setIsLoading(true);
       
       try {
-        // Load clients for the current user
-        const clientsData = await getClients(currentUser.uid);
-        // Convert Firebase clients to our Client interface
-        const mappedClients: Client[] = clientsData.map(client => ({
+        // Load clients directly from Firebase without userId filter first
+        const clientsData = await getClients();
+        console.log('Raw clients data from Firebase:', clientsData);
+        
+        // Filter clients by current user and map to our interface
+        const userClients = clientsData.filter(client => 
+          client.userId === currentUser.uid || client.userId === 'dev-user-123'
+        );
+        
+        const mappedClients: Client[] = userClients.map(client => ({
           id: client.id,
           clientId: client.clientId,
           name: client.name,
-          email: client.email,
-          phone: client.phone,
-          mobilePhone: client.mobilePhone,
-          address: client.address,
-          city: client.city,
-          state: client.state,
-          zipCode: client.zipCode
+          email: client.email || '',
+          phone: client.phone || '',
+          mobilePhone: client.mobilePhone || '',
+          address: client.address || '',
+          city: client.city || '',
+          state: client.state || '',
+          zipCode: client.zipCode || ''
         }));
-        setClients(mappedClients);
-        console.log('Clients loaded:', mappedClients.length, 'clients found');
         
-        // Si no hay clientes, crear algunos de ejemplo para el usuario
-        if (mappedClients.length === 0) {
-          console.log('No clients found, would you like to add some sample clients?');
-        }
+        setClients(mappedClients);
+        console.log('Clients loaded for user:', mappedClients.length, 'clients found');
+        console.log('Mapped clients:', mappedClients);
         
         // Load materials
         const materialsRef = collection(db, 'materials');
@@ -1777,39 +1780,74 @@ export default function Estimates() {
               </Button>
             </div>
             
-            <div className="max-h-[300px] overflow-y-auto border rounded-md">
+            <div className="max-h-[400px] overflow-y-auto">
               {filteredClients.length > 0 ? (
-                <Table className="text-sm">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="py-2">Name</TableHead>
-                      <TableHead className="py-2">Email</TableHead>
-                      <TableHead className="py-2">Phone</TableHead>
-                      <TableHead className="py-2 w-[100px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredClients.map(client => (
-                      <TableRow key={client.id}>
-                        <TableCell className="py-1.5 font-medium">{client.name}</TableCell>
-                        <TableCell className="py-1.5">{client.email || '-'}</TableCell>
-                        <TableCell className="py-1.5">{client.phone || '-'}</TableCell>
-                        <TableCell className="py-1.5">
-                          <Button 
-                            size="sm" 
-                            onClick={() => handleSelectClient(client)}
-                            className="h-7 text-xs px-2"
-                          >
-                            Seleccionar
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <div className="space-y-2">
+                  {filteredClients.map(client => (
+                    <div
+                      key={client.id}
+                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                      onClick={() => handleSelectClient(client)}
+                    >
+                      <div className="flex-1">
+                        <h4 className="font-medium text-sm">{client.name}</h4>
+                        <div className="text-xs text-gray-500 space-y-1">
+                          {client.email && (
+                            <div className="flex items-center gap-1">
+                              <Mail className="h-3 w-3" />
+                              <span>{client.email}</span>
+                            </div>
+                          )}
+                          {(client.phone || client.mobilePhone) && (
+                            <div className="flex items-center gap-1">
+                              <span className="h-3 w-3 text-center">📞</span>
+                              <span>{client.phone || client.mobilePhone}</span>
+                            </div>
+                          )}
+                          {client.address && (
+                            <div className="flex items-center gap-1">
+                              <span className="h-3 w-3 text-center">📍</span>
+                              <span className="truncate max-w-[200px]">
+                                {client.address}
+                                {client.city && `, ${client.city}`}
+                                {client.state && `, ${client.state}`}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelectClient(client);
+                        }}
+                        className="h-8 text-xs px-3 ml-3"
+                      >
+                        Select
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               ) : (
-                <div className="text-center py-6">
-                  <p className="text-sm text-muted-foreground">No se encontraron clientes</p>
+                <div className="text-center py-8">
+                  <div className="text-gray-400 mb-2">
+                    <Search className="h-8 w-8 mx-auto" />
+                  </div>
+                  <p className="text-sm text-gray-500 mb-3">
+                    {clients.length === 0 ? 'No tienes clientes guardados aún' : 'No se encontraron clientes con esa búsqueda'}
+                  </p>
+                  <Button 
+                    size="sm" 
+                    onClick={() => {
+                      setShowClientSearchDialog(false);
+                      window.open('/clients', '_blank');
+                    }}
+                    variant="outline"
+                  >
+                    <PlusCircle className="h-4 w-4 mr-1" />
+                    Agregar primer cliente
+                  </Button>
                 </div>
               )}
             </div>

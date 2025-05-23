@@ -63,34 +63,44 @@ export const saveClient = async (clientData: Omit<Client, 'id' | 'createdAt' | '
 // Obtener todos los clientes
 export const getClients = async (userId?: string, filters?: { tag?: string, source?: string }) => {
   try {
-    const queryConstraints = [];
+    let q;
+    
+    if (userId || (filters && Object.keys(filters).length > 0)) {
+      const queryConstraints = [];
 
-    // Siempre filtrar por userId si se proporciona
-    if (userId) {
-      queryConstraints.push(where("userId", "==", userId));
-    }
-
-    // Aplicar filtros adicionales si se proporcionan
-    if (filters) {
-      if (filters.tag) {
-        queryConstraints.push(where("tags", "array-contains", filters.tag));
+      // Filtrar por userId si se proporciona
+      if (userId) {
+        queryConstraints.push(where("userId", "==", userId));
       }
 
-      if (filters.source) {
-        if (filters.source === "no_source") {
-          // Para clientes sin fuente, buscamos donde source es null o string vacío
-          queryConstraints.push(where("source", "==", ""));
-        } else {
-          queryConstraints.push(where("source", "==", filters.source));
+      // Aplicar filtros adicionales si se proporcionan
+      if (filters) {
+        if (filters.tag) {
+          queryConstraints.push(where("tags", "array-contains", filters.tag));
+        }
+
+        if (filters.source) {
+          if (filters.source === "no_source") {
+            // Para clientes sin fuente, buscamos donde source es null o string vacío
+            queryConstraints.push(where("source", "==", ""));
+          } else {
+            queryConstraints.push(where("source", "==", filters.source));
+          }
         }
       }
-    }
 
-    let q = query(
-      collection(db, "clients"),
-      ...queryConstraints,
-      orderBy("createdAt", "desc")
-    );
+      q = query(
+        collection(db, "clients"),
+        ...queryConstraints,
+        orderBy("createdAt", "desc")
+      );
+    } else {
+      // Si no hay filtros, obtener todos los clientes
+      q = query(
+        collection(db, "clients"),
+        orderBy("createdAt", "desc")
+      );
+    }
 
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => {
