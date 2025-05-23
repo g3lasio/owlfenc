@@ -31,7 +31,8 @@ import {
   Calendar,
   Search,
   Users,
-  Sparkles
+  Sparkles,
+  Package
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -157,16 +158,94 @@ export default function EstimateGenerator() {
   const [isSaving, setIsSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showMaterialSearchDialog, setShowMaterialSearchDialog] = useState(false);
+  
+  // Estados para los nuevos botones de materiales
+  const [showInventoryDialog, setShowInventoryDialog] = useState(false);
   const [showAddMaterialDialog, setShowAddMaterialDialog] = useState(false);
-  const [newItem, setNewItem] = useState<Partial<EstimateItem>>({
+  const [newMaterial, setNewMaterial] = useState({
     name: '',
     description: '',
-    category: 'material',
-    quantity: 1,
-    unit: 'piece',
-    unitPrice: 0,
-    isOptional: false
+    unit: '',
+    price: '',
+    supplier: ''
   });
+
+  // Query para obtener materiales del inventario
+  const { data: inventoryMaterials = [] } = useQuery({
+    queryKey: ['/api/user-materials'],
+    enabled: showInventoryDialog
+  });
+
+  // Funciones para manejar materiales
+  const handleAddMaterialFromInventory = (material: any) => {
+    const newItem = {
+      id: Date.now().toString(),
+      name: material.name,
+      description: material.description || '',
+      quantity: 1,
+      unit: material.unit,
+      price: material.price / 100, // Convert from cents
+      total: material.price / 100
+    };
+    
+    setEstimate(prev => ({
+      ...prev,
+      items: [...prev.items, newItem]
+    }));
+    
+    setShowInventoryDialog(false);
+    toast({
+      title: "Material added",
+      description: `${material.name} has been added to your estimate.`,
+    });
+  };
+
+  const handleSaveNewMaterial = async () => {
+    try {
+      const materialData = {
+        name: newMaterial.name,
+        description: newMaterial.description,
+        unit: newMaterial.unit,
+        price: Math.round(parseFloat(newMaterial.price) * 100), // Convert to cents
+        supplier: newMaterial.supplier,
+        category: 'Materials',
+        userId: 1 // You might want to get this from auth context
+      };
+
+      const response = await fetch('/api/user-materials', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(materialData),
+      });
+
+      if (response.ok) {
+        // Reset form
+        setNewMaterial({
+          name: '',
+          description: '',
+          unit: '',
+          price: '',
+          supplier: ''
+        });
+        setShowAddMaterialDialog(false);
+        
+        toast({
+          title: "Material saved",
+          description: "New material has been added to your inventory.",
+        });
+      } else {
+        throw new Error('Failed to save material');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save material. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Tipos de proyecto disponibles
   const projectTypes = [
@@ -1264,10 +1343,36 @@ export default function EstimateGenerator() {
                                 No items added yet. Click below to add materials or labor.
                               </p>
 
-                              <Button variant="outline" className="w-full">
-                                <Plus className="mr-2 h-4 w-4" />
-                                Add Item
-                              </Button>
+                              {/* Three new buttons to replace the single Add Item button */}
+                              <div className="grid grid-cols-1 gap-3">
+                                <Button 
+                                  variant="outline" 
+                                  className="w-full"
+                                  onClick={() => setShowInventoryDialog(true)}
+                                >
+                                  <Package className="mr-2 h-4 w-4" />
+                                  Search Inventory
+                                </Button>
+                                
+                                <Button 
+                                  variant="outline" 
+                                  className="w-full"
+                                  onClick={() => setShowAddMaterialDialog(true)}
+                                >
+                                  <Plus className="mr-2 h-4 w-4" />
+                                  Add New Material
+                                </Button>
+                                
+                                <Button 
+                                  variant="outline" 
+                                  className="w-full"
+                                  disabled
+                                >
+                                  <Sparkles className="mr-2 h-4 w-4" />
+                                  Get Material with AI
+                                  <Badge variant="secondary" className="ml-2">Coming Soon</Badge>
+                                </Button>
+                              </div>
 
                               <div className="border rounded-md p-4 mt-6 bg-muted/50">
                                 <div className="flex justify-between items-center mb-2">
@@ -1367,5 +1472,161 @@ export default function EstimateGenerator() {
         </div>
       </div>
     </div>
+
+    {/* Dialog for Search Inventory */}
+    <Dialog open={showInventoryDialog} onOpenChange={setShowInventoryDialog}>
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Search Inventory</DialogTitle>
+          <p className="text-sm text-muted-foreground">
+            Select materials from your inventory to add to the estimate
+          </p>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          {inventoryMaterials.length === 0 ? (
+            <div className="text-center py-8">
+              <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">No materials in inventory</h3>
+              <p className="text-muted-foreground mb-4">
+                Add some materials to your inventory first to use this feature.
+              </p>
+              <Button onClick={() => {
+                setShowInventoryDialog(false);
+                setShowAddMaterialDialog(true);
+              }}>
+                Add Your First Material
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {inventoryMaterials.map((material: any) => (
+                <Card key={material.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-medium">{material.name}</h4>
+                      <Badge variant="secondary">{material.category}</Badge>
+                    </div>
+                    
+                    {material.description && (
+                      <p className="text-sm text-muted-foreground mb-2">
+                        {material.description}
+                      </p>
+                    )}
+                    
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">
+                        Unit: {material.unit}
+                      </span>
+                      <span className="font-medium">
+                        ${(material.price / 100).toFixed(2)}
+                      </span>
+                    </div>
+                    
+                    {material.supplier && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Supplier: {material.supplier}
+                      </p>
+                    )}
+                    
+                    <Button 
+                      size="sm" 
+                      className="w-full mt-3"
+                      onClick={() => handleAddMaterialFromInventory(material)}
+                    >
+                      Add to Estimate
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    {/* Dialog for Add New Material */}
+    <Dialog open={showAddMaterialDialog} onOpenChange={setShowAddMaterialDialog}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Add New Material</DialogTitle>
+          <p className="text-sm text-muted-foreground">
+            Add a new material to your inventory
+          </p>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="material-name">Item Name</Label>
+            <Input
+              id="material-name"
+              value={newMaterial.name}
+              onChange={(e) => setNewMaterial(prev => ({ ...prev, name: e.target.value }))}
+              placeholder="e.g., Wood Post 4x4x8"
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="material-description">Description</Label>
+            <Textarea
+              id="material-description"
+              value={newMaterial.description}
+              onChange={(e) => setNewMaterial(prev => ({ ...prev, description: e.target.value }))}
+              placeholder="Optional description of the material"
+              rows={2}
+            />
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="material-unit">Price Unit</Label>
+              <Input
+                id="material-unit"
+                value={newMaterial.unit}
+                onChange={(e) => setNewMaterial(prev => ({ ...prev, unit: e.target.value }))}
+                placeholder="e.g., piece, sq ft, gallon"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="material-price">Price ($)</Label>
+              <Input
+                id="material-price"
+                type="number"
+                step="0.01"
+                value={newMaterial.price}
+                onChange={(e) => setNewMaterial(prev => ({ ...prev, price: e.target.value }))}
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+          
+          <div>
+            <Label htmlFor="material-supplier">Supplier</Label>
+            <Input
+              id="material-supplier"
+              value={newMaterial.supplier}
+              onChange={(e) => setNewMaterial(prev => ({ ...prev, supplier: e.target.value }))}
+              placeholder="e.g., Home Depot, Lowes"
+            />
+          </div>
+        </div>
+        
+        <DialogFooter>
+          <Button 
+            variant="outline" 
+            onClick={() => setShowAddMaterialDialog(false)}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSaveNewMaterial}
+            disabled={!newMaterial.name || !newMaterial.unit || !newMaterial.price}
+          >
+            Save Material
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
