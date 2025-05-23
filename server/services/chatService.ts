@@ -57,3 +57,8 @@ async function processGeneralChatMessage(
     userId
   };
 }
+
+// Export del servicio principal
+export const chatService = {
+  processChatMessage
+};
