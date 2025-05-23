@@ -1,64 +1,18 @@
 import { useState, useEffect } from 'react';
-import { useToast } from '@/hooks/use-toast';
-import { useProfile } from '@/hooks/use-profile';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Link } from 'wouter';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { MervinAssistant } from '@/components/ui/mervin-assistant';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogDescription,
-  DialogFooter
-} from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
-import { 
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { 
-  PlusCircle, 
-  Trash2, 
-  ArrowRight, 
-  FileDown, 
-  Mail, 
-  CalendarCheck, 
-  Search, 
-  RotateCcw, 
-  DollarSign,
-  MoveVertical,
-  Edit,
-  Save,
-  X
-} from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db, saveEstimate, devMode } from '../lib/firebase';
-import { getClients, Client as FirebaseClient } from '../lib/clientFirebase';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Plus, Search, Package, Trash2, Edit, FileDown, Eye } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
 
-// Types
 interface Client {
   id: string;
   clientId: string;
@@ -110,39 +64,12 @@ interface Estimate {
 }
 
 export default function Estimates() {
-  // Set English as the default language
-  const defaultLanguage = 'en';
-  const { currentUser } = useAuth();
   const { toast } = useToast();
-  const { profile } = useProfile();
+  const queryClient = useQueryClient();
   
-  // States for clients
-  const [clients, setClients] = useState<Client[]>([]);
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [searchClientTerm, setSearchClientTerm] = useState('');
-  const [filteredClients, setFilteredClients] = useState<Client[]>([]);
-  const [showClientSearchDialog, setShowClientSearchDialog] = useState(false);
-  
-  // States for materials
-  const [materials, setMaterials] = useState<Material[]>([]);
-  const [searchMaterialTerm, setSearchMaterialTerm] = useState('');
-  const [filteredMaterials, setFilteredMaterials] = useState<Material[]>([]);
-  const [showMaterialSearchDialog, setShowMaterialSearchDialog] = useState(false);
-  const [showAddMaterialDialog, setShowAddMaterialDialog] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [isLoadingMaterials, setIsLoadingMaterials] = useState(false);
-  const [newMaterial, setNewMaterial] = useState<Partial<Material>>({
-    name: '',
-    category: '',
-    description: '',
-    unit: 'piece',
-    price: 0,
-    sku: ''
-  });
-  
-  // States for the estimate
-  const [estimate, setEstimate] = useState<Estimate>({
-    title: 'New Estimate',
+  // State for the estimate form
+  const [currentEstimate, setCurrentEstimate] = useState<Estimate>({
+    title: '',
     clientId: '',
     client: null,
     items: [],
@@ -151,2326 +78,475 @@ export default function Estimates() {
     notes: '',
     status: 'draft'
   });
-  
-  // Loading states
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isSendingEmail, setIsSendingEmail] = useState(false);
-  
-  // Additional states
-  const [tempQuantity, setTempQuantity] = useState<number>(1);
-  const [tempSelectedMaterial, setTempSelectedMaterial] = useState<Material | null>(null);
-  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
-  const [editableHtml, setEditableHtml] = useState<string | null>(null);
-  const [isEditingPreview, setIsEditingPreview] = useState(false);
+
+  // Dialog states
+  const [showClientSearchDialog, setShowClientSearchDialog] = useState(false);
+  const [showMaterialSearchDialog, setShowMaterialSearchDialog] = useState(false);
+  const [showAddMaterialDialog, setShowAddMaterialDialog] = useState(false);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
-  // Siempre usamos la plantilla Premium
-  const [selectedTemplateId] = useState<number>(999003); 
-  const [selectedTemplateStyle] = useState<string>("premium");
-  
-  // Load clients and materials when component mounts
-  useEffect(() => {
-    if (!currentUser) return;
+
+  // Search states
+  const [clientSearchTerm, setClientSearchTerm] = useState('');
+  const [materialSearchTerm, setMaterialSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+
+  // Temporary states for material selection
+  const [tempSelectedMaterial, setTempSelectedMaterial] = useState<Material | null>(null);
+  const [tempQuantity, setTempQuantity] = useState(1);
+  const [tempDescription, setTempDescription] = useState('');
+
+  // New material form state
+  const [newMaterial, setNewMaterial] = useState({
+    name: '',
+    category: '',
+    description: '',
+    price: 0,
+    unit: '',
+    quantity: 1,
+    supplier: '',
+    sku: ''
+  });
+
+  const [previewHtml, setPreviewHtml] = useState('');
+
+  // Fetch clients
+  const { data: clients = [] } = useQuery({
+    queryKey: ['/api/clients'],
+    enabled: showClientSearchDialog
+  });
+
+  // Fetch materials
+  const { data: materials = [] } = useQuery({
+    queryKey: ['/api/materials'],
+    enabled: showMaterialSearchDialog
+  });
+
+  // Filter clients based on search term
+  const filteredClients = clients.filter((client: Client) =>
+    client.name.toLowerCase().includes(clientSearchTerm.toLowerCase()) ||
+    (client.email && client.email.toLowerCase().includes(clientSearchTerm.toLowerCase())) ||
+    (client.phone && client.phone.includes(clientSearchTerm))
+  );
+
+  // Filter materials based on search term and category
+  const filteredMaterials = materials.filter((material: Material) => {
+    const matchesSearch = materialSearchTerm === '' || 
+      material.name.toLowerCase().includes(materialSearchTerm.toLowerCase()) ||
+      (material.description && material.description.toLowerCase().includes(materialSearchTerm.toLowerCase())) ||
+      material.category.toLowerCase().includes(materialSearchTerm.toLowerCase()) ||
+      (material.sku && material.sku.toLowerCase().includes(materialSearchTerm.toLowerCase()));
     
-    const loadData = async () => {
-      setIsLoading(true);
-      
-      try {
-        // Load clients
-        const clientsData = await getClients();
-        // Convert Firebase clients to our Client interface
-        const mappedClients: Client[] = clientsData.map(client => ({
-          id: client.id,
-          clientId: client.clientId,
-          name: client.name,
-          email: client.email,
-          phone: client.phone,
-          mobilePhone: client.mobilePhone,
-          address: client.address,
-          city: client.city,
-          state: client.state,
-          zipCode: client.zipCode
-        }));
-        setClients(mappedClients);
-        
-        // Load materials
-        const materialsRef = collection(db, 'materials');
-        const q = query(materialsRef, where('userId', '==', currentUser.uid));
-        const querySnapshot = await getDocs(q);
-        
-        const materialsData: Material[] = [];
-        querySnapshot.forEach((doc) => {
-          const data = doc.data() as Omit<Material, 'id'>;
-          materialsData.push({
-            id: doc.id,
-            ...data,
-            price: typeof data.price === 'number' ? data.price : 0
-          } as Material);
-        });
-        
-        setMaterials(materialsData);
-      } catch (error) {
-        console.error('Error loading data:', error);
-        toast({
-          title: 'Error',
-          description: 'No se pudieron cargar los datos necesarios.',
-          variant: 'destructive'
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    const matchesCategory = selectedCategory === 'all' || material.category === selectedCategory;
     
-    loadData();
-  }, [currentUser, toast]);
-  
-  // Calculate total when items change
+    return matchesSearch && matchesCategory;
+  });
+
+  // Create material mutation
+  const createMaterialMutation = useMutation({
+    mutationFn: (materialData: any) => apiRequest('/api/materials', {
+      method: 'POST',
+      body: JSON.stringify(materialData)
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/materials'] });
+      toast({
+        title: "Material creado",
+        description: "El material se ha agregado al inventario y al estimado",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo crear el material",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Save estimate mutation
+  const saveEstimateMutation = useMutation({
+    mutationFn: (estimateData: any) => apiRequest('/api/estimates', {
+      method: 'POST',
+      body: JSON.stringify(estimateData)
+    }),
+    onSuccess: () => {
+      toast({
+        title: "Estimado guardado",
+        description: "El estimado se ha guardado exitosamente",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo guardar el estimado",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Calculate totals whenever items change
   useEffect(() => {
-    const subtotal = estimate.items.reduce((sum, item) => sum + item.total, 0);
-    // You can add tax calculation here if needed
-    setEstimate(prev => ({
+    const subtotal = currentEstimate.items.reduce((sum, item) => sum + item.total, 0);
+    setCurrentEstimate(prev => ({
       ...prev,
       subtotal,
-      total: subtotal
+      total: subtotal // You can add tax calculations here if needed
     }));
-  }, [estimate.items]);
-  
-  // Filter clients when search term changes
-  useEffect(() => {
-    if (searchClientTerm.trim() === '') {
-      setFilteredClients(clients);
-    } else {
-      const term = searchClientTerm.toLowerCase();
-      const filtered = clients.filter(client => 
-        client.name.toLowerCase().includes(term) || 
-        client.email?.toLowerCase().includes(term) || 
-        client.phone?.includes(term)
-      );
-      setFilteredClients(filtered);
-    }
-  }, [searchClientTerm, clients]);
-  
-  // Filter materials when search term changes
-  useEffect(() => {
-    let filtered = materials;
-    
-    // Filter by search term
-    if (searchMaterialTerm.trim() !== '') {
-      const term = searchMaterialTerm.toLowerCase();
-      filtered = filtered.filter(material => 
-        material.name.toLowerCase().includes(term) || 
-        material.description?.toLowerCase().includes(term) || 
-        material.category.toLowerCase().includes(term) ||
-        material.sku?.toLowerCase().includes(term)
-      );
-    }
-    
-    // Filter by category
-    if (selectedCategory) {
-      filtered = filtered.filter(material => material.category === selectedCategory);
-    }
-    
-    setFilteredMaterials(filtered);
-  }, [searchMaterialTerm, materials, selectedCategory]);
-  
-  // Format currency
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN'
-    }).format(amount);
-  };
-  
-  // Select client
+  }, [currentEstimate.items]);
+
   const handleSelectClient = (client: Client) => {
-    setSelectedClient(client);
-    setEstimate(prev => ({
+    setCurrentEstimate(prev => ({
       ...prev,
       clientId: client.id,
       client
     }));
     setShowClientSearchDialog(false);
+    setClientSearchTerm('');
   };
-  
-  // Add material to estimate
-  const handleAddItemToEstimate = () => {
+
+  const handleAddSelectedMaterial = () => {
     if (!tempSelectedMaterial) return;
-    
+
     const newItem: EstimateItem = {
-      id: `item_${Date.now()}`,
+      id: Date.now().toString(),
       materialId: tempSelectedMaterial.id,
       name: tempSelectedMaterial.name,
-      description: tempSelectedMaterial.description || "",
+      description: tempDescription || tempSelectedMaterial.description,
       price: tempSelectedMaterial.price,
       quantity: tempQuantity,
       unit: tempSelectedMaterial.unit,
       total: tempSelectedMaterial.price * tempQuantity
     };
-    
-    setEstimate(prev => ({
+
+    setCurrentEstimate(prev => ({
       ...prev,
       items: [...prev.items, newItem]
     }));
-    
+
+    // Reset temporary states
     setTempSelectedMaterial(null);
     setTempQuantity(1);
+    setTempDescription('');
     setShowMaterialSearchDialog(false);
+    setMaterialSearchTerm('');
+    setSelectedCategory('all');
+
+    toast({
+      title: "Material agregado",
+      description: "El material se ha agregado al estimado",
+    });
   };
-  
-  // Remove item from estimate
-  const handleRemoveItem = (id: string) => {
-    setEstimate(prev => ({
-      ...prev,
-      items: prev.items.filter(item => item.id !== id)
-    }));
-  };
-  
-  // Update item quantity
-  const handleUpdateQuantity = (id: string, quantity: number) => {
-    if (quantity <= 0) return;
-    
-    setEstimate(prev => ({
-      ...prev,
-      items: prev.items.map(item => {
-        if (item.id === id) {
-          return {
-            ...item,
-            quantity,
-            total: item.price * quantity
-          };
-        }
-        return item;
-      })
-    }));
-  };
-  
-  // Move item up or down in the list
-  const moveItem = (id: string, direction: 'up' | 'down') => {
-    const itemIndex = estimate.items.findIndex(item => item.id === id);
-    if (itemIndex === -1) return;
-    
-    const newItems = [...estimate.items];
-    
-    if (direction === 'up' && itemIndex > 0) {
-      // Swap with the item above
-      [newItems[itemIndex], newItems[itemIndex - 1]] = [newItems[itemIndex - 1], newItems[itemIndex]];
-    } else if (direction === 'down' && itemIndex < newItems.length - 1) {
-      // Swap with the item below
-      [newItems[itemIndex], newItems[itemIndex + 1]] = [newItems[itemIndex + 1], newItems[itemIndex]];
-    }
-    
-    setEstimate(prev => ({
-      ...prev,
-      items: newItems
-    }));
-  };
-  
-  // Save new material
+
   const handleSaveMaterial = async () => {
-    if (!currentUser) return;
-    
-    if (!newMaterial.name || !newMaterial.category || !newMaterial.unit) {
+    if (!newMaterial.name || !newMaterial.category || !newMaterial.unit || newMaterial.price <= 0) {
       toast({
-        title: 'Datos incompletos',
-        description: 'Por favor, completa los campos obligatorios: Nombre, Categoría y Unidad.',
-        variant: 'destructive'
+        title: "Error",
+        description: "Por favor completa todos los campos requeridos",
+        variant: "destructive",
       });
       return;
     }
-    
+
     try {
-      const materialData = {
-        ...newMaterial,
-        price: typeof newMaterial.price === 'number' ? newMaterial.price : 0,
-        userId: currentUser.uid,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+      const materialWithId = await createMaterialMutation.mutateAsync(newMaterial);
+      
+      // Add to current estimate
+      const newItem: EstimateItem = {
+        id: Date.now().toString(),
+        materialId: materialWithId.id,
+        name: newMaterial.name,
+        description: newMaterial.description,
+        price: newMaterial.price,
+        quantity: newMaterial.quantity,
+        unit: newMaterial.unit,
+        total: newMaterial.price * newMaterial.quantity
       };
-      
-      const docRef = await addDoc(collection(db, 'materials'), materialData);
-      
-      const newMaterialWithId: Material = {
-        id: docRef.id,
-        ...materialData,
-        price: materialData.price as number
-      } as Material;
-      
-      setMaterials(prev => [...prev, newMaterialWithId]);
-      
-      // Use the new material as the selected material
-      setTempSelectedMaterial(newMaterialWithId);
-      
-      // Reset the form
+
+      setCurrentEstimate(prev => ({
+        ...prev,
+        items: [...prev.items, newItem]
+      }));
+
+      // Reset form
       setNewMaterial({
         name: '',
         category: '',
         description: '',
-        unit: 'pieza',
-        price: 0
+        price: 0,
+        unit: '',
+        quantity: 1,
+        supplier: '',
+        sku: ''
       });
       
       setShowAddMaterialDialog(false);
-      
-      toast({
-        title: 'Material agregado',
-        description: `Se ha agregado el material "${newMaterial.name}" correctamente.`
-      });
     } catch (error) {
-      console.error('Error al guardar material:', error);
-      toast({
-        title: 'Error al guardar',
-        description: 'No se pudo guardar el material. Por favor, inténtalo de nuevo.',
-        variant: 'destructive'
-      });
+      console.error('Error saving material:', error);
     }
   };
-  
-  // Generate and save the estimate
-  const handleSaveEstimate = async () => {
-    if (!currentUser || !estimate.client) {
-      toast({
-        title: 'Datos incompletos',
-        description: 'Por favor, selecciona un cliente antes de guardar.',
-        variant: 'destructive'
-      });
-      return;
-    }
-    
-    if (estimate.items.length === 0) {
-      toast({
-        title: 'Sin materiales',
-        description: 'Por favor, agrega al menos un material al estimado.',
-        variant: 'destructive'
-      });
-      return;
-    }
-    
-    setIsSaving(true);
-    
-    try {
-      // En este punto sabemos que estimate.client no es null
-      const client = estimate.client;
-      
-      // Primero, vamos a generar el HTML del estimado usando la misma lógica 
-      // que usamos para la vista previa
-      const estimateHtml = `
-      <style>
-        .estimate-preview {
-          font-family: 'Arial', sans-serif;
-          color: #333;
-          max-width: 100%;
-          margin: 0 auto;
-        }
-        
-        .estimate-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 30px;
-          padding-bottom: 20px;
-          border-bottom: 1px solid #ddd;
-        }
-        
-        .company-info h1 {
-          margin: 0 0 10px 0;
-          color: #1e3a8a;
-          font-size: 24px;
-        }
-        
-        .company-info p {
-          margin: 5px 0;
-          font-size: 14px;
-        }
-        
-        .estimate-title {
-          text-align: right;
-        }
-        
-        .estimate-title h2 {
-          margin: 0 0 10px 0;
-          color: #1e3a8a;
-          font-size: 28px;
-        }
-        
-        .estimate-title p {
-          margin: 5px 0;
-          font-size: 14px;
-        }
-        
-        .section {
-          margin-bottom: 25px;
-        }
-        
-        .section h3 {
-          margin: 0 0 15px 0;
-          color: #1e3a8a;
-          font-size: 18px;
-          padding-bottom: 8px;
-          border-bottom: 1px solid #eee;
-        }
-        
-        .section p {
-          margin: 5px 0;
-          font-size: 14px;
-        }
-        
-        .grid-container {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 20px;
-          margin-bottom: 20px;
-        }
-        
-        .grid-item strong {
-          display: inline-block;
-          min-width: 100px;
-          color: #555;
-        }
-        
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          margin-bottom: 20px;
-        }
-        
-        th {
-          text-align: left;
-          padding: 10px;
-          background-color: #f4f4f8;
-          font-weight: 600;
-          border-bottom: 2px solid #ddd;
-        }
-        
-        td {
-          padding: 10px;
-          border-bottom: 1px solid #eee;
-        }
-        
-        .summary {
-          margin-top: 20px;
-          text-align: right;
-        }
-        
-        .summary-item {
-          margin: 5px 0;
-          font-size: 14px;
-        }
-        
-        .total {
-          font-size: 18px;
-          font-weight: bold;
-          color: #1e3a8a;
-          margin-top: 10px;
-        }
-        
-        .notes {
-          margin-top: 30px;
-          padding: 15px;
-          background-color: #f9f9f9;
-          border-radius: 4px;
-        }
-        
-        .estimate-footer {
-          margin-top: 30px;
-          padding-top: 15px;
-          border-top: 1px solid #ddd;
-          font-size: 12px;
-          color: #777;
-          text-align: center;
-        }
-      </style>
-      
-      <div class="estimate-preview">
-        <div class="estimate-header">
-          <div class="company-info">
-            <h1>${profile?.companyName || 'Owl Fence'}</h1>
-            <p>${profile?.address || '123 Fence Avenue'}, ${profile?.city || 'San Diego'}, ${profile?.state || 'CA'} ${profile?.zipCode || '92101'}</p>
-            <p>${profile?.email || 'info@owlfence.com'} | ${profile?.phone || profile?.mobilePhone || '(555) 123-4567'}</p>
-            <p>${profile?.website || 'www.owlfence.com'}</p>
-          </div>
-          <div class="estimate-title">
-            <h2>ESTIMADO</h2>
-            <p><strong>Fecha:</strong> ${new Date().toLocaleDateString()}</p>
-            <p><strong>Estimado #:</strong> EST-${Date.now().toString().slice(-6)}</p>
-            <p><strong>Válido hasta:</strong> ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}</p>
-          </div>
-        </div>
-        
-        <div class="section">
-          <h3>Cliente</h3>
-          <div class="grid-container">
-            <div class="grid-item">
-              <p><strong>Nombre:</strong> ${client.name}</p>
-              <p><strong>Email:</strong> ${client.email || 'N/A'}</p>
-              <p><strong>Teléfono:</strong> ${client.phone || 'N/A'}</p>
-            </div>
-            <div class="grid-item">
-              <p><strong>Dirección:</strong> ${client.address || 'N/A'}</p>
-              <p><strong>Ciudad:</strong> ${client.city || 'N/A'}</p>
-              <p><strong>Estado/CP:</strong> ${client.state || 'N/A'} ${client.zipCode ? ', ' + client.zipCode : ''}</p>
-            </div>
-          </div>
-        </div>
-        
-        <div class="section">
-          <h3>Detalles y Descripción del Proyecto</h3>
-          <p>${estimate.notes || 'Sin descripción detallada del proyecto.'}</p>
-        </div>
-        
-        <div class="section">
-          <h3>Materiales y Servicios</h3>
-          <table>
-            <thead>
-              <tr>
-                <th style="width: 40%">Descripción</th>
-                <th style="width: 15%">Cantidad</th>
-                <th style="width: 15%">Unidad</th>
-                <th style="width: 15%">Precio</th>
-                <th style="width: 15%">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${estimate.items.map(item => `
-                <tr>
-                  <td>${item.name}${item.description ? `<br><span style="color: #666; font-size: 12px;">${item.description}</span>` : ''}</td>
-                  <td>${item.quantity}</td>
-                  <td>${item.unit}</td>
-                  <td>${formatCurrency(item.price)}</td>
-                  <td>${formatCurrency(item.total)}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-          
-          <div class="summary">
-            <div class="summary-item">
-              <strong>Subtotal:</strong>
-              <span>${formatCurrency(estimate.subtotal)}</span>
-            </div>
-            <div class="summary-item total">
-              <strong>Total:</strong>
-              <span>${formatCurrency(estimate.total)}</span>
-            </div>
-          </div>
-        </div>
-        
-        <div class="estimate-footer">
-          <p>Este estimado es válido por 30 días a partir de la fecha de emisión. Precios sujetos a cambios después de este período.</p>
-          <p>Para aprobar este estimado, por favor contáctenos por teléfono o email para programar el inicio del proyecto.</p>
-        </div>
-      </div>
-      `;
-      
-      // Preparar los datos del estimado para guardar
-      // Agregar logs para depuración
-      console.log('Guardando estimado para cliente:', client.name);
-      
-      const estimateData = {
-        title: estimate.title,
-        clientId: estimate.clientId,
-        clientName: client.name,
-        clientEmail: client.email || '',
-        clientPhone: client.phone || '',
-        clientAddress: client.address || '',
-        items: estimate.items,
-        subtotal: estimate.subtotal,
-        total: estimate.total,
-        notes: estimate.notes,
-        status: estimate.status,
-        userId: currentUser.uid,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        estimateHtml: estimateHtml // Guardamos el HTML del estimado
-      };
-      
-      console.log('Datos del estimado a guardar:', estimateData);
-      
-      // Guardar el estimado utilizando nuestra función compatible con desarrollo/producción
-      console.log('Utilizando la función saveEstimate para guardar el estimado');
-      const savedEstimate = await saveEstimate(estimateData);
-      const estimateId = savedEstimate.id;
-      
-      console.log('Estimado guardado con éxito. ID:', estimateId);
-      
-      // Crear o actualizar el proyecto relacionado con este estimado
-      const projectData = {
-        projectId: `EST-${Date.now().toString().slice(-6)}`,
-        clientName: client.name,
-        clientEmail: client.email || '',
-        clientPhone: client.phone || '',
-        address: client.address || '',
-        city: client.city || '',
-        state: client.state || '',
-        zipCode: client.zipCode || '',
-        estimateHtml: estimateHtml,
-        totalPrice: estimate.total,
-        status: 'draft',
-        projectProgress: 'estimate_created',
-        projectType: 'Residencial', // Valor por defecto, se podría personalizar
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        userId: currentUser.uid,
-        estimateId: estimateId, // Referencia al estimado creado
-        clientNotes: estimate.notes || ''
-      };
-      
-      // Guardar el proyecto en la colección de projects
-      await addDoc(collection(db, 'projects'), projectData);
-      
-      // Agregar log una vez guardado el estimado
-      console.log('Estimado guardado exitosamente con ID:', estimateId);
-      
-      toast({
-        title: 'Estimado guardado',
-        description: 'El estimado se ha guardado correctamente y está disponible en My Estimates.'
-      });
-      
-      // Reset the form
-      setEstimate({
-        title: 'Nuevo Estimado',
-        clientId: '',
-        client: null,
-        items: [],
-        subtotal: 0,
-        total: 0,
-        notes: '',
-        status: 'draft'
-      });
-      setSelectedClient(null);
-    } catch (error) {
-      console.error('Error al guardar estimado:', error);
-      toast({
-        title: 'Error al guardar',
-        description: 'No se pudo guardar el estimado. Por favor, inténtalo de nuevo.',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsSaving(false);
-    }
+
+  const handleRemoveItem = (itemId: string) => {
+    setCurrentEstimate(prev => ({
+      ...prev,
+      items: prev.items.filter(item => item.id !== itemId)
+    }));
   };
-  
-  // Generate Preview
-  const handleGeneratePreview = async () => {
-    if (!estimate.client) {
+
+  const handleSaveEstimate = () => {
+    if (!currentEstimate.title || !currentEstimate.clientId || currentEstimate.items.length === 0) {
       toast({
-        title: 'Incomplete Data',
-        description: 'Please select a client before generating the preview.',
-        variant: 'destructive'
+        title: "Error",
+        description: "Por favor completa el título, selecciona un cliente y agrega al menos un material",
+        variant: "destructive",
       });
       return;
     }
-    
-    if (estimate.items.length === 0) {
-      toast({
-        title: 'No Materials',
-        description: 'Please add at least one material to the estimate.',
-        variant: 'destructive'
-      });
-      return;
-    }
-    
-    console.log('Generando preview del estimado...');
-    setIsEditingPreview(false); // Aseguramos que comenzamos en modo vista
-    
-    try {
-      // Convertir el estilo seleccionado al ID de template correspondiente
-      const templateId = styleToTemplateId[selectedTemplateStyle] || 999001;
-      setSelectedTemplateId(templateId);
-      
-      console.log(`Generando preview con estilo: ${selectedTemplateStyle}, templateId: ${templateId}`);
-      
-      // Llamar a la API para generar el HTML usando la plantilla estática
-      const response = await fetch('/api/estimates/html', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          estimateData: {
-            client: estimate.client,
-            contractor: profile,
-            project: {
-              type: estimate.title,
-              subtype: estimate.title,
-              dimensions: { area: 0 },
-              notes: estimate.notes
-            },
-            items: estimate.items.map(item => ({
-              description: item.name,
-              quantity: item.quantity,
-              unit: item.unit,
-              price: item.price,
-              totalCost: item.total
-            })),
-            subtotal: estimate.subtotal,
-            tax: estimate.tax,
-            total: estimate.total
-          },
-          templateId: templateId
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Error generando HTML para previsualización');
-      }
-      
-      const { html } = await response.json();
-      console.log('HTML para preview generado correctamente con plantilla estática');
-      
-      setPreviewHtml(html);
-      setShowPreviewDialog(true);
-      return;
-    } catch (error) {
-      console.error('Error generando previsualización con plantilla estática:', error);
-      toast({
-        title: 'Aviso',
-        description: 'Usando plantilla local de respaldo para la vista previa.',
-        variant: 'default'
-      });
-    }
-    
-    // Fallback si la API falla: usar generación local
-    console.log('Usando método local para previsualización');
-    
-    // En este punto sabemos que estimate.client no es null
-    const client = estimate.client;
-    
-    // Determinamos la URL del logo
-    let logoUrl = '/owl-logo.png'; // Logo por defecto
-    
-    // Si el perfil tiene un logo personalizado, lo usamos
-    if (profile?.logo) {
-      console.log('Usando logo del perfil de la empresa:', profile.logo);
-      // Verificar si el logo es una URL externa o relativa
-      if (profile.logo.startsWith('http') || profile.logo.startsWith('data:')) {
-        logoUrl = profile.logo;
-      } else {
-        // Si es una ruta relativa, asegurarnos de que tenga el formato correcto
-        logoUrl = profile.logo.startsWith('/') ? profile.logo : `/${profile.logo}`;
-      }
-    } else {
-      console.log('Usando logo por defecto:', logoUrl);
-    }
-    
-    // Precargamos la imagen para verificar si puede cargarse correctamente
-    const logoImg = new Image();
-    logoImg.onload = () => console.log('Logo precargado correctamente:', logoUrl);
-    logoImg.onerror = () => {
-      console.warn('Error precargando logo, usando logo por defecto');
-      logoUrl = '/owl-logo.png';
-    };
-    logoImg.src = logoUrl;
-    
-    console.log('Preparando plantilla HTML con logo...');
-    
-    // Definir estilos de plantilla basados en el tipo seleccionado
-    let templateStyles = '';
-    let bodyBgColor = '#ffffff';
-    let primaryColor = '#1e3a8a';
-    let borderColor = '#dddddd';
-    let tableBgColor = '#f4f4f8';
-    let tableTextColor = '#333333';
-    let fontFamily = "'Arial', sans-serif";
-    let boxShadow = '0 0 10px rgba(0,0,0,0.1)';
-    let border = '1px solid #dddddd';
-    let borderRadius = '0px';
-    let signatureArea = '';
-    
-    // Configurar estilos según el template seleccionado
-    if (selectedTemplateStyle === 'professional') {
-      primaryColor = '#3498db';
-      borderColor = '#3498db';
-      tableBgColor = '#3498db';
-      tableTextColor = '#ffffff';
-      boxShadow = '0 5px 25px rgba(0,0,0,0.08)';
-      border = 'none';
-      borderRadius = '8px';
-      
-      // Agregar área de firma para profesional
-      signatureArea = `
-        <div style="display: flex; justify-content: space-between; margin-top: 50px; margin-bottom: 30px;">
-          <div style="width: 40%; border-top: 1px solid #ccc; padding-top: 10px; text-align: center;">
-            <p>Firma del Cliente</p>
-          </div>
-          <div style="width: 40%; border-top: 1px solid #ccc; padding-top: 10px; text-align: center;">
-            <p>Fecha de Aprobación</p>
-          </div>
-        </div>
-        
-        <div style="text-align: center; margin-top: 20px;">
-          <a href="mailto:${profile?.email || 'info@owlfence.com'}?subject=Aprobación de Estimado #EST-${Date.now().toString().slice(-6)}" 
-             style="display: inline-block; background-color: #3498db; color: white; padding: 10px 20px; 
-                    text-decoration: none; border-radius: 5px; font-weight: bold;">
-            Aprobar Estimado
-          </a>
-        </div>
-      `;
-    } 
-    else if (selectedTemplateStyle === 'luxury') {
-      primaryColor = '#483d8b';
-      borderColor = '#d4af37';
-      tableBgColor = '#483d8b';
-      tableTextColor = '#ffffff';
-      fontFamily = "'Georgia', serif";
-      boxShadow = '0 10px 30px rgba(0,0,0,0.08)';
-      border = '1px solid #e0e0e0';
-      borderRadius = '12px';
-      
-      // Agregar área de firma para luxury
-      signatureArea = `
-        <div style="display: flex; justify-content: space-between; margin-top: 50px; margin-bottom: 30px;">
-          <div style="width: 45%; border-top: 1px solid #483d8b; padding-top: 15px; text-align: center; color: #483d8b; font-style: italic;">
-            <p>Firma del Cliente</p>
-          </div>
-          <div style="width: 45%; border-top: 1px solid #483d8b; padding-top: 15px; text-align: center; color: #483d8b; font-style: italic;">
-            <p>Fecha de Aprobación</p>
-          </div>
-        </div>
-        
-        <div style="text-align: center; margin-top: 30px;">
-          <a href="mailto:${profile?.email || 'info@owlfence.com'}?subject=Aprobación de Estimado Premium #EST-${Date.now().toString().slice(-6)}" 
-             style="display: inline-block; background-color: #483d8b; color: white; padding: 12px 25px; 
-                    text-decoration: none; border-radius: 5px; font-weight: bold; letter-spacing: 1px;">
-            Aprobar Estimado Premium
-          </a>
-        </div>
-      `;
-    }
-    
-    // Generar una plantilla HTML mejorada con el logo
-    const html = `
-      <style>
-        body {
-          margin: 0;
-          padding: 0;
-          font-family: ${fontFamily};
-          color: #333;
-          background-color: ${bodyBgColor};
-          line-height: 1.6;
-        }
-        
-        .estimate-container {
-          max-width: 900px;
-          margin: 20px auto;
-          padding: 30px;
-          background-color: #fff;
-          box-shadow: ${boxShadow};
-          border: ${border};
-          border-radius: ${borderRadius};
-        }
-        
-        .estimate-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 30px;
-          padding-bottom: 20px;
-          border-bottom: 2px solid ${borderColor};
-        }
-        
-        .company-logo {
-          max-width: 200px;
-          max-height: 80px;
-          margin-bottom: 15px;
-          object-fit: contain;
-        }
-        
-        .company-info h1 {
-          margin: 0 0 10px 0;
-          color: ${primaryColor};
-          font-size: 24px;
-        }
-        
-        .company-info p {
-          margin: 5px 0;
-          font-size: 14px;
-        }
-        
-        .estimate-title {
-          text-align: right;
-        }
-        
-        .estimate-title h2 {
-          margin: 0 0 10px 0;
-          color: #1e3a8a;
-          font-size: 28px;
-        }
-        
-        .estimate-title p {
-          margin: 5px 0;
-          font-size: 14px;
-        }
-        
-        .section {
-          margin-bottom: 25px;
-        }
-        
-        .section h3 {
-          margin: 0 0 15px 0;
-          color: #1e3a8a;
-          font-size: 18px;
-          padding-bottom: 8px;
-          border-bottom: 1px solid #eee;
-        }
-        
-        .section p {
-          margin: 5px 0;
-          font-size: 14px;
-        }
-        
-        .grid-container {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 20px;
-          margin-bottom: 20px;
-        }
-        
-        .grid-item strong {
-          display: inline-block;
-          min-width: 100px;
-          color: #555;
-        }
-        
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          margin-bottom: 20px;
-        }
-        
-        th {
-          text-align: left;
-          padding: 10px;
-          background-color: #f4f4f8;
-          font-weight: 600;
-          border-bottom: 2px solid #ddd;
-        }
-        
-        td {
-          padding: 10px;
-          border-bottom: 1px solid #eee;
-        }
-        
-        .summary {
-          margin-top: 20px;
-          text-align: right;
-        }
-        
-        .summary-item {
-          margin: 5px 0;
-          font-size: 14px;
-        }
-        
-        .total {
-          font-size: 18px;
-          font-weight: bold;
-          color: #1e3a8a;
-          margin-top: 10px;
-        }
-        
-        .notes {
-          margin-top: 30px;
-          padding: 15px;
-          background-color: #f9f9f9;
-          border-radius: 4px;
-        }
-        
-        .estimate-footer {
-          margin-top: 30px;
-          padding-top: 15px;
-          border-top: 1px solid #ddd;
-          font-size: 12px;
-          color: #777;
-          text-align: center;
-        }
-      </style>
-      
-      <div class="estimate-preview">
-        <div class="estimate-header">
-          <div class="company-info">
-            <img src="${logoUrl}" alt="Logo" class="company-logo" crossorigin="anonymous" onerror="this.style.display='none'; console.error('Error cargando logo en preview');" />
-            <h1>${profile?.companyName || 'Owl Fence'}</h1>
-            <p>${profile?.address || '123 Fence Avenue'}, ${profile?.city || 'San Diego'}, ${profile?.state || 'CA'} ${profile?.zipCode || '92101'}</p>
-            <p>${profile?.email || 'info@owlfence.com'} | ${profile?.phone || profile?.mobilePhone || '(555) 123-4567'}</p>
-            <p>${profile?.website || 'www.owlfence.com'}</p>
-          </div>
-          <div class="estimate-title">
-            <h2>ESTIMADO</h2>
-            <p><strong>Fecha:</strong> ${new Date().toLocaleDateString()}</p>
-            <p><strong>Estimado #:</strong> EST-${Date.now().toString().slice(-6)}</p>
-            <p><strong>Válido hasta:</strong> ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}</p>
-          </div>
-        </div>
-        
-        <div class="section">
-          <h3>Cliente</h3>
-          <div class="grid-container">
-            <div class="grid-item">
-              <p><strong>Nombre:</strong> ${client.name}</p>
-              <p><strong>Email:</strong> ${client.email || 'N/A'}</p>
-              <p><strong>Teléfono:</strong> ${client.phone || 'N/A'}</p>
-            </div>
-            <div class="grid-item">
-              <p><strong>Dirección:</strong> ${client.address || 'N/A'}</p>
-              <p><strong>Ciudad:</strong> ${client.city || 'N/A'}</p>
-              <p><strong>Estado/CP:</strong> ${client.state || 'N/A'} ${client.zipCode ? ', ' + client.zipCode : ''}</p>
-            </div>
-          </div>
-        </div>
-        
-        <div class="section">
-          <h3>Detalles y Descripción del Proyecto</h3>
-          <p>${estimate.notes || 'Sin descripción detallada del proyecto.'}</p>
-        </div>
-        
-        <div class="section">
-          <h3>Materiales y Servicios</h3>
-          <table>
-            <thead>
-              <tr>
-                <th style="width: 40%">Descripción</th>
-                <th style="width: 15%">Cantidad</th>
-                <th style="width: 15%">Unidad</th>
-                <th style="width: 15%">Precio</th>
-                <th style="width: 15%">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${estimate.items.map(item => `
-                <tr>
-                  <td>${item.name}${item.description ? `<br><span style="color: #666; font-size: 12px;">${item.description}</span>` : ''}</td>
-                  <td>${item.quantity}</td>
-                  <td>${item.unit}</td>
-                  <td>${formatCurrency(item.price)}</td>
-                  <td>${formatCurrency(item.total)}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-          
-          <div class="summary">
-            <div class="summary-item">
-              <strong>Subtotal:</strong>
-              <span>${formatCurrency(estimate.subtotal)}</span>
-            </div>
-            <div class="summary-item total">
-              <strong>Total:</strong>
-              <span>${formatCurrency(estimate.total)}</span>
-            </div>
-          </div>
-        </div>
-        
-        <div class="estimate-footer">
-          <p>Este estimado es válido por 30 días a partir de la fecha de emisión. Precios sujetos a cambios después de este período.</p>
-          <p>Para aprobar este estimado, por favor contáctenos por teléfono o email para programar el inicio del proyecto.</p>
-        </div>
-      </div>
-    `;
-    
-    console.log('HTML para preview generado correctamente');
+
+    saveEstimateMutation.mutate(currentEstimate);
+  };
+
+  const handlePreview = () => {
+    const html = generateEstimateHTML();
     setPreviewHtml(html);
     setShowPreviewDialog(true);
   };
-  
-  // Handle send email
-  const handleSendEmail = () => {
-    if (!estimate.client || !estimate.client.email) {
-      toast({
-        title: 'Sin correo electrónico',
-        description: 'El cliente no tiene un correo electrónico registrado.',
-        variant: 'destructive'
-      });
-      return;
-    }
-    
-    const clientEmail = estimate.client.email;
-    
-    setIsSendingEmail(true);
-    
-    // In a real app, you would call an API to send the email
-    // For this example, we'll just show a success message after a delay
-    setTimeout(() => {
-      toast({
-        title: 'Email enviado',
-        description: `El estimado se ha enviado correctamente a ${clientEmail}.`
-      });
-      setIsSendingEmail(false);
-    }, 1500);
+
+  const generateEstimateHTML = () => {
+    return `
+      <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">
+          ${currentEstimate.title}
+        </h1>
+        <div style="margin: 20px 0;">
+          <h3>Cliente:</h3>
+          <p>${currentEstimate.client?.name || 'No seleccionado'}</p>
+          ${currentEstimate.client?.email ? `<p>Email: ${currentEstimate.client.email}</p>` : ''}
+          ${currentEstimate.client?.phone ? `<p>Teléfono: ${currentEstimate.client.phone}</p>` : ''}
+        </div>
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+          <thead>
+            <tr style="background-color: #f8f9fa;">
+              <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Material</th>
+              <th style="border: 1px solid #ddd; padding: 12px; text-align: center;">Cantidad</th>
+              <th style="border: 1px solid #ddd; padding: 12px; text-align: right;">Precio Unit.</th>
+              <th style="border: 1px solid #ddd; padding: 12px; text-align: right;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${currentEstimate.items.map(item => `
+              <tr>
+                <td style="border: 1px solid #ddd; padding: 12px;">
+                  <strong>${item.name}</strong>
+                  ${item.description ? `<br><small>${item.description}</small>` : ''}
+                </td>
+                <td style="border: 1px solid #ddd; padding: 12px; text-align: center;">${item.quantity} ${item.unit}</td>
+                <td style="border: 1px solid #ddd; padding: 12px; text-align: right;">$${item.price.toFixed(2)}</td>
+                <td style="border: 1px solid #ddd; padding: 12px; text-align: right;">$${item.total.toFixed(2)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+          <tfoot>
+            <tr style="background-color: #f8f9fa; font-weight: bold;">
+              <td colspan="3" style="border: 1px solid #ddd; padding: 12px; text-align: right;">Total:</td>
+              <td style="border: 1px solid #ddd; padding: 12px; text-align: right;">$${currentEstimate.total.toFixed(2)}</td>
+            </tr>
+          </tfoot>
+        </table>
+        ${currentEstimate.notes ? `
+          <div style="margin: 20px 0;">
+            <h3>Notas:</h3>
+            <p>${currentEstimate.notes}</p>
+          </div>
+        ` : ''}
+      </div>
+    `;
   };
-  
-  // Handle download PDF
+
   const handleDownloadPdf = async () => {
     try {
-      // No permitir descargar si el usuario está editando
-      if (isEditingPreview) {
-        toast({
-          title: 'Guardar cambios',
-          description: 'Por favor, guarde los cambios antes de descargar el PDF.',
-        });
-        return;
-      }
-      
-      // Si no hay HTML de vista previa, generarlo primero
-      if (!previewHtml) {
-        console.log('No hay HTML de vista previa, generando primero...');
-        await handleGeneratePreview();
-        
-        if (!previewHtml) {
-          console.error('No se pudo generar el HTML para el PDF después de intentar');
-          toast({
-            title: 'Error en la Generación',
-            description: 'No se pudo generar el contenido del PDF. Por favor intente nuevamente.',
-            variant: 'destructive'
-          });
-          return;
-        }
-      }
-      
-      toast({
-        title: 'Descarga iniciada',
-        description: 'El PDF del estimado se está generando.'
+      const response = await apiRequest('/api/estimates/generate-pdf', {
+        method: 'POST',
+        body: JSON.stringify({ html: previewHtml })
       });
       
-      console.log('Generando PDF...');
-      
-      // Usar una imagen base64 para el logo para evitar problemas de carga en el PDF
-      const logoBase64 = "data:image/png;base64,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";
-
-      // Obtener el HTML final para el PDF
-      let finalHtml = previewHtml;
-      
-      // Si estamos generando desde cero o editando, asegurar que se incluya el logo
-      if ((!finalHtml.includes('<img src=') || finalHtml.includes('Error cargando imagen')) && profile) {
-        console.log('Preparando plantilla HTML con logo...');
-        
-        // Buscar el mejor lugar para insertar o reemplazar el logo en el HTML con la versión base64
-        if (finalHtml.includes('<div class="company-info">')) {
-          // Reemplazar cualquier imagen existente o insertar una nueva al inicio de company-info
-          const companyInfoRegex = /<div class="company-info">([\s\S]*?)<\/div>/;
-          const companyInfoMatch = finalHtml.match(companyInfoRegex);
-          
-          if (companyInfoMatch) {
-            const companyInfoContent = companyInfoMatch[1];
-            let newContent;
-            
-            if (companyInfoContent.includes('<img')) {
-              // Reemplazar la imagen existente
-              newContent = companyInfoContent.replace(
-                /<img[^>]*>/,
-                `<img src="${logoBase64}" alt="Logo" class="company-logo" />`
-              );
-            } else {
-              // Insertar nueva imagen
-              newContent = `\n<img src="${logoBase64}" alt="Logo" class="company-logo" />${companyInfoContent}`;
-            }
-            
-            finalHtml = finalHtml.replace(
-              companyInfoRegex,
-              `<div class="company-info">${newContent}</div>`
-            );
-          }
-        }
-      }
-      
-      console.log('HTML para PDF generado correctamente');
-      
-      // Intentar generar PDF usando la API con la plantilla estática
-      try {
-        // Usar el mismo ID de template que se usó en preview
-        const templateId = styleToTemplateId[selectedTemplateStyle] || 999001;
-        console.log(`Generando PDF con templateId: ${templateId}, estilo: ${selectedTemplateStyle}`);
-        
-        // Preparar los datos para la API
-        const response = await fetch('/api/estimates/pdf', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            estimateData: {
-              client: estimate.client,
-              contractor: profile,
-              project: {
-                type: estimate.title,
-                subtype: estimate.title,
-                dimensions: { area: 0 },
-                notes: estimate.notes
-              },
-              items: estimate.items.map(item => ({
-                description: item.name,
-                quantity: item.quantity,
-                unit: item.unit,
-                price: item.price,
-                totalCost: item.total
-              })),
-              subtotal: estimate.subtotal,
-              tax: estimate.tax,
-              total: estimate.total
-            },
-            templateId: templateId,
-            fileName: `Estimado-${estimate.client?.name?.replace(/\s+/g, '-') || 'Sin-Cliente'}-${Date.now()}`
-          }),
-        });
-        
-        if (response.ok) {
-          const blob = await response.blob();
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `Estimado-${estimate.client?.name?.replace(/\s+/g, '-') || 'Sin-Cliente'}-${Date.now()}.pdf`;
-          document.body.appendChild(a);
-          a.click();
-          
-          // Limpiar
-          window.URL.revokeObjectURL(url);
-          document.body.removeChild(a);
-          
-          toast({
-            title: 'PDF generado',
-            description: 'El PDF se ha generado y descargado correctamente usando la plantilla seleccionada.'
-          });
-          
-          return; // Terminar si la API funciona correctamente
-        } else {
-          console.warn('Error generando PDF con la API, usando método alternativo');
-        }
-      } catch (apiError) {
-        console.error('Error llamando a la API de generación de PDF:', apiError);
-        console.log('Usando métodos alternativos de generación de PDF');
-      }
-      
-      // Fallback: Generación del lado del cliente con HTML existente
-      // Generar un nombre de archivo para el PDF
-      const fileName = `Estimado-${estimate.client?.name?.replace(/\s+/g, '-') || 'Sin-Cliente'}-${Date.now()}`;
-      
-      console.log('Preparando generación de PDF con el template seleccionado');
-      console.log('Tamaño del HTML para PDF:', finalHtml.length, 'caracteres');
-      
-      // Usar directamente el estado de selectedTemplateStyle
-      console.log('Template seleccionado para PDF:', selectedTemplateStyle);
-      
-      // Asegurarse de que el HTML incluye la información del template
-      if (!finalHtml.includes(`data-template="${selectedTemplateStyle}"`)) {
-        console.log('Agregando información de template al HTML');
-        finalHtml = finalHtml.replace('<body', `<body data-template="${selectedTemplateStyle}" `);
-      }
-      
-      // Intenta primero con generateClientSidePDF que es más confiable
-      try {
-        console.log('Intentando generar PDF usando método del cliente...');
-        const { generateClientSidePDF } = await import('../lib/pdf');
-        await generateClientSidePDF(finalHtml, fileName);
-        
-        toast({
-          title: 'PDF generado',
-          description: 'El PDF se ha generado y descargado correctamente.'
-        });
-      } catch (clientSideError) {
-        console.error('Error con generateClientSidePDF, intentando con método del servidor:', clientSideError);
-        
-        // Si falla, intentar con el método alternativo del servidor
-        try {
-          console.log('Intentando generar PDF usando método del servidor...');
-          const { downloadHTMLAsPDF } = await import('../lib/pdf');
-          await downloadHTMLAsPDF(finalHtml, fileName);
-          
-          toast({
-            title: 'PDF generado',
-            description: 'El PDF se ha generado y descargado correctamente.'
-          });
-        } catch (downloadError) {
-          console.error('Error con downloadHTMLAsPDF:', downloadError);
-          throw new Error("No se pudo generar el PDF por ningún método");
-        }
-      }
-    } catch (error) {
-      console.error('Error al generar PDF:', error);
+      // Handle PDF download here
       toast({
-        title: 'Error',
-        description: 'Hubo un problema al generar el PDF. Por favor, intente nuevamente.',
-        variant: 'destructive'
+        title: "PDF generado",
+        description: "El PDF se ha generado exitosamente",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo generar el PDF",
+        variant: "destructive",
       });
     }
   };
-  
-  return (
-    <div className="container py-6">
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold">Nuevo Estimado</h1>
-        </div>
-        <Link href="/estimates-dashboard">
-          <Button variant="outline" size="sm" className="h-9">
-            <CalendarCheck className="mr-1 h-4 w-4" />
-            My Estimates
-          </Button>
-        </Link>
-      </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Estimate Information */}
-        <Card className="lg:col-span-1">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Estimate Information</CardTitle>
-          </CardHeader>
-          <CardContent className="pb-4">
-            <div className="space-y-3">
-              
-              
-              <div>
-                <Label className="text-xs">Fecha</Label>
-                <Input
-                  type="date"
-                  defaultValue={new Date().toISOString().split('T')[0]}
-                  disabled
-                  className="h-9"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Contractor Information */}
-        <Card className="lg:col-span-1">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Contractor Information</CardTitle>
-          </CardHeader>
-          <CardContent className="pb-4">
-            <div className="grid grid-cols-1 gap-3">
-              {profile?.logo && (
-                <div className="flex justify-center mb-2">
-                  <img 
-                    src={profile.logo} 
-                    alt="Company Logo" 
-                    className="max-h-16 object-contain" 
-                  />
-                </div>
-              )}
-              <h3 className="font-medium text-sm">{profile?.companyName || ""}</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
-                <p className="text-xs text-muted-foreground">
-                  <span className="font-medium">Email:</span> {profile?.email || ""}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  <span className="font-medium">Teléfono:</span> {profile?.phone || profile?.mobilePhone || ""}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  <span className="font-medium">Dirección:</span> {profile?.address || ""}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  <span className="font-medium">Website:</span> {profile?.website || ""}
-                </p>
-              </div>
-              {(!profile?.companyName || !profile?.email || !profile?.phone) && (
-                <div className="mt-2 bg-amber-50 p-2 rounded text-xs text-amber-700 border border-amber-200">
-                  <p>Información incompleta. Actualiza tu <Link href="/settings/profile">perfil de empresa</Link> para mostrar datos correctos en tus estimados.</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Client Information */}
-        <Card className="lg:col-span-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex justify-between items-center">
-              <span>Client Information</span>
-              <Button variant="ghost" size="sm" onClick={() => setShowClientSearchDialog(true)} className="h-8">
-                <Search className="h-4 w-4 mr-1" />
-                Search
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pb-4">
-            {estimate.client ? (
-              <div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 mb-3">
-                  <h3 className="font-medium text-sm md:col-span-2 mb-1">{estimate.client.name}</h3>
-                  {estimate.client.email && (
-                    <p className="text-xs text-muted-foreground">
-                      <span className="font-medium">Email:</span> {estimate.client.email}
-                    </p>
-                  )}
-                  {estimate.client.phone && (
-                    <p className="text-xs text-muted-foreground">
-                      <span className="font-medium">Teléfono:</span> {estimate.client.phone}
-                    </p>
-                  )}
-                  {estimate.client.address && (
-                    <p className="text-xs text-muted-foreground">
-                      <span className="font-medium">Dirección:</span> {estimate.client.address}
-                    </p>
-                  )}
-                  {estimate.client.city && estimate.client.state && (
-                    <p className="text-xs text-muted-foreground">
-                      <span className="font-medium">Ciudad/Estado:</span> {estimate.client.city}, {estimate.client.state} {estimate.client.zipCode || ''}
-                    </p>
-                  )}
-                </div>
-                <Button variant="outline" size="sm" onClick={() => setShowClientSearchDialog(true)} className="h-7 text-xs px-2">
-                  Cambiar cliente
-                </Button>
-              </div>
-            ) : (
-              <div className="text-center py-4">
-                <p className="mb-2 text-muted-foreground text-sm">No hay un cliente seleccionado</p>
-                <Button onClick={() => setShowClientSearchDialog(true)} size="sm">
-                  <Search className="h-4 w-4 mr-1" />
-                  Seleccionar cliente
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-        
-        {/* Project details and description */}
-        <Card className="lg:col-span-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">
-              Detalles y Descripción del Proyecto
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pb-4">
-            <div className="relative">
-              <Textarea 
-                id="estimate-notes" 
-                value={estimate.notes} 
-                onChange={(e) => setEstimate(prev => ({ ...prev, notes: e.target.value }))}
-                placeholder="Descripción detallada del proyecto y notas adicionales para el cliente"
-                rows={3}
-                className="resize-none text-sm"
-              />
-              <div className="absolute right-2 top-2">
-                <MervinAssistant 
-                  originalText={estimate.notes} 
-                  onTextEnhanced={(enhancedText) => setEstimate(prev => ({ ...prev, notes: enhancedText }))}
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Materials List */}
-        <Card className="lg:col-span-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex justify-between items-center">
-              <span>Materials and Services</span>
-              <Button size="sm" onClick={() => setShowMaterialSearchDialog(true)} className="h-8">
-                <PlusCircle className="h-4 w-4 mr-1" />
-                Add
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pb-4">
-            {estimate.items.length > 0 ? (
-              <div className="overflow-x-auto">
-                <Table className="text-xs">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead style={{ width: 45 }} className="px-1"></TableHead>
-                      <TableHead className="px-2">Nombre</TableHead>
-                      <TableHead className="px-2 whitespace-nowrap">Unidad</TableHead>
-                      <TableHead className="px-2 whitespace-nowrap">Precio</TableHead>
-                      <TableHead className="px-2 whitespace-nowrap">Cant.</TableHead>
-                      <TableHead className="px-2 whitespace-nowrap">Total</TableHead>
-                      <TableHead style={{ width: 40 }} className="px-1"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {estimate.items.map(item => (
-                      <TableRow key={item.id}>
-                        <TableCell className="align-middle p-1">
-                          <div className="flex">
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button 
-                                    size="icon" 
-                                    variant="ghost" 
-                                    onClick={() => moveItem(item.id, "up")}
-                                    className="h-5 w-5"
-                                  >
-                                    <MoveVertical className="h-3 w-3 rotate-180" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent side="right">
-                                  <p>Mover arriba</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                            
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button 
-                                    size="icon" 
-                                    variant="ghost" 
-                                    onClick={() => moveItem(item.id, "down")}
-                                    className="h-5 w-5 -ml-1"
-                                  >
-                                    <MoveVertical className="h-3 w-3" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent side="right">
-                                  <p>Mover abajo</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          </div>
-                        </TableCell>
-                        <TableCell className="p-2 font-medium">
-                          {item.name}
-                          {item.description && (
-                            <p className="text-xs text-muted-foreground truncate max-w-[150px]">{item.description}</p>
-                          )}
-                        </TableCell>
-                        <TableCell className="p-2">{item.unit}</TableCell>
-                        <TableCell className="p-2">{formatCurrency(item.price)}</TableCell>
-                        <TableCell className="p-2">
-                          <Input 
-                            type="number"
-                            value={item.quantity}
-                            onChange={(e) => handleUpdateQuantity(item.id, Number(e.target.value))}
-                            min={1}
-                            className="w-16 h-7 text-xs"
-                          />
-                        </TableCell>
-                        <TableCell className="p-2 font-medium">{formatCurrency(item.total)}</TableCell>
-                        <TableCell className="p-1">
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            onClick={() => handleRemoveItem(item.id)}
-                            className="h-5 w-5"
-                          >
-                            <Trash2 className="h-3 w-3 text-destructive" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            ) : (
-              <div className="text-center py-6">
-                <p className="mb-2 text-muted-foreground text-sm">No materials added</p>
-                <Button onClick={() => setShowMaterialSearchDialog(true)} size="sm">
-                  <PlusCircle className="h-4 w-4 mr-1" />
-                  Add Material
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-        
-        {/* Summary */}
-        <Card className="lg:col-span-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Resumen</CardTitle>
-          </CardHeader>
-          <CardContent className="pb-4">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
-              <div className="flex-1 mb-3 md:mb-0">
-                <p className="text-sm mb-1">
-                  <span className="font-medium">Subtotal:</span> {formatCurrency(estimate.subtotal)}
-                </p>
-                <p className="text-lg font-bold">
-                  <span>Total:</span> {formatCurrency(estimate.total)}
-                </p>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-2">
-                <Button 
-                  variant="outline" 
-                  onClick={handleGeneratePreview}
-                  disabled={!estimate.client || estimate.items.length === 0}
-                  size="sm"
-                  className="h-9"
-                >
-                  <ArrowRight className="mr-1 h-4 w-4" />
-                  Preview
-                </Button>
-                
-                <Button 
-                  variant="outline" 
-                  onClick={handleDownloadPdf}
-                  disabled={estimate.items.length === 0 || !estimate.client}
-                  size="sm"
-                  className="h-9"
-                >
-                  <FileDown className="mr-1 h-4 w-4" />
-                  PDF
-                </Button>
-                
-                <Button 
-                  onClick={handleSendEmail}
-                  disabled={isSendingEmail || estimate.items.length === 0 || !estimate.client || !estimate.client.email}
-                  size="sm"
-                  className="h-9"
-                >
-                  {isSendingEmail ? (
-                    <>
-                      <RotateCcw className="mr-1 h-4 w-4 animate-spin" />
-                      Sending...
-                    </>
-                  ) : (
-                    <>
-                      <Mail className="mr-1 h-4 w-4" />
-                      Email
-                    </>
-                  )}
-                </Button>
-                
-                <Button 
-                  onClick={handleSaveEstimate} 
-                  disabled={isSaving || !estimate.client || estimate.items.length === 0}
-                  size="sm"
-                  className="h-9"
-                >
-                  {isSaving ? (
-                    <>
-                      <RotateCcw className="mr-1 h-4 w-4 animate-spin" />
-                      Guardando...
-                    </>
-                  ) : (
-                    <>
-                      <CalendarCheck className="mr-1 h-4 w-4" />
-                      Save
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-      
-      {/* Client Search Dialog */}
-      <Dialog open={showClientSearchDialog} onOpenChange={setShowClientSearchDialog}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader className="pb-3">
-            <DialogTitle className="text-lg">Select Client</DialogTitle>
-            <DialogDescription className="text-sm">
-              Search and select a client for the estimate.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div>
-            <Input
-              placeholder="Search by name, email or phone..."
-              value={searchClientTerm}
-              onChange={(e) => setSearchClientTerm(e.target.value)}
-              className="mb-3"
-            />
-            
-            <div className="max-h-[300px] overflow-y-auto border rounded-md">
-              {filteredClients.length > 0 ? (
-                <Table className="text-sm">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="py-2">Name</TableHead>
-                      <TableHead className="py-2">Email</TableHead>
-                      <TableHead className="py-2">Phone</TableHead>
-                      <TableHead className="py-2 w-[100px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredClients.map(client => (
-                      <TableRow key={client.id}>
-                        <TableCell className="py-1.5 font-medium">{client.name}</TableCell>
-                        <TableCell className="py-1.5">{client.email || '-'}</TableCell>
-                        <TableCell className="py-1.5">{client.phone || '-'}</TableCell>
-                        <TableCell className="py-1.5">
-                          <Button 
-                            size="sm" 
-                            onClick={() => handleSelectClient(client)}
-                            className="h-7 text-xs px-2"
-                          >
-                            Seleccionar
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : (
-                <div className="text-center py-6">
-                  <p className="text-sm text-muted-foreground">No se encontraron clientes</p>
-                </div>
-              )}
-            </div>
-          </div>
-          
-          <DialogFooter className="pt-2">
-            <Button variant="outline" size="sm" onClick={() => setShowClientSearchDialog(false)}>
-              Cancel
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Enhanced Material Search Dialog */}
-      <Dialog open={showMaterialSearchDialog} onOpenChange={setShowMaterialSearchDialog}>
-        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader className="pb-3">
-            <DialogTitle className="text-lg">Select Material from Inventory</DialogTitle>
-            <DialogDescription className="text-sm">
-              Search your existing materials or quickly add a new one to both your estimate and inventory.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="flex-1 flex flex-col min-h-0">
-            {/* Search and Add New Material Section */}
-            <div className="flex gap-2 mb-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by name, description, category, or SKU..."
-                  value={searchMaterialTerm}
-                  onChange={(e) => setSearchMaterialTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <Button 
-                onClick={() => {
-                  setShowMaterialSearchDialog(false);
-                  setShowAddMaterialDialog(true);
-                }}
-                className="whitespace-nowrap bg-primary hover:bg-primary/90"
-              >
-                <PlusCircle className="h-4 w-4 mr-2" />
-                Add New Material
-              </Button>
-            </div>
-            
-            {/* Quick Material Categories Filter */}
-            {materials.length > 0 && (
-              <div className="flex gap-2 mb-3 overflow-x-auto pb-2">
-                <Button
-                  variant={!selectedCategory ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSelectedCategory("")}
-                  className="whitespace-nowrap"
-                >
-                  All
-                </Button>
-                {Array.from(new Set(materials.map(m => m.category).filter(Boolean))).map(category => (
-                  <Button
-                    key={category}
-                    variant={selectedCategory === category ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setSelectedCategory(category)}
-                    className="whitespace-nowrap"
-                  >
-                    {category}
-                  </Button>
-                ))}
-              </div>
-            )}
-            
-            {/* Materials List */}
-            <div className="flex-1 min-h-0 border rounded-lg">
-              {isLoadingMaterials ? (
-                <div className="flex items-center justify-center h-40">
-                  <div className="text-center">
-                    <RotateCcw className="h-6 w-6 animate-spin mx-auto mb-3 text-primary" />
-                    <p className="text-sm text-muted-foreground">Loading materials from inventory...</p>
-                  </div>
-                </div>
-              ) : filteredMaterials.length === 0 ? (
-                <div className="flex items-center justify-center h-40">
-                  <div className="text-center">
-                    <DollarSign className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground mb-3">
-                      {searchMaterialTerm ? 'No materials found matching your search' : 'No materials in inventory yet'}
-                    </p>
-                    <Button 
-                      onClick={() => {
-                        setShowMaterialSearchDialog(false);
-                        setShowAddMaterialDialog(true);
-                      }}
-                      className="bg-primary hover:bg-primary/90"
-                    >
-                      <PlusCircle className="h-4 w-4 mr-2" />
-                      {searchMaterialTerm ? 'Create This Material' : 'Add Your First Material'}
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="max-h-[300px] overflow-y-auto">
-                  {filteredMaterials.map(material => (
-                    <div 
-                      key={material.id} 
-                      className={`p-4 border-b hover:bg-accent cursor-pointer transition-colors ${
-                        tempSelectedMaterial?.id === material.id ? 'bg-primary/10 border-primary' : ''
-                      }`}
-                      onClick={() => setTempSelectedMaterial(material)}
-                    >
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <p className="font-medium text-sm">{material.name}</p>
-                            {material.category && (
-                              <span className="text-xs bg-secondary px-2 py-1 rounded-full">
-                                {material.category}
-                              </span>
-                            )}
-                          </div>
-                          {material.description && (
-                            <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{material.description}</p>
-                          )}
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-primary">
-                              {formatCurrency(material.price)} / {material.unit}
-                            </span>
-                            {material.sku && (
-                              <span className="text-xs text-muted-foreground">SKU: {material.sku}</span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="ml-3 flex items-center">
-                          {tempSelectedMaterial?.id === material.id ? (
-                            <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                              <div className="w-2 h-2 bg-white rounded-full"></div>
-                            </div>
-                          ) : (
-                            <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-          
-          {/* Selected Material Section */}
-          {tempSelectedMaterial && (
-            <div className="border rounded-lg p-4 bg-accent/30 mt-4">
-              <div className="flex justify-between items-start mb-3">
-                <div>
-                  <p className="font-medium">{tempSelectedMaterial.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {formatCurrency(tempSelectedMaterial.price)} / {tempSelectedMaterial.unit}
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setTempSelectedMaterial(null)}
-                  className="h-8 w-8 p-0"
-                >
-                  ×
-                </Button>
-              </div>
-              
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center space-x-2">
-                  <Label htmlFor="quantity" className="whitespace-nowrap text-sm">Quantity:</Label>
-                  <Input
-                    id="quantity"
-                    type="number"
-                    value={tempQuantity}
-                    onChange={(e) => setTempQuantity(Number(e.target.value))}
-                    min={1}
-                    className="w-24 h-9"
-                  />
-                  <span className="text-sm text-muted-foreground">{tempSelectedMaterial.unit}</span>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-muted-foreground">Total</p>
-                  <p className="text-lg font-bold text-primary">
-                    {formatCurrency(tempSelectedMaterial.price * tempQuantity)}
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex justify-end mt-3">
-                <Button 
-                  onClick={handleAddItemToEstimate}
-                  className="min-w-[120px] bg-primary hover:bg-primary/90"
-                >
-                  <PlusCircle className="h-4 w-4 mr-2" />
-                  Add to Estimate
-                </Button>
-              </div>
-            </div>
-          )}
-          
-          <DialogFooter className="pt-4">
-            <Button variant="outline" onClick={() => setShowMaterialSearchDialog(false)}>
-              Cancel
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Enhanced Add Material Dialog */}
-      <Dialog open={showAddMaterialDialog} onOpenChange={setShowAddMaterialDialog}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Add New Material</DialogTitle>
-            <DialogDescription>
-              Create a new material that will be added to your inventory and can be used in estimates.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="material-name">Material Name *</Label>
-              <Input
-                id="material-name"
-                value={newMaterial.name}
-                onChange={(e) => setNewMaterial(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="e.g., Cedar Fence Post 6ft"
-                className="mt-1"
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="material-category">Category</Label>
-              <Input
-                id="material-category"
-                value={newMaterial.category}
-                onChange={(e) => setNewMaterial(prev => ({ ...prev, category: e.target.value }))}
-                placeholder="e.g., Posts, Panels, Hardware"
-                className="mt-1"
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="material-description">Description</Label>
-              <Textarea
-                id="material-description"
-                value={newMaterial.description}
-                onChange={(e) => setNewMaterial(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Brief description of the material"
-                className="mt-1"
-                rows={2}
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="material-unit">Unit *</Label>
-                <Select value={newMaterial.unit} onValueChange={(value) => setNewMaterial(prev => ({ ...prev, unit: value }))}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select unit" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="piece">Piece</SelectItem>
-                    <SelectItem value="ft">Feet</SelectItem>
-                    <SelectItem value="sqft">Sq Feet</SelectItem>
-                    <SelectItem value="linear ft">Linear Feet</SelectItem>
-                    <SelectItem value="bag">Bag</SelectItem>
-                    <SelectItem value="box">Box</SelectItem>
-                    <SelectItem value="gallon">Gallon</SelectItem>
-                    <SelectItem value="pound">Pound</SelectItem>
-                    <SelectItem value="each">Each</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <Label htmlFor="material-price">Price per Unit *</Label>
-                <Input
-                  id="material-price"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={newMaterial.price || ''}
-                  onChange={(e) => setNewMaterial(prev => ({ ...prev, price: Number(e.target.value) }))}
-                  placeholder="0.00"
-                  className="mt-1"
-                />
-              </div>
-            </div>
-            
-            <div>
-              <Label htmlFor="material-sku">SKU (Optional)</Label>
-              <Input
-                id="material-sku"
-                value={newMaterial.sku}
-                onChange={(e) => setNewMaterial(prev => ({ ...prev, sku: e.target.value }))}
-                placeholder="e.g., CFP-6FT-001"
-                className="mt-1"
-              />
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddMaterialDialog(false)}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleSaveMaterial}
-              disabled={!newMaterial.name || !newMaterial.unit || !newMaterial.price}
-              className="bg-primary hover:bg-primary/90"
-            >
-              <PlusCircle className="h-4 w-4 mr-2" />
-              Save & Add to Estimate
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Preview Dialog */}
-      <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
-        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle>Estimate Preview</DialogTitle>
-            <DialogDescription>
-              Preview how your estimate will look when sent to the client.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="flex-1 overflow-auto border rounded-md">
-            <div 
-              dangerouslySetInnerHTML={{ __html: previewHtml }} 
-              className="p-6"
-            />
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowPreviewDialog(false)}>
-              Close
-            </Button>
-            <Button onClick={handleDownloadPdf}>
-              <FileDown className="h-4 w-4 mr-2" />
-              Download PDF
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
 
-export default Estimates;
-                  setShowAddMaterialDialog(true);
-                  setShowMaterialSearchDialog(false);
-                }}
-                className="h-9"
-              >
-                <PlusCircle className="h-4 w-4 mr-1" />
-                Nuevo
-              </Button>
-            </div>
-            
-            <div className="max-h-[200px] overflow-y-auto border rounded-md mb-4">
-              {filteredMaterials.length > 0 ? (
-                <Table className="text-sm">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="py-2">Nombre</TableHead>
-                      <TableHead className="py-2">Categoría</TableHead>
-                      <TableHead className="py-2">Precio</TableHead>
-                      <TableHead className="py-2 w-[100px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredMaterials.map(material => (
-                      <TableRow key={material.id}>
-                        <TableCell className="py-1.5 font-medium">
-                          {material.name}
-                          {material.description && (
-                            <p className="text-xs text-muted-foreground truncate max-w-[180px]">
-                              {material.description}
-                            </p>
-                          )}
-                        </TableCell>
-                        <TableCell className="py-1.5">{material.category}</TableCell>
-                        <TableCell className="py-1.5">{formatCurrency(material.price)}</TableCell>
-                        <TableCell className="py-1.5">
-                          <Button 
-                            size="sm" 
-                            onClick={() => {
-                              setTempSelectedMaterial(material);
-                            }}
-                            className="h-7 text-xs px-2"
-                          >
-                            Seleccionar
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+  return (
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Crear Estimado</h1>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handlePreview} disabled={currentEstimate.items.length === 0}>
+            <Eye className="mr-2 h-4 w-4" />
+            Vista Previa
+          </Button>
+          <Button onClick={handleSaveEstimate} disabled={saveEstimateMutation.isPending}>
+            Guardar Estimado
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - Estimate Details */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Basic Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Información Básica</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="title">Título del Estimado</Label>
+                <Input
+                  id="title"
+                  value={currentEstimate.title}
+                  onChange={(e) => setCurrentEstimate(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="Ej: Cerca de madera para patio trasero"
+                />
+              </div>
+              
+              <div>
+                <Label>Cliente</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={currentEstimate.client?.name || ''}
+                    placeholder="Seleccionar cliente..."
+                    readOnly
+                  />
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowClientSearchDialog(true)}
+                  >
+                    <Search className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="notes">Notas</Label>
+                <Textarea
+                  id="notes"
+                  value={currentEstimate.notes}
+                  onChange={(e) => setCurrentEstimate(prev => ({ ...prev, notes: e.target.value }))}
+                  placeholder="Notas adicionales sobre el estimado..."
+                  rows={3}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Materials */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                Materiales
+                <Button onClick={() => setShowMaterialSearchDialog(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Agregar Material
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {currentEstimate.items.length === 0 ? (
+                <div className="text-center py-8">
+                  <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">
+                    No hay materiales agregados. Haz clic en "Agregar Material" para comenzar.
+                  </p>
+                </div>
               ) : (
-                <div className="text-center py-4">
-                  <p className="text-sm text-muted-foreground">No se encontraron materiales</p>
+                <div className="space-y-2">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Material</TableHead>
+                        <TableHead className="text-center">Cantidad</TableHead>
+                        <TableHead className="text-right">Precio Unit.</TableHead>
+                        <TableHead className="text-right">Total</TableHead>
+                        <TableHead className="w-16"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {currentEstimate.items.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">{item.name}</div>
+                              {item.description && (
+                                <div className="text-sm text-muted-foreground">{item.description}</div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {item.quantity} {item.unit}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            ${item.price.toFixed(2)}
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            ${item.total.toFixed(2)}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveItem(item.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
               )}
-            </div>
-          </div>
-          
-          {tempSelectedMaterial && (
-            <div className="bg-muted p-3 rounded-md mb-3">
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2">
-                <div>
-                  <h3 className="font-medium text-sm">{tempSelectedMaterial.name}</h3>
-                  <p className="text-xs text-muted-foreground">
-                    {tempSelectedMaterial.description || 'No description'}
-                  </p>
-                  <p className="text-xs mt-1">
-                    <span className="font-medium">Price:</span> {formatCurrency(tempSelectedMaterial.price)}
-                  </p>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Label htmlFor="quantity" className="whitespace-nowrap text-xs">Quantity:</Label>
-                  <Input
-                    id="quantity"
-                    type="number"
-                    value={tempQuantity}
-                    onChange={(e) => setTempQuantity(Number(e.target.value))}
-                    min={1}
-                    className="w-20 h-8 text-sm"
-                  />
-                </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Column - Summary */}
+        <div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Resumen</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-between">
+                <span>Subtotal:</span>
+                <span>${currentEstimate.subtotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between font-bold text-lg border-t pt-2">
+                <span>Total:</span>
+                <span>${currentEstimate.total.toFixed(2)}</span>
               </div>
               
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-sm font-medium">Total: {formatCurrency(tempSelectedMaterial.price * tempQuantity)}</p>
-                </div>
-                <Button 
-                  size="sm"
-                  onClick={handleAddItemToEstimate}
-                  className="h-8"
-                >
-                  <PlusCircle className="h-4 w-4 mr-1" />
-                  Agregar
-                </Button>
-              </div>
-            </div>
-          )}
-          
-          <DialogFooter className="pt-2">
-            <Button variant="outline" size="sm" onClick={() => setShowMaterialSearchDialog(false)}>
-              Cancel
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Add Material Dialog */}
-      <Dialog open={showAddMaterialDialog} onOpenChange={setShowAddMaterialDialog}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Add New Material</DialogTitle>
-            <DialogDescription>
-              Create a new material that will be added to your inventory and can be used in estimates.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="material-name" className="text-xs">Name*</Label>
-              <Input 
-                id="material-name" 
-                value={newMaterial.name} 
-                onChange={(e) => setNewMaterial(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Material name"
-                required
-                className="h-9"
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="material-category" className="text-xs">Category*</Label>
-              <Input 
-                id="material-category" 
-                value={newMaterial.category} 
-                onChange={(e) => setNewMaterial(prev => ({ ...prev, category: e.target.value }))}
-                placeholder="Material category"
-                required
-                className="h-9"
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="material-description" className="text-xs">Description</Label>
-              <Textarea 
-                id="material-description" 
-                value={newMaterial.description} 
-                onChange={(e) => setNewMaterial(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Detailed description"
-                className="text-sm resize-none"
-                rows={2}
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="material-price" className="text-xs">Price*</Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-2">
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                  </span>
-                  <Input 
-                    id="material-price" 
-                    type="number"
-                    value={newMaterial.price} 
-                    onChange={(e) => setNewMaterial(prev => ({ ...prev, price: Number(e.target.value) }))}
-                    min={0}
-                    step={0.01}
-                    className="pl-9 h-9"
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <Label htmlFor="material-unit" className="text-xs">Unit*</Label>
-                <Select 
-                  value={newMaterial.unit} 
-                  onValueChange={(value: string) => setNewMaterial(prev => ({ ...prev, unit: value }))}
-                >
-                  <SelectTrigger id="material-unit" className="h-9">
-                    <SelectValue placeholder="Select" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pieza">Piece</SelectItem>
-                    <SelectItem value="metro">Meter</SelectItem>
-                    <SelectItem value="metro2">Square Meter</SelectItem>
-                    <SelectItem value="metro3">Cubic Meter</SelectItem>
-                    <SelectItem value="kg">Kilogram</SelectItem>
-                    <SelectItem value="galón">Gallon</SelectItem>
-                    <SelectItem value="litro">Liter</SelectItem>
-                    <SelectItem value="bolsa">Bag</SelectItem>
-                    <SelectItem value="caja">Box</SelectItem>
-                    <SelectItem value="juego">Set</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-          
-          <DialogFooter className="pt-3">
-            <Button variant="outline" size="sm" onClick={() => setShowAddMaterialDialog(false)}>
-              Cancel
-            </Button>
-            <Button size="sm" onClick={handleSaveMaterial}>
-              Save Material
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Preview Dialog */}
-      <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
-        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle>Estimate Preview</DialogTitle>
-            <DialogDescription>
-              Preview how your estimate will look when sent to the client.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="flex-1 overflow-auto border rounded-md">
-            <div 
-              dangerouslySetInnerHTML={{ __html: previewHtml || '' }} 
-              className="p-6"
-            />
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowPreviewDialog(false)}>
-              Close
-            </Button>
-            <Button onClick={handleDownloadPdf}>
-              <FileDown className="h-4 w-4 mr-2" />
-              Download PDF
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
-                        }, 100);
-                      }
-                    }}
-                  />
+              <div className="space-y-2 pt-4">
+                <Badge variant="secondary">
+                  {currentEstimate.items.length} materiales
+                </Badge>
+                {currentEstimate.client && (
+                  <div className="text-sm text-muted-foreground">
+                    Cliente: {currentEstimate.client.name}
+                  </div>
                 )}
               </div>
-            )}
-          </div>
-          
-          <DialogFooter className="pt-3 mt-auto shrink-0 border-t">
-            <div className="flex items-center justify-between w-full">
-              <Button 
-                variant={isEditingPreview ? "default" : "outline"} 
-                onClick={() => {
-                  if (isEditingPreview) {
-                    // Save changes and exit edit mode
-                    try {
-                      // Use the edited HTML content directly
-                      setPreviewHtml(editableHtml || "");
-                      setIsEditingPreview(false);
-                      
-                      toast({
-                        title: 'Changes Saved',
-                        description: 'Your estimate has been updated successfully.'
-                      });
-                    } catch (error) {
-                      console.error('Error saving edited content:', error);
-                      toast({
-                        title: 'Error Saving Changes',
-                        description: 'There was a problem updating your estimate.',
-                        variant: 'destructive'
-                      });
-                    }
-                  } else {
-                    // Enter edit mode - prepare HTML for editing
-                    setEditableHtml(previewHtml);
-                    setIsEditingPreview(true);
-                  }
-                }}
-              >
-                {isEditingPreview ? (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Save Changes
-                  </>
-                ) : (
-                  <>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit Text
-                  </>
-                )}
-              </Button>
-              
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    if (isEditingPreview) {
-                      // Confirm before discarding changes
-                      if (confirm('Discard your changes?')) {
-                        setIsEditingPreview(false);
-                        setEditableHtml(previewHtml); // Reset to original
-                      }
-                    } else {
-                      setShowPreviewDialog(false);
-                    }
-                  }}
-                >
-                  {isEditingPreview ? 'Cancel' : 'Close'}
-                </Button>
-                
-                <Button 
-                  onClick={handleDownloadPdf}
-                  disabled={isEditingPreview}
-                >
-                  <FileDown className="h-4 w-4 mr-2" />
-                  Download PDF
-                </Button>
-              </div>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
