@@ -1797,27 +1797,345 @@ export default function Estimates() {
         </DialogContent>
       </Dialog>
       
-      {/* Material Search Dialog */}
+      {/* Enhanced Material Search Dialog */}
       <Dialog open={showMaterialSearchDialog} onOpenChange={setShowMaterialSearchDialog}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader className="pb-3">
-            <DialogTitle className="text-lg">Select Material</DialogTitle>
+            <DialogTitle className="text-lg">Select Material from Inventory</DialogTitle>
             <DialogDescription className="text-sm">
-              Search for an existing material or add a new one.
+              Search your existing materials or quickly add a new one to both your estimate and inventory.
             </DialogDescription>
           </DialogHeader>
           
-          <div>
-            <div className="flex justify-between items-center mb-3">
-              <Input
-                placeholder="Search materials..."
-                value={searchMaterialTerm}
-                onChange={(e) => setSearchMaterialTerm(e.target.value)}
-                className="flex-1 mr-2"
-              />
+          <div className="flex-1 flex flex-col min-h-0">
+            {/* Search and Add New Material Section */}
+            <div className="flex gap-2 mb-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name, description, category, or SKU..."
+                  value={searchMaterialTerm}
+                  onChange={(e) => setSearchMaterialTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
               <Button 
-                size="sm" 
                 onClick={() => {
+                  setShowMaterialSearchDialog(false);
+                  setShowAddMaterialDialog(true);
+                }}
+                className="whitespace-nowrap bg-primary hover:bg-primary/90"
+              >
+                <PlusCircle className="h-4 w-4 mr-2" />
+                Add New Material
+              </Button>
+            </div>
+            
+            {/* Quick Material Categories Filter */}
+            {materials.length > 0 && (
+              <div className="flex gap-2 mb-3 overflow-x-auto pb-2">
+                <Button
+                  variant={!selectedCategory ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedCategory("")}
+                  className="whitespace-nowrap"
+                >
+                  All
+                </Button>
+                {Array.from(new Set(materials.map(m => m.category).filter(Boolean))).map(category => (
+                  <Button
+                    key={category}
+                    variant={selectedCategory === category ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedCategory(category)}
+                    className="whitespace-nowrap"
+                  >
+                    {category}
+                  </Button>
+                ))}
+              </div>
+            )}
+            
+            {/* Materials List */}
+            <div className="flex-1 min-h-0 border rounded-lg">
+              {isLoadingMaterials ? (
+                <div className="flex items-center justify-center h-40">
+                  <div className="text-center">
+                    <RotateCcw className="h-6 w-6 animate-spin mx-auto mb-3 text-primary" />
+                    <p className="text-sm text-muted-foreground">Loading materials from inventory...</p>
+                  </div>
+                </div>
+              ) : filteredMaterials.length === 0 ? (
+                <div className="flex items-center justify-center h-40">
+                  <div className="text-center">
+                    <DollarSign className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground mb-3">
+                      {searchMaterialTerm ? 'No materials found matching your search' : 'No materials in inventory yet'}
+                    </p>
+                    <Button 
+                      onClick={() => {
+                        setShowMaterialSearchDialog(false);
+                        setShowAddMaterialDialog(true);
+                      }}
+                      className="bg-primary hover:bg-primary/90"
+                    >
+                      <PlusCircle className="h-4 w-4 mr-2" />
+                      {searchMaterialTerm ? 'Create This Material' : 'Add Your First Material'}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="max-h-[300px] overflow-y-auto">
+                  {filteredMaterials.map(material => (
+                    <div 
+                      key={material.id} 
+                      className={`p-4 border-b hover:bg-accent cursor-pointer transition-colors ${
+                        tempSelectedMaterial?.id === material.id ? 'bg-primary/10 border-primary' : ''
+                      }`}
+                      onClick={() => setTempSelectedMaterial(material)}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-medium text-sm">{material.name}</p>
+                            {material.category && (
+                              <span className="text-xs bg-secondary px-2 py-1 rounded-full">
+                                {material.category}
+                              </span>
+                            )}
+                          </div>
+                          {material.description && (
+                            <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{material.description}</p>
+                          )}
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-primary">
+                              {formatCurrency(material.price)} / {material.unit}
+                            </span>
+                            {material.sku && (
+                              <span className="text-xs text-muted-foreground">SKU: {material.sku}</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="ml-3 flex items-center">
+                          {tempSelectedMaterial?.id === material.id ? (
+                            <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                              <div className="w-2 h-2 bg-white rounded-full"></div>
+                            </div>
+                          ) : (
+                            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Selected Material Section */}
+          {tempSelectedMaterial && (
+            <div className="border rounded-lg p-4 bg-accent/30 mt-4">
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <p className="font-medium">{tempSelectedMaterial.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {formatCurrency(tempSelectedMaterial.price)} / {tempSelectedMaterial.unit}
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setTempSelectedMaterial(null)}
+                  className="h-8 w-8 p-0"
+                >
+                  ×
+                </Button>
+              </div>
+              
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center space-x-2">
+                  <Label htmlFor="quantity" className="whitespace-nowrap text-sm">Quantity:</Label>
+                  <Input
+                    id="quantity"
+                    type="number"
+                    value={tempQuantity}
+                    onChange={(e) => setTempQuantity(Number(e.target.value))}
+                    min={1}
+                    className="w-24 h-9"
+                  />
+                  <span className="text-sm text-muted-foreground">{tempSelectedMaterial.unit}</span>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-muted-foreground">Total</p>
+                  <p className="text-lg font-bold text-primary">
+                    {formatCurrency(tempSelectedMaterial.price * tempQuantity)}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex justify-end mt-3">
+                <Button 
+                  onClick={handleAddItemToEstimate}
+                  className="min-w-[120px] bg-primary hover:bg-primary/90"
+                >
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  Add to Estimate
+                </Button>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter className="pt-4">
+            <Button variant="outline" onClick={() => setShowMaterialSearchDialog(false)}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Enhanced Add Material Dialog */}
+      <Dialog open={showAddMaterialDialog} onOpenChange={setShowAddMaterialDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Add New Material</DialogTitle>
+            <DialogDescription>
+              Create a new material that will be added to your inventory and can be used in estimates.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="material-name">Material Name *</Label>
+              <Input
+                id="material-name"
+                value={newMaterial.name}
+                onChange={(e) => setNewMaterial(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="e.g., Cedar Fence Post 6ft"
+                className="mt-1"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="material-category">Category</Label>
+              <Input
+                id="material-category"
+                value={newMaterial.category}
+                onChange={(e) => setNewMaterial(prev => ({ ...prev, category: e.target.value }))}
+                placeholder="e.g., Posts, Panels, Hardware"
+                className="mt-1"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="material-description">Description</Label>
+              <Textarea
+                id="material-description"
+                value={newMaterial.description}
+                onChange={(e) => setNewMaterial(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Brief description of the material"
+                className="mt-1"
+                rows={2}
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="material-unit">Unit *</Label>
+                <Select value={newMaterial.unit} onValueChange={(value) => setNewMaterial(prev => ({ ...prev, unit: value }))}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select unit" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="piece">Piece</SelectItem>
+                    <SelectItem value="ft">Feet</SelectItem>
+                    <SelectItem value="sqft">Sq Feet</SelectItem>
+                    <SelectItem value="linear ft">Linear Feet</SelectItem>
+                    <SelectItem value="bag">Bag</SelectItem>
+                    <SelectItem value="box">Box</SelectItem>
+                    <SelectItem value="gallon">Gallon</SelectItem>
+                    <SelectItem value="pound">Pound</SelectItem>
+                    <SelectItem value="each">Each</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="material-price">Price per Unit *</Label>
+                <Input
+                  id="material-price"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={newMaterial.price || ''}
+                  onChange={(e) => setNewMaterial(prev => ({ ...prev, price: Number(e.target.value) }))}
+                  placeholder="0.00"
+                  className="mt-1"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="material-sku">SKU (Optional)</Label>
+              <Input
+                id="material-sku"
+                value={newMaterial.sku}
+                onChange={(e) => setNewMaterial(prev => ({ ...prev, sku: e.target.value }))}
+                placeholder="e.g., CFP-6FT-001"
+                className="mt-1"
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddMaterialDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSaveMaterial}
+              disabled={!newMaterial.name || !newMaterial.unit || !newMaterial.price}
+              className="bg-primary hover:bg-primary/90"
+            >
+              <PlusCircle className="h-4 w-4 mr-2" />
+              Save & Add to Estimate
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Preview Dialog */}
+      <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Estimate Preview</DialogTitle>
+            <DialogDescription>
+              Preview how your estimate will look when sent to the client.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-auto border rounded-md">
+            <div 
+              dangerouslySetInnerHTML={{ __html: previewHtml }} 
+              className="p-6"
+            />
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPreviewDialog(false)}>
+              Close
+            </Button>
+            <Button onClick={handleDownloadPdf}>
+              <FileDown className="h-4 w-4 mr-2" />
+              Download PDF
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+export default Estimates;
                   setShowAddMaterialDialog(true);
                   setShowMaterialSearchDialog(false);
                 }}
