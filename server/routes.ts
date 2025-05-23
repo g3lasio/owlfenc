@@ -268,6 +268,10 @@ const setupTemplateServing = (app: Express) => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // CRITICAL: Configurar middleware JSON antes de las rutas para que funcione enhance-description
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+  
   // Configurar el endpoint para servir templates HTML
   setupTemplateServing(app);
   // Use payment routes
