@@ -1631,6 +1631,5 @@ export default function EstimateGenerator() {
         </DialogFooter>
       </DialogContent>
     </Dialog>
-    </>
   );
 }
