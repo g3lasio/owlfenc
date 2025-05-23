@@ -44,6 +44,7 @@ import pdfRoutes from './routes/pdf-routes';
 import paymentRoutes from './routes/payment-routes'; // Import payment routes
 import estimatesRoutes from './routes/estimates'; // Import new estimates routes
 import { setupTemplatesRoutes } from './routes/templates';
+import { aiEnhancementRoutes } from './routes/aiEnhancementRoutes'; // Import new AI enhancement routes
 import express from 'express'; // Import express to use express.raw
 
 // Initialize OpenAI API
@@ -414,6 +415,9 @@ Output in English regardless of input language. Make it suitable for contracts a
   
   // Registrar rutas de generación de PDF
   app.use('/api/pdf', pdfRoutes);
+  
+  // Registrar rutas de mejora de descripciones con IA
+  app.use('/api/project', aiEnhancementRoutes);
 
   // Add API routes
   app.get('/api/projects', async (req: Request, res: Response) => {

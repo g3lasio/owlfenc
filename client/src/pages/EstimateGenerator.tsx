@@ -41,7 +41,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { MervinAssistant } from '@/components/ui/mervin-assistant';
+import { ProjectDescriptionEnhancer } from '@/components/ui/project-description-enhancer';
 import { X, Phone, Mail, Check } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getClients, Client as ClientType } from '../lib/clientFirebase';
@@ -1196,9 +1196,10 @@ export default function EstimateGenerator() {
                                   className="min-h-[150px]"
                                 />
                                 <div className="absolute right-2 top-2">
-                                  <MervinAssistant 
+                                  <ProjectDescriptionEnhancer 
                                     originalText={estimate.projectDescription} 
                                     onTextEnhanced={(text) => setEstimate(prev => ({ ...prev, projectDescription: text }))}
+                                    projectType={estimate.projectType}
                                   />
                                 </div>
                               </div>
