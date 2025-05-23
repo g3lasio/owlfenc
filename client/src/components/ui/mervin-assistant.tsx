@@ -45,8 +45,8 @@ export function MervinAssistant({
     try {
       console.log("Starting professional description enhancement with AI...");
       
-      // Using Anthropic Claude for professional project description enhancement
-      const response = await fetch('/api/enhance-description', {
+      // NEW: Using OpenAI GPT-4o for professional project description enhancement
+      const response = await fetch('/api/ai-enhance', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

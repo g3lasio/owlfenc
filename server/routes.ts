@@ -276,41 +276,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setupTemplateServing(app);
   // Use payment routes
   app.use('/api', paymentRoutes);
-  // Professional project description enhancement with OpenAI GPT-4
-  app.post("/api/enhance-description", async (req: Request, res: Response) => {
+  // NEW: Simple and direct AI description enhancement 
+  app.post("/api/ai-enhance", async (req: Request, res: Response) => {
+    console.log('=== NEW AI ENHANCE ENDPOINT ===');
+    console.log('📥 Full request received');
+    console.log('📝 Body:', JSON.stringify(req.body, null, 2));
+    console.log('📋 Headers:', JSON.stringify(req.headers, null, 2));
+    
     try {
-      console.log('🔍 Debugging request body:', JSON.stringify(req.body, null, 2));
+      const body = req.body;
+      const text = body?.originalText || body?.description || body?.text;
       
-      const { originalText, projectType, description } = req.body;
-      
-      // Accept both 'originalText' and 'description' for compatibility
-      const textToEnhance = originalText || description;
+      console.log('🔍 Extracted text:', text);
+      console.log('🏗️ Project type:', body?.projectType);
 
-      console.log('📝 Text to enhance:', textToEnhance);
-      console.log('🏗️ Project type:', projectType);
-
-      if (!textToEnhance || textToEnhance.trim() === '') {
-        console.log('❌ No valid text provided');
+      if (!text || text.trim() === '') {
+        console.log('❌ No text found in request');
         return res.status(400).json({ 
-          error: 'No se proporcionó una descripción válida para mejorar',
-          debug: {
-            originalText: originalText,
-            description: description,
-            receivedBody: req.body
-          }
+          error: 'No text provided for enhancement',
+          receivedBody: body
         });
       }
 
-      console.log('🚀 Starting professional description enhancement with OpenAI...');
-      console.log('Original text:', textToEnhance);
-      console.log('Project type:', projectType);
+      console.log('🚀 Starting OpenAI enhancement...');
 
       // Create a professional prompt for project description enhancement
-      const enhancementPrompt = `You are a professional construction project manager and technical writer. Your task is to transform basic project descriptions into highly professional, detailed, and comprehensive project specifications.
+      const prompt = `Transform this construction project description into a highly professional, detailed specification in English:
 
-CRITICAL REQUIREMENTS:
-1. ALWAYS output the enhanced description in ENGLISH, regardless of input language
-2. If the input is in Spanish, translate AND enhance to English
+INPUT: "${text}"
+PROJECT TYPE: "${body?.projectType || 'general construction'}"
+
+Create a comprehensive professional description with:
+- Technical specifications
+- Materials and installation methods  
+- Quality standards
+- Professional terminology
+
+Output in English regardless of input language. Make it suitable for contracts and estimates.`;
+
+      // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: "You are a professional construction project manager. Transform descriptions into detailed, professional English specifications." },
+          { role: "user", content: prompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 1000,
+      });
+
+      const enhancedDescription = response.choices[0].message.content || "Unable to enhance description";
+
+      console.log('✅ OpenAI enhancement completed successfully');
+      console.log('📏 Enhanced description length:', enhancedDescription.length);
+
+      res.json({ 
+        enhancedDescription,
+        originalText: text,
+        success: true
+      });
+
+    } catch (error: any) {
+      console.error('❌ Error in AI enhancement:', error);
+      res.status(500).json({ 
+        error: 'AI enhancement failed',
+        message: error.message || 'Unknown error'
+      });
+    }
+  });
 3. Create a professional, detailed description suitable for contracts and estimates
 4. Structure the output in clear sections with professional terminology
 5. Include technical specifications, quality standards, and process details
