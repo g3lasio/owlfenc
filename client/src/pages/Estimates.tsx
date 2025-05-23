@@ -173,8 +173,8 @@ export default function Estimates() {
       setIsLoading(true);
       
       try {
-        // Load clients
-        const clientsData = await getClients();
+        // Load clients for the current user
+        const clientsData = await getClients(currentUser.uid);
         // Convert Firebase clients to our Client interface
         const mappedClients: Client[] = clientsData.map(client => ({
           id: client.id,
@@ -189,6 +189,12 @@ export default function Estimates() {
           zipCode: client.zipCode
         }));
         setClients(mappedClients);
+        console.log('Clients loaded:', mappedClients.length, 'clients found');
+        
+        // Si no hay clientes, crear algunos de ejemplo para el usuario
+        if (mappedClients.length === 0) {
+          console.log('No clients found, would you like to add some sample clients?');
+        }
         
         // Load materials
         const materialsRef = collection(db, 'materials');

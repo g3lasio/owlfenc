@@ -42,6 +42,7 @@ export const saveClient = async (clientData: Omit<Client, 'id' | 'createdAt' | '
     const clientWithMeta = {
       ...clientData,
       clientId: clientData.clientId || `client_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+      userId: clientData.userId, // Asegurar que el userId se incluya
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now()
     };
@@ -60,17 +61,17 @@ export const saveClient = async (clientData: Omit<Client, 'id' | 'createdAt' | '
 };
 
 // Obtener todos los clientes
-export const getClients = async (filters?: { tag?: string, source?: string }) => {
+export const getClients = async (userId?: string, filters?: { tag?: string, source?: string }) => {
   try {
-    let q = query(
-      collection(db, "clients"), 
-      orderBy("createdAt", "desc")
-    );
+    const queryConstraints = [];
 
-    // Aplicar filtros si se proporcionan
+    // Siempre filtrar por userId si se proporciona
+    if (userId) {
+      queryConstraints.push(where("userId", "==", userId));
+    }
+
+    // Aplicar filtros adicionales si se proporcionan
     if (filters) {
-      const queryConstraints = [];
-
       if (filters.tag) {
         queryConstraints.push(where("tags", "array-contains", filters.tag));
       }
@@ -83,15 +84,13 @@ export const getClients = async (filters?: { tag?: string, source?: string }) =>
           queryConstraints.push(where("source", "==", filters.source));
         }
       }
-
-      if (queryConstraints.length > 0) {
-        q = query(
-          collection(db, "clients"),
-          ...queryConstraints,
-          orderBy("createdAt", "desc")
-        );
-      }
     }
+
+    let q = query(
+      collection(db, "clients"),
+      ...queryConstraints,
+      orderBy("createdAt", "desc")
+    );
 
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => {
