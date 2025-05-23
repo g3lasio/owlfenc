@@ -338,9 +338,52 @@ export default function EstimateGenerator() {
       setClientSearch('');
     };
 
-  // Render del sidebar
-  const renderSidebar = () => (
-    <div className="w-80 bg-card border-r border-border p-6 flex flex-col">
+  // Mobile header con navegación
+  const renderMobileHeader = () => (
+    <div className="md:hidden bg-card border-b border-border p-4">
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-lg font-bold text-foreground">Estimate Generator</h1>
+        <Badge variant="outline" className="text-xs">
+          Step {['client', 'project', 'items', 'review'].indexOf(currentStep) + 1}/4
+        </Badge>
+      </div>
+      
+      {/* Progress bar móvil */}
+      <div className="w-full bg-muted rounded-full h-2 mb-4">
+        <div 
+          className="bg-primary h-2 rounded-full transition-all duration-300" 
+          style={{ width: `${(((['client', 'project', 'items', 'review'].indexOf(currentStep) + 1) / 4) * 100)}%` }}
+        />
+      </div>
+      
+      {/* Navegación horizontal móvil */}
+      <div className="flex justify-between gap-1">
+        {[
+          { step: 'client', icon: User, label: 'Client' },
+          { step: 'project', icon: Building, label: 'Project' },
+          { step: 'items', icon: Calculator, label: 'Items' },
+          { step: 'review', icon: Eye, label: 'Review' }
+        ].map(({ step, icon: Icon, label }) => (
+          <button
+            key={step}
+            onClick={() => goToStep(step as typeof currentStep)}
+            className={`flex-1 flex flex-col items-center gap-1 p-2 rounded-md text-xs transition-colors ${
+              currentStep === step 
+                ? 'bg-primary text-primary-foreground' 
+                : 'hover:bg-muted text-muted-foreground'
+            }`}
+          >
+            <Icon className="h-4 w-4" />
+            <span className="truncate">{label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  // Render del sidebar para desktop
+  const renderDesktopSidebar = () => (
+    <div className="hidden md:flex w-80 bg-card border-r border-border p-6 flex-col">
       <div className="mb-6">
         <h2 className="text-xl font-bold text-foreground mb-2">Estimate Generator</h2>
         <p className="text-sm text-muted-foreground">Create professional estimates step by step</p>
@@ -433,14 +476,15 @@ export default function EstimateGenerator() {
                   
                   <Dialog open={showClientDialog} onOpenChange={setShowClientDialog}>
                     <DialogTrigger asChild>
-                      <Button variant="outline" size="sm" className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" className="flex items-center gap-2 text-xs md:text-sm">
                         <Users className="h-4 w-4" />
-                        <span>Load Existing Client</span>
+                        <span className="hidden sm:inline">Load Existing Client</span>
+                        <span className="sm:hidden">Load Client</span>
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
+                    <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto">
                       <DialogHeader>
-                        <DialogTitle>Select Existing Client</DialogTitle>
+                        <DialogTitle className="text-lg md:text-xl">Select Existing Client</DialogTitle>
                       </DialogHeader>
                       
                       <div className="space-y-4">
@@ -450,7 +494,7 @@ export default function EstimateGenerator() {
                             placeholder="Search by name, email or phone..."
                             value={clientSearch}
                             onChange={(e) => setClientSearch(e.target.value)}
-                            className="pl-10"
+                            className="pl-10 text-sm md:text-base"
                           />
                         </div>
                         
