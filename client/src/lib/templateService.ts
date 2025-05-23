@@ -1,3 +1,4 @@
+
 /**
  * Servicio centralizado para gestionar los templates de la aplicación
  * Este enfoque elimina la necesidad de cargar archivos HTML externos
@@ -374,17 +375,16 @@ const premiumTemplate = `<!doctype html>
 </html>`;
 
 /**
- * Obtiene el HTML del template premium, sin importar el estilo solicitado
- * @param templateStyle - Parámetro ignorado, siempre devuelve el template premium
- * @returns El HTML del template premium
+ * Obtiene el HTML del template Premium
+ * @returns El HTML del template Premium
  */
-export function getTemplateHTML(templateStyle: string = 'standard'): string {
-  console.log(`Solicitado template de estilo: ${templateStyle} - Retornando template Premium único`);
+export function getTemplateHTML(): string {
+  console.log('Retornando template Premium único');
   return premiumTemplate;
 }
 
 /**
- * Agrega un nuevo template al almacén (función mantenida para compatibilidad)
+ * Función mantenida para compatibilidad
  * @param name - Nombre/identificador del template (ignorado)
  * @param html - Contenido HTML del template (ignorado)
  */

@@ -107,21 +107,21 @@ const EstimatePreview: React.FC<EstimatePreviewProps> = ({
   // Helper functions for formatting data
   function formatFullAddress(address: any): string {
     if (!address) return '';
-    
+
     if (typeof address === 'string') return address;
-    
+
     const parts = [];
     if (address.street) parts.push(address.street);
     if (address.city) parts.push(address.city);
     if (address.state) parts.push(address.state);
     if (address.zip) parts.push(address.zip);
-    
+
     return parts.join(', ');
   }
 
   function formatDate(dateValue: any): string {
     if (!dateValue) return '';
-    
+
     try {
       const date = new Date(dateValue);
       return date.toLocaleDateString('en-US', {

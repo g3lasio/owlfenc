@@ -161,8 +161,9 @@ export default function Estimates() {
   const [editableHtml, setEditableHtml] = useState<string | null>(null);
   const [isEditingPreview, setIsEditingPreview] = useState(false);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<number>(999002); // Default to professional template
-  const [selectedTemplateStyle, setSelectedTemplateStyle] = useState<string>("professional");
+  // Siempre usamos la plantilla Premium
+  const [selectedTemplateId] = useState<number>(999003); 
+  const [selectedTemplateStyle] = useState<string>("premium");
   
   // Load clients and materials when component mounts
   useEffect(() => {
@@ -1405,31 +1406,7 @@ export default function Estimates() {
               <div>
                 <div className="flex justify-between items-center mb-1">
                   <div className="flex items-center">
-                    <Label htmlFor="template-style" className="text-xs mr-2">Plantilla:</Label>
-                    <Select 
-                      value={selectedTemplateStyle}
-                      onValueChange={(value) => {
-                        const style = value as 'standard' | 'professional' | 'luxury';
-                        setSelectedTemplateStyle(style);
-                        // Actualizar también el ID del template
-                        const templateId = {
-                          'standard': 999001,
-                          'professional': 999002,
-                          'luxury': 999003
-                        }[style] || 999001;
-                        setSelectedTemplateId(templateId);
-                        console.log(`Template seleccionado: ${value}, templateId: ${templateId}`);
-                      }}
-                    >
-                      <SelectTrigger id="template-style" className="h-7 w-[120px]">
-                        <SelectValue placeholder="Selecciona" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="standard">Estándar</SelectItem>
-                        <SelectItem value="professional">Profesional</SelectItem>
-                        <SelectItem value="luxury">Premium</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label className="text-xs">Plantilla Premium</Label>
                   </div>
                 </div>
               </div>
