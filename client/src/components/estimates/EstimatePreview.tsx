@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { loadTemplateHTML } from '../../lib/templateLoader';
+import { getTemplateHTML } from '../../lib/templateService';
 
 interface EstimatePreviewProps {
   estimateData: any;
