@@ -42,6 +42,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { ProjectDescriptionEnhancer } from '@/components/ui/project-description-enhancer';
+import { CustomMaterialForm } from '@/components/ui/custom-material-form';
 import { X, Phone, Mail, Check } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getClients, Client as ClientType } from '../lib/clientFirebase';
@@ -198,17 +199,139 @@ export default function EstimateGenerator() {
       loadClients();
     }, [currentUser, toast]);
 
+  // Estados para materiales y búsqueda
+  const [materials, setMaterials] = useState<any[]>([]);
+  const [showMaterialSearchDialog, setShowMaterialSearchDialog] = useState(false);
+  const [showNewMaterialDialog, setShowNewMaterialDialog] = useState(false);
+  const [materialSearch, setMaterialSearch] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  
+  // Cargar materiales disponibles
+  useEffect(() => {
+    loadMaterials();
+  }, []);
+
+  const loadMaterials = async () => {
+    try {
+      const response = await fetch('/api/materials');
+      if (response.ok) {
+        const materialsData = await response.json();
+        setMaterials(materialsData);
+      }
+    } catch (error) {
+      console.error('Error al cargar materiales:', error);
+    }
+  };
+
   // Funciones para manejar ítems
-  const addItem = () => {
+  const addItem = (material?: any) => {
+    if (material) {
+      // Agregar material existente
+      const newItem = {
+        id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        materialId: material.id,
+        name: material.name,
+        description: material.description || '',
+        unit: material.unit,
+        price: material.price / 100, // Convertir de centavos a dólares
+        quantity: 1,
+        category: material.category,
+        supplier: material.supplier || '',
+        sku: material.sku || ''
+      };
+      
+      setEstimate(prev => ({
+        ...prev,
+        items: [...prev.items, newItem]
+      }));
+      
+      setShowMaterialSearchDialog(false);
+      toast({
+        title: "Material Agregado",
+        description: `${material.name} ha sido agregado al estimado`
+      });
+    }
+  };
+
+  const addCustomItem = (customItem: any) => {
+    const newItem = {
+      id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      materialId: null, // Material personalizado
+      name: customItem.name,
+      description: customItem.description || '',
+      unit: customItem.unit,
+      price: parseFloat(customItem.price) || 0,
+      quantity: 1,
+      category: customItem.category || 'Custom',
+      supplier: customItem.supplier || '',
+      sku: customItem.sku || ''
+    };
     
+    setEstimate(prev => ({
+      ...prev,
+      items: [...prev.items, newItem]
+    }));
+    
+    setShowNewMaterialDialog(false);
+    toast({
+      title: "Material Personalizado Agregado",
+      description: `${customItem.name} ha sido agregado al estimado`
+    });
   };
 
   const removeItem = (itemId: string) => {
+    setEstimate(prev => ({
+      ...prev,
+      items: prev.items.filter(item => item.id !== itemId)
+    }));
     
+    toast({
+      title: "Material Eliminado",
+      description: "El material ha sido eliminado del estimado"
+    });
   };
 
   const updateItemQuantity = (itemId: string, quantity: number) => {
+    if (quantity <= 0) return;
     
+    setEstimate(prev => ({
+      ...prev,
+      items: prev.items.map(item => 
+        item.id === itemId ? { ...item, quantity } : item
+      )
+    }));
+  };
+
+  const updateItemPrice = (itemId: string, price: number) => {
+    if (price < 0) return;
+    
+    setEstimate(prev => ({
+      ...prev,
+      items: prev.items.map(item => 
+        item.id === itemId ? { ...item, price } : item
+      )
+    }));
+  };
+
+  // Filtrar materiales por búsqueda y categoría
+  const filteredMaterials = materials.filter(material => {
+    const matchesSearch = material.name?.toLowerCase().includes(materialSearch.toLowerCase()) ||
+                         material.description?.toLowerCase().includes(materialSearch.toLowerCase()) ||
+                         material.category?.toLowerCase().includes(materialSearch.toLowerCase());
+    
+    const matchesCategory = selectedCategory === 'all' || material.category === selectedCategory;
+    
+    return matchesSearch && matchesCategory;
+  });
+
+  // Obtener categorías únicas
+  const categories = ['all', ...new Set(materials.map(m => m.category).filter(Boolean))];
+
+  // Calcular total del estimado
+  const calculateTotal = () => {
+    return estimate.items.reduce((total, item) => {
+      return total + (item.price * item.quantity);
+    }, 0);
   };
 
   // Función para cargar un cliente existente
@@ -695,181 +818,243 @@ export default function EstimateGenerator() {
 
       case 'items':
         return (
-          
-            <div className="space-y-6">
-              {/* Add New Item Form */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <PlusCircle className="h-5 w-5" />
-                    Add New Item
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <Label htmlFor="itemName">Item Name *</Label>
-                      <Input
-                        id="itemName"
-                        value={newItem.name || ''}
-                        onChange={(e) => setNewItem(prev => ({ ...prev, name: e.target.value }))}
-                        placeholder="e.g., Wood Posts"
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="category">Category</Label>
-                      <Select 
-                        value={newItem.category} 
-                        onValueChange={(value) => setNewItem(prev => ({ ...prev, category: value as any }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="material">Material</SelectItem>
-                          <SelectItem value="labor">Labor</SelectItem>
-                          <SelectItem value="additional">Additional</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="unit">Unit</Label>
-                      <Select 
-                        value={newItem.unit} 
-                        onValueChange={(value) => setNewItem(prev => ({ ...prev, unit: value }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="piece">Piece</SelectItem>
-                          <SelectItem value="linear_ft">Linear Ft</SelectItem>
-                          <SelectItem value="sq_ft">Sq Ft</SelectItem>
-                          <SelectItem value="hour">Hour</SelectItem>
-                          <SelectItem value="day">Day</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+          <div className="space-y-6">
+            {/* Add Materials Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Package className="h-5 w-5" />
+                    Materials and Services
                   </div>
-
-                  <div>
-                    <Label htmlFor="description">Description</Label>
-                    <Input
-                      id="description"
-                      value={newItem.description || ''}
-                      onChange={(e) => setNewItem(prev => ({ ...prev, description: e.target.value }))}
-                      placeholder="Brief description of the item..."
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <Label htmlFor="quantity">Quantity *</Label>
-                      <Input
-                        id="quantity"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={newItem.quantity || ''}
-                        onChange={(e) => setNewItem(prev => ({ ...prev, quantity: parseFloat(e.target.value) || 0 }))}
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="unitPrice">Unit Price *</Label>
-                      <Input
-                        id="unitPrice"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={newItem.unitPrice || ''}
-                        onChange={(e) => setNewItem(prev => ({ ...prev, unitPrice: parseFloat(e.target.value) || 0 }))}
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label>Total</Label>
-                      <div className="flex items-center h-10 px-3 py-2 border border-input bg-muted rounded-md">
-                        ${((newItem.quantity || 0) * (newItem.unitPrice || 0)).toFixed(2)}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end">
-                    <Button onClick={addItem}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Item
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={() => setShowMaterialSearchDialog(true)}
+                      variant="outline" 
+                      size="sm"
+                    >
+                      <Search className="h-4 w-4 mr-2" />
+                      Browse Inventory
+                    </Button>
+                    <Button 
+                      onClick={() => setShowNewMaterialDialog(true)}
+                      size="sm"
+                    >
+                      <PlusCircle className="h-4 w-4 mr-2" />
+                      Add Custom
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* Items List */}
-              {estimate.items.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Calculator className="h-5 w-5" />
-                      Estimate Items ({estimate.items.length})
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {estimate.items.map((item) => (
-                        <div key={item.id} className="flex items-center gap-4 p-4 border border-border rounded-lg">
-                          <div className="flex-1">
-                            <div className="font-medium">{item.name}</div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {estimate.items.length === 0 ? (
+                  <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
+                    <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No materials added yet</h3>
+                    <p className="text-gray-500 mb-4">Start building your estimate by adding materials and services</p>
+                    <div className="flex justify-center gap-3">
+                      <Button onClick={() => setShowMaterialSearchDialog(true)} variant="outline">
+                        <Search className="h-4 w-4 mr-2" />
+                        Browse Inventory
+                      </Button>
+                      <Button onClick={() => setShowNewMaterialDialog(true)}>
+                        <PlusCircle className="h-4 w-4 mr-2" />
+                        Add Custom Item
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {estimate.items.map((item) => (
+                      <div key={item.id} className="flex items-center gap-4 p-4 border border-border rounded-lg bg-gray-50">
+                        <div className="flex-1">
+                          <div className="font-medium">{item.name}</div>
+                          {item.description && (
                             <div className="text-sm text-muted-foreground">{item.description}</div>
+                          )}
+                          <div className="flex items-center gap-2 mt-1">
                             <Badge variant="outline" className="text-xs">
                               {item.category}
                             </Badge>
+                            {item.sku && (
+                              <span className="text-xs text-muted-foreground">SKU: {item.sku}</span>
+                            )}
                           </div>
-                          
-                          <div className="flex items-center gap-2">
-                            <Input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={item.quantity}
-                              onChange={(e) => updateItemQuantity(item.id, parseFloat(e.target.value) || 0)}
-                              className="w-20"
-                            />
-                            <span className="text-sm text-muted-foreground">{item.unit}</span>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={item.quantity}
+                            onChange={(e) => updateItemQuantity(item.id, parseFloat(e.target.value) || 1)}
+                            className="w-20 text-center"
+                          />
+                          <span className="text-sm text-muted-foreground min-w-[60px]">{item.unit}</span>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">@</span>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={item.price}
+                            onChange={(e) => updateItemPrice(item.id, parseFloat(e.target.value) || 0)}
+                            className="w-24 text-center"
+                          />
+                        </div>
+                        
+                        <div className="text-right min-w-[100px]">
+                          <div className="font-bold text-lg">
+                            ${(item.price * item.quantity).toFixed(2)}
                           </div>
-                          
-                          <div className="text-right min-w-[100px]">
-                            <div className="font-medium">${(item.totalPrice / 100).toFixed(2)}</div>
-                            <div className="text-sm text-muted-foreground">
-                              ${(item.unitPrice / 100).toFixed(2)} / {item.unit}
+                        </div>
+                        
+                        <Button
+                          onClick={() => removeItem(item.id)}
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    
+                    {/* Total Section */}
+                    <div className="border-t pt-4 mt-6">
+                      <div className="flex justify-between items-center text-lg font-bold">
+                        <span>Estimate Total:</span>
+                        <span className="text-2xl text-green-600">
+                          ${calculateTotal().toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <div className="flex justify-between pt-4">
+              <Button onClick={prevStep} variant="outline">
+                Back: Project Details
+              </Button>
+              <Button onClick={nextStep} disabled={estimate.items.length === 0}>
+                Next: Review ({estimate.items.length} items)
+              </Button>
+            </div>
+
+            {/* Material Search Dialog */}
+            <Dialog open={showMaterialSearchDialog} onOpenChange={setShowMaterialSearchDialog}>
+              <DialogContent className="sm:max-w-4xl max-h-[80vh] flex flex-col">
+                <DialogHeader className="flex-shrink-0">
+                  <DialogTitle>Select Materials from Inventory</DialogTitle>
+                  <DialogDescription>
+                    Choose materials from your inventory to add to this estimate
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="flex-1 overflow-hidden flex flex-col">
+                  {/* Search and Filters */}
+                  <div className="flex gap-4 mb-4 flex-shrink-0">
+                    <div className="flex-1 relative">
+                      <Search className="absolute top-3 left-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search materials by name, description, or SKU..."
+                        value={materialSearch}
+                        onChange={(e) => setMaterialSearch(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                    <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map(category => (
+                          <SelectItem key={category} value={category}>
+                            {category === 'all' ? 'All Categories' : category}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      onClick={() => setShowNewMaterialDialog(true)}
+                      variant="outline"
+                    >
+                      <PlusCircle className="h-4 w-4 mr-2" />
+                      Add Custom
+                    </Button>
+                  </div>
+
+                  {/* Materials List */}
+                  <div className="flex-1 overflow-y-auto border rounded-md">
+                    {filteredMaterials.length > 0 ? (
+                      <div className="p-2 space-y-2">
+                        {filteredMaterials.map(material => (
+                          <div 
+                            key={material.id}
+                            className="flex items-center justify-between p-3 border rounded-lg hover:bg-blue-50 hover:border-blue-200 cursor-pointer transition-all"
+                            onClick={() => addItem(material)}
+                          >
+                            <div className="flex-1">
+                              <h3 className="font-medium">{material.name}</h3>
+                              {material.description && (
+                                <p className="text-sm text-muted-foreground">{material.description}</p>
+                              )}
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant="outline" className="text-xs">
+                                  {material.category}
+                                </Badge>
+                                {material.sku && (
+                                  <span className="text-xs text-muted-foreground">SKU: {material.sku}</span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-bold">
+                                ${(material.price / 100).toFixed(2)}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                per {material.unit}
+                              </div>
                             </div>
                           </div>
-                          
-                          <Button
-                            onClick={() => removeItem(item.id)}
-                            variant="outline"
-                            size="sm"
-                          >
-                            <Trash2 className="h-4 w-4" />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center py-12">
+                        <div className="text-center">
+                          <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-gray-900 mb-2">No materials found</h3>
+                          <p className="text-gray-500 mb-4">Try adjusting your search or category filter</p>
+                          <Button onClick={() => setShowNewMaterialDialog(true)}>
+                            <PlusCircle className="h-4 w-4 mr-2" />
+                            Add Custom Material
                           </Button>
                         </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
 
-              <div className="flex justify-between pt-4">
-                <Button onClick={prevStep} variant="outline">
-                  Back: Project Details
-                </Button>
-                <Button onClick={nextStep} disabled={estimate.items.length === 0}>
-                  Next: Review
-                </Button>
-              </div>
-            </div>
-          
+            {/* Add Custom Material Dialog */}
+            <Dialog open={showNewMaterialDialog} onOpenChange={setShowNewMaterialDialog}>
+              <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Add Custom Material</DialogTitle>
+                  <DialogDescription>
+                    Create a custom material or service for this estimate
+                  </DialogDescription>
+                </DialogHeader>
+                <CustomMaterialForm onSubmit={addCustomItem} onCancel={() => setShowNewMaterialDialog(false)} />
+              </DialogContent>
+            </Dialog>
+          </div>
         );
 
       case 'review':
