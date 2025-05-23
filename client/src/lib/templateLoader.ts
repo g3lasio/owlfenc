@@ -1,30 +1,29 @@
+
 /**
  * Utilidad para cargar plantillas HTML desde el servicio centralizado
  */
 import { getTemplateHTML } from './templateService';
 
 /**
- * Carga una plantilla HTML basada en el estilo seleccionado
- * @param templateStyle - Estilo de la plantilla a cargar ('standard', 'professional', 'luxury')
- * @returns Contenido HTML de la plantilla
+ * Carga la plantilla HTML premium sin importar el estilo solicitado
+ * @param templateStyle - Este parámetro se ignora, siempre carga el template premium
+ * @returns Contenido HTML de la plantilla premium
  */
 export async function loadTemplateHTML(templateStyle: string = 'standard'): Promise<string> {
   try {
-    console.log(`Cargando plantilla para el estilo: ${templateStyle}`);
-
+    console.log(`Solicitud de plantilla "${templateStyle}" - Cargando template Premium único`);
+    
     // Obtener el template directamente del servicio centralizado
-    const templateContent = getTemplateHTML(templateStyle);
-
+    const templateContent = getTemplateHTML('professional');
+    
     if (templateContent) {
-      console.log(`Plantilla "${templateStyle}" cargada exitosamente, tamaño: ${templateContent.length} bytes`);
+      console.log(`Template premium cargado correctamente, tamaño: ${templateContent.length} bytes`);
       return templateContent;
     } else {
-      console.warn(`No se pudo cargar la plantilla "${templateStyle}". Usando plantilla estándar.`);
-      return getTemplateHTML('standard');
+      throw new Error('No se pudo cargar el template premium');
     }
   } catch (error) {
-    console.error('Error al cargar la plantilla:', error);
-    // Usar plantilla estándar en caso de error
-    return getTemplateHTML('standard');
+    console.error('Error al cargar el template:', error);
+    throw error;
   }
 }

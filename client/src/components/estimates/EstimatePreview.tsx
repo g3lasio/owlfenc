@@ -16,11 +16,9 @@ const EstimatePreview: React.FC<EstimatePreviewProps> = ({
   const [html, setHtml] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Determinar el estilo de template basado en el ID
+  // Siempre usamos el template premium independientemente del ID
   const getTemplateStyle = (id: number): string => {
-    if (id === 999002 || id === 2) return 'professional';
-    if (id === 999003 || id === 3) return 'luxury';
-    return 'standard'; // Default
+    return 'professional'; // Siempre usamos el estilo professional (Premium)
   };
 
   // Cargar el HTML de la plantilla cada vez que cambia el templateId
@@ -28,17 +26,16 @@ const EstimatePreview: React.FC<EstimatePreviewProps> = ({
     const fetchTemplate = async () => {
       try {
         setLoading(true);
-        
-        // Determinar el estilo del template
-        const style = getTemplateStyle(templateId);
-        console.log(`Cargando plantilla de estilo: ${style} para previsualización (ID: ${templateId})`);
-        
+
+        // Siempre usamos el template premium
+        console.log(`Cargando plantilla Premium (ID: ${templateId} - ignorado)`);
+
         // Cargar el HTML de la plantilla
         let templateHtml;
         try {
-          templateHtml = await loadTemplateHTML(style);
+          templateHtml = await loadTemplateHTML('professional');
           if (templateHtml) {
-            console.log(`Plantilla cargada exitosamente. Longitud: ${templateHtml.length} caracteres`);
+            console.log(`Plantilla Premium cargada exitosamente. Longitud: ${templateHtml.length} caracteres`);
           } else {
             console.error('La función loadTemplateHTML devolvió un valor nulo o vacío');
           }
@@ -48,28 +45,22 @@ const EstimatePreview: React.FC<EstimatePreviewProps> = ({
           setLoading(false);
           return;
         }
-        
+
         if (!templateHtml) {
           console.error('No se pudo cargar la plantilla HTML');
           setHtml(`
             <div class="error" style="padding: 20px; background-color: #fff1f2; border-left: 4px solid #e11d48; margin: 20px 0;">
               <h3 style="color: #be123c; margin-top: 0;">Error al cargar la plantilla</h3>
-              <p>No se pudo cargar la plantilla de estilo: ${style} (ID: ${templateId})</p>
-              <p>Verifica que los archivos de plantillas existan en la carpeta <code>/public/templates/</code> y que los nombres coincidan:</p>
-              <ul style="margin-top: 10px;">
-                <li>Estándar: <code>basictemplateestimate.html</code></li>
-                <li>Profesional: <code>Premiumtemplateestimate.html</code></li>
-                <li>Premium: <code>luxurytemplate.html</code></li>
-              </ul>
+              <p>No se pudo cargar la plantilla Premium</p>
             </div>
           `);
           setLoading(false);
           return;
         }
-        
+
         // Aplicar los datos del estimado al HTML
         let processedHtml = templateHtml;
-        
+
         // Reemplazar campos básicos
         const replacements: Record<string, string> = {
           '[COMPANY_NAME]': estimateData.contractor?.name || 'Nombre de la Empresa',
@@ -94,12 +85,12 @@ const EstimatePreview: React.FC<EstimatePreviewProps> = ({
           '[TOTAL]': formatCurrency(getTotal(estimateData)),
           '[COMPLETION_TIME]': getCompletionTime(estimateData)
         };
-        
+
         // Reemplazar cada placeholder en el template
         Object.entries(replacements).forEach(([placeholder, value]) => {
           processedHtml = processedHtml.replace(new RegExp(placeholder, 'g'), value);
         });
-        
+
         // Para el logo de la empresa
         if (estimateData.contractor?.logo) {
           processedHtml = processedHtml.replace('[COMPANY_LOGO]', 
@@ -107,11 +98,11 @@ const EstimatePreview: React.FC<EstimatePreviewProps> = ({
         } else {
           processedHtml = processedHtml.replace('[COMPANY_LOGO]', '');
         }
-        
+
         // Generar las filas de la tabla
         const tableRowsHtml = generateEstimateTableRows(estimateData);
         processedHtml = processedHtml.replace('[COST_TABLE_ROWS]', tableRowsHtml);
-        
+
         setHtml(processedHtml);
       } catch (error) {
         console.error('Error generando la previsualización:', error);
@@ -120,48 +111,48 @@ const EstimatePreview: React.FC<EstimatePreviewProps> = ({
         setLoading(false);
       }
     };
-    
+
     fetchTemplate();
   }, [estimateData, templateId]);
-  
+
   // Funciones helper para formatear los datos
   function formatDimensions(dimensions: any): string {
     if (!dimensions) return 'N/A';
-    
+
     const parts = [];
     if (dimensions.length) parts.push(`Longitud: ${dimensions.length} pies`);
     if (dimensions.width) parts.push(`Ancho: ${dimensions.width} pies`);
     if (dimensions.height) parts.push(`Altura: ${dimensions.height} pies`);
     if (dimensions.area) parts.push(`Área: ${dimensions.area} pies²`);
-    
+
     return parts.join(', ') || 'N/A';
   }
-  
+
   function getSubtotal(data: any): number {
     if (!data.rulesBasedEstimate) return 0;
-    
+
     const materialTotal = data.rulesBasedEstimate.materialTotal || 0;
     const laborTotal = data.rulesBasedEstimate.labor?.totalCost || 0;
     const additionalTotal = data.rulesBasedEstimate.additionalTotal || 0;
-    
+
     return materialTotal + laborTotal + additionalTotal;
   }
-  
+
   function getTaxAmount(data: any): number {
     const subtotal = getSubtotal(data);
     return subtotal * 0.0875; // 8.75% tax rate
   }
-  
+
   function getTotal(data: any): number {
     const subtotal = getSubtotal(data);
     const taxAmount = getTaxAmount(data);
     return subtotal + taxAmount;
   }
-  
+
   function getCompletionTime(data: any): string {
     return data.rulesBasedEstimate?.estimatedDays || 'N/A';
   }
-  
+
   function formatCurrency(value: number): string {
     return value.toLocaleString('en-US', {
       style: 'currency',
@@ -170,14 +161,14 @@ const EstimatePreview: React.FC<EstimatePreviewProps> = ({
       maximumFractionDigits: 2
     });
   }
-  
+
   function generateEstimateTableRows(data: any): string {
     let html = '';
-    
+
     // Materiales
     if (data.rulesBasedEstimate?.materials) {
       const materials = data.rulesBasedEstimate.materials;
-      
+
       Object.entries(materials).forEach(([key, value]: [string, any]) => {
         if (key === 'roofing') {
           html += `
@@ -242,7 +233,7 @@ const EstimatePreview: React.FC<EstimatePreviewProps> = ({
         }
       });
     }
-    
+
     // Mano de obra
     if (data.rulesBasedEstimate?.labor) {
       const labor = data.rulesBasedEstimate.labor;
@@ -256,14 +247,14 @@ const EstimatePreview: React.FC<EstimatePreviewProps> = ({
         </tr>
       `;
     }
-    
+
     // Costos adicionales
     if (data.rulesBasedEstimate?.additionalCosts) {
       const additionalCosts = data.rulesBasedEstimate.additionalCosts;
-      
+
       Object.entries(additionalCosts).forEach(([key, value]: [string, any]) => {
         let description = key;
-        
+
         if (key === 'demolition') description = 'Demolición/Remoción';
         else if (key === 'painting') description = 'Pintura/Acabado';
         else if (key === 'lattice') description = 'Celosía';
@@ -271,7 +262,7 @@ const EstimatePreview: React.FC<EstimatePreviewProps> = ({
         else if (key === 'roofRemoval') description = 'Remoción de Techo';
         else if (key === 'ventilation') description = 'Ventilación';
         else if (key === 'gutters') description = 'Canalones';
-        
+
         html += `
           <tr>
             <td>${description}</td>
@@ -283,7 +274,7 @@ const EstimatePreview: React.FC<EstimatePreviewProps> = ({
         `;
       });
     }
-    
+
     return html;
   }
 
@@ -301,10 +292,7 @@ const EstimatePreview: React.FC<EstimatePreviewProps> = ({
         <div className="p-4 bg-muted/20 border-b flex items-center justify-between">
           <h3 className="text-md font-semibold">Vista previa del estimado</h3>
           <span className="text-xs text-muted-foreground">
-            {templateId === 999001 ? 'Plantilla Estándar' : 
-             templateId === 999002 ? 'Plantilla Profesional' : 
-             templateId === 999003 ? 'Plantilla Premium' : 
-             'Plantilla Personalizada'}
+            Plantilla Premium
           </span>
         </div>
         <div 
