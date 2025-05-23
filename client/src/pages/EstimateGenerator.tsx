@@ -1013,12 +1013,12 @@ export default function EstimateGenerator() {
 
                             {/* Modal para seleccionar cliente */}
                             <Dialog open={showClientDialog} onOpenChange={setShowClientDialog}>
-                              <DialogContent className="sm:max-w-md">
-                                <DialogHeader>
+                              <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col">
+                                <DialogHeader className="flex-shrink-0">
                                   <DialogTitle>Select Existing Client</DialogTitle>
                                 </DialogHeader>
 
-                                <div className="relative">
+                                <div className="relative flex-shrink-0 mb-4">
                                   <Search className="absolute top-3 left-3 h-4 w-4 text-muted-foreground" />
                                   <Input
                                     placeholder="Search by name, email or phone"
@@ -1038,7 +1038,16 @@ export default function EstimateGenerator() {
                                   )}
                                 </div>
 
-                                <div className="max-h-[300px] overflow-y-auto border rounded-md">
+                                {/* Contador de resultados */}
+                                <div className="text-sm text-muted-foreground mb-2 flex-shrink-0">
+                                  {clients.length > 0 && (
+                                    <span>
+                                      Showing {filteredClients.length} of {clients.length} clients
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div className="flex-1 overflow-y-auto border rounded-md min-h-0" style={{ maxHeight: '400px' }}>
                                   {loadingClients ? (
                                     <div className="flex items-center justify-center py-10">
                                       <div className="space-y-2 text-center">
@@ -1047,38 +1056,46 @@ export default function EstimateGenerator() {
                                       </div>
                                     </div>
                                   ) : filteredClients.length > 0 ? (
-                                    <div className="divide-y">
+                                    <div className="space-y-2 p-2">
                                       {filteredClients.map((client) => (
                                         <div
                                           key={client.id}
-                                          className="p-3 hover:bg-muted cursor-pointer transition-colors"
+                                          className="p-4 border rounded-lg hover:bg-blue-50 hover:border-blue-200 cursor-pointer transition-all duration-200 group"
                                           onClick={() => loadExistingClient(client)}
                                         >
                                           <div className="flex justify-between items-start">
-                                            <div>
-                                              <p className="font-medium">{client.name}</p>
-                                              <div className="text-sm text-muted-foreground space-y-1 mt-1">
+                                            <div className="flex-1 min-w-0">
+                                              <h3 className="font-semibold text-gray-900 truncate">{client.name}</h3>
+                                              <div className="space-y-1 mt-2">
                                                 {client.email && (
-                                                  <p className="flex items-center">
-                                                    <Mail className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
-                                                    <span>{client.email}</span>
+                                                  <p className="flex items-center text-sm text-gray-600">
+                                                    <Mail className="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" />
+                                                    <span className="truncate">{client.email}</span>
                                                   </p>
                                                 )}
                                                 {client.phone && (
-                                                  <p className="flex items-center">
-                                                    <Phone className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+                                                  <p className="flex items-center text-sm text-gray-600">
+                                                    <Phone className="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" />
                                                     <span>{client.phone}</span>
                                                   </p>
                                                 )}
                                                 {client.address && (
-                                                  <p className="flex items-center">
-                                                    <MapPin className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
-                                                    <span>{client.address}</span>
+                                                  <p className="flex items-center text-sm text-gray-600">
+                                                    <MapPin className="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" />
+                                                    <span className="truncate">{client.address}</span>
                                                   </p>
                                                 )}
                                               </div>
                                             </div>
-                                            <Button variant="ghost" size="sm" className="h-9">
+                                            <Button 
+                                              variant="default" 
+                                              size="sm" 
+                                              className="ml-4 flex-shrink-0 bg-blue-600 hover:bg-blue-700 text-white"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                loadExistingClient(client);
+                                              }}
+                                            >
                                               Select
                                             </Button>
                                           </div>
