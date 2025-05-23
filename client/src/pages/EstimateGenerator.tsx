@@ -1670,5 +1670,89 @@ export default function EstimateGenerator() {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {/* Add New Material Dialog */}
+    <Dialog open={showAddMaterialDialog} onOpenChange={setShowAddMaterialDialog}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Add New Material</DialogTitle>
+          <DialogDescription>
+            Add a new material to your estimate and inventory
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="material-name">Material Name</Label>
+            <Input
+              id="material-name"
+              value={newMaterial.name}
+              onChange={(e) => setNewMaterial(prev => ({ ...prev, name: e.target.value }))}
+              placeholder="e.g., Wood Post 4x4x8"
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="material-description">Description</Label>
+            <Textarea
+              id="material-description"
+              value={newMaterial.description}
+              onChange={(e) => setNewMaterial(prev => ({ ...prev, description: e.target.value }))}
+              placeholder="Brief description of the material"
+              rows={2}
+            />
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="material-unit">Price Unit</Label>
+              <Input
+                id="material-unit"
+                value={newMaterial.unit}
+                onChange={(e) => setNewMaterial(prev => ({ ...prev, unit: e.target.value }))}
+                placeholder="e.g., piece, sq ft"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="material-price">Price ($)</Label>
+              <Input
+                id="material-price"
+                type="number"
+                step="0.01"
+                value={newMaterial.price}
+                onChange={(e) => setNewMaterial(prev => ({ ...prev, price: e.target.value }))}
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+          
+          <div>
+            <Label htmlFor="material-supplier">Supplier (Optional)</Label>
+            <Input
+              id="material-supplier"
+              value={newMaterial.supplier}
+              onChange={(e) => setNewMaterial(prev => ({ ...prev, supplier: e.target.value }))}
+              placeholder="e.g., Home Depot, Lowes"
+            />
+          </div>
+        </div>
+        
+        <DialogFooter>
+          <Button 
+            variant="outline" 
+            onClick={() => setShowAddMaterialDialog(false)}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSaveNewMaterial}
+            disabled={!newMaterial.name || !newMaterial.unit || !newMaterial.price}
+          >
+            Save Material
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
