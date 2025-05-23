@@ -66,7 +66,7 @@ interface Estimate {
 export default function Estimates() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
   // State for the estimate form
   const [currentEstimate, setCurrentEstimate] = useState<Estimate>({
     title: '',
@@ -135,9 +135,9 @@ export default function Estimates() {
       (material.description && material.description.toLowerCase().includes(materialSearchTerm.toLowerCase())) ||
       material.category.toLowerCase().includes(materialSearchTerm.toLowerCase()) ||
       (material.sku && material.sku.toLowerCase().includes(materialSearchTerm.toLowerCase()));
-    
+
     const matchesCategory = selectedCategory === 'all' || material.category === selectedCategory;
-    
+
     return matchesSearch && matchesCategory;
   });
 
@@ -249,7 +249,7 @@ export default function Estimates() {
 
     try {
       const materialWithId = await createMaterialMutation.mutateAsync(newMaterial);
-      
+
       // Add to current estimate
       const newItem: EstimateItem = {
         id: Date.now().toString(),
@@ -278,7 +278,7 @@ export default function Estimates() {
         supplier: '',
         sku: ''
       });
-      
+
       setShowAddMaterialDialog(false);
     } catch (error) {
       console.error('Error saving material:', error);
@@ -368,7 +368,7 @@ export default function Estimates() {
         method: 'POST',
         body: JSON.stringify({ html: previewHtml })
       });
-      
+
       // Handle PDF download here
       toast({
         title: "PDF generado",
@@ -416,7 +416,7 @@ export default function Estimates() {
                   placeholder="Ej: Cerca de madera para patio trasero"
                 />
               </div>
-              
+
               <div>
                 <Label>Cliente</Label>
                 <div className="flex gap-2">
@@ -532,7 +532,7 @@ export default function Estimates() {
                 <span>Total:</span>
                 <span>${currentEstimate.total.toFixed(2)}</span>
               </div>
-              
+
               <div className="space-y-2 pt-4">
                 <Badge variant="secondary">
                   {currentEstimate.items.length} materiales

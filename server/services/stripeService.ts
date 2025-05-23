@@ -610,19 +610,26 @@ class StripeService {
       // Verificar primero que la conexión a Stripe funciona
       const isConnected = await this.verifyStripeConnection();
       if (!isConnected) {
-        throw new Error('No se pudo establecer conexión con Stripe. Verifique las credenciales.');
+        console.warn(`[${new Date().toISOString()}] No se pudo establecer conexión con Stripe. Continuando sin sincronizar planes.`);
+        return; // En lugar de lanzar un error, simplemente retornamos
       }
 
-      const plans = await storage.getAllSubscriptionPlans();
-
-      for (const plan of plans) {
-        await this.createOrUpdateStripePlan(plan);
+      try {
+        const plans = await storage.getAllSubscriptionPlans();
+        
+        for (const plan of plans) {
+          await this.createOrUpdateStripePlan(plan);
+        }
+        
+        console.log(`[${new Date().toISOString()}] Sincronizados ${plans.length} planes con Stripe`);
+      } catch (dbError) {
+        console.error(`[${new Date().toISOString()}] Error al obtener planes de la base de datos:`, dbError);
+        console.log(`[${new Date().toISOString()}] Continuando sin sincronizar planes con Stripe debido a problemas con la base de datos`);
+        // No lanzamos el error para evitar que el servidor falle
       }
-
-      console.log(`[${new Date().toISOString()}] Sincronizados ${plans.length} planes con Stripe`);
     } catch (error) {
       console.error(`[${new Date().toISOString()}] Error al sincronizar planes con Stripe:`, error);
-      throw error;
+      // No lanzamos el error para permitir que el servidor continúe funcionando
     }
   }
 
