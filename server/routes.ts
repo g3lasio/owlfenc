@@ -2729,10 +2729,16 @@ async function generateContractHtml(projectDetails: any): Promise<string> {
   return html;
 }
 
-// Materials endpoint - returns sample materials for estimates
-app.get('/api/materials', async (req, res) => {
-  try {
-    const { category } = req.query;
+async function generatePDF(data: any, type: 'estimate' | 'contract'): Promise<Buffer> {
+  return await documentService.generateDocument(data, type);
+}
+
+export function registerRoutes(app: Express): Server {
+  
+  // Materials endpoint - returns sample materials for estimates
+  app.get('/api/materials', async (req, res) => {
+    try {
+      const { category } = req.query;
     
     // Sample materials data
     const allMaterials = [
@@ -2777,7 +2783,9 @@ app.get('/api/materials', async (req, res) => {
   }
 });
 
-async function generatePDF(data: any, type: 'estimate' | 'contract'): Promise<Buffer> {
-  return await documentService.generateDocument(data, type);
-}
+  // Register all AI enhancement routes
+  app.use('/', aiEnhancementRoutes);
+
+  // Continue with existing route registrations
+  app.post("/api/ai-enhance", async (req: Request, res: Response) => {
 
