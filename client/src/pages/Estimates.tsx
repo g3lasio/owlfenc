@@ -1781,46 +1781,48 @@ export default function Estimates() {
             </div>
             
             <div className="max-h-[400px] overflow-y-auto">
-              {filteredClients.length > 0 ? (
+              {filteredMaterials.length > 0 ? (
                 <div className="space-y-2">
-                  {filteredClients.map(client => (
+                  {filteredMaterials.map(material => (
                     <div
-                      key={client.id}
+                      key={material.id}
                       className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                      onClick={() => handleSelectClient(client)}
+                      onClick={() => setTempSelectedMaterial(material)}
                     >
                       <div className="flex-1">
-                        <h4 className="font-medium text-sm">{client.name}</h4>
+                        <h4 className="font-medium text-sm">{material.name}</h4>
                         <div className="text-xs text-gray-500 space-y-1">
-                          {client.email && (
+                          <div className="flex items-center gap-1">
+                            <span className="h-3 w-3 text-center">🏷️</span>
+                            <span>{material.category}</span>
+                          </div>
+                          {material.description && (
                             <div className="flex items-center gap-1">
-                              <Mail className="h-3 w-3" />
-                              <span>{client.email}</span>
+                              <span className="h-3 w-3 text-center">📝</span>
+                              <span className="truncate max-w-[200px]">{material.description}</span>
                             </div>
                           )}
-                          {(client.phone || client.mobilePhone) && (
+                          <div className="flex items-center gap-2">
                             <div className="flex items-center gap-1">
-                              <span className="h-3 w-3 text-center">📞</span>
-                              <span>{client.phone || client.mobilePhone}</span>
-                            </div>
-                          )}
-                          {client.address && (
-                            <div className="flex items-center gap-1">
-                              <span className="h-3 w-3 text-center">📍</span>
-                              <span className="truncate max-w-[200px]">
-                                {client.address}
-                                {client.city && `, ${client.city}`}
-                                {client.state && `, ${client.state}`}
+                              <span className="h-3 w-3 text-center">💰</span>
+                              <span className="font-medium text-green-600">
+                                {formatCurrency(material.price)} / {material.unit}
                               </span>
                             </div>
-                          )}
+                            {material.stock && (
+                              <div className="flex items-center gap-1">
+                                <span className="h-3 w-3 text-center">📦</span>
+                                <span>Stock: {material.stock}</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <Button 
                         size="sm" 
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleSelectClient(client);
+                          setTempSelectedMaterial(material);
                         }}
                         className="h-8 text-xs px-3 ml-3"
                       >
@@ -1835,18 +1837,18 @@ export default function Estimates() {
                     <Search className="h-8 w-8 mx-auto" />
                   </div>
                   <p className="text-sm text-gray-500 mb-3">
-                    {clients.length === 0 ? 'No tienes clientes guardados aún' : 'No se encontraron clientes con esa búsqueda'}
+                    {materials.length === 0 ? 'No tienes materiales guardados en tu inventario aún' : 'No se encontraron materiales con esa búsqueda'}
                   </p>
                   <Button 
                     size="sm" 
                     onClick={() => {
-                      setShowClientSearchDialog(false);
-                      window.open('/clients', '_blank');
+                      setShowMaterialSearchDialog(false);
+                      window.open('/materials', '_blank');
                     }}
                     variant="outline"
                   >
                     <PlusCircle className="h-4 w-4 mr-1" />
-                    Agregar primer cliente
+                    Ir a Inventario
                   </Button>
                 </div>
               )}
@@ -1865,9 +1867,9 @@ export default function Estimates() {
       <Dialog open={showMaterialSearchDialog} onOpenChange={setShowMaterialSearchDialog}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader className="pb-3">
-            <DialogTitle className="text-lg">Select Material</DialogTitle>
+            <DialogTitle className="text-lg">🔍 Buscar Material del Inventario</DialogTitle>
             <DialogDescription className="text-sm">
-              Search for an existing material or add a new one.
+              Selecciona un material de tu inventario guardado o agrega uno nuevo.
             </DialogDescription>
           </DialogHeader>
           
