@@ -160,6 +160,28 @@ export default function EstimateGenerator() {
     isOptional: false
   });
 
+  // Estados para materiales
+  const [materials, setMaterials] = useState<any[]>([]);
+  const [showMaterialSearchDialog, setShowMaterialSearchDialog] = useState(false);
+  const [showNewMaterialDialog, setShowNewMaterialDialog] = useState(false);
+  const [materialSearch, setMaterialSearch] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+
+  // Categorías disponibles
+  const categories = ['all', 'Posts', 'Rails', 'Panels', 'Hardware', 'Labor', 'Equipment', 'Other'];
+
+  // Filtrar materiales
+  const filteredMaterials = materials.filter((material: any) => {
+    const matchesSearch = !materialSearch || 
+      material.name.toLowerCase().includes(materialSearch.toLowerCase()) ||
+      material.description?.toLowerCase().includes(materialSearch.toLowerCase()) ||
+      material.sku?.toLowerCase().includes(materialSearch.toLowerCase());
+    
+    const matchesCategory = selectedCategory === 'all' || material.category === selectedCategory;
+    
+    return matchesSearch && matchesCategory;
+  });
+
   // Tipos de proyecto disponibles
   const projectTypes = [
     { value: 'fence', label: 'Fence Installation', subtypes: ['Wood Fence', 'Vinyl Fence', 'Chain Link', 'Metal Fence'] },
@@ -199,13 +221,6 @@ export default function EstimateGenerator() {
       loadClients();
     }, [currentUser, toast]);
 
-  // Estados para materiales y búsqueda
-  const [materials, setMaterials] = useState<any[]>([]);
-  const [showMaterialSearchDialog, setShowMaterialSearchDialog] = useState(false);
-  const [showNewMaterialDialog, setShowNewMaterialDialog] = useState(false);
-  const [materialSearch, setMaterialSearch] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  
   // Cargar materiales disponibles
   useEffect(() => {
     loadMaterials();
@@ -229,15 +244,12 @@ export default function EstimateGenerator() {
       // Agregar material existente
       const newItem = {
         id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        materialId: material.id,
         name: material.name,
         description: material.description || '',
         unit: material.unit,
-        price: material.price / 100, // Convertir de centavos a dólares
+        price: material.price,
         quantity: 1,
-        category: material.category,
-        supplier: material.supplier || '',
-        sku: material.sku || ''
+        total: material.price
       };
       
       setEstimate(prev => ({
@@ -256,15 +268,12 @@ export default function EstimateGenerator() {
   const addCustomItem = (customItem: any) => {
     const newItem = {
       id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      materialId: null, // Material personalizado
       name: customItem.name,
       description: customItem.description || '',
       unit: customItem.unit,
       price: parseFloat(customItem.price) || 0,
       quantity: 1,
-      category: customItem.category || 'Custom',
-      supplier: customItem.supplier || '',
-      sku: customItem.sku || ''
+      total: parseFloat(customItem.price) || 0
     };
     
     setEstimate(prev => ({
