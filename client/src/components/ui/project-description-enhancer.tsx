@@ -1,8 +1,33 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import axios from "axios";
+
+// Icono personalizado de Mervin AI
+const MervinAIIcon = ({ className = "h-3 w-3" }: { className?: string }) => (
+  <svg 
+    className={className} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <circle cx="12" cy="12" r="10" fill="currentColor" fillOpacity="0.1"/>
+    <path 
+      d="M8 12h8M12 8v8M16 8l-8 8M8 8l8 8" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+      strokeLinecap="round"
+    />
+    <circle cx="12" cy="12" r="2" fill="currentColor"/>
+  </svg>
+);
 
 interface ProjectDescriptionEnhancerProps {
   originalText: string;
@@ -100,24 +125,33 @@ export function ProjectDescriptionEnhancer({
   };
 
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={enhanceDescription}
-      disabled={isEnhancing || !originalText || originalText.trim().length < 5}
-      className={`flex items-center gap-2 text-xs py-1 h-7 px-3 ${className}`}
-    >
-      {isEnhancing ? (
-        <>
-          <Loader2 className="h-3 w-3 animate-spin" />
-          Mejorando...
-        </>
-      ) : (
-        <>
-          <Sparkles className="h-3 w-3" />
-          Mejorar con IA
-        </>
-      )}
-    </Button>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={enhanceDescription}
+            disabled={isEnhancing || !originalText || originalText.trim().length < 5}
+            className={`flex items-center gap-2 text-xs py-1 h-7 px-3 ${className}`}
+          >
+            {isEnhancing ? (
+              <>
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Mejorando...
+              </>
+            ) : (
+              <>
+                <MervinAIIcon className="h-3 w-3" />
+                Mejorar con IA
+              </>
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Enhance with Mervin AI</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
