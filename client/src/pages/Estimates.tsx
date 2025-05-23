@@ -1403,13 +1403,7 @@ export default function Estimates() {
           </CardHeader>
           <CardContent className="pb-4">
             <div className="space-y-3">
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <div className="flex items-center">
-                    <Label className="text-xs">Plantilla Premium</Label>
-                  </div>
-                </div>
-              </div>
+              
               
               <div>
                 <Label className="text-xs">Fecha</Label>
