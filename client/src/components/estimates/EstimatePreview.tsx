@@ -30,14 +30,38 @@ const EstimatePreview: React.FC<EstimatePreviewProps> = ({
         
         // Determinar el estilo del template
         const style = getTemplateStyle(templateId);
-        console.log(`Cargando plantilla de estilo: ${style} para previsualización`);
+        console.log(`Cargando plantilla de estilo: ${style} para previsualización (ID: ${templateId})`);
         
         // Cargar el HTML de la plantilla
-        const templateHtml = await loadTemplateHTML(style);
+        let templateHtml;
+        try {
+          templateHtml = await loadTemplateHTML(style);
+          if (templateHtml) {
+            console.log(`Plantilla cargada exitosamente. Longitud: ${templateHtml.length} caracteres`);
+          } else {
+            console.error('La función loadTemplateHTML devolvió un valor nulo o vacío');
+          }
+        } catch (templateError) {
+          console.error('Error al cargar la plantilla:', templateError);
+          setHtml(`<div class="error">Error al cargar la plantilla: ${templateError.message}</div>`);
+          setLoading(false);
+          return;
+        }
         
         if (!templateHtml) {
           console.error('No se pudo cargar la plantilla HTML');
-          setHtml('<div class="error">Error al cargar la plantilla</div>');
+          setHtml(`
+            <div class="error" style="padding: 20px; background-color: #fff1f2; border-left: 4px solid #e11d48; margin: 20px 0;">
+              <h3 style="color: #be123c; margin-top: 0;">Error al cargar la plantilla</h3>
+              <p>No se pudo cargar la plantilla de estilo: ${style} (ID: ${templateId})</p>
+              <p>Verifica que los archivos de plantillas existan en la carpeta <code>/public/templates/</code> y que los nombres coincidan:</p>
+              <ul style="margin-top: 10px;">
+                <li>Estándar: <code>basictemplateestimate.html</code></li>
+                <li>Profesional: <code>Premiumtemplateestimate.html</code></li>
+                <li>Premium: <code>luxurytemplate.html</code></li>
+              </ul>
+            </div>
+          `);
           setLoading(false);
           return;
         }

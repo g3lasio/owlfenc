@@ -19,17 +19,38 @@ export async function loadTemplateHTML(templateStyle: string = 'standard'): Prom
     };
     
     const templatePath = templateMap[templateStyle] || templateMap['standard'];
+    console.log(`Intentando cargar desde ruta: ${templatePath}`);
     
     try {
-      // Intentar cargar el archivo utilizando fetch
-      const response = await fetch(templatePath);
+      // Intentar cargar el archivo utilizando fetch con cache: 'no-store' para evitar problemas de caché
+      const response = await fetch(templatePath, { 
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' }
+      });
       
       if (response.ok) {
         const templateContent = await response.text();
-        console.log(`Plantilla cargada exitosamente desde: ${templatePath}`);
+        console.log(`Plantilla cargada exitosamente desde: ${templatePath}, tamaño: ${templateContent.length} bytes`);
         return templateContent;
       } else {
-        console.warn(`No se pudo cargar la plantilla desde ${templatePath}, utilizando plantilla integrada.`);
+        console.warn(`No se pudo cargar la plantilla desde ${templatePath}, código: ${response.status}. Intentando ruta alternativa.`);
+        
+        // Intentar con ruta alternativa
+        const altPath = `/static/templates/${templatePath.split('/').pop()}`;
+        console.log(`Intentando con ruta alternativa: ${altPath}`);
+        
+        const altResponse = await fetch(altPath, { 
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' }
+        });
+        
+        if (altResponse.ok) {
+          const altContent = await altResponse.text();
+          console.log(`Plantilla cargada exitosamente desde ruta alternativa: ${altPath}`);
+          return altContent;
+        } else {
+          console.warn(`No se pudo cargar la plantilla desde ruta alternativa: ${altPath}, utilizando plantilla integrada.`);
+        }
       }
     } catch (fetchError) {
       console.warn(`Error fetching plantilla desde ${templatePath}:`, fetchError);
