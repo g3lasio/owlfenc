@@ -10,7 +10,7 @@ import Projects from "@/pages/Projects";
 import Clients from "./pages/Clients";
 import NuevoClientes from "./pages/NuevoClientes";
 import Materials from "./pages/Materials";
-import EstimatesIntegrated from "./pages/EstimatesIntegrated";
+import EstimatesWizard from "./pages/EstimatesWizard";
 import ChatInterface from "@/components/chat/ChatInterface";
 import Settings from "@/pages/Settings";
 import Profile from "@/pages/Profile";
@@ -157,7 +157,7 @@ function Router() {
         {() => <ProtectedRoute component={AITestingPage} />}
       </Route>
       <Route path="/estimates">
-        {() => <ProtectedRoute component={EstimatesIntegrated} />}
+        {() => <ProtectedRoute component={EstimatesWizard} />}
       </Route>
       <Route path="/estimate-generator">
         {() => <ProtectedRoute component={EstimateGenerator} />}
