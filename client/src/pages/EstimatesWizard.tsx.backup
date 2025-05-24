@@ -1547,7 +1547,8 @@ Formato: Párrafos informativos (máximo 120 palabras).`;
       </Dialog>
     </div>
   );
-}
+
+                        {isLoadingMaterials ? (
                           <p className="text-center py-4 text-muted-foreground">Cargando materiales...</p>
                         ) : filteredMaterials.length === 0 ? (
                           <p className="text-center py-4 text-muted-foreground">
