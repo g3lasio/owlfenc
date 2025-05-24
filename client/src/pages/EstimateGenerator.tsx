@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { ProjectDescriptionEnhancer } from '@/components/ui/project-description-enhancer';
+import { getClients } from '@/lib/clientFirebase';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   User, 
   FileText, 
@@ -54,7 +56,7 @@ interface Estimate {
 type Step = 'client' | 'project' | 'items' | 'review';
 
 interface ClientType {
-  id: number;
+  id: string;
   name: string;
   email: string;
   phone: string;
@@ -64,6 +66,7 @@ interface ClientType {
 export default function EstimateGenerator() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { currentUser } = useAuth();
   
   // Mobile-first state management
   const [currentStep, setCurrentStep] = useState<Step>('client');
@@ -86,15 +89,41 @@ export default function EstimateGenerator() {
     notes: ''
   });
 
-  // Load clients
-  const { data: clients = [], isLoading: loadingClients } = useQuery({
-    queryKey: ['/api/clients'],
-    queryFn: async () => {
-      const response = await fetch('/api/clients');
-      if (!response.ok) throw new Error('Failed to fetch clients');
-      return response.json();
-    }
-  });
+  // Load clients from Firebase
+  const [clients, setClients] = useState<ClientType[]>([]);
+  const [loadingClients, setLoadingClients] = useState(false);
+
+  // Load clients when component mounts
+  useEffect(() => {
+    const loadClientsData = async () => {
+      if (!currentUser) return;
+      
+      setLoadingClients(true);
+      try {
+        const clientsData = await getClients(currentUser.uid);
+        const mappedClients: ClientType[] = clientsData.map(client => ({
+          id: client.id,
+          name: client.name,
+          email: client.email || '',
+          phone: client.phone || '',
+          address: client.address || ''
+        }));
+        setClients(mappedClients);
+        console.log('Clients loaded for EstimateGenerator:', mappedClients.length);
+      } catch (error) {
+        console.error('Error loading clients:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load clients',
+          variant: 'destructive'
+        });
+      } finally {
+        setLoadingClients(false);
+      }
+    };
+
+    loadClientsData();
+  }, [currentUser, toast]);
 
   // Calculate totals whenever items change
   useEffect(() => {
