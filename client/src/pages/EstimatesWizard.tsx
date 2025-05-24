@@ -1097,6 +1097,118 @@ export default function EstimatesWizard() {
           )}
         </div>
       </div>
+
+      {/* Add Client Dialog */}
+      <Dialog open={showAddClientDialog} onOpenChange={setShowAddClientDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5" />
+              Crear Nuevo Cliente
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="name">Nombre *</Label>
+                <Input
+                  id="name"
+                  value={newClient.name}
+                  onChange={(e) => setNewClient(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Nombre completo"
+                />
+              </div>
+              <div>
+                <Label htmlFor="email">Email *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={newClient.email}
+                  onChange={(e) => setNewClient(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="email@ejemplo.com"
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="phone">Teléfono</Label>
+                <Input
+                  id="phone"
+                  value={newClient.phone}
+                  onChange={(e) => setNewClient(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="(555) 123-4567"
+                />
+              </div>
+              <div>
+                <Label htmlFor="zipCode">Código Postal</Label>
+                <Input
+                  id="zipCode"
+                  value={newClient.zipCode}
+                  onChange={(e) => setNewClient(prev => ({ ...prev, zipCode: e.target.value }))}
+                  placeholder="12345"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="address">Dirección</Label>
+              <Input
+                id="address"
+                value={newClient.address}
+                onChange={(e) => setNewClient(prev => ({ ...prev, address: e.target.value }))}
+                placeholder="123 Main St"
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="city">Ciudad</Label>
+                <Input
+                  id="city"
+                  value={newClient.city}
+                  onChange={(e) => setNewClient(prev => ({ ...prev, city: e.target.value }))}
+                  placeholder="Ciudad"
+                />
+              </div>
+              <div>
+                <Label htmlFor="state">Estado</Label>
+                <Input
+                  id="state"
+                  value={newClient.state}
+                  onChange={(e) => setNewClient(prev => ({ ...prev, state: e.target.value }))}
+                  placeholder="Estado"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="notes">Notas</Label>
+              <Textarea
+                id="notes"
+                value={newClient.notes}
+                onChange={(e) => setNewClient(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder="Notas adicionales..."
+                rows={2}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowAddClientDialog(false)}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={createNewClient}>
+              <UserPlus className="h-4 w-4 mr-2" />
+              Crear Cliente
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
