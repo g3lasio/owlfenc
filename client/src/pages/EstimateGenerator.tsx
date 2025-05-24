@@ -66,7 +66,7 @@ interface ClientType {
 export default function EstimateGenerator() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { currentUser, login, loginWithGoogle } = useAuth();
+  const { currentUser, login, loginWithGoogle, loginWithApple } = useAuth();
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -144,6 +144,28 @@ export default function EstimateGenerator() {
       toast({
         title: 'Login Error',
         description: 'Failed to login with Google',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  const handleAppleLogin = async () => {
+    setLoginLoading(true);
+    try {
+      console.log('Iniciando autenticación con Apple desde EstimateGenerator');
+      await loginWithApple();
+      setShowLoginDialog(false);
+      toast({
+        title: 'Success',
+        description: 'Logged in with Apple successfully!',
+      });
+    } catch (error) {
+      console.error('Apple login error:', error);
+      toast({
+        title: 'Login Error', 
+        description: 'Failed to login with Apple',
         variant: 'destructive'
       });
     } finally {
@@ -881,6 +903,15 @@ export default function EstimateGenerator() {
           </DialogHeader>
           
           <div className="space-y-4">
+            {/* Apple Login Button */}
+            <Button 
+              onClick={handleAppleLogin}
+              disabled={loginLoading}
+              className="w-full bg-black hover:bg-gray-800 text-white"
+            >
+              {loginLoading ? 'Signing in...' : 'Continue with Apple'}
+            </Button>
+
             {/* Google Login Button */}
             <Button 
               onClick={handleGoogleLogin}
