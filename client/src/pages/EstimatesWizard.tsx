@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { getClients as getFirebaseClients, saveClient } from '@/lib/clientFirebase';
+import { collection, query, where, getDocs, addDoc, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { 
   Search, 
   Plus, 
@@ -118,6 +120,7 @@ export default function EstimatesWizard() {
   const [materialSearch, setMaterialSearch] = useState('');
   const [showMaterialDialog, setShowMaterialDialog] = useState(false);
   const [showAddClientDialog, setShowAddClientDialog] = useState(false);
+  const [showAddMaterialDialog, setShowAddMaterialDialog] = useState(false);
 
   // Loading states
   const [isLoadingClients, setIsLoadingClients] = useState(true);
@@ -134,6 +137,17 @@ export default function EstimatesWizard() {
     state: '',
     zipCode: '',
     notes: ''
+  });
+
+  // New material form
+  const [newMaterial, setNewMaterial] = useState({
+    name: '',
+    description: '',
+    category: '',
+    price: '',
+    unit: '',
+    sku: '',
+    supplier: ''
   });
 
   // Load data on mount
@@ -176,15 +190,34 @@ export default function EstimatesWizard() {
   };
 
   const loadMaterials = async () => {
+    if (!currentUser) return;
+    
     try {
       setIsLoadingMaterials(true);
-      const response = await fetch('/api/materials?category=all');
-      if (response.ok) {
-        const data = await response.json();
-        setMaterials(data);
-      }
+      // Use Firebase directly like your functional Materials page
+      const materialsRef = collection(db, 'materials');
+      const q = query(materialsRef, where('userId', '==', currentUser.uid));
+      const querySnapshot = await getDocs(q);
+
+      const materialsData: Material[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data() as Omit<Material, 'id'>;
+        const material: Material = {
+          id: doc.id,
+          ...data,
+          price: typeof data.price === 'number' ? data.price : 0
+        };
+        materialsData.push(material);
+      });
+
+      setMaterials(materialsData);
     } catch (error) {
-      console.error('Error loading materials:', error);
+      console.error('Error loading materials from Firebase:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudieron cargar los materiales',
+        variant: 'destructive'
+      });
     } finally {
       setIsLoadingMaterials(false);
     }
@@ -313,6 +346,73 @@ export default function EstimatesWizard() {
       toast({
         title: 'Error',
         description: 'No se pudo crear el cliente',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  // Create new material manually
+  const createNewMaterial = async () => {
+    if (!newMaterial.name || !newMaterial.price || !newMaterial.unit) {
+      toast({
+        title: 'Datos requeridos',
+        description: 'El nombre, precio y unidad son obligatorios',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      const materialData = {
+        name: newMaterial.name,
+        description: newMaterial.description || '',
+        category: newMaterial.category || 'General',
+        price: parseFloat(newMaterial.price),
+        unit: newMaterial.unit,
+        sku: newMaterial.sku || '',
+        supplier: newMaterial.supplier || '',
+        userId: currentUser?.uid,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now()
+      };
+
+      const materialsRef = collection(db, 'materials');
+      const docRef = await addDoc(materialsRef, materialData);
+      
+      // Add to local state
+      const materialWithId = { 
+        id: docRef.id, 
+        ...materialData,
+        createdAt: materialData.createdAt.toDate(),
+        updatedAt: materialData.updatedAt.toDate()
+      };
+      
+      setMaterials(prev => [materialWithId, ...prev]);
+      
+      // Add to estimate automatically
+      addMaterialToEstimate(materialWithId);
+      
+      // Reset form and close dialog
+      setNewMaterial({
+        name: '',
+        description: '',
+        category: '',
+        price: '',
+        unit: '',
+        sku: '',
+        supplier: ''
+      });
+      setShowAddMaterialDialog(false);
+      
+      toast({
+        title: 'Material creado',
+        description: `${materialData.name} ha sido creado y agregado al estimado`
+      });
+    } catch (error) {
+      console.error('Error creating material:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo crear el material',
         variant: 'destructive'
       });
     }
@@ -786,14 +886,24 @@ export default function EstimatesWizard() {
                       <DialogTitle>Seleccionar Material del Inventario</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          placeholder="Buscar materiales..."
-                          value={materialSearch}
-                          onChange={(e) => setMaterialSearch(e.target.value)}
-                          className="pl-10"
-                        />
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder="Buscar materiales..."
+                            value={materialSearch}
+                            onChange={(e) => setMaterialSearch(e.target.value)}
+                            className="pl-10"
+                          />
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setShowAddMaterialDialog(true)}
+                          className="whitespace-nowrap"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Nuevo Material
+                        </Button>
                       </div>
                       <div className="max-h-96 overflow-y-auto">
                         {isLoadingMaterials ? (
@@ -1205,6 +1315,107 @@ export default function EstimatesWizard() {
             <Button onClick={createNewClient}>
               <UserPlus className="h-4 w-4 mr-2" />
               Crear Cliente
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Material Dialog */}
+      <Dialog open={showAddMaterialDialog} onOpenChange={setShowAddMaterialDialog}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5" />
+              Crear Nuevo Material
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="material-name">Nombre *</Label>
+                <Input
+                  id="material-name"
+                  value={newMaterial.name}
+                  onChange={(e) => setNewMaterial(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Nombre del material"
+                />
+              </div>
+              <div>
+                <Label htmlFor="material-category">Categoría</Label>
+                <Input
+                  id="material-category"
+                  value={newMaterial.category}
+                  onChange={(e) => setNewMaterial(prev => ({ ...prev, category: e.target.value }))}
+                  placeholder="Ej: Madera, Metal, Concreto"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="material-description">Descripción</Label>
+              <Textarea
+                id="material-description"
+                value={newMaterial.description}
+                onChange={(e) => setNewMaterial(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Descripción del material..."
+                rows={2}
+              />
+            </div>
+            
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="material-price">Precio *</Label>
+                <Input
+                  id="material-price"
+                  type="number"
+                  step="0.01"
+                  value={newMaterial.price}
+                  onChange={(e) => setNewMaterial(prev => ({ ...prev, price: e.target.value }))}
+                  placeholder="0.00"
+                />
+              </div>
+              <div>
+                <Label htmlFor="material-unit">Unidad *</Label>
+                <Input
+                  id="material-unit"
+                  value={newMaterial.unit}
+                  onChange={(e) => setNewMaterial(prev => ({ ...prev, unit: e.target.value }))}
+                  placeholder="pies, metros, kg"
+                />
+              </div>
+              <div>
+                <Label htmlFor="material-sku">SKU</Label>
+                <Input
+                  id="material-sku"
+                  value={newMaterial.sku}
+                  onChange={(e) => setNewMaterial(prev => ({ ...prev, sku: e.target.value }))}
+                  placeholder="Código SKU"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="material-supplier">Proveedor</Label>
+              <Input
+                id="material-supplier"
+                value={newMaterial.supplier}
+                onChange={(e) => setNewMaterial(prev => ({ ...prev, supplier: e.target.value }))}
+                placeholder="Nombre del proveedor"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowAddMaterialDialog(false)}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={createNewMaterial}>
+              <Plus className="h-4 w-4 mr-2" />
+              Crear Material
             </Button>
           </DialogFooter>
         </DialogContent>
