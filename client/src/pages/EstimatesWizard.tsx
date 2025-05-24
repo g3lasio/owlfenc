@@ -503,7 +503,7 @@ export default function EstimatesWizard() {
         if (!response.ok) throw new Error('Error processing with AI');
         const result = await response.json();
         
-        setEstimate(prev => ({ ...prev, [field]: result.content }));
+        setEstimate(prev => ({ ...prev, [field]: result.enhancedContent }));
         
         toast({
           title: '✨ Completed with AI',
