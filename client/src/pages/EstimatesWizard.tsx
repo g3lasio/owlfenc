@@ -302,7 +302,7 @@ export default function EstimatesWizard() {
       console.error('❌ Error loading materials from Firebase:', error);
       toast({
         title: 'Error',
-        description: 'No se pudieron cargar los materiales',
+        description: 'Could not load materials',
         variant: 'destructive'
       });
     } finally {
@@ -363,8 +363,8 @@ export default function EstimatesWizard() {
   const selectClient = (client: Client) => {
     setEstimate(prev => ({ ...prev, client }));
     toast({
-      title: 'Cliente seleccionado',
-      description: `${client.name} ha sido agregado al estimado`
+      title: 'Client Selected',
+      description: `${client.name} has been added to the estimate`
     });
   };
 
@@ -372,8 +372,8 @@ export default function EstimatesWizard() {
   const createNewClient = async () => {
     if (!newClient.name || !newClient.email) {
       toast({
-        title: 'Datos requeridos',
-        description: 'El nombre y email son obligatorios',
+        title: 'Required Data',
+        description: 'Name and email are required',
         variant: 'destructive'
       });
       return;
@@ -425,14 +425,14 @@ export default function EstimatesWizard() {
       setShowAddClientDialog(false);
       
       toast({
-        title: 'Cliente creado',
-        description: `${clientData.name} ha sido creado y seleccionado`
+        title: 'Client Created',
+        description: `${clientData.name} has been created and selected`
       });
     } catch (error) {
       console.error('Error creating client:', error);
       toast({
         title: 'Error',
-        description: 'No se pudo crear el cliente',
+        description: 'Could not create client',
         variant: 'destructive'
       });
     }
@@ -442,8 +442,8 @@ export default function EstimatesWizard() {
   const enhanceProjectWithAI = async (field: string) => {
     if (!projectDescription.trim()) {
       toast({
-        title: 'Descripción requerida',
-        description: 'Por favor describe brevemente tu proyecto para usar la IA',
+        title: 'Description Required',
+        description: 'Please briefly describe your project to use AI',
         variant: 'destructive'
       });
       return;
@@ -455,7 +455,7 @@ export default function EstimatesWizard() {
       // Analyze project context
       const projectContext = {
         description: projectDescription,
-        client: estimate.client?.name || 'Cliente',
+        client: estimate.client?.name || 'Client',
         materials: estimate.items.map(item => `${item.name} (${item.quantity} ${item.unit})`).join(', '),
         totalValue: estimate.total
       };
@@ -487,8 +487,8 @@ export default function EstimatesWizard() {
         setEstimate(prev => ({ ...prev, ...updates }));
         
         toast({
-          title: '🚀 ¡Proyecto completado con IA!',
-          description: 'Todos los campos han sido rellenados profesionalmente'
+          title: '🚀 Project completed with AI!',
+          description: 'All fields have been filled professionally'
         });
       } else {
         // Process single field
