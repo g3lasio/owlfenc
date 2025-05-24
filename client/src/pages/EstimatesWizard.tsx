@@ -27,7 +27,9 @@ import {
   Check,
   Calculator,
   Building2,
-  UserPlus
+  UserPlus,
+  Sparkles,
+  Brain
 } from 'lucide-react';
 
 // Types
@@ -149,6 +151,10 @@ export default function EstimatesWizard() {
     sku: '',
     supplier: ''
   });
+
+  // AI enhancement states
+  const [isAIProcessing, setIsAIProcessing] = useState(false);
+  const [projectDescription, setProjectDescription] = useState('');
 
   // Load data on mount
   useEffect(() => {
@@ -359,6 +365,189 @@ export default function EstimatesWizard() {
         variant: 'destructive'
       });
     }
+  };
+
+  // AI Enhancement Functions
+  const enhanceProjectWithAI = async (field: string) => {
+    if (!projectDescription.trim()) {
+      toast({
+        title: 'Descripción requerida',
+        description: 'Por favor describe brevemente tu proyecto para usar la IA',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsAIProcessing(true);
+    
+    try {
+      // Analyze project context
+      const projectContext = {
+        description: projectDescription,
+        client: estimate.client?.name || 'Cliente',
+        materials: estimate.items.map(item => `${item.name} (${item.quantity} ${item.unit})`).join(', '),
+        totalValue: estimate.total
+      };
+
+      if (field === 'all') {
+        // Process all fields at once
+        const fields = ['scope', 'timeline', 'process', 'includes', 'excludes', 'notes'];
+        const allPromises = fields.map(async (f) => {
+          const prompt = generateAIPrompt(f, projectContext);
+          const response = await fetch('/api/ai/enhance-project', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt, field: f, context: projectContext }),
+          });
+          
+          if (!response.ok) throw new Error(`Error processing ${f}`);
+          const result = await response.json();
+          return { field: f, content: result.content };
+        });
+
+        const results = await Promise.all(allPromises);
+        
+        // Update all fields at once
+        const updates = results.reduce((acc, { field: f, content }) => {
+          acc[f] = content;
+          return acc;
+        }, {} as any);
+        
+        setEstimate(prev => ({ ...prev, ...updates }));
+        
+        toast({
+          title: '🚀 ¡Proyecto completado con IA!',
+          description: 'Todos los campos han sido rellenados profesionalmente'
+        });
+      } else {
+        // Process single field
+        const prompt = generateAIPrompt(field, projectContext);
+        
+        const response = await fetch('/api/ai/enhance-project', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt, field, context: projectContext }),
+        });
+
+        if (!response.ok) throw new Error('Error al procesar con IA');
+        const result = await response.json();
+        
+        setEstimate(prev => ({ ...prev, [field]: result.content }));
+        
+        toast({
+          title: '✨ Completado con IA',
+          description: `El campo "${getFieldDisplayName(field)}" ha sido mejorado con IA`
+        });
+      }
+      
+    } catch (error) {
+      console.error('Error enhancing with AI:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo procesar con IA. Inténtalo de nuevo.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsAIProcessing(false);
+    }
+  };
+
+  const generateAIPrompt = (field: string, context: any) => {
+    const basePrompt = `Actúa como un contratista profesional experto creando un estimado para: ${context.description}
+    
+Cliente: ${context.client}
+Materiales seleccionados: ${context.materials || 'No especificados'}
+Valor del proyecto: $${context.totalValue}
+
+Genera contenido profesional y específico para el campo "${getFieldDisplayName(field)}" en español.`;
+
+    switch (field) {
+      case 'scope':
+        return `${basePrompt}
+
+Crea un alcance de trabajo detallado que incluya:
+- Análisis de la situación actual
+- Trabajos de preparación necesarios
+- Proceso de instalación/construcción principal
+- Acabados y detalles finales
+- Estándares de calidad a seguir
+
+Formato: Párrafos claros y profesionales (máximo 200 palabras).`;
+
+      case 'timeline':
+        return `${basePrompt}
+
+Estima un tiempo realista considerando:
+- Complejidad del proyecto
+- Condiciones climáticas
+- Disponibilidad de materiales
+- Permisos necesarios
+
+Formato: Tiempo específico (ej. "2-3 semanas", "10-14 días hábiles").`;
+
+      case 'process':
+        return `${basePrompt}
+
+Describe el proceso de trabajo paso a paso:
+- Preparación del sitio
+- Secuencia de actividades
+- Coordinación necesaria
+- Control de calidad
+- Inspecciones
+
+Formato: Lista numerada o con viñetas (máximo 150 palabras).`;
+
+      case 'includes':
+        return `${basePrompt}
+
+Lista específicamente qué incluye el presupuesto:
+- Materiales principales
+- Mano de obra especializada
+- Herramientas y equipo
+- Permisos básicos
+- Garantías
+
+Formato: Lista clara con viñetas (máximo 120 palabras).`;
+
+      case 'excludes':
+        return `${basePrompt}
+
+Lista claramente qué NO incluye el presupuesto:
+- Trabajos adicionales fuera del alcance
+- Permisos especiales
+- Servicios de terceros
+- Modificaciones no contempladas
+- Contingencias extraordinarias
+
+Formato: Lista clara con viñetas (máximo 100 palabras).`;
+
+      case 'notes':
+        return `${basePrompt}
+
+Agrega notas profesionales importantes:
+- Recomendaciones de mantenimiento
+- Consideraciones especiales del sitio
+- Sugerencias para optimizar resultados
+- Información sobre garantías
+- Próximos pasos
+
+Formato: Párrafos informativos (máximo 120 palabras).`;
+
+      default:
+        return basePrompt;
+    }
+  };
+
+  const getFieldDisplayName = (field: string) => {
+    const fieldNames = {
+      scope: 'Alcance del Trabajo',
+      timeline: 'Tiempo Estimado',
+      process: 'Proceso de Trabajo',
+      includes: 'Incluye',
+      excludes: 'No Incluye',
+      notes: 'Notas Adicionales'
+    };
+    return fieldNames[field as keyof typeof fieldNames] || field;
   };
 
   // Create new material manually
@@ -1045,19 +1234,84 @@ export default function EstimatesWizard() {
                 Detalles del Proyecto
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
+              {/* AI Project Description Input */}
+              <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Brain className="h-5 w-5 text-purple-600" />
+                  <Label className="text-purple-800 font-medium">
+                    Descripción del Proyecto para IA
+                  </Label>
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Describe brevemente tu proyecto (ej: Instalación de cerca perimetral de 100 metros)"
+                    value={projectDescription}
+                    onChange={(e) => setProjectDescription(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => enhanceProjectWithAI('all')}
+                    disabled={isAIProcessing || !projectDescription.trim()}
+                    className="whitespace-nowrap bg-gradient-to-r from-purple-600 to-blue-600 text-white border-0 hover:from-purple-700 hover:to-blue-700"
+                  >
+                    {isAIProcessing ? (
+                      <>
+                        <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2" />
+                        Procesando...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Rellenar Todo con IA
+                      </>
+                    )}
+                  </Button>
+                </div>
+                <p className="text-xs text-purple-600 mt-2">
+                  💡 Describe tu proyecto y la IA completará automáticamente todos los campos profesionalmente
+                </p>
+              </div>
+
               <div>
-                <Label htmlFor="scope">Alcance del Trabajo</Label>
+                <div className="flex items-center justify-between mb-2">
+                  <Label htmlFor="scope">Alcance del Trabajo</Label>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => enhanceProjectWithAI('scope')}
+                    disabled={isAIProcessing || !projectDescription.trim()}
+                    className="text-xs h-7"
+                  >
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    IA
+                  </Button>
+                </div>
                 <Textarea
                   id="scope"
                   placeholder="Descripción del alcance del proyecto..."
                   value={estimate.scope}
                   onChange={(e) => setEstimate(prev => ({ ...prev, scope: e.target.value }))}
-                  rows={2}
+                  rows={3}
                 />
               </div>
+              
               <div>
-                <Label htmlFor="timeline">Tiempo Estimado</Label>
+                <div className="flex items-center justify-between mb-2">
+                  <Label htmlFor="timeline">Tiempo Estimado</Label>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => enhanceProjectWithAI('timeline')}
+                    disabled={isAIProcessing || !projectDescription.trim()}
+                    className="text-xs h-7"
+                  >
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    IA
+                  </Button>
+                </div>
                 <Input
                   id="timeline"
                   placeholder="ej. 2-3 semanas"
@@ -1065,38 +1319,90 @@ export default function EstimatesWizard() {
                   onChange={(e) => setEstimate(prev => ({ ...prev, timeline: e.target.value }))}
                 />
               </div>
+
               <div>
-                <Label htmlFor="process">Proceso de Trabajo</Label>
+                <div className="flex items-center justify-between mb-2">
+                  <Label htmlFor="process">Proceso de Trabajo</Label>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => enhanceProjectWithAI('process')}
+                    disabled={isAIProcessing || !projectDescription.trim()}
+                    className="text-xs h-7"
+                  >
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    IA
+                  </Button>
+                </div>
                 <Textarea
                   id="process"
                   placeholder="Pasos del proceso de trabajo..."
                   value={estimate.process}
                   onChange={(e) => setEstimate(prev => ({ ...prev, process: e.target.value }))}
-                  rows={2}
+                  rows={3}
                 />
               </div>
+
               <div>
-                <Label htmlFor="includes">Incluye</Label>
+                <div className="flex items-center justify-between mb-2">
+                  <Label htmlFor="includes">Incluye</Label>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => enhanceProjectWithAI('includes')}
+                    disabled={isAIProcessing || !projectDescription.trim()}
+                    className="text-xs h-7"
+                  >
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    IA
+                  </Button>
+                </div>
                 <Textarea
                   id="includes"
                   placeholder="Servicios y materiales incluidos..."
                   value={estimate.includes}
                   onChange={(e) => setEstimate(prev => ({ ...prev, includes: e.target.value }))}
-                  rows={2}
+                  rows={3}
                 />
               </div>
+
               <div>
-                <Label htmlFor="excludes">No Incluye</Label>
+                <div className="flex items-center justify-between mb-2">
+                  <Label htmlFor="excludes">No Incluye</Label>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => enhanceProjectWithAI('excludes')}
+                    disabled={isAIProcessing || !projectDescription.trim()}
+                    className="text-xs h-7"
+                  >
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    IA
+                  </Button>
+                </div>
                 <Textarea
                   id="excludes"
                   placeholder="Servicios y materiales no incluidos..."
                   value={estimate.excludes}
                   onChange={(e) => setEstimate(prev => ({ ...prev, excludes: e.target.value }))}
-                  rows={2}
+                  rows={3}
                 />
               </div>
+
               <div>
-                <Label htmlFor="notes">Notas Adicionales</Label>
+                <div className="flex items-center justify-between mb-2">
+                  <Label htmlFor="notes">Notas Adicionales</Label>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => enhanceProjectWithAI('notes')}
+                    disabled={isAIProcessing || !projectDescription.trim()}
+                    className="text-xs h-7"
+                  >
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    IA
+                  </Button>
+                </div>
                 <Textarea
                   id="notes"
                   placeholder="Notas especiales, condiciones, etc."
