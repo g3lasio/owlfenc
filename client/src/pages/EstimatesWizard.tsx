@@ -88,8 +88,8 @@ interface EstimateData {
 
 const STEPS = [
   { id: 'client', title: 'Cliente', icon: User },
-  { id: 'materials', title: 'Materiales', icon: Package },
   { id: 'details', title: 'Detalles', icon: FileText },
+  { id: 'materials', title: 'Materiales', icon: Package },
   { id: 'preview', title: 'Vista Previa', icon: Eye }
 ];
 
@@ -1064,7 +1064,7 @@ Formato: Párrafos informativos (máximo 120 palabras).`;
           </Card>
         );
 
-      case 1: // Materials Selection
+      case 1: // Project Details
         return (
           <Card>
             <CardHeader>
@@ -1225,7 +1225,7 @@ Formato: Párrafos informativos (máximo 120 palabras).`;
           </Card>
         );
 
-      case 2: // Project Details
+      case 2: // Materials Selection
         return (
           <Card>
             <CardHeader>
