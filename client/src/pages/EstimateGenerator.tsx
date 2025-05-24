@@ -66,7 +66,11 @@ interface ClientType {
 export default function EstimateGenerator() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { currentUser } = useAuth();
+  const { currentUser, login, loginWithGoogle } = useAuth();
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
   
   // Mobile-first state management
   const [currentStep, setCurrentStep] = useState<Step>('client');
@@ -93,72 +97,88 @@ export default function EstimateGenerator() {
   const [clients, setClients] = useState<ClientType[]>([]);
   const [loadingClients, setLoadingClients] = useState(false);
 
+  // Handle Firebase login
+  const handleEmailLogin = async () => {
+    if (!loginEmail || !loginPassword) {
+      toast({
+        title: 'Error',
+        description: 'Please enter email and password',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setLoginLoading(true);
+    try {
+      await login(loginEmail, loginPassword);
+      setShowLoginDialog(false);
+      setLoginEmail('');
+      setLoginPassword('');
+      toast({
+        title: 'Success',
+        description: 'Logged in successfully!',
+      });
+    } catch (error) {
+      console.error('Login error:', error);
+      toast({
+        title: 'Login Error',
+        description: 'Invalid email or password',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setLoginLoading(true);
+    try {
+      await loginWithGoogle();
+      setShowLoginDialog(false);
+      toast({
+        title: 'Success',
+        description: 'Logged in with Google successfully!',
+      });
+    } catch (error) {
+      console.error('Google login error:', error);
+      toast({
+        title: 'Login Error',
+        description: 'Failed to login with Google',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
   // Load clients when component mounts
   useEffect(() => {
     const loadClientsData = async () => {
+      if (!currentUser) {
+        // Show login dialog if no user is authenticated
+        setShowLoginDialog(true);
+        return;
+      }
+      
       setLoadingClients(true);
       try {
-        // Try to load from Firebase if we have a user
-        if (currentUser) {
-          const clientsData = await getClients(currentUser.uid);
-          const mappedClients: ClientType[] = clientsData.map(client => ({
-            id: client.id,
-            name: client.name,
-            email: client.email || '',
-            phone: client.phone || '',
-            address: client.address || ''
-          }));
-          setClients(mappedClients);
-          console.log('Clients loaded for EstimateGenerator:', mappedClients.length);
-        } else {
-          // If no current user, create demo clients for testing
-          const demoClients: ClientType[] = [
-            {
-              id: '1',
-              name: 'John Smith',
-              email: 'john.smith@email.com',
-              phone: '(555) 123-4567',
-              address: '123 Main St, Anytown, ST 12345'
-            },
-            {
-              id: '2',
-              name: 'Maria Garcia',
-              email: 'maria.garcia@email.com',
-              phone: '(555) 987-6543',
-              address: '456 Oak Ave, Downtown, ST 67890'
-            },
-            {
-              id: '3',
-              name: 'David Johnson',
-              email: 'david.johnson@email.com',
-              phone: '(555) 555-0123',
-              address: '789 Pine Rd, Suburb, ST 54321'
-            }
-          ];
-          setClients(demoClients);
-          console.log('Demo clients loaded for EstimateGenerator:', demoClients.length);
-        }
+        const clientsData = await getClients(currentUser.uid);
+        const mappedClients: ClientType[] = clientsData.map(client => ({
+          id: client.id,
+          name: client.name,
+          email: client.email || '',
+          phone: client.phone || '',
+          address: client.address || ''
+        }));
+        setClients(mappedClients);
+        console.log('Clients loaded for EstimateGenerator:', mappedClients.length);
       } catch (error) {
         console.error('Error loading clients:', error);
-        // Create demo clients as fallback
-        const demoClients: ClientType[] = [
-          {
-            id: '1',
-            name: 'John Smith',
-            email: 'john.smith@email.com',
-            phone: '(555) 123-4567',
-            address: '123 Main St, Anytown, ST 12345'
-          },
-          {
-            id: '2',
-            name: 'Maria Garcia',
-            email: 'maria.garcia@email.com',
-            phone: '(555) 987-6543',
-            address: '456 Oak Ave, Downtown, ST 67890'
-          }
-        ];
-        setClients(demoClients);
-        console.log('Fallback demo clients loaded');
+        toast({
+          title: 'Error',
+          description: 'Failed to load clients from Firebase',
+          variant: 'destructive'
+        });
       } finally {
         setLoadingClients(false);
       }
@@ -849,6 +869,73 @@ export default function EstimateGenerator() {
                 ))}
               </div>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Login Dialog */}
+      <Dialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Login to Access Your Contacts</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Google Login Button */}
+            <Button 
+              onClick={handleGoogleLogin}
+              disabled={loginLoading}
+              className="w-full"
+              variant="outline"
+            >
+              {loginLoading ? 'Signing in...' : 'Continue with Google'}
+            </Button>
+            
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Or continue with email
+                </span>
+              </div>
+            </div>
+
+            {/* Email/Password Login */}
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="login-email">Email</Label>
+                <Input
+                  id="login-email"
+                  type="email"
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  className="mt-1"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="login-password">Password</Label>
+                <Input
+                  id="login-password"
+                  type="password"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  className="mt-1"
+                />
+              </div>
+              
+              <Button 
+                onClick={handleEmailLogin}
+                disabled={loginLoading}
+                className="w-full"
+              >
+                {loginLoading ? 'Signing in...' : 'Sign In'}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
