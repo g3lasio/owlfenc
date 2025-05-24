@@ -52,7 +52,7 @@ interface EstimateData {
   status: 'draft' | 'sent' | 'approved';
 }
 
-export default function Estimates() {
+export default function EstimatesNew() {
   const { currentUser } = useAuth();
   const { toast } = useToast();
 
