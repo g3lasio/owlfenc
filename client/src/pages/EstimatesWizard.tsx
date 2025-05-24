@@ -129,6 +129,77 @@ export default function EstimatesWizard() {
   const [isLoadingMaterials, setIsLoadingMaterials] = useState(true);
   const [previewHtml, setPreviewHtml] = useState('');
 
+  // New client/material data
+  const [newClientData, setNewClientData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: ''
+  });
+
+  const [newMaterialData, setNewMaterialData] = useState({
+    name: '',
+    category: '',
+    price: 0
+  });
+
+  // Handle adding new client
+  const handleAddNewClient = async () => {
+    try {
+      const newClient = {
+        id: `temp-${Date.now()}`,
+        name: newClientData.name,
+        email: newClientData.email,
+        phone: newClientData.phone,
+        address: newClientData.address,
+        source: 'manual'
+      };
+
+      setClients(prev => [...prev, newClient]);
+      setEstimate(prev => ({ ...prev, client: newClient }));
+      setNewClientData({ name: '', email: '', phone: '', address: '' });
+      setShowAddClientDialog(false);
+      
+      toast({
+        title: "Cliente agregado",
+        description: `${newClient.name} ha sido agregado exitosamente`
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo agregar el cliente",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Handle adding new material
+  const handleAddNewMaterial = async () => {
+    try {
+      const newMaterial = {
+        id: `temp-${Date.now()}`,
+        name: newMaterialData.name,
+        category: newMaterialData.category,
+        price: newMaterialData.price
+      };
+
+      setMaterials(prev => [...prev, newMaterial]);
+      setNewMaterialData({ name: '', category: '', price: 0 });
+      setShowAddMaterialDialog(false);
+      
+      toast({
+        title: "Material agregado",
+        description: `${newMaterial.name} ha sido agregado al inventario`
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo agregar el material",
+        variant: "destructive"
+      });
+    }
+  };
+
   // New client form
   const [newClient, setNewClient] = useState({
     name: '',
@@ -1511,18 +1582,61 @@ Formato: Párrafos informativos (máximo 120 palabras).`;
           <DialogHeader>
             <DialogTitle>Agregar Nuevo Cliente</DialogTitle>
           </DialogHeader>
-          <AddClientForm 
-            onClientAdded={(newClient) => {
-              setClients(prev => [...prev, newClient]);
-              setEstimate(prev => ({ ...prev, client: newClient }));
-              setShowAddClientDialog(false);
-              toast({
-                title: "Cliente agregado",
-                description: `${newClient.name} ha sido agregado exitosamente`
-              });
-            }}
-            onCancel={() => setShowAddClientDialog(false)}
-          />
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="clientName">Nombre</Label>
+              <Input
+                id="clientName"
+                placeholder="Nombre del cliente"
+                value={newClientData.name}
+                onChange={(e) => setNewClientData(prev => ({ ...prev, name: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="clientEmail">Email</Label>
+              <Input
+                id="clientEmail"
+                type="email"
+                placeholder="email@ejemplo.com"
+                value={newClientData.email}
+                onChange={(e) => setNewClientData(prev => ({ ...prev, email: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="clientPhone">Teléfono</Label>
+              <Input
+                id="clientPhone"
+                placeholder="(555) 123-4567"
+                value={newClientData.phone}
+                onChange={(e) => setNewClientData(prev => ({ ...prev, phone: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="clientAddress">Dirección</Label>
+              <Input
+                id="clientAddress"
+                placeholder="Dirección completa"
+                value={newClientData.address}
+                onChange={(e) => setNewClientData(prev => ({ ...prev, address: e.target.value }))}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowAddClientDialog(false)}
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleAddNewClient}
+                disabled={!newClientData.name.trim()}
+                className="flex-1"
+              >
+                Agregar Cliente
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -1532,17 +1646,53 @@ Formato: Párrafos informativos (máximo 120 palabras).`;
           <DialogHeader>
             <DialogTitle>Agregar Nuevo Material</DialogTitle>
           </DialogHeader>
-          <AddMaterialForm 
-            onMaterialAdded={(newMaterial) => {
-              setMaterials(prev => [...prev, newMaterial]);
-              setShowAddMaterialDialog(false);
-              toast({
-                title: "Material agregado",
-                description: `${newMaterial.name} ha sido agregado al inventario`
-              });
-            }}
-            onCancel={() => setShowAddMaterialDialog(false)}
-          />
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="materialName">Nombre del Material</Label>
+              <Input
+                id="materialName"
+                placeholder="Nombre del material"
+                value={newMaterialData.name}
+                onChange={(e) => setNewMaterialData(prev => ({ ...prev, name: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="materialCategory">Categoría</Label>
+              <Input
+                id="materialCategory"
+                placeholder="Categoría del material"
+                value={newMaterialData.category}
+                onChange={(e) => setNewMaterialData(prev => ({ ...prev, category: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="materialPrice">Precio</Label>
+              <Input
+                id="materialPrice"
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                value={newMaterialData.price}
+                onChange={(e) => setNewMaterialData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowAddMaterialDialog(false)}
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleAddNewMaterial}
+                disabled={!newMaterialData.name.trim()}
+                className="flex-1"
+              >
+                Agregar Material
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
