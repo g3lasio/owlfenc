@@ -10,7 +10,7 @@ import Projects from "@/pages/Projects";
 import Clients from "./pages/Clients";
 import NuevoClientes from "./pages/NuevoClientes";
 import Materials from "./pages/Materials";
-import Estimates from "./pages/Estimates";
+import EstimatesClean from "./pages/EstimatesClean";
 import ChatInterface from "@/components/chat/ChatInterface";
 import Settings from "@/pages/Settings";
 import Profile from "@/pages/Profile";
@@ -157,7 +157,7 @@ function Router() {
         {() => <ProtectedRoute component={AITestingPage} />}
       </Route>
       <Route path="/estimates">
-        {() => <ProtectedRoute component={EstimateGenerator} />}
+        {() => <ProtectedRoute component={EstimatesClean} />}
       </Route>
       <Route path="/estimate-generator">
         {() => <ProtectedRoute component={EstimateGenerator} />}
@@ -166,7 +166,7 @@ function Router() {
         {() => <ProtectedRoute component={EstimatesDashboard} />}
       </Route>
       <Route path="/estimates-legacy">
-        {() => <ProtectedRoute component={Estimates} />}
+        {() => <ProtectedRoute component={EstimateGenerator} />}
       </Route>
 
       {/* Página no encontrada */}
