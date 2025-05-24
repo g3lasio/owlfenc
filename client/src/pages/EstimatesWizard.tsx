@@ -190,18 +190,27 @@ export default function EstimatesWizard() {
   };
 
   const loadMaterials = async () => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      console.log('No current user, skipping materials load');
+      return;
+    }
     
     try {
       setIsLoadingMaterials(true);
+      console.log('🔄 Cargando materiales de Firebase para usuario:', currentUser.uid);
+      
       // Use Firebase directly like your functional Materials page
       const materialsRef = collection(db, 'materials');
       const q = query(materialsRef, where('userId', '==', currentUser.uid));
       const querySnapshot = await getDocs(q);
 
+      console.log('📦 Documentos de materiales encontrados:', querySnapshot.size);
+
       const materialsData: Material[] = [];
-      querySnapshot.forEach((doc) => {
+      querySnapshot.forEach((doc, index) => {
         const data = doc.data() as Omit<Material, 'id'>;
+        console.log(`   Material ${index + 1}:`, { id: doc.id, name: data.name, price: data.price, category: data.category });
+        
         const material: Material = {
           id: doc.id,
           ...data,
@@ -210,9 +219,10 @@ export default function EstimatesWizard() {
         materialsData.push(material);
       });
 
+      console.log('✅ Materiales procesados:', materialsData.length);
       setMaterials(materialsData);
     } catch (error) {
-      console.error('Error loading materials from Firebase:', error);
+      console.error('❌ Error loading materials from Firebase:', error);
       toast({
         title: 'Error',
         description: 'No se pudieron cargar los materiales',
