@@ -125,7 +125,7 @@ router.post('/enhance-project', async (req: Request, res: Response) => {
       messages: [
         {
           role: "system",
-          content: "Eres un contratista profesional experto con más de 20 años de experiencia en construcción y estimados. Generas contenido técnico preciso y profesional para estimados de proyectos."
+          content: "You are a professional contractor expert with over 20 years of experience in construction and estimates. You generate accurate and professional technical content for project estimates. Always respond in English."
         },
         {
           role: "user",
@@ -147,7 +147,7 @@ router.post('/enhance-project', async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      content,
+      enhancedContent: content,
       field,
       source: 'openai-gpt4o',
       timestamp: new Date().toISOString()

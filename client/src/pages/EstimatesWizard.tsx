@@ -161,13 +161,13 @@ export default function EstimatesWizard() {
       setShowAddClientDialog(false);
       
       toast({
-        title: "Cliente agregado",
-        description: `${newClient.name} ha sido agregado exitosamente`
+        title: "Client Added",
+        description: `${newClient.name} has been added successfully`
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: "No se pudo agregar el cliente",
+        description: "Could not add client",
         variant: "destructive"
       });
     }
@@ -188,13 +188,13 @@ export default function EstimatesWizard() {
       setShowAddMaterialDialog(false);
       
       toast({
-        title: "Material agregado",
-        description: `${newMaterial.name} ha sido agregado al inventario`
+        title: "Material Added",
+        description: `${newMaterial.name} has been added to inventory`
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: "No se pudo agregar el material",
+        description: "Could not add material",
         variant: "destructive"
       });
     }
