@@ -53,8 +53,8 @@ const isReplitDev = window.location.hostname.includes('.replit.dev') ||
 // Opción para forzar el uso de Firebase real incluso en entorno de desarrollo
 const useRealFirebase = localStorage.getItem('useRealFirebase') === 'true';
 
-// Activar modo de desarrollo si estamos en Replit y no estamos forzando Firebase real
-export const devMode = isReplitDev && !useRealFirebase;
+// Forzamos Firebase real para acceder a los contactos guardados
+export const devMode = false; // Cambiado para usar Firebase real
 
 // Auto login en modo desarrollo
 if (devMode) {
@@ -99,11 +99,13 @@ export const createDevUser = () => {
 
 // Configuración de Firebase
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
-  authDomain: isReplitDev ? window.location.hostname : `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "",
-  storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.appspot.com`,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || ""
+  apiKey: "AIzaSyBkiNyJNG-uGBO3-w4g-q5SbqDxvTdCRSk",
+  authDomain: "owl-fenc.firebaseapp.com",
+  projectId: "owl-fenc",
+  storageBucket: "owl-fenc.firebasestorage.app",
+  messagingSenderId: "610753147271",
+  appId: "1:610753147271:web:b720b293ba1f4d2f456322",
+  measurementId: "G-Z2PWQXHEN0"
 };
 
 // Initialize Firebase
