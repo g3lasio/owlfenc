@@ -500,8 +500,25 @@ export default function EstimatesWizard() {
           body: JSON.stringify({ prompt, field, context: projectContext }),
         });
 
-        if (!response.ok) throw new Error('Error processing with AI');
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ API Error Response:', errorText);
+          throw new Error('Error processing with AI');
+        }
+        
         const result = await response.json();
+        console.log('✅ Full AI Response:', result);
+        console.log('🔍 Enhanced Content:', result.enhancedContent);
+        console.log('🔍 Success Status:', result.success);
+        
+        if (!result.success) {
+          throw new Error(result.error || 'AI processing failed');
+        }
+        
+        if (!result.enhancedContent) {
+          console.error('❌ No enhanced content in response:', result);
+          throw new Error('No content generated');
+        }
         
         setEstimate(prev => ({ ...prev, [field]: result.enhancedContent }));
         
