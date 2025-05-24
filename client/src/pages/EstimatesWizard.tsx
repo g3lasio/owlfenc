@@ -5,9 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { getClients as getFirebaseClients, saveClient } from '@/lib/clientFirebase';
 import { 
   Search, 
   Plus, 
@@ -23,16 +24,28 @@ import {
   ChevronLeft,
   Check,
   Calculator,
-  Building2
+  Building2,
+  UserPlus
 } from 'lucide-react';
 
 // Types
 interface Client {
   id: string;
+  clientId: string;
   name: string;
-  email: string;
-  phone: string;
-  address: string;
+  email?: string | null;
+  phone?: string | null;
+  mobilePhone?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zipCode?: string | null;
+  notes?: string | null;
+  source?: string;
+  classification?: string;
+  tags?: string[];
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 interface Material {
@@ -104,11 +117,24 @@ export default function EstimatesWizard() {
   const [clientSearch, setClientSearch] = useState('');
   const [materialSearch, setMaterialSearch] = useState('');
   const [showMaterialDialog, setShowMaterialDialog] = useState(false);
+  const [showAddClientDialog, setShowAddClientDialog] = useState(false);
 
   // Loading states
   const [isLoadingClients, setIsLoadingClients] = useState(true);
   const [isLoadingMaterials, setIsLoadingMaterials] = useState(true);
   const [previewHtml, setPreviewHtml] = useState('');
+
+  // New client form
+  const [newClient, setNewClient] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    notes: ''
+  });
 
   // Load data on mount
   useEffect(() => {
@@ -134,14 +160,16 @@ export default function EstimatesWizard() {
   const loadClients = async () => {
     try {
       setIsLoadingClients(true);
-      // Try Firebase first since that's where your functional clients are
-      const response = await fetch(`/api/clients?userId=${currentUser?.uid}`);
-      if (response.ok) {
-        const data = await response.json();
-        setClients(data);
-      }
+      // Use Firebase directly like your functional Clients page
+      const clientsData = await getFirebaseClients();
+      setClients(clientsData);
     } catch (error) {
-      console.error('Error loading clients:', error);
+      console.error('Error loading clients from Firebase:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudieron cargar los clientes',
+        variant: 'destructive'
+      });
     } finally {
       setIsLoadingClients(false);
     }
@@ -200,8 +228,9 @@ export default function EstimatesWizard() {
   // Filter clients and materials
   const filteredClients = clients.filter(client =>
     client.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
-    client.email.toLowerCase().includes(clientSearch.toLowerCase()) ||
-    client.phone.includes(clientSearch)
+    (client.email && client.email.toLowerCase().includes(clientSearch.toLowerCase())) ||
+    (client.phone && client.phone.includes(clientSearch)) ||
+    (client.mobilePhone && client.mobilePhone.includes(clientSearch))
   );
 
   const filteredMaterials = materials.filter(material =>
@@ -217,6 +246,76 @@ export default function EstimatesWizard() {
       title: 'Cliente seleccionado',
       description: `${client.name} ha sido agregado al estimado`
     });
+  };
+
+  // Create new client manually
+  const createNewClient = async () => {
+    if (!newClient.name || !newClient.email) {
+      toast({
+        title: 'Datos requeridos',
+        description: 'El nombre y email son obligatorios',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      const clientData = {
+        clientId: `client_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+        name: newClient.name,
+        email: newClient.email,
+        phone: newClient.phone || '',
+        mobilePhone: '',
+        address: newClient.address || '',
+        city: newClient.city || '',
+        state: newClient.state || '',
+        zipCode: newClient.zipCode || '',
+        notes: newClient.notes || '',
+        source: 'Manual - Estimates',
+        classification: 'cliente',
+        tags: []
+      };
+
+      const savedClient = await saveClient(clientData);
+      
+      // Add to local state
+      const clientWithId = { 
+        id: savedClient.id, 
+        ...clientData,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      setClients(prev => [clientWithId, ...prev]);
+      
+      // Select the new client automatically
+      setEstimate(prev => ({ ...prev, client: clientWithId }));
+      
+      // Reset form and close dialog
+      setNewClient({
+        name: '',
+        email: '',
+        phone: '',
+        address: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        notes: ''
+      });
+      setShowAddClientDialog(false);
+      
+      toast({
+        title: 'Cliente creado',
+        description: `${clientData.name} ha sido creado y seleccionado`
+      });
+    } catch (error) {
+      console.error('Error creating client:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo crear el cliente',
+        variant: 'destructive'
+      });
+    }
   };
 
   // Material management
@@ -620,14 +719,24 @@ export default function EstimatesWizard() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Buscar por nombre, email o teléfono..."
-                      value={clientSearch}
-                      onChange={(e) => setClientSearch(e.target.value)}
-                      className="pl-10"
-                    />
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Buscar por nombre, email o teléfono..."
+                        value={clientSearch}
+                        onChange={(e) => setClientSearch(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setShowAddClientDialog(true)}
+                      className="whitespace-nowrap"
+                    >
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Nuevo Cliente
+                    </Button>
                   </div>
                   <div className="max-h-64 overflow-y-auto space-y-2">
                     {isLoadingClients ? (
