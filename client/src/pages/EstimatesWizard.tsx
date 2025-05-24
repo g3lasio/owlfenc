@@ -1498,7 +1498,7 @@ Formato: Párrafos informativos (máximo 120 palabras).`;
               setCurrentStep(Math.min(STEPS.length - 1, currentStep + 1));
             }
           }}
-          disabled={!canProceedToNextStep()}
+          disabled={!canProceedToNext()}
         >
           {currentStep === STEPS.length - 1 ? 'Completar' : 'Siguiente'}
           {currentStep !== STEPS.length - 1 && <ChevronRight className="h-4 w-4 ml-2" />}
