@@ -500,14 +500,14 @@ export default function EstimatesWizard() {
           body: JSON.stringify({ prompt, field, context: projectContext }),
         });
 
-        if (!response.ok) throw new Error('Error al procesar con IA');
+        if (!response.ok) throw new Error('Error processing with AI');
         const result = await response.json();
         
         setEstimate(prev => ({ ...prev, [field]: result.content }));
         
         toast({
-          title: '✨ Completado con IA',
-          description: `El campo "${getFieldDisplayName(field)}" ha sido mejorado con IA`
+          title: '✨ Completed with AI',
+          description: `The "${getFieldDisplayName(field)}" field has been enhanced with AI`
         });
       }
       
@@ -515,7 +515,7 @@ export default function EstimatesWizard() {
       console.error('Error enhancing with AI:', error);
       toast({
         title: 'Error',
-        description: 'No se pudo procesar con IA. Inténtalo de nuevo.',
+        description: 'Could not process with AI. Please try again.',
         variant: 'destructive'
       });
     } finally {
