@@ -11,7 +11,7 @@ import {
   updateDoc,
   deleteDoc
 } from "firebase/firestore";
-import { db } from "./firebase";
+import { db, auth } from "./firebase";
 
 // Interfaz para el cliente
 export interface Client {
