@@ -86,20 +86,24 @@ export default function Profile() {
 
   const loadCompanyProfile = async () => {
     try {
-      // Primero intentamos cargar desde localStorage en modo desarrollo
-      const isDevMode = window.location.hostname.includes('.replit.dev') || 
-                         window.location.hostname.includes('.id.repl.co') ||
-                         window.location.hostname === 'localhost' ||
-                         window.location.hostname.includes('replit.app');
+      console.log('🔄 Cargando perfil de empresa...');
       
-      if (isDevMode) {
-        const localProfile = localStorage.getItem('userProfile');
-        if (localProfile) {
-          console.log("Perfil cargado desde localStorage");
-          const parsedProfile = JSON.parse(localProfile);
-          setCompanyInfo(parsedProfile);
-          return;
-        }
+      // Obtener el ID del usuario autenticado
+      const { currentUser } = useAuth();
+      const userId = currentUser?.uid || 'dev-user-123';
+      console.log(`👤 Usuario actual: ${userId}`);
+      
+      // Usar clave específica por usuario para localStorage
+      const profileKey = `userProfile_${userId}`;
+      const localProfile = localStorage.getItem(profileKey);
+      
+      if (localProfile) {
+        console.log("✅ Perfil cargado desde localStorage para usuario:", userId);
+        const parsedProfile = JSON.parse(localProfile);
+        setCompanyInfo(parsedProfile);
+        return;
+      } else {
+        console.log("📦 No hay perfil guardado para usuario:", userId);
       }
       
       // Si no hay datos en localStorage o no estamos en dev, intentamos la API
@@ -219,33 +223,32 @@ export default function Profile() {
   const handleSave = async () => {
     setLoading(true);
     try {
-      // Detectar si estamos en modo desarrollo
-      const isDevMode = window.location.hostname.includes('.replit.dev') || 
-                        window.location.hostname.includes('.id.repl.co') ||
-                        window.location.hostname === 'localhost' ||
-                        window.location.hostname.includes('replit.app');
-                        
-      // Guardar en localStorage si estamos en modo desarrollo
-      if (isDevMode) {
-        // Asegurarnos de que cualquier valor undefined se convierta en cadena vacía
-        const safeCompanyInfo = Object.fromEntries(
-          Object.entries(companyInfo).map(([key, value]) => {
-            if (typeof value === 'object' && value !== null) {
-              if (Array.isArray(value)) {
-                return [key, value];
-              } else {
-                return [key, Object.fromEntries(
-                  Object.entries(value).map(([k, v]) => [k, v === undefined ? "" : v])
-                )];
-              }
+      console.log('💾 Guardando perfil de empresa...');
+      
+      // Obtener el ID del usuario autenticado
+      const userId = currentUser?.uid || 'dev-user-123';
+      console.log(`👤 Guardando para usuario: ${userId}`);
+      
+      // Asegurarnos de que cualquier valor undefined se convierta en cadena vacía
+      const safeCompanyInfo = Object.fromEntries(
+        Object.entries(companyInfo).map(([key, value]) => {
+          if (typeof value === 'object' && value !== null) {
+            if (Array.isArray(value)) {
+              return [key, value];
+            } else {
+              return [key, Object.fromEntries(
+                Object.entries(value).map(([k, v]) => [k, v === undefined ? "" : v])
+              )];
             }
-            return [key, value === undefined ? "" : value];
-          })
-        );
-        
-        localStorage.setItem('userProfile', JSON.stringify(safeCompanyInfo));
-        console.log("Perfil guardado en localStorage:", safeCompanyInfo);
-      }
+          }
+          return [key, value === undefined ? "" : value];
+        })
+      );
+      
+      // Usar clave específica por usuario para localStorage
+      const profileKey = `userProfile_${userId}`;
+      localStorage.setItem(profileKey, JSON.stringify(safeCompanyInfo));
+      console.log(`✅ Perfil guardado en localStorage con clave: ${profileKey}`, safeCompanyInfo);
       
       // Primero intentamos usar la función del hook
       if (updateProfile) {

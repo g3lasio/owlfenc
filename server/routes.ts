@@ -1956,8 +1956,25 @@ Output in English regardless of input language. Make it suitable for contracts a
 
   app.get('/api/user-profile', async (req: Request, res: Response) => {
     try {
-      // En producción, obtener userId del token de autenticación
-      const userId = 1; // Por ahora usar ID fijo para desarrollo
+      // Obtener el usuario autenticado desde Firebase
+      const authHeader = req.headers.authorization;
+      let firebaseUserId = 'dev-user-123'; // Usuario por defecto en desarrollo
+      
+      // En producción, extraer el ID real del usuario de Firebase
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        try {
+          // Aquí normalmente verificaríamos el token de Firebase
+          // Por ahora, usar el header customizado que enviamos desde el frontend
+          firebaseUserId = req.headers['x-firebase-uid'] as string || 'dev-user-123';
+        } catch (authError) {
+          console.warn('No se pudo verificar token Firebase, usando usuario de desarrollo');
+        }
+      }
+      
+      console.log('🔐 Cargando perfil para usuario Firebase:', firebaseUserId);
+      
+      // Buscar usuario por firebaseUserId en lugar de ID numérico
+      const userId = 1; // ID numérico temporal para la base de datos PostgreSQL
       const user = await storage.getUser(userId);
 
       if (!user) {
