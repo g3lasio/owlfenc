@@ -20,7 +20,8 @@ import { jsPDF } from 'jspdf';
  * Función robusta para generar PDF profesional usando jsPDF
  */
 async function generateProfessionalPDF(html: string): Promise<Buffer> {
-  console.log('Generando PDF profesional con jsPDF...');
+  console.log('🔄 Generando PDF profesional con jsPDF...');
+  console.log('📄 HTML recibido (primeros 200 caracteres):', html.substring(0, 200));
   
   try {
     // Crear nuevo documento PDF
@@ -31,7 +32,15 @@ async function generateProfessionalPDF(html: string): Promise<Buffer> {
     });
     
     // Extraer datos del HTML
+    console.log('🔍 Extrayendo datos del HTML...');
     const extractedData = extractEstimateData(html);
+    console.log('📊 Datos extraídos del HTML:', {
+      companyName: extractedData.companyName,
+      estimateNumber: extractedData.estimateNumber,
+      clientName: extractedData.clientName,
+      itemsCount: extractedData.items?.length || 0,
+      total: extractedData.total
+    });
     
     // Configuración del documento
     const pageWidth = doc.internal.pageSize.getWidth();

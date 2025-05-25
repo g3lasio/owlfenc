@@ -44,6 +44,7 @@ import anthropicRoutes from './routes/anthropic';
 import pdfRoutes from './routes/pdf-routes';
 import paymentRoutes from './routes/payment-routes'; // Import payment routes
 import estimatesRoutes from './routes/estimates'; // Import new estimates routes
+import estimatesSimpleRoutes from './routes/estimates-simple'; // Import simple estimates routes
 import { setupTemplatesRoutes } from './routes/templates';
 import { aiEnhancementRoutes } from './routes/aiEnhancementRoutes'; // Import new AI enhancement routes
 import { registerDeepSearchRoutes } from './routes/deepSearchRoutes'; // Import DeepSearch AI routes
@@ -279,6 +280,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setupTemplateServing(app);
   // Use payment routes
   app.use('/api', paymentRoutes);
+  
+  // Registro del endpoint simple para autoguardado de estimados
+  console.log('🔧 Registrando endpoint simple para estimados...');
+  app.use('/api/estimates', estimatesSimpleRoutes);
   // NEW: Simple and direct AI description enhancement 
   app.post("/api/ai-enhance", async (req: Request, res: Response) => {
     console.log('=== NEW AI ENHANCE ENDPOINT ===');
