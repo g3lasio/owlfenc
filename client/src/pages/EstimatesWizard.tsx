@@ -138,6 +138,19 @@ export default function EstimatesWizardFixed() {
   // AI enhancement states
   const [isAIProcessing, setIsAIProcessing] = useState(false);
   const [showMervinMessage, setShowMervinMessage] = useState(false);
+  const [showCompanyEditDialog, setShowCompanyEditDialog] = useState(false);
+  const [editableCompany, setEditableCompany] = useState({
+    companyName: '',
+    address: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    phone: '',
+    email: '',
+    website: '',
+    license: '',
+    insurancePolicy: ''
+  });
 
   // Load data on mount
   useEffect(() => {
@@ -159,6 +172,24 @@ export default function EstimatesWizardFixed() {
       total
     }));
   }, [estimate.items]);
+
+  // Initialize company data when contractor profile loads
+  useEffect(() => {
+    if (contractor) {
+      setEditableCompany({
+        companyName: contractor.companyName || contractor.name || '',
+        address: contractor.address || '',
+        city: contractor.city || '',
+        state: contractor.state || '',
+        zipCode: contractor.zipCode || '',
+        phone: contractor.phone || '',
+        email: contractor.email || '',
+        website: contractor.website || '',
+        license: contractor.license || '',
+        insurancePolicy: contractor.insurancePolicy || ''
+      });
+    }
+  }, [contractor]);
 
   const loadClients = async () => {
     try {
@@ -1006,6 +1037,14 @@ export default function EstimatesWizardFixed() {
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
+                    onClick={() => setShowCompanyEditDialog(true)}
+                    size="sm"
+                  >
+                    <Building2 className="h-4 w-4 mr-2" />
+                    Editar Empresa
+                  </Button>
+                  <Button
+                    variant="outline"
                     onClick={() => generateEstimatePreview()}
                     disabled={!estimate.client || estimate.items.length === 0}
                   >
@@ -1032,7 +1071,7 @@ export default function EstimatesWizardFixed() {
                   </p>
                 </div>
               ) : (
-                <div className="border rounded-lg p-4 bg-muted/50">
+                <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
                   <div
                     dangerouslySetInnerHTML={{ 
                       __html: previewHtml || generateEstimatePreview()
@@ -1222,6 +1261,154 @@ export default function EstimatesWizardFixed() {
           </div>
         </div>
       )}
+
+      {/* Diálogo de edición de empresa */}
+      <Dialog open={showCompanyEditDialog} onOpenChange={setShowCompanyEditDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Editar Información de Empresa
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="companyName">Nombre de la Empresa</Label>
+                <Input
+                  id="companyName"
+                  value={editableCompany.companyName}
+                  onChange={(e) => setEditableCompany(prev => ({ ...prev, companyName: e.target.value }))}
+                  placeholder="Nombre de tu empresa"
+                />
+              </div>
+              <div>
+                <Label htmlFor="phone">Teléfono</Label>
+                <Input
+                  id="phone"
+                  value={editableCompany.phone}
+                  onChange={(e) => setEditableCompany(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="(555) 123-4567"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="address">Dirección</Label>
+              <Input
+                id="address"
+                value={editableCompany.address}
+                onChange={(e) => setEditableCompany(prev => ({ ...prev, address: e.target.value }))}
+                placeholder="123 Main Street"
+              />
+            </div>
+            
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="city">Ciudad</Label>
+                <Input
+                  id="city"
+                  value={editableCompany.city}
+                  onChange={(e) => setEditableCompany(prev => ({ ...prev, city: e.target.value }))}
+                  placeholder="Ciudad"
+                />
+              </div>
+              <div>
+                <Label htmlFor="state">Estado</Label>
+                <Input
+                  id="state"
+                  value={editableCompany.state}
+                  onChange={(e) => setEditableCompany(prev => ({ ...prev, state: e.target.value }))}
+                  placeholder="CA"
+                />
+              </div>
+              <div>
+                <Label htmlFor="zipCode">Código Postal</Label>
+                <Input
+                  id="zipCode"
+                  value={editableCompany.zipCode}
+                  onChange={(e) => setEditableCompany(prev => ({ ...prev, zipCode: e.target.value }))}
+                  placeholder="12345"
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={editableCompany.email}
+                  onChange={(e) => setEditableCompany(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="info@empresa.com"
+                />
+              </div>
+              <div>
+                <Label htmlFor="website">Sitio Web</Label>
+                <Input
+                  id="website"
+                  value={editableCompany.website}
+                  onChange={(e) => setEditableCompany(prev => ({ ...prev, website: e.target.value }))}
+                  placeholder="www.empresa.com"
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="license">Licencia</Label>
+                <Input
+                  id="license"
+                  value={editableCompany.license}
+                  onChange={(e) => setEditableCompany(prev => ({ ...prev, license: e.target.value }))}
+                  placeholder="Número de licencia"
+                />
+              </div>
+              <div>
+                <Label htmlFor="insurancePolicy">Póliza de Seguro</Label>
+                <Input
+                  id="insurancePolicy"
+                  value={editableCompany.insurancePolicy}
+                  onChange={(e) => setEditableCompany(prev => ({ ...prev, insurancePolicy: e.target.value }))}
+                  placeholder="Número de póliza"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCompanyEditDialog(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={() => {
+              // Actualizar la información del contratista temporalmente para esta sesión
+              const updatedContractor = {
+                ...contractor,
+                companyName: editableCompany.companyName,
+                name: editableCompany.companyName,
+                address: editableCompany.address,
+                city: editableCompany.city,
+                state: editableCompany.state,
+                zipCode: editableCompany.zipCode,
+                phone: editableCompany.phone,
+                email: editableCompany.email,
+                website: editableCompany.website,
+                license: editableCompany.license,
+                insurancePolicy: editableCompany.insurancePolicy
+              };
+              setContractor(updatedContractor);
+              setShowCompanyEditDialog(false);
+              setPreviewHtml(''); // Forzar regeneración de la vista previa
+              toast({
+                title: '✅ Información Actualizada',
+                description: 'Los cambios se aplicarán al estimado. Estos cambios son temporales para esta sesión.',
+              });
+            }}>
+              Guardar Cambios
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
