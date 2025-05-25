@@ -1258,100 +1258,108 @@ export default function EstimatesWizardFixed() {
                   ))}
                   
                   <div className="border-t pt-4 space-y-3">
-                    {/* Compact Tax and Discount Controls */}
-                    <div className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2 text-sm">
-                      <div className="flex items-center gap-4">
-                        {/* Tax Rate - Compact */}
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-600 text-xs font-medium">Impuesto:</span>
-                          <div className="flex items-center">
-                            <input
-                              type="number"
-                              value={estimate.taxRate}
-                              onChange={(e) => setEstimate(prev => ({ 
-                                ...prev, 
-                                taxRate: parseFloat(e.target.value) || 0 
-                              }))}
-                              className="w-12 h-6 text-xs text-center border border-gray-300 rounded px-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                              min="0"
-                              max="100"
-                              step="0.1"
-                            />
-                            <span className="text-xs text-gray-500 ml-1">%</span>
+                    {/* Sleek Dark Tax and Discount Controls */}
+                    <div className="bg-gradient-to-r from-gray-900 via-black to-gray-900 rounded-xl px-4 py-3 border border-gray-700 shadow-lg">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-6">
+                          {/* Tax Rate - Sleek Dark */}
+                          <div className="flex items-center gap-3">
+                            <span className="text-gray-300 text-xs font-medium tracking-wide">IMPUESTO</span>
+                            <div className="flex items-center bg-gray-800 rounded-lg px-2 py-1 border border-gray-600">
+                              <input
+                                type="number"
+                                value={estimate.taxRate}
+                                onChange={(e) => setEstimate(prev => ({ 
+                                  ...prev, 
+                                  taxRate: parseFloat(e.target.value) || 0 
+                                }))}
+                                className="w-8 bg-transparent text-white text-xs text-center focus:outline-none"
+                                min="0"
+                                max="100"
+                                step="0.1"
+                              />
+                              <span className="text-gray-400 text-xs ml-1">%</span>
+                            </div>
                           </div>
-                        </div>
 
-                        {/* Discount - Compact */}
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-600 text-xs font-medium">Descuento:</span>
-                          <div className="flex items-center gap-1">
-                            <select
-                              value={estimate.discountType}
-                              onChange={(e) => setEstimate(prev => ({ 
-                                ...prev, 
-                                discountType: e.target.value as 'percentage' | 'fixed' 
-                              }))}
-                              className="w-8 h-6 text-xs border border-gray-300 rounded px-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            >
-                              <option value="percentage">%</option>
-                              <option value="fixed">$</option>
-                            </select>
-                            <input
-                              type="number"
-                              value={estimate.discountValue}
-                              onChange={(e) => setEstimate(prev => ({ 
-                                ...prev, 
-                                discountValue: parseFloat(e.target.value) || 0 
-                              }))}
-                              className="w-16 h-6 text-xs text-center border border-gray-300 rounded px-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                              min="0"
-                              step="0.01"
-                              placeholder="0"
-                            />
+                          {/* Discount - Sleek Dark */}
+                          <div className="flex items-center gap-3">
+                            <span className="text-gray-300 text-xs font-medium tracking-wide">DESCUENTO</span>
+                            <div className="flex items-center gap-2">
+                              <select
+                                value={estimate.discountType}
+                                onChange={(e) => setEstimate(prev => ({ 
+                                  ...prev, 
+                                  discountType: e.target.value as 'percentage' | 'fixed' 
+                                }))}
+                                className="bg-gray-800 text-white text-xs border border-gray-600 rounded px-1 py-1 focus:outline-none focus:border-blue-500"
+                              >
+                                <option value="percentage">%</option>
+                                <option value="fixed">$</option>
+                              </select>
+                              <div className="bg-gray-800 rounded-lg px-2 py-1 border border-gray-600">
+                                <input
+                                  type="number"
+                                  value={estimate.discountValue}
+                                  onChange={(e) => setEstimate(prev => ({ 
+                                    ...prev, 
+                                    discountValue: parseFloat(e.target.value) || 0 
+                                  }))}
+                                  className="w-12 bg-transparent text-white text-xs text-center focus:outline-none"
+                                  min="0"
+                                  step="0.01"
+                                  placeholder="0"
+                                />
+                              </div>
+                            </div>
                           </div>
                         </div>
+                        
+                        {/* Reset button with glow effect */}
+                        {(estimate.discountValue > 0 || estimate.taxRate !== 10) && (
+                          <button
+                            onClick={() => setEstimate(prev => ({ 
+                              ...prev, 
+                              taxRate: 10,
+                              discountValue: 0,
+                              discountType: 'percentage'
+                            }))}
+                            className="text-xs text-gray-400 hover:text-blue-400 transition-colors duration-200 underline hover:glow"
+                          >
+                            Reset
+                          </button>
+                        )}
                       </div>
-                      
-                      {/* Reset button for quick clear */}
-                      {(estimate.discountValue > 0 || estimate.taxRate !== 10) && (
-                        <button
-                          onClick={() => setEstimate(prev => ({ 
-                            ...prev, 
-                            taxRate: 10,
-                            discountValue: 0,
-                            discountType: 'percentage'
-                          }))}
-                          className="text-xs text-gray-400 hover:text-gray-600 underline"
-                        >
-                          Reset
-                        </button>
-                      )}
                     </div>
 
-                    {/* Enhanced Totals Summary */}
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-3">
-                      <div className="text-right space-y-1 text-sm">
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Subtotal:</span>
-                          <span className="font-medium">${estimate.subtotal.toFixed(2)}</span>
+                    {/* Premium Totals Summary */}
+                    <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-4 border border-gray-200 shadow-sm">
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-gray-600 font-medium">Subtotal:</span>
+                          <span className="font-semibold text-gray-900">${estimate.subtotal.toFixed(2)}</span>
                         </div>
                         
                         {estimate.discountAmount > 0 && (
-                          <div className="flex justify-between items-center text-green-700">
-                            <span>Descuento ({estimate.discountType === 'percentage' ? `${estimate.discountValue}%` : `$${estimate.discountValue}`}):</span>
-                            <span className="font-medium">-${estimate.discountAmount.toFixed(2)}</span>
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-emerald-600 font-medium">
+                              Descuento ({estimate.discountType === 'percentage' ? `${estimate.discountValue}%` : `$${estimate.discountValue}`}):
+                            </span>
+                            <span className="font-semibold text-emerald-600">-${estimate.discountAmount.toFixed(2)}</span>
                           </div>
                         )}
                         
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Impuesto ({estimate.taxRate}%):</span>
-                          <span className="font-medium">${estimate.tax.toFixed(2)}</span>
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-gray-600 font-medium">Impuesto ({estimate.taxRate}%):</span>
+                          <span className="font-semibold text-gray-900">${estimate.tax.toFixed(2)}</span>
                         </div>
                         
-                        <div className="border-t border-gray-200 pt-2 mt-2">
+                        <div className="border-t border-gray-300 pt-3 mt-3">
                           <div className="flex justify-between items-center">
                             <span className="text-lg font-bold text-gray-800">Total:</span>
-                            <span className="text-xl font-bold text-primary">${estimate.total.toFixed(2)}</span>
+                            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                              ${estimate.total.toFixed(2)}
+                            </span>
                           </div>
                         </div>
                       </div>
