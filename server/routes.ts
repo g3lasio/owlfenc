@@ -979,6 +979,91 @@ Output in English regardless of input language. Make it suitable for contracts a
     }
   });
 
+  // New endpoint for sending estimate emails with SendGrid
+  app.post('/api/send-estimate-email', async (req: Request, res: Response) => {
+    try {
+      const schema = z.object({
+        to: z.string().email(),
+        subject: z.string(),
+        message: z.string(),
+        estimateHtml: z.string(),
+        clientName: z.string(),
+        companyName: z.string(),
+        companyEmail: z.string(),
+        sendCopy: z.boolean().optional()
+      });
+
+      const { to, subject, message, estimateHtml, clientName, companyName, companyEmail, sendCopy } = schema.parse(req.body);
+
+      // Import SendGrid
+      const sgMail = require('@sendgrid/mail');
+      
+      if (!process.env.SENDGRID_API_KEY) {
+        return res.status(500).json({ success: false, error: 'SendGrid API key not configured' });
+      }
+
+      sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+      // Create HTML email content
+      const emailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <h2 style="color: #2563eb; margin: 0;">${companyName}</h2>
+            <p style="margin: 10px 0 0 0; color: #666;">Estimado Profesional</p>
+          </div>
+          
+          <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb;">
+            <p style="margin-bottom: 15px;">${message.replace(/\n/g, '<br>')}</p>
+            
+            <div style="margin: 20px 0;">
+              <h3 style="color: #374151; margin-bottom: 15px;">Estimado Adjunto:</h3>
+              ${estimateHtml}
+            </div>
+            
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #666; font-size: 14px;">
+              <p>Este estimado fue generado profesionalmente por ${companyName}.</p>
+              <p>Si tiene preguntas, responda directamente a este email o contáctenos.</p>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Prepare email data
+      const emailData = {
+        to: to,
+        from: companyEmail || 'noreply@owlfence.com',
+        subject: subject,
+        html: emailHtml,
+        text: message
+      };
+
+      // Send main email
+      await sgMail.send(emailData);
+
+      // Send copy if requested
+      if (sendCopy && companyEmail) {
+        const copyEmail = {
+          ...emailData,
+          to: companyEmail,
+          subject: `[COPIA] ${subject}`
+        };
+        await sgMail.send(copyEmail);
+      }
+
+      res.json({ 
+        success: true, 
+        message: `Estimado enviado exitosamente a ${to}${sendCopy ? ' (con copia)' : ''}` 
+      });
+
+    } catch (error) {
+      console.error('Error sending estimate email:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Error al enviar el email. Verifique la configuración de SendGrid.' 
+      });
+    }
+  });
+
   app.post('/api/generate-contract', async (req: Request, res: Response) => {
     try {
       const schema = z.object({
