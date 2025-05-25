@@ -35,14 +35,28 @@ router.get('/', async (req, res) => {
 // POST /api/estimates - Crear un nuevo estimado
 router.post('/', async (req, res) => {
   try {
-    const userId = 1; // Por ahora usamos usuario por defecto
+    // Obtener el usuario autenticado desde Firebase (modo desarrollo o producción)
+    const authHeader = req.headers.authorization;
+    let firebaseUserId = 'dev-user-123'; // Usuario por defecto en desarrollo
     
-    console.log('Creando nuevo estimado para usuario:', userId);
-    console.log('Datos recibidos:', req.body);
+    // En producción, extraer el ID real del usuario de Firebase
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        // Aquí normalmente verificaríamos el token de Firebase
+        // Por ahora, extraemos el userId del frontend si se proporciona
+        firebaseUserId = req.body.firebaseUserId || 'dev-user-123';
+      } catch (authError) {
+        console.warn('No se pudo verificar token Firebase, usando usuario de desarrollo');
+      }
+    }
     
-    // Validar datos de entrada
+    console.log('🔐 Creando nuevo estimado para usuario Firebase:', firebaseUserId);
+    console.log('📦 Datos recibidos:', req.body);
+    
+    // Validar datos de entrada y agregar el userId de Firebase
     const estimateData = {
-      userId,
+      userId: 1, // ID numérico para la base de datos PostgreSQL  
+      firebaseUserId: firebaseUserId, // ID de Firebase para separación de datos
       ...req.body,
       estimateDate: new Date(),
       status: req.body.status || 'draft'
@@ -52,7 +66,7 @@ router.post('/', async (req, res) => {
     const validationResult = insertEstimateSchema.safeParse(estimateData);
     
     if (!validationResult.success) {
-      console.error('Error de validación:', validationResult.error);
+      console.error('❌ Error de validación:', validationResult.error);
       return res.status(400).json({
         error: 'Datos de estimado inválidos',
         details: validationResult.error.format()
@@ -62,11 +76,11 @@ router.post('/', async (req, res) => {
     // Crear estimado en la base de datos
     const newEstimate = await storage.createEstimate(validationResult.data);
     
-    console.log('Estimado creado exitosamente:', newEstimate.id);
+    console.log('✅ Estimado creado exitosamente para usuario:', firebaseUserId, 'ID:', newEstimate.id);
     
     res.status(201).json(newEstimate);
   } catch (error) {
-    console.error('Error al crear estimado:', error);
+    console.error('❌ Error al crear estimado:', error);
     res.status(500).json({ 
       error: 'Error al crear estimado',
       message: error instanceof Error ? error.message : 'Error desconocido'

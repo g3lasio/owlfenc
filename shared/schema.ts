@@ -451,6 +451,7 @@ export type InsertPropertySearchHistory = z.infer<typeof insertPropertySearchHis
 export const estimates = pgTable("estimates", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id),
+  firebaseUserId: text("firebase_user_id").notNull(), // ID de Firebase para separación completa de datos
   estimateNumber: text("estimate_number").notNull().unique(),
   
   // Client Information

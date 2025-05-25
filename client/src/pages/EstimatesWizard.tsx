@@ -720,6 +720,7 @@ export default function EstimatesWizardFixed() {
       }
 
       const estimateData = {
+        firebaseUserId: currentUser?.uid || 'dev-user-123', // ID del usuario autenticado
         clientName: estimate.client.name || '',
         clientEmail: estimate.client.email || '',
         clientPhone: estimate.client.phone || '',
