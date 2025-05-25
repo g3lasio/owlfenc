@@ -8,7 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import mervinLogoPath from "@assets/White logo - no background.png";
+// Usar el logo correcto de OWL FENCE
+const mervinLogoUrl = "https://ik.imagekit.io/lp5czyx2a/ChatGPT%20Image%20May%2010,%202025,%2005_35_38%20PM.png?updatedAt=1748157114019";
 import { getClients as getFirebaseClients, saveClient } from '@/lib/clientFirebase';
 import { collection, query, where, getDocs, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -844,7 +845,7 @@ export default function EstimatesWizardFixed() {
                           setShowMervinMessage(true);
                           setTimeout(() => {
                             setShowMervinMessage(false);
-                          }, 6000);
+                          }, 10000);
 
                           toast({
                             title: '🎉 DeepSearch IA Completado',
@@ -1150,9 +1151,9 @@ export default function EstimatesWizardFixed() {
               <div className="relative bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 p-1 rounded-full">
                 <div className="bg-gray-900 rounded-full p-4">
                   <img 
-                    src={mervinLogoPath} 
+                    src={mervinLogoUrl} 
                     alt="Mervin AI" 
-                    className="w-24 h-24 object-contain filter brightness-0 invert"
+                    className="w-24 h-24 object-contain"
                   />
                 </div>
               </div>
@@ -1168,7 +1169,7 @@ export default function EstimatesWizardFixed() {
                 DeepSearch IA
               </h2>
               <p className="text-xl text-gray-300 animate-pulse">
-                Analizando proyecto con Claude 3.7 Sonnet...
+                Analizando proyecto con inteligencia artificial...
               </p>
               <div className="flex items-center justify-center space-x-2 mt-4">
                 <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce"></div>
@@ -1204,9 +1205,9 @@ export default function EstimatesWizardFixed() {
               <div className="flex-shrink-0">
                 <div className="w-12 h-12 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full flex items-center justify-center">
                   <img 
-                    src={mervinLogoPath} 
+                    src={mervinLogoUrl} 
                     alt="Mervin" 
-                    className="w-8 h-8 object-contain filter brightness-0 invert"
+                    className="w-8 h-8 object-contain"
                   />
                 </div>
               </div>
