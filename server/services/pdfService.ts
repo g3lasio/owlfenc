@@ -23,6 +23,7 @@ export async function generatePDF(
     displayHeaderFooter?: boolean;
   } = {}
 ): Promise<Buffer> {
+  let browser;
   try {
     // Valores por defecto
     const defaultOptions = {
@@ -44,7 +45,7 @@ export async function generatePDF(
       margin: { ...defaultOptions.margin, ...options.margin }
     };
     
-    // Lanzar navegador headless
+    // Lanzar navegador headless con configuración mejorada para Replit
     console.log('Lanzando navegador Puppeteer...');
     const browser = await puppeteer.launch({
       headless: true,
@@ -52,8 +53,14 @@ export async function generatePDF(
         '--no-sandbox', 
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
-        '--disable-gpu'
-      ]
+        '--disable-gpu',
+        '--disable-web-security',
+        '--disable-features=VizDisplayCompositor',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process'
+      ],
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined
     });
     
     // Crear nueva página
@@ -79,13 +86,20 @@ export async function generatePDF(
     // Convertir a Buffer de Node.js para evitar errores de tipo
     const buffer = Buffer.from(pdfBuffer);
     
-    // Cerrar navegador
-    await browser.close();
-    
     return buffer;
   } catch (error) {
     console.error('Error generando PDF:', error);
     throw new Error(`Error al generar PDF: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+  } finally {
+    // Asegurar que el navegador se cierre siempre
+    if (browser) {
+      try {
+        await browser.close();
+        console.log('Navegador cerrado correctamente');
+      } catch (closeError) {
+        console.error('Error al cerrar navegador:', closeError);
+      }
+    }
   }
 }
 
