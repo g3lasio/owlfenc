@@ -5,6 +5,7 @@
 import express from 'express';
 import multer from 'multer';
 import { generatePDF, savePDFToFileSystem } from '../services/pdfService';
+import { generateAdvancedPDF, validateAdvancedPdfService } from '../services/advancedPdfService';
 
 const router = express.Router();
 
@@ -23,10 +24,20 @@ router.post('/generate', upload.none(), async (req, res) => {
       return res.status(400).json({ error: 'No se proporcionó contenido HTML' });
     }
     
-    console.log('Generando PDF con contenido HTML, longitud:', html.length);
+    console.log('Generando PDF avanzado con contenido HTML, longitud:', html.length);
     
-    // Generar el PDF
-    const pdfBuffer = await generatePDF(html);
+    // Verificar que el servicio avanzado esté disponible y generar PDF
+    const isServiceReady = await validateAdvancedPdfService();
+    
+    let pdfBuffer: Buffer;
+    
+    if (isServiceReady) {
+      console.log('Usando servicio avanzado de PDF con IA...');
+      pdfBuffer = await generateAdvancedPDF(html);
+    } else {
+      console.log('Servicio avanzado no disponible, usando método estándar...');
+      pdfBuffer = await generatePDF(html);
+    }
     
     console.log('PDF generado correctamente, tamaño:', pdfBuffer.length);
     
