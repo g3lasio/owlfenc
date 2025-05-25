@@ -611,8 +611,14 @@ export default function EstimatesWizardFixed() {
             <span style="margin-right: 20px; color: #000000;"><strong>Subtotal:</strong></span>
             <span style="font-weight: bold; color: #000000;">$${estimate.subtotal.toFixed(2)}</span>
           </div>
+          ${estimate.discount > 0 ? `
+            <div style="margin-bottom: 10px; font-size: 1.1em; color: #22c55e;">
+              <span style="margin-right: 20px; color: #22c55e;"><strong>Descuento (${estimate.discountType === 'percentage' ? estimate.discountRate + '%' : 'Fijo'}):</strong></span>
+              <span style="font-weight: bold; color: #22c55e;">-$${estimate.discount.toFixed(2)}</span>
+            </div>
+          ` : ''}
           <div style="margin-bottom: 15px; font-size: 1.1em; color: #000000;">
-            <span style="margin-right: 20px; color: #000000;"><strong>Tax (16%):</strong></span>
+            <span style="margin-right: 20px; color: #000000;"><strong>Impuesto (${estimate.taxRate}%):</strong></span>
             <span style="font-weight: bold; color: #000000;">$${estimate.tax.toFixed(2)}</span>
           </div>
           <div style="border-top: 2px solid #2563eb; padding-top: 15px; font-size: 1.3em; color: #2563eb;">
