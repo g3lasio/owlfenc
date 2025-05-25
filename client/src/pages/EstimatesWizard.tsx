@@ -605,35 +605,130 @@ export default function EstimatesWizardFixed() {
   // Download PDF
   const downloadPDF = async () => {
     try {
+      // Generar HTML optimizado para PDF
       const html = generateEstimatePreview();
       
-      const response = await fetch('/api/generate-pdf', {
+      // Crear un HTML más limpio y optimizado para PDF
+      const cleanHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; color: #000; }
+            .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+            .company-info { flex: 1; }
+            .estimate-info { text-align: right; }
+            .bill-to { margin: 20px 0; }
+            .materials-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            .materials-table th, .materials-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            .materials-table th { background-color: #f5f5f5; }
+            .totals { text-align: right; margin-top: 20px; }
+            .total-line { margin: 5px 0; }
+            .final-total { font-weight: bold; font-size: 1.2em; color: #2563eb; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="company-info">
+              ${contractor?.logo ? `<img src="${contractor.logo}" style="max-height: 80px; margin-bottom: 10px;">` : ''}
+              <h2>${contractor?.companyName || contractor?.name || 'Nombre de Empresa'}</h2>
+              <p>${contractor?.address || ''}<br>
+                 ${contractor?.city || ''}, ${contractor?.state || ''} ${contractor?.zipCode || ''}<br>
+                 ${contractor?.phone || ''}<br>
+                 ${contractor?.email || ''}<br>
+                 ${contractor?.website || ''}
+              </p>
+            </div>
+            <div class="estimate-info">
+              <h1>ESTIMATE</h1>
+              <p><strong>Estimate #:</strong> EST-${Date.now()}</p>
+              <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+            </div>
+          </div>
+
+          <div class="bill-to">
+            <h3>Bill To:</h3>
+            <p><strong>${estimate.client?.name || ''}</strong><br>
+               ${estimate.client?.email || ''}<br>
+               ${estimate.client?.phone || ''}<br>
+               ${estimate.client?.address || ''}
+            </p>
+          </div>
+
+          <div>
+            <h3>Project Details:</h3>
+            <p>${estimate.projectDetails}</p>
+          </div>
+
+          <table class="materials-table">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th>Quantity</th>
+                <th>Unit</th>
+                <th>Unit Price</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${estimate.items.map(item => `
+                <tr>
+                  <td>
+                    <strong>${item.name}</strong><br>
+                    <small>${item.description}</small>
+                  </td>
+                  <td>${item.quantity}</td>
+                  <td>${item.unit}</td>
+                  <td>$${item.price.toFixed(2)}</td>
+                  <td>$${item.total.toFixed(2)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <div class="totals">
+            <div class="total-line">Subtotal: $${estimate.subtotal.toFixed(2)}</div>
+            <div class="total-line">Tax (16%): $${estimate.tax.toFixed(2)}</div>
+            <div class="total-line final-total">Total: $${estimate.total.toFixed(2)}</div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      const response = await fetch('/api/pdf/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ html, filename: `estimate-${estimate.client?.name || 'client'}.pdf` }),
+        body: JSON.stringify({ 
+          html: cleanHtml, 
+          filename: `estimate-${estimate.client?.name || 'client'}.pdf` 
+        }),
       });
 
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = `estimate-${estimate.client?.name || 'client'}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        
-        toast({
-          title: 'PDF Downloaded',
-          description: 'The estimate has been downloaded as PDF'
-        });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `estimate-${estimate.client?.name || 'client'}-${Date.now()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: '✅ PDF Descargado',
+        description: 'El estimado se ha descargado correctamente como PDF'
+      });
     } catch (error) {
       console.error('Error downloading PDF:', error);
       toast({
-        title: 'Error',
-        description: 'Could not download PDF',
+        title: '❌ Error al Descargar PDF',
+        description: 'No se pudo generar el PDF. Inténtalo de nuevo.',
         variant: 'destructive'
       });
     }
