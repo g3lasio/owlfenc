@@ -1257,70 +1257,104 @@ export default function EstimatesWizardFixed() {
                     </div>
                   ))}
                   
-                  <div className="border-t pt-4 space-y-4">
-                    {/* Tax and Discount Controls */}
-                    <div className="grid grid-cols-2 gap-4">
-                      {/* Tax Rate Control */}
-                      <div className="space-y-2">
-                        <Label htmlFor="taxRate">Impuesto (%)</Label>
-                        <Input
-                          id="taxRate"
-                          type="number"
-                          value={estimate.taxRate}
-                          onChange={(e) => setEstimate(prev => ({ 
-                            ...prev, 
-                            taxRate: parseFloat(e.target.value) || 0 
-                          }))}
-                          className="text-right"
-                          min="0"
-                          max="100"
-                          step="0.1"
-                        />
-                      </div>
+                  <div className="border-t pt-4 space-y-3">
+                    {/* Compact Tax and Discount Controls */}
+                    <div className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2 text-sm">
+                      <div className="flex items-center gap-4">
+                        {/* Tax Rate - Compact */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-600 text-xs font-medium">Impuesto:</span>
+                          <div className="flex items-center">
+                            <input
+                              type="number"
+                              value={estimate.taxRate}
+                              onChange={(e) => setEstimate(prev => ({ 
+                                ...prev, 
+                                taxRate: parseFloat(e.target.value) || 0 
+                              }))}
+                              className="w-12 h-6 text-xs text-center border border-gray-300 rounded px-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              min="0"
+                              max="100"
+                              step="0.1"
+                            />
+                            <span className="text-xs text-gray-500 ml-1">%</span>
+                          </div>
+                        </div>
 
-                      {/* Discount Control */}
-                      <div className="space-y-2">
-                        <Label htmlFor="discount">Descuento</Label>
-                        <div className="flex gap-2">
-                          <select
-                            value={estimate.discountType}
-                            onChange={(e) => setEstimate(prev => ({ 
-                              ...prev, 
-                              discountType: e.target.value as 'percentage' | 'fixed' 
-                            }))}
-                            className="px-2 py-1 border rounded text-sm"
-                          >
-                            <option value="percentage">%</option>
-                            <option value="fixed">$</option>
-                          </select>
-                          <Input
-                            type="number"
-                            value={estimate.discountValue}
-                            onChange={(e) => setEstimate(prev => ({ 
-                              ...prev, 
-                              discountValue: parseFloat(e.target.value) || 0 
-                            }))}
-                            className="text-right flex-1"
-                            min="0"
-                            step="0.01"
-                            placeholder="0"
-                          />
+                        {/* Discount - Compact */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-600 text-xs font-medium">Descuento:</span>
+                          <div className="flex items-center gap-1">
+                            <select
+                              value={estimate.discountType}
+                              onChange={(e) => setEstimate(prev => ({ 
+                                ...prev, 
+                                discountType: e.target.value as 'percentage' | 'fixed' 
+                              }))}
+                              className="w-8 h-6 text-xs border border-gray-300 rounded px-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            >
+                              <option value="percentage">%</option>
+                              <option value="fixed">$</option>
+                            </select>
+                            <input
+                              type="number"
+                              value={estimate.discountValue}
+                              onChange={(e) => setEstimate(prev => ({ 
+                                ...prev, 
+                                discountValue: parseFloat(e.target.value) || 0 
+                              }))}
+                              className="w-16 h-6 text-xs text-center border border-gray-300 rounded px-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              min="0"
+                              step="0.01"
+                              placeholder="0"
+                            />
+                          </div>
                         </div>
                       </div>
+                      
+                      {/* Reset button for quick clear */}
+                      {(estimate.discountValue > 0 || estimate.taxRate !== 10) && (
+                        <button
+                          onClick={() => setEstimate(prev => ({ 
+                            ...prev, 
+                            taxRate: 10,
+                            discountValue: 0,
+                            discountType: 'percentage'
+                          }))}
+                          className="text-xs text-gray-400 hover:text-gray-600 underline"
+                        >
+                          Reset
+                        </button>
+                      )}
                     </div>
 
-                    {/* Totals Summary */}
-                    <div className="text-right space-y-2">
-                      <p>Subtotal: <span className="font-medium">${estimate.subtotal.toFixed(2)}</span></p>
-                      {estimate.discountAmount > 0 && (
-                        <p className="text-green-600">
-                          Descuento: <span className="font-medium">-${estimate.discountAmount.toFixed(2)}</span>
-                        </p>
-                      )}
-                      <p>Impuesto ({estimate.taxRate}%): <span className="font-medium">${estimate.tax.toFixed(2)}</span></p>
-                      <p className="text-lg font-bold text-primary">
-                        Total: ${estimate.total.toFixed(2)}
-                      </p>
+                    {/* Enhanced Totals Summary */}
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-3">
+                      <div className="text-right space-y-1 text-sm">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">Subtotal:</span>
+                          <span className="font-medium">${estimate.subtotal.toFixed(2)}</span>
+                        </div>
+                        
+                        {estimate.discountAmount > 0 && (
+                          <div className="flex justify-between items-center text-green-700">
+                            <span>Descuento ({estimate.discountType === 'percentage' ? `${estimate.discountValue}%` : `$${estimate.discountValue}`}):</span>
+                            <span className="font-medium">-${estimate.discountAmount.toFixed(2)}</span>
+                          </div>
+                        )}
+                        
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">Impuesto ({estimate.taxRate}%):</span>
+                          <span className="font-medium">${estimate.tax.toFixed(2)}</span>
+                        </div>
+                        
+                        <div className="border-t border-gray-200 pt-2 mt-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-lg font-bold text-gray-800">Total:</span>
+                            <span className="text-xl font-bold text-primary">${estimate.total.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
