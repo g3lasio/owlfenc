@@ -89,6 +89,7 @@ interface EstimateData {
   discountType: 'percentage' | 'fixed';
   discountValue: number;
   discountAmount: number;
+  discountName: string;
 }
 
 const STEPS = [
@@ -113,7 +114,8 @@ export default function EstimatesWizardFixed() {
     taxRate: 10, // Default 10% instead of 16%
     discountType: 'percentage',
     discountValue: 0,
-    discountAmount: 0
+    discountAmount: 0,
+    discountName: ''
   });
 
   // Data from existing systems
@@ -611,10 +613,10 @@ export default function EstimatesWizardFixed() {
             <span style="margin-right: 20px; color: #000000;"><strong>Subtotal:</strong></span>
             <span style="font-weight: bold; color: #000000;">$${estimate.subtotal.toFixed(2)}</span>
           </div>
-          ${estimate.discount > 0 ? `
+          ${estimate.discountAmount > 0 ? `
             <div style="margin-bottom: 10px; font-size: 1.1em; color: #22c55e;">
-              <span style="margin-right: 20px; color: #22c55e;"><strong>Descuento (${estimate.discountType === 'percentage' ? estimate.discountRate + '%' : 'Fijo'}):</strong></span>
-              <span style="font-weight: bold; color: #22c55e;">-$${estimate.discount.toFixed(2)}</span>
+              <span style="margin-right: 20px; color: #22c55e;"><strong>Descuento ${estimate.discountName ? '(' + estimate.discountName + ')' : ''} (${estimate.discountType === 'percentage' ? estimate.discountValue + '%' : 'Fijo'}):</strong></span>
+              <span style="font-weight: bold; color: #22c55e;">-$${estimate.discountAmount.toFixed(2)}</span>
             </div>
           ` : ''}
           <div style="margin-bottom: 15px; font-size: 1.1em; color: #000000;">
@@ -1292,6 +1294,18 @@ export default function EstimatesWizardFixed() {
                           <div className="flex items-center gap-3">
                             <span className="text-gray-300 text-xs font-medium tracking-wide">DESCUENTO</span>
                             <div className="flex items-center gap-2">
+                              {/* Discount Name */}
+                              <input
+                                type="text"
+                                value={estimate.discountName || ''}
+                                onChange={(e) => setEstimate(prev => ({ 
+                                  ...prev, 
+                                  discountName: e.target.value 
+                                }))}
+                                className="w-20 bg-gray-800 text-white text-xs border border-gray-600 rounded px-2 py-1 focus:outline-none focus:border-blue-500"
+                                placeholder="Tipo"
+                              />
+                              {/* Discount Type */}
                               <select
                                 value={estimate.discountType}
                                 onChange={(e) => setEstimate(prev => ({ 
@@ -1303,6 +1317,7 @@ export default function EstimatesWizardFixed() {
                                 <option value="percentage">%</option>
                                 <option value="fixed">$</option>
                               </select>
+                              {/* Discount Value */}
                               <div className="bg-gray-800 rounded-lg px-2 py-1 border border-gray-600">
                                 <input
                                   type="number"
@@ -1322,13 +1337,14 @@ export default function EstimatesWizardFixed() {
                         </div>
                         
                         {/* Reset button with glow effect */}
-                        {(estimate.discountValue > 0 || estimate.taxRate !== 10) && (
+                        {(estimate.discountValue > 0 || estimate.taxRate !== 10 || estimate.discountName) && (
                           <button
                             onClick={() => setEstimate(prev => ({ 
                               ...prev, 
                               taxRate: 10,
                               discountValue: 0,
-                              discountType: 'percentage'
+                              discountType: 'percentage',
+                              discountName: ''
                             }))}
                             className="text-xs text-gray-400 hover:text-blue-400 transition-colors duration-200 underline hover:glow"
                           >
@@ -1958,7 +1974,8 @@ export default function EstimatesWizardFixed() {
                 taxRate: 10,
                 discountType: 'percentage',
                 discountValue: 0,
-                discountAmount: 0
+                discountAmount: 0,
+                discountName: ''
               });
             }}>
               <Plus className="h-4 w-4 mr-2" />
