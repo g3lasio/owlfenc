@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import mervinLogoPath from "@assets/White logo - no background.png";
 import { getClients as getFirebaseClients, saveClient } from '@/lib/clientFirebase';
 import { collection, query, where, getDocs, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -135,6 +136,7 @@ export default function EstimatesWizardFixed() {
 
   // AI enhancement states
   const [isAIProcessing, setIsAIProcessing] = useState(false);
+  const [showMervinMessage, setShowMervinMessage] = useState(false);
 
   // Load data on mount
   useEffect(() => {
@@ -838,6 +840,12 @@ export default function EstimatesWizardFixed() {
                             items: [...prev.items, ...newItems]
                           }));
 
+                          // Mostrar mensaje de Mervin por 6 segundos
+                          setShowMervinMessage(true);
+                          setTimeout(() => {
+                            setShowMervinMessage(false);
+                          }, 6000);
+
                           toast({
                             title: '🎉 DeepSearch IA Completado',
                             description: `Se agregaron ${newItems.length} materiales automáticamente`
@@ -1131,6 +1139,88 @@ export default function EstimatesWizardFixed() {
           )}
         </div>
       </div>
+
+      {/* Overlay futurista de DeepSearch AI */}
+      {isAIProcessing && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="relative flex flex-col items-center justify-center space-y-6">
+            {/* Logo Mervin con efecto futurista */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 rounded-full blur-xl opacity-75 animate-pulse"></div>
+              <div className="relative bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 p-1 rounded-full">
+                <div className="bg-gray-900 rounded-full p-4">
+                  <img 
+                    src={mervinLogoPath} 
+                    alt="Mervin AI" 
+                    className="w-24 h-24 object-contain filter brightness-0 invert"
+                  />
+                </div>
+              </div>
+              {/* Anillos giratorios */}
+              <div className="absolute inset-0 border-2 border-cyan-400/30 rounded-full animate-spin"></div>
+              <div className="absolute inset-2 border-2 border-blue-500/30 rounded-full animate-spin animate-reverse"></div>
+              <div className="absolute inset-4 border-2 border-purple-600/30 rounded-full animate-spin"></div>
+            </div>
+
+            {/* Texto futurista */}
+            <div className="text-center space-y-2">
+              <h2 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">
+                DeepSearch IA
+              </h2>
+              <p className="text-xl text-gray-300 animate-pulse">
+                Analizando proyecto con Claude 3.7 Sonnet...
+              </p>
+              <div className="flex items-center justify-center space-x-2 mt-4">
+                <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                <div className="w-2 h-2 bg-purple-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+              </div>
+            </div>
+
+            {/* Efecto de partículas */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              {[...Array(20)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-1 h-1 bg-white rounded-full opacity-20 animate-pulse"
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`,
+                    animationDelay: `${Math.random() * 2}s`,
+                    animationDuration: `${2 + Math.random() * 2}s`
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mensaje emergente de Mervin */}
+      {showMervinMessage && (
+        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 max-w-lg">
+          <div className="bg-gradient-to-r from-cyan-900/95 via-blue-900/95 to-purple-900/95 backdrop-blur-md border border-cyan-500/30 rounded-2xl p-6 shadow-2xl animate-in slide-in-from-top-4 duration-500">
+            <div className="flex items-start space-x-4">
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full flex items-center justify-center">
+                  <img 
+                    src={mervinLogoPath} 
+                    alt="Mervin" 
+                    className="w-8 h-8 object-contain filter brightness-0 invert"
+                  />
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-white mb-2">¡Hola primo! 👋</h3>
+                <p className="text-gray-200 text-sm leading-relaxed">
+                  Aquí tienes una lista sugerida de materiales para tu proyecto. Aún no soy perfecto (la IA también aprende), así que si ves algo que no va o falta, ajústalo con toda confianza. Tus aportes me ayudan a ser cada vez más preciso. ¡Gracias por tu apoyo!
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 h-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 rounded-full animate-pulse"></div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
