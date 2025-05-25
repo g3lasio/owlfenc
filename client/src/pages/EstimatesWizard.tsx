@@ -28,8 +28,11 @@ import {
   Calculator,
   Building2,
   UserPlus,
-  Sparkles,
-  Brain
+  Brain,
+  Minus,
+  Download,
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react';
 
 // Types
@@ -88,7 +91,7 @@ const STEPS = [
   { id: 'preview', title: 'Vista Previa', icon: Eye }
 ];
 
-export default function EstimatesWizard() {
+export default function EstimatesWizardFixed() {
   const { currentUser } = useAuth();
   const { toast } = useToast();
 
@@ -112,83 +115,11 @@ export default function EstimatesWizard() {
   const [materialSearch, setMaterialSearch] = useState('');
   const [showMaterialDialog, setShowMaterialDialog] = useState(false);
   const [showAddClientDialog, setShowAddClientDialog] = useState(false);
-  const [showAddMaterialDialog, setShowAddMaterialDialog] = useState(false);
 
   // Loading states
   const [isLoadingClients, setIsLoadingClients] = useState(true);
   const [isLoadingMaterials, setIsLoadingMaterials] = useState(true);
   const [previewHtml, setPreviewHtml] = useState('');
-
-  // New client/material data
-  const [newClientData, setNewClientData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: ''
-  });
-
-  const [newMaterialData, setNewMaterialData] = useState({
-    name: '',
-    category: '',
-    price: 0
-  });
-
-  // Handle adding new client
-  const handleAddNewClient = async () => {
-    try {
-      const newClient = {
-        id: `temp-${Date.now()}`,
-        name: newClientData.name,
-        email: newClientData.email,
-        phone: newClientData.phone,
-        address: newClientData.address,
-        source: 'manual'
-      };
-
-      setClients(prev => [...prev, newClient]);
-      setEstimate(prev => ({ ...prev, client: newClient }));
-      setNewClientData({ name: '', email: '', phone: '', address: '' });
-      setShowAddClientDialog(false);
-      
-      toast({
-        title: "Client Added",
-        description: `${newClient.name} has been added successfully`
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Could not add client",
-        variant: "destructive"
-      });
-    }
-  };
-
-  // Handle adding new material
-  const handleAddNewMaterial = async () => {
-    try {
-      const newMaterial = {
-        id: `temp-${Date.now()}`,
-        name: newMaterialData.name,
-        category: newMaterialData.category,
-        price: newMaterialData.price
-      };
-
-      setMaterials(prev => [...prev, newMaterial]);
-      setNewMaterialData({ name: '', category: '', price: 0 });
-      setShowAddMaterialDialog(false);
-      
-      toast({
-        title: "Material Added",
-        description: `${newMaterial.name} has been added to inventory`
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Could not add material",
-        variant: "destructive"
-      });
-    }
-  };
 
   // New client form
   const [newClient, setNewClient] = useState({
@@ -200,17 +131,6 @@ export default function EstimatesWizard() {
     state: '',
     zipCode: '',
     notes: ''
-  });
-
-  // New material form
-  const [newMaterial, setNewMaterial] = useState({
-    name: '',
-    description: '',
-    category: '',
-    price: '',
-    unit: '',
-    sku: '',
-    supplier: ''
   });
 
   // AI enhancement states
@@ -240,7 +160,6 @@ export default function EstimatesWizard() {
   const loadClients = async () => {
     try {
       setIsLoadingClients(true);
-      // Use Firebase directly like your functional Clients page
       const clientsData = await getFirebaseClients();
       setClients(clientsData);
     } catch (error) {
@@ -256,27 +175,17 @@ export default function EstimatesWizard() {
   };
 
   const loadMaterials = async () => {
-    if (!currentUser) {
-      console.log('No current user, skipping materials load');
-      return;
-    }
+    if (!currentUser) return;
     
     try {
       setIsLoadingMaterials(true);
-      console.log('🔄 Cargando materiales de Firebase para usuario:', currentUser.uid);
-      
-      // Use Firebase directly like your functional Materials page
       const materialsRef = collection(db, 'materials');
       const q = query(materialsRef, where('userId', '==', currentUser.uid));
       const querySnapshot = await getDocs(q);
 
-      console.log('📦 Documentos de materiales encontrados:', querySnapshot.size);
-
       const materialsData: Material[] = [];
-      querySnapshot.forEach((doc, index) => {
+      querySnapshot.forEach((doc) => {
         const data = doc.data() as Omit<Material, 'id'>;
-        console.log(`   Material ${index + 1}:`, { id: doc.id, name: data.name, price: data.price, category: data.category });
-        
         const material: Material = {
           id: doc.id,
           ...data,
@@ -285,10 +194,9 @@ export default function EstimatesWizard() {
         materialsData.push(material);
       });
 
-      console.log('✅ Materiales procesados:', materialsData.length);
       setMaterials(materialsData);
     } catch (error) {
-      console.error('❌ Error loading materials from Firebase:', error);
+      console.error('Error loading materials from Firebase:', error);
       toast({
         title: 'Error',
         description: 'Could not load materials',
@@ -308,122 +216,6 @@ export default function EstimatesWizard() {
       }
     } catch (error) {
       console.error('Error loading contractor profile:', error);
-    }
-  };
-
-  // Navigation
-  const nextStep = () => {
-    if (currentStep < STEPS.length - 1) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-
-  const prevStep = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
-  const canProceedToNext = () => {
-    switch (currentStep) {
-      case 0: return estimate.client !== null;
-      case 1: return estimate.items.length > 0;
-      case 2: return true;
-      case 3: return true;
-      default: return false;
-    }
-  };
-
-  // Filter clients and materials
-  const filteredClients = clients.filter(client =>
-    client.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
-    (client.email && client.email.toLowerCase().includes(clientSearch.toLowerCase())) ||
-    (client.phone && client.phone.includes(clientSearch)) ||
-    (client.mobilePhone && client.mobilePhone.includes(clientSearch))
-  );
-
-  const filteredMaterials = materials.filter(material =>
-    material.name.toLowerCase().includes(materialSearch.toLowerCase()) ||
-    material.description.toLowerCase().includes(materialSearch.toLowerCase()) ||
-    material.category.toLowerCase().includes(materialSearch.toLowerCase())
-  );
-
-  // Client selection
-  const selectClient = (client: Client) => {
-    setEstimate(prev => ({ ...prev, client }));
-    toast({
-      title: 'Client Selected',
-      description: `${client.name} has been added to the estimate`
-    });
-  };
-
-  // Create new client manually
-  const createNewClient = async () => {
-    if (!newClient.name || !newClient.email) {
-      toast({
-        title: 'Required Data',
-        description: 'Name and email are required',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    try {
-      const clientData = {
-        clientId: `client_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-        name: newClient.name,
-        email: newClient.email,
-        phone: newClient.phone || '',
-        mobilePhone: '',
-        address: newClient.address || '',
-        city: newClient.city || '',
-        state: newClient.state || '',
-        zipCode: newClient.zipCode || '',
-        notes: newClient.notes || '',
-        source: 'Manual - Estimates',
-        classification: 'cliente',
-        tags: []
-      };
-
-      const savedClient = await saveClient(clientData);
-      
-      // Add to local state
-      const clientWithId = { 
-        id: savedClient.id, 
-        ...clientData,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-      
-      setClients(prev => [clientWithId, ...prev]);
-      
-      // Select the new client automatically
-      setEstimate(prev => ({ ...prev, client: clientWithId }));
-      
-      // Reset form and close dialog
-      setNewClient({
-        name: '',
-        email: '',
-        phone: '',
-        address: '',
-        city: '',
-        state: '',
-        zipCode: '',
-        notes: ''
-      });
-      setShowAddClientDialog(false);
-      
-      toast({
-        title: 'Client Created',
-        description: `${clientData.name} has been created and selected`
-      });
-    } catch (error) {
-      console.error('Error creating client:', error);
-      toast({
-        title: 'Error',
-        description: 'Could not create client',
-        variant: 'destructive'
-      });
     }
   };
 
@@ -482,6 +274,118 @@ export default function EstimatesWizard() {
       });
     } finally {
       setIsAIProcessing(false);
+    }
+  };
+
+  // Navigation
+  const nextStep = () => {
+    if (currentStep < STEPS.length - 1) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const canProceedToNext = () => {
+    switch (currentStep) {
+      case 0: return estimate.client !== null;
+      case 1: return estimate.projectDetails.trim().length > 0;
+      case 2: return estimate.items.length > 0;
+      case 3: return true;
+      default: return false;
+    }
+  };
+
+  // Filter clients and materials
+  const filteredClients = clients.filter(client =>
+    client.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
+    (client.email && client.email.toLowerCase().includes(clientSearch.toLowerCase())) ||
+    (client.phone && client.phone.includes(clientSearch)) ||
+    (client.mobilePhone && client.mobilePhone.includes(clientSearch))
+  );
+
+  const filteredMaterials = materials.filter(material =>
+    material.name.toLowerCase().includes(materialSearch.toLowerCase()) ||
+    material.description.toLowerCase().includes(materialSearch.toLowerCase()) ||
+    material.category.toLowerCase().includes(materialSearch.toLowerCase())
+  );
+
+  // Client selection
+  const selectClient = (client: Client) => {
+    setEstimate(prev => ({ ...prev, client }));
+    toast({
+      title: 'Client Selected',
+      description: `${client.name} has been added to the estimate`
+    });
+  };
+
+  // Create new client manually
+  const createNewClient = async () => {
+    if (!newClient.name || !newClient.email) {
+      toast({
+        title: 'Required Data',
+        description: 'Name and email are required',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      const clientData = {
+        clientId: `client_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+        name: newClient.name,
+        email: newClient.email,
+        phone: newClient.phone || '',
+        mobilePhone: '',
+        address: newClient.address || '',
+        city: newClient.city || '',
+        state: newClient.state || '',
+        zipCode: newClient.zipCode || '',
+        notes: newClient.notes || '',
+        source: 'Manual - Estimates',
+        classification: 'cliente',
+        tags: []
+      };
+
+      const savedClient = await saveClient(clientData);
+      
+      const clientWithId = { 
+        id: savedClient.id, 
+        ...clientData,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      setClients(prev => [clientWithId, ...prev]);
+      setEstimate(prev => ({ ...prev, client: clientWithId }));
+      
+      setNewClient({
+        name: '',
+        email: '',
+        phone: '',
+        address: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        notes: ''
+      });
+      setShowAddClientDialog(false);
+      
+      toast({
+        title: 'Client Created',
+        description: `${clientData.name} has been created and selected`
+      });
+    } catch (error) {
+      console.error('Error creating client:', error);
+      toast({
+        title: 'Error',
+        description: 'Could not create client',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -601,591 +505,173 @@ export default function EstimatesWizard() {
 
   // Download PDF
   const downloadPDF = async () => {
-        return `${basePrompt}
-
-Estima un tiempo realista considerando:
-- Complejidad del proyecto
-- Condiciones climáticas
-- Disponibilidad de materiales
-- Permisos necesarios
-
-Formato: Tiempo específico (ej. "2-3 semanas", "10-14 días hábiles").`;
-
-      case 'process':
-        return `${basePrompt}
-
-Describe el proceso de trabajo paso a paso:
-- Preparación del sitio
-- Secuencia de actividades
-- Coordinación necesaria
-- Control de calidad
-- Inspecciones
-
-Formato: Lista numerada o con viñetas (máximo 150 palabras).`;
-
-      case 'includes':
-        return `${basePrompt}
-
-Lista específicamente qué incluye el presupuesto:
-- Materiales principales
-- Mano de obra especializada
-- Herramientas y equipo
-- Permisos básicos
-- Garantías
-
-Formato: Lista clara con viñetas (máximo 120 palabras).`;
-
-      case 'excludes':
-        return `${basePrompt}
-
-Lista claramente qué NO incluye el presupuesto:
-- Trabajos adicionales fuera del alcance
-- Permisos especiales
-- Servicios de terceros
-- Modificaciones no contempladas
-- Contingencias extraordinarias
-
-Formato: Lista clara con viñetas (máximo 100 palabras).`;
-
-      case 'notes':
-        return `${basePrompt}
-
-Agrega notas profesionales importantes:
-- Recomendaciones de mantenimiento
-- Consideraciones especiales del sitio
-- Sugerencias para optimizar resultados
-- Información sobre garantías
-- Próximos pasos
-
-Formato: Párrafos informativos (máximo 120 palabras).`;
-
-      default:
-        return basePrompt;
-    }
-  };
-
-  const getFieldDisplayName = (field: string) => {
-    const fieldNames = {
-      scope: 'Alcance del Trabajo',
-      timeline: 'Tiempo Estimado',
-      process: 'Proceso de Trabajo',
-      includes: 'Incluye',
-      excludes: 'No Incluye',
-      notes: 'Notas Adicionales'
-    };
-    return fieldNames[field as keyof typeof fieldNames] || field;
-  };
-
-  // Create new material manually
-  const createNewMaterial = async () => {
-    if (!newMaterial.name || !newMaterial.price || !newMaterial.unit) {
-      toast({
-        title: 'Datos requeridos',
-        description: 'El nombre, precio y unidad son obligatorios',
-        variant: 'destructive'
-      });
-      return;
-    }
-
     try {
-      const materialData = {
-        name: newMaterial.name,
-        description: newMaterial.description || '',
-        category: newMaterial.category || 'General',
-        price: parseFloat(newMaterial.price),
-        unit: newMaterial.unit,
-        sku: newMaterial.sku || '',
-        supplier: newMaterial.supplier || '',
-        userId: currentUser?.uid,
-        createdAt: Timestamp.now(),
-        updatedAt: Timestamp.now()
-      };
+      const html = generateEstimatePreview();
+      
+      const response = await fetch('/api/generate-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ html, filename: `estimate-${estimate.client?.name || 'client'}.pdf` }),
+      });
 
-      const materialsRef = collection(db, 'materials');
-      const docRef = await addDoc(materialsRef, materialData);
-      
-      // Add to local state
-      const materialWithId = { 
-        id: docRef.id, 
-        ...materialData,
-        createdAt: materialData.createdAt.toDate(),
-        updatedAt: materialData.updatedAt.toDate()
-      };
-      
-      setMaterials(prev => [materialWithId, ...prev]);
-      
-      // Add to estimate automatically
-      addMaterialToEstimate(materialWithId);
-      
-      // Reset form and close dialog
-      setNewMaterial({
-        name: '',
-        description: '',
-        category: '',
-        price: '',
-        unit: '',
-        sku: '',
-        supplier: ''
-      });
-      setShowAddMaterialDialog(false);
-      
-      toast({
-        title: 'Material creado',
-        description: `${materialData.name} ha sido creado y agregado al estimado`
-      });
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `estimate-${estimate.client?.name || 'client'}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        
+        toast({
+          title: 'PDF Downloaded',
+          description: 'The estimate has been downloaded as PDF'
+        });
+      }
     } catch (error) {
-      console.error('Error creating material:', error);
+      console.error('Error downloading PDF:', error);
       toast({
         title: 'Error',
-        description: 'No se pudo crear el material',
+        description: 'Could not download PDF',
         variant: 'destructive'
       });
     }
   };
 
-  // Material management
-  const addMaterialToEstimate = (material: Material, quantity: number = 1) => {
-    const newItem: EstimateItem = {
-      id: `item_${Date.now()}`,
-      materialId: material.id,
-      name: material.name,
-      description: material.description,
-      quantity,
-      price: material.price,
-      unit: material.unit,
-      total: material.price * quantity
-    };
-
-    setEstimate(prev => ({
-      ...prev,
-      items: [...prev.items, newItem]
-    }));
-
-    setShowMaterialDialog(false);
-    setMaterialSearch('');
-    toast({
-      title: 'Material agregado',
-      description: `${material.name} ha sido agregado al estimado`
-    });
-  };
-
-  const updateItem = (itemId: string, field: string, value: string | number) => {
-    setEstimate(prev => ({
-      ...prev,
-      items: prev.items.map(item => {
-        if (item.id === itemId) {
-          const updatedItem = { ...item, [field]: value };
-          if (field === 'quantity' || field === 'price') {
-            updatedItem.total = updatedItem.price * updatedItem.quantity;
-          }
-          return updatedItem;
-        }
-        return item;
-      })
-    }));
-  };
-
-  const removeItem = (itemId: string) => {
-    setEstimate(prev => ({
-      ...prev,
-      items: prev.items.filter(item => item.id !== itemId)
-    }));
-  };
-
-  // Generate preview HTML using your exact template
-  const generatePreview = () => {
-    if (!estimate.client || estimate.items.length === 0) return;
-
-    const itemsHtml = estimate.items.map(item => `
-      <tr>
-        <td>${item.name}</td>
-        <td>${item.description}</td>
-        <td>${item.quantity} ${item.unit}</td>
-        <td>$${item.price.toFixed(2)}</td>
-        <td>$${item.total.toFixed(2)}</td>
-      </tr>
-    `).join('');
-
-    const contractorName = contractor?.company || contractor?.name || 'Tu Empresa';
-    const contractorAddress = contractor?.address || 'Dirección de tu empresa';
-    const contractorEmail = contractor?.email || 'contacto@tuempresa.com';
-    const contractorPhone = contractor?.phone || '(555) 123-4567';
-
-    const html = `
-    <!doctype html>
-    <html lang="en">
-      <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Estimate Template (General Contractors - Neon Final)</title>
-        <style>
-          body {
-            font-family: "Segoe UI", Arial, sans-serif;
-            background: #f8f9fb;
-            margin: 0;
-            padding: 0;
-            color: #181818;
-          }
-          .container {
-            max-width: 800px;
-            margin: 40px auto;
-            background: #fff;
-            box-shadow: 0 4px 24px rgba(20, 240, 248, 0.12);
-            border-radius: 18px;
-            padding: 34px 36px 20px 36px;
-            border: 2px solid #14f0f8;
-          }
-          .header {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            border-bottom: 2.5px solid #14f0f8;
-            padding-bottom: 18px;
-            margin-bottom: 18px;
-          }
-          .company-details {
-            line-height: 1.7;
-          }
-          .logo {
-            max-width: 108px;
-            max-height: 60px;
-            margin-bottom: 6px;
-            background: #f5f7fa;
-            border-radius: 8px;
-            border: 1px solid #d7e0ee;
-            display: block;
-          }
-          .company-name {
-            font-size: 1.22rem;
-            font-weight: 700;
-            color: #181818;
-            margin-bottom: 2px;
-            letter-spacing: 0.5px;
-          }
-          .company-address {
-            font-size: 1rem;
-            color: #222;
-            margin-bottom: 2px;
-          }
-          .estimate-title {
-            text-align: right;
-            font-size: 2rem;
-            color: #181818;
-            font-weight: 600;
-            letter-spacing: 1px;
-            text-shadow: 0 2px 12px #e0fcff30;
-          }
-          .estimate-meta {
-            text-align: right;
-            font-size: 1rem;
-            color: #303030;
-            line-height: 1.5;
-          }
-          .section {
-            margin-bottom: 23px;
-          }
-          .section-title {
-            font-size: 1.13rem;
-            font-weight: bold;
-            color: #181818;
-            margin-bottom: 6px;
-            letter-spacing: 0.5px;
-            background: #e9fdff;
-            padding: 4px 12px;
-            border-left: 4px solid #14f0f8;
-            border-radius: 6px 0 0 6px;
-            display: inline-block;
-            box-shadow: 0 1px 4px 0 #14f0f816;
-          }
-          .details-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: #e9fdff;
-            border-radius: 7px;
-            overflow: hidden;
-            margin-bottom: 6px;
-            box-shadow: 0 1.5px 6px 0 #10dbe222;
-            border: 1.5px solid #14f0f8;
-          }
-          .details-table th,
-          .details-table td {
-            padding: 12px 9px;
-            text-align: left;
-            color: #181818;
-          }
-          .details-table th {
-            background: #bafcff;
-            color: #181818;
-            font-size: 1.02rem;
-            font-weight: 600;
-            border-bottom: 1.5px solid #14f0f8;
-          }
-          .details-table td {
-            border-bottom: 1px solid #e6fafd;
-            font-size: 1rem;
-          }
-          .details-table tr:last-child td {
-            border-bottom: none;
-          }
-          .totals-row {
-            font-weight: 700;
-            background: #bafcff;
-            font-size: 1.09rem;
-            color: #181818;
-          }
-          .project-details {
-            font-size: 1.06rem;
-            color: #233;
-            margin: 16px 0 24px 0;
-            padding: 18px 22px 13px 22px;
-            background: #e1fbfc;
-            border-radius: 8px;
-            border-left: 4px solid #14f0f8;
-            box-shadow: 0 2px 8px rgba(20, 240, 248, 0.07);
-          }
-          .client-contact a,
-          .company-details a {
-            display: inline-block;
-            margin-right: 10px;
-            padding: 4px 10px;
-            color: #181818;
-            background: #e6fcff;
-            border-radius: 7px;
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 1.02rem;
-            transition: background 0.2s;
-            box-shadow: 0 0 7px 0 #10dbe225;
-            border: 1px solid #14f0f8;
-          }
-          .client-contact a:hover,
-          .company-details a:hover {
-            background: #14f0f8;
-            color: #181818;
-          }
-          .footer {
-            text-align: right;
-            margin-top: 16px;
-            font-size: 0.89rem;
-            color: #14f0f8;
-            padding-top: 5px;
-            border-top: 1.5px solid #bafcff;
-            letter-spacing: 0.12px;
-            font-family: "Segoe UI", Arial, sans-serif;
-            text-shadow: 0 0 8px #10dbe233;
-          }
-          .table-wrapper {
-            overflow-x: auto;
-            overflow-y: hidden;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: thin;
-            scrollbar-color: #14f0f8 #e9fdff;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <div class="company-details">
-              ${contractor?.logo ? `<img src="${contractor.logo}" alt="Company Logo" class="logo" />` : ''}
-              <div class="company-name">${contractorName}</div>
-              <div class="company-address">${contractorAddress}</div>
-              <div>
-                <a href="mailto:${contractorEmail}">${contractorEmail}</a>
-                <a href="tel:${contractorPhone}">${contractorPhone}</a>
-              </div>
-            </div>
-            <div>
-              <div class="estimate-title">ESTIMATE</div>
-              <div class="estimate-meta">
-                <div><strong>Date:</strong> ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-                <div><strong>Estimate #:</strong> EST-${Date.now()}</div>
-                <div><strong>Valid Until:</strong> ${new Date(Date.now() + 30*24*60*60*1000).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="section">
-            <div class="section-title">Client</div>
-            <div class="table-wrapper">
-              <table class="details-table">
-                <tr>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Phone</th>
-                  <th>Address</th>
-                </tr>
-                <tr>
-                  <td>${estimate.client.name}</td>
-                  <td><a href="mailto:${estimate.client.email}">${estimate.client.email}</a></td>
-                  <td><a href="tel:${estimate.client.phone}">${estimate.client.phone}</a></td>
-                  <td>${estimate.client.address}</td>
-                </tr>
-              </table>
-            </div>
-          </div>
-
-          <div class="section">
-            <div class="section-title">Estimate Details</div>
-            <div class="table-wrapper">
-              <table class="details-table">
-                <tr>
-                  <th>Item</th>
-                  <th>Description</th>
-                  <th>Quantity</th>
-                  <th>Unit Price</th>
-                  <th>Total</th>
-                </tr>
-                ${itemsHtml}
-                <tr class="totals-row">
-                  <td colspan="4" style="text-align: right">Subtotal</td>
-                  <td>$${estimate.subtotal.toFixed(2)}</td>
-                </tr>
-                <tr class="totals-row">
-                  <td colspan="4" style="text-align: right">Tax (16%)</td>
-                  <td>$${estimate.tax.toFixed(2)}</td>
-                </tr>
-                <tr class="totals-row">
-                  <td colspan="4" style="text-align: right"><strong>Total</strong></td>
-                  <td><strong>$${estimate.total.toFixed(2)}</strong></td>
-                </tr>
-              </table>
-            </div>
-          </div>
-
-          ${(estimate.scope || estimate.timeline || estimate.process || estimate.includes || estimate.excludes) ? `
-          <div class="section project-details">
-            ${estimate.scope ? `<b>Scope:</b> ${estimate.scope}<br />` : ''}
-            ${estimate.timeline ? `<b>Timeline:</b> ${estimate.timeline}<br />` : ''}
-            ${estimate.process ? `<b>Process:</b> ${estimate.process}<br />` : ''}
-            ${estimate.includes ? `<b>Includes:</b> ${estimate.includes}<br />` : ''}
-            ${estimate.excludes ? `<b>Excludes:</b> ${estimate.excludes}` : ''}
-          </div>
-          ` : ''}
-
-          ${estimate.notes ? `
-          <div class="section project-details">
-            <b>Additional Notes:</b><br />
-            ${estimate.notes.replace(/\n/g, '<br/>')}
-          </div>
-          ` : ''}
-
-          <div class="section">
-            <div class="section-title">Terms & Conditions</div>
-            <div class="terms">
-              <ul style="margin: 0 0 0 1.4em; padding: 0; color: #181818">
-                <li>
-                  This estimate is valid for 30 days from the issue date. Prices may
-                  change after this period due to fluctuations in materials, labor,
-                  or market conditions.
-                </li>
-                <li>
-                  Project execution, specific terms, and additional conditions will
-                  be detailed in the formal contract to be signed by both parties.
-                </li>
-                <li>For questions, please contact us directly.</li>
-              </ul>
-            </div>
-          </div>
-
-          <div class="footer">
-            &copy; ${new Date().getFullYear()} ${contractorName}. All Rights Reserved.
-          </div>
-        </div>
-      </body>
-    </html>`;
-
-    setPreviewHtml(html);
-  };
-
-  // Generate preview when reaching step 3
-  useEffect(() => {
-    if (currentStep === 3) {
-      generatePreview();
-    }
-  }, [currentStep, estimate]);
-
-  // Render step content
-  const renderStepContent = () => {
+  // Render current step
+  const renderCurrentStep = () => {
     switch (currentStep) {
       case 0: // Client Selection
         return (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Seleccionar Cliente
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {estimate.client ? (
-                <div className="space-y-4">
-                  <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-semibold text-primary">{estimate.client.name}</h3>
-                        <p className="text-sm text-muted-foreground">{estimate.client.email}</p>
-                        <p className="text-sm text-muted-foreground">{estimate.client.phone}</p>
-                        <p className="text-sm text-muted-foreground">{estimate.client.address}</p>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setEstimate(prev => ({ ...prev, client: null }))}
-                      >
-                        Cambiar
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-green-600">
-                    <Check className="h-4 w-4" />
-                    <span className="text-sm">Cliente seleccionado correctamente</span>
-                  </div>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Seleccionar Cliente
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Buscar por nombre, email o teléfono..."
-                        value={clientSearch}
-                        onChange={(e) => setClientSearch(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setShowAddClientDialog(true)}
-                      className="whitespace-nowrap"
-                    >
+                <Dialog open={showAddClientDialog} onOpenChange={setShowAddClientDialog}>
+                  <DialogTrigger asChild>
+                    <Button size="sm">
                       <UserPlus className="h-4 w-4 mr-2" />
                       Nuevo Cliente
                     </Button>
-                  </div>
-                  <div className="max-h-64 overflow-y-auto space-y-2">
-                    {isLoadingClients ? (
-                      <p className="text-center py-4 text-muted-foreground">Cargando clientes...</p>
-                    ) : filteredClients.length === 0 ? (
-                      <p className="text-center py-4 text-muted-foreground">
-                        {clientSearch ? 'No se encontraron clientes' : 'No hay clientes disponibles'}
-                      </p>
-                    ) : (
-                      filteredClients.map((client) => (
-                        <div
-                          key={client.id}
-                          className="p-3 border rounded-lg cursor-pointer hover:bg-muted transition-colors"
-                          onClick={() => selectClient(client)}
-                        >
-                          <h4 className="font-medium">{client.name}</h4>
-                          <p className="text-sm text-muted-foreground">{client.email}</p>
-                          <p className="text-sm text-muted-foreground">{client.phone}</p>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Crear Nuevo Cliente</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="name">Nombre *</Label>
+                          <Input
+                            id="name"
+                            value={newClient.name}
+                            onChange={(e) => setNewClient(prev => ({ ...prev, name: e.target.value }))}
+                          />
                         </div>
-                      ))
-                    )}
+                        <div>
+                          <Label htmlFor="email">Email *</Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            value={newClient.email}
+                            onChange={(e) => setNewClient(prev => ({ ...prev, email: e.target.value }))}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="phone">Teléfono</Label>
+                          <Input
+                            id="phone"
+                            value={newClient.phone}
+                            onChange={(e) => setNewClient(prev => ({ ...prev, phone: e.target.value }))}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="address">Dirección</Label>
+                          <Input
+                            id="address"
+                            value={newClient.address}
+                            onChange={(e) => setNewClient(prev => ({ ...prev, address: e.target.value }))}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setShowAddClientDialog(false)}>
+                        Cancelar
+                      </Button>
+                      <Button onClick={createNewClient}>
+                        Crear Cliente
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar cliente por nombre, email o teléfono..."
+                  value={clientSearch}
+                  onChange={(e) => setClientSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              
+              {estimate.client && (
+                <div className="p-4 border border-primary rounded-lg bg-primary/5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium text-primary">Cliente Seleccionado</h3>
+                      <p className="text-sm">{estimate.client.name}</p>
+                      <p className="text-xs text-muted-foreground">{estimate.client.email}</p>
+                    </div>
+                    <Check className="h-5 w-5 text-primary" />
                   </div>
                 </div>
               )}
+
+              <div className="max-h-96 overflow-y-auto">
+                {isLoadingClients ? (
+                  <p className="text-center py-4 text-muted-foreground">Cargando clientes...</p>
+                ) : filteredClients.length === 0 ? (
+                  <p className="text-center py-4 text-muted-foreground">
+                    {clientSearch ? 'No se encontraron clientes' : 'No hay clientes disponibles'}
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {filteredClients.map((client) => (
+                      <div
+                        key={client.id}
+                        className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                          estimate.client?.id === client.id 
+                            ? 'border-primary bg-primary/5' 
+                            : 'hover:bg-muted'
+                        }`}
+                        onClick={() => selectClient(client)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-medium">{client.name}</h4>
+                            <p className="text-sm text-muted-foreground">{client.email || 'Sin email'}</p>
+                            <p className="text-xs text-muted-foreground">{client.phone || 'Sin teléfono'}</p>
+                          </div>
+                          {estimate.client?.id === client.id && (
+                            <Check className="h-4 w-4 text-primary" />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         );
@@ -1264,24 +750,14 @@ Formato: Párrafos informativos (máximo 120 palabras).`;
                       <DialogTitle>Seleccionar Material del Inventario</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
-                      <div className="flex gap-2">
-                        <div className="relative flex-1">
-                          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            placeholder="Buscar materiales..."
-                            value={materialSearch}
-                            onChange={(e) => setMaterialSearch(e.target.value)}
-                            className="pl-10"
-                          />
-                        </div>
-                        <Button 
-                          variant="outline" 
-                          onClick={() => setShowAddMaterialDialog(true)}
-                          className="whitespace-nowrap"
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Nuevo Material
-                        </Button>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Buscar materiales..."
+                          value={materialSearch}
+                          onChange={(e) => setMaterialSearch(e.target.value)}
+                          className="pl-10"
+                        />
                       </div>
                       <div className="max-h-96 overflow-y-auto">
                         {isLoadingMaterials ? (
@@ -1315,59 +791,61 @@ Formato: Párrafos informativos (máximo 120 palabras).`;
             </CardHeader>
             <CardContent>
               {estimate.items.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
+                <div className="text-center py-8 text-muted-foreground">
                   <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg mb-2">No hay materiales agregados aún.</p>
-                  <p>Haz clic en "Agregar Material" para comenzar.</p>
+                  <p>No hay materiales agregados al estimado</p>
+                  <p className="text-sm">Haz clic en "Agregar Material" para comenzar</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {estimate.items.map((item, index) => (
-                    <div key={index} className="flex items-center gap-4 p-4 border rounded-lg">
+                    <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex-1">
                         <h4 className="font-medium">{item.name}</h4>
-                        <p className="text-sm text-muted-foreground">{item.category}</p>
+                        <p className="text-sm text-muted-foreground">{item.description}</p>
+                        <p className="text-sm font-medium">${item.price.toFixed(2)} / {item.unit}</p>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => updateItemQuantity(item.id, item.quantity - 1)}
+                            disabled={item.quantity <= 1}
+                          >
+                            <Minus className="h-3 w-3" />
+                          </Button>
+                          <span className="w-12 text-center">{item.quantity}</span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => updateItemQuantity(item.id, item.quantity + 1)}
+                          >
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium">${item.total.toFixed(2)}</p>
+                        </div>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => updateItemQuantity(index, Math.max(1, item.quantity - 1))}
+                          onClick={() => removeItemFromEstimate(item.id)}
+                          className="text-destructive hover:text-destructive"
                         >
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        <span className="w-12 text-center">{item.quantity}</span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => updateItemQuantity(index, item.quantity + 1)}
-                        >
-                          <Plus className="h-4 w-4" />
+                          <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm text-muted-foreground">
-                          ${item.price?.toFixed(2) || '0.00'} c/u
-                        </p>
-                        <p className="font-medium">
-                          ${((item.price || 0) * item.quantity).toFixed(2)}
-                        </p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeItemFromEstimate(index)}
-                        className="text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
                     </div>
                   ))}
                   
                   <div className="border-t pt-4">
-                    <div className="flex justify-between items-center text-lg font-semibold">
-                      <span>Total de Materiales:</span>
-                      <span>${estimate.subtotal.toFixed(2)}</span>
+                    <div className="text-right space-y-2">
+                      <p>Subtotal: <span className="font-medium">${estimate.subtotal.toFixed(2)}</span></p>
+                      <p>Impuesto (16%): <span className="font-medium">${estimate.tax.toFixed(2)}</span></p>
+                      <p className="text-lg font-bold text-primary">
+                        Total: ${estimate.total.toFixed(2)}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1380,41 +858,46 @@ Formato: Párrafos informativos (máximo 120 palabras).`;
         return (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Eye className="h-5 w-5" />
-                Vista Previa del Estimado
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Eye className="h-5 w-5" />
+                  Vista Previa del Estimado
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => generateEstimatePreview()}
+                    disabled={!estimate.client || estimate.items.length === 0}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Actualizar Vista Previa
+                  </Button>
+                  <Button
+                    onClick={downloadPDF}
+                    disabled={!estimate.client || estimate.items.length === 0 || !previewHtml}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Descargar PDF
+                  </Button>
+                </div>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {!estimate.client ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <AlertCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Completa los pasos anteriores para ver la vista previa</p>
+              {!estimate.client || estimate.items.length === 0 ? (
+                <div className="text-center py-8">
+                  <AlertCircle className="h-12 w-12 mx-auto mb-4 text-amber-500" />
+                  <p className="text-lg font-medium">Estimado Incompleto</p>
+                  <p className="text-muted-foreground">
+                    Necesitas seleccionar un cliente y agregar materiales para generar la vista previa
+                  </p>
                 </div>
               ) : (
-                <div className="space-y-6">
-                  <div className="bg-muted/50 p-6 rounded-lg">
-                    <div dangerouslySetInnerHTML={{ __html: previewHtml }} />
-                  </div>
-                  
-                  <div className="flex gap-3">
-                    <Button 
-                      onClick={generatePreview}
-                      disabled={!estimate.client}
-                      className="flex-1"
-                    >
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Actualizar Vista Previa
-                    </Button>
-                    <Button 
-                      onClick={downloadPDF}
-                      disabled={!estimate.client || !previewHtml}
-                      className="flex-1"
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      Descargar PDF
-                    </Button>
-                  </div>
+                <div className="border rounded-lg p-4 bg-muted/50">
+                  <div
+                    dangerouslySetInnerHTML={{ 
+                      __html: previewHtml || generateEstimatePreview()
+                    }}
+                  />
                 </div>
               )}
             </CardContent>
@@ -1427,191 +910,96 @@ Formato: Párrafos informativos (máximo 120 palabras).`;
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      {/* Header */}
-      <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold">Wizard de creación de estimados profesionales</h1>
-        <p className="text-muted-foreground">The AI Force Crafting the Future Skyline</p>
+    <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Crear Nuevo Estimado</h1>
+        <p className="text-muted-foreground">
+          Sigue los pasos para crear un estimado profesional para tu cliente
+        </p>
       </div>
 
       {/* Progress Steps */}
-      <div className="flex items-center justify-between max-w-2xl mx-auto">
-        {STEPS.map((step, index) => (
-          <div key={step.id} className="flex items-center">
-            <div className={`
-              flex items-center justify-center w-10 h-10 rounded-full border-2 transition-colors
-              ${index <= currentStep ? 'bg-primary border-primary text-primary-foreground' : 'border-muted-foreground text-muted-foreground'}
-            `}>
-              {index < currentStep ? (
-                <Check className="h-5 w-5" />
-              ) : (
-                <step.icon className="h-5 w-5" />
-              )}
-            </div>
-            <span className={`ml-2 text-sm font-medium ${index <= currentStep ? 'text-foreground' : 'text-muted-foreground'}`}>
-              {step.title}
-            </span>
-            {index < STEPS.length - 1 && (
-              <div className={`mx-4 h-px w-12 ${index < currentStep ? 'bg-primary' : 'bg-muted-foreground'}`} />
-            )}
-          </div>
-        ))}
+      <div className="mb-8">
+        <div className="flex items-center justify-center">
+          {STEPS.map((step, index) => {
+            const Icon = step.icon;
+            const isActive = index === currentStep;
+            const isCompleted = index < currentStep;
+            
+            return (
+              <div key={step.id} className="flex items-center">
+                <div
+                  className={`flex flex-col items-center ${
+                    isActive ? 'text-primary' : isCompleted ? 'text-green-600' : 'text-muted-foreground'
+                  }`}
+                >
+                  <div
+                    className={`flex items-center justify-center w-10 h-10 rounded-full border-2 mb-2 ${
+                      isActive
+                        ? 'border-primary bg-primary text-primary-foreground'
+                        : isCompleted
+                        ? 'border-green-600 bg-green-600 text-white'
+                        : 'border-muted-foreground'
+                    }`}
+                  >
+                    {isCompleted ? (
+                      <Check className="h-5 w-5" />
+                    ) : (
+                      <Icon className="h-5 w-5" />
+                    )}
+                  </div>
+                  <span className="text-xs font-medium">{step.title}</span>
+                </div>
+                {index < STEPS.length - 1 && (
+                  <div
+                    className={`w-24 h-0.5 mx-4 ${
+                      isCompleted ? 'bg-green-600' : 'bg-muted-foreground/30'
+                    }`}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Step Content */}
-      <div className="max-w-4xl mx-auto">
-        {renderStepContent()}
+      {/* Current Step Content */}
+      <div className="mb-8">
+        {renderCurrentStep()}
       </div>
 
-      {/* Navigation */}
-      <div className="flex justify-between max-w-4xl mx-auto">
+      {/* Navigation Buttons */}
+      <div className="flex justify-between">
         <Button
           variant="outline"
-          onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+          onClick={prevStep}
           disabled={currentStep === 0}
         >
           <ChevronLeft className="h-4 w-4 mr-2" />
           Anterior
         </Button>
         
-        <Button
-          onClick={() => {
-            if (currentStep === STEPS.length - 1) {
-              // Handle final step completion
-              toast({
-                title: "Estimado completado",
-                description: "Tu estimado ha sido generado exitosamente"
-              });
-            } else {
-              setCurrentStep(Math.min(STEPS.length - 1, currentStep + 1));
-            }
-          }}
-          disabled={!canProceedToNext()}
-        >
-          {currentStep === STEPS.length - 1 ? 'Completar' : 'Siguiente'}
-          {currentStep !== STEPS.length - 1 && <ChevronRight className="h-4 w-4 ml-2" />}
-        </Button>
+        <div className="flex gap-2">
+          {currentStep === STEPS.length - 1 ? (
+            <Button
+              onClick={downloadPDF}
+              disabled={!estimate.client || estimate.items.length === 0}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Finalizar y Descargar
+            </Button>
+          ) : (
+            <Button
+              onClick={nextStep}
+              disabled={!canProceedToNext()}
+            >
+              Siguiente
+              <ChevronRight className="h-4 w-4 ml-2" />
+            </Button>
+          )}
+        </div>
       </div>
-
-      {/* Add Client Dialog */}
-      <Dialog open={showAddClientDialog} onOpenChange={setShowAddClientDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Agregar Nuevo Cliente</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="clientName">Nombre</Label>
-              <Input
-                id="clientName"
-                placeholder="Nombre del cliente"
-                value={newClientData.name}
-                onChange={(e) => setNewClientData(prev => ({ ...prev, name: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label htmlFor="clientEmail">Email</Label>
-              <Input
-                id="clientEmail"
-                type="email"
-                placeholder="email@ejemplo.com"
-                value={newClientData.email}
-                onChange={(e) => setNewClientData(prev => ({ ...prev, email: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label htmlFor="clientPhone">Teléfono</Label>
-              <Input
-                id="clientPhone"
-                placeholder="(555) 123-4567"
-                value={newClientData.phone}
-                onChange={(e) => setNewClientData(prev => ({ ...prev, phone: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label htmlFor="clientAddress">Dirección</Label>
-              <Input
-                id="clientAddress"
-                placeholder="Dirección completa"
-                value={newClientData.address}
-                onChange={(e) => setNewClientData(prev => ({ ...prev, address: e.target.value }))}
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setShowAddClientDialog(false)}
-                className="flex-1"
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={handleAddNewClient}
-                disabled={!newClientData.name.trim()}
-                className="flex-1"
-              >
-                Agregar Cliente
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Add Material Dialog */}
-      <Dialog open={showAddMaterialDialog} onOpenChange={setShowAddMaterialDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Agregar Nuevo Material</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="materialName">Nombre del Material</Label>
-              <Input
-                id="materialName"
-                placeholder="Nombre del material"
-                value={newMaterialData.name}
-                onChange={(e) => setNewMaterialData(prev => ({ ...prev, name: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label htmlFor="materialCategory">Categoría</Label>
-              <Input
-                id="materialCategory"
-                placeholder="Categoría del material"
-                value={newMaterialData.category}
-                onChange={(e) => setNewMaterialData(prev => ({ ...prev, category: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label htmlFor="materialPrice">Precio</Label>
-              <Input
-                id="materialPrice"
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                value={newMaterialData.price}
-                onChange={(e) => setNewMaterialData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setShowAddMaterialDialog(false)}
-                className="flex-1"
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={handleAddNewMaterial}
-                disabled={!newMaterialData.name.trim()}
-                className="flex-1"
-              >
-                Agregar Material
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
