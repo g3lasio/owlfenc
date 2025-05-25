@@ -867,29 +867,63 @@ export default function EstimateGenerator() {
                 {clients.length === 0 ? 'No clients found' : 'No clients match your search'}
               </div>
             ) : (
-              <div className="space-y-2">
-                {filteredClients.map((client: ClientType) => (
-                  <div
-                    key={client.id}
-                    onClick={() => loadExistingClient(client)}
-                    className="p-4 border rounded-lg cursor-pointer hover:bg-muted transition-colors"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-medium">{client.name}</h4>
-                        <p className="text-sm text-muted-foreground">{client.email}</p>
-                        <p className="text-sm text-muted-foreground">{client.phone}</p>
-                        {client.address && (
-                          <p className="text-sm text-muted-foreground mt-1">{client.address}</p>
-                        )}
+              <>
+                <div className="space-y-2 max-h-[360px]">
+                  {/* Mostrar solo los primeros 3 clientes */}
+                  {filteredClients.slice(0, 3).map((client: ClientType) => (
+                    <div
+                      key={client.id}
+                      onClick={() => loadExistingClient(client)}
+                      className="p-4 border rounded-lg cursor-pointer hover:bg-muted transition-colors"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-medium">{client.name}</h4>
+                          <p className="text-sm text-muted-foreground">{client.email}</p>
+                          <p className="text-sm text-muted-foreground">{client.phone}</p>
+                          {client.address && (
+                            <p className="text-sm text-muted-foreground mt-1">{client.address}</p>
+                          )}
+                        </div>
+                        <Button size="sm" variant="ghost">
+                          Select
+                        </Button>
                       </div>
-                      <Button size="sm" variant="ghost">
-                        Select
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Mostrar indicador de más clientes si hay más de 3 */}
+                {filteredClients.length > 3 && (
+                  <div className="mt-3 text-center">
+                    <p className="text-sm text-muted-foreground mb-2">
+                      {filteredClients.length - 3} more clients available
+                    </p>
+                    <div className="flex justify-center gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          const dialog = document.querySelector('.overflow-y-auto');
+                          if (dialog) dialog.scrollTop = 0;
+                        }}
+                      >
+                        Ver desde el inicio
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          const dialog = document.querySelector('.overflow-y-auto');
+                          if (dialog) dialog.scrollTop = dialog.scrollHeight;
+                        }}
+                      >
+                        Ver más clientes
                       </Button>
                     </div>
                   </div>
-                ))}
-              </div>
+                )}
+              </>
             )}
           </div>
         </DialogContent>
