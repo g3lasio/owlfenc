@@ -706,28 +706,46 @@ export default function EstimatesWizardFixed() {
   // Save estimate to database
   const saveEstimate = async () => {
     try {
+      console.log('💾 Iniciando guardado del estimado...');
+      
+      // Asegurar que tenemos datos mínimos
+      if (!estimate.client || estimate.items.length === 0) {
+        toast({
+          title: '⚠️ Datos Incompletos',
+          description: 'Necesitas seleccionar un cliente y agregar materiales',
+          variant: 'destructive',
+          duration: 3000
+        });
+        return null;
+      }
+
       const estimateData = {
-        estimateNumber: `EST-${Date.now()}`,
-        clientName: estimate.client?.name || '',
-        clientEmail: estimate.client?.email || '',
-        clientPhone: estimate.client?.phone || '',
-        clientAddress: estimate.client?.address || '',
-        projectType: 'fence', // Por ahora, se puede hacer dinámico después
-        projectDescription: estimate.projectDetails,
-        items: estimate.items.map(item => ({
+        clientName: estimate.client.name || '',
+        clientEmail: estimate.client.email || '',
+        clientPhone: estimate.client.phone || '',
+        clientAddress: estimate.client.address || 'Sin dirección',
+        projectType: 'fence',
+        projectSubtype: 'custom',
+        projectDescription: estimate.projectDetails || 'Proyecto de cerca personalizado',
+        scope: 'Instalación completa de cerca',
+        timeline: '2-3 semanas',
+        items: estimate.items.map((item, index) => ({
           name: item.name,
-          description: item.description,
+          description: item.description || item.name,
+          category: 'material' as const, // Campo requerido
           quantity: item.quantity,
-          unit: item.unit,
-          unitPrice: Math.round(item.price * 100), // Convertir a centavos
-          totalPrice: Math.round(item.total * 100)
+          unit: item.unit || 'unit',
+          unitPrice: Math.round(item.price * 100), // Centavos
+          totalPrice: Math.round(item.total * 100), // Centavos
+          sortOrder: index,
+          isOptional: false
         })),
-        subtotal: Math.round(estimate.subtotal * 100),
-        taxAmount: Math.round(estimate.tax * 100),
-        total: Math.round(estimate.total * 100),
-        htmlContent: generateEstimatePreview(),
-        status: 'draft'
+        taxRate: estimate.taxRate || 10,
+        notes: `Estimado generado el ${new Date().toLocaleDateString()}`,
+        internalNotes: `Cliente: ${estimate.client.name}, Total: $${estimate.total.toFixed(2)}`
       };
+
+      console.log('📤 Enviando datos al servidor:', estimateData);
 
       const response = await fetch('/api/estimates', {
         method: 'POST',
@@ -735,24 +753,27 @@ export default function EstimatesWizardFixed() {
         body: JSON.stringify(estimateData),
       });
 
+      const responseData = await response.json();
+
       if (response.ok) {
-        const savedEstimate = await response.json();
+        console.log('✅ Estimado guardado exitosamente:', responseData);
         toast({
           title: '💾 Estimado Guardado',
-          description: `Estimado ${savedEstimate.estimateNumber} guardado correctamente`,
+          description: `Estimado guardado correctamente en la base de datos`,
           duration: 3000
         });
-        return savedEstimate;
+        return responseData;
       } else {
-        throw new Error('Error al guardar el estimado');
+        console.error('❌ Error del servidor:', responseData);
+        throw new Error(responseData.error || 'Error al guardar el estimado');
       }
     } catch (error) {
-      console.error('Error saving estimate:', error);
+      console.error('❌ Error saving estimate:', error);
       toast({
         title: '❌ Error al Guardar',
-        description: 'No se pudo guardar el estimado',
+        description: 'No se pudo guardar el estimado. Revisa los datos e inténtalo de nuevo.',
         variant: 'destructive',
-        duration: 3000
+        duration: 5000
       });
       return null;
     }
