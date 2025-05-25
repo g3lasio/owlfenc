@@ -19,7 +19,8 @@ if (!process.env.FIREBASE_API_KEY || !process.env.FIREBASE_PROJECT_ID) {
 }
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Sincronizar planes con Stripe en segundo plano
 (async () => {
@@ -30,7 +31,6 @@ app.use(express.json());
     console.error('Error conectando con Stripe:', error);
   }
 })();
-app.use(express.urlencoded({ extended: false }));
 
 
 // Importar rutas de pagos
