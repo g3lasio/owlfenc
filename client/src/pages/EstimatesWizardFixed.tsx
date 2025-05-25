@@ -448,53 +448,102 @@ export default function EstimatesWizardFixed() {
       return '<p>Incomplete estimate data</p>';
     }
 
+    const estimateNumber = `EST-${Date.now()}`;
+    const estimateDate = new Date().toLocaleDateString();
+
     const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
-        <h1 style="color: #2563eb; text-align: center;">Estimate</h1>
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
         
-        <div style="margin-bottom: 30px;">
-          <h2>Client Information</h2>
-          <p><strong>Name:</strong> ${estimate.client.name}</p>
-          <p><strong>Email:</strong> ${estimate.client.email || 'N/A'}</p>
-          <p><strong>Phone:</strong> ${estimate.client.phone || 'N/A'}</p>
-          <p><strong>Address:</strong> ${estimate.client.address || 'N/A'}</p>
+        <!-- Header with Company Info and Logo -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px;">
+          <div style="flex: 1;">
+            ${contractor?.logo ? `
+              <img src="${contractor.logo}" alt="Company Logo" style="max-width: 120px; max-height: 80px; margin-bottom: 10px;" />
+            ` : ''}
+            <h2 style="margin: 0; color: #2563eb; font-size: 1.5em;">${contractor?.companyName || 'Your Company'}</h2>
+            <p style="margin: 5px 0; color: #666;">
+              ${contractor?.address || ''}<br>
+              ${contractor?.city ? `${contractor.city}, ` : ''}${contractor?.state || ''} ${contractor?.zipCode || ''}<br>
+              ${contractor?.phone || ''}<br>
+              ${contractor?.email || ''}
+            </p>
+            ${contractor?.website ? `<p style="margin: 5px 0; color: #2563eb;">${contractor.website}</p>` : ''}
+            ${contractor?.license ? `<p style="margin: 5px 0; font-size: 0.9em; color: #666;">License: ${contractor.license}</p>` : ''}
+          </div>
+          
+          <div style="text-align: right;">
+            <h1 style="margin: 0; color: #2563eb; font-size: 2.2em;">ESTIMATE</h1>
+            <p style="margin: 10px 0; font-size: 1.1em;"><strong>Estimate #:</strong> ${estimateNumber}</p>
+            <p style="margin: 5px 0;"><strong>Date:</strong> ${estimateDate}</p>
+          </div>
+        </div>
+        
+        <!-- Client Information -->
+        <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
+          <div style="flex: 1; padding-right: 20px;">
+            <h3 style="color: #2563eb; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">Bill To:</h3>
+            <p style="margin: 5px 0; font-size: 1.1em;"><strong>${estimate.client.name}</strong></p>
+            <p style="margin: 5px 0;">${estimate.client.email || ''}</p>
+            <p style="margin: 5px 0;">${estimate.client.phone || ''}</p>
+            <p style="margin: 5px 0;">${estimate.client.address || ''}</p>
+            <p style="margin: 5px 0;">${estimate.client.city ? `${estimate.client.city}, ` : ''}${estimate.client.state || ''} ${estimate.client.zipCode || ''}</p>
+          </div>
         </div>
 
+        <!-- Project Details -->
         <div style="margin-bottom: 30px;">
-          <h2>Project Details</h2>
-          <div style="background: #f8fafc; padding: 15px; border-radius: 8px;">
+          <h3 style="color: #2563eb; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">Project Details</h3>
+          <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #2563eb; line-height: 1.6;">
             ${estimate.projectDetails.replace(/\n/g, '<br>')}
           </div>
         </div>
 
+        <!-- Materials & Labor -->
         <div style="margin-bottom: 30px;">
-          <h2>Materials & Labor</h2>
-          <table style="width: 100%; border-collapse: collapse;">
+          <h3 style="color: #2563eb; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">Materials & Labor</h3>
+          <table style="width: 100%; border-collapse: collapse; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
             <thead>
-              <tr style="background: #f1f5f9;">
-                <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Item</th>
-                <th style="border: 1px solid #ddd; padding: 10px; text-align: center;">Qty</th>
-                <th style="border: 1px solid #ddd; padding: 10px; text-align: right;">Unit Price</th>
-                <th style="border: 1px solid #ddd; padding: 10px; text-align: right;">Total</th>
+              <tr style="background: #2563eb; color: white;">
+                <th style="border: 1px solid #2563eb; padding: 12px; text-align: left; font-weight: bold;">Description</th>
+                <th style="border: 1px solid #2563eb; padding: 12px; text-align: center; font-weight: bold;">Qty</th>
+                <th style="border: 1px solid #2563eb; padding: 12px; text-align: right; font-weight: bold;">Unit Price</th>
+                <th style="border: 1px solid #2563eb; padding: 12px; text-align: right; font-weight: bold;">Total</th>
               </tr>
             </thead>
             <tbody>
-              ${estimate.items.map(item => `
-                <tr>
-                  <td style="border: 1px solid #ddd; padding: 10px;">${item.name}</td>
-                  <td style="border: 1px solid #ddd; padding: 10px; text-align: center;">${item.quantity} ${item.unit}</td>
-                  <td style="border: 1px solid #ddd; padding: 10px; text-align: right;">$${item.price.toFixed(2)}</td>
-                  <td style="border: 1px solid #ddd; padding: 10px; text-align: right;">$${item.total.toFixed(2)}</td>
+              ${estimate.items.map((item, index) => `
+                <tr style="background: ${index % 2 === 0 ? '#f8fafc' : '#ffffff'};">
+                  <td style="border: 1px solid #ddd; padding: 12px;">${item.name}${item.description ? `<br><small style="color: #666;">${item.description}</small>` : ''}</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; text-align: center;">${item.quantity} ${item.unit}</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; text-align: right;">$${item.price.toFixed(2)}</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; text-align: right; font-weight: bold;">$${item.total.toFixed(2)}</td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
         </div>
 
-        <div style="text-align: right; margin-top: 20px;">
-          <p><strong>Subtotal: $${estimate.subtotal.toFixed(2)}</strong></p>
-          <p><strong>Tax (16%): $${estimate.tax.toFixed(2)}</strong></p>
-          <p style="font-size: 1.2em; color: #2563eb;"><strong>Total: $${estimate.total.toFixed(2)}</strong></p>
+        <!-- Totals -->
+        <div style="text-align: right; margin-top: 30px; background: #f8fafc; padding: 20px; border-radius: 8px; border: 2px solid #e5e7eb;">
+          <div style="margin-bottom: 10px; font-size: 1.1em;">
+            <span style="margin-right: 20px;"><strong>Subtotal:</strong></span>
+            <span style="font-weight: bold;">$${estimate.subtotal.toFixed(2)}</span>
+          </div>
+          <div style="margin-bottom: 15px; font-size: 1.1em;">
+            <span style="margin-right: 20px;"><strong>Tax (16%):</strong></span>
+            <span style="font-weight: bold;">$${estimate.tax.toFixed(2)}</span>
+          </div>
+          <div style="border-top: 2px solid #2563eb; padding-top: 15px; font-size: 1.3em; color: #2563eb;">
+            <span style="margin-right: 20px;"><strong>TOTAL:</strong></span>
+            <span style="font-weight: bold; font-size: 1.2em;">$${estimate.total.toFixed(2)}</span>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #e5e7eb; text-align: center; color: #666; font-size: 0.9em;">
+          <p style="margin: 10px 0;"><strong>This estimate is valid for 30 days from the date shown above.</strong></p>
+          <p style="margin: 10px 0;">Thank you for considering ${contractor?.companyName || 'our company'} for your project!</p>
+          ${contractor?.insurancePolicy ? `<p style="margin: 5px 0;">Fully Insured - Policy #: ${contractor.insurancePolicy}</p>` : ''}
         </div>
       </div>
     `;
