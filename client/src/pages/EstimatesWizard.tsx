@@ -575,18 +575,18 @@ export default function EstimatesWizardFixed() {
         <!-- Header with Company Info and Logo -->
         <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px;">
           <div style="flex: 1;">
-            ${contractor?.logo ? `
-              <img src="${contractor.logo}" alt="Company Logo" style="max-width: 120px; max-height: 80px; margin-bottom: 10px;" />
+            ${profile?.logo ? `
+              <img src="${profile.logo}" alt="Company Logo" style="max-width: 120px; max-height: 80px; margin-bottom: 10px;" />
             ` : ''}
-            <h2 style="margin: 0; color: #2563eb; font-size: 1.5em;">${contractor?.companyName || 'Your Company'}</h2>
+            <h2 style="margin: 0; color: #2563eb; font-size: 1.5em;">${profile?.companyName || 'Your Company'}</h2>
             <p style="margin: 5px 0; color: #666;">
-              ${contractor?.address || ''}<br>
-              ${contractor?.city ? `${contractor.city}, ` : ''}${contractor?.state || ''} ${contractor?.zipCode || ''}<br>
-              ${contractor?.phone || ''}<br>
-              ${contractor?.email || ''}
+              ${profile?.address || ''}<br>
+              ${profile?.city ? `${profile.city}, ` : ''}${profile?.state || ''} ${profile?.zipCode || ''}<br>
+              ${profile?.phone || ''}<br>
+              ${profile?.email || ''}
             </p>
-            ${contractor?.website ? `<p style="margin: 5px 0; color: #2563eb;">${contractor.website}</p>` : ''}
-            ${contractor?.license ? `<p style="margin: 5px 0; font-size: 0.9em; color: #666;">License: ${contractor.license}</p>` : ''}
+            ${profile?.website ? `<p style="margin: 5px 0; color: #2563eb;">${profile.website}</p>` : ''}
+            ${profile?.license ? `<p style="margin: 5px 0; font-size: 0.9em; color: #666;">License: ${profile.license}</p>` : ''}
           </div>
           
           <div style="text-align: right;">
@@ -668,8 +668,8 @@ export default function EstimatesWizardFixed() {
         <!-- Footer -->
         <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #e5e7eb; text-align: center; color: #666; font-size: 0.9em;">
           <p style="margin: 10px 0;"><strong>This estimate is valid for 30 days from the date shown above.</strong></p>
-          <p style="margin: 10px 0;">Thank you for considering ${contractor?.companyName || 'our company'} for your project!</p>
-          ${contractor?.insurancePolicy ? `<p style="margin: 5px 0;">Fully Insured - Policy #: ${contractor.insurancePolicy}</p>` : ''}
+          <p style="margin: 10px 0;">Thank you for considering ${profile?.companyName || 'our company'} for your project!</p>
+          ${profile?.insurancePolicy ? `<p style="margin: 5px 0;">Fully Insured - Policy #: ${profile.insurancePolicy}</p>` : ''}
         </div>
       </div>
     `;
