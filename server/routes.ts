@@ -321,6 +321,8 @@ Create a comprehensive professional description with:
 Output in English regardless of input language. Make it suitable for contracts and estimates.`;
 
       // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      let enhancedDescription: string;
+      
       try {
         const response = await openai.chat.completions.create({
           model: "gpt-4o",
@@ -336,23 +338,24 @@ Output in English regardless of input language. Make it suitable for contracts a
           throw new Error('Invalid OpenAI response format');
         }
 
-        const enhancedDescription = response.choices[0].message.content;
+        enhancedDescription = response.choices[0].message.content;
 
         console.log('✅ OpenAI enhancement completed successfully');
         console.log('📏 Enhanced description length:', enhancedDescription.length);
+        
+        res.json({ 
+          enhancedDescription: enhancedDescription,
+          originalText: text,
+          success: true
+        });
+        
       } catch (openAiError) {
         console.error('❌ Error during OpenAI processing:', openAiError);
-        return res.status(500).json({ 
+        res.status(500).json({ 
           error: 'Failed to process with AI service', 
           message: openAiError.message || 'Unknown AI processing error'
         });
       }
-
-      res.json({ 
-        enhancedDescription,
-        originalText: text,
-        success: true
-      });
 
     } catch (error: any) {
       console.error('❌ Error in AI enhancement:', error);
