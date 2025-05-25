@@ -5,6 +5,7 @@
 import puppeteer from 'puppeteer';
 import path from 'path';
 import fs from 'fs';
+import { PDFDocument, rgb } from 'pdf-lib';
 
 /**
  * Genera un PDF a partir de contenido HTML
@@ -12,6 +13,76 @@ import fs from 'fs';
  * @param options Opciones adicionales para la generación del PDF
  * @returns Buffer con el contenido del PDF generado
  */
+/**
+ * Función alternativa para generar PDF usando pdf-lib cuando Puppeteer falla
+ */
+async function generateFallbackPDF(html: string): Promise<Buffer> {
+  console.log('Usando generación de PDF alternativa...');
+  
+  // Extraer texto del HTML
+  const textContent = html
+    .replace(/<style[^>]*>.*?<\/style>/gi, '')
+    .replace(/<script[^>]*>.*?<\/script>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Crear un nuevo documento PDF
+  const pdfDoc = await PDFDocument.create();
+  const page = pdfDoc.addPage([612, 792]); // Tamaño Letter
+  
+  // Configurar fuente y tamaño
+  const fontSize = 12;
+  const lineHeight = 16;
+  const margin = 50;
+  const pageWidth = page.getWidth() - (margin * 2);
+  
+  // Dividir texto en líneas que caben en la página
+  const words = textContent.split(' ');
+  const lines: string[] = [];
+  let currentLine = '';
+  
+  for (const word of words) {
+    const testLine = currentLine + (currentLine ? ' ' : '') + word;
+    if (testLine.length * 6 < pageWidth) { // Aproximación del ancho del texto
+      currentLine = testLine;
+    } else {
+      if (currentLine) lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+  if (currentLine) lines.push(currentLine);
+  
+  // Escribir texto en el PDF
+  let yPosition = page.getHeight() - margin;
+  
+  for (const line of lines) {
+    if (yPosition < margin + lineHeight) {
+      // Crear nueva página si es necesario
+      const newPage = pdfDoc.addPage([612, 792]);
+      yPosition = newPage.getHeight() - margin;
+      newPage.drawText(line, {
+        x: margin,
+        y: yPosition,
+        size: fontSize,
+        color: rgb(0, 0, 0),
+      });
+    } else {
+      page.drawText(line, {
+        x: margin,
+        y: yPosition,
+        size: fontSize,
+        color: rgb(0, 0, 0),
+      });
+    }
+    yPosition -= lineHeight;
+  }
+  
+  // Guardar el PDF
+  const pdfBytes = await pdfDoc.save();
+  return Buffer.from(pdfBytes);
+}
+
 export async function generatePDF(
   html: string, 
   options: {
@@ -88,8 +159,15 @@ export async function generatePDF(
     
     return buffer;
   } catch (error) {
-    console.error('Error generando PDF:', error);
-    throw new Error(`Error al generar PDF: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+    console.error('Error con Puppeteer, usando método alternativo:', error);
+    
+    // Usar el método de respaldo con pdf-lib
+    try {
+      return await generateFallbackPDF(html);
+    } catch (fallbackError) {
+      console.error('Error en método de respaldo:', fallbackError);
+      throw new Error(`Error al generar PDF: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+    }
   } finally {
     // Asegurar que el navegador se cierre siempre
     if (browser) {
