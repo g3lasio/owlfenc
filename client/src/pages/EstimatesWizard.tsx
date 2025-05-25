@@ -465,6 +465,20 @@ export default function EstimatesWizardFixed() {
     }));
   };
 
+  // Update item price
+  const updateItemPrice = (itemId: string, newPrice: number) => {
+    if (newPrice < 0) return;
+    
+    setEstimate(prev => ({
+      ...prev,
+      items: prev.items.map(item =>
+        item.id === itemId
+          ? { ...item, price: newPrice, total: newPrice * item.quantity }
+          : item
+      )
+    }));
+  };
+
   // Remove item from estimate
   const removeItemFromEstimate = (itemId: string) => {
     setEstimate(prev => ({
