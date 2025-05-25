@@ -149,7 +149,8 @@ export default function EstimatesWizardFixed() {
     email: '',
     website: '',
     license: '',
-    insurancePolicy: ''
+    insurancePolicy: '',
+    logo: ''
   });
 
   // Load data on mount
@@ -186,7 +187,8 @@ export default function EstimatesWizardFixed() {
         email: contractor.email || '',
         website: contractor.website || '',
         license: contractor.license || '',
-        insurancePolicy: contractor.insurancePolicy || ''
+        insurancePolicy: contractor.insurancePolicy || '',
+        logo: contractor.logo || ''
       });
     }
   }, [contractor]);
@@ -974,7 +976,18 @@ export default function EstimatesWizardFixed() {
                       <div className="flex-1">
                         <h4 className="font-medium">{item.name}</h4>
                         <p className="text-sm text-muted-foreground">{item.description}</p>
-                        <p className="text-sm font-medium">${item.price.toFixed(2)} / {item.unit}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-sm">$</span>
+                          <Input
+                            type="number"
+                            value={item.price.toFixed(2)}
+                            onChange={(e) => updateItemPrice(item.id, parseFloat(e.target.value) || 0)}
+                            className="w-20 h-6 text-sm"
+                            step="0.01"
+                            min="0"
+                          />
+                          <span className="text-sm">/ {item.unit}</span>
+                        </div>
                       </div>
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-1">
@@ -986,7 +999,13 @@ export default function EstimatesWizardFixed() {
                           >
                             <Minus className="h-3 w-3" />
                           </Button>
-                          <span className="w-12 text-center">{item.quantity}</span>
+                          <Input
+                            type="number"
+                            value={item.quantity}
+                            onChange={(e) => updateItemQuantity(item.id, parseInt(e.target.value) || 1)}
+                            className="w-16 h-8 text-center"
+                            min="1"
+                          />
                           <Button
                             variant="outline"
                             size="sm"
@@ -1277,6 +1296,43 @@ export default function EstimatesWizardFixed() {
             </DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="logo">Logo de la Empresa</Label>
+                <div className="flex items-center gap-4">
+                  {editableCompany.logo && (
+                    <img 
+                      src={editableCompany.logo} 
+                      alt="Logo actual" 
+                      className="w-16 h-16 object-contain border rounded"
+                    />
+                  )}
+                  <Input
+                    id="logo"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                          setEditableCompany(prev => ({ 
+                            ...prev, 
+                            logo: event.target?.result as string 
+                          }));
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="flex-1"
+                  />
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Sube una imagen para el logo de tu empresa (PNG, JPG, etc.)
+                </p>
+              </div>
+            </div>
+            
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="companyName">Nombre de la Empresa</Label>
@@ -1399,14 +1455,15 @@ export default function EstimatesWizardFixed() {
                 email: editableCompany.email,
                 website: editableCompany.website,
                 license: editableCompany.license,
-                insurancePolicy: editableCompany.insurancePolicy
+                insurancePolicy: editableCompany.insurancePolicy,
+                logo: editableCompany.logo
               };
               setContractor(updatedContractor);
               setShowCompanyEditDialog(false);
               setPreviewHtml(''); // Forzar regeneración de la vista previa
               toast({
                 title: '✅ Información Actualizada',
-                description: 'Los cambios se aplicarán al estimado. Estos cambios son temporales para esta sesión.',
+                description: 'Los cambios se aplicarán al estimado. Logo y datos de empresa actualizados.',
               });
             }}>
               Guardar Cambios
