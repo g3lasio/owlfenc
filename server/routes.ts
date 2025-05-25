@@ -349,7 +349,7 @@ Output in English regardless of input language. Make it suitable for contracts a
       }
 
       res.json({ 
-        enhancedDescriptionancedDescription,
+        enhancedDescription,
         originalText: text,
         success: true
       });
