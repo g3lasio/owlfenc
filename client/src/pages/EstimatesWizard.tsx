@@ -28,7 +28,6 @@ import {
   Calculator,
   Building2,
   UserPlus,
-  Brain,
   Minus,
   Download,
   RefreshCw,

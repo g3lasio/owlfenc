@@ -45,6 +45,7 @@ import paymentRoutes from './routes/payment-routes'; // Import payment routes
 import estimatesRoutes from './routes/estimates'; // Import new estimates routes
 import { setupTemplatesRoutes } from './routes/templates';
 import { aiEnhancementRoutes } from './routes/aiEnhancementRoutes'; // Import new AI enhancement routes
+import { registerDeepSearchRoutes } from './routes/deepSearchRoutes'; // Import DeepSearch AI routes
 import express from 'express'; // Import express to use express.raw
 
 // Initialize OpenAI API
@@ -2580,6 +2581,9 @@ Output in English regardless of input language. Make it suitable for contracts a
       });
     }
   });
+
+  // Registrar rutas del módulo DeepSearch IA
+  registerDeepSearchRoutes(app);
 
   // Crear y retornar el servidor HTTP
   const server = createServer(app);
