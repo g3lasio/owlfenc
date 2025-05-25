@@ -767,7 +767,7 @@ export default function EstimatesWizardFixed() {
                   placeholder="Describe los detalles completos del proyecto:&#10;&#10;• Alcance del trabajo y especificaciones técnicas&#10;• Cronograma y tiempo estimado&#10;• Proceso paso a paso del trabajo&#10;• Qué está incluido en el precio&#10;• Qué NO está incluido&#10;• Notas adicionales, términos especiales, condiciones..."
                   value={estimate.projectDetails}
                   onChange={(e) => setEstimate(prev => ({ ...prev, projectDetails: e.target.value }))}
-                  className="min-h-[300px] text-sm"
+                  className="min-h-[120px] text-sm"
                 />
                 <div className="flex items-start gap-2 mt-2 p-3 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
                   <Brain className="h-4 w-4 text-purple-600 mt-0.5 flex-shrink-0" />
