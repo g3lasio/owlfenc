@@ -361,7 +361,8 @@ export default function EstimatesWizardFixed() {
     setEstimate(prev => ({ ...prev, client }));
     toast({
       title: 'Client Selected',
-      description: `${client.name} has been added to the estimate`
+      description: `${client.name} has been added to the estimate`,
+      duration: 3000
     });
   };
 
@@ -494,7 +495,8 @@ export default function EstimatesWizardFixed() {
     
     toast({
       title: 'Material Removed',
-      description: 'The material has been removed from the estimate'
+      description: 'The material has been removed from the estimate',
+      duration: 3000
     });
   };
 
@@ -644,7 +646,8 @@ export default function EstimatesWizardFixed() {
         const savedEstimate = await response.json();
         toast({
           title: '💾 Estimado Guardado',
-          description: `Estimado ${savedEstimate.estimateNumber} guardado correctamente`
+          description: `Estimado ${savedEstimate.estimateNumber} guardado correctamente`,
+          duration: 3000
         });
         return savedEstimate;
       } else {
@@ -655,7 +658,8 @@ export default function EstimatesWizardFixed() {
       toast({
         title: '❌ Error al Guardar',
         description: 'No se pudo guardar el estimado',
-        variant: 'destructive'
+        variant: 'destructive',
+        duration: 3000
       });
       return null;
     }
@@ -675,7 +679,8 @@ export default function EstimatesWizardFixed() {
       toast({
         title: '❌ Error',
         description: 'No se pudieron cargar los estimados guardados',
-        variant: 'destructive'
+        variant: 'destructive',
+        duration: 3000
       });
     } finally {
       setIsLoadingEstimates(false);
