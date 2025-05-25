@@ -1322,10 +1322,22 @@ export default function EstimatesWizardFixed() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Crear Nuevo Estimado</h1>
-        <p className="text-muted-foreground">
-          Sigue los pasos para crear un estimado profesional para tu cliente
-        </p>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Crear Nuevo Estimado</h1>
+            <p className="text-muted-foreground">
+              Sigue los pasos para crear un estimado profesional para tu cliente
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => setShowEstimatesHistory(true)}
+            className="border-blue-300 text-blue-600 hover:bg-blue-50"
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Mis Estimados
+          </Button>
+        </div>
       </div>
 
       {/* Progress Steps */}
