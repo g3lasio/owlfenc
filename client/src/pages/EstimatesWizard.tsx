@@ -162,6 +162,7 @@ export default function EstimatesWizardFixed() {
   
   // Email dialog states
   const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [emailData, setEmailData] = useState({
     toEmail: '',
     subject: '',
@@ -1557,14 +1558,13 @@ export default function EstimatesWizardFixed() {
                       <span className="hidden sm:inline">Actualizar</span> Vista
                     </Button>
                     <Button
-                      variant="outline"
-                      onClick={() => setShowEmailDialog(true)}
-                      disabled={!estimate.client || estimate.items.length === 0 || !previewHtml}
-                      className="border-blue-300 text-blue-600 hover:bg-blue-50 flex-1 text-xs"
+                      onClick={() => setShowPreview(true)}
+                      disabled={!estimate.client || estimate.items.length === 0}
+                      className="bg-blue-600 hover:bg-blue-700 text-white flex-1 text-xs"
                       size="sm"
                     >
-                      <Mail className="h-3 w-3 mr-1" />
-                      Enviar Email
+                      <Eye className="h-3 w-3 mr-1" />
+                      Preview & Send
                     </Button>
                     <Button
                       onClick={downloadPDF}
@@ -2112,6 +2112,200 @@ export default function EstimatesWizardFixed() {
               <Plus className="h-4 w-4 mr-2" />
               Crear Nuevo Estimado
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Complete PDF Preview Dialog */}
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto">
+          <DialogHeader className="border-b border-gray-200 pb-4">
+            <DialogTitle className="flex items-center gap-3 text-xl">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Eye className="h-6 w-6 text-blue-600" />
+              </div>
+              Professional Estimate Preview
+            </DialogTitle>
+            <DialogDescription className="text-gray-600 mt-2">
+              Complete preview of your professional estimate as it will appear in the PDF
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 py-4">
+            {/* Complete PDF Preview */}
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              <div 
+                className="p-8 bg-white"
+                style={{ 
+                  fontFamily: 'Arial, sans-serif',
+                  lineHeight: '1.6',
+                  color: '#333'
+                }}
+              >
+                {/* Header with Company Logo and Info */}
+                <div className="flex justify-between items-start mb-8">
+                  <div className="flex items-center gap-4">
+                    <img 
+                      src={mervinLogoUrl} 
+                      alt="Company Logo" 
+                      className="h-16 w-16 object-contain"
+                    />
+                    <div>
+                      <h1 className="text-2xl font-bold text-blue-900">{profile?.companyName || 'Your Company'}</h1>
+                      <p className="text-gray-600">{profile?.address || 'Company Address'}</p>
+                      <p className="text-gray-600">{profile?.city}, {profile?.state} {profile?.zipCode}</p>
+                      <p className="text-gray-600">Phone: {profile?.phone || 'Phone Number'}</p>
+                      <p className="text-gray-600">Email: {profile?.email || 'Email Address'}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <h2 className="text-xl font-bold text-gray-800">PROFESSIONAL ESTIMATE</h2>
+                    <p className="text-gray-600">Date: {new Date().toLocaleDateString()}</p>
+                    <p className="text-gray-600">Estimate #: EST-{new Date().getFullYear()}-{String(Date.now()).slice(-4)}</p>
+                  </div>
+                </div>
+
+                {/* Client Information */}
+                <div className="mb-8 p-4 bg-gray-50 rounded-lg">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-800">Bill To:</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="font-medium">{estimate.client?.name || 'Client Name'}</p>
+                      <p className="text-gray-600">{estimate.client?.address || 'Client Address'}</p>
+                      <p className="text-gray-600">{estimate.client?.city}, {estimate.client?.state} {estimate.client?.zipCode}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">Phone: {estimate.client?.phone || 'Phone Number'}</p>
+                      <p className="text-gray-600">Email: {estimate.client?.email || 'Email Address'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Project Details */}
+                {estimate.projectDetails && (
+                  <div className="mb-8">
+                    <h3 className="text-lg font-semibold mb-3 text-gray-800">Project Description:</h3>
+                    <p className="text-gray-700 bg-blue-50 p-4 rounded-lg">{estimate.projectDetails}</p>
+                  </div>
+                )}
+
+                {/* Items Table */}
+                <div className="mb-8">
+                  <h3 className="text-lg font-semibold mb-4 text-gray-800">Items & Services:</h3>
+                  <table className="w-full border-collapse border border-gray-300">
+                    <thead>
+                      <tr className="bg-blue-600 text-white">
+                        <th className="border border-gray-300 p-3 text-left">Description</th>
+                        <th className="border border-gray-300 p-3 text-center">Quantity</th>
+                        <th className="border border-gray-300 p-3 text-center">Unit</th>
+                        <th className="border border-gray-300 p-3 text-right">Unit Price</th>
+                        <th className="border border-gray-300 p-3 text-right">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {estimate.items.map((item, index) => (
+                        <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                          <td className="border border-gray-300 p-3">
+                            <div>
+                              <div className="font-medium">{item.name}</div>
+                              {item.description && (
+                                <div className="text-sm text-gray-600 mt-1">{item.description}</div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="border border-gray-300 p-3 text-center">{item.quantity}</td>
+                          <td className="border border-gray-300 p-3 text-center">{item.unit}</td>
+                          <td className="border border-gray-300 p-3 text-right">${item.price.toFixed(2)}</td>
+                          <td className="border border-gray-300 p-3 text-right font-medium">${item.total.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Totals Section */}
+                <div className="mb-8">
+                  <div className="flex justify-end">
+                    <div className="w-80">
+                      <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-gray-700">Subtotal:</span>
+                          <span className="font-medium">${estimate.subtotal.toFixed(2)}</span>
+                        </div>
+                        
+                        {estimate.discountAmount > 0 && (
+                          <div className="flex justify-between text-green-600">
+                            <span>Discount ({estimate.discountName || 'Discount'}):</span>
+                            <span>-${estimate.discountAmount.toFixed(2)}</span>
+                          </div>
+                        )}
+                        
+                        <div className="flex justify-between">
+                          <span className="text-gray-700">Tax ({estimate.taxRate}%):</span>
+                          <span className="font-medium">${estimate.tax.toFixed(2)}</span>
+                        </div>
+                        
+                        <div className="border-t border-gray-300 pt-2">
+                          <div className="flex justify-between text-lg font-bold text-blue-900">
+                            <span>Total:</span>
+                            <span>${estimate.total.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Terms and Conditions */}
+                <div className="mb-8">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-800">Terms & Conditions:</h3>
+                  <div className="text-sm text-gray-700 space-y-2 bg-gray-50 p-4 rounded-lg">
+                    <p>• This estimate is valid for 30 days from the date issued.</p>
+                    <p>• A 50% deposit is required to begin work.</p>
+                    <p>• Final payment is due upon completion of the project.</p>
+                    <p>• All materials and workmanship are guaranteed for one year.</p>
+                    <p>• Changes to the scope of work may affect the final price.</p>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="text-center pt-6 border-t border-gray-300">
+                  <p className="text-gray-600">Thank you for choosing {profile?.companyName || 'our services'}!</p>
+                  <p className="text-sm text-gray-500 mt-2">
+                    For questions about this estimate, please contact us at {profile?.phone || 'phone'} or {profile?.email || 'email'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="border-t border-gray-200 pt-4 flex justify-between">
+            <Button variant="outline" onClick={() => setShowPreview(false)} className="flex items-center gap-2">
+              <X className="h-4 w-4" />
+              Close Preview
+            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  setShowPreview(false);
+                  setShowEmailDialog(true);
+                }}
+                disabled={!estimate.client?.email}
+                className="flex items-center gap-2 border-blue-300 text-blue-600 hover:bg-blue-50"
+              >
+                <Mail className="h-4 w-4" />
+                Send Email
+              </Button>
+              <Button 
+                onClick={downloadPDF}
+                disabled={!estimate.client || estimate.items.length === 0}
+                className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Download PDF
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
