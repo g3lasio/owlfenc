@@ -75,12 +75,7 @@ interface EstimateItem {
 interface EstimateData {
   client: Client | null;
   items: EstimateItem[];
-  notes: string;
-  scope: string;
-  timeline: string;
-  process: string;
-  includes: string;
-  excludes: string;
+  projectDetails: string;
   subtotal: number;
   tax: number;
   total: number;
@@ -101,12 +96,7 @@ export default function EstimatesWizard() {
   const [estimate, setEstimate] = useState<EstimateData>({
     client: null,
     items: [],
-    notes: '',
-    scope: '',
-    timeline: '',
-    process: '',
-    includes: '',
-    excludes: '',
+    projectDetails: '',
     subtotal: 0,
     tax: 0,
     total: 0
@@ -225,7 +215,6 @@ export default function EstimatesWizard() {
 
   // AI enhancement states
   const [isAIProcessing, setIsAIProcessing] = useState(false);
-  const [projectDescription, setProjectDescription] = useState('');
 
   // Load data on mount
   useEffect(() => {
@@ -438,12 +427,12 @@ export default function EstimatesWizard() {
     }
   };
 
-  // AI Enhancement Functions
-  const enhanceProjectWithAI = async (field: string) => {
-    if (!projectDescription.trim()) {
+  // AI Enhancement Function - Simplified for single field
+  const enhanceProjectWithAI = async () => {
+    if (!estimate.projectDetails.trim()) {
       toast({
-        title: 'Description Required',
-        description: 'Please briefly describe your project to use AI',
+        title: 'Descripción Requerida',
+        description: 'Por favor describe tu proyecto para usar Mervin AI',
         variant: 'destructive'
       });
       return;
@@ -452,87 +441,43 @@ export default function EstimatesWizard() {
     setIsAIProcessing(true);
     
     try {
-      // Analyze project context
-      const projectContext = {
-        description: projectDescription,
-        client: estimate.client?.name || 'Client',
-        materials: estimate.items.map(item => `${item.name} (${item.quantity} ${item.unit})`).join(', '),
-        totalValue: estimate.total
-      };
+      console.log('🤖 Starting Mervin AI enhancement...');
+      
+      const response = await fetch('/api/ai-enhance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          originalText: estimate.projectDetails,
+          projectType: 'construction estimate'
+        }),
+      });
 
-      if (field === 'all') {
-        // Process all fields at once
-        const fields = ['scope', 'timeline', 'process', 'includes', 'excludes', 'notes'];
-        const allPromises = fields.map(async (f) => {
-          const prompt = generateAIPrompt(f, projectContext);
-          const response = await fetch('/api/ai/enhance-project', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt, field: f, context: projectContext }),
-          });
-          
-          if (!response.ok) throw new Error(`Error processing ${f}`);
-          const result = await response.json();
-          return { field: f, content: result.content };
-        });
-
-        const results = await Promise.all(allPromises);
-        
-        // Update all fields at once
-        const updates = results.reduce((acc, { field: f, content }) => {
-          acc[f] = content;
-          return acc;
-        }, {} as any);
-        
-        setEstimate(prev => ({ ...prev, ...updates }));
+      if (!response.ok) {
+        throw new Error('Error al procesar con Mervin AI');
+      }
+      
+      const result = await response.json();
+      console.log('✅ Mervin AI Response:', result);
+      
+      if (result.enhancedDescription) {
+        setEstimate(prev => ({ 
+          ...prev, 
+          projectDetails: result.enhancedDescription 
+        }));
         
         toast({
-          title: '🚀 Project completed with AI!',
-          description: 'All fields have been filled professionally'
+          title: '✨ Mejorado con Mervin AI',
+          description: 'La descripción del proyecto ha sido mejorada profesionalmente'
         });
       } else {
-        // Process single field
-        const prompt = generateAIPrompt(field, projectContext);
-        
-        const response = await fetch('/api/ai/enhance-project', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt, field, context: projectContext }),
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('❌ API Error Response:', errorText);
-          throw new Error('Error processing with AI');
-        }
-        
-        const result = await response.json();
-        console.log('✅ Full AI Response:', result);
-        console.log('🔍 Enhanced Content:', result.enhancedContent);
-        console.log('🔍 Success Status:', result.success);
-        
-        if (!result.success) {
-          throw new Error(result.error || 'AI processing failed');
-        }
-        
-        if (!result.enhancedContent) {
-          console.error('❌ No enhanced content in response:', result);
-          throw new Error('No content generated');
-        }
-        
-        setEstimate(prev => ({ ...prev, [field]: result.enhancedContent }));
-        
-        toast({
-          title: '✨ Completed with AI',
-          description: `The "${getFieldDisplayName(field)}" field has been enhanced with AI`
-        });
+        throw new Error('No se pudo generar contenido mejorado');
       }
       
     } catch (error) {
       console.error('Error enhancing with AI:', error);
       toast({
         title: 'Error',
-        description: 'Could not process with AI. Please try again.',
+        description: 'No se pudo procesar con Mervin AI. Inténtalo de nuevo.',
         variant: 'destructive'
       });
     } finally {
@@ -540,29 +485,122 @@ export default function EstimatesWizard() {
     }
   };
 
-  const generateAIPrompt = (field: string, context: any) => {
-    const basePrompt = `Actúa como un contratista profesional experto creando un estimado para: ${context.description}
+  // Add material to estimate
+  const addMaterialToEstimate = (material: Material) => {
+    const estimateItem: EstimateItem = {
+      id: `item-${Date.now()}`,
+      materialId: material.id,
+      name: material.name,
+      description: material.description || '',
+      quantity: 1,
+      price: material.price,
+      unit: material.unit || 'unit',
+      total: material.price * 1
+    };
+
+    setEstimate(prev => ({
+      ...prev,
+      items: [...prev.items, estimateItem]
+    }));
+
+    setShowMaterialDialog(false);
     
-Cliente: ${context.client}
-Materiales seleccionados: ${context.materials || 'No especificados'}
-Valor del proyecto: $${context.totalValue}
+    toast({
+      title: 'Material Added',
+      description: `${material.name} has been added to the estimate`
+    });
+  };
 
-Genera contenido profesional y específico para el campo "${getFieldDisplayName(field)}" en español.`;
+  // Update item quantity
+  const updateItemQuantity = (itemId: string, newQuantity: number) => {
+    if (newQuantity <= 0) return;
+    
+    setEstimate(prev => ({
+      ...prev,
+      items: prev.items.map(item =>
+        item.id === itemId
+          ? { ...item, quantity: newQuantity, total: item.price * newQuantity }
+          : item
+      )
+    }));
+  };
 
-    switch (field) {
-      case 'scope':
-        return `${basePrompt}
+  // Remove item from estimate
+  const removeItemFromEstimate = (itemId: string) => {
+    setEstimate(prev => ({
+      ...prev,
+      items: prev.items.filter(item => item.id !== itemId)
+    }));
+    
+    toast({
+      title: 'Material Removed',
+      description: 'The material has been removed from the estimate'
+    });
+  };
 
-Crea un alcance de trabajo detallado que incluya:
-- Análisis de la situación actual
-- Trabajos de preparación necesarios
-- Proceso de instalación/construcción principal
-- Acabados y detalles finales
-- Estándares de calidad a seguir
+  // Generate estimate preview
+  const generateEstimatePreview = () => {
+    if (!estimate.client || estimate.items.length === 0) {
+      return '<p>Incomplete estimate data</p>';
+    }
 
-Formato: Párrafos claros y profesionales (máximo 200 palabras).`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #2563eb; text-align: center;">Estimate</h1>
+        
+        <div style="margin-bottom: 30px;">
+          <h2>Client Information</h2>
+          <p><strong>Name:</strong> ${estimate.client.name}</p>
+          <p><strong>Email:</strong> ${estimate.client.email || 'N/A'}</p>
+          <p><strong>Phone:</strong> ${estimate.client.phone || 'N/A'}</p>
+          <p><strong>Address:</strong> ${estimate.client.address || 'N/A'}</p>
+        </div>
 
-      case 'timeline':
+        <div style="margin-bottom: 30px;">
+          <h2>Project Details</h2>
+          <div style="background: #f8fafc; padding: 15px; border-radius: 8px;">
+            ${estimate.projectDetails.replace(/\n/g, '<br>')}
+          </div>
+        </div>
+
+        <div style="margin-bottom: 30px;">
+          <h2>Materials & Labor</h2>
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background: #f1f5f9;">
+                <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Item</th>
+                <th style="border: 1px solid #ddd; padding: 10px; text-align: center;">Qty</th>
+                <th style="border: 1px solid #ddd; padding: 10px; text-align: right;">Unit Price</th>
+                <th style="border: 1px solid #ddd; padding: 10px; text-align: right;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${estimate.items.map(item => `
+                <tr>
+                  <td style="border: 1px solid #ddd; padding: 10px;">${item.name}</td>
+                  <td style="border: 1px solid #ddd; padding: 10px; text-align: center;">${item.quantity} ${item.unit}</td>
+                  <td style="border: 1px solid #ddd; padding: 10px; text-align: right;">$${item.price.toFixed(2)}</td>
+                  <td style="border: 1px solid #ddd; padding: 10px; text-align: right;">$${item.total.toFixed(2)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        <div style="text-align: right; margin-top: 20px;">
+          <p><strong>Subtotal: $${estimate.subtotal.toFixed(2)}</strong></p>
+          <p><strong>Tax (16%): $${estimate.tax.toFixed(2)}</strong></p>
+          <p style="font-size: 1.2em; color: #2563eb;"><strong>Total: $${estimate.total.toFixed(2)}</strong></p>
+        </div>
+      </div>
+    `;
+    
+    setPreviewHtml(html);
+    return html;
+  };
+
+  // Download PDF
+  const downloadPDF = async () => {
         return `${basePrompt}
 
 Estima un tiempo realista considerando:
@@ -1162,182 +1200,44 @@ Formato: Párrafos informativos (máximo 120 palabras).`;
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* AI Project Description Input */}
-              <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Brain className="h-5 w-5 text-purple-600" />
-                  <Label className="text-purple-800 font-medium">
-                    Descripción del Proyecto para IA
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <Label htmlFor="projectDetails" className="text-base font-medium flex items-center gap-2">
+                    <Building2 className="h-4 w-4" />
+                    Project Details
                   </Label>
-                </div>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Describe brevemente tu proyecto (ej: Instalación de cerca perimetral de 100 metros)"
-                    value={projectDescription}
-                    onChange={(e) => setProjectDescription(e.target.value)}
-                    className="flex-1"
-                  />
                   <Button
-                    variant="outline"
+                    onClick={enhanceProjectWithAI}
+                    disabled={isAIProcessing || !estimate.projectDetails.trim()}
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
                     size="sm"
-                    onClick={() => enhanceProjectWithAI('all')}
-                    disabled={isAIProcessing || !projectDescription.trim()}
-                    className="whitespace-nowrap bg-gradient-to-r from-purple-600 to-blue-600 text-white border-0 hover:from-purple-700 hover:to-blue-700"
                   >
                     {isAIProcessing ? (
                       <>
-                        <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2" />
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                         Procesando...
                       </>
                     ) : (
                       <>
-                        <Sparkles className="h-4 w-4 mr-2" />
-                        Rellenar Todo con IA
+                        <Brain className="h-4 w-4 mr-2" />
+                        Enhance with Mervin AI
                       </>
                     )}
                   </Button>
                 </div>
-                <p className="text-xs text-purple-600 mt-2">
-                  💡 Describe tu proyecto y la IA completará automáticamente todos los campos profesionalmente
-                </p>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label htmlFor="scope">Alcance del Trabajo</Label>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => enhanceProjectWithAI('scope')}
-                    disabled={isAIProcessing || !projectDescription.trim()}
-                    className="text-xs"
-                  >
-                    <Sparkles className="h-3 w-3 mr-1" />
-                    Rellenar con IA
-                  </Button>
-                </div>
                 <Textarea
-                  id="scope"
-                  placeholder="Describe el alcance completo del trabajo..."
-                  value={estimate.scope}
-                  onChange={(e) => setEstimate(prev => ({ ...prev, scope: e.target.value }))}
-                  className="min-h-[100px]"
+                  id="projectDetails"
+                  placeholder="Describe los detalles completos del proyecto:&#10;&#10;• Alcance del trabajo y especificaciones técnicas&#10;• Cronograma y tiempo estimado&#10;• Proceso paso a paso del trabajo&#10;• Qué está incluido en el precio&#10;• Qué NO está incluido&#10;• Notas adicionales, términos especiales, condiciones..."
+                  value={estimate.projectDetails}
+                  onChange={(e) => setEstimate(prev => ({ ...prev, projectDetails: e.target.value }))}
+                  className="min-h-[300px] text-sm"
                 />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label htmlFor="timeline">Cronograma y Tiempo</Label>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => enhanceProjectWithAI('timeline')}
-                    disabled={isAIProcessing || !projectDescription.trim()}
-                    className="text-xs"
-                  >
-                    <Sparkles className="h-3 w-3 mr-1" />
-                    Rellenar con IA
-                  </Button>
+                <div className="flex items-start gap-2 mt-2 p-3 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+                  <Brain className="h-4 w-4 text-purple-600 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-purple-700">
+                    <strong>💡 Tip:</strong> Escribe una descripción básica de tu proyecto y usa <strong>"Enhance with Mervin AI"</strong> para generar automáticamente una descripción profesional completa con todos los detalles técnicos necesarios para el estimado.
+                  </p>
                 </div>
-                <Textarea
-                  id="timeline"
-                  placeholder="Cronograma estimado para completar el proyecto..."
-                  value={estimate.timeline}
-                  onChange={(e) => setEstimate(prev => ({ ...prev, timeline: e.target.value }))}
-                  className="min-h-[80px]"
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label htmlFor="process">Proceso de Trabajo</Label>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => enhanceProjectWithAI('process')}
-                    disabled={isAIProcessing || !projectDescription.trim()}
-                    className="text-xs"
-                  >
-                    <Sparkles className="h-3 w-3 mr-1" />
-                    Rellenar con IA
-                  </Button>
-                </div>
-                <Textarea
-                  id="process"
-                  placeholder="Describe el proceso paso a paso del trabajo..."
-                  value={estimate.process}
-                  onChange={(e) => setEstimate(prev => ({ ...prev, process: e.target.value }))}
-                  className="min-h-[100px]"
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label htmlFor="includes">Incluye</Label>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => enhanceProjectWithAI('includes')}
-                    disabled={isAIProcessing || !projectDescription.trim()}
-                    className="text-xs"
-                  >
-                    <Sparkles className="h-3 w-3 mr-1" />
-                    Rellenar con IA
-                  </Button>
-                </div>
-                <Textarea
-                  id="includes"
-                  placeholder="Qué está incluido en el precio..."
-                  value={estimate.includes}
-                  onChange={(e) => setEstimate(prev => ({ ...prev, includes: e.target.value }))}
-                  className="min-h-[80px]"
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label htmlFor="excludes">No Incluye</Label>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => enhanceProjectWithAI('excludes')}
-                    disabled={isAIProcessing || !projectDescription.trim()}
-                    className="text-xs"
-                  >
-                    <Sparkles className="h-3 w-3 mr-1" />
-                    Rellenar con IA
-                  </Button>
-                </div>
-                <Textarea
-                  id="excludes"
-                  placeholder="Qué NO está incluido en el precio..."
-                  value={estimate.excludes}
-                  onChange={(e) => setEstimate(prev => ({ ...prev, excludes: e.target.value }))}
-                  className="min-h-[80px]"
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label htmlFor="notes">Notas Adicionales</Label>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => enhanceProjectWithAI('notes')}
-                    disabled={isAIProcessing || !projectDescription.trim()}
-                    className="text-xs"
-                  >
-                    <Sparkles className="h-3 w-3 mr-1" />
-                    Rellenar con IA
-                  </Button>
-                </div>
-                <Textarea
-                  id="notes"
-                  placeholder="Notas adicionales, términos especiales, condiciones..."
-                  value={estimate.notes}
-                  onChange={(e) => setEstimate(prev => ({ ...prev, notes: e.target.value }))}
-                  className="min-h-[80px]"
-                />
               </div>
             </CardContent>
           </Card>
