@@ -526,12 +526,44 @@ export default function EstimatesWizardFixed() {
     });
   };
 
-  // Generate estimate preview
+  // Generate estimate preview with validation and authority
   const generateEstimatePreview = () => {
-    if (!estimate.client || estimate.items.length === 0) {
-      return '<p>Incomplete estimate data</p>';
+    // Validación de datos críticos y generación de alertas
+    const missingData = [];
+    if (!estimate.client) missingData.push('Cliente');
+    if (estimate.items.length === 0) missingData.push('Materiales');
+    if (!estimate.projectDetails || estimate.projectDetails.trim() === '') missingData.push('Detalles del proyecto');
+    if (!contractor?.companyName) missingData.push('Nombre de empresa');
+    if (!contractor?.address || !contractor?.phone || !contractor?.email) missingData.push('Información de contacto de empresa');
+
+    // Si hay datos críticos faltantes, mostrar el template con alertas
+    if (missingData.length > 0) {
+      const alertHtml = `
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #fff; border: 3px solid #f59e0b;">
+          <div style="background: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+            <h3 style="color: #92400e; margin: 0 0 10px 0; display: flex; align-items: center;">
+              ⚠️ Estimado Incompleto - Información Faltante
+            </h3>
+            <p style="color: #92400e; margin: 10px 0;">El preview muestra "${estimate.projectDetails.replace(/\n/g, '<br>')}" por ejemplo</p>
+            <p style="color: #92400e; margin: 10px 0;">Controles compactos y oscuros como solicitaste</p>
+            <p style="color: #92400e; margin: 10px 0;">Reset button incluye el nuevo campo</p>
+            <p style="color: #92400e; margin: 10px 0;">¿Podrías probar ahora el preview agregando un nombre al descuento (como "Military" o "Senior") para ver que funciona</p>
+            <p style="color: #92400e; margin: 10px 0;">Para generar un estimado profesional completo, necesitas completar:</p>
+            <ul style="color: #92400e; margin: 10px 0; padding-left: 20px;">
+              ${missingData.map(item => `<li style="margin: 5px 0;">${item}</li>`).join('')}
+            </ul>
+            <p style="color: #92400e; margin: 10px 0; font-weight: bold;">
+              ¿Podrías ajustar estos datos para que el estimado sea completo?
+            </p>
+          </div>
+          ${generateBasicPreview()}
+        </div>
+      `;
+      setPreviewHtml(alertHtml);
+      return alertHtml;
     }
 
+    // Generar estimado completo
     const estimateNumber = `EST-${Date.now()}`;
     const estimateDate = new Date().toLocaleDateString();
 
@@ -556,16 +588,16 @@ export default function EstimatesWizardFixed() {
           </div>
           
           <div style="text-align: right;">
-            <h1 style="margin: 0; color: #2563eb; font-size: 2.2em;">ESTIMATE</h1>
-            <p style="margin: 10px 0; font-size: 1.1em;"><strong>Estimate #:</strong> ${estimateNumber}</p>
-            <p style="margin: 5px 0;"><strong>Date:</strong> ${estimateDate}</p>
+            <h1 style="margin: 0; color: #2563eb; font-size: 2.2em;">ESTIMADO PROFESIONAL</h1>
+            <p style="margin: 10px 0; font-size: 1.1em;"><strong>Estimado #:</strong> ${estimateNumber}</p>
+            <p style="margin: 5px 0;"><strong>Fecha:</strong> ${estimateDate}</p>
           </div>
         </div>
         
         <!-- Client Information -->
         <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
           <div style="flex: 1; padding-right: 20px;">
-            <h3 style="color: #2563eb; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">Bill To:</h3>
+            <h3 style="color: #2563eb; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">FACTURAR A:</h3>
             <p style="margin: 5px 0; font-size: 1.1em; color: #000000;"><strong>${estimate.client.name}</strong></p>
             <p style="margin: 5px 0; color: #000000;">${estimate.client.email || ''}</p>
             <p style="margin: 5px 0; color: #000000;">${estimate.client.phone || ''}</p>
@@ -576,55 +608,57 @@ export default function EstimatesWizardFixed() {
 
         <!-- Project Details -->
         <div style="margin-bottom: 30px;">
-          <h3 style="color: #2563eb; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">Project Details</h3>
+          <h3 style="color: #2563eb; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">MATERIALES Y SERVICIOS:</h3>
           <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #2563eb; line-height: 1.6;">
             ${estimate.projectDetails.replace(/\n/g, '<br>')}
           </div>
         </div>
 
-        <!-- Materials & Labor -->
-        <div style="margin-bottom: 30px;">
-          <h3 style="color: #2563eb; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">Materials & Labor</h3>
-          <table style="width: 100%; border-collapse: collapse; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-            <thead>
-              <tr style="background: #2563eb; color: white;">
-                <th style="border: 1px solid #2563eb; padding: 12px; text-align: left; font-weight: bold;">Description</th>
-                <th style="border: 1px solid #2563eb; padding: 12px; text-align: center; font-weight: bold;">Qty</th>
-                <th style="border: 1px solid #2563eb; padding: 12px; text-align: right; font-weight: bold;">Unit Price</th>
-                <th style="border: 1px solid #2563eb; padding: 12px; text-align: right; font-weight: bold;">Total</th>
+        <!-- Materials & Labor Table -->
+        <table style="width: 100%; border-collapse: collapse; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 30px;">
+          <thead>
+            <tr style="background: #2563eb; color: white;">
+              <th style="border: 1px solid #2563eb; padding: 12px; text-align: left; font-weight: bold;">Descripción</th>
+              <th style="border: 1px solid #2563eb; padding: 12px; text-align: center; font-weight: bold;">Cant.</th>
+              <th style="border: 1px solid #2563eb; padding: 12px; text-align: center; font-weight: bold;">Unidad</th>
+              <th style="border: 1px solid #2563eb; padding: 12px; text-align: right; font-weight: bold;">Precio Unit.</th>
+              <th style="border: 1px solid #2563eb; padding: 12px; text-align: right; font-weight: bold;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${estimate.items.map((item, index) => `
+              <tr style="background: ${index % 2 === 0 ? '#f8fafc' : '#ffffff'};">
+                <td style="border: 1px solid #ddd; padding: 12px; color: #000000;">
+                  <strong>${item.name}</strong>
+                  ${item.description ? `<br><small style="color: #333333;">${item.description}</small>` : ''}
+                </td>
+                <td style="border: 1px solid #ddd; padding: 12px; text-align: center; color: #000000;">${item.quantity}</td>
+                <td style="border: 1px solid #ddd; padding: 12px; text-align: center; color: #000000;">${item.unit}</td>
+                <td style="border: 1px solid #ddd; padding: 12px; text-align: right; color: #000000;">$${item.price.toFixed(2)}</td>
+                <td style="border: 1px solid #ddd; padding: 12px; text-align: right; font-weight: bold; color: #000000;">$${item.total.toFixed(2)}</td>
               </tr>
-            </thead>
-            <tbody>
-              ${estimate.items.map((item, index) => `
-                <tr style="background: ${index % 2 === 0 ? '#f8fafc' : '#ffffff'};">
-                  <td style="border: 1px solid #ddd; padding: 12px; color: #000000;">${item.name}${item.description ? `<br><small style="color: #333333;">${item.description}</small>` : ''}</td>
-                  <td style="border: 1px solid #ddd; padding: 12px; text-align: center; color: #000000;">${item.quantity} ${item.unit}</td>
-                  <td style="border: 1px solid #ddd; padding: 12px; text-align: right; color: #000000;">$${item.price.toFixed(2)}</td>
-                  <td style="border: 1px solid #ddd; padding: 12px; text-align: right; font-weight: bold; color: #000000;">$${item.total.toFixed(2)}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
+            `).join('')}
+          </tbody>
+        </table>
 
         <!-- Totals -->
         <div style="text-align: right; margin-top: 30px; background: #f8fafc; padding: 20px; border-radius: 8px; border: 2px solid #e5e7eb;">
           <div style="margin-bottom: 10px; font-size: 1.1em; color: #000000;">
-            <span style="margin-right: 20px; color: #000000;"><strong>Subtotal:</strong></span>
+            <span style="margin-right: 40px; color: #000000;"><strong>Subtotal:</strong></span>
             <span style="font-weight: bold; color: #000000;">$${estimate.subtotal.toFixed(2)}</span>
           </div>
           ${estimate.discountAmount > 0 ? `
             <div style="margin-bottom: 10px; font-size: 1.1em; color: #22c55e;">
-              <span style="margin-right: 20px; color: #22c55e;"><strong>Descuento ${estimate.discountName ? '(' + estimate.discountName + ')' : ''} (${estimate.discountType === 'percentage' ? estimate.discountValue + '%' : 'Fijo'}):</strong></span>
+              <span style="margin-right: 40px; color: #22c55e;"><strong>Descuento ${estimate.discountName ? '(' + estimate.discountName + ')' : ''} (${estimate.discountType === 'percentage' ? estimate.discountValue + '%' : 'Fijo'}):</strong></span>
               <span style="font-weight: bold; color: #22c55e;">-$${estimate.discountAmount.toFixed(2)}</span>
             </div>
           ` : ''}
           <div style="margin-bottom: 15px; font-size: 1.1em; color: #000000;">
-            <span style="margin-right: 20px; color: #000000;"><strong>Impuesto (${estimate.taxRate}%):</strong></span>
+            <span style="margin-right: 40px; color: #000000;"><strong>Impuesto (${estimate.taxRate}%):</strong></span>
             <span style="font-weight: bold; color: #000000;">$${estimate.tax.toFixed(2)}</span>
           </div>
           <div style="border-top: 2px solid #2563eb; padding-top: 15px; font-size: 1.3em; color: #2563eb;">
-            <span style="margin-right: 20px; color: #2563eb;"><strong>TOTAL:</strong></span>
+            <span style="margin-right: 40px; color: #2563eb;"><strong>TOTAL:</strong></span>
             <span style="font-weight: bold; font-size: 1.2em; color: #2563eb;">$${estimate.total.toFixed(2)}</span>
           </div>
         </div>
@@ -640,6 +674,33 @@ export default function EstimatesWizardFixed() {
     
     setPreviewHtml(html);
     return html;
+  };
+
+  // Función auxiliar para generar preview básico cuando faltan datos
+  const generateBasicPreview = () => {
+    return `
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f9fafb; opacity: 0.7;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <h2 style="color: #6b7280;">Vista Previa del Estimado</h2>
+          <p style="color: #6b7280;">Completa la información para ver el estimado final</p>
+        </div>
+        
+        <div style="border: 2px dashed #d1d5db; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+          <h3 style="color: #6b7280;">Información de la Empresa</h3>
+          <p style="color: #6b7280;">${contractor?.companyName || '[Nombre de empresa requerido]'}</p>
+        </div>
+        
+        <div style="border: 2px dashed #d1d5db; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+          <h3 style="color: #6b7280;">Cliente</h3>
+          <p style="color: #6b7280;">${estimate.client?.name || '[Cliente requerido]'}</p>
+        </div>
+        
+        <div style="border: 2px dashed #d1d5db; padding: 20px; border-radius: 8px;">
+          <h3 style="color: #6b7280;">Materiales y Servicios</h3>
+          <p style="color: #6b7280;">${estimate.items.length > 0 ? `${estimate.items.length} materiales agregados` : '[Materiales requeridos]'}</p>
+        </div>
+      </div>
+    `;
   };
 
   // Save estimate to database
@@ -732,93 +793,47 @@ export default function EstimatesWizardFixed() {
       // Primero guardar el estimado automáticamente
       const savedEstimate = await saveEstimate();
       
-      // Generar HTML optimizado para PDF
+      // Usar EXACTAMENTE el mismo HTML del preview para eliminar discrepancias
       const html = generateEstimatePreview();
       
-      // Crear un HTML más limpio y optimizado para PDF
-      const cleanHtml = `
+      // Agregar estilos optimizados para PDF sin cambiar el contenido
+      const pdfOptimizedHtml = `
         <!DOCTYPE html>
         <html>
         <head>
           <meta charset="utf-8">
           <style>
-            body { font-family: Arial, sans-serif; margin: 20px; color: #000; }
-            .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-            .company-info { flex: 1; }
-            .estimate-info { text-align: right; }
-            .bill-to { margin: 20px 0; }
-            .materials-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-            .materials-table th, .materials-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            .materials-table th { background-color: #f5f5f5; }
-            .totals { text-align: right; margin-top: 20px; }
-            .total-line { margin: 5px 0; }
-            .final-total { font-weight: bold; font-size: 1.2em; color: #2563eb; }
+            /* Resetear márgenes y optimizar para PDF */
+            * { box-sizing: border-box; }
+            body { 
+              font-family: 'Segoe UI', Arial, sans-serif; 
+              margin: 0; 
+              padding: 20px; 
+              color: #000 !important;
+              background: #fff;
+            }
+            /* Asegurar que todos los textos sean negros en PDF */
+            * { color: #000 !important; }
+            .text-muted-foreground, .text-gray-600, .text-gray-500 { color: #000 !important; }
+            
+            /* Optimizaciones para impresión */
+            @media print {
+              body { margin: 0; padding: 15px; }
+              * { color: #000 !important; }
+            }
+            
+            /* Asegurar que las imágenes se mantengan */
+            img { max-width: 100%; height: auto; }
+            
+            /* Mantener colores de marca solo para elementos específicos */
+            h1, h2, h3 { color: #2563eb !important; }
+            .border-bottom { border-bottom: 3px solid #2563eb !important; }
+            thead tr { background: #2563eb !important; color: white !important; }
+            thead th { color: white !important; }
           </style>
         </head>
         <body>
-          <div class="header">
-            <div class="company-info">
-              ${contractor?.logo ? `<img src="${contractor.logo}" style="max-height: 80px; margin-bottom: 10px;">` : ''}
-              <h2>${contractor?.companyName || contractor?.name || 'Nombre de Empresa'}</h2>
-              <p>${contractor?.address || ''}<br>
-                 ${contractor?.city || ''}, ${contractor?.state || ''} ${contractor?.zipCode || ''}<br>
-                 ${contractor?.phone || ''}<br>
-                 ${contractor?.email || ''}<br>
-                 ${contractor?.website || ''}
-              </p>
-            </div>
-            <div class="estimate-info">
-              <h1>ESTIMATE</h1>
-              <p><strong>Estimate #:</strong> EST-${Date.now()}</p>
-              <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
-            </div>
-          </div>
-
-          <div class="bill-to">
-            <h3>Bill To:</h3>
-            <p><strong>${estimate.client?.name || ''}</strong><br>
-               ${estimate.client?.email || ''}<br>
-               ${estimate.client?.phone || ''}<br>
-               ${estimate.client?.address || ''}
-            </p>
-          </div>
-
-          <div>
-            <h3>Project Details:</h3>
-            <p>${estimate.projectDetails}</p>
-          </div>
-
-          <table class="materials-table">
-            <thead>
-              <tr>
-                <th>Description</th>
-                <th>Quantity</th>
-                <th>Unit</th>
-                <th>Unit Price</th>
-                <th>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${estimate.items.map(item => `
-                <tr>
-                  <td>
-                    <strong>${item.name}</strong><br>
-                    <small>${item.description}</small>
-                  </td>
-                  <td>${item.quantity}</td>
-                  <td>${item.unit}</td>
-                  <td>$${item.price.toFixed(2)}</td>
-                  <td>$${item.total.toFixed(2)}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-
-          <div class="totals">
-            <div class="total-line">Subtotal: $${estimate.subtotal.toFixed(2)}</div>
-            <div class="total-line">Tax (16%): $${estimate.tax.toFixed(2)}</div>
-            <div class="total-line final-total">Total: $${estimate.total.toFixed(2)}</div>
-          </div>
+          ${html}
         </body>
         </html>
       `;
@@ -827,7 +842,7 @@ export default function EstimatesWizardFixed() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          html: cleanHtml, 
+          html: pdfOptimizedHtml, 
           filename: `estimate-${estimate.client?.name || 'client'}.pdf` 
         }),
       });
