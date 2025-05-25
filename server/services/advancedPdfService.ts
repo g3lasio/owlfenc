@@ -50,9 +50,12 @@ async function extractDataWithAI(html: string): Promise<EstimateData> {
       model: 'claude-3-7-sonnet-20250219',
       max_tokens: 2000,
       system: `Eres un experto extractor de datos de estimados de construcción. 
-      Extrae la información del HTML y devuélvela en formato JSON exacto.
-      Asegúrate de extraer TODOS los materiales/servicios de la tabla.
-      Si falta información, usa valores por defecto razonables.`,
+      IMPORTANTE: Extrae los datos EXACTOS del HTML, especialmente:
+      - El porcentaje de impuesto real (puede ser 10%, 12%, 16%, etc.)
+      - El descuento aplicado y su porcentaje 
+      - Los totales exactos como aparecen
+      - Información real del cliente
+      NO uses valores por defecto. Si no encuentras un dato, déjalo vacío o en 0.`,
       messages: [{
         role: 'user',
         content: `Extrae los datos de este estimado HTML y devuélvelos en este formato JSON exacto:
@@ -133,7 +136,9 @@ function extractDataBasic(html: string): EstimateData {
   };
 
   try {
-    // Extraer información básica
+    console.log('Iniciando extracción básica mejorada...');
+    
+    // Extraer información del cliente
     const clientMatch = html.match(/Bill To:\s*([^<\n]+)/i);
     if (clientMatch) data.clientName = clientMatch[1].trim();
 
@@ -146,20 +151,110 @@ function extractDataBasic(html: string): EstimateData {
     const projectMatch = html.match(/Project Details:\s*([^<\n]+)/i);
     if (projectMatch) data.projectDetails = projectMatch[1].trim();
 
-    // Extraer totales
-    const subtotalMatch = html.match(/Subtotal:\s*\$([0-9,]+\.?[0-9]*)/i);
-    if (subtotalMatch) data.subtotal = parseFloat(subtotalMatch[1].replace(/,/g, ''));
-
-    const taxMatch = html.match(/Tax \(([0-9]+)%\):\s*\$([0-9,]+\.?[0-9]*)/i);
-    if (taxMatch) {
-      data.taxRate = parseInt(taxMatch[1]);
-      data.tax = parseFloat(taxMatch[2].replace(/,/g, ''));
+    // Extraer totales con patrones más específicos
+    const subtotalMatch = html.match(/Subtotal[:\s]*\$?([0-9,]+\.?[0-9]*)/i);
+    if (subtotalMatch) {
+      data.subtotal = parseFloat(subtotalMatch[1].replace(/,/g, ''));
+      console.log('Subtotal extraído:', data.subtotal);
     }
 
-    const totalMatch = html.match(/Total:\s*\$([0-9,]+\.?[0-9]*)/i);
-    if (totalMatch) data.total = parseFloat(totalMatch[1].replace(/,/g, ''));
+    // Buscar descuento - múltiples patrones
+    const discountPatterns = [
+      /Descuento[^$]*\$([0-9,]+\.?[0-9]*)/i,
+      /Discount[^$]*\$([0-9,]+\.?[0-9]*)/i,
+      /-\$([0-9,]+\.?[0-9]*)/g
+    ];
+    
+    for (const pattern of discountPatterns) {
+      const discountMatch = html.match(pattern);
+      if (discountMatch) {
+        data.discount = parseFloat(discountMatch[1].replace(/,/g, ''));
+        console.log('Descuento extraído:', data.discount);
+        
+        // Intentar extraer tipo de descuento
+        const discountTypeMatch = html.match(/Descuento\s*\(([^)]+)\)/i);
+        if (discountTypeMatch) {
+          data.discountType = discountTypeMatch[1];
+        }
+        break;
+      }
+    }
 
-    console.log('Extracción básica completada');
+    // Extraer impuesto con patrones más específicos
+    const taxPatterns = [
+      /Impuesto\s*\(([0-9]+)%\)[:\s]*\$([0-9,]+\.?[0-9]*)/i,
+      /Tax\s*\(([0-9]+)%\)[:\s]*\$([0-9,]+\.?[0-9]*)/i,
+      /IVA\s*\(([0-9]+)%\)[:\s]*\$([0-9,]+\.?[0-9]*)/i
+    ];
+    
+    for (const pattern of taxPatterns) {
+      const taxMatch = html.match(pattern);
+      if (taxMatch) {
+        data.taxRate = parseInt(taxMatch[1]);
+        data.tax = parseFloat(taxMatch[2].replace(/,/g, ''));
+        console.log('Impuesto extraído:', data.taxRate + '%', data.tax);
+        break;
+      }
+    }
+
+    // Extraer total final
+    const totalPatterns = [
+      /Total[:\s]*\$([0-9,]+\.?[0-9]*)/i,
+      /TOTAL[:\s]*\$([0-9,]+\.?[0-9]*)/i
+    ];
+    
+    for (const pattern of totalPatterns) {
+      const totalMatch = html.match(pattern);
+      if (totalMatch) {
+        data.total = parseFloat(totalMatch[1].replace(/,/g, ''));
+        console.log('Total extraído:', data.total);
+        break;
+      }
+    }
+
+    // Extraer items de la tabla
+    const tableRows = html.match(/<tr[^>]*>[\s\S]*?<\/tr>/gi);
+    if (tableRows) {
+      console.log('Procesando', tableRows.length, 'filas de tabla...');
+      
+      tableRows.forEach((row, index) => {
+        // Saltar encabezados
+        if (row.includes('<th') || index === 0) return;
+        
+        const cells = row.match(/<td[^>]*>([\s\S]*?)<\/td>/gi);
+        if (cells && cells.length >= 5) {
+          const description = cells[0].replace(/<[^>]*>/g, '').trim();
+          const quantity = parseInt(cells[1].replace(/<[^>]*>/g, '').trim()) || 1;
+          const unit = cells[2].replace(/<[^>]*>/g, '').trim();
+          const priceText = cells[3].replace(/<[^>]*>/g, '').replace(/\$/, '').trim();
+          const totalText = cells[4].replace(/<[^>]*>/g, '').replace(/\$/, '').trim();
+          
+          const price = parseFloat(priceText.replace(/,/g, '')) || 0;
+          const total = parseFloat(totalText.replace(/,/g, '')) || 0;
+          
+          if (description && description.length > 3) {
+            data.items.push({
+              description,
+              quantity,
+              unit: unit || 'pieza',
+              price,
+              total
+            });
+            console.log('Item agregado:', description);
+          }
+        }
+      });
+    }
+
+    console.log('Extracción básica completada. Items:', data.items.length);
+    console.log('Datos finales:', {
+      subtotal: data.subtotal,
+      discount: data.discount,
+      taxRate: data.taxRate,
+      tax: data.tax,
+      total: data.total
+    });
+    
   } catch (error) {
     console.error('Error en extracción básica:', error);
   }
