@@ -1375,43 +1375,54 @@ export default function EstimatesWizardFixed() {
         return (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Eye className="h-5 w-5" />
-                  Vista Previa del Estimado
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowCompanyEditDialog(true)}
-                    size="sm"
-                  >
-                    <Building2 className="h-4 w-4 mr-2" />
-                    Editar Empresa
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => generateEstimatePreview()}
-                    disabled={!estimate.client || estimate.items.length === 0}
-                  >
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Actualizar Vista Previa
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowEstimatesHistory(true)}
-                    className="border-gray-300"
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    Mis Estimados
-                  </Button>
-                  <Button
-                    onClick={downloadPDF}
-                    disabled={!estimate.client || estimate.items.length === 0 || !previewHtml}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Descargar PDF
-                  </Button>
+              <CardTitle>
+                <div className="flex flex-col space-y-4">
+                  {/* Title Row */}
+                  <div className="flex items-center gap-2">
+                    <Eye className="h-5 w-5" />
+                    Vista Previa del Estimado
+                  </div>
+                  
+                  {/* Action Buttons - Responsive Grid */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 w-full">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowCompanyEditDialog(true)}
+                      size="sm"
+                      className="flex-1 text-xs"
+                    >
+                      <Building2 className="h-3 w-3 mr-1" />
+                      <span className="hidden sm:inline">Editar</span> Empresa
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => generateEstimatePreview()}
+                      disabled={!estimate.client || estimate.items.length === 0}
+                      size="sm"
+                      className="flex-1 text-xs"
+                    >
+                      <RefreshCw className="h-3 w-3 mr-1" />
+                      <span className="hidden sm:inline">Actualizar</span> Vista
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowEstimatesHistory(true)}
+                      className="border-gray-300 flex-1 text-xs"
+                      size="sm"
+                    >
+                      <FileText className="h-3 w-3 mr-1" />
+                      Mis Estimados
+                    </Button>
+                    <Button
+                      onClick={downloadPDF}
+                      disabled={!estimate.client || estimate.items.length === 0 || !previewHtml}
+                      size="sm"
+                      className="flex-1 text-xs bg-green-600 hover:bg-green-700"
+                    >
+                      <Download className="h-3 w-3 mr-1" />
+                      <span className="hidden sm:inline">Descargar</span> PDF
+                    </Button>
+                  </div>
                 </div>
               </CardTitle>
             </CardHeader>
