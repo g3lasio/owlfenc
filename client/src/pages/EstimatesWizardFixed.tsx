@@ -646,11 +646,11 @@ export default function EstimatesWizardFixed() {
                     {clientSearch ? 'No se encontraron clientes' : 'No hay clientes disponibles'}
                   </p>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     {filteredClients.map((client) => (
                       <div
                         key={client.id}
-                        className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                        className={`p-2 border rounded cursor-pointer transition-colors ${
                           estimate.client?.id === client.id 
                             ? 'border-primary bg-primary/5' 
                             : 'hover:bg-muted'
@@ -658,13 +658,15 @@ export default function EstimatesWizardFixed() {
                         onClick={() => selectClient(client)}
                       >
                         <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="font-medium">{client.name}</h4>
-                            <p className="text-sm text-muted-foreground">{client.email || 'Sin email'}</p>
-                            <p className="text-xs text-muted-foreground">{client.phone || 'Sin teléfono'}</p>
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-medium text-sm truncate">{client.name}</h4>
+                            <div className="flex gap-3 text-xs text-muted-foreground">
+                              <span className="truncate">{client.email || 'Sin email'}</span>
+                              <span className="flex-shrink-0">{client.phone || 'Sin teléfono'}</span>
+                            </div>
                           </div>
                           {estimate.client?.id === client.id && (
-                            <Check className="h-4 w-4 text-primary" />
+                            <Check className="h-4 w-4 text-primary flex-shrink-0 ml-2" />
                           )}
                         </div>
                       </div>
