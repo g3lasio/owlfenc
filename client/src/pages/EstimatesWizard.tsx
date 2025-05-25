@@ -516,11 +516,11 @@ export default function EstimatesWizardFixed() {
         <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
           <div style="flex: 1; padding-right: 20px;">
             <h3 style="color: #2563eb; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">Bill To:</h3>
-            <p style="margin: 5px 0; font-size: 1.1em;"><strong>${estimate.client.name}</strong></p>
-            <p style="margin: 5px 0;">${estimate.client.email || ''}</p>
-            <p style="margin: 5px 0;">${estimate.client.phone || ''}</p>
-            <p style="margin: 5px 0;">${estimate.client.address || ''}</p>
-            <p style="margin: 5px 0;">${estimate.client.city ? `${estimate.client.city}, ` : ''}${estimate.client.state || ''} ${estimate.client.zipCode || ''}</p>
+            <p style="margin: 5px 0; font-size: 1.1em; color: #000000;"><strong>${estimate.client.name}</strong></p>
+            <p style="margin: 5px 0; color: #000000;">${estimate.client.email || ''}</p>
+            <p style="margin: 5px 0; color: #000000;">${estimate.client.phone || ''}</p>
+            <p style="margin: 5px 0; color: #000000;">${estimate.client.address || ''}</p>
+            <p style="margin: 5px 0; color: #000000;">${estimate.client.city ? `${estimate.client.city}, ` : ''}${estimate.client.state || ''} ${estimate.client.zipCode || ''}</p>
           </div>
         </div>
 
@@ -547,10 +547,10 @@ export default function EstimatesWizardFixed() {
             <tbody>
               ${estimate.items.map((item, index) => `
                 <tr style="background: ${index % 2 === 0 ? '#f8fafc' : '#ffffff'};">
-                  <td style="border: 1px solid #ddd; padding: 12px;">${item.name}${item.description ? `<br><small style="color: #666;">${item.description}</small>` : ''}</td>
-                  <td style="border: 1px solid #ddd; padding: 12px; text-align: center;">${item.quantity} ${item.unit}</td>
-                  <td style="border: 1px solid #ddd; padding: 12px; text-align: right;">$${item.price.toFixed(2)}</td>
-                  <td style="border: 1px solid #ddd; padding: 12px; text-align: right; font-weight: bold;">$${item.total.toFixed(2)}</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; color: #000000;">${item.name}${item.description ? `<br><small style="color: #333333;">${item.description}</small>` : ''}</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; text-align: center; color: #000000;">${item.quantity} ${item.unit}</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; text-align: right; color: #000000;">$${item.price.toFixed(2)}</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; text-align: right; font-weight: bold; color: #000000;">$${item.total.toFixed(2)}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -559,17 +559,17 @@ export default function EstimatesWizardFixed() {
 
         <!-- Totals -->
         <div style="text-align: right; margin-top: 30px; background: #f8fafc; padding: 20px; border-radius: 8px; border: 2px solid #e5e7eb;">
-          <div style="margin-bottom: 10px; font-size: 1.1em;">
-            <span style="margin-right: 20px;"><strong>Subtotal:</strong></span>
-            <span style="font-weight: bold;">$${estimate.subtotal.toFixed(2)}</span>
+          <div style="margin-bottom: 10px; font-size: 1.1em; color: #000000;">
+            <span style="margin-right: 20px; color: #000000;"><strong>Subtotal:</strong></span>
+            <span style="font-weight: bold; color: #000000;">$${estimate.subtotal.toFixed(2)}</span>
           </div>
-          <div style="margin-bottom: 15px; font-size: 1.1em;">
-            <span style="margin-right: 20px;"><strong>Tax (16%):</strong></span>
-            <span style="font-weight: bold;">$${estimate.tax.toFixed(2)}</span>
+          <div style="margin-bottom: 15px; font-size: 1.1em; color: #000000;">
+            <span style="margin-right: 20px; color: #000000;"><strong>Tax (16%):</strong></span>
+            <span style="font-weight: bold; color: #000000;">$${estimate.tax.toFixed(2)}</span>
           </div>
           <div style="border-top: 2px solid #2563eb; padding-top: 15px; font-size: 1.3em; color: #2563eb;">
-            <span style="margin-right: 20px;"><strong>TOTAL:</strong></span>
-            <span style="font-weight: bold; font-size: 1.2em;">$${estimate.total.toFixed(2)}</span>
+            <span style="margin-right: 20px; color: #2563eb;"><strong>TOTAL:</strong></span>
+            <span style="font-weight: bold; font-size: 1.2em; color: #2563eb;">$${estimate.total.toFixed(2)}</span>
           </div>
         </div>
 
@@ -1073,6 +1073,11 @@ export default function EstimatesWizardFixed() {
               ) : (
                 <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
                   <div
+                    style={{
+                      color: '#000000',
+                      '--tw-text-opacity': '1'
+                    }}
+                    className="[&_*]:!text-black [&_td]:!text-black [&_th]:!text-black [&_p]:!text-black [&_span]:!text-black [&_div]:!text-black"
                     dangerouslySetInnerHTML={{ 
                       __html: previewHtml || generateEstimatePreview()
                     }}
