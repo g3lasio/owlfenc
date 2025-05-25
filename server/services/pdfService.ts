@@ -241,6 +241,9 @@ async function generateProfessionalPDF(html: string): Promise<Buffer> {
  * Extrae datos estructurados del HTML del estimado
  */
 function extractEstimateData(html: string): any {
+  console.log('🔍 Iniciando extracción de datos del HTML...');
+  console.log('📄 Longitud del HTML:', html.length);
+  
   // Valores por defecto
   const data = {
     companyName: 'Nombre de Empresa',
@@ -267,82 +270,166 @@ function extractEstimateData(html: string): any {
   };
   
   try {
-    // Extraer información del cliente
-    const billToMatch = html.match(/Bill To:\s*([^<\n]+)/i);
+    // Extraer nombre de empresa mejorado
+    const companyMatch = html.match(/<h2[^>]*>([^<]+)<\/h2>/) || html.match(/companyName['"]\s*:\s*['"]([^'"]+)['"]/);
+    if (companyMatch) {
+      data.companyName = companyMatch[1].trim();
+      console.log('✅ Empresa encontrada:', data.companyName);
+    }
+    
+    // Extraer número de estimado
+    const estimateNumMatch = html.match(/Estimado #:\s*([^<\n]+)/i) || html.match(/EST-(\d+)/);
+    if (estimateNumMatch) {
+      data.estimateNumber = estimateNumMatch[1].trim();
+      console.log('✅ Número de estimado encontrado:', data.estimateNumber);
+    }
+    
+    // Extraer fecha
+    const dateMatch = html.match(/Fecha:\s*([^<\n]+)/i) || html.match(/Date:\s*([^<\n]+)/i);
+    if (dateMatch) {
+      data.date = dateMatch[1].trim();
+      console.log('✅ Fecha encontrada:', data.date);
+    }
+    
+    // Extraer información del cliente mejorada
+    const billToMatch = html.match(/FACTURAR A:\s*<\/h3>\s*<p[^>]*><strong>([^<]+)<\/strong>/i) || 
+                      html.match(/Bill To:\s*<\/h3>\s*<p[^>]*><strong>([^<]+)<\/strong>/i);
     if (billToMatch) {
       data.clientName = billToMatch[1].trim();
+      console.log('✅ Cliente encontrado:', data.clientName);
     }
     
     // Extraer email
     const emailMatch = html.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
     if (emailMatch) {
       data.clientEmail = emailMatch[1];
+      console.log('✅ Email encontrado:', data.clientEmail);
     }
     
-    // Extraer teléfono
-    const phoneMatch = html.match(/(\([0-9]{3}\)\s?[0-9]{3}-[0-9]{4}|[0-9]{3}-[0-9]{3}-[0-9]{4}|\([0-9]{3}\)\s?[0-9]{7})/);
+    // Extraer teléfono con patrones más amplios
+    const phoneMatch = html.match(/(\([0-9]{3}\)\s?[0-9]{3}-[0-9]{4}|[0-9]{3}-[0-9]{3}-[0-9]{4}|\([0-9]{3}\)\s?[0-9]{7}|\+?1?[-.\s]?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4})/);
     if (phoneMatch) {
       data.clientPhone = phoneMatch[1];
+      console.log('✅ Teléfono encontrado:', data.clientPhone);
     }
     
-    // Extraer detalles del proyecto
-    const projectMatch = html.match(/Project Details:\s*([^<\n]+)/i);
+    // Extraer detalles del proyecto mejorado
+    const projectMatch = html.match(/MATERIALES Y SERVICIOS:<\/h3>\s*<div[^>]*>([^<]+)/i) || 
+                         html.match(/Project Details<\/h3>\s*<div[^>]*>([^<]+)/i) ||
+                         html.match(/border-left:\s*4px solid[^>]*>([^<]+)/);
     if (projectMatch) {
-      data.projectDetails = projectMatch[1].trim();
+      data.projectDetails = projectMatch[1].trim().replace(/<br>/g, ' ').replace(/&nbsp;/g, ' ');
+      console.log('✅ Detalles del proyecto encontrados:', data.projectDetails);
     }
     
-    // Extraer totales
-    const subtotalMatch = html.match(/Subtotal:\s*\$([0-9,]+\.?[0-9]*)/i);
+    // Extraer totales con patrones más robustos
+    const subtotalMatch = html.match(/Subtotal:\s*<\/span>\s*<span[^>]*>\$([0-9,]+\.?[0-9]*)<\/span>/i) ||
+                         html.match(/Subtotal:\s*\$([0-9,]+\.?[0-9]*)/i);
     if (subtotalMatch) {
       data.subtotal = parseFloat(subtotalMatch[1].replace(/,/g, ''));
+      console.log('✅ Subtotal encontrado:', data.subtotal);
     }
     
-    const taxMatch = html.match(/Tax \(([0-9]+)%\):\s*\$([0-9,]+\.?[0-9]*)/i);
+    // Extraer impuesto
+    const taxMatch = html.match(/Impuesto \(([0-9]+)%\):\s*<\/span>\s*<span[^>]*>\$([0-9,]+\.?[0-9]*)<\/span>/i) ||
+                     html.match(/Tax \(([0-9]+)%\):\s*\$([0-9,]+\.?[0-9]*)/i);
     if (taxMatch) {
       data.taxRate = taxMatch[1];
       data.tax = parseFloat(taxMatch[2].replace(/,/g, ''));
+      console.log('✅ Impuesto encontrado:', data.tax, 'Tasa:', data.taxRate + '%');
     }
     
-    const discountMatch = html.match(/Descuento[^$]*\$([0-9,]+\.?[0-9]*)/i);
+    // Extraer descuento mejorado
+    const discountMatch = html.match(/Descuento[^<]*<\/span>\s*<span[^>]*>-\$([0-9,]+\.?[0-9]*)<\/span>/i) ||
+                         html.match(/Descuento[^$]*-\$([0-9,]+\.?[0-9]*)/i);
     if (discountMatch) {
       data.discount = parseFloat(discountMatch[1].replace(/,/g, ''));
+      console.log('✅ Descuento encontrado:', data.discount);
     }
     
-    const totalMatch = html.match(/Total:\s*\$([0-9,]+\.?[0-9]*)/i);
+    // Extraer total
+    const totalMatch = html.match(/TOTAL:\s*<\/span>\s*<span[^>]*>\$([0-9,]+\.?[0-9]*)<\/span>/i) ||
+                      html.match(/Total:\s*\$([0-9,]+\.?[0-9]*)/i);
     if (totalMatch) {
       data.total = parseFloat(totalMatch[1].replace(/,/g, ''));
+      console.log('✅ Total encontrado:', data.total);
     }
     
-    // Extraer items de la tabla (simplificado)
-    const tableMatches = html.match(/<tbody>[\s\S]*?<\/tbody>/i);
+    // Extraer items de la tabla con parser más robusto
+    console.log('🔍 Buscando tabla de materiales...');
+    const tableMatches = html.match(/<table[^>]*>[\s\S]*?<\/table>/i);
     if (tableMatches) {
-      const rows = tableMatches[0].match(/<tr>[\s\S]*?<\/tr>/gi);
-      if (rows) {
-        rows.forEach(row => {
-          const cells = row.match(/<td[^>]*>([\s\S]*?)<\/td>/gi);
-          if (cells && cells.length >= 5) {
-            const description = cells[0].replace(/<[^>]*>/g, '').trim();
-            const quantity = parseInt(cells[1].replace(/<[^>]*>/g, '').trim()) || 1;
-            const unit = cells[2].replace(/<[^>]*>/g, '').trim();
-            const price = parseFloat(cells[3].replace(/<[^>]*>/g, '').replace(/\$/, '').trim()) || 0;
-            const total = parseFloat(cells[4].replace(/<[^>]*>/g, '').replace(/\$/, '').trim()) || 0;
-            
-            if (description && description.length > 5) {
-              data.items.push({
-                description,
-                quantity,
-                unit,
-                price,
-                total
-              });
+      console.log('📋 Tabla encontrada, extrayendo filas...');
+      const tbodyMatch = tableMatches[0].match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/i);
+      if (tbodyMatch) {
+        const rows = tbodyMatch[1].match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi);
+        if (rows) {
+          console.log(`📝 Encontradas ${rows.length} filas de materiales`);
+          
+          rows.forEach((row, index) => {
+            const cells = row.match(/<td[^>]*>([\s\S]*?)<\/td>/gi);
+            if (cells && cells.length >= 5) {
+              // Descripción (incluye nombre + descripción)
+              const descCell = cells[0].replace(/<[^>]*>/g, '').trim();
+              const description = descCell.replace(/\s+/g, ' ');
+              
+              // Cantidad
+              const quantityCell = cells[1].replace(/<[^>]*>/g, '').trim();
+              const quantity = parseInt(quantityCell) || 1;
+              
+              // Unidad
+              const unitCell = cells[2].replace(/<[^>]*>/g, '').trim();
+              const unit = unitCell || 'unit';
+              
+              // Precio unitario
+              const priceCell = cells[3].replace(/<[^>]*>/g, '').replace(/\$/, '').trim();
+              const price = parseFloat(priceCell.replace(/,/g, '')) || 0;
+              
+              // Total
+              const totalCell = cells[4].replace(/<[^>]*>/g, '').replace(/\$/, '').trim();
+              const total = parseFloat(totalCell.replace(/,/g, '')) || 0;
+              
+              if (description && description.length > 2 && quantity > 0) {
+                data.items.push({
+                  description,
+                  quantity,
+                  unit,
+                  price,
+                  total
+                });
+                console.log(`✅ Material ${index + 1}:`, {
+                  description: description.substring(0, 50) + '...',
+                  quantity,
+                  unit,
+                  price,
+                  total
+                });
+              }
             }
-          }
-        });
+          });
+        }
       }
+    } else {
+      console.log('❌ No se encontró tabla de materiales en el HTML');
+      // Debug: mostrar fragmento del HTML para diagnóstico
+      const snippet = html.substring(0, 1000);
+      console.log('📄 Fragmento del HTML:', snippet);
     }
+    
+    console.log('📊 Resumen de extracción:');
+    console.log('   - Empresa:', data.companyName);
+    console.log('   - Cliente:', data.clientName);
+    console.log('   - Email:', data.clientEmail);
+    console.log('   - Teléfono:', data.clientPhone);
+    console.log('   - Materiales encontrados:', data.items.length);
+    console.log('   - Subtotal:', data.subtotal);
+    console.log('   - Descuento:', data.discount);
+    console.log('   - Impuesto:', data.tax);
+    console.log('   - Total:', data.total);
     
   } catch (error) {
-    console.error('Error extrayendo datos del HTML:', error);
+    console.error('❌ Error extrayendo datos del HTML:', error);
+    console.error('📄 HTML que causó el error:', html.substring(0, 500));
   }
   
   return data;
