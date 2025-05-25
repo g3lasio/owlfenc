@@ -55,7 +55,7 @@ interface State {
 
 const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
 
-const addToRemoveQueue = (toastId: string) => {
+const addToRemoveQueue = (toastId: string, delay?: number) => {
   if (toastTimeouts.has(toastId)) {
     return
   }
@@ -66,7 +66,7 @@ const addToRemoveQueue = (toastId: string) => {
       type: "REMOVE_TOAST",
       toastId: toastId,
     })
-  }, TOAST_REMOVE_DELAY)
+  }, delay || TOAST_REMOVE_DELAY)
 
   toastTimeouts.set(toastId, timeout)
 }
@@ -160,6 +160,13 @@ function toast({ ...props }: Toast) {
       },
     },
   })
+
+  // Programar auto-dismiss si se especifica duración
+  if (props.duration !== undefined && props.duration > 0) {
+    setTimeout(() => {
+      dismiss()
+    }, props.duration)
+  }
 
   return {
     id: id,
