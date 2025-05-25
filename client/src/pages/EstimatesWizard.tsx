@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/hooks/use-profile';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -102,6 +103,7 @@ const STEPS = [
 export default function EstimatesWizardFixed() {
   const { currentUser } = useAuth();
   const { toast } = useToast();
+  const { profile, isLoading: isProfileLoading } = useProfile();
 
   const [currentStep, setCurrentStep] = useState(0);
   const [estimate, setEstimate] = useState<EstimateData>({
@@ -528,13 +530,13 @@ export default function EstimatesWizardFixed() {
 
   // Generate estimate preview with validation and authority
   const generateEstimatePreview = () => {
-    // Validación de datos críticos y generación de alertas
+    // Validación de datos críticos y generación de alertas usando profile en lugar de contractor
     const missingData = [];
     if (!estimate.client) missingData.push('Cliente');
     if (estimate.items.length === 0) missingData.push('Materiales');
     if (!estimate.projectDetails || estimate.projectDetails.trim() === '') missingData.push('Detalles del proyecto');
-    if (!contractor?.companyName) missingData.push('Nombre de empresa');
-    if (!contractor?.address || !contractor?.phone || !contractor?.email) missingData.push('Información de contacto de empresa');
+    if (!profile?.companyName) missingData.push('Nombre de empresa');
+    if (!profile?.address || !profile?.phone || !profile?.email) missingData.push('Información de contacto de empresa');
 
     // Si hay datos críticos faltantes, mostrar el template con alertas
     if (missingData.length > 0) {
