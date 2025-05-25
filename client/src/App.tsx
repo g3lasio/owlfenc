@@ -40,6 +40,7 @@ import AppleCallback from "@/pages/AppleCallback";
 import SecuritySettings from "@/pages/SecuritySettings";
 import ContractGenerator from "@/pages/ContractGenerator";
 import AITestingPage from "@/pages/AITestingPage";
+import DeepSearchDemo from "@/pages/DeepSearchDemo";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import AuthDiagnostic from './pages/AuthDiagnostic';
@@ -155,6 +156,9 @@ function Router() {
       </Route>
       <Route path="/ai-testing">
         {() => <ProtectedRoute component={AITestingPage} />}
+      </Route>
+      <Route path="/deepsearch-demo">
+        {() => <ProtectedRoute component={DeepSearchDemo} />}
       </Route>
       <Route path="/estimates">
         {() => <ProtectedRoute component={EstimatesWizard} />}
