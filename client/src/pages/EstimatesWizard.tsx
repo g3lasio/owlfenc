@@ -85,6 +85,10 @@ interface EstimateData {
   subtotal: number;
   tax: number;
   total: number;
+  taxRate: number;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  discountAmount: number;
 }
 
 const STEPS = [
@@ -105,7 +109,11 @@ export default function EstimatesWizardFixed() {
     projectDetails: '',
     subtotal: 0,
     tax: 0,
-    total: 0
+    total: 0,
+    taxRate: 10, // Default 10% instead of 16%
+    discountType: 'percentage',
+    discountValue: 0,
+    discountAmount: 0
   });
 
   // Data from existing systems
@@ -166,19 +174,35 @@ export default function EstimatesWizardFixed() {
     loadContractorProfile();
   }, [currentUser]);
 
-  // Calculate totals when items change
+  // Calculate totals when items, tax rate, or discount change
   useEffect(() => {
     const subtotal = estimate.items.reduce((sum, item) => sum + item.total, 0);
-    const tax = subtotal * 0.16;
-    const total = subtotal + tax;
+    
+    // Calculate discount amount
+    let discountAmount = 0;
+    if (estimate.discountValue > 0) {
+      if (estimate.discountType === 'percentage') {
+        discountAmount = subtotal * (estimate.discountValue / 100);
+      } else {
+        discountAmount = estimate.discountValue;
+      }
+    }
+    
+    // Apply discount to subtotal
+    const subtotalAfterDiscount = subtotal - discountAmount;
+    
+    // Calculate tax on discounted amount
+    const tax = subtotalAfterDiscount * (estimate.taxRate / 100);
+    const total = subtotalAfterDiscount + tax;
 
     setEstimate(prev => ({
       ...prev,
       subtotal,
       tax,
-      total
+      total,
+      discountAmount
     }));
-  }, [estimate.items]);
+  }, [estimate.items, estimate.taxRate, estimate.discountType, estimate.discountValue]);
 
   // Initialize company data when contractor profile loads
   useEffect(() => {
@@ -1233,10 +1257,67 @@ export default function EstimatesWizardFixed() {
                     </div>
                   ))}
                   
-                  <div className="border-t pt-4">
+                  <div className="border-t pt-4 space-y-4">
+                    {/* Tax and Discount Controls */}
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Tax Rate Control */}
+                      <div className="space-y-2">
+                        <Label htmlFor="taxRate">Impuesto (%)</Label>
+                        <Input
+                          id="taxRate"
+                          type="number"
+                          value={estimate.taxRate}
+                          onChange={(e) => setEstimate(prev => ({ 
+                            ...prev, 
+                            taxRate: parseFloat(e.target.value) || 0 
+                          }))}
+                          className="text-right"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                        />
+                      </div>
+
+                      {/* Discount Control */}
+                      <div className="space-y-2">
+                        <Label htmlFor="discount">Descuento</Label>
+                        <div className="flex gap-2">
+                          <select
+                            value={estimate.discountType}
+                            onChange={(e) => setEstimate(prev => ({ 
+                              ...prev, 
+                              discountType: e.target.value as 'percentage' | 'fixed' 
+                            }))}
+                            className="px-2 py-1 border rounded text-sm"
+                          >
+                            <option value="percentage">%</option>
+                            <option value="fixed">$</option>
+                          </select>
+                          <Input
+                            type="number"
+                            value={estimate.discountValue}
+                            onChange={(e) => setEstimate(prev => ({ 
+                              ...prev, 
+                              discountValue: parseFloat(e.target.value) || 0 
+                            }))}
+                            className="text-right flex-1"
+                            min="0"
+                            step="0.01"
+                            placeholder="0"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Totals Summary */}
                     <div className="text-right space-y-2">
                       <p>Subtotal: <span className="font-medium">${estimate.subtotal.toFixed(2)}</span></p>
-                      <p>Impuesto (16%): <span className="font-medium">${estimate.tax.toFixed(2)}</span></p>
+                      {estimate.discountAmount > 0 && (
+                        <p className="text-green-600">
+                          Descuento: <span className="font-medium">-${estimate.discountAmount.toFixed(2)}</span>
+                        </p>
+                      )}
+                      <p>Impuesto ({estimate.taxRate}%): <span className="font-medium">${estimate.tax.toFixed(2)}</span></p>
                       <p className="text-lg font-bold text-primary">
                         Total: ${estimate.total.toFixed(2)}
                       </p>
@@ -1814,7 +1895,11 @@ export default function EstimatesWizardFixed() {
                 projectDetails: '',
                 subtotal: 0,
                 tax: 0,
-                total: 0
+                total: 0,
+                taxRate: 10,
+                discountType: 'percentage',
+                discountValue: 0,
+                discountAmount: 0
               });
             }}>
               <Plus className="h-4 w-4 mr-2" />
