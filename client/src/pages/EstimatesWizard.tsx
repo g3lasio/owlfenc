@@ -36,7 +36,8 @@ import {
   Download,
   RefreshCw,
   AlertCircle,
-  Edit
+  Edit,
+  Mail
 } from 'lucide-react';
 
 // Types
@@ -157,6 +158,16 @@ export default function EstimatesWizardFixed() {
   const [savedEstimates, setSavedEstimates] = useState<any[]>([]);
   const [isLoadingEstimates, setIsLoadingEstimates] = useState(false);
   const [showCompanyEditDialog, setShowCompanyEditDialog] = useState(false);
+  
+  // Email dialog states
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [emailData, setEmailData] = useState({
+    toEmail: '',
+    subject: '',
+    message: '',
+    sendCopy: true
+  });
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [editableCompany, setEditableCompany] = useState({
     companyName: '',
     address: '',
@@ -810,6 +821,85 @@ export default function EstimatesWizardFixed() {
       loadSavedEstimates();
     }
   }, [showEstimatesHistory]);
+
+  // Initialize email data when dialog opens
+  useEffect(() => {
+    if (showEmailDialog && estimate.client) {
+      setEmailData({
+        toEmail: estimate.client.email || '',
+        subject: `Estimado Profesional - ${profile?.companyName || 'Su Proyecto'}`,
+        message: `Estimado/a ${estimate.client.name},\n\nEsperamos que este mensaje le encuentre bien. Adjunto encontrará el estimado profesional para su proyecto de ${estimate.projectDetails || 'construcción'}.\n\nHemos preparado cuidadosamente este estimado considerando sus necesidades específicas y utilizando materiales de la más alta calidad. El estimado incluye todos los detalles del trabajo a realizar, así como los costos asociados.\n\nSi tiene alguna pregunta sobre el estimado o desea hacer algún ajuste, no dude en contactarnos. Estamos aquí para asegurar que el proyecto cumpla con todas sus expectativas.\n\nEsperamos tener la oportunidad de trabajar con usted en este proyecto.\n\nSaludos cordiales,\n${profile?.companyName || 'Su Empresa'}\n${profile?.phone || ''}\n${profile?.email || ''}`,
+        sendCopy: true
+      });
+    }
+  }, [showEmailDialog, estimate.client, profile]);
+
+  // Send email function
+  const sendEstimateEmail = async () => {
+    if (!estimate.client?.email) {
+      toast({
+        title: 'Error',
+        description: 'El cliente no tiene un email registrado',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (!emailData.toEmail || !emailData.subject || !emailData.message) {
+      toast({
+        title: 'Error', 
+        description: 'Por favor complete todos los campos requeridos',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsSendingEmail(true);
+    
+    try {
+      // Generate the estimate HTML
+      const estimateHtml = generateEstimatePreview();
+      
+      // Send email with estimate
+      const response = await fetch('/api/send-estimate-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: emailData.toEmail,
+          subject: emailData.subject,
+          message: emailData.message,
+          estimateHtml: estimateHtml,
+          clientName: estimate.client.name,
+          companyName: profile?.companyName || 'Your Company',
+          companyEmail: profile?.email || '',
+          sendCopy: emailData.sendCopy
+        })
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: '✅ Email Enviado',
+          description: `El estimado fue enviado exitosamente a ${emailData.toEmail}`,
+          duration: 5000
+        });
+        setShowEmailDialog(false);
+      } else {
+        throw new Error(result.error || 'Error al enviar el email');
+      }
+    } catch (error) {
+      console.error('Error sending email:', error);
+      toast({
+        title: '❌ Error al Enviar',
+        description: 'No se pudo enviar el email. Por favor intente nuevamente.',
+        variant: 'destructive',
+        duration: 5000
+      });
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
 
   // Download PDF
   const downloadPDF = async () => {
@@ -1467,12 +1557,13 @@ export default function EstimatesWizardFixed() {
                     </Button>
                     <Button
                       variant="outline"
-                      onClick={() => setShowEstimatesHistory(true)}
-                      className="border-gray-300 flex-1 text-xs"
+                      onClick={() => setShowEmailDialog(true)}
+                      disabled={!estimate.client || estimate.items.length === 0 || !previewHtml}
+                      className="border-blue-300 text-blue-600 hover:bg-blue-50 flex-1 text-xs"
                       size="sm"
                     >
-                      <FileText className="h-3 w-3 mr-1" />
-                      Mis Estimados
+                      <Mail className="h-3 w-3 mr-1" />
+                      Enviar Email
                     </Button>
                     <Button
                       onClick={downloadPDF}
@@ -2019,6 +2110,104 @@ export default function EstimatesWizardFixed() {
             }}>
               <Plus className="h-4 w-4 mr-2" />
               Crear Nuevo Estimado
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Email Dialog */}
+      <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Enviar Estimado por Email
+            </DialogTitle>
+            <DialogDescription>
+              Envía el estimado profesional directamente al cliente con un mensaje personalizado
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="toEmail">Email del Cliente *</Label>
+                <Input
+                  id="toEmail"
+                  type="email"
+                  value={emailData.toEmail}
+                  onChange={(e) => setEmailData(prev => ({ ...prev, toEmail: e.target.value }))}
+                  placeholder="cliente@email.com"
+                />
+              </div>
+              <div>
+                <Label htmlFor="subject">Asunto *</Label>
+                <Input
+                  id="subject"
+                  value={emailData.subject}
+                  onChange={(e) => setEmailData(prev => ({ ...prev, subject: e.target.value }))}
+                  placeholder="Estimado Profesional - Su Proyecto"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="message">Mensaje *</Label>
+              <Textarea
+                id="message"
+                value={emailData.message}
+                onChange={(e) => setEmailData(prev => ({ ...prev, message: e.target.value }))}
+                placeholder="Mensaje personalizado para el cliente..."
+                rows={8}
+                className="resize-none"
+              />
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="sendCopy"
+                checked={emailData.sendCopy}
+                onChange={(e) => setEmailData(prev => ({ ...prev, sendCopy: e.target.checked }))}
+                className="rounded"
+              />
+              <Label htmlFor="sendCopy" className="text-sm">
+                Enviar una copia a mi email ({profile?.email || 'su email'})
+              </Label>
+            </div>
+
+            {estimate.client && (
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h4 className="font-medium text-blue-900 mb-2">Información del Cliente:</h4>
+                <p className="text-sm text-blue-700">
+                  <strong>Nombre:</strong> {estimate.client.name}<br />
+                  <strong>Email:</strong> {estimate.client.email || 'No registrado'}<br />
+                  <strong>Proyecto:</strong> {estimate.projectDetails || 'Sin descripción'}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEmailDialog(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={sendEstimateEmail}
+              disabled={isSendingEmail || !emailData.toEmail || !emailData.subject || !emailData.message}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {isSendingEmail ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Enviando...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  Enviar Estimado
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
