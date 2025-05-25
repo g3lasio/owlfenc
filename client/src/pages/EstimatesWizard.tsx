@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 // Usar el logo correcto de OWL FENCE
@@ -34,7 +34,8 @@ import {
   Minus,
   Download,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  Edit
 } from 'lucide-react';
 
 // Types
@@ -1269,6 +1270,14 @@ export default function EstimatesWizardFixed() {
                     Actualizar Vista Previa
                   </Button>
                   <Button
+                    variant="outline"
+                    onClick={() => setShowEstimatesHistory(true)}
+                    className="border-gray-300"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Mis Estimados
+                  </Button>
+                  <Button
                     onClick={downloadPDF}
                     disabled={!estimate.client || estimate.items.length === 0 || !previewHtml}
                   >
@@ -1665,6 +1674,134 @@ export default function EstimatesWizardFixed() {
               });
             }}>
               Guardar Cambios
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal del Historial de Estimados */}
+      <Dialog open={showEstimatesHistory} onOpenChange={setShowEstimatesHistory}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Mis Estimados Guardados
+            </DialogTitle>
+            <DialogDescription>
+              Historial completo de todos los estimados creados y guardados
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {isLoadingEstimates ? (
+              <div className="text-center py-8">
+                <div className="inline-flex items-center gap-2">
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  Cargando estimados...
+                </div>
+              </div>
+            ) : savedEstimates.length === 0 ? (
+              <div className="text-center py-8">
+                <FileText className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                <p className="text-lg font-medium">No hay estimados guardados</p>
+                <p className="text-muted-foreground">
+                  Crea y descarga tu primer estimado para verlo aquí
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-4 max-h-96 overflow-y-auto">
+                {savedEstimates.map((estimate) => (
+                  <div key={estimate.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="font-semibold text-lg">{estimate.estimateNumber}</h3>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            estimate.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
+                            estimate.status === 'sent' ? 'bg-blue-100 text-blue-800' :
+                            estimate.status === 'approved' ? 'bg-green-100 text-green-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {estimate.status === 'draft' ? 'Borrador' :
+                             estimate.status === 'sent' ? 'Enviado' :
+                             estimate.status === 'approved' ? 'Aprobado' : estimate.status}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-1">
+                          <strong>Cliente:</strong> {estimate.clientName}
+                        </p>
+                        <p className="text-sm text-gray-600 mb-1">
+                          <strong>Proyecto:</strong> {estimate.projectType || 'Cerca'}
+                        </p>
+                        <p className="text-sm text-gray-600 mb-2">
+                          <strong>Total:</strong> ${(estimate.total / 100).toFixed(2)}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Creado: {new Date(estimate.estimateDate).toLocaleDateString('es-ES')}
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            // Abrir PDF si existe
+                            if (estimate.pdfUrl) {
+                              window.open(estimate.pdfUrl, '_blank');
+                            } else {
+                              toast({
+                                title: 'PDF no disponible',
+                                description: 'Este estimado no tiene PDF generado',
+                                variant: 'destructive'
+                              });
+                            }
+                          }}
+                        >
+                          <Download className="h-3 w-3 mr-1" />
+                          PDF
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            // Cargar estimado para editar
+                            // Aquí se puede implementar la funcionalidad de cargar un estimado existente
+                            toast({
+                              title: 'Función próximamente',
+                              description: 'Pronto podrás editar estimados guardados'
+                            });
+                          }}
+                        >
+                          <Edit className="h-3 w-3 mr-1" />
+                          Editar
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEstimatesHistory(false)}>
+              Cerrar
+            </Button>
+            <Button onClick={() => {
+              setShowEstimatesHistory(false);
+              // Resetear formulario para crear nuevo estimado
+              setCurrentStep(0);
+              setEstimate({
+                client: null,
+                items: [],
+                projectDetails: '',
+                subtotal: 0,
+                tax: 0,
+                total: 0
+              });
+            }}>
+              <Plus className="h-4 w-4 mr-2" />
+              Crear Nuevo Estimado
             </Button>
           </DialogFooter>
         </DialogContent>
