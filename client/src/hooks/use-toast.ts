@@ -161,11 +161,12 @@ function toast({ ...props }: Toast) {
     },
   })
 
-  // Programar auto-dismiss si se especifica duración
-  if (props.duration !== undefined && props.duration > 0) {
+  // Programar auto-dismiss SIEMPRE - usar duración especificada o 3 segundos por defecto
+  const autoDismissDelay = props.duration !== undefined ? props.duration : 3000;
+  if (autoDismissDelay > 0) {
     setTimeout(() => {
       dismiss()
-    }, props.duration)
+    }, autoDismissDelay)
   }
 
   return {
