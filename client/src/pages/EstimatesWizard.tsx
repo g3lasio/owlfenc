@@ -138,6 +138,11 @@ export default function EstimatesWizardFixed() {
   // AI enhancement states
   const [isAIProcessing, setIsAIProcessing] = useState(false);
   const [showMervinMessage, setShowMervinMessage] = useState(false);
+
+  // Estimates history states
+  const [showEstimatesHistory, setShowEstimatesHistory] = useState(false);
+  const [savedEstimates, setSavedEstimates] = useState<any[]>([]);
+  const [isLoadingEstimates, setIsLoadingEstimates] = useState(false);
   const [showCompanyEditDialog, setShowCompanyEditDialog] = useState(false);
   const [editableCompany, setEditableCompany] = useState({
     companyName: '',
@@ -602,9 +607,93 @@ export default function EstimatesWizardFixed() {
     return html;
   };
 
+  // Save estimate to database
+  const saveEstimate = async () => {
+    try {
+      const estimateData = {
+        estimateNumber: `EST-${Date.now()}`,
+        clientName: estimate.client?.name || '',
+        clientEmail: estimate.client?.email || '',
+        clientPhone: estimate.client?.phone || '',
+        clientAddress: estimate.client?.address || '',
+        projectType: 'fence', // Por ahora, se puede hacer dinámico después
+        projectDescription: estimate.projectDetails,
+        items: estimate.items.map(item => ({
+          name: item.name,
+          description: item.description,
+          quantity: item.quantity,
+          unit: item.unit,
+          unitPrice: Math.round(item.price * 100), // Convertir a centavos
+          totalPrice: Math.round(item.total * 100)
+        })),
+        subtotal: Math.round(estimate.subtotal * 100),
+        taxAmount: Math.round(estimate.tax * 100),
+        total: Math.round(estimate.total * 100),
+        htmlContent: generateEstimatePreview(),
+        status: 'draft'
+      };
+
+      const response = await fetch('/api/estimates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(estimateData),
+      });
+
+      if (response.ok) {
+        const savedEstimate = await response.json();
+        toast({
+          title: '💾 Estimado Guardado',
+          description: `Estimado ${savedEstimate.estimateNumber} guardado correctamente`
+        });
+        return savedEstimate;
+      } else {
+        throw new Error('Error al guardar el estimado');
+      }
+    } catch (error) {
+      console.error('Error saving estimate:', error);
+      toast({
+        title: '❌ Error al Guardar',
+        description: 'No se pudo guardar el estimado',
+        variant: 'destructive'
+      });
+      return null;
+    }
+  };
+
+  // Load saved estimates
+  const loadSavedEstimates = async () => {
+    setIsLoadingEstimates(true);
+    try {
+      const response = await fetch('/api/estimates');
+      if (response.ok) {
+        const data = await response.json();
+        setSavedEstimates(data);
+      }
+    } catch (error) {
+      console.error('Error loading estimates:', error);
+      toast({
+        title: '❌ Error',
+        description: 'No se pudieron cargar los estimados guardados',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoadingEstimates(false);
+    }
+  };
+
+  // Load estimates when history modal opens
+  useEffect(() => {
+    if (showEstimatesHistory) {
+      loadSavedEstimates();
+    }
+  }, [showEstimatesHistory]);
+
   // Download PDF
   const downloadPDF = async () => {
     try {
+      // Primero guardar el estimado automáticamente
+      const savedEstimate = await saveEstimate();
+      
       // Generar HTML optimizado para PDF
       const html = generateEstimatePreview();
       
