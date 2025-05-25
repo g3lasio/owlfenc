@@ -789,14 +789,94 @@ export default function EstimatesWizardFixed() {
                   <Package className="h-5 w-5" />
                   Agregar Materiales ({estimate.items.length})
                 </div>
+                <div className="flex gap-2">
+                  <Button 
+                    size="sm"
+                    variant="outline"
+                    onClick={async () => {
+                      if (!estimate.projectDetails.trim()) {
+                        toast({
+                          title: 'Descripción requerida',
+                          description: 'Por favor describe tu proyecto primero para usar DeepSearch IA',
+                          variant: 'destructive'
+                        });
+                        return;
+                      }
+                      
+                      setIsAIProcessing(true);
+                      try {
+                        const response = await fetch('/api/deepsearch/materials-only', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            projectDescription: estimate.projectDetails,
+                            location: estimate.client?.address || ''
+                          })
+                        });
+
+                        if (!response.ok) {
+                          throw new Error('Error al generar materiales con IA');
+                        }
+
+                        const result = await response.json();
+                        
+                        if (result.success && result.materials) {
+                          // Agregar materiales generados por IA al estimado
+                          const newItems = result.materials.map((material: any) => ({
+                            id: `ai_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                            name: material.name,
+                            description: material.description || '',
+                            category: material.category,
+                            quantity: material.quantity,
+                            unit: material.unit,
+                            price: material.price,
+                            total: material.total
+                          }));
+
+                          setEstimate(prev => ({
+                            ...prev,
+                            items: [...prev.items, ...newItems]
+                          }));
+
+                          toast({
+                            title: '🎉 DeepSearch IA Completado',
+                            description: `Se agregaron ${newItems.length} materiales automáticamente`
+                          });
+                        }
+                      } catch (error) {
+                        console.error('Error with DeepSearch:', error);
+                        toast({
+                          title: 'Error en DeepSearch IA',
+                          description: 'No se pudieron generar materiales automáticamente',
+                          variant: 'destructive'
+                        });
+                      } finally {
+                        setIsAIProcessing(false);
+                      }
+                    }}
+                    disabled={isAIProcessing || !estimate.projectDetails.trim()}
+                  >
+                    {isAIProcessing ? (
+                      <>
+                        <Brain className="h-4 w-4 mr-2 animate-pulse" />
+                        Generando...
+                      </>
+                    ) : (
+                      <>
+                        <Brain className="h-4 w-4 mr-2" />
+                        DeepSearch IA
+                      </>
+                    )}
+                  </Button>
+                </div>
                 <Dialog open={showMaterialDialog} onOpenChange={setShowMaterialDialog}>
-                  <DialogTrigger asChild>
-                    <Button size="sm">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Agregar Material
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-4xl">
+                    <DialogTrigger asChild>
+                      <Button size="sm">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Agregar Material
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-4xl">
                     <DialogHeader>
                       <DialogTitle>Seleccionar Material del Inventario</DialogTitle>
                     </DialogHeader>
