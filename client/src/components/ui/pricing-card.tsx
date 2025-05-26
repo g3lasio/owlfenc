@@ -82,10 +82,27 @@ export function PricingCard({
           </div>
           
           <div className="mb-6 text-center relative">
-            <div className="text-sm italic text-transparent bg-gradient-to-r from-blue-400 via-purple-500 to-cyan-400 bg-clip-text font-medium leading-relaxed px-2 py-3 rounded-lg border border-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-sm shadow-lg animate-pulse">
-              "{motto}"
+            <div className="relative bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-4 border-2 border-transparent bg-clip-padding">
+              {/* Transformers-style geometric border */}
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 rounded-lg"></div>
+              <div className="absolute inset-[2px] bg-slate-900 rounded-lg"></div>
+              
+              {/* Corner accents like Transformers */}
+              <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-cyan-400"></div>
+              <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-cyan-400"></div>
+              <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-cyan-400"></div>
+              <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-cyan-400"></div>
+              
+              {/* Glowing neon text */}
+              <div className="relative z-10 text-sm font-bold tracking-wide uppercase text-transparent bg-gradient-to-r from-cyan-300 via-green-400 to-cyan-300 bg-clip-text leading-relaxed py-2">
+                <div className="drop-shadow-[0_0_10px_rgba(34,211,238,0.7)] animate-pulse">
+                  "{motto}"
+                </div>
+              </div>
+              
+              {/* Animated glow effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/20 via-green-400/20 to-cyan-400/20 rounded-lg blur-sm animate-pulse"></div>
             </div>
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg blur-md -z-10"></div>
           </div>
           
           <ul className="space-y-2">
