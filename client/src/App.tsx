@@ -10,7 +10,7 @@ import Projects from "@/pages/Projects";
 import Clients from "./pages/Clients";
 import NuevoClientes from "./pages/NuevoClientes";
 import Materials from "./pages/Materials";
-import EstimatesWizard from "./pages/EstimatesWizard";
+import EstimatesWizard from "./pages/EstimatesWizardMobile";
 import ChatInterface from "@/components/chat/ChatInterface";
 import Settings from "@/pages/Settings";
 import Profile from "@/pages/Profile";
