@@ -38,12 +38,6 @@ export const navigationGroups: NavigationGroup[] = [
         icon: "ri-briefcase-4-line"
       },
       {
-        id: "project-payments",
-        label: "navigation.paymentTracker",
-        path: "/project-payments",
-        icon: "ri-money-dollar-circle-line"
-      },
-      {
         id: "clients",
         label: "navigation.clients",
         path: "/clients",
@@ -77,6 +71,12 @@ export const navigationGroups: NavigationGroup[] = [
         label: "navigation.propertyVerification",
         path: "/property-verifier",
         icon: "ri-shield-keyhole-line"
+      },
+      {
+        id: "project-payments",
+        label: "navigation.paymentTracker",
+        path: "/project-payments",
+        icon: "ri-money-dollar-circle-line"
       },
       {
         id: "permit-advisor",
