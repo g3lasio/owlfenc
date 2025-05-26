@@ -832,45 +832,19 @@ export default function EstimatesDashboard() {
       </html>
       `;
       
-      // Generate PDF client-side usando downloadHTMLAsPDF en lugar de generateClientSidePDF 
-      // para evitar problemas con la carga de imágenes
-      const { downloadHTMLAsPDF } = await import('../lib/pdf');
-      const fileName = `Estimado-${estimateData.clientName?.replace(/\s+/g, '-') || 'Cliente'}-${Date.now()}`;
+      // Generar vista previa y PDF usando el sistema unificado
+      setPreviewHtml(html);
+      setShowPreviewDialog(true);
       
-      // Intentar primero con downloadHTMLAsPDF que usa el servidor
-      try {
-        await downloadHTMLAsPDF(html, fileName);
-        
-        toast({
-          title: "PDF generado",
-          description: "El PDF del estimado se ha generado correctamente.",
-        });
-      } catch (downloadError) {
-        console.error('Error con downloadHTMLAsPDF, intentando con generateClientSidePDF:', downloadError);
-        
-        // Si falla, intentar con el método alternativo generateClientSidePDF
-        try {
-          const { generateClientSidePDF } = await import('../lib/pdf');
-          await generateClientSidePDF(html, fileName);
-          
-          toast({
-            title: "PDF generado",
-            description: "El PDF del estimado se ha generado correctamente.",
-          });
-        } catch (clientSideError) {
-          console.error('Error con generateClientSidePDF:', clientSideError);
-          throw new Error("No se pudo generar el PDF por ningún método");
-        }
-      }
     } catch (error) {
-      console.error('Error downloading PDF:', error);
+      console.error('Error viewing estimate:', error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "No se pudo generar el PDF del estimado.",
+        description: error instanceof Error ? error.message : "No se pudo cargar la vista previa del estimado.",
         variant: "destructive"
       });
     } finally {
-      setIsPdfLoading(false);
+      setIsPreviewLoading(false);
     }
   };
   
