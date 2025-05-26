@@ -50,17 +50,22 @@ export class PDFMonkeyService {
       // Usar directamente el template ID 2 que funciona mejor
       const templateId = options.templateId || '2E4DC55E-044E-4FD3-B511-FEBF950071FA';
       
-      // Limpiar y optimizar HTML para PDFMonkey
-      const cleanHtml = html
+      // Simplificar HTML para compatibilidad total con PDFMonkey
+      const simpleHtml = html
         .replace(/\s+/g, ' ') // Eliminar espacios múltiples
         .replace(/<!--[\s\S]*?-->/g, '') // Eliminar comentarios
+        .replace(/style="[^"]*"/g, '') // Eliminar todos los estilos inline
+        .replace(/<style[\s\S]*?<\/style>/gi, '') // Eliminar bloques CSS
+        .replace(/class="[^"]*"/g, '') // Eliminar clases CSS
         .trim();
+      
+      console.log(`🐒 [PDFMONKEY] HTML simplificado - Tamaño: ${simpleHtml.length} caracteres`);
       
       const documentPayload = {
         document: {
           document_template_id: templateId,
           payload: {
-            html_content: cleanHtml, // HTML limpio para mejor compatibilidad
+            html_content: simpleHtml, // HTML ultra-simplificado
             title: options.title || 'Document',
             ...options.data
           },
