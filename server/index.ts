@@ -46,6 +46,11 @@ app.use('/api', paymentRoutes);
 app.use('/api', modernPdfRoutes);
 console.log('✅ [MODERN-PDF] Sistema PDF rápido registrado en /api/generate-pdf');
 
+// 🔧 Registrar endpoint simple para estimados...
+import pdfRoutes from './routes/pdf-routes';
+app.use('/api/pdf', pdfRoutes);
+console.log('🔧 [SIMPLE-PDF] Sistema ligero registrado en /api/pdf/generate');
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
