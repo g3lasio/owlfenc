@@ -69,6 +69,7 @@ export default function EstimatesDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [isPdfLoading, setIsPdfLoading] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
 
   // Load estimates from Firestore
   useEffect(() => {
@@ -187,6 +188,7 @@ export default function EstimatesDashboard() {
   // Handler for View Estimate
   const handleViewEstimate = async (estimateId: string) => {
     try {
+      setIsPreviewLoading(true);
       setCurrentEstimateId(estimateId);
       toast({
         title: "Cargando estimado",
@@ -487,6 +489,8 @@ export default function EstimatesDashboard() {
         description: error instanceof Error ? error.message : "No se pudo cargar la vista previa del estimado.",
         variant: "destructive"
       });
+    } finally {
+      setIsPreviewLoading(false);
     }
   };
   
@@ -832,7 +836,7 @@ export default function EstimatesDashboard() {
       </html>
       `;
       
-      // Generar vista previa y PDF usando el sistema unificado
+      // Generar vista previa usando el sistema unificado
       setPreviewHtml(html);
       setShowPreviewDialog(true);
       
