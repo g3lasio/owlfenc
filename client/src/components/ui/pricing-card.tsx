@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, Hammer, Crown, Trophy } from "lucide-react";
+import { Check, Hammer, Crown, Trophy, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface PricingCardProps {
@@ -44,9 +44,10 @@ export function PricingCard({
       case 'mero_patron':
         return <Crown className="h-6 w-6 text-primary" />;
       case 'chingon_mayor':
-        return <Trophy className="h-6 w-6 text-amber-500" />;
+      case 'master_contractor':
+        return <Zap className="h-6 w-6 text-purple-500" />;
       default:
-        return null;
+        return <Trophy className="h-6 w-6 text-amber-500" />;
     }
   };
 
@@ -67,21 +68,24 @@ export function PricingCard({
         </div>
       )}
       <div>
-        <CardHeader className="pb-2">
-          <div className="flex items-center gap-3">
+        <CardHeader className="pb-2 text-center">
+          <div className="flex items-center justify-center gap-3 mb-2">
             {renderPlanIcon()}
             <CardTitle className="text-xl">{name}</CardTitle>
           </div>
-          <CardDescription className="text-sm pt-1">{description}</CardDescription>
+          <CardDescription className="text-sm pt-1 text-center">{description}</CardDescription>
         </CardHeader>
         <CardContent className="pb-2">
-          <div className="mb-6">
+          <div className="mb-6 text-center">
             <span className="text-3xl font-bold">${currentPrice}</span>
             <span className="text-muted-foreground ml-1">{period}</span>
           </div>
           
-          <div className="text-sm italic text-muted-foreground mb-6">
-            "{motto}"
+          <div className="mb-6 text-center relative">
+            <div className="text-sm italic text-transparent bg-gradient-to-r from-blue-400 via-purple-500 to-cyan-400 bg-clip-text font-medium leading-relaxed px-2 py-3 rounded-lg border border-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-sm shadow-lg animate-pulse">
+              "{motto}"
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg blur-md -z-10"></div>
           </div>
           
           <ul className="space-y-2">
