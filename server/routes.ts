@@ -1335,9 +1335,10 @@ Output in English regardless of input language. Make it suitable for contracts a
   // *** SUBSCRIPTION ROUTES ***
   app.get('/api/subscription/plans', async (req: Request, res: Response) => {
     try {
-      const plans = await storage.getAllSubscriptionPlans();
+      // Siempre usar los planes actualizados
+      const plans = null; // Forzar uso de planes por defecto actualizados
 
-      // Si no hay planes, devolver planes por defecto para desarrollo
+      // Devolver planes actualizados
       if (!plans || plans.length === 0) {
         const defaultPlans = [
           {
