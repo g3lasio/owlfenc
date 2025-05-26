@@ -47,9 +47,8 @@ export class PDFMonkeyService {
         throw new Error('API Key de PDFMonkey no configurada');
       }
 
-      // Usar template configurado con {{html_content}} que renderiza nuestro HTML existente
-      const templateId = options.templateId || 'DF24FD81-01C5-4054-BDCF-19ED1DFCD763';
-      const fallbackTemplateId = '2E4DC55E-044E-4FD3-B511-FEBF950071FA';
+      // Usar directamente el template ID 2 que funciona mejor
+      const templateId = options.templateId || '2E4DC55E-044E-4FD3-B511-FEBF950071FA';
       
       // Limpiar y optimizar HTML para PDFMonkey
       const cleanHtml = html
@@ -75,44 +74,17 @@ export class PDFMonkeyService {
 
       console.log('📤 [PDFMONKEY] Enviando solicitud a PDFMonkey...');
       
-      let response;
-      try {
-        response = await axios.post(
-          `${this.baseUrl}/documents`,
-          documentPayload,
-          {
-            headers: {
-              'Authorization': `Bearer ${this.apiKey}`,
-              'Content-Type': 'application/json'
-            },
-            timeout: 30000
-          }
-        );
-      } catch (primaryError) {
-        console.log(`⚠️ [PDFMONKEY] Template principal falló, intentando con fallback: ${fallbackTemplateId}`);
-        
-        // Intentar con template de fallback
-        const fallbackPayload = {
-          ...documentPayload,
-          document: {
-            ...documentPayload.document,
-            document_template_id: fallbackTemplateId
-          }
-        };
-        
-        response = await axios.post(
-          `${this.baseUrl}/documents`,
-          fallbackPayload,
-          {
-            headers: {
-              'Authorization': `Bearer ${this.apiKey}`,
-              'Content-Type': 'application/json'
-            },
-            timeout: 30000
-          }
-        );
-        console.log('✅ [PDFMONKEY] Fallback template funcionó correctamente');
-      }
+      const response = await axios.post(
+        `${this.baseUrl}/documents`,
+        documentPayload,
+        {
+          headers: {
+            'Authorization': `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 30000
+        }
+      );
 
       const documentId = response.data.document.id;
       console.log(`📊 [PDFMONKEY] Documento creado con ID: ${documentId}`);
