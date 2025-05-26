@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { getClients as getFirebaseClients, saveClient } from '@/lib/clientFirebase';
+import { migrateClientsToCurrentUser } from '@/lib/migrateClients';
 import { collection, query, where, getDocs, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { 
@@ -135,6 +136,7 @@ export default function EstimatesWizardMobile() {
   const [isLoadingClients, setIsLoadingClients] = useState(true);
   const [isLoadingMaterials, setIsLoadingMaterials] = useState(true);
   const [previewHtml, setPreviewHtml] = useState('');
+  const [isMigrating, setIsMigrating] = useState(false);
 
   // New client form
   const [newClient, setNewClient] = useState({
@@ -167,6 +169,11 @@ export default function EstimatesWizardMobile() {
     try {
       const clientsData = await getFirebaseClients(currentUser.uid);
       setClients(clientsData as Client[]);
+      
+      // Si no hay clientes pero sabemos que hay 107 en la base de datos, ofrecer migración
+      if (clientsData.length === 0) {
+        console.log("No se encontraron clientes para el usuario actual, verificando migración...");
+      }
     } catch (error) {
       console.error('Error loading clients from Firebase:', error);
       toast({
@@ -176,6 +183,42 @@ export default function EstimatesWizardMobile() {
       });
     } finally {
       setIsLoadingClients(false);
+    }
+  };
+
+  // Función para migrar clientes existentes
+  const migrateExistingClients = async () => {
+    if (!currentUser) return;
+    
+    setIsMigrating(true);
+    try {
+      const result = await migrateClientsToCurrentUser(currentUser.uid);
+      
+      if (result.success) {
+        toast({
+          title: '✅ Migración Exitosa',
+          description: `Se migraron ${result.migratedCount} clientes correctamente`,
+          duration: 5000
+        });
+        
+        // Recargar los clientes después de la migración
+        await loadClientsFromFirebase();
+      } else {
+        toast({
+          title: '❌ Error en Migración',
+          description: 'No se pudieron migrar los clientes',
+          variant: 'destructive'
+        });
+      }
+    } catch (error) {
+      console.error('Error migrating clients:', error);
+      toast({
+        title: '❌ Error',
+        description: 'Error durante la migración de clientes',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsMigrating(false);
     }
   };
 
@@ -490,9 +533,31 @@ export default function EstimatesWizardMobile() {
                 {isLoadingClients ? (
                   <p className="text-center py-4 text-muted-foreground">Cargando clientes...</p>
                 ) : filteredClients.length === 0 ? (
-                  <p className="text-center py-4 text-muted-foreground">
-                    {clientSearch ? 'No se encontraron clientes' : 'No hay clientes disponibles'}
-                  </p>
+                  <div className="text-center py-4 space-y-3">
+                    <p className="text-muted-foreground">
+                      {clientSearch ? 'No se encontraron clientes' : 'No hay clientes disponibles'}
+                    </p>
+                    {!clientSearch && (
+                      <Button
+                        onClick={migrateExistingClients}
+                        disabled={isMigrating}
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        {isMigrating ? (
+                          <>
+                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            Migrando...
+                          </>
+                        ) : (
+                          <>
+                            <Users className="h-4 w-4 mr-2" />
+                            Recuperar Mis Clientes
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
                 ) : (
                   filteredClients.map((client) => (
                     <div
