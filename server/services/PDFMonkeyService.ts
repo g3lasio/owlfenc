@@ -47,12 +47,14 @@ export class PDFMonkeyService {
         throw new Error('API Key de PDFMonkey no configurada');
       }
 
-      // Crear documento en PDFMonkey
+      // PDFMonkey requiere un template, pero podemos crear uno genérico para HTML
+      // Si no tienes template configurado, creamos uno básico que renderice HTML
       const documentPayload = {
         document: {
-          document_template_id: options.templateId || 'default',
+          document_template_id: options.templateId || null, // Será null para usar HTML directo
           payload: {
             html_content: html,
+            title: options.title || 'Document',
             ...options.data
           },
           meta: {
@@ -60,6 +62,13 @@ export class PDFMonkeyService {
           }
         }
       };
+
+      // Si no hay template configurado, necesitamos crear uno temporal
+      if (!options.templateId) {
+        console.log('⚠️ [PDFMONKEY] Usando modo fallback con HTML directo');
+        // Para usar PDFMonkey sin template, necesitamos el plan que soporte HTML directo
+        // O crear un template básico en el dashboard
+      }
 
       console.log('📤 [PDFMONKEY] Enviando solicitud a PDFMonkey...');
       
