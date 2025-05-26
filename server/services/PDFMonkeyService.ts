@@ -81,8 +81,9 @@ export class PDFMonkeyService {
 
       console.log('📤 [PDFMONKEY] Enviando solicitud a PDFMonkey...');
       
+      // 🔥 USAR ENDPOINT SÍNCRONO PARA EVITAR EL PROBLEMA DE "DRAFT"
       const response = await axios.post(
-        `${this.baseUrl}/documents`,
+        `${this.baseUrl}/documents/sync`, // ← ENDPOINT SÍNCRONO
         documentPayload,
         {
           headers: {
@@ -93,21 +94,35 @@ export class PDFMonkeyService {
         }
       );
 
-      const documentId = response.data.document.id;
-      console.log(`📊 [PDFMONKEY] Documento creado con ID: ${documentId}`);
+      console.log(`📊 [PDFMONKEY] Respuesta síncrona:`, JSON.stringify(response.data, null, 2));
 
-      // Esperar a que el PDF esté listo y descargarlo
-      const pdfBuffer = await this.waitAndDownloadPdf(documentId);
-      
-      const processingTime = Date.now() - startTime;
-      console.log(`✅ [PDFMONKEY] PDF generado exitosamente en ${processingTime}ms`);
+      // Con endpoint /sync, el PDF está listo inmediatamente
+      if (response.data?.document?.id) {
+        const documentId = response.data.document.id;
+        console.log(`✅ [PDFMONKEY] PDF generado síncronamente - ID: ${documentId}`);
+        
+        // Descargar el PDF directamente
+        const downloadResponse = await axios.get(
+          `${this.baseUrl}/documents/${documentId}/download`,
+          {
+            headers: { 'Authorization': `Bearer ${this.apiKey}` },
+            responseType: 'arraybuffer',
+            timeout: 30000
+          }
+        );
 
-      return {
-        success: true,
-        buffer: pdfBuffer,
-        documentId,
-        processingTime
-      };
+        const processingTime = Date.now() - startTime;
+        console.log(`📥 [PDFMONKEY] PDF descargado exitosamente - ${downloadResponse.data.byteLength} bytes en ${processingTime}ms`);
+
+        return {
+          success: true,
+          buffer: Buffer.from(downloadResponse.data),
+          documentId,
+          processingTime
+        };
+      } else {
+        throw new Error(`Error en respuesta síncrona: ${JSON.stringify(response.data)}`);
+      }
 
     } catch (error) {
       const processingTime = Date.now() - startTime;
