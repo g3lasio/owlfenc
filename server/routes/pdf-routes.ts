@@ -29,14 +29,14 @@ router.post('/generate', upload.none(), async (req, res) => {
 
     console.log(`📄 [FAST-PDF] Generando PDF rápido - Tamaño HTML: ${html.length} caracteres`);
 
-    // 🎯 USAR SISTEMA MODERNO RÁPIDO
-    const { modernPdfService } = await import('../services/ModernPdfService');
+    // ⚡ USAR SISTEMA SIMPLE Y RÁPIDO (sin dependencias de Chrome)
+    const { simplePdfService } = await import('../services/SimplePdfService');
     
     let result;
     if (type === 'contract') {
-      result = await modernPdfService.generateContractPdf(html, estimateId || 'contract');
+      result = await simplePdfService.generateContractPdf(html, estimateId || 'contract');
     } else {
-      result = await modernPdfService.generateEstimatePdf(html, estimateId || 'estimate');
+      result = await simplePdfService.generateEstimatePdf(html, estimateId || 'estimate');
     }
 
     if (!result.success) {

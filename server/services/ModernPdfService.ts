@@ -5,7 +5,7 @@
  * Diseñado para ser reutilizable tanto para estimados como para contratos
  */
 
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-core';
 import { promises as fs } from 'fs';
 import path from 'path';
 
