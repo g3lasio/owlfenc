@@ -432,14 +432,14 @@ export default function EstimatesWizardMobile() {
     switch (currentStep) {
       case 0: // Client Selection
         return (
-          <Card className="w-full">
-            <CardHeader className="pb-4">
+          <Card className="w-full max-w-sm mx-auto">
+            <CardHeader className="pb-4 px-4">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <User className="h-5 w-5" />
                 Seleccionar Cliente
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 px-4">
               {/* Search and Add Client */}
               <div className="flex flex-col sm:flex-row gap-2">
                 <div className="relative flex-1">
