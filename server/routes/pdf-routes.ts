@@ -12,54 +12,67 @@ const router = express.Router();
 // Configurar multer para parsear el FormData
 const upload = multer({ storage: multer.memoryStorage() });
 
-// Endpoint para generar un PDF a partir de contenido HTML
+// 🚀 NUEVO SISTEMA PDF RÁPIDO - Reemplaza sistema lento anterior
 router.post('/generate', upload.none(), async (req, res) => {
+  const startTime = Date.now();
+  console.log('🚀 [FAST-PDF] Nueva solicitud interceptada - Usando sistema rápido');
+
   try {
-    console.log('Recibida solicitud para generar PDF');
-    
-    const { html, filename = 'document.pdf' } = req.body;
-    
+    const { html, title, estimateId, type = 'estimate' } = req.body;
+
     if (!html) {
-      console.log('Error: No se proporcionó contenido HTML');
-      return res.status(400).json({ error: 'No se proporcionó contenido HTML' });
+      return res.status(400).json({
+        success: false,
+        error: 'HTML requerido para generar PDF'
+      });
     }
+
+    console.log(`📄 [FAST-PDF] Generando PDF rápido - Tamaño HTML: ${html.length} caracteres`);
+
+    // 🎯 USAR SISTEMA MODERNO RÁPIDO
+    const { modernPdfService } = await import('../services/ModernPdfService');
     
-    console.log('Generando PDF avanzado con contenido HTML, longitud:', html.length);
-    
-    // Verificar que el servicio avanzado esté disponible y generar PDF
-    const isServiceReady = await validateAdvancedPdfService();
-    
-    let pdfBuffer: Buffer;
-    
-    if (isServiceReady) {
-      console.log('Usando servicio avanzado de PDF con IA...');
-      pdfBuffer = await generateAdvancedPDF(html);
+    let result;
+    if (type === 'contract') {
+      result = await modernPdfService.generateContractPdf(html, estimateId || 'contract');
     } else {
-      console.log('Servicio avanzado no disponible, usando método estándar...');
-      pdfBuffer = await generatePDF(html);
+      result = await modernPdfService.generateEstimatePdf(html, estimateId || 'estimate');
     }
-    
-    console.log('PDF generado correctamente, tamaño:', pdfBuffer.length);
-    
-    // Para debug, guardar una copia en el sistema de archivos
-    if (process.env.NODE_ENV !== 'production') {
-      const savedPath = savePDFToFileSystem(pdfBuffer, `debug-${Date.now()}.pdf`);
-      console.log('PDF guardado para debug en:', savedPath);
+
+    if (!result.success) {
+      console.error('❌ [FAST-PDF] Error generando PDF:', result.error);
+      return res.status(500).json({
+        success: false,
+        error: result.error || 'Error desconocido'
+      });
     }
+
+    const totalTime = Date.now() - startTime;
+    console.log(`✅ [FAST-PDF] PDF generado exitosamente en ${totalTime}ms (vs 38 segundos anterior)`);
+    console.log(`📊 [FAST-PDF] Mejora de velocidad: ${Math.round(38000/totalTime)}x más rápido`);
+
+    // Configurar headers para descarga
+    const filename = title ? `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf` : 'documento.pdf';
     
-    // Establecer cabeceras para la descarga
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    console.log('Enviando PDF como respuesta...');
+    res.setHeader('Content-Length', result.buffer!.length);
+    res.setHeader('X-Generation-Time', totalTime.toString());
+    res.setHeader('X-Processing-Time', result.processingTime.toString());
+
+    console.log('✅ [FAST-PDF] Enviando PDF optimizado...');
     
-    // Enviar el PDF como respuesta
-    res.send(pdfBuffer);
-    console.log('PDF enviado con éxito');
+    // Enviar el PDF
+    res.send(result.buffer);
+    console.log('🎯 [FAST-PDF] PDF enviado exitosamente');
   } catch (error) {
-    console.error('Error generando PDF:', error);
-    res.status(500).json({ 
-      error: 'Error al generar el PDF',
-      details: error instanceof Error ? error.message : 'Error desconocido' 
+    const totalTime = Date.now() - startTime;
+    console.error('❌ [FAST-PDF] Error inesperado:', error);
+    
+    res.status(500).json({
+      success: false,
+      error: 'Error interno del servidor',
+      processingTime: totalTime
     });
   }
 });
