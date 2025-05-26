@@ -60,6 +60,7 @@ export class PDFMonkeyService {
         .trim();
       
       console.log(`🐒 [PDFMONKEY] HTML simplificado - Tamaño: ${simpleHtml.length} caracteres`);
+      console.log(`🐒 [PDFMONKEY] Muestra HTML simplificado (primeros 200 chars):`, simpleHtml.substring(0, 200));
       
       const documentPayload = {
         document: {
@@ -76,6 +77,7 @@ export class PDFMonkeyService {
       };
 
       console.log(`🐒 [PDFMONKEY] Usando template: ${templateId}`);
+      console.log(`🐒 [PDFMONKEY] Payload completo:`, JSON.stringify(documentPayload, null, 2));
 
       console.log('📤 [PDFMONKEY] Enviando solicitud a PDFMonkey...');
       
@@ -134,11 +136,15 @@ export class PDFMonkeyService {
           }
         );
 
-        const status = statusResponse.data.document.status;
+        const responseData = statusResponse.data.document;
+        const status = responseData?.status;
+        
         console.log(`🔄 [PDFMONKEY] Estado del documento (intento ${attempt}): ${status}`);
+        console.log(`🔍 [PDFMONKEY] Respuesta completa:`, JSON.stringify(responseData, null, 2));
 
         if (status === 'success') {
-          // Descargar el PDF
+          console.log(`✅ [PDFMONKEY] ¡PDF generado exitosamente! Descargando...`);
+          
           const downloadResponse = await axios.get(
             `${this.baseUrl}/documents/${documentId}/download`,
             {
@@ -149,11 +155,23 @@ export class PDFMonkeyService {
             }
           );
 
+          console.log(`📥 [PDFMONKEY] PDF descargado - Tamaño: ${downloadResponse.data.byteLength} bytes`);
           return Buffer.from(downloadResponse.data);
         }
 
         if (status === 'error') {
-          throw new Error('Error en la generación del PDF en PDFMonkey');
+          console.log(`❌ [PDFMONKEY] Error detectado:`, responseData?.error || responseData);
+          throw new Error(`PDFMonkey generation failed: ${responseData?.error || JSON.stringify(responseData)}`);
+        }
+        
+        if (status === 'draft') {
+          console.log(`⏳ [PDFMONKEY] Documento en borrador - analizando...`);
+          if (responseData?.errors && responseData.errors.length > 0) {
+            console.log(`🚨 [PDFMONKEY] Errores en template:`, responseData.errors);
+          }
+          if (responseData?.logs) {
+            console.log(`📋 [PDFMONKEY] Logs disponibles:`, responseData.logs);
+          }
         }
 
         // Esperar un poco antes del siguiente intento
