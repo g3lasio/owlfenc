@@ -892,9 +892,9 @@ export default function EstimatesWizardMobile() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Mobile Header */}
-      <div className="sticky top-0 z-50 bg-background border-b">
+      <div className="sticky top-0 z-50 bg-background border-b flex-shrink-0">
         <div className="flex items-center justify-between p-4">
           <div>
             <h1 className="text-lg font-bold">Nuevo Estimado</h1>
@@ -941,9 +941,11 @@ export default function EstimatesWizardMobile() {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="p-4 pb-20">
-        {renderCurrentStep()}
+      {/* Main Content - Scrollable */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-4 pb-24">
+          {renderCurrentStep()}
+        </div>
       </div>
 
       {/* Navigation Footer - Sticky */}
