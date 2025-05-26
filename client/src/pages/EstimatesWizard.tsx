@@ -172,6 +172,126 @@ export default function EstimatesWizardFixed() {
   // Email dialog states
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+
+  // Smart Search Handler
+  const handleSmartSearch = async () => {
+    if (!estimate.projectDetails.trim()) {
+      toast({
+        title: 'Descripción requerida',
+        description: 'Por favor describe tu proyecto primero para usar Smart Search IA',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsAIProcessing(true);
+    setAiProgress(0);
+    
+    try {
+      let endpoint = '';
+      let successMessage = '';
+      
+      switch (smartSearchMode) {
+        case 'materials':
+          endpoint = '/api/deepsearch/materials-only';
+          successMessage = 'materiales';
+          break;
+        case 'labor':
+          endpoint = '/api/labor-deepsearch';
+          successMessage = 'servicios de labor';
+          break;
+        case 'both':
+          endpoint = '/api/deepsearch/combined';
+          successMessage = 'materiales y labor';
+          break;
+      }
+
+      setAiProgress(30);
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectDescription: estimate.projectDetails,
+          location: estimate.client?.address || ''
+        })
+      });
+
+      setAiProgress(70);
+
+      if (!response.ok) {
+        throw new Error('Error al generar con Smart Search IA');
+      }
+
+      const result = await response.json();
+      setAiProgress(90);
+
+      if (result.success) {
+        const newItems: EstimateItem[] = [];
+        
+        // Agregar materiales si existen
+        if (result.materials) {
+          result.materials.forEach((material: any) => {
+            newItems.push({
+              id: `ai_mat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              materialId: material.id || '',
+              name: material.name,
+              description: material.description || '',
+              quantity: material.quantity,
+              price: material.price,
+              unit: material.unit,
+              total: material.total
+            });
+          });
+        }
+
+        // Agregar servicios de labor si existen
+        if (result.laborServices) {
+          result.laborServices.forEach((service: any) => {
+            newItems.push({
+              id: `ai_lab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              materialId: service.id || '',
+              name: service.name,
+              description: service.description || '',
+              quantity: service.quantity,
+              price: service.price,
+              unit: service.unit,
+              total: service.total
+            });
+          });
+        }
+
+        setEstimate(prev => ({
+          ...prev,
+          items: [...prev.items, ...newItems]
+        }));
+
+        setAiProgress(100);
+        setShowSmartSearchDialog(false);
+
+        // Mostrar mensaje de Mervin
+        setShowMervinMessage(true);
+        setTimeout(() => {
+          setShowMervinMessage(false);
+        }, 10000);
+
+        toast({
+          title: '🎉 Smart Search IA Completado',
+          description: `Se agregaron ${newItems.length} ${successMessage} automáticamente`
+        });
+      }
+    } catch (error) {
+      console.error('Error with Smart Search:', error);
+      toast({
+        title: 'Error en Smart Search IA',
+        description: 'No se pudieron generar los elementos automáticamente',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsAIProcessing(false);
+      setAiProgress(0);
+    }
+  };
   const [emailData, setEmailData] = useState({
     toEmail: '',
     subject: '',
