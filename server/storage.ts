@@ -1027,14 +1027,11 @@ export class StorageManager implements IStorage {
   }
 }
 
-// Por defecto usamos PostgreSQL como almacenamiento principal
+// Usar Firebase como almacenamiento principal
+const firebaseStorage = new FirebaseStorage();
+
+// PostgreSQL como respaldo (opcional)
 const databaseStorage = new DatabaseStorage();
 
-// Vamos a utilizar solo el almacenamiento principal de PostgreSQL
-// pero con manejo de errores mejorado en el StorageManager
-export const storage = new StorageManager(databaseStorage);
-
-// NOTA: La implementación de Firebase necesita completarse antes de utilizarla
-// como respaldo. Para habilitarla después:
-// const firebaseStorage = new FirebaseStorage();
-// export const storage = new StorageManager(databaseStorage, firebaseStorage);
+// Usar Firebase como principal con PostgreSQL como respaldo
+export const storage = new StorageManager(firebaseStorage, databaseStorage);
