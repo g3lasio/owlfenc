@@ -326,6 +326,7 @@ export default function EstimatesWizardMobile() {
     try {
       const clientData = {
         ...newClient,
+        clientId: `client_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         userId: currentUser?.uid || '',
         createdAt: new Date(),
         source: 'estimate_wizard'

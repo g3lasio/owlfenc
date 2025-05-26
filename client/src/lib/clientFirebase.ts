@@ -122,8 +122,7 @@ export const getClients = async (userId?: string, filters?: { tag?: string, sour
       try {
         q = query(
           collection(db, "clients"),
-          ...queryConstraints,
-          orderBy("createdAt", "desc")
+          ...queryConstraints
         );
         console.log("   ✓ Consulta con filtros construida exitosamente");
       } catch (queryError) {
