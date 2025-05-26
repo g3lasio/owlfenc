@@ -15,7 +15,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 // 🚀 NUEVO SISTEMA PDF RÁPIDO - Reemplaza sistema lento anterior
 router.post('/generate', upload.none(), async (req, res) => {
   const startTime = Date.now();
-  console.log('🚀 [FAST-PDF] Nueva solicitud interceptada - Usando sistema rápido');
+  console.log('🐒 [PDFMONKEY] Nueva solicitud interceptada - Usando servicio profesional');
 
   try {
     const { html, title, estimateId, type = 'estimate' } = req.body;
@@ -27,16 +27,16 @@ router.post('/generate', upload.none(), async (req, res) => {
       });
     }
 
-    console.log(`📄 [FAST-PDF] Generando PDF rápido - Tamaño HTML: ${html.length} caracteres`);
+    console.log(`📄 [PDFMONKEY] Generando PDF profesional - Tamaño HTML: ${html.length} caracteres`);
 
-    // ⚡ USAR SISTEMA SIMPLE Y RÁPIDO (sin dependencias de Chrome)
-    const { simplePdfService } = await import('../services/SimplePdfService');
+    // 🐒 USAR PDFMONKEY - Sistema profesional y estable
+    const { pdfMonkeyService } = await import('../services/PDFMonkeyService');
     
     let result;
     if (type === 'contract') {
-      result = await simplePdfService.generateContractPdf(html, estimateId || 'contract');
+      result = await pdfMonkeyService.generateContractPdf(html, estimateId || 'contract');
     } else {
-      result = await simplePdfService.generateEstimatePdf(html, estimateId || 'estimate');
+      result = await pdfMonkeyService.generateEstimatePdf(html, estimateId || 'estimate');
     }
 
     if (!result.success) {

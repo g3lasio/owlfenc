@@ -36,20 +36,15 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // Importar rutas de pagos
 import paymentRoutes from './routes/payment-routes';
 
-// 🚀 NUEVO SISTEMA PDF MODERNO - Reemplaza sistema lento anterior
-import modernPdfRoutes from './routes/modern-pdf-routes';
+// 🐒 SISTEMA PDFMONKEY - Único procesador profesional de PDFs
+import pdfRoutes from './routes/pdf-routes';
 
 // Registrar rutas de pagos
 app.use('/api', paymentRoutes);
 
-// 📄 Registrar nuevo sistema PDF optimizado
-app.use('/api', modernPdfRoutes);
-console.log('✅ [MODERN-PDF] Sistema PDF rápido registrado en /api/generate-pdf');
-
-// 🔧 Registrar endpoint simple para estimados...
-import pdfRoutes from './routes/pdf-routes';
+// 📄 Registrar sistema PDFMonkey único
 app.use('/api/pdf', pdfRoutes);
-console.log('🔧 [SIMPLE-PDF] Sistema ligero registrado en /api/pdf/generate');
+console.log('🐒 [PDFMONKEY] Sistema profesional de PDFs registrado en /api/pdf/generate');
 
 app.use((req, res, next) => {
   const start = Date.now();
