@@ -48,6 +48,7 @@ import estimatesSimpleRoutes from './routes/estimates-simple'; // Import simple 
 import { setupTemplatesRoutes } from './routes/templates';
 import { aiEnhancementRoutes } from './routes/aiEnhancementRoutes'; // Import new AI enhancement routes
 import { registerDeepSearchRoutes } from './routes/deepSearchRoutes'; // Import DeepSearch AI routes
+import { registerLaborDeepSearchRoutes } from './routes/laborDeepSearchRoutes'; // Import Labor DeepSearch AI routes
 import express from 'express'; // Import express to use express.raw
 
 // Initialize OpenAI API
@@ -2700,6 +2701,9 @@ Output in English regardless of input language. Make it suitable for contracts a
 
   // Registrar rutas del módulo DeepSearch IA
   registerDeepSearchRoutes(app);
+  
+  // Registrar rutas del módulo Labor DeepSearch IA
+  registerLaborDeepSearchRoutes(app);
 
   // Crear y retornar el servidor HTTP
   const server = createServer(app);

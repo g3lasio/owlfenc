@@ -84,7 +84,7 @@ router.get('/', async (req, res) => {
     console.log('📋 Obteniendo lista de proyectos...');
     
     // Obtener todos los proyectos (que incluyen los estimados guardados)
-    const projects = await storage.getProjects();
+    const projects = await storage.getAllProjects();
     
     console.log(`✅ Se encontraron ${projects.length} proyectos`);
     

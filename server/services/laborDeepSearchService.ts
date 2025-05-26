@@ -1,0 +1,296 @@
+/**
+ * Labor DeepSearch IA Service
+ * 
+ * Este servicio utiliza IA para analizar descripciones de proyectos y generar
+ * automáticamente listas de servicios de labor/mano de obra con costos estimados.
+ * 
+ * Funcionalidad:
+ * - Análisis de descripción del proyecto para identificar tareas de labor
+ * - Identificación automática de servicios necesarios (instalación, demolición, limpieza, etc.)
+ * - Estimación de horas de trabajo y costos de mano de obra
+ * - Generación de estimados de labor completos
+ * 
+ * Casos de uso:
+ * - Proyectos donde el cliente provee materiales
+ * - Servicios de limpieza y demolición
+ * - Instalación sin materiales
+ * - Servicios de preparación de sitio
+ * - Hauling y disposal
+ */
+
+import Anthropic from '@anthropic-ai/sdk';
+
+// the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
+
+interface LaborItem {
+  id: string;
+  name: string;
+  description: string;
+  category: string; // 'preparation', 'installation', 'cleanup', 'demolition', 'hauling', 'specialty'
+  hours: number;
+  hourlyRate: number;
+  totalCost: number;
+  skillLevel: string; // 'helper', 'skilled', 'specialist', 'foreman'
+  crew: number; // número de personas necesarias
+  dependencies?: string[]; // tareas que deben completarse antes
+  equipment?: string[]; // equipo necesario para la tarea
+}
+
+interface LaborAnalysisResult {
+  laborItems: LaborItem[];
+  totalHours: number;
+  totalLaborCost: number;
+  estimatedDuration: string; // días de trabajo
+  crewSize: number;
+  projectComplexity: 'low' | 'medium' | 'high';
+  specialRequirements: string[];
+  safetyConsiderations: string[];
+}
+
+export class LaborDeepSearchService {
+  
+  /**
+   * Analiza un proyecto y genera una lista completa de tareas de labor
+   */
+  async analyzeLaborRequirements(
+    projectDescription: string, 
+    location?: string,
+    projectType?: string
+  ): Promise<LaborAnalysisResult> {
+    try {
+      console.log('🔧 Labor DeepSearch: Iniciando análisis de labor para:', { projectDescription, location, projectType });
+
+      const prompt = this.buildLaborAnalysisPrompt(projectDescription, location, projectType);
+      
+      const response = await anthropic.messages.create({
+        model: "claude-3-7-sonnet-20250219",
+        max_tokens: 4000,
+        temperature: 0.3,
+        messages: [{
+          role: "user",
+          content: prompt
+        }]
+      });
+
+      const content = response.content[0];
+      if (content.type !== 'text') {
+        throw new Error('Invalid response type from Anthropic');
+      }
+
+      const analysisResult = this.parseClaudeResponse(content.text);
+      
+      console.log('✅ Labor DeepSearch: Análisis completado', {
+        laborItemsCount: analysisResult.laborItems.length,
+        totalCost: analysisResult.totalLaborCost,
+        estimatedDuration: analysisResult.estimatedDuration
+      });
+
+      return analysisResult;
+
+    } catch (error) {
+      console.error('❌ Labor DeepSearch Error:', error);
+      throw new Error(`Error en análisis de labor: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+    }
+  }
+
+  /**
+   * Construye el prompt para Claude específico para análisis de labor
+   */
+  private buildLaborAnalysisPrompt(projectDescription: string, location?: string, projectType?: string): string {
+    return `
+Eres un experto en construcción y estimación de costos de mano de obra. Analiza la siguiente descripción de proyecto y genera una lista detallada de todas las tareas de labor/servicios necesarios.
+
+DESCRIPCIÓN DEL PROYECTO:
+${projectDescription}
+
+TIPO DE PROYECTO: ${projectType || 'General'}
+UBICACIÓN: ${location || 'Estados Unidos'}
+
+INSTRUCCIONES:
+1. Identifica SOLO las tareas de LABOR/SERVICIOS (NO incluyas materiales)
+2. Considera que el cliente puede estar proporcionando los materiales
+3. Enfócate en servicios como: instalación, preparación, demolición, limpieza, hauling, etc.
+4. Estima horas realistas y costos de mano de obra por región
+5. Incluye diferentes niveles de habilidad necesarios
+6. Considera equipos y herramientas necesarios
+
+CATEGORÍAS DE LABOR A CONSIDERAR:
+- Preparación del sitio (excavación, nivelación, marcado)
+- Demolición y remoción
+- Instalación y construcción
+- Acabados y detalles
+- Limpieza y cleanup
+- Hauling y disposal
+- Servicios especializados
+
+RESPONDE EN FORMATO JSON EXACTO:
+{
+  "laborItems": [
+    {
+      "id": "labor_001",
+      "name": "Nombre de la tarea",
+      "description": "Descripción detallada del trabajo",
+      "category": "preparation|installation|cleanup|demolition|hauling|specialty",
+      "hours": 8.0,
+      "hourlyRate": 45.00,
+      "totalCost": 360.00,
+      "skillLevel": "helper|skilled|specialist|foreman",
+      "crew": 2,
+      "dependencies": ["tarea_previa"],
+      "equipment": ["herramientas necesarias"]
+    }
+  ],
+  "totalHours": 40.0,
+  "totalLaborCost": 2400.00,
+  "estimatedDuration": "3-5 días",
+  "crewSize": 3,
+  "projectComplexity": "medium",
+  "specialRequirements": ["permisos especiales", "certificaciones"],
+  "safetyConsiderations": ["consideraciones de seguridad"]
+}
+
+TARIFAS DE REFERENCIA POR NIVEL:
+- Helper: $20-30/hora
+- Skilled: $35-50/hora  
+- Specialist: $50-75/hora
+- Foreman: $60-85/hora
+
+Ajusta las tarifas según la ubicación y complejidad del proyecto.
+`;
+  }
+
+  /**
+   * Parsea la respuesta de Claude y estructura los datos
+   */
+  private parseClaudeResponse(claudeResponse: string): LaborAnalysisResult {
+    try {
+      // Limpiar la respuesta y extraer JSON
+      const jsonMatch = claudeResponse.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('No se encontró JSON válido en la respuesta');
+      }
+
+      const parsed = JSON.parse(jsonMatch[0]);
+      
+      // Validar estructura básica
+      if (!parsed.laborItems || !Array.isArray(parsed.laborItems)) {
+        throw new Error('Estructura de respuesta inválida');
+      }
+
+      // Generar IDs únicos si no existen
+      parsed.laborItems = parsed.laborItems.map((item: any, index: number) => ({
+        ...item,
+        id: item.id || `labor_${Date.now()}_${index}`,
+        totalCost: Number(item.totalCost || 0),
+        hours: Number(item.hours || 0),
+        hourlyRate: Number(item.hourlyRate || 0),
+        crew: Number(item.crew || 1)
+      }));
+
+      // Calcular totales si no están presentes
+      if (!parsed.totalHours) {
+        parsed.totalHours = parsed.laborItems.reduce((sum: number, item: any) => sum + (item.hours || 0), 0);
+      }
+
+      if (!parsed.totalLaborCost) {
+        parsed.totalLaborCost = parsed.laborItems.reduce((sum: number, item: any) => sum + (item.totalCost || 0), 0);
+      }
+
+      return parsed as LaborAnalysisResult;
+
+    } catch (error) {
+      console.error('Error parseando respuesta de Claude:', error);
+      throw new Error('Error procesando respuesta de IA');
+    }
+  }
+
+  /**
+   * Genera una lista de tareas de labor compatible con el sistema existente
+   */
+  async generateCompatibleLaborList(projectDescription: string, location?: string, projectType?: string): Promise<any[]> {
+    const laborResult = await this.analyzeLaborRequirements(projectDescription, location, projectType);
+    
+    return laborResult.laborItems.map(labor => ({
+      id: labor.id,
+      name: labor.name,
+      description: `${labor.description} (${labor.hours} horas, ${labor.crew} personas)`,
+      category: 'labor',
+      quantity: labor.hours,
+      unit: 'horas',
+      unitPrice: labor.hourlyRate,
+      totalPrice: labor.totalCost,
+      skillLevel: labor.skillLevel,
+      crew: labor.crew,
+      equipment: labor.equipment || [],
+      dependencies: labor.dependencies || []
+    }));
+  }
+
+  /**
+   * Combina análisis de materiales y labor para un estimado completo
+   */
+  async generateCombinedEstimate(
+    projectDescription: string, 
+    includeMaterials: boolean = true,
+    includeLabor: boolean = true,
+    location?: string,
+    projectType?: string
+  ): Promise<{
+    materials: any[];
+    labor: any[];
+    totalMaterialsCost: number;
+    totalLaborCost: number;
+    grandTotal: number;
+  }> {
+    
+    const results = {
+      materials: [] as any[],
+      labor: [] as any[],
+      totalMaterialsCost: 0,
+      totalLaborCost: 0,
+      grandTotal: 0
+    };
+
+    try {
+      // Generar labor si se solicita
+      if (includeLabor) {
+        console.log('🔧 Generando análisis de labor...');
+        const laborResult = await this.analyzeLaborRequirements(projectDescription, location, projectType);
+        results.labor = await this.generateCompatibleLaborList(projectDescription, location, projectType);
+        results.totalLaborCost = laborResult.totalLaborCost;
+      }
+
+      // Generar materiales si se solicita (usando el servicio existente)
+      if (includeMaterials) {
+        console.log('📦 Generando análisis de materiales...');
+        // Importar el servicio de materiales existente
+        const { deepSearchService } = await import('./deepSearchService');
+        const materialsResult = await deepSearchService.generateCompatibleMaterialsList(projectDescription, location);
+        results.materials = materialsResult;
+        results.totalMaterialsCost = materialsResult.reduce((sum: number, item: any) => sum + (item.total || 0), 0);
+      }
+
+      results.grandTotal = results.totalMaterialsCost + results.totalLaborCost;
+
+      console.log('✅ Estimado combinado generado:', {
+        materialsCount: results.materials.length,
+        laborCount: results.labor.length,
+        totalMaterialsCost: results.totalMaterialsCost,
+        totalLaborCost: results.totalLaborCost,
+        grandTotal: results.grandTotal
+      });
+
+      return results;
+
+    } catch (error) {
+      console.error('❌ Error generando estimado combinado:', error);
+      throw error;
+    }
+  }
+}
+
+// Crear instancia del servicio
+export const laborDeepSearchService = new LaborDeepSearchService();
