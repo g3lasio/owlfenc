@@ -83,12 +83,29 @@ export default function PropertyOwnershipVerifier() {
 
     const validateGoogleMapsKey = () => {
       const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+      console.log("Verificando API key de Google Maps:", apiKey ? `${apiKey.substring(0, 10)}...` : "No encontrada");
+      
       if (!apiKey || apiKey.length < 20) {
+        console.error("API key inválida o faltante");
         setApiError(true);
         setUseManualInput(true);
         setError(
           "Error: No se encontró una clave API válida de Google Maps. Verifica la variable de entorno VITE_GOOGLE_MAPS_API_KEY.",
         );
+      } else {
+        console.log("API key válida encontrada");
+        // Verificar si hay errores de Google Maps después de un pequeño retraso
+        setTimeout(() => {
+          if (window.google && window.google.maps) {
+            console.log("Google Maps cargado correctamente");
+            setApiError(false);
+            setUseManualInput(false);
+          } else {
+            console.log("Google Maps no se cargó correctamente, usando entrada manual");
+            setApiError(true);
+            setUseManualInput(true);
+          }
+        }, 2000);
       }
     };
 
