@@ -51,11 +51,17 @@ export class PDFMonkeyService {
       const templateId = options.templateId || 'DF24FD81-01C5-4054-BDCF-19ED1DFCD763';
       const fallbackTemplateId = '2E4DC55E-044E-4FD3-B511-FEBF950071FA';
       
+      // Limpiar y optimizar HTML para PDFMonkey
+      const cleanHtml = html
+        .replace(/\s+/g, ' ') // Eliminar espacios múltiples
+        .replace(/<!--[\s\S]*?-->/g, '') // Eliminar comentarios
+        .trim();
+      
       const documentPayload = {
         document: {
           document_template_id: templateId,
           payload: {
-            html_content: html, // Nuestro HTML se renderiza directamente en el template
+            html_content: cleanHtml, // HTML limpio para mejor compatibilidad
             title: options.title || 'Document',
             ...options.data
           },
@@ -105,6 +111,7 @@ export class PDFMonkeyService {
             timeout: 30000
           }
         );
+        console.log('✅ [PDFMONKEY] Fallback template funcionó correctamente');
       }
 
       const documentId = response.data.document.id;

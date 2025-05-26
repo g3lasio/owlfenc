@@ -954,11 +954,28 @@ export default function EstimatesWizardFixed() {
         </html>
       `;
 
+      // 🐒 USAR TEMPLATE UNIFICADO CON PDFMONKEY
+      const { generateUnifiedEstimateHTML, convertEstimateDataToTemplate } = 
+        await import('../lib/unified-estimate-template');
+      
+      // Obtener datos de la empresa
+      let companyData = {};
+      try {
+        const profile = localStorage.getItem('contractorProfile');
+        if (profile) companyData = JSON.parse(profile);
+      } catch (error) {
+        console.warn('Usando datos por defecto');
+      }
+      
+      // Generar HTML con template unificado (mismo que el preview)
+      const templateData = convertEstimateDataToTemplate(estimate, companyData);
+      const unifiedHtml = generateUnifiedEstimateHTML(templateData);
+      
       const response = await fetch('/api/pdf/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          html: pdfOptimizedHtml, 
+          html: unifiedHtml, 
           filename: `estimate-${estimate.client?.name || 'client'}.pdf` 
         }),
       });
