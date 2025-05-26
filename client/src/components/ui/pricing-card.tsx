@@ -82,26 +82,36 @@ export function PricingCard({
           </div>
           
           <div className="mb-6 text-center relative">
-            <div className="relative bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-4 border-2 border-transparent bg-clip-padding">
-              {/* Transformers-style geometric border */}
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 rounded-lg"></div>
-              <div className="absolute inset-[2px] bg-slate-900 rounded-lg"></div>
-              
-              {/* Corner accents like Transformers */}
-              <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-cyan-400"></div>
-              <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-cyan-400"></div>
-              <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-cyan-400"></div>
-              <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-cyan-400"></div>
-              
-              {/* Glowing neon text */}
-              <div className="relative z-10 text-sm font-bold tracking-wide uppercase text-transparent bg-gradient-to-r from-cyan-300 via-green-400 to-cyan-300 bg-clip-text leading-relaxed py-2">
-                <div className="drop-shadow-[0_0_10px_rgba(34,211,238,0.7)] animate-pulse">
-                  "{motto}"
-                </div>
+            <div className="relative p-4 mx-2">
+              {/* Futuristic arrow-style border */}
+              <div className="absolute inset-0">
+                {/* Top arrow */}
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-8 h-2 bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 translate-y-1 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-l-transparent border-r-transparent border-t-cyan-400"></div>
+                
+                {/* Bottom arrow */}
+                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-8 h-2 bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
+                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 -translate-y-1 w-0 h-0 border-l-[6px] border-r-[6px] border-b-[8px] border-l-transparent border-r-transparent border-b-cyan-400"></div>
+                
+                {/* Side lines with gradient */}
+                <div className="absolute left-0 top-4 bottom-4 w-[2px] bg-gradient-to-b from-cyan-400 via-blue-500 to-cyan-400"></div>
+                <div className="absolute right-0 top-4 bottom-4 w-[2px] bg-gradient-to-b from-cyan-400 via-blue-500 to-cyan-400"></div>
+                
+                {/* Corner tech details */}
+                <div className="absolute top-2 left-2 w-3 h-[2px] bg-cyan-400"></div>
+                <div className="absolute top-2 left-2 w-[2px] h-3 bg-cyan-400"></div>
+                <div className="absolute top-2 right-2 w-3 h-[2px] bg-cyan-400"></div>
+                <div className="absolute top-2 right-2 w-[2px] h-3 bg-cyan-400"></div>
+                <div className="absolute bottom-2 left-2 w-3 h-[2px] bg-cyan-400"></div>
+                <div className="absolute bottom-2 left-2 w-[2px] h-3 bg-cyan-400"></div>
+                <div className="absolute bottom-2 right-2 w-3 h-[2px] bg-cyan-400"></div>
+                <div className="absolute bottom-2 right-2 w-[2px] h-3 bg-cyan-400"></div>
               </div>
               
-              {/* Animated glow effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/20 via-green-400/20 to-cyan-400/20 rounded-lg blur-sm animate-pulse"></div>
+              {/* Clear, readable neon text */}
+              <div className="relative z-10 text-base font-bold italic text-cyan-300 leading-relaxed py-3 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]">
+                "{motto}"
+              </div>
             </div>
           </div>
           
