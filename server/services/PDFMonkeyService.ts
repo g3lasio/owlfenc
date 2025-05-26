@@ -47,13 +47,15 @@ export class PDFMonkeyService {
         throw new Error('API Key de PDFMonkey no configurada');
       }
 
-      // PDFMonkey requiere un template, pero podemos crear uno genérico para HTML
-      // Si no tienes template configurado, creamos uno básico que renderice HTML
+      // Usar template configurado con {{html_content}} que renderiza nuestro HTML existente
+      const templateId = options.templateId || 'DF24FD81-01C5-4054-BDCF-19ED1DFCD763';
+      const fallbackTemplateId = '2E4DC55E-044E-4FD3-B511-FEBF950071FA';
+      
       const documentPayload = {
         document: {
-          document_template_id: options.templateId || null, // Será null para usar HTML directo
+          document_template_id: templateId,
           payload: {
-            html_content: html,
+            html_content: html, // Nuestro HTML se renderiza directamente en el template
             title: options.title || 'Document',
             ...options.data
           },
@@ -63,26 +65,47 @@ export class PDFMonkeyService {
         }
       };
 
-      // Si no hay template configurado, necesitamos crear uno temporal
-      if (!options.templateId) {
-        console.log('⚠️ [PDFMONKEY] Usando modo fallback con HTML directo');
-        // Para usar PDFMonkey sin template, necesitamos el plan que soporte HTML directo
-        // O crear un template básico en el dashboard
-      }
+      console.log(`🐒 [PDFMONKEY] Usando template: ${templateId}`);
 
       console.log('📤 [PDFMONKEY] Enviando solicitud a PDFMonkey...');
       
-      const response = await axios.post(
-        `${this.baseUrl}/documents`,
-        documentPayload,
-        {
-          headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          timeout: 30000
-        }
-      );
+      let response;
+      try {
+        response = await axios.post(
+          `${this.baseUrl}/documents`,
+          documentPayload,
+          {
+            headers: {
+              'Authorization': `Bearer ${this.apiKey}`,
+              'Content-Type': 'application/json'
+            },
+            timeout: 30000
+          }
+        );
+      } catch (primaryError) {
+        console.log(`⚠️ [PDFMONKEY] Template principal falló, intentando con fallback: ${fallbackTemplateId}`);
+        
+        // Intentar con template de fallback
+        const fallbackPayload = {
+          ...documentPayload,
+          document: {
+            ...documentPayload.document,
+            document_template_id: fallbackTemplateId
+          }
+        };
+        
+        response = await axios.post(
+          `${this.baseUrl}/documents`,
+          fallbackPayload,
+          {
+            headers: {
+              'Authorization': `Bearer ${this.apiKey}`,
+              'Content-Type': 'application/json'
+            },
+            timeout: 30000
+          }
+        );
+      }
 
       const documentId = response.data.document.id;
       console.log(`📊 [PDFMONKEY] Documento creado con ID: ${documentId}`);
