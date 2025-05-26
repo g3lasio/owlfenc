@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 // Usar el logo correcto de OWL FENCE
 const mervinLogoUrl = "https://ik.imagekit.io/lp5czyx2a/ChatGPT%20Image%20May%2010,%202025,%2005_35_38%20PM.png?updatedAt=1748157114019";
@@ -27,6 +28,7 @@ import {
   Users, 
   ChevronRight, 
   ChevronLeft,
+  ChevronDown,
   Check,
   Calculator,
   Building2,
@@ -38,7 +40,9 @@ import {
   AlertCircle,
   Edit,
   Mail,
-  X
+  X,
+  Wrench,
+  Combine
 } from 'lucide-react';
 
 // Types
@@ -137,6 +141,12 @@ export default function EstimatesWizardFixed() {
   const [isLoadingClients, setIsLoadingClients] = useState(true);
   const [isLoadingMaterials, setIsLoadingMaterials] = useState(true);
   const [previewHtml, setPreviewHtml] = useState('');
+  
+  // Smart Search states
+  const [showSmartSearchDialog, setShowSmartSearchDialog] = useState(false);
+  const [smartSearchMode, setSmartSearchMode] = useState<'materials' | 'labor' | 'both'>('both');
+  const [isAIProcessing, setIsAIProcessing] = useState(false);
+  const [aiProgress, setAiProgress] = useState(0);
 
   // New client form
   const [newClient, setNewClient] = useState({
@@ -150,8 +160,7 @@ export default function EstimatesWizardFixed() {
     notes: ''
   });
 
-  // AI enhancement states
-  const [isAIProcessing, setIsAIProcessing] = useState(false);
+  // AI enhancement states - using the existing isAIProcessing from Smart Search
   const [showMervinMessage, setShowMervinMessage] = useState(false);
 
   // Estimates history states
@@ -1210,90 +1219,117 @@ export default function EstimatesWizardFixed() {
                   Agregar Materiales ({estimate.items.length})
                 </div>
                 <div className="flex gap-2">
-                  <Button 
-                    size="sm"
-                    variant="outline"
-                    onClick={async () => {
-                      if (!estimate.projectDetails.trim()) {
-                        toast({
-                          title: 'Descripción requerida',
-                          description: 'Por favor describe tu proyecto primero para usar DeepSearch IA',
-                          variant: 'destructive'
-                        });
-                        return;
-                      }
-                      
-                      setIsAIProcessing(true);
-                      try {
-                        const response = await fetch('/api/deepsearch/materials-only', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            projectDescription: estimate.projectDetails,
-                            location: estimate.client?.address || ''
-                          })
-                        });
+                  {/* Smart DeepSearch Button con opciones */}
+                  <Dialog open={showSmartSearchDialog} onOpenChange={setShowSmartSearchDialog}>
+                    <DialogTrigger asChild>
+                      <Button 
+                        size="sm"
+                        variant="outline"
+                        disabled={!estimate.projectDetails.trim()}
+                        className="flex items-center gap-2"
+                      >
+                        <Brain className="h-4 w-4" />
+                        Smart Search IA
+                        <ChevronDown className="h-3 w-3" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl">
+                      <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                          <Brain className="h-5 w-5 text-blue-500" />
+                          Smart Search IA
+                        </DialogTitle>
+                        <DialogDescription>
+                          Elige qué tipo de análisis necesitas para tu proyecto
+                        </DialogDescription>
+                      </DialogHeader>
 
-                        if (!response.ok) {
-                          throw new Error('Error al generar materiales con IA');
-                        }
+                      <div className="grid grid-cols-3 gap-4 my-6">
+                        <Card 
+                          className={`cursor-pointer transition-all border-2 ${
+                            smartSearchMode === 'materials' 
+                              ? 'border-blue-500 bg-blue-50' 
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                          onClick={() => setSmartSearchMode('materials')}
+                        >
+                          <CardContent className="p-4 text-center">
+                            <Package className="h-8 w-8 mx-auto mb-2 text-blue-500" />
+                            <h3 className="font-medium mb-1">Solo Materiales</h3>
+                            <p className="text-xs text-gray-500">Lista de materiales con precios</p>
+                          </CardContent>
+                        </Card>
 
-                        const result = await response.json();
-                        
-                        if (result.success && result.materials) {
-                          // Agregar materiales generados por IA al estimado
-                          const newItems = result.materials.map((material: any) => ({
-                            id: `ai_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                            name: material.name,
-                            description: material.description || '',
-                            category: material.category,
-                            quantity: material.quantity,
-                            unit: material.unit,
-                            price: material.price,
-                            total: material.total
-                          }));
+                        <Card 
+                          className={`cursor-pointer transition-all border-2 ${
+                            smartSearchMode === 'labor' 
+                              ? 'border-orange-500 bg-orange-50' 
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                          onClick={() => setSmartSearchMode('labor')}
+                        >
+                          <CardContent className="p-4 text-center">
+                            <Wrench className="h-8 w-8 mx-auto mb-2 text-orange-500" />
+                            <h3 className="font-medium mb-1">Solo Labor</h3>
+                            <p className="text-xs text-gray-500">Servicios y mano de obra</p>
+                          </CardContent>
+                        </Card>
 
-                          setEstimate(prev => ({
-                            ...prev,
-                            items: [...prev.items, ...newItems]
-                          }));
+                        <Card 
+                          className={`cursor-pointer transition-all border-2 ${
+                            smartSearchMode === 'both' 
+                              ? 'border-green-500 bg-green-50' 
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                          onClick={() => setSmartSearchMode('both')}
+                        >
+                          <CardContent className="p-4 text-center">
+                            <Combine className="h-8 w-8 mx-auto mb-2 text-green-500" />
+                            <h3 className="font-medium mb-1">Ambos</h3>
+                            <p className="text-xs text-gray-500">Materiales + Labor</p>
+                            <Badge variant="secondary" className="mt-1 text-xs">Recomendado</Badge>
+                          </CardContent>
+                        </Card>
+                      </div>
 
-                          // Mostrar mensaje de Mervin por 6 segundos
-                          setShowMervinMessage(true);
-                          setTimeout(() => {
-                            setShowMervinMessage(false);
-                          }, 10000);
+                      {isAIProcessing && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span>Procesando con IA...</span>
+                            <span>{aiProgress}%</span>
+                          </div>
+                          <Progress value={aiProgress} className="w-full" />
+                        </div>
+                      )}
 
-                          toast({
-                            title: '🎉 DeepSearch IA Completado',
-                            description: `Se agregaron ${newItems.length} materiales automáticamente`
-                          });
-                        }
-                      } catch (error) {
-                        console.error('Error with DeepSearch:', error);
-                        toast({
-                          title: 'Error en DeepSearch IA',
-                          description: 'No se pudieron generar materiales automáticamente',
-                          variant: 'destructive'
-                        });
-                      } finally {
-                        setIsAIProcessing(false);
-                      }
-                    }}
-                    disabled={isAIProcessing || !estimate.projectDetails.trim()}
-                  >
-                    {isAIProcessing ? (
-                      <>
-                        <Brain className="h-4 w-4 mr-2 animate-pulse" />
-                        Generando...
-                      </>
-                    ) : (
-                      <>
-                        <Brain className="h-4 w-4 mr-2" />
-                        DeepSearch IA
-                      </>
-                    )}
-                  </Button>
+                      <div className="flex justify-between pt-4">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setShowSmartSearchDialog(false)}
+                          disabled={isAIProcessing}
+                        >
+                          Cancelar
+                        </Button>
+                        <Button 
+                          onClick={handleSmartSearch}
+                          disabled={isAIProcessing || !estimate.projectDetails.trim()}
+                          className="flex items-center gap-2"
+                        >
+                          {isAIProcessing ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                              Generando...
+                            </>
+                          ) : (
+                            <>
+                              <Brain className="h-4 w-4" />
+                              Generar {smartSearchMode === 'materials' ? 'Materiales' : smartSearchMode === 'labor' ? 'Labor' : 'Ambos'}
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
                 <Dialog open={showMaterialDialog} onOpenChange={setShowMaterialDialog}>
                     <DialogTrigger asChild>
