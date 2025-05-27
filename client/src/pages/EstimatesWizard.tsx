@@ -142,6 +142,8 @@ export default function EstimatesWizardFixed() {
   const [isLoadingClients, setIsLoadingClients] = useState(true);
   const [isLoadingMaterials, setIsLoadingMaterials] = useState(true);
   const [previewHtml, setPreviewHtml] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   
   // Smart Search states
   const [showSmartSearchDialog, setShowSmartSearchDialog] = useState(false);
@@ -172,7 +174,6 @@ export default function EstimatesWizardFixed() {
   
   // Email dialog states
   const [showEmailDialog, setShowEmailDialog] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
 
   // Smart Search Handler
   const handleSmartSearch = async () => {
@@ -627,6 +628,197 @@ export default function EstimatesWizardFixed() {
     }
   };
 
+  // Robust save function that syncs to Firebase and projects dashboard
+  const handleSaveEstimate = async () => {
+    if (!currentUser?.uid) {
+      toast({
+        title: 'Error de autenticación',
+        description: 'Debes estar conectado para guardar estimados',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (!estimate.client || estimate.items.length === 0) {
+      toast({
+        title: 'Datos incompletos',
+        description: 'Selecciona un cliente y agrega al menos un material',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      // 1. Generate HTML content first (fallback if needed)
+      let htmlContent = '';
+      try {
+        htmlContent = generateEstimatePreview();
+      } catch (htmlError) {
+        console.warn('Error generating HTML preview, using basic format:', htmlError);
+        htmlContent = `
+          <div style="font-family: Arial, sans-serif; padding: 20px;">
+            <h1>Estimado para ${estimate.client.name}</h1>
+            <p>Cliente: ${estimate.client.name}</p>
+            <p>Email: ${estimate.client.email || 'No especificado'}</p>
+            <p>Proyecto: ${estimate.projectDetails}</p>
+            <h3>Materiales:</h3>
+            <ul>
+              ${estimate.items.map(item => `
+                <li>${item.name} - ${item.quantity} ${item.unit} x $${item.price.toFixed(2)} = $${item.total.toFixed(2)}</li>
+              `).join('')}
+            </ul>
+            <p><strong>Total: $${estimate.total.toFixed(2)}</strong></p>
+          </div>
+        `;
+      }
+
+      // 2. Prepare estimate data for Firebase and backend
+      const estimateNumber = `EST-${Date.now()}`;
+      const estimateData = {
+        // Firebase user association
+        firebaseUserId: currentUser.uid,
+        userId: currentUser.uid,
+        
+        // Basic info
+        estimateNumber: estimateNumber,
+        title: `Estimado para ${estimate.client.name}`,
+        status: 'draft',
+        
+        // Client information
+        clientId: estimate.client.id,
+        clientName: estimate.client.name,
+        clientEmail: estimate.client.email || '',
+        clientPhone: estimate.client.phone || '',
+        clientAddress: estimate.client.address || '',
+        clientCity: estimate.client.city || '',
+        clientState: estimate.client.state || '',
+        clientZipCode: estimate.client.zipCode || '',
+        
+        // Project details
+        projectType: 'fence', // Default type
+        projectSubtype: 'custom',
+        projectDescription: estimate.projectDetails,
+        scope: 'Instalación completa según especificaciones',
+        timeline: '2-3 semanas',
+        
+        // Financial data
+        items: estimate.items.map((item, index) => ({
+          id: item.id,
+          materialId: item.materialId,
+          name: item.name,
+          description: item.description || item.name,
+          category: 'material',
+          quantity: item.quantity,
+          unit: item.unit || 'unit',
+          unitPrice: Math.round(item.price * 100), // Convert to cents
+          totalPrice: Math.round(item.total * 100), // Convert to cents
+          sortOrder: index,
+          isOptional: false
+        })),
+        
+        subtotal: Math.round(estimate.subtotal * 100), // Convert to cents
+        taxRate: estimate.taxRate || 10,
+        taxAmount: Math.round(estimate.tax * 100), // Convert to cents
+        discountAmount: Math.round(estimate.discountAmount * 100), // Convert to cents
+        discountType: estimate.discountType,
+        discountValue: estimate.discountValue,
+        discountName: estimate.discountName || '',
+        total: Math.round(estimate.total * 100), // Convert to cents
+        
+        // Content and metadata
+        htmlContent: htmlContent,
+        notes: `Estimado generado el ${new Date().toLocaleDateString()}`,
+        internalNotes: `Cliente: ${estimate.client.name}, Total: $${estimate.total.toFixed(2)}`,
+        validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Valid for 30 days
+        
+        // Timestamps
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      console.log('💾 Guardando estimado:', estimateData);
+
+      // 3. Save to backend (this will sync to both estimates and projects)
+      const response = await fetch('/api/estimates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(estimateData)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error del servidor: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Estimado guardado exitosamente:', result);
+
+      // 4. Try to save directly to Firebase as backup (estimate collection)
+      try {
+        const estimateDoc = {
+          ...estimateData,
+          id: result.data?.id || `est_${Date.now()}`,
+          firebaseUserId: currentUser.uid,
+          syncedAt: new Date(),
+          source: 'wizard'
+        };
+
+        // Save to estimates collection
+        await addDoc(collection(db, 'estimates'), estimateDoc);
+        console.log('📄 Backup guardado en colección estimates');
+
+        // Also save to user's estimates subcollection  
+        await addDoc(collection(db, 'users', currentUser.uid, 'estimates'), estimateDoc);
+        console.log('👤 Guardado en subcollección personal de estimados');
+
+      } catch (firebaseError) {
+        console.warn('⚠️ Error guardando backup en Firebase, pero el estimado principal se guardó:', firebaseError);
+      }
+
+      // 5. Success feedback
+      toast({
+        title: '✅ Estimado guardado exitosamente',
+        description: `${estimateNumber} se guardó en tus estimados y proyectos`,
+        duration: 5000
+      });
+
+      // 6. Optional: Auto-advance to preview
+      if (currentStep === 3) {
+        setPreviewHtml(htmlContent);
+        setShowPreview(true);
+      }
+
+    } catch (error) {
+      console.error('❌ Error guardando estimado:', error);
+      
+      // 7. Fallback: Try to save minimal data locally or show helpful error
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      
+      toast({
+        title: 'Error al guardar',
+        description: `No se pudo guardar el estimado: ${errorMessage}. Los datos se mantienen en la sesión actual.`,
+        variant: 'destructive',
+        duration: 8000
+      });
+
+      // Try to save to localStorage as absolute fallback
+      try {
+        const fallbackData = {
+          estimate,
+          timestamp: new Date().toISOString(),
+          userId: currentUser.uid
+        };
+        localStorage.setItem(`estimate_fallback_${Date.now()}`, JSON.stringify(fallbackData));
+        console.log('💾 Fallback: Datos guardados localmente');
+      } catch (localError) {
+        console.error('❌ Error incluso en fallback local:', localError);
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   // Filter clients and materials
   const filteredClients = clients.filter(client =>
     client.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
@@ -857,11 +1049,11 @@ export default function EstimatesWizardFixed() {
         <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
           <div style="flex: 1; padding-right: 20px;">
             <h3 style="color: #2563eb; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">FACTURAR A:</h3>
-            <p style="margin: 5px 0; font-size: 1.1em; color: #000000;"><strong>${estimate.client.name}</strong></p>
-            <p style="margin: 5px 0; color: #000000;">${estimate.client.email || ''}</p>
-            <p style="margin: 5px 0; color: #000000;">${estimate.client.phone || ''}</p>
-            <p style="margin: 5px 0; color: #000000;">${estimate.client.address || ''}</p>
-            <p style="margin: 5px 0; color: #000000;">${estimate.client.city ? `${estimate.client.city}, ` : ''}${estimate.client.state || ''} ${estimate.client.zipCode || ''}</p>
+            <p style="margin: 5px 0; font-size: 1.1em; color: #000000;"><strong>${estimate.client?.name || 'Cliente no especificado'}</strong></p>
+            <p style="margin: 5px 0; color: #000000;">${estimate.client?.email || ''}</p>
+            <p style="margin: 5px 0; color: #000000;">${estimate.client?.phone || ''}</p>
+            <p style="margin: 5px 0; color: #000000;">${estimate.client?.address || ''}</p>
+            <p style="margin: 5px 0; color: #000000;">${estimate.client?.city ? `${estimate.client.city}, ` : ''}${estimate.client?.state || ''} ${estimate.client?.zipCode || ''}</p>
           </div>
         </div>
 
@@ -1941,6 +2133,16 @@ export default function EstimatesWizardFixed() {
                     >
                       <RefreshCw className="h-3 w-3 mr-1" />
                       <span className="hidden sm:inline">Actualizar</span> Vista
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleSaveEstimate()}
+                      disabled={!estimate.client || estimate.items.length === 0 || isSaving}
+                      size="sm"
+                      className="flex-1 text-xs"
+                    >
+                      <Save className="h-3 w-3 mr-1" />
+                      <span className="hidden sm:inline">{isSaving ? 'Guardando...' : 'Guardar'}</span> Estimado
                     </Button>
                     <Button
                       onClick={() => setShowPreview(true)}
