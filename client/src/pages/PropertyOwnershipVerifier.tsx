@@ -34,10 +34,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import GooglePlacesAutocomplete, {
-  geocodeByAddress,
-  getLatLng,
-} from "react-google-places-autocomplete";
+import GooglePlacesAutocompleteComponent from "@/components/ui/google-places-autocomplete";
 import { propertyVerifierService, PropertyDetails, OwnerHistoryEntry } from "@/services/propertyVerifierService";
 import PropertySearchHistory from "@/components/property/PropertySearchHistory";
 import { useQueryClient } from '@tanstack/react-query';
@@ -54,136 +51,20 @@ export default function PropertyOwnershipVerifier() {
   const [error, setError] = useState<string | null>(null);
   const [propertyDetails, setPropertyDetails] =
     useState<PropertyDetails | null>(null);
-  const [placeValue, setPlaceValue] = useState<any>(null);
-  const [apiError, setApiError] = useState<boolean>(false);
-  const [useManualInput, setUseManualInput] = useState<boolean>(false);
   const { toast } = useToast();
 
-  // Estados que ya no se usan con Google Places Autocomplete
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-
-  // Detectar errores de la API de Google Maps
-  useEffect(() => {
-    const handleGoogleMapsError = (event: ErrorEvent) => {
-      if (
-        event.message &&
-        (event.message.includes("Google Maps JavaScript API") ||
-          event.message.includes("Google Maps Places API") ||
-          event.message.includes("ApiNotActivatedMapError"))
-      ) {
-        console.error("Google Maps API error detected:", event.message);
-        setApiError(true);
-        setUseManualInput(true);
-        setError(
-          "Error: La API de Google Maps no está configurada correctamente. Por favor verifica que la clave API sea válida y tenga los servicios necesarios habilitados (Maps JavaScript API, Places API, Geocoding API).",
-        );
-      }
-    };
-
-    const validateGoogleMapsKey = () => {
-      const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-      console.log("Verificando API key de Google Maps:", apiKey ? `${apiKey.substring(0, 10)}...` : "No encontrada");
+  // Manejar la selección de lugar desde el autocompletado
+  const handlePlaceSelect = (placeData: any) => {
+    console.log("📍 [PropertyVerifier] Lugar seleccionado:", placeData);
+    
+    if (placeData && placeData.address) {
+      // Limpiar cualquier error previo
+      setError(null);
       
-      if (!apiKey || apiKey.length < 20) {
-        console.error("API key inválida o faltante");
-        setApiError(true);
-        setUseManualInput(true);
-        setError(
-          "Error: No se encontró una clave API válida de Google Maps. Verifica la variable de entorno VITE_GOOGLE_MAPS_API_KEY.",
-        );
-      } else {
-        console.log("API key válida encontrada");
-        // Verificar si hay errores de Google Maps después de un pequeño retraso
-        setTimeout(() => {
-          if (window.google && window.google.maps) {
-            console.log("Google Maps cargado correctamente");
-            setApiError(false);
-            setUseManualInput(false);
-          } else {
-            console.log("Google Maps no se cargó correctamente, usando entrada manual");
-            setApiError(true);
-            setUseManualInput(true);
-          }
-        }, 2000);
-      }
-    };
-
-    validateGoogleMapsKey();
-    window.addEventListener("error", handleGoogleMapsError);
-
-    return () => {
-      window.removeEventListener("error", handleGoogleMapsError);
-    };
-  }, []);
-
-  // Handler for the old input change method (no longer used)
-  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAddress(e.target.value);
-  };
-
-  // Manejar la selección de la dirección del autocompletado
-  const handlePlaceSelect = async (place: any) => {
-    if (place && place.value) {
-      try {
-        // Obtener la dirección formateada del valor seleccionado
-        setAddress(place.value.description);
-
-        // Limpiar cualquier error previo
-        setError(null);
-
-        // Obtener más detalles de la ubicación para enriquecer los datos
-        const results = await geocodeByAddress(place.value.description);
-        if (results && results.length > 0) {
-          // Obtener coordenadas
-          const latLng = await getLatLng(results[0]);
-          console.log("Coordenadas seleccionadas:", latLng);
-
-          // Analizar los componentes de la dirección para extracción de datos
-          const addressComponents = results[0].address_components;
-
-          // Extraer información útil como código postal, ciudad, estado, etc.
-          let zipCode = "";
-          let city = "";
-          let state = "";
-          let neighborhood = "";
-
-          addressComponents.forEach((component: any) => {
-            const types = component.types;
-
-            if (types.includes("postal_code")) {
-              zipCode = component.long_name;
-            }
-
-            if (types.includes("locality")) {
-              city = component.long_name;
-            }
-
-            if (types.includes("administrative_area_level_1")) {
-              state = component.long_name;
-            }
-
-            if (types.includes("neighborhood")) {
-              neighborhood = component.long_name;
-            }
-          });
-
-          console.log("Información adicional:", {
-            zipCode,
-            city,
-            state,
-            neighborhood,
-          });
-
-          // Iniciar automáticamente la búsqueda después de seleccionar una dirección
-          // con un pequeño retraso para mejor experiencia de usuario
-          setTimeout(() => {
-            handleSearch();
-          }, 300);
-        }
-      } catch (error) {
-        console.error("Error al procesar la dirección seleccionada:", error);
-      }
+      // Iniciar automáticamente la búsqueda después de seleccionar una dirección
+      setTimeout(() => {
+        handleSearch();
+      }, 300);
     }
   };
 
@@ -279,116 +160,15 @@ export default function PropertyOwnershipVerifier() {
               <div className="grid grid-cols-12 gap-4">
                 <div className="col-span-12 sm:col-span-9">
                   <Label htmlFor="address">Dirección de la Propiedad</Label>
-
-                  {apiError || useManualInput ? (
-                    // Entrada manual cuando hay error de Google Maps API
-                    <div className="space-y-2">
-                      <div className="relative">
-                        <Input
-                          id="address"
-                          value={address}
-                          onChange={handleAddressChange}
-                          placeholder="Type Address"
-                          className="pl-9"
-                        />
-                        <div className="absolute top-3 left-3 text-gray-400 pointer-events-none">
-                          <MapPin size={16} className="opacity-60" />
-                        </div>
-                      </div>
-
-                      <Alert className="py-2">
-                        <AlertTriangle className="h-4 w-4 mr-2" />
-                        <div className="text-xs">
-                          El autocompletado de direcciones no está disponible en
-                          este momento. Por favor, ingresa la dirección completa
-                          manualmente.
-                        </div>
-                      </Alert>
-                    </div>
-                  ) : (
-                    // Autocompletado con Google Maps cuando funciona
-                    <div className="relative">
-                      <GooglePlacesAutocomplete
-                        apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
-                        apiOptions={{
-                          language: "es",
-                          region: "mx",
-                          libraries: ["places"],
-                        }}
-                        autocompletionRequest={{
-                          componentRestrictions: {
-                            country: ["mx", "us", "es"],
-                          },
-                          types: ["address"],
-                        }}
-                        selectProps={{
-                          value: placeValue,
-                          onChange: (value) => {
-                            setPlaceValue(value);
-                            handlePlaceSelect(value);
-                          },
-                          placeholder:
-                            "type the address",
-                          noOptionsMessage: () =>
-                            "No se encontraron resultados",
-                          loadingMessage: () => "Buscando direcciones...",
-                          styles: {
-                            control: (provided) => ({
-                              ...provided,
-                              minHeight: "42px",
-                              height: "auto",
-                              borderRadius: "7px",
-                              boxShadow: "none",
-                              borderColor: "#e2e8f0",
-                              paddingLeft: "30px",
-                              paddingRight: "8px",
-                              whiteSpace: "normal",
-                              "&:hover": {
-                                borderColor: "#cbd5e1",
-                              },
-                            }),
-                            option: (provided, state) => ({
-                              ...provided,
-                              backgroundColor: state.isFocused
-                                ? "#f1f5f9"
-                                : "white",
-                              color: "#334155",
-                              cursor: "pointer",
-                              fontSize: "14px",
-                              padding: "8px 12px",
-                            }),
-                            menu: (provided) => ({
-                              ...provided,
-                              borderRadius: "7px",
-                              boxShadow:
-                                "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-                              zIndex: 100,
-                            }),
-                            input: (provided) => ({
-                              ...provided,
-                              fontSize: "14px",
-                            }),
-                          },
-                        }}
-                      />
-                      <div className="absolute top-3 left-3 text-gray-400 pointer-events-none">
-                        <MapPin size={16} className="opacity-60" />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Link para cambiar entre modos manual y autocompletado */}
-                  <div className="mt-1">
-                    <button
-                      type="button"
-                      onClick={() => setUseManualInput(!useManualInput)}
-                      className="text-xs text-primary hover:underline"
-                    >
-                      {useManualInput
-                        ? "Intentar usar autocompletado"
-                        : "Cambiar a entrada manual"}
-                    </button>
-                  </div>
+                  <GooglePlacesAutocompleteComponent
+                    value={address}
+                    onChange={setAddress}
+                    onPlaceSelect={handlePlaceSelect}
+                    placeholder="Ingresa la dirección de la propiedad"
+                    countries={["mx", "us", "es"]}
+                    language="es"
+                    region="mx"
+                  />
                 </div>
                 <div className="col-span-12 sm:col-span-3 flex items-end">
                   <Button
