@@ -507,9 +507,48 @@ export default function Materials() {
 
   return (
     <AppLayout>
-      <div className="container py-6">
+      <div className="container mx-auto px-4 py-6 max-w-7xl">
+        {/* Header de navegación mejorado */}
         <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-2">Inventario de Materiales</h1>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => navigate('/')}
+                className="p-2 hover:bg-secondary rounded-lg transition-colors flex items-center gap-2 text-muted-foreground hover:text-foreground"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m15 18-6-6 6-6"/>
+                </svg>
+                <span className="hidden sm:inline">Regresar al Dashboard</span>
+              </button>
+              <div className="h-6 w-px bg-border hidden sm:block"></div>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Inventario de Materiales</h1>
+            </div>
+            
+            {/* Indicador de materiales */}
+            <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>{materials.length} materiales</span>
+              </div>
+              {materials.filter(m => 
+                typeof m.stock === 'number' && 
+                typeof m.minStock === 'number' && 
+                m.stock <= m.minStock
+              ).length > 0 && (
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                  <span>
+                    {materials.filter(m => 
+                      typeof m.stock === 'number' && 
+                      typeof m.minStock === 'number' && 
+                      m.stock <= m.minStock
+                    ).length} bajo stock
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
           <p className="text-muted-foreground">
             Gestiona el inventario de materiales para tus proyectos de cercado
           </p>
