@@ -144,7 +144,6 @@ export default function PropertyOwnershipVerifier() {
           <CardHeader>
             <div className="flex justify-between items-center mb-2">
               <div className="flex-1">
-                <CardTitle className="text-center">Verificar Propiedad</CardTitle>
                 <CardDescription className="text-center">
                   Ingresa la dirección de la propiedad para verificar sus detalles
                   de propiedad
