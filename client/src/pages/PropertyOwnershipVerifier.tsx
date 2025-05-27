@@ -183,13 +183,22 @@ export default function PropertyOwnershipVerifier() {
           </div>
           
           <CardHeader className="relative z-10 pb-4">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div className="flex-1">
-                <Label htmlFor="address" className="text-lg font-medium text-cyan-300 tracking-wide">
-                  Dirección de la Propiedad
-                </Label>
+          </CardHeader>
+          
+          <CardContent className="relative z-10 pt-0">
+            <div className="space-y-4">
+              <div className="w-full">
+                <MapboxPlacesAutocomplete
+                  value={address}
+                  onChange={setAddress}
+                  onPlaceSelect={handlePlaceSelect}
+                  placeholder="Ingresa la dirección de la propiedad"
+                  countries={["mx", "us", "es"]}
+                  language="es"
+                />
               </div>
-              <div className="flex gap-3">
+
+              <div className="flex justify-center gap-3">
                 <PropertySearchHistory onSelectHistory={handleSelectHistory} />
                 <Button
                   onClick={handleSearch}
@@ -213,21 +222,6 @@ export default function PropertyOwnershipVerifier() {
                     <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/20 to-blue-400/20 opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
                   )}
                 </Button>
-              </div>
-            </div>
-          </CardHeader>
-          
-          <CardContent className="relative z-10 pt-0">
-            <div className="space-y-4">
-              <div className="w-full">
-                <MapboxPlacesAutocomplete
-                  value={address}
-                  onChange={setAddress}
-                  onPlaceSelect={handlePlaceSelect}
-                  placeholder="Ingresa la dirección de la propiedad"
-                  countries={["mx", "us", "es"]}
-                  language="es"
-                />
               </div>
 
               {error && (
