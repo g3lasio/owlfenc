@@ -330,9 +330,6 @@ export default function PermitAdvisor() {
                     <TabsTrigger value="process" className="relative text-teal-300 data-[state=active]:bg-blue-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/50 transition-all duration-300">
                       <span className="relative z-10">Process</span>
                     </TabsTrigger>
-                    <TabsTrigger value="timeline" className="relative text-teal-300 data-[state=active]:bg-purple-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/50 transition-all duration-300">
-                      <span className="relative z-10">Timeline</span>
-                    </TabsTrigger>
                     <TabsTrigger value="considerations" className="relative text-teal-300 data-[state=active]:bg-amber-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-amber-500/50 transition-all duration-300">
                       <span className="relative z-10">Alerts</span>
                     </TabsTrigger>
@@ -587,15 +584,75 @@ export default function PermitAdvisor() {
 
                   <TabsContent value="process" className="space-y-4">
                     {permitData.process && permitData.process.length > 0 ? (
-                      <div className="space-y-3">
+                      <div className="space-y-4">
                         {permitData.process.map((step: any, idx: number) => (
-                          <div key={idx} className="flex items-start gap-3">
-                            <div className="flex-shrink-0 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-xs font-bold text-white">
-                              {idx + 1}
-                            </div>
-                            <p className="text-gray-300 text-sm">
-                              {typeof step === 'string' ? step : step.step || JSON.stringify(step)}
-                            </p>
+                          <div key={idx} className="relative">
+                            <div className="absolute inset-0 bg-gradient-to-r from-blue-400/10 via-cyan-400/10 to-teal-400/10 rounded-lg"></div>
+                            <Card className="relative bg-gray-800/70 border-blue-400/30 backdrop-blur-sm">
+                              <CardContent className="p-4">
+                                <div className="flex items-start gap-4">
+                                  <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-lg">
+                                    {idx + 1}
+                                  </div>
+                                  <div className="flex-1 space-y-2">
+                                    <h4 className="text-blue-300 font-semibold">
+                                      {typeof step === 'string' ? `Step ${idx + 1}` : (step.step || `Step ${idx + 1}`)}
+                                    </h4>
+                                    <p className="text-gray-300 text-sm leading-relaxed">
+                                      {typeof step === 'string' ? step : step.step || step.description || 'Process step details'}
+                                    </p>
+                                    
+                                    {/* Additional step details */}
+                                    {typeof step === 'object' && step.timing && (
+                                      <div className="flex items-center gap-2 mt-2">
+                                        <span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-1 rounded">
+                                          ⏱️ {step.timing}
+                                        </span>
+                                        {step.responsibleParty && (
+                                          <span className="text-xs bg-cyan-500/20 text-cyan-300 px-2 py-1 rounded">
+                                            👤 {step.responsibleParty}
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
+
+                                    {/* Required documents for this step */}
+                                    {typeof step === 'object' && step.requiredDocuments && step.requiredDocuments.length > 0 && (
+                                      <div className="mt-3">
+                                        <h5 className="text-xs text-gray-400 uppercase tracking-wide mb-2">Required Documents:</h5>
+                                        <div className="flex flex-wrap gap-1">
+                                          {step.requiredDocuments.map((doc: string, docIdx: number) => (
+                                            <span key={docIdx} className="text-xs bg-gray-700/50 text-gray-300 px-2 py-1 rounded border border-gray-600/30">
+                                              📄 {doc}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* Official links */}
+                                    {typeof step === 'object' && step.officialLinks && step.officialLinks.length > 0 && (
+                                      <div className="mt-3">
+                                        <h5 className="text-xs text-gray-400 uppercase tracking-wide mb-2">Official Resources:</h5>
+                                        <div className="flex flex-wrap gap-2">
+                                          {step.officialLinks.map((link: string, linkIdx: number) => (
+                                            <a
+                                              key={linkIdx}
+                                              href={link}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="text-xs bg-blue-500/20 text-blue-300 px-3 py-1 rounded border border-blue-400/30 hover:bg-blue-500/30 transition-colors"
+                                            >
+                                              🔗 Official Form
+                                            </a>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
                           </div>
                         ))}
                       </div>
@@ -608,35 +665,124 @@ export default function PermitAdvisor() {
                     )}
                   </TabsContent>
 
-                  <TabsContent value="timeline" className="space-y-4">
-                    <div className="text-center py-8">
-                      <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
-                        📅
-                      </div>
-                      <h3 className="text-lg font-medium text-purple-300">Timeline Analysis Loading...</h3>
-                      <p className="text-gray-400">Critical path analysis will appear here</p>
-                    </div>
-                  </TabsContent>
+
 
                   <TabsContent value="considerations" className="space-y-4">
                     {permitData.specialConsiderations && permitData.specialConsiderations.length > 0 ? (
-                      <div className="space-y-3">
-                        {permitData.specialConsiderations.map((consideration: any, idx: number) => (
-                          <div key={idx} className="flex items-start gap-3">
-                            <div className="flex-shrink-0 w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center text-xs font-bold text-black">
-                              !
+                      <div className="space-y-4">
+                        {permitData.specialConsiderations.map((consideration: any, idx: number) => {
+                          // Parse the consideration if it's a string containing JSON-like data
+                          let alertData: any = {};
+                          let alertText = '';
+                          
+                          if (typeof consideration === 'string') {
+                            // Try to extract structured data from string
+                            try {
+                              // Check if it looks like structured data
+                              if (consideration.includes(':') && consideration.includes('"')) {
+                                // Parse JSON-like string structure
+                                const matches = consideration.match(/"([^"]+)":"([^"]+)"/g);
+                                if (matches) {
+                                  matches.forEach(match => {
+                                    const [key, value] = match.replace(/"/g, '').split(':');
+                                    alertData[key] = value;
+                                  });
+                                  alertText = consideration;
+                                } else {
+                                  alertText = consideration;
+                                }
+                              } else {
+                                alertText = consideration;
+                              }
+                            } catch {
+                              alertText = consideration;
+                            }
+                          } else {
+                            alertData = consideration;
+                            alertText = JSON.stringify(consideration);
+                          }
+
+                          return (
+                            <div key={idx} className="relative">
+                              <div className="absolute inset-0 bg-gradient-to-r from-amber-400/10 via-orange-400/10 to-red-400/10 rounded-lg"></div>
+                              <Card className="relative bg-gray-800/70 border-amber-400/30 backdrop-blur-sm">
+                                <CardContent className="p-4">
+                                  <div className="flex items-start gap-4">
+                                    <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center text-sm font-bold text-black shadow-lg">
+                                      ⚠️
+                                    </div>
+                                    <div className="flex-1 space-y-3">
+                                      <h4 className="text-amber-300 font-semibold">Critical Alert #{idx + 1}</h4>
+                                      
+                                      {/* Specific regulations */}
+                                      {alertData.specificLocalRegulations && (
+                                        <div className="bg-red-500/10 border border-red-400/30 rounded-lg p-3">
+                                          <h5 className="text-red-400 font-medium mb-2 flex items-center gap-2">
+                                            📋 Local Regulations
+                                          </h5>
+                                          <p className="text-red-200 text-sm">{alertData.specificLocalRegulations}</p>
+                                        </div>
+                                      )}
+
+                                      {/* Environmental considerations */}
+                                      {alertData.environmental && (
+                                        <div className="bg-green-500/10 border border-green-400/30 rounded-lg p-3">
+                                          <h5 className="text-green-400 font-medium mb-2 flex items-center gap-2">
+                                            🌿 Environmental Requirements
+                                          </h5>
+                                          <p className="text-green-200 text-sm">{alertData.environmental}</p>
+                                        </div>
+                                      )}
+
+                                      {/* Zoning restrictions */}
+                                      {alertData.zoning && (
+                                        <div className="bg-blue-500/10 border border-blue-400/30 rounded-lg p-3">
+                                          <h5 className="text-blue-400 font-medium mb-2 flex items-center gap-2">
+                                            🏢 Zoning Restrictions
+                                          </h5>
+                                          <p className="text-blue-200 text-sm">{alertData.zoning}</p>
+                                        </div>
+                                      )}
+
+                                      {/* Penalties */}
+                                      {alertData.penalties && (
+                                        <div className="bg-red-500/10 border border-red-400/30 rounded-lg p-3">
+                                          <h5 className="text-red-400 font-medium mb-2 flex items-center gap-2">
+                                            ⚖️ Penalties for Non-Compliance
+                                          </h5>
+                                          <p className="text-red-200 text-sm font-medium">{alertData.penalties}</p>
+                                        </div>
+                                      )}
+
+                                      {/* Deadlines */}
+                                      {alertData.deadlines && (
+                                        <div className="bg-amber-500/10 border border-amber-400/30 rounded-lg p-3">
+                                          <h5 className="text-amber-400 font-medium mb-2 flex items-center gap-2">
+                                            ⏰ Critical Deadlines
+                                          </h5>
+                                          <p className="text-amber-200 text-sm font-medium">{alertData.deadlines}</p>
+                                        </div>
+                                      )}
+
+                                      {/* If no structured data, show the raw text in a nice format */}
+                                      {Object.keys(alertData).length === 0 && (
+                                        <div className="bg-amber-500/10 border border-amber-400/30 rounded-lg p-3">
+                                          <p className="text-amber-200 text-sm leading-relaxed">{alertText}</p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
                             </div>
-                            <p className="text-gray-300 text-sm">
-                              {typeof consideration === 'string' ? consideration : JSON.stringify(consideration)}
-                            </p>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     ) : (
                       <div className="text-center py-8">
                         <CheckCircle2 className="h-12 w-12 text-green-400 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-green-300">No special considerations</h3>
-                        <p className="text-gray-400">No additional considerations identified for this project.</p>
+                        <h3 className="text-lg font-medium text-green-300">No Critical Alerts</h3>
+                        <p className="text-gray-400">No special considerations or alerts identified for this project.</p>
                       </div>
                     )}
                   </TabsContent>
