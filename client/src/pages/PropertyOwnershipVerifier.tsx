@@ -140,14 +140,10 @@ export default function PropertyOwnershipVerifier() {
       </p>
 
       <div className="mb-8">
-        <Card>
+        <Card className="relative overflow-hidden border-2 border-transparent bg-gradient-to-r from-cyan-500/20 via-blue-500/10 to-purple-500/20 shadow-2xl before:absolute before:inset-0 before:rounded-lg before:p-[2px] before:bg-gradient-to-r before:from-cyan-400 before:via-blue-500 before:to-purple-600 before:-z-10 before:animate-pulse">
           <CardHeader>
             <div className="flex justify-between items-center mb-2">
               <div className="flex-1">
-                <CardDescription className="text-center">
-                  Ingresa la dirección de la propiedad para verificar sus detalles
-                  de propiedad
-                </CardDescription>
               </div>
               <div className="flex-shrink-0">
                 <PropertySearchHistory onSelectHistory={handleSelectHistory} />
