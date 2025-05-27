@@ -23,9 +23,12 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CheckCircle2, Search, Clock } from "lucide-react";
+import { CheckCircle2, Search, Clock, Trash2 } from "lucide-react";
 import MapboxPlacesAutocomplete from "@/components/ui/mapbox-places-autocomplete";
 import { useToast } from "@/hooks/use-toast";
+import { auth, db } from "@/lib/firebase";
+import { collection, addDoc, getDocs, query, where, orderBy, limit, Timestamp, deleteDoc, doc } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
 
 interface PermitData {
   name: string;
@@ -72,35 +75,86 @@ export default function PermitAdvisor() {
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("permits");
   const [showHistory, setShowHistory] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [searchFilter, setSearchFilter] = useState("");
   const { toast } = useToast();
 
-  // Simulación de datos de historial para mostrar un diseño elegante
-  const sampleHistoryData = [
-    {
-      id: 1,
-      address: "2652 Cordelia Road, Fairfield, CA",
-      projectType: "electrical",
-      title: "Electrical en 2652 Cordelia Road",
-      createdAt: "Hace 2h",
-      results: { requiredPermits: [{ name: "Electrical Permit" }], contactInformation: [{ phone: "(707) 428-7451" }] }
+  // Monitor auth state
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Query para obtener historial real de Firebase
+  const { data: historyData = [], isLoading: historyLoading, refetch: refetchHistory } = useQuery({
+    queryKey: ['permitHistory', currentUser?.uid],
+    queryFn: async () => {
+      if (!currentUser?.uid) return [];
+      
+      try {
+        const q = query(
+          collection(db, 'permit_search_history'),
+          where('userId', '==', currentUser.uid),
+          orderBy('createdAt', 'desc'),
+          limit(50) // Obtener hasta 50 búsquedas recientes
+        );
+        
+        const querySnapshot = await getDocs(q);
+        const history: any[] = [];
+        
+        querySnapshot.forEach((doc) => {
+          history.push({
+            id: doc.id,
+            ...doc.data()
+          });
+        });
+        
+        return history;
+      } catch (error) {
+        console.error('Error obteniendo historial:', error);
+        return [];
+      }
     },
-    {
-      id: 2,
-      address: "1109 La Grande Avenue, Napa, CA",
-      projectType: "roofing",
-      title: "Roofing en 1109 La Grande Avenue",
-      createdAt: "Hace 1d",
-      results: { requiredPermits: [{ name: "Roofing Permit" }], contactInformation: [{ phone: "(707) 253-4417" }] }
-    },
-    {
-      id: 3,
-      address: "2907 Owens Road, Mansfield, OH",
-      projectType: "bathroom",
-      title: "Bathroom en 2907 Owens Road",
-      createdAt: "Hace 3d",
-      results: { requiredPermits: [{ name: "Building Permit" }, { name: "Plumbing Permit" }] }
+    enabled: !!currentUser?.uid,
+  });
+
+  // Funciones para el historial de Firebase
+  const saveToHistory = async (results: any) => {
+    if (!currentUser?.uid || !selectedAddress || !projectType) return;
+    
+    try {
+      const title = `${projectType.charAt(0).toUpperCase() + projectType.slice(1)} en ${selectedAddress}`;
+      
+      const historyItem = {
+        userId: currentUser.uid,
+        address: selectedAddress,
+        projectType,
+        projectDescription: projectDescription || '',
+        results,
+        title,
+        createdAt: Timestamp.now()
+      };
+
+      await addDoc(collection(db, 'permit_search_history'), historyItem);
+      console.log('✅ Búsqueda guardada en historial de Firebase');
+      refetchHistory(); // Actualizar la lista
+    } catch (error) {
+      console.error('❌ Error al guardar en historial:', error);
     }
-  ];
+  };
+
+  // Filtrar historial según búsqueda
+  const filteredHistory = historyData.filter((item: any) => {
+    if (!searchFilter) return true;
+    const searchTerm = searchFilter.toLowerCase();
+    return (
+      item.address?.toLowerCase().includes(searchTerm) ||
+      item.projectType?.toLowerCase().includes(searchTerm) ||
+      item.title?.toLowerCase().includes(searchTerm)
+    );
+  });
 
   const getProjectIcon = (type: string) => {
     const icons: Record<string, string> = {
@@ -133,13 +187,39 @@ export default function PermitAdvisor() {
   const loadFromHistory = (historyItem: any) => {
     setSelectedAddress(historyItem.address);
     setProjectType(historyItem.projectType);
-    setProjectDescription('');
+    setProjectDescription(historyItem.projectDescription || '');
     setPermitData(historyItem.results);
     setShowHistory(false);
     toast({
       title: "Search Loaded",
       description: `Loaded: ${historyItem.title}`,
     });
+  };
+
+  const formatHistoryDate = (timestamp: any) => {
+    if (!timestamp) return 'Unknown';
+    
+    try {
+      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+      const now = new Date();
+      const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+      
+      if (diffInMinutes < 1) return 'Just now';
+      if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+      
+      const diffInHours = Math.floor(diffInMinutes / 60);
+      if (diffInHours < 24) return `${diffInHours}h ago`;
+      
+      const diffInDays = Math.floor(diffInHours / 24);
+      if (diffInDays < 7) return `${diffInDays}d ago`;
+      
+      return date.toLocaleDateString('en-US', { 
+        day: 'numeric', 
+        month: 'short'
+      });
+    } catch (error) {
+      return 'Unknown';
+    }
   };
 
   const handleAddressSelect = (addressData: any) => {
@@ -348,7 +428,22 @@ export default function PermitAdvisor() {
                   </DialogHeader>
 
                   <ScrollArea className="max-h-[60vh] pr-4">
-                    {sampleHistoryData.length === 0 ? (
+                    {/* Buscador de historial */}
+                    <div className="mb-4 p-3 bg-gray-800/30 rounded-lg border border-gray-700/50">
+                      <Input
+                        placeholder="Buscar en historial... (dirección, tipo de proyecto)"
+                        value={searchFilter}
+                        onChange={(e) => setSearchFilter(e.target.value)}
+                        className="bg-gray-900/50 border-gray-600/50 text-gray-300 placeholder-gray-500"
+                      />
+                    </div>
+
+                    {historyLoading ? (
+                      <div className="text-center py-12">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-400 mx-auto mb-4"></div>
+                        <p className="text-gray-400">Cargando historial...</p>
+                      </div>
+                    ) : filteredHistory.length === 0 ? (
                       <div className="text-center py-12">
                         <div className="w-16 h-16 bg-gradient-to-r from-gray-600 to-gray-500 rounded-full flex items-center justify-center mx-auto mb-4 opacity-50">
                           📋
@@ -358,7 +453,7 @@ export default function PermitAdvisor() {
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {sampleHistoryData.map((item, index) => (
+                        {filteredHistory.map((item: any, index: number) => (
                           <div key={item.id}>
                             <div 
                               onClick={() => loadFromHistory(item)}
@@ -377,7 +472,7 @@ export default function PermitAdvisor() {
                                     </Badge>
                                   </div>
                                   <span className="text-xs text-gray-400 font-mono">
-                                    {item.createdAt}
+                                    {formatHistoryDate(item.createdAt)}
                                   </span>
                                 </div>
 
@@ -409,7 +504,7 @@ export default function PermitAdvisor() {
                               </div>
                             </div>
                             
-                            {index < sampleHistoryData.length - 1 && (
+                            {index < filteredHistory.length - 1 && (
                               <Separator className="my-3 bg-gray-700/30" />
                             )}
                           </div>
@@ -418,10 +513,10 @@ export default function PermitAdvisor() {
                     )}
                   </ScrollArea>
 
-                  {sampleHistoryData.length > 0 && (
+                  {filteredHistory.length > 0 && (
                     <div className="flex justify-center pt-4 border-t border-gray-700/30">
                       <p className="text-xs text-gray-500">
-                        Showing {sampleHistoryData.length} recent searches
+                        Showing {filteredHistory.length} of {historyData.length} searches
                       </p>
                     </div>
                   )}
