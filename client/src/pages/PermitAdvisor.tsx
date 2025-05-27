@@ -210,30 +210,30 @@ export default function PermitAdvisor() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-black p-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-teal-900 to-black p-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="relative inline-block">
             {/* Futuristic icon frame */}
             <div className="relative p-4 mb-4">
-              <div className="absolute inset-0 border-2 border-cyan-400 opacity-60">
+              <div className="absolute inset-0 border-2 border-teal-400 opacity-60">
                 {/* Corner brackets */}
-                <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-cyan-300"></div>
-                <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-cyan-300"></div>
-                <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-cyan-300"></div>
-                <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-cyan-300"></div>
+                <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-teal-300"></div>
+                <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-teal-300"></div>
+                <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-teal-300"></div>
+                <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-teal-300"></div>
                 {/* Scanning lines */}
-                <div className="absolute top-2 left-2 right-2 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-60 animate-pulse"></div>
-                <div className="absolute bottom-2 left-2 right-2 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-60 animate-pulse delay-1000"></div>
+                <div className="absolute top-2 left-2 right-2 h-px bg-gradient-to-r from-transparent via-teal-400 to-transparent opacity-60 animate-pulse"></div>
+                <div className="absolute bottom-2 left-2 right-2 h-px bg-gradient-to-r from-transparent via-teal-400 to-transparent opacity-60 animate-pulse delay-1000"></div>
               </div>
               <div className="relative text-6xl">🛡️</div>
             </div>
           </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-blue-600 bg-clip-text text-transparent mb-2">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-teal-400 to-emerald-500 bg-clip-text text-transparent mb-2">
             Construction Permit Advisor
           </h1>
-          <p className="text-lg text-gray-300">
+          <p className="text-lg text-teal-200">
             Get detailed information about permits and regulations for your project
           </p>
         </div>
@@ -242,23 +242,23 @@ export default function PermitAdvisor() {
         {showSearchForm && (
           <div className="relative mb-8">
             {/* Cyberpunk outer frame */}
-            <div className="absolute inset-0 border border-cyan-400 opacity-30">
+            <div className="absolute inset-0 border border-teal-400 opacity-30">
               {/* Corner brackets */}
-              <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-cyan-300"></div>
-              <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-cyan-300"></div>
-              <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-cyan-300"></div>
-              <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-cyan-300"></div>
+              <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-teal-300"></div>
+              <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-teal-300"></div>
+              <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-teal-300"></div>
+              <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-teal-300"></div>
               {/* Scanning lines */}
-              <div className="absolute top-3 left-3 right-3 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-40 animate-pulse"></div>
-              <div className="absolute bottom-3 left-3 right-3 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-40 animate-pulse delay-1000"></div>
+              <div className="absolute top-3 left-3 right-3 h-px bg-gradient-to-r from-transparent via-teal-400 to-transparent opacity-40 animate-pulse"></div>
+              <div className="absolute bottom-3 left-3 right-3 h-px bg-gradient-to-r from-transparent via-teal-400 to-transparent opacity-40 animate-pulse delay-1000"></div>
             </div>
-            <Card className="relative bg-gray-800/80 border-cyan-500/30 backdrop-blur-sm">
+            <Card className="relative bg-gray-800/80 border-teal-500/30 backdrop-blur-sm">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-cyan-300">
-                  <Search className="h-5 w-5 text-cyan-400" />
+                <CardTitle className="flex items-center gap-2 text-teal-300">
+                  <Search className="h-5 w-5 text-teal-400" />
                   Project Information
                 </CardTitle>
-                <CardDescription className="text-gray-300">
+                <CardDescription className="text-teal-200">
                   Enter your project details to get specific permit information
                 </CardDescription>
               </CardHeader>
@@ -269,7 +269,7 @@ export default function PermitAdvisor() {
                     variant="outline"
                     size="sm"
                     onClick={() => setShowHistory(true)}
-                    className="flex items-center gap-2 bg-gray-700/50 border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20"
+                    className="flex items-center gap-2 bg-gray-700/50 border-teal-500/30 text-teal-300 hover:bg-teal-500/20"
                   >
                     <History className="h-4 w-4" />
                     View History
@@ -278,7 +278,7 @@ export default function PermitAdvisor() {
 
                 {/* Address */}
                 <div className="space-y-2">
-                  <Label htmlFor="address" className="text-cyan-300">Project Address</Label>
+                  <Label htmlFor="address" className="text-teal-300">Project Address</Label>
                   <MapboxPlacesAutocomplete
                     value={address}
                     onChange={setAddress}
@@ -291,12 +291,12 @@ export default function PermitAdvisor() {
 
                 {/* Project type */}
                 <div className="space-y-2">
-                  <Label htmlFor="projectType" className="text-cyan-300">Project Type</Label>
+                  <Label htmlFor="projectType" className="text-teal-300">Project Type</Label>
                   <Select value={projectType} onValueChange={setProjectType}>
-                    <SelectTrigger className="bg-gray-700/50 border-cyan-500/30 text-gray-200">
+                    <SelectTrigger className="bg-gray-700/50 border-teal-500/30 text-gray-200">
                       <SelectValue placeholder="Select project type" />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-800 border-cyan-500/30">
+                    <SelectContent className="bg-gray-800 border-teal-500/30">
                       <SelectItem value="fence">Fence</SelectItem>
                       <SelectItem value="addition">House Addition</SelectItem>
                       <SelectItem value="deck">Deck/Patio</SelectItem>
@@ -312,14 +312,14 @@ export default function PermitAdvisor() {
 
                 {/* Project description */}
                 <div className="space-y-2">
-                  <Label htmlFor="description" className="text-cyan-300">Project Description (Optional)</Label>
+                  <Label htmlFor="description" className="text-teal-300">Project Description (Optional)</Label>
                   <Textarea
                     id="description"
                     placeholder="Describe the specific details of your project..."
                     value={projectDescription}
                     onChange={(e) => setProjectDescription(e.target.value)}
                     rows={3}
-                    className="bg-gray-700/50 border-cyan-500/30 text-gray-200 placeholder:text-gray-400"
+                    className="bg-gray-700/50 border-teal-500/30 text-gray-200 placeholder:text-gray-400"
                   />
                 </div>
               </CardContent>
@@ -327,7 +327,7 @@ export default function PermitAdvisor() {
                 <Button
                   onClick={handleSearch}
                   disabled={permitMutation.isPending}
-                  className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0"
+                  className="w-full bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 text-white border-0"
                 >
                   {permitMutation.isPending ? (
                     <>
@@ -354,43 +354,43 @@ export default function PermitAdvisor() {
               <Button
                 variant="outline"
                 onClick={handleBackToSearch}
-                className="flex items-center gap-2 bg-gray-700/50 border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20"
+                className="flex items-center gap-2 bg-gray-700/50 border-teal-500/30 text-teal-300 hover:bg-teal-500/20"
               >
                 <ArrowLeft className="h-4 w-4" />
                 New Search
               </Button>
               <div className="text-right">
-                <h2 className="text-lg font-semibold text-cyan-300">Results for:</h2>
-                <p className="text-sm text-gray-400">{permitData.meta?.location}</p>
+                <h2 className="text-lg font-semibold text-teal-300">Results for:</h2>
+                <p className="text-sm text-teal-200">{permitData.meta?.location}</p>
               </div>
             </div>
 
             {/* Results content */}
             <div className="relative">
               {/* Cyberpunk outer frame */}
-              <div className="absolute inset-0 border border-cyan-400 opacity-30">
+              <div className="absolute inset-0 border border-teal-400 opacity-30">
                 {/* Corner brackets */}
-                <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-cyan-300"></div>
-                <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-cyan-300"></div>
-                <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-cyan-300"></div>
-                <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-cyan-300"></div>
+                <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-teal-300"></div>
+                <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-teal-300"></div>
+                <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-teal-300"></div>
+                <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-teal-300"></div>
                 {/* Scanning lines */}
-                <div className="absolute top-3 left-3 right-3 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-40 animate-pulse"></div>
-                <div className="absolute bottom-3 left-3 right-3 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-40 animate-pulse delay-1000"></div>
+                <div className="absolute top-3 left-3 right-3 h-px bg-gradient-to-r from-transparent via-teal-400 to-transparent opacity-40 animate-pulse"></div>
+                <div className="absolute bottom-3 left-3 right-3 h-px bg-gradient-to-r from-transparent via-teal-400 to-transparent opacity-40 animate-pulse delay-1000"></div>
               </div>
-              <Card className="relative bg-gray-800/80 border-cyan-500/30 backdrop-blur-sm">
+              <Card className="relative bg-gray-800/80 border-teal-500/30 backdrop-blur-sm">
                 <CardHeader>
-                  <CardTitle className="text-cyan-300">Permit Information</CardTitle>
-                  <CardDescription className="text-gray-300">
+                  <CardTitle className="text-teal-300">Permit Information</CardTitle>
+                  <CardDescription className="text-teal-200">
                     Project: {permitData.meta?.projectType} at {permitData.meta?.location}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Tabs value={activeTab} onValueChange={setActiveTab}>
                     <TabsList className="grid w-full grid-cols-3 bg-gray-700/50">
-                      <TabsTrigger value="permits" className="text-cyan-300 data-[state=active]:bg-cyan-500/20">Permits</TabsTrigger>
-                      <TabsTrigger value="process" className="text-cyan-300 data-[state=active]:bg-cyan-500/20">Process</TabsTrigger>
-                      <TabsTrigger value="considerations" className="text-cyan-300 data-[state=active]:bg-cyan-500/20">Considerations</TabsTrigger>
+                      <TabsTrigger value="permits" className="text-teal-300 data-[state=active]:bg-teal-500/20">Permits</TabsTrigger>
+                      <TabsTrigger value="process" className="text-teal-300 data-[state=active]:bg-teal-500/20">Process</TabsTrigger>
+                      <TabsTrigger value="considerations" className="text-teal-300 data-[state=active]:bg-teal-500/20">Considerations</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="permits" className="space-y-4">
