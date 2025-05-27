@@ -325,8 +325,9 @@ export default function PermitAdvisor() {
               <CardContent className="px-2 sm:px-4 lg:px-6">
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
                   {/* Responsive tabs - fully visible on all screens */}
-                  <TabsList className="flex w-full overflow-x-auto sm:grid sm:grid-cols-5 bg-gray-900/80 border border-teal-400/30 relative p-2 gap-2">
-                    <div className="absolute inset-0 bg-gradient-to-r from-teal-500/10 via-transparent to-cyan-500/10 animate-pulse"></div>
+                  <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-teal-500/30">
+                    <TabsList className="flex w-max min-w-full sm:grid sm:grid-cols-5 sm:w-full bg-gray-900/80 border border-teal-400/30 relative p-2 gap-2">
+                      <div className="absolute inset-0 bg-gradient-to-r from-teal-500/10 via-transparent to-cyan-500/10 animate-pulse"></div>
                     <TabsTrigger value="permits" className="relative text-teal-300 data-[state=active]:bg-teal-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-teal-500/50 transition-all duration-300 whitespace-nowrap min-w-[90px] flex-shrink-0 text-sm font-medium px-4 py-2">
                       <span className="relative z-10">Permits</span>
                     </TabsTrigger>
@@ -342,7 +343,8 @@ export default function PermitAdvisor() {
                     <TabsTrigger value="considerations" className="relative text-teal-300 data-[state=active]:bg-amber-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-amber-500/50 transition-all duration-300 whitespace-nowrap min-w-[90px] flex-shrink-0 text-sm font-medium px-4 py-2">
                       <span className="relative z-10">Alerts</span>
                     </TabsTrigger>
-                  </TabsList>
+                    </TabsList>
+                  </div>
 
                   <TabsContent value="permits" className="space-y-4">
                     {permitData.requiredPermits && permitData.requiredPermits.length > 0 ? (
