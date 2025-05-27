@@ -1355,83 +1355,185 @@ export default function EstimatesWizardFixed() {
                   Agregar Materiales ({estimate.items.length})
                 </div>
                 <div className="flex gap-2">
-                  {/* Smart Search IA - Interfaz Compacta y Elegante */}
+                  {/* Smart Search IA - Interfaz Futurista Tony Stark */}
                   <div className="relative">
-                    <Button 
-                      size="sm"
-                      variant="outline"
+                    <button 
                       disabled={!estimate.projectDetails.trim() || isAIProcessing}
-                      className="flex items-center gap-2 min-w-[140px]"
+                      className={`
+                        relative overflow-hidden px-4 py-2 min-w-[160px] text-sm font-medium transition-all duration-300
+                        bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900
+                        border border-cyan-400/30 rounded-lg
+                        hover:border-cyan-400/60 hover:shadow-lg hover:shadow-cyan-400/20
+                        disabled:opacity-50 disabled:cursor-not-allowed
+                        group
+                      `}
                       onClick={() => setShowSmartSearchDialog(!showSmartSearchDialog)}
                     >
-                      {isAIProcessing ? (
-                        <>
-                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
-                          {aiProgress}%
-                        </>
-                      ) : (
-                        <>
-                          <Brain className="h-4 w-4" />
-                          Smart Search IA
-                          <ChevronDown className={`h-3 w-3 transition-transform ${showSmartSearchDialog ? 'rotate-180' : ''}`} />
-                        </>
-                      )}
-                    </Button>
+                      {/* Efecto de luz de fondo */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/10 via-blue-400/5 to-cyan-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      
+                      <div className="relative flex items-center gap-2 text-white">
+                        {isAIProcessing ? (
+                          <>
+                            <div className="flex items-center gap-2">
+                              <div className="w-4 h-4 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+                              <span className="text-cyan-400 font-mono">{aiProgress}%</span>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <Brain className="h-4 w-4 text-cyan-400" />
+                            <span>SMART SEARCH</span>
+                            <ChevronDown className={`h-3 w-3 text-cyan-400 transition-transform duration-300 ${showSmartSearchDialog ? 'rotate-180' : ''}`} />
+                          </>
+                        )}
+                      </div>
+                    </button>
 
-                    {/* Dropdown Compacto */}
+                    {/* Dropdown Futurista Holográfico */}
                     {showSmartSearchDialog && !isAIProcessing && (
-                      <div className="absolute top-full mt-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[280px]">
-                        <div className="p-3">
-                          <div className="text-xs text-gray-500 mb-2 font-medium">Selecciona el tipo de análisis:</div>
+                      <div className="absolute top-full mt-2 left-0 z-20 min-w-[320px]">
+                        {/* Panel Holográfico Principal */}
+                        <div className="
+                          bg-gradient-to-b from-slate-900/95 via-slate-800/98 to-slate-900/95 
+                          backdrop-blur-xl border border-cyan-400/30 rounded-xl shadow-2xl shadow-cyan-400/10
+                          overflow-hidden
+                        ">
+                          {/* Header con línea neon */}
+                          <div className="border-b border-cyan-400/20 p-4">
+                            <div className="text-xs font-mono text-cyan-400 mb-1 tracking-wider">SELECT ANALYSIS TYPE</div>
+                            <div className="h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
+                          </div>
                           
-                          <div className="space-y-1">
-                            {/* Solo Materiales */}
+                          <div className="p-3 space-y-2">
+                            {/* Inventory Quantum */}
                             <button
                               onClick={() => {
                                 setSmartSearchMode('materials');
+                                setShowSmartSearchDialog(false);
                                 handleSmartSearch();
                               }}
-                              className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-blue-50 transition-colors text-left"
+                              className="
+                                group w-full p-3 rounded-lg transition-all duration-300
+                                border border-blue-400/20 bg-gradient-to-r from-blue-500/5 to-blue-600/5
+                                hover:border-blue-400/50 hover:bg-gradient-to-r hover:from-blue-500/15 hover:to-blue-600/15
+                                hover:shadow-lg hover:shadow-blue-400/20
+                              "
                             >
-                              <Package className="h-4 w-4 text-blue-500 flex-shrink-0" />
-                              <div>
-                                <div className="text-sm font-medium">Solo Materiales</div>
-                                <div className="text-xs text-gray-500">Lista de materiales con precios</div>
+                              <div className="flex items-center gap-3">
+                                {/* Icono Futurista */}
+                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-400/20 to-blue-600/20 border border-blue-400/30 flex items-center justify-center">
+                                  <div className="w-5 h-5 border-2 border-blue-400 rounded-sm relative">
+                                    <div className="absolute inset-1 border border-blue-400/50" />
+                                  </div>
+                                </div>
+                                
+                                <div className="flex-1 text-left">
+                                  <div className="text-sm font-medium text-white group-hover:text-blue-400 transition-colors">
+                                    INVENTORY QUANTUM
+                                  </div>
+                                  <div className="text-xs text-slate-400 font-mono">
+                                    Materials matrix with pricing vectors
+                                  </div>
+                                </div>
+                                
+                                {/* Flecha animada */}
+                                <div className="text-blue-400 group-hover:translate-x-1 transition-transform">
+                                  <ChevronRight className="h-4 w-4" />
+                                </div>
                               </div>
                             </button>
 
-                            {/* Solo Labor */}
+                            {/* Labor DeepSearch */}
                             <button
                               onClick={() => {
                                 setSmartSearchMode('labor');
+                                setShowSmartSearchDialog(false);
                                 handleSmartSearch();
                               }}
-                              className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-orange-50 transition-colors text-left"
+                              className="
+                                group w-full p-3 rounded-lg transition-all duration-300
+                                border border-orange-400/20 bg-gradient-to-r from-orange-500/5 to-amber-600/5
+                                hover:border-orange-400/50 hover:bg-gradient-to-r hover:from-orange-500/15 hover:to-amber-600/15
+                                hover:shadow-lg hover:shadow-orange-400/20
+                              "
                             >
-                              <Wrench className="h-4 w-4 text-orange-500 flex-shrink-0" />
-                              <div>
-                                <div className="text-sm font-medium">Solo Labor</div>
-                                <div className="text-xs text-gray-500">Servicios y mano de obra</div>
+                              <div className="flex items-center gap-3">
+                                {/* Icono Futurista */}
+                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-400/20 to-amber-600/20 border border-orange-400/30 flex items-center justify-center">
+                                  <div className="relative">
+                                    <Wrench className="h-5 w-5 text-orange-400" />
+                                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-orange-400 rounded-full animate-pulse" />
+                                  </div>
+                                </div>
+                                
+                                <div className="flex-1 text-left">
+                                  <div className="text-sm font-medium text-white group-hover:text-orange-400 transition-colors">
+                                    LABOR DEEPSEARCH
+                                  </div>
+                                  <div className="text-xs text-slate-400 font-mono">
+                                    Service algorithms & workforce optimization
+                                  </div>
+                                </div>
+                                
+                                {/* Flecha animada */}
+                                <div className="text-orange-400 group-hover:translate-x-1 transition-transform">
+                                  <ChevronRight className="h-4 w-4" />
+                                </div>
                               </div>
                             </button>
 
-                            {/* Ambos - Recomendado */}
+                            {/* Project Synapse - Recomendado */}
                             <button
                               onClick={() => {
                                 setSmartSearchMode('both');
+                                setShowSmartSearchDialog(false);
                                 handleSmartSearch();
                               }}
-                              className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-green-50 transition-colors text-left border border-green-200 bg-green-50"
+                              className="
+                                group w-full p-3 rounded-lg transition-all duration-300
+                                border border-green-400/40 bg-gradient-to-r from-green-500/10 to-emerald-600/10
+                                hover:border-green-400/70 hover:bg-gradient-to-r hover:from-green-500/20 hover:to-emerald-600/20
+                                hover:shadow-lg hover:shadow-green-400/25
+                                ring-1 ring-green-400/20
+                              "
                             >
-                              <Combine className="h-4 w-4 text-green-500 flex-shrink-0" />
-                              <div className="flex-1">
-                                <div className="text-sm font-medium flex items-center gap-2">
-                                  Materiales + Labor
-                                  <Badge variant="secondary" className="text-xs">Recomendado</Badge>
+                              <div className="flex items-center gap-3">
+                                {/* Icono Futurista con efecto especial */}
+                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-400/20 to-emerald-600/20 border border-green-400/40 flex items-center justify-center relative">
+                                  <div className="relative">
+                                    <div className="w-5 h-5 rounded-full border-2 border-green-400 relative">
+                                      <div className="absolute inset-1 rounded-full bg-green-400/30" />
+                                      <div className="absolute inset-2 rounded-full bg-green-400 animate-pulse" />
+                                    </div>
+                                  </div>
                                 </div>
-                                <div className="text-xs text-gray-500">Análisis completo del proyecto</div>
+                                
+                                <div className="flex-1 text-left">
+                                  <div className="flex items-center gap-2">
+                                    <div className="text-sm font-medium text-white group-hover:text-green-400 transition-colors">
+                                      PROJECT SYNAPSE
+                                    </div>
+                                    <div className="px-2 py-0.5 bg-green-400/20 border border-green-400/40 rounded text-xs text-green-400 font-mono">
+                                      OPTIMAL
+                                    </div>
+                                  </div>
+                                  <div className="text-xs text-slate-400 font-mono">
+                                    Complete neural network analysis
+                                  </div>
+                                </div>
+                                
+                                {/* Flecha animada con brillo */}
+                                <div className="text-green-400 group-hover:translate-x-1 transition-transform">
+                                  <ChevronRight className="h-4 w-4" />
+                                </div>
                               </div>
                             </button>
+                          </div>
+
+                          {/* Footer con línea neon */}
+                          <div className="border-t border-cyan-400/20 p-2">
+                            <div className="h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent" />
                           </div>
                         </div>
                       </div>
@@ -1440,17 +1542,25 @@ export default function EstimatesWizardFixed() {
                     {/* Overlay para cerrar el dropdown */}
                     {showSmartSearchDialog && !isAIProcessing && (
                       <div 
-                        className="fixed inset-0 z-0" 
+                        className="fixed inset-0 z-10" 
                         onClick={() => setShowSmartSearchDialog(false)}
                       />
                     )}
                   </div>
 
-                  {/* Barra de progreso compacta cuando está procesando */}
+                  {/* Barra de progreso futurista cuando está procesando */}
                   {isAIProcessing && (
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Progress value={aiProgress} className="w-24 h-2" />
-                      <span className="text-xs">Generando...</span>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-slate-900 to-slate-800 border border-cyan-400/30 rounded-lg">
+                        <div className="w-20 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-cyan-400 to-blue-400 rounded-full transition-all duration-300"
+                            style={{ width: `${aiProgress}%` }}
+                          />
+                        </div>
+                        <span className="text-xs text-cyan-400 font-mono">{aiProgress}%</span>
+                      </div>
+                      <span className="text-xs text-slate-400 font-mono">Neural processing...</span>
                     </div>
                   )}
                 </div>
