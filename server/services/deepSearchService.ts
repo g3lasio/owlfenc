@@ -116,62 +116,63 @@ export class DeepSearchService {
    * Genera un prompt estructurado para el análisis de Claude
    */
   private buildAnalysisPrompt(description: string, location?: string): string {
-    const locationContext = location ? `\nUbicación del proyecto: ${location}` : '';
+    const locationContext = location ? `\nProject Location: ${location}` : '';
     
     return `
-Analiza la siguiente descripción de proyecto de construcción y genera una lista completa de materiales necesarios:
+Analyze the following construction project description and generate a complete list of required materials:
 
-DESCRIPCIÓN DEL PROYECTO:
+PROJECT DESCRIPTION:
 ${description}${locationContext}
 
-Por favor proporciona tu análisis en el siguiente formato JSON exacto:
+Please provide your analysis in the following exact JSON format:
 
 {
-  "projectType": "tipo específico de proyecto",
-  "projectScope": "alcance detallado del trabajo",
+  "projectType": "specific project type",
+  "projectScope": "detailed work scope",
   "materials": [
     {
       "id": "mat_001",
-      "name": "Nombre comercial del material",
-      "description": "Descripción detallada",
-      "category": "categoría (madera, metal, concreto, hardware, etc.)",
-      "quantity": número,
-      "unit": "unidad (pies, libras, galones, piezas, etc.)",
-      "unitPrice": precio_estimado_por_unidad,
-      "totalPrice": precio_total,
-      "specifications": "especificaciones técnicas"
+      "name": "Commercial material name",
+      "description": "Detailed description",
+      "category": "category (lumber, metal, concrete, hardware, etc.)",
+      "quantity": number,
+      "unit": "unit (feet, pounds, gallons, pieces, etc.)",
+      "unitPrice": estimated_price_per_unit,
+      "totalPrice": total_price,
+      "specifications": "technical specifications"
     }
   ],
   "laborCosts": [
     {
-      "category": "tipo de trabajo",
-      "description": "descripción del trabajo",
-      "hours": horas_estimadas,
-      "rate": tarifa_por_hora,
+      "category": "work type",
+      "description": "work description",
+      "hours": estimated_hours,
+      "rate": hourly_rate,
       "total": total_labor
     }
   ],
   "additionalCosts": [
     {
-      "category": "permisos|transporte|equipo|otros",
-      "description": "descripción del costo",
-      "cost": monto,
+      "category": "permits|transport|equipment|other",
+      "description": "cost description",
+      "cost": amount,
       "required": true/false
     }
   ],
-  "recommendations": ["recomendación 1", "recomendación 2"],
-  "warnings": ["advertencia 1", "advertencia 2"],
-  "confidence": número_entre_0_y_1
+  "recommendations": ["recommendation 1", "recommendation 2"],
+  "warnings": ["warning 1", "warning 2"],
+  "confidence": number_between_0_and_1
 }
 
-IMPORTANTE:
-- Sé específico con nombres comerciales reales de materiales
-- Incluye todos los materiales necesarios, incluso los pequeños (tornillos, adhesivos, etc.)
-- Calcula cantidades realistas basadas en las dimensiones
-- Proporciona precios estimados actuales del mercado estadounidense
-- Incluye costos de labor realistas para la región
-- Considera permisos y regulaciones locales
-- Asegúrate de que el JSON sea válido y completo
+IMPORTANT:
+- Be specific with real commercial material names
+- Include all necessary materials, even small ones (screws, adhesives, etc.)
+- Calculate realistic quantities based on dimensions
+- Provide current US market estimated prices
+- Include realistic labor costs for the region
+- Consider local permits and regulations
+- Ensure JSON is valid and complete
+- ALL TEXT MUST BE IN ENGLISH ONLY
 `;
   }
 
@@ -180,27 +181,28 @@ IMPORTANTE:
    */
   private getSystemPrompt(): string {
     return `
-Eres un experto contratista de construcción con 20+ años de experiencia en estimación de proyectos. 
-Tu especialidad es analizar descripciones de proyectos y generar listas completas y precisas de materiales.
+You are an expert construction contractor with 20+ years of experience in project estimation. 
+Your specialty is analyzing project descriptions and generating complete and accurate material lists.
 
-CONOCIMIENTO ESPECIALIZADO:
-- Materiales de construcción y sus especificaciones
-- Precios actuales del mercado de materiales de construcción
-- Códigos de construcción y regulaciones
-- Técnicas de instalación y mejores prácticas
-- Proveedores como Home Depot, Lowes, Ferguson, etc.
+SPECIALIZED KNOWLEDGE:
+- Construction materials and their specifications
+- Current construction material market prices
+- Building codes and regulations
+- Installation techniques and best practices
+- Suppliers like Home Depot, Lowes, Ferguson, etc.
 
-INSTRUCCIONES:
-1. Analiza cuidadosamente cada descripción de proyecto
-2. Identifica TODOS los materiales necesarios, incluso los más pequeños
-3. Calcula cantidades precisas basadas en dimensiones estándar
-4. Proporciona precios realistas del mercado actual
-5. Incluye costos de labor apropiados para el tipo de trabajo
-6. Considera factores como desperdicio, extras y contingencias
-7. Sugiere alternativas o mejoras cuando sea apropiado
-8. Advierte sobre posibles complicaciones o requerimientos especiales
+INSTRUCTIONS:
+1. Carefully analyze each project description
+2. Identify ALL necessary materials, even the smallest ones
+3. Calculate precise quantities based on standard dimensions
+4. Provide realistic current market prices
+5. Include appropriate labor costs for the type of work
+6. Consider factors like waste, extras and contingencies
+7. Suggest alternatives or improvements when appropriate
+8. Warn about possible complications or special requirements
 
-RESPONDE SIEMPRE EN FORMATO JSON VÁLIDO.
+ALWAYS RESPOND IN VALID JSON FORMAT.
+ALL TEXT MUST BE IN ENGLISH ONLY.
 `;
   }
 

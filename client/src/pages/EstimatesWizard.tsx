@@ -247,15 +247,32 @@ export default function EstimatesWizardFixed() {
 
           // Auto-guardar materiales al inventario de Firebase
           if (currentUser?.uid) {
+            console.log('🚀 STARTING AUTO-SAVE for materials:', result.materials.length);
+            console.log('📋 Materials data:', result.materials);
+            console.log('👤 Current user UID:', currentUser.uid);
+            
             MaterialInventoryService.addMaterialsFromDeepSearch(
               result.materials,
               currentUser.uid,
               estimate.projectDetails
             ).then((saveResults) => {
-              console.log('📦 Auto-save to inventory completed:', saveResults);
+              console.log('✅ AUTO-SAVE SUCCESS! Results:', saveResults);
+              if (saveResults.added > 0) {
+                toast({
+                  title: "Materials Auto-Saved",
+                  description: `${saveResults.added} materials automatically added to your inventory`,
+                });
+              }
             }).catch((error) => {
-              console.error('❌ Error auto-saving materials to inventory:', error);
+              console.error('❌ AUTO-SAVE FAILED:', error);
+              toast({
+                title: "Auto-save Warning",
+                description: "Some materials couldn't be saved to inventory",
+                variant: "destructive"
+              });
             });
+          } else {
+            console.warn('⚠️ No user UID available for auto-save');
           }
         }
 

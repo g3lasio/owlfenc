@@ -44,11 +44,15 @@ export class MaterialInventoryService {
       return results;
     }
 
-    console.log('🔄 Auto-saving materials to inventory:', materials.length);
+    console.log('🔄 AUTO-SAVE STARTING: Saving materials to inventory:', materials.length);
+    console.log('🔍 Materials to save:', materials);
+    console.log('👤 User ID:', userId);
 
     try {
       // Verificar materiales existentes para evitar duplicados
+      console.log('📋 Checking existing materials...');
       const existingMaterials = await this.getExistingMaterials(userId);
+      console.log('📊 Found existing materials:', existingMaterials.length);
       const existingNames = new Set(existingMaterials.map(m => m.name.toLowerCase().trim()));
 
       for (const material of materials) {
@@ -73,7 +77,9 @@ export class MaterialInventoryService {
             category: material.category || 'General',
             description: material.description || `Auto-generated from DeepSearch`,
             unit: material.unit,
-            price: typeof material.price === 'number' ? material.price : parseFloat(material.price) || 0,
+            price: typeof material.price === 'number' ? material.price : 
+                   (typeof material.unitPrice === 'number' ? material.unitPrice : 
+                   parseFloat(material.price || material.unitPrice) || 0),
             supplier: material.supplier || '',
             supplierLink: material.supplierLink || '',
             sku: material.sku || '',
