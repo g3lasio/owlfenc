@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -506,7 +506,12 @@ export default function PermitAdvisor() {
                                       <div className="w-8 h-8 bg-teal-500/20 rounded-full flex items-center justify-center">📞</div>
                                       <div>
                                         <p className="text-xs text-gray-400">Direct Line</p>
-                                        <p className="text-teal-300 font-mono">{contact.phone}</p>
+                                        <a 
+                                          href={`tel:${contact.phone.replace(/\D/g, '')}`}
+                                          className="text-teal-300 font-mono hover:text-teal-200 hover:underline transition-colors cursor-pointer"
+                                        >
+                                          {contact.phone}
+                                        </a>
                                       </div>
                                     </div>
                                   )}
@@ -515,7 +520,12 @@ export default function PermitAdvisor() {
                                       <div className="w-8 h-8 bg-cyan-500/20 rounded-full flex items-center justify-center">📧</div>
                                       <div>
                                         <p className="text-xs text-gray-400">Email</p>
-                                        <p className="text-cyan-300 font-mono text-sm">{contact.email}</p>
+                                        <a 
+                                          href={`mailto:${contact.email}`}
+                                          className="text-cyan-300 font-mono text-sm hover:text-cyan-200 hover:underline transition-colors cursor-pointer"
+                                        >
+                                          {contact.email}
+                                        </a>
                                       </div>
                                     </div>
                                   )}
@@ -524,7 +534,14 @@ export default function PermitAdvisor() {
                                       <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center">📍</div>
                                       <div>
                                         <p className="text-xs text-gray-400">Address</p>
-                                        <p className="text-blue-300 text-sm">{contact.address}</p>
+                                        <a 
+                                          href={`https://maps.google.com/maps?q=${encodeURIComponent(contact.address)}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-blue-300 text-sm hover:text-blue-200 hover:underline transition-colors cursor-pointer"
+                                        >
+                                          {contact.address}
+                                        </a>
                                       </div>
                                     </div>
                                   )}
@@ -610,52 +627,140 @@ export default function PermitAdvisor() {
                       )}
                     </TabsContent>
 
-                    {/* New Premium Timeline Tab */}
-                    <TabsContent value="timeline" className="space-y-4">
-                      {permitData.timeline ? (
-                        <div className="space-y-6">
-                          {/* Critical Path Visualization */}
-                          <div className="relative">
-                            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-purple-500/10 rounded-lg animate-pulse"></div>
-                            <Card className="relative bg-gray-800/90 border-purple-400/30">
-                              <CardHeader>
-                                <CardTitle className="text-purple-300 flex items-center gap-2">
-                                  <div className="w-3 h-3 bg-purple-400 rounded-full animate-ping"></div>
-                                  Project Timeline Analysis
-                                </CardTitle>
-                              </CardHeader>
-                              <CardContent>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                  {permitData.timeline.totalEstimatedTime && (
-                                    <div className="text-center p-4 bg-purple-500/10 rounded-lg border border-purple-400/20">
-                                      <h4 className="text-purple-300 font-medium">Total Time</h4>
-                                      <p className="text-2xl font-bold text-white mt-2">{permitData.timeline.totalEstimatedTime}</p>
-                                    </div>
-                                  )}
-                                  {permitData.timeline.criticalPathItems && (
-                                    <div className="text-center p-4 bg-red-500/10 rounded-lg border border-red-400/20">
-                                      <h4 className="text-red-300 font-medium">Critical Items</h4>
-                                      <p className="text-2xl font-bold text-white mt-2">{Array.isArray(permitData.timeline.criticalPathItems) ? permitData.timeline.criticalPathItems.length : '1'}</p>
-                                    </div>
-                                  )}
-                                  {permitData.timeline.bestTimeToApply && (
-                                    <div className="text-center p-4 bg-green-500/10 rounded-lg border border-green-400/20">
-                                      <h4 className="text-green-300 font-medium">Best Time</h4>
-                                      <p className="text-sm font-medium text-white mt-2">{permitData.timeline.bestTimeToApply}</p>
-                                    </div>
-                                  )}
-                                </div>
-                              </CardContent>
-                            </Card>
-                          </div>
+                    {/* Premium Interactive Timeline with Process Checklist */}
+                    <TabsContent value="timeline" className="space-y-6">
+                      {/* Timeline Overview */}
+                      {permitData.timeline && (
+                        <div className="relative">
+                          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-purple-500/10 rounded-lg animate-pulse"></div>
+                          <Card className="relative bg-gray-800/90 border-purple-400/30">
+                            <CardHeader>
+                              <CardTitle className="text-purple-300 flex items-center gap-2">
+                                <div className="w-3 h-3 bg-purple-400 rounded-full animate-ping"></div>
+                                Project Timeline Overview
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {permitData.timeline.totalEstimatedTime && (
+                                  <div className="text-center p-4 bg-purple-500/10 rounded-lg border border-purple-400/20">
+                                    <h4 className="text-purple-300 font-medium">Total Time</h4>
+                                    <p className="text-2xl font-bold text-white mt-2">{permitData.timeline.totalEstimatedTime}</p>
+                                  </div>
+                                )}
+                                {permitData.timeline.criticalPathItems && (
+                                  <div className="text-center p-4 bg-red-500/10 rounded-lg border border-red-400/20">
+                                    <h4 className="text-red-300 font-medium">Critical Items</h4>
+                                    <p className="text-2xl font-bold text-white mt-2">{Array.isArray(permitData.timeline.criticalPathItems) ? permitData.timeline.criticalPathItems.length : '1'}</p>
+                                  </div>
+                                )}
+                                {permitData.timeline.bestTimeToApply && (
+                                  <div className="text-center p-4 bg-green-500/10 rounded-lg border border-green-400/20">
+                                    <h4 className="text-green-300 font-medium">Best Time</h4>
+                                    <p className="text-sm font-medium text-white mt-2">{permitData.timeline.bestTimeToApply}</p>
+                                  </div>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
                         </div>
-                      ) : (
-                        <div className="text-center py-8">
-                          <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
-                            📅
+                      )}
+
+                      {/* Interactive Process Checklist */}
+                      {permitData.process && permitData.process.length > 0 && (
+                        <Card className="bg-gray-800/90 border-blue-400/30">
+                          <CardHeader>
+                            <CardTitle className="text-blue-300 flex items-center gap-2">
+                              <div className="w-3 h-3 bg-blue-400 rounded-full animate-pulse"></div>
+                              Interactive Process Checklist
+                            </CardTitle>
+                            <CardDescription className="text-blue-200/70">
+                              Follow these steps in order. Click to mark as completed.
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-4">
+                              {permitData.process.map((step: any, idx: number) => {
+                                const [completed, setCompleted] = React.useState(false);
+                                return (
+                                  <div 
+                                    key={idx} 
+                                    className={`group relative p-4 rounded-lg border-2 transition-all duration-300 cursor-pointer ${
+                                      completed 
+                                        ? 'bg-green-500/10 border-green-400/50 shadow-lg shadow-green-400/20' 
+                                        : 'bg-gray-700/50 border-blue-400/30 hover:border-blue-400/60 hover:bg-blue-500/10'
+                                    }`}
+                                    onClick={() => setCompleted(!completed)}
+                                  >
+                                    {/* Step Number */}
+                                    <div className="flex items-start gap-4">
+                                      <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
+                                        completed 
+                                          ? 'bg-green-500 text-white' 
+                                          : 'bg-blue-500 text-white'
+                                      }`}>
+                                        {completed ? '✓' : idx + 1}
+                                      </div>
+                                      
+                                      {/* Step Content */}
+                                      <div className="flex-1">
+                                        <p className={`text-sm transition-all duration-300 ${
+                                          completed 
+                                            ? 'text-green-300 line-through opacity-75' 
+                                            : 'text-gray-300'
+                                        }`}>
+                                          {typeof step === 'string' ? step : step.step || JSON.stringify(step)}
+                                        </p>
+                                        
+                                        {/* Dependencies indicator */}
+                                        {step.dependencies && (
+                                          <div className="mt-2 flex items-center gap-2">
+                                            <span className="text-xs text-amber-400">Depends on step:</span>
+                                            <span className="text-xs text-amber-300 font-mono bg-amber-500/10 px-2 py-1 rounded">
+                                              {step.dependencies}
+                                            </span>
+                                          </div>
+                                        )}
+                                        
+                                        {/* Timing indicator */}
+                                        {step.timing && (
+                                          <div className="mt-2 flex items-center gap-2">
+                                            <span className="text-xs text-purple-400">Timing:</span>
+                                            <span className="text-xs text-purple-300 font-mono bg-purple-500/10 px-2 py-1 rounded">
+                                              {step.timing}
+                                            </span>
+                                          </div>
+                                        )}
+                                      </div>
+                                      
+                                      {/* Interactive indicator */}
+                                      <div className={`transition-all duration-300 ${
+                                        completed ? 'text-green-400' : 'text-blue-400 group-hover:text-blue-300'
+                                      }`}>
+                                        {completed ? '🎉' : '👆'}
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Holographic border effect */}
+                                    {!completed && (
+                                      <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-400/10 via-transparent to-cyan-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {/* Loading state when no data */}
+                      {(!permitData.timeline && (!permitData.process || permitData.process.length === 0)) && (
+                        <div className="text-center py-12">
+                          <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-spin">
+                            📋
                           </div>
-                          <h3 className="text-lg font-medium text-purple-300">Timeline Analysis Loading...</h3>
-                          <p className="text-gray-400">Critical path analysis will appear here</p>
+                          <h3 className="text-lg font-medium text-purple-300">Process Timeline Loading...</h3>
+                          <p className="text-gray-400">Interactive checklist will appear here</p>
                         </div>
                       )}
                     </TabsContent>

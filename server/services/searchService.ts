@@ -375,7 +375,32 @@ Provide premium-level detail that justifies professional subscription cost.`
           },
           {
             role: "user",
-            content: context
+            content: `${context}
+
+IMPORTANT: Include specific building code sections with real numbers like:
+- IBC (International Building Code) Section 105.1
+- IRC (International Residential Code) Chapter 3
+- Local city ordinances with section numbers
+- Specific measurements, clearances, and requirements
+- Real permit numbers, application forms, and submission requirements
+
+Example format for localCodes:
+{
+  "section": "IBC Section 105.1",
+  "type": "Building Permit Required",
+  "details": "A building permit is required for construction, alteration, repair, enlargement, or demolition of any building or structure",
+  "restrictions": "Must submit plans showing structural details, materials, and compliance with fire safety codes"
+}
+
+Provide real contact information including:
+- Specific department names (Building Division, Planning Department, etc.)
+- Real phone numbers with area codes
+- Government email addresses ending in .gov
+- Physical addresses of offices
+- Inspector names where possible
+- Office hours
+
+Make this worth $100/month subscription by providing professional-grade information.`
           }
         ],
         response_format: { type: "json_object" },
