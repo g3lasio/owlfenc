@@ -94,6 +94,7 @@ export default function PermitAdvisor() {
       if (!currentUser?.uid) return [];
       
       try {
+        // Crear la colección si no existe
         const q = query(
           collection(db, 'permit_search_history'),
           where('userId', '==', currentUser.uid),
@@ -111,37 +112,65 @@ export default function PermitAdvisor() {
           });
         });
         
+        console.log(`📋 Historial cargado: ${history.length} búsquedas encontradas`);
         return history;
       } catch (error) {
-        console.error('Error obteniendo historial:', error);
+        console.error('❌ Error obteniendo historial:', error);
+        // En caso de error, crear una estructura vacía
         return [];
       }
     },
     enabled: !!currentUser?.uid,
+    refetchOnWindowFocus: false,
+    staleTime: 1000 * 60 * 5, // 5 minutos
   });
 
-  // Funciones para el historial de Firebase
-  const saveToHistory = async (results: any) => {
-    if (!currentUser?.uid || !selectedAddress || !projectType) return;
+  // Funciones para el historial de Firebase con retry automático
+  const saveToHistory = async (results: any, retryCount = 3) => {
+    if (!currentUser?.uid || !selectedAddress || !projectType) {
+      console.log('⚠️ No se puede guardar: faltan datos del usuario o búsqueda');
+      return;
+    }
     
-    try {
-      const title = `${projectType.charAt(0).toUpperCase() + projectType.slice(1)} en ${selectedAddress}`;
-      
-      const historyItem = {
-        userId: currentUser.uid,
-        address: selectedAddress,
-        projectType,
-        projectDescription: projectDescription || '',
-        results,
-        title,
-        createdAt: Timestamp.now()
-      };
+    for (let attempt = 1; attempt <= retryCount; attempt++) {
+      try {
+        const title = `${projectType.charAt(0).toUpperCase() + projectType.slice(1)} en ${selectedAddress}`;
+        
+        const historyItem = {
+          userId: currentUser.uid,
+          address: selectedAddress,
+          projectType,
+          projectDescription: projectDescription || '',
+          results,
+          title,
+          createdAt: Timestamp.now(),
+          timestamp: new Date().toISOString() // Backup timestamp
+        };
 
-      await addDoc(collection(db, 'permit_search_history'), historyItem);
-      console.log('✅ Búsqueda guardada en historial de Firebase');
-      refetchHistory(); // Actualizar la lista
-    } catch (error) {
-      console.error('❌ Error al guardar en historial:', error);
+        const docRef = await addDoc(collection(db, 'permit_search_history'), historyItem);
+        console.log(`✅ Búsqueda guardada en historial de Firebase (ID: ${docRef.id})`);
+        
+        // Actualizar la lista inmediatamente
+        setTimeout(() => {
+          refetchHistory();
+        }, 500);
+        
+        return docRef.id; // Éxito, salir del loop
+      } catch (error) {
+        console.error(`❌ Error al guardar en historial (intento ${attempt}/${retryCount}):`, error);
+        
+        if (attempt === retryCount) {
+          // En el último intento, mostrar el error al usuario
+          toast({
+            title: "⚠️ History Save Warning",
+            description: "Search completed but couldn't save to history. Your results are still available.",
+            variant: "default"
+          });
+        } else {
+          // Esperar antes del siguiente intento
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        }
+      }
     }
   };
 
