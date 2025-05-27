@@ -21,8 +21,13 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { CheckCircle2, Search, Clock } from "lucide-react";
 import MapboxPlacesAutocomplete from "@/components/ui/mapbox-places-autocomplete";
+import { auth, db } from "@/lib/firebase";
+import { collection, addDoc, getDocs, query, where, orderBy, limit, Timestamp } from 'firebase/firestore';
+import { useAuthState } from 'react-firebase-hooks/auth';
 import { useToast } from "@/hooks/use-toast";
 
 interface PermitData {
