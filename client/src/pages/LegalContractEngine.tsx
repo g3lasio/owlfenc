@@ -5,7 +5,7 @@
  * usando el motor de IA especializado en protección legal del contratista.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
 import {
   Scale,
   FileText,
@@ -22,79 +23,93 @@ import {
   CheckCircle,
   AlertTriangle,
   Search,
-  Plus
+  Plus,
+  Loader2
 } from "lucide-react";
 import EstimateToContractGenerator from "@/components/contract/EstimateToContractGenerator";
 
-// Datos de ejemplo para demostrar el flujo (en producción vendrían de la base de datos)
-const sampleEstimates = [
-  {
-    id: "EST-2025-001",
-    clientName: "Pancho Villa",
-    clientEmail: "pancho.villa@email.com",
-    clientPhone: "(555) 123-4567",
-    projectAddress: "1234 Main Street, Austin, TX 78701",
-    projectType: "Fence Installation",
-    projectDescription: "Installation of 200 linear feet of 6-foot cedar privacy fence along the property line. Includes gate installation and removal of existing chain link fence.",
-    totalAmount: 8500,
-    items: [
-      { description: "Cedar fence panels (6ft x 8ft)", quantity: 25, unitPrice: 180, total: 4500 },
-      { description: "Fence posts (pressure treated)", quantity: 26, unitPrice: 35, total: 910 },
-      { description: "Gate hardware and installation", quantity: 1, unitPrice: 350, total: 350 },
-      { description: "Labor - fence installation", quantity: 16, unitPrice: 45, total: 720 },
-      { description: "Removal of existing fence", quantity: 1, unitPrice: 500, total: 500 },
-      { description: "Concrete for posts", quantity: 13, unitPrice: 25, total: 325 },
-      { description: "Permits and fees", quantity: 1, unitPrice: 195, total: 195 }
-    ],
-    laborCost: 2220,
-    materialCost: 6085,
-    timeline: "5-7 business days",
-    contractorName: "Owl Fence Pro Services",
-    contractorAddress: "789 Contractor Ave, Austin, TX 78702",
-    contractorLicense: "TX-LIC-123456",
-    state: "Texas",
-    createdAt: new Date("2025-01-15"),
-    status: "approved" as const
-  },
-  {
-    id: "EST-2025-002",
-    clientName: "María González",
-    clientEmail: "maria.gonzalez@email.com",
-    projectAddress: "5678 Oak Avenue, San Antonio, TX 78201",
-    projectType: "Deck Construction",
-    projectDescription: "Construction of 12x16 composite deck with railing, stairs, and lighting installation.",
-    totalAmount: 12400,
-    items: [
-      { description: "Composite decking materials", quantity: 192, unitPrice: 35, total: 6720 },
-      { description: "Deck framing lumber", quantity: 1, unitPrice: 1200, total: 1200 },
-      { description: "Railing system", quantity: 48, unitPrice: 45, total: 2160 },
-      { description: "LED deck lighting", quantity: 8, unitPrice: 85, total: 680 },
-      { description: "Labor - deck construction", quantity: 24, unitPrice: 50, total: 1200 },
-      { description: "Permits and inspections", quantity: 1, unitPrice: 440, total: 440 }
-    ],
-    laborCost: 3600,
-    materialCost: 8360,
-    timeline: "7-10 business days",
-    contractorName: "Owl Fence Pro Services",
-    contractorAddress: "789 Contractor Ave, Austin, TX 78702",
-    contractorLicense: "TX-LIC-123456",
-    state: "Texas",
-    createdAt: new Date("2025-01-20"),
-    status: "pending" as const
-  }
-];
+// Interfaz para los proyectos/estimados del backend
+interface BackendProject {
+  id: string;
+  projectId: string;
+  clientName: string;
+  clientEmail: string;
+  clientPhone?: string;
+  address: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  fenceType: string;
+  length?: number;
+  height?: number;
+  totalPrice?: number;
+  status: string;
+  estimateHtml?: string;
+  details?: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 const LegalContractEnginePage: React.FC = () => {
-  const [selectedEstimate, setSelectedEstimate] = useState(sampleEstimates[0]);
+  const [selectedEstimate, setSelectedEstimate] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [generatedContract, setGeneratedContract] = useState<string>('');
   const { toast } = useToast();
 
-  const filteredEstimates = sampleEstimates.filter(estimate =>
+  // Obtener proyectos reales desde la API
+  const { data: projects = [], isLoading, error } = useQuery({
+    queryKey: ['/api/estimates'],
+    queryFn: () => fetch('/api/estimates').then(res => {
+      if (!res.ok) throw new Error('Error al cargar estimados');
+      return res.json();
+    })
+  });
+
+  // Convertir datos del backend al formato esperado por el motor legal
+  const convertBackendProject = (project: BackendProject) => {
+    let details = {};
+    try {
+      details = project.details ? JSON.parse(project.details) : {};
+    } catch (e) {
+      console.warn('Error parsing project details:', e);
+    }
+
+    return {
+      id: project.projectId,
+      clientName: project.clientName,
+      clientEmail: project.clientEmail,
+      clientPhone: project.clientPhone || '',
+      projectAddress: `${project.address}${project.city ? ', ' + project.city : ''}${project.state ? ', ' + project.state : ''}${project.zip ? ' ' + project.zip : ''}`,
+      projectType: project.fenceType || 'Fence Installation',
+      projectDescription: `${project.fenceType} project${project.length ? ` - ${project.length} linear feet` : ''}${project.height ? ` at ${project.height} feet height` : ''}`,
+      totalAmount: project.totalPrice ? project.totalPrice / 100 : 0, // Convert from cents
+      items: [], // Podríamos extraer esto de details si está disponible
+      timeline: "Por determinar",
+      contractorName: "Owl Fence Pro Services", // Esto vendría del perfil del usuario
+      contractorAddress: "Austin, TX", // Esto vendría del perfil del usuario
+      contractorLicense: "TX-LIC-123456", // Esto vendría del perfil del usuario
+      state: project.state || "Texas",
+      createdAt: new Date(project.createdAt),
+      status: project.status === 'completed' ? 'approved' as const : 'pending' as const
+    };
+  };
+
+  // Convertir proyectos a formato de estimados
+  const estimates = projects.map(convertBackendProject);
+  
+  // Filtrar estimados
+  const filteredEstimates = estimates.filter(estimate =>
     estimate.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     estimate.projectType.toLowerCase().includes(searchTerm.toLowerCase()) ||
     estimate.id.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Seleccionar el primer estimado disponible si no hay uno seleccionado
+  useEffect(() => {
+    if (estimates.length > 0 && !selectedEstimate) {
+      setSelectedEstimate(estimates[0]);
+    }
+  }, [estimates, selectedEstimate]);
 
   const handleContractGenerated = (contractHtml: string) => {
     setGeneratedContract(contractHtml);
@@ -185,10 +200,53 @@ const LegalContractEnginePage: React.FC = () => {
 
               {/* Generador Principal */}
               <div className="lg:col-span-2">
-                <EstimateToContractGenerator
-                  estimate={selectedEstimate}
-                  onContractGenerated={handleContractGenerated}
-                />
+                {isLoading ? (
+                  <Card className="border-cyan-500/30 bg-black/50 backdrop-blur-sm">
+                    <CardContent className="p-8 text-center">
+                      <Loader2 className="h-8 w-8 animate-spin text-cyan-400 mx-auto mb-4" />
+                      <p className="text-cyan-400">Cargando estimados desde tu base de datos...</p>
+                    </CardContent>
+                  </Card>
+                ) : error ? (
+                  <Card className="border-red-500/30 bg-red-500/10 backdrop-blur-sm">
+                    <CardContent className="p-8 text-center">
+                      <AlertTriangle className="h-8 w-8 text-red-400 mx-auto mb-4" />
+                      <p className="text-red-400 mb-4">Error al cargar estimados</p>
+                      <p className="text-sm text-red-300/80">
+                        No se pudieron obtener los datos del backend. Verifica la conexión.
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : estimates.length === 0 ? (
+                  <Card className="border-yellow-500/30 bg-yellow-500/10 backdrop-blur-sm">
+                    <CardContent className="p-8 text-center">
+                      <FileText className="h-8 w-8 text-yellow-400 mx-auto mb-4" />
+                      <p className="text-yellow-400 mb-4">No hay estimados disponibles</p>
+                      <p className="text-sm text-yellow-300/80 mb-4">
+                        Necesitas tener estimados aprobados para generar contratos.
+                      </p>
+                      <Button 
+                        onClick={() => window.location.href = '/estimates-wizard'}
+                        className="bg-yellow-500 text-black hover:bg-yellow-400"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Crear Nuevo Estimado
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : selectedEstimate ? (
+                  <EstimateToContractGenerator
+                    estimate={selectedEstimate}
+                    onContractGenerated={handleContractGenerated}
+                  />
+                ) : (
+                  <Card className="border-cyan-500/30 bg-black/50 backdrop-blur-sm">
+                    <CardContent className="p-8 text-center">
+                      <FileText className="h-8 w-8 text-cyan-400 mx-auto mb-4" />
+                      <p className="text-cyan-400">Selecciona un estimado para generar su contrato</p>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             </div>
           </TabsContent>
