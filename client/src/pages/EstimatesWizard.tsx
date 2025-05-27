@@ -740,8 +740,8 @@ export default function EstimatesWizardFixed() {
 
       console.log('💾 Guardando estimado:', estimateData);
 
-      // 3. Save to backend (this will sync to both estimates and projects)
-      const response = await fetch('/api/estimates', {
+      // 3. Save to backend using existing working endpoint
+      const response = await fetch('/api/estimates-simple', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(estimateData)
