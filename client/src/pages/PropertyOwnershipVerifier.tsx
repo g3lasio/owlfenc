@@ -140,45 +140,101 @@ export default function PropertyOwnershipVerifier() {
       </p>
 
       <div className="mb-8">
-        <Card className="relative overflow-hidden border-2 border-transparent bg-gradient-to-r from-cyan-500/20 via-blue-500/10 to-purple-500/20 shadow-2xl before:absolute before:inset-0 before:rounded-lg before:p-[2px] before:bg-gradient-to-r before:from-cyan-400 before:via-blue-500 before:to-purple-600 before:-z-10 before:animate-pulse">
-          <CardHeader>
-            <div className="flex justify-between items-center mb-2">
+        <Card className="relative overflow-visible bg-transparent border-0 shadow-none">
+          {/* Stark Industries futuristic border */}
+          <div className="absolute inset-0 pointer-events-none">
+            {/* Corner arrows - top left */}
+            <div className="absolute top-0 left-0 w-8 h-8">
+              <div className="absolute top-0 left-0 w-6 h-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+              <div className="absolute top-0 left-0 w-0.5 h-6 bg-gradient-to-b from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+              <div className="absolute top-1.5 left-1.5 w-3 h-0.5 bg-cyan-400/60"></div>
+              <div className="absolute top-1.5 left-1.5 w-0.5 h-3 bg-cyan-400/60"></div>
+            </div>
+            
+            {/* Corner arrows - top right */}
+            <div className="absolute top-0 right-0 w-8 h-8">
+              <div className="absolute top-0 right-0 w-6 h-0.5 bg-gradient-to-l from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+              <div className="absolute top-0 right-0 w-0.5 h-6 bg-gradient-to-b from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+              <div className="absolute top-1.5 right-1.5 w-3 h-0.5 bg-cyan-400/60"></div>
+              <div className="absolute top-1.5 right-1.5 w-0.5 h-3 bg-cyan-400/60"></div>
+            </div>
+            
+            {/* Corner arrows - bottom left */}
+            <div className="absolute bottom-0 left-0 w-8 h-8">
+              <div className="absolute bottom-0 left-0 w-6 h-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+              <div className="absolute bottom-0 left-0 w-0.5 h-6 bg-gradient-to-t from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+              <div className="absolute bottom-1.5 left-1.5 w-3 h-0.5 bg-cyan-400/60"></div>
+              <div className="absolute bottom-1.5 left-1.5 w-0.5 h-3 bg-cyan-400/60"></div>
+            </div>
+            
+            {/* Corner arrows - bottom right */}
+            <div className="absolute bottom-0 right-0 w-8 h-8">
+              <div className="absolute bottom-0 right-0 w-6 h-0.5 bg-gradient-to-l from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+              <div className="absolute bottom-0 right-0 w-0.5 h-6 bg-gradient-to-t from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+              <div className="absolute bottom-1.5 right-1.5 w-3 h-0.5 bg-cyan-400/60"></div>
+              <div className="absolute bottom-1.5 right-1.5 w-0.5 h-3 bg-cyan-400/60"></div>
+            </div>
+            
+            {/* Side scanning lines */}
+            <div className="absolute top-4 left-0 w-0.5 h-1/3 bg-gradient-to-b from-transparent via-cyan-400/80 to-transparent opacity-60 animate-pulse"></div>
+            <div className="absolute top-4 right-0 w-0.5 h-1/3 bg-gradient-to-b from-transparent via-cyan-400/80 to-transparent opacity-60 animate-pulse delay-300"></div>
+            <div className="absolute bottom-4 left-4 w-1/3 h-0.5 bg-gradient-to-r from-transparent via-blue-500/80 to-transparent opacity-60 animate-pulse delay-500"></div>
+            <div className="absolute bottom-4 right-4 w-1/3 h-0.5 bg-gradient-to-l from-transparent via-blue-500/80 to-transparent opacity-60 animate-pulse delay-700"></div>
+          </div>
+          
+          <CardHeader className="relative z-10 pb-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div className="flex-1">
+                <Label htmlFor="address" className="text-lg font-medium text-cyan-300 tracking-wide">
+                  Dirección de la Propiedad
+                </Label>
               </div>
-              <div className="flex-shrink-0">
+              <div className="flex gap-3">
                 <PropertySearchHistory onSelectHistory={handleSelectHistory} />
+                <Button
+                  onClick={handleSearch}
+                  disabled={loading}
+                  className="relative overflow-hidden bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 border border-cyan-400/30 shadow-lg shadow-cyan-400/20 transition-all duration-300 min-w-[120px]"
+                >
+                  <span className="relative z-10 flex items-center gap-2">
+                    {loading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        Buscando...
+                      </>
+                    ) : (
+                      <>
+                        <ArrowRight className="w-4 h-4" />
+                        Buscar
+                      </>
+                    )}
+                  </span>
+                  {!loading && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/20 to-blue-400/20 opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
+                  )}
+                </Button>
               </div>
             </div>
           </CardHeader>
-          <CardContent>
+          
+          <CardContent className="relative z-10 pt-0">
             <div className="space-y-4">
-              <div className="grid grid-cols-12 gap-4">
-                <div className="col-span-12 sm:col-span-9">
-                  <Label htmlFor="address">Dirección de la Propiedad</Label>
-                  <MapboxPlacesAutocomplete
-                    value={address}
-                    onChange={setAddress}
-                    onPlaceSelect={handlePlaceSelect}
-                    placeholder="Ingresa la dirección de la propiedad"
-                    countries={["mx", "us", "es"]}
-                    language="es"
-                  />
-                </div>
-                <div className="col-span-12 sm:col-span-3 flex items-end">
-                  <Button
-                    className="w-full"
-                    onClick={handleSearch}
-                    disabled={loading}
-                  >
-                    {loading ? "Buscando..." : "Buscar"}
-                  </Button>
-                </div>
+              <div className="w-full">
+                <MapboxPlacesAutocomplete
+                  value={address}
+                  onChange={setAddress}
+                  onPlaceSelect={handlePlaceSelect}
+                  placeholder="Ingresa la dirección de la propiedad"
+                  countries={["mx", "us", "es"]}
+                  language="es"
+                />
               </div>
 
               {error && (
-                <Alert variant="destructive">
-                  <AlertTitle>Error</AlertTitle>
-                  <AlertDescription>{error}</AlertDescription>
+                <Alert variant="destructive" className="border-red-400/50 bg-red-900/20 backdrop-blur-sm">
+                  <AlertTriangle className="h-4 w-4 text-red-400" />
+                  <AlertTitle className="text-red-300">Error</AlertTitle>
+                  <AlertDescription className="text-red-200">{error}</AlertDescription>
                 </Alert>
               )}
             </div>
