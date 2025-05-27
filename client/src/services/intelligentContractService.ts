@@ -1,302 +1,297 @@
-// client/src/services/intelligentContractService.ts
+import Anthropic from '@anthropic-ai/sdk';
 
-export interface ContractTemplate {
-  id: string;
-  name: string;
-  projectTypes: string[];
-  legalComplexity: 'basic' | 'intermediate' | 'advanced';
-  requiredClauses: string[];
-  optionalClauses: string[];
-  stateSpecificRequirements: Record<string, string[]>;
+// the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
+const anthropic = new Anthropic({
+  apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY,
+  dangerouslyAllowBrowser: true
+});
+
+interface ContractData {
+  [key: string]: any;
 }
 
-export interface SmartField {
-  id: string;
-  field: string;
-  prompt: string;
-  type: 'text' | 'multiline' | 'date' | 'number' | 'choice' | 'address' | 'ai-enhanced' | 'legal-clause';
-  required: boolean;
-  dependsOn?: string[]; // Campos que determinan si este campo es necesario
-  autoFill?: {
-    source: 'profile' | 'previous-contracts' | 'ai-suggestion';
-    confidence: number;
-  };
-  validation?: {
-    pattern?: string;
-    minLength?: number;
-    maxLength?: number;
-    customRule?: string;
-  };
-  legalImportance: 'critical' | 'important' | 'optional';
+interface SmartRecommendation {
+  type: 'skip_question' | 'auto_fill' | 'legal_clause' | 'description_enhancement';
+  questionId?: string;
+  value?: string;
+  reason: string;
+  confidence: number;
 }
 
 /**
- * Plantillas especializadas por tipo de proyecto
+ * Servicio de Contrato Inteligente usando Anthropic
+ * 
+ * Este servicio utiliza IA para:
+ * - Eliminar preguntas redundantes
+ * - Auto-completar información obvia
+ * - Generar cláusulas legales protectoras
+ * - Mejorar descripciones de proyectos
  */
-export const contractTemplates: ContractTemplate[] = [
-  {
-    id: 'general-construction',
-    name: 'General Construction Contract',
-    projectTypes: ['general', 'concrete', 'carpentry'],
-    legalComplexity: 'advanced',
-    requiredClauses: [
-      'liability-insurance',
-      'performance-bond',
-      'lien-waiver',
-      'permit-responsibility',
-      'change-order-process',
-      'dispute-resolution'
-    ],
-    optionalClauses: [
-      'warranty-extension',
-      'liquidated-damages',
-      'force-majeure-detailed'
-    ],
-    stateSpecificRequirements: {
-      'California': ['seismic-compliance', 'prevailing-wage'],
-      'Texas': ['mechanics-lien-notice', 'payment-bond'],
-      'Florida': ['hurricane-clause', 'moisture-warranty']
-    }
-  },
-  {
-    id: 'specialty-trades',
-    name: 'Specialty Trades Contract',
-    projectTypes: ['electrical', 'plumbing', 'hvac'],
-    legalComplexity: 'intermediate',
-    requiredClauses: [
-      'licensing-verification',
-      'code-compliance',
-      'permit-responsibility',
-      'liability-insurance'
-    ],
-    optionalClauses: [
-      'warranty-extension',
-      'emergency-service'
-    ],
-    stateSpecificRequirements: {
-      'California': ['title-24-compliance'],
-      'Texas': ['licensing-disclosure'],
-      'New York': ['union-requirements']
-    }
-  },
-  {
-    id: 'simple-services',
-    name: 'Simple Service Contract',
-    projectTypes: ['fencing', 'painting', 'landscaping'],
-    legalComplexity: 'basic',
-    requiredClauses: [
-      'basic-liability',
-      'payment-terms',
-      'scope-definition'
-    ],
-    optionalClauses: [
-      'seasonal-warranty',
-      'maintenance-agreement'
-    ],
-    stateSpecificRequirements: {}
-  }
-];
-
-/**
- * Determina la plantilla más apropiada basada en el tipo de proyecto
- */
-export function selectOptimalTemplate(projectType: string, projectComplexity: string, state: string): ContractTemplate {
-  // Buscar plantilla que coincida con el tipo de proyecto
-  let matchingTemplates = contractTemplates.filter(template => 
-    template.projectTypes.includes(projectType)
-  );
-
-  // Si no hay coincidencia exacta, usar la plantilla general
-  if (matchingTemplates.length === 0) {
-    matchingTemplates = contractTemplates.filter(template => 
-      template.id === 'general-construction'
-    );
-  }
-
-  // Seleccionar por complejidad
-  const complexityOrder = ['basic', 'intermediate', 'advanced'];
-  const targetComplexity = projectComplexity || 'intermediate';
+export class IntelligentContractService {
   
-  const bestMatch = matchingTemplates.find(template => 
-    template.legalComplexity === targetComplexity
-  ) || matchingTemplates[0];
+  /**
+   * Analiza los datos recopilados y recomienda acciones inteligentes
+   */
+  static async analyzeAndRecommend(collectedData: ContractData): Promise<SmartRecommendation[]> {
+    try {
+      const prompt = `
+      Eres Mervin AI, el asistente experto en contratos de construcción. Analiza los datos recopilados y proporciona recomendaciones inteligentes para optimizar el proceso.
 
-  return bestMatch;
-}
+      DATOS RECOPILADOS:
+      ${JSON.stringify(collectedData, null, 2)}
 
-/**
- * Genera campos inteligentes basados en la plantilla seleccionada
- */
-export function generateSmartFields(template: ContractTemplate, existingData: Record<string, any> = {}): SmartField[] {
-  const baseFields: SmartField[] = [
-    // Campos básicos siempre requeridos
-    {
-      id: 'client_name',
-      field: 'client.name',
-      prompt: "What is the client's full name?",
-      type: 'text',
-      required: true,
-      legalImportance: 'critical',
-      validation: { minLength: 2 }
-    },
-    {
-      id: 'client_address',
-      field: 'client.address',
-      prompt: "What is the client's address?",
-      type: 'address',
-      required: true,
-      legalImportance: 'critical'
-    },
-    {
-      id: 'project_scope',
-      field: 'project.scope',
-      prompt: "Describe the complete scope of work including all deliverables",
-      type: 'ai-enhanced',
-      required: true,
-      legalImportance: 'critical',
-      validation: { minLength: 50 }
-    },
-    {
-      id: 'payment_total',
-      field: 'payment.totalAmount',
-      prompt: "What is the total contract amount (USD)?",
-      type: 'number',
-      required: true,
-      legalImportance: 'critical',
-      validation: { pattern: '^\\$?[0-9,]+(\\.[0-9]{2})?$' }
+      INSTRUCCIONES:
+      1. Identifica información que se puede auto-completar basándose en datos existentes
+      2. Detecta preguntas que son redundantes o innecesarias
+      3. Sugiere cláusulas legales específicas que protejan al contratista
+      4. Recomienda mejoras para descripciones de proyectos
+
+      RESPONDE EN FORMATO JSON:
+      {
+        "recommendations": [
+          {
+            "type": "skip_question|auto_fill|legal_clause|description_enhancement",
+            "questionId": "id_de_pregunta_si_aplica",
+            "value": "valor_a_autocompletar_o_clausula",
+            "reason": "explicación_clara_en_español",
+            "confidence": 0.9
+          }
+        ]
+      }
+
+      REGLAS ESPECÍFICAS:
+      - Si hay dirección, auto-completar estado (California por defecto)
+      - Si hay categoría de proyecto, generar cláusulas legales específicas
+      - Si hay descripción básica, sugerir mejoras profesionales
+      - Priorizar protección legal del contratista
+      `;
+
+      const response = await anthropic.messages.create({
+        model: 'claude-3-7-sonnet-20250219',
+        max_tokens: 2000,
+        messages: [{
+          role: 'user',
+          content: prompt
+        }]
+      });
+
+      const content = response.content[0];
+      if (content.type === 'text') {
+        const result = JSON.parse(content.text);
+        return result.recommendations || [];
+      }
+      return [];
+
+    } catch (error) {
+      console.error('Error analyzing contract data:', error);
+      return [];
     }
-  ];
-
-  // Agregar campos específicos según cláusulas requeridas
-  const templateSpecificFields: SmartField[] = [];
-
-  if (template.requiredClauses.includes('liability-insurance')) {
-    templateSpecificFields.push({
-      id: 'insurance_liability',
-      field: 'insurance.liabilityAmount',
-      prompt: "What is your liability insurance coverage amount?",
-      type: 'text',
-      required: true,
-      legalImportance: 'critical',
-      autoFill: { source: 'profile', confidence: 0.8 }
-    });
   }
 
-  if (template.requiredClauses.includes('performance-bond')) {
-    templateSpecificFields.push({
-      id: 'performance_bond',
-      field: 'legal.performanceBond',
-      prompt: "Will you provide a performance bond for this project?",
-      type: 'choice',
-      required: true,
-      legalImportance: 'important',
-      dependsOn: ['payment_total'] // Solo requerido para proyectos grandes
-    });
+  /**
+   * Genera cláusulas legales específicas para el tipo de proyecto
+   */
+  static async generateLegalClauses(projectData: ContractData): Promise<string> {
+    try {
+      const prompt = `
+      Eres un abogado especializado en contratos de construcción en California. Genera cláusulas legales específicas que protejan al contratista.
+
+      DATOS DEL PROYECTO:
+      - Tipo: ${projectData.category || 'General'}
+      - Ubicación: ${projectData.address || 'California'}
+      - Descripción: ${projectData.description || 'Proyecto de construcción'}
+      - Valor estimado: ${projectData.totalCost || 'Por determinar'}
+
+      GENERA CLÁUSULAS ESPECÍFICAS PARA:
+      1. Protección contra cambios de alcance
+      2. Términos de pago y penalidades por retraso
+      3. Responsabilidades de permisos y regulaciones
+      4. Protección contra condiciones imprevistas
+      5. Limitación de responsabilidad
+      6. Resolución de disputas
+
+      FORMATO: Texto claro y profesional en español, listo para incluir en contrato.
+      `;
+
+      const response = await anthropic.messages.create({
+        model: 'claude-3-7-sonnet-20250219',
+        max_tokens: 1500,
+        messages: [{
+          role: 'user',
+          content: prompt
+        }]
+      });
+
+      return response.content[0].text;
+
+    } catch (error) {
+      console.error('Error generating legal clauses:', error);
+      return '';
+    }
   }
 
-  if (template.requiredClauses.includes('permit-responsibility')) {
-    templateSpecificFields.push({
-      id: 'permit_responsibility',
-      field: 'legal.permitResponsibility',
-      prompt: "Who will be responsible for obtaining permits?",
-      type: 'choice',
-      required: true,
-      legalImportance: 'critical'
-    });
+  /**
+   * Mejora la descripción del proyecto con terminología profesional
+   */
+  static async enhanceProjectDescription(basicDescription: string, projectCategory: string): Promise<string> {
+    try {
+      const prompt = `
+      Eres Mervin AI, experto en proyectos de construcción. Mejora esta descripción básica del proyecto:
+
+      DESCRIPCIÓN ORIGINAL: "${basicDescription}"
+      CATEGORÍA: ${projectCategory}
+
+      MEJORA LA DESCRIPCIÓN CON:
+      - Terminología técnica profesional
+      - Especificaciones claras de materiales y procesos
+      - Cronograma aproximado
+      - Consideraciones de seguridad y calidad
+      - Cumplimiento de códigos locales de California
+
+      RESPONDE CON: Una descripción profesional mejorada en español, clara y específica.
+      `;
+
+      const response = await anthropic.messages.create({
+        model: 'claude-3-7-sonnet-20250219',
+        max_tokens: 800,
+        messages: [{
+          role: 'user',
+          content: prompt
+        }]
+      });
+
+      return response.content[0].text;
+
+    } catch (error) {
+      console.error('Error enhancing description:', error);
+      return basicDescription;
+    }
   }
 
-  return [...baseFields, ...templateSpecificFields];
-}
+  /**
+   * Detecta el estado desde una dirección
+   */
+  static extractStateFromAddress(address: string): string {
+    // Buscar patrones comunes de estados en direcciones
+    const statePatterns = [
+      /california|ca\b/i,
+      /texas|tx\b/i,
+      /florida|fl\b/i,
+      /new york|ny\b/i,
+      // Agregar más estados según sea necesario
+    ];
 
-/**
- * Sistema de validación inteligente
- */
-export function validateContractData(data: Record<string, any>, template: ContractTemplate): {
-  isValid: boolean;
-  errors: string[];
-  warnings: string[];
-  suggestions: string[];
-} {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-  const suggestions: string[] = [];
-
-  // Validaciones críticas
-  if (!data.client?.name || data.client.name.length < 2) {
-    errors.push("Client name is required and must be at least 2 characters");
-  }
-
-  if (!data.project?.scope || data.project.scope.length < 50) {
-    errors.push("Project scope must be detailed (minimum 50 characters)");
-  }
-
-  if (!data.payment?.totalAmount || parseFloat(data.payment.totalAmount.replace(/[^0-9.]/g, '')) <= 0) {
-    errors.push("Valid payment amount is required");
-  }
-
-  // Validaciones específicas por plantilla
-  if (template.requiredClauses.includes('liability-insurance') && !data.insurance?.liabilityAmount) {
-    errors.push("Liability insurance information is required for this type of project");
-  }
-
-  // Sugerencias de mejora
-  if (data.payment?.totalAmount && parseFloat(data.payment.totalAmount.replace(/[^0-9.]/g, '')) > 50000) {
-    suggestions.push("Consider requiring a performance bond for projects over $50,000");
-  }
-
-  if (!data.legal?.permitResponsibility) {
-    warnings.push("Permit responsibility should be clearly defined");
-  }
-
-  return {
-    isValid: errors.length === 0,
-    errors,
-    warnings,
-    suggestions
-  };
-}
-
-/**
- * Autocompletado inteligente basado en contexto
- */
-export function suggestFieldValues(fieldId: string, currentData: Record<string, any>, userProfile: any): string[] {
-  const suggestions: string[] = [];
-
-  switch (fieldId) {
-    case 'payment_schedule':
-      if (currentData.payment?.totalAmount) {
-        const amount = parseFloat(currentData.payment.totalAmount.replace(/[^0-9.]/g, ''));
-        if (amount > 10000) {
-          suggestions.push("25% upon signing, 50% at 50% completion, 25% upon final completion");
-          suggestions.push("30% upon signing, 40% at substantial completion, 30% after final inspection");
-        } else {
-          suggestions.push("50% upon signing, 50% upon completion");
-        }
+    for (const pattern of statePatterns) {
+      if (pattern.test(address)) {
+        if (/california|ca\b/i.test(address)) return 'CA';
+        if (/texas|tx\b/i.test(address)) return 'TX';
+        if (/florida|fl\b/i.test(address)) return 'FL';
+        if (/new york|ny\b/i.test(address)) return 'NY';
       }
-      break;
+    }
 
-    case 'permit_responsibility':
-      suggestions.push("Contractor will obtain all necessary permits");
-      suggestions.push("Client will obtain permits, contractor will assist");
-      suggestions.push("Shared responsibility - contractor for trade permits, client for building permits");
-      break;
-
-    case 'warranty_period':
-      if (currentData.project?.type) {
-        switch (currentData.project.type) {
-          case 'roofing':
-            suggestions.push("5 years materials, 2 years workmanship");
-            break;
-          case 'electrical':
-          case 'plumbing':
-            suggestions.push("1 year parts and labor");
-            break;
-          default:
-            suggestions.push("1 year workmanship warranty");
-        }
-      }
-      break;
+    // Por defecto California (basado en el contexto del negocio)
+    return 'CA';
   }
 
-  return suggestions;
+  /**
+   * Analiza si una pregunta debe omitirse basándose en datos existentes
+   */
+  static shouldSkipQuestion(questionId: string, collectedData: ContractData): boolean {
+    // Si ya se capturó la dirección, omitir pregunta de estado
+    if (questionId === 'legal.state' && collectedData['property.address']) {
+      return true;
+    }
+
+    // Si ya hay información de la empresa del perfil, omitir preguntas básicas
+    if (questionId.startsWith('contractor.') && collectedData.companyProfile) {
+      return true;
+    }
+
+    // Agregar más lógica de omisión según sea necesario
+    return false;
+  }
+
+  /**
+   * Auto-completa valores obvios basándose en información existente
+   */
+  static autoFillValue(questionId: string, collectedData: ContractData): string | null {
+    // Auto-completar estado desde dirección
+    if (questionId === 'legal.state' && collectedData['property.address']) {
+      return this.extractStateFromAddress(collectedData['property.address']);
+    }
+
+    // Auto-completar información del contratista desde perfil
+    if (questionId === 'contractor.name' && collectedData.companyProfile?.companyName) {
+      return collectedData.companyProfile.companyName;
+    }
+
+    if (questionId === 'contractor.phone' && collectedData.companyProfile?.phone) {
+      return collectedData.companyProfile.phone;
+    }
+
+    if (questionId === 'contractor.email' && collectedData.companyProfile?.email) {
+      return collectedData.companyProfile.email;
+    }
+
+    return null;
+  }
+
+  /**
+   * Genera un resumen inteligente del progreso del contrato
+   */
+  static async generateProgressSummary(collectedData: ContractData): Promise<string> {
+    try {
+      const completionPercentage = this.calculateCompletionPercentage(collectedData);
+      
+      const prompt = `
+      Genera un resumen conciso del progreso del contrato:
+
+      DATOS RECOPILADOS: ${JSON.stringify(collectedData, null, 2)}
+      PROGRESO: ${completionPercentage}%
+
+      RESPONDE CON: Un resumen en español de máximo 2 líneas sobre qué se ha completado y qué falta.
+      `;
+
+      const response = await anthropic.messages.create({
+        model: 'claude-3-7-sonnet-20250219',
+        max_tokens: 300,
+        messages: [{
+          role: 'user',
+          content: prompt
+        }]
+      });
+
+      return response.content[0].text;
+
+    } catch (error) {
+      console.error('Error generating progress summary:', error);
+      return `Progreso: ${this.calculateCompletionPercentage(collectedData)}% completado`;
+    }
+  }
+
+  /**
+   * Calcula el porcentaje de completitud del contrato
+   */
+  static calculateCompletionPercentage(collectedData: ContractData): number {
+    const requiredFields = [
+      'client.name',
+      'property.address',
+      'project.category',
+      'project.description',
+      'timeline.startDate',
+      'payment.totalAmount'
+    ];
+
+    const completedFields = requiredFields.filter(field => {
+      const keys = field.split('.');
+      let value = collectedData;
+      for (const key of keys) {
+        value = value?.[key];
+      }
+      return value && value.toString().trim().length > 0;
+    });
+
+    return Math.round((completedFields.length / requiredFields.length) * 100);
+  }
 }

@@ -42,6 +42,7 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 import { enhanceDescriptionWithAI, generateAdditionalClauses } from "@/services/openaiService";
+import { IntelligentContractService } from "@/services/intelligentContractService";
 
 // Import Question type from our service
 import { Question as SurveyQuestion } from "@/services/newContractQuestionService";
@@ -112,15 +113,104 @@ const NewContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
     }
   }, [profile, isProfileLoading]);
 
+  // Sistema inteligente para auto-completar y optimizar flujo
+  const handleIntelligentStep = async () => {
+    // Si se capturó una dirección, auto-completar el estado
+    if (answers['property.address'] && !answers['legal.state']) {
+      const extractedState = IntelligentContractService.extractStateFromAddress(answers['property.address']);
+      setAnswers(prev => ({
+        ...prev,
+        'legal.state': extractedState
+      }));
+      
+      toast({
+        title: "🤖 Mervin AI - Auto-completado inteligente",
+        description: `Estado detectado automáticamente: ${extractedState}`,
+        variant: "default"
+      });
+    }
+
+    // Si hay descripción básica del proyecto, ofrecer mejora automática
+    if (answers['project.description'] && selectedCategory && answers['project.description'].length > 10) {
+      try {
+        const enhancedDesc = await IntelligentContractService.enhanceProjectDescription(
+          answers['project.description'], 
+          selectedCategory
+        );
+        
+        if (enhancedDesc && enhancedDesc !== answers['project.description']) {
+          setOriginalDescription(answers['project.description']);
+          setEnhancedDescription(enhancedDesc);
+          setIsAIDialogOpen(true);
+          return; // Parar para mostrar mejora
+        }
+      } catch (error) {
+        console.log('Enhancement not available');
+      }
+    }
+
+    // Generar cláusulas legales automáticamente si hay suficiente información
+    if (selectedCategory && answers['property.address'] && !answers['legal.specialClauses']) {
+      try {
+        const legalClauses = await IntelligentContractService.generateLegalClauses({
+          category: selectedCategory,
+          address: answers['property.address'],
+          description: answers['project.description'] || '',
+          totalCost: answers['payment.totalAmount'] || ''
+        });
+        
+        if (legalClauses) {
+          setAnswers(prev => ({
+            ...prev,
+            'legal.specialClauses': legalClauses
+          }));
+          
+          toast({
+            title: "⚖️ Cláusulas legales generadas",
+            description: "Mervin AI ha creado cláusulas específicas para proteger tu contrato",
+            variant: "default"
+          });
+        }
+      } catch (error) {
+        console.log('Legal clauses generation not available');
+      }
+    }
+  };
+
   // Advance to the next step
-  const handleNext = () => {
+  const handleNext = async () => {
     // Validate the current questions
     if (!validateCurrentGroup()) {
       return;
     }
     
+    // Ejecutar lógica inteligente antes de avanzar
+    await handleIntelligentStep();
+    
     if (currentStep < questionGroups.length - 1) {
-      setCurrentStep(currentStep + 1);
+      // Revisar si la siguiente pregunta debe omitirse
+      let nextStep = currentStep + 1;
+      
+      // Omitir pregunta del estado si ya tenemos dirección
+      const nextGroup = questionGroups[nextStep];
+      if (nextGroup && nextGroup.questions.some(q => q.id === 'legal.state') && answers['property.address']) {
+        // Auto-completar estado y saltar esa pregunta
+        const extractedState = IntelligentContractService.extractStateFromAddress(answers['property.address']);
+        setAnswers(prev => ({
+          ...prev,
+          'legal.state': extractedState
+        }));
+        
+        // Buscar el siguiente paso que no sea redundante
+        nextStep = nextStep + 1 < questionGroups.length ? nextStep + 1 : nextStep;
+        
+        toast({
+          title: "🚀 Flujo optimizado",
+          description: `Pregunta del estado omitida - detectado automáticamente: ${extractedState}`,
+        });
+      }
+      
+      setCurrentStep(nextStep);
       window.scrollTo(0, 0);
     } else {
       // If we're on the last step, complete the survey
