@@ -25,9 +25,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CheckCircle2, Search, Clock } from "lucide-react";
 import MapboxPlacesAutocomplete from "@/components/ui/mapbox-places-autocomplete";
-import { auth, db } from "@/lib/firebase";
-import { collection, addDoc, getDocs, query, where, orderBy, limit, Timestamp } from 'firebase/firestore';
-import { useAuthState } from 'react-firebase-hooks/auth';
 import { useToast } from "@/hooks/use-toast";
 
 interface PermitData {
@@ -76,6 +73,74 @@ export default function PermitAdvisor() {
   const [activeTab, setActiveTab] = useState("permits");
   const [showHistory, setShowHistory] = useState(false);
   const { toast } = useToast();
+
+  // Simulación de datos de historial para mostrar un diseño elegante
+  const sampleHistoryData = [
+    {
+      id: 1,
+      address: "2652 Cordelia Road, Fairfield, CA",
+      projectType: "electrical",
+      title: "Electrical en 2652 Cordelia Road",
+      createdAt: "Hace 2h",
+      results: { requiredPermits: [{ name: "Electrical Permit" }], contactInformation: [{ phone: "(707) 428-7451" }] }
+    },
+    {
+      id: 2,
+      address: "1109 La Grande Avenue, Napa, CA",
+      projectType: "roofing",
+      title: "Roofing en 1109 La Grande Avenue",
+      createdAt: "Hace 1d",
+      results: { requiredPermits: [{ name: "Roofing Permit" }], contactInformation: [{ phone: "(707) 253-4417" }] }
+    },
+    {
+      id: 3,
+      address: "2907 Owens Road, Mansfield, OH",
+      projectType: "bathroom",
+      title: "Bathroom en 2907 Owens Road",
+      createdAt: "Hace 3d",
+      results: { requiredPermits: [{ name: "Building Permit" }, { name: "Plumbing Permit" }] }
+    }
+  ];
+
+  const getProjectIcon = (type: string) => {
+    const icons: Record<string, string> = {
+      electrical: '⚡',
+      plumbing: '🚿',
+      roofing: '🏠',
+      bathroom: '🛁',
+      kitchen: '🍳',
+      addition: '🏗️',
+      concrete: '🧱',
+      default: '🔧'
+    };
+    return icons[type.toLowerCase()] || icons.default;
+  };
+
+  const getProjectTypeColor = (projectType: string): string => {
+    const colors: Record<string, string> = {
+      electrical: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
+      plumbing: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+      roofing: 'bg-orange-500/20 text-orange-300 border-orange-500/30',
+      bathroom: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
+      kitchen: 'bg-green-500/20 text-green-300 border-green-500/30',
+      addition: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
+      concrete: 'bg-gray-500/20 text-gray-300 border-gray-500/30',
+      default: 'bg-teal-500/20 text-teal-300 border-teal-500/30'
+    };
+    return colors[projectType.toLowerCase()] || colors.default;
+  };
+
+  const loadFromHistory = (historyItem: any) => {
+    setSelectedAddress(historyItem.address);
+    setProjectType(historyItem.projectType);
+    setProjectDescription('');
+    setPermitData(historyItem.results);
+    setShowHistory(false);
+    toast({
+      title: "Search Loaded",
+      description: `Loaded: ${historyItem.title}`,
+    });
+  };
 
   const handleAddressSelect = (addressData: any) => {
     console.log("📍 [MapboxPlaces] Dirección seleccionada:", addressData.address);
@@ -256,15 +321,112 @@ export default function PermitAdvisor() {
                 )}
               </Button>
               
-              <Button
-                variant="outline"
-                onClick={() => setShowHistory(!showHistory)}
-                className="w-full sm:w-auto border-teal-500/30 text-teal-300 hover:bg-teal-500/10 h-12 text-sm sm:text-base px-4"
-              >
-                📅
-                <span className="hidden sm:inline">{showHistory ? "Hide History" : "Show History"}</span>
-                <span className="sm:hidden">History</span>
-              </Button>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full sm:w-auto border-teal-500/30 text-teal-300 hover:bg-teal-500/10 h-12 text-sm sm:text-base px-4"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 bg-teal-500/20 rounded-md flex items-center justify-center">
+                        📋
+                      </div>
+                      <span className="hidden sm:inline">Search History</span>
+                      <span className="sm:hidden">History</span>
+                    </div>
+                  </Button>
+                </DialogTrigger>
+                
+                <DialogContent className="max-w-2xl bg-gray-900/95 border-teal-400/30 backdrop-blur-md">
+                  <DialogHeader>
+                    <DialogTitle className="text-teal-300 flex items-center gap-3">
+                      <div className="w-8 h-8 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full flex items-center justify-center">
+                        📋
+                      </div>
+                      Recent Searches
+                    </DialogTitle>
+                  </DialogHeader>
+
+                  <ScrollArea className="max-h-[60vh] pr-4">
+                    {sampleHistoryData.length === 0 ? (
+                      <div className="text-center py-12">
+                        <div className="w-16 h-16 bg-gradient-to-r from-gray-600 to-gray-500 rounded-full flex items-center justify-center mx-auto mb-4 opacity-50">
+                          📋
+                        </div>
+                        <h3 className="text-lg font-medium text-gray-400 mb-2">No search history found</h3>
+                        <p className="text-gray-500 text-sm">Your recent permit searches will appear here</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {sampleHistoryData.map((item, index) => (
+                          <div key={item.id}>
+                            <div 
+                              onClick={() => loadFromHistory(item)}
+                              className="group relative p-4 bg-gray-800/40 hover:bg-gray-800/70 border border-gray-700/50 hover:border-teal-400/30 rounded-lg cursor-pointer transition-all duration-300"
+                            >
+                              {/* Holographic border effect */}
+                              <div className="absolute inset-0 bg-gradient-to-r from-teal-500/10 via-transparent to-cyan-500/10 opacity-0 group-hover:opacity-100 rounded-lg transition-opacity duration-300"></div>
+                              
+                              <div className="relative space-y-3">
+                                {/* Header with project type and date */}
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-lg">{getProjectIcon(item.projectType)}</span>
+                                    <Badge className={`${getProjectTypeColor(item.projectType)} text-xs font-medium`}>
+                                      {item.projectType.charAt(0).toUpperCase() + item.projectType.slice(1)}
+                                    </Badge>
+                                  </div>
+                                  <span className="text-xs text-gray-400 font-mono">
+                                    {item.createdAt}
+                                  </span>
+                                </div>
+
+                                {/* Address */}
+                                <div className="space-y-1">
+                                  <p className="text-teal-300 font-medium text-sm line-clamp-1">
+                                    {item.address}
+                                  </p>
+                                </div>
+
+                                {/* Quick stats */}
+                                <div className="flex items-center gap-4 text-xs text-gray-500">
+                                  {item.results?.requiredPermits && (
+                                    <span className="flex items-center gap-1">
+                                      🏛️ {item.results.requiredPermits.length} permits
+                                    </span>
+                                  )}
+                                  {item.results?.contactInformation && (
+                                    <span className="flex items-center gap-1">
+                                      📞 {item.results.contactInformation.length} contacts
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Hover effect indicator */}
+                              <div className="absolute right-4 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <div className="w-2 h-2 bg-teal-400 rounded-full animate-pulse"></div>
+                              </div>
+                            </div>
+                            
+                            {index < sampleHistoryData.length - 1 && (
+                              <Separator className="my-3 bg-gray-700/30" />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </ScrollArea>
+
+                  {sampleHistoryData.length > 0 && (
+                    <div className="flex justify-center pt-4 border-t border-gray-700/30">
+                      <p className="text-xs text-gray-500">
+                        Showing {sampleHistoryData.length} recent searches
+                      </p>
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
             </div>
           </CardContent>
         </Card>
