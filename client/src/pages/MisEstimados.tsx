@@ -5,10 +5,12 @@ import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
 import { FileText, Eye, Download, Edit, Trash2, Calendar, DollarSign, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth, db } from '@/lib/firebase';
+import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 
 interface SavedEstimate {
-  id: number;
-  projectId: number;
+  id: string;
   estimateNumber: string;
   title: string;
   clientName: string;
@@ -25,39 +27,69 @@ export default function MisEstimados() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const [user] = useAuthState(auth);
 
   useEffect(() => {
-    loadEstimates();
-  }, []);
+    if (user) {
+      loadEstimates();
+    }
+  }, [user]);
 
   const loadEstimates = async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('/api/estimates-simple', {
-        method: 'GET',
-        headers: { 'Accept': 'application/json' }
-      });
+      console.log('📥 Cargando estimados desde Firebase...');
 
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
+      // Load from Firebase estimates collection
+      const estimatesQuery = query(
+        collection(db, 'estimates'),
+        where('firebaseUserId', '==', user.uid),
+        orderBy('createdAt', 'desc')
+      );
 
-      const result = await response.json();
+      const estimatesSnapshot = await getDocs(estimatesQuery);
+      const firebaseEstimates = estimatesSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt || new Date().toISOString()
+      })) as SavedEstimate[];
+
+      // Also load from localStorage as backup
+      const localEstimates = JSON.parse(localStorage.getItem('savedEstimates') || '[]');
       
-      if (result.success) {
-        setEstimates(result.data || []);
-      } else {
-        throw new Error(result.error || 'Error cargando estimados');
-      }
+      // Combine and deduplicate
+      const allEstimates = [...firebaseEstimates, ...localEstimates];
+      const uniqueEstimates = allEstimates.filter((estimate, index, self) => 
+        index === self.findIndex(e => e.estimateNumber === estimate.estimateNumber)
+      );
+
+      setEstimates(uniqueEstimates);
+      console.log(`✅ Cargados ${uniqueEstimates.length} estimados`);
+
     } catch (err) {
       console.error('❌ Error cargando estimados:', err);
       setError(err instanceof Error ? err.message : 'Error desconocido');
+      
+      // Try to load from localStorage as fallback
+      try {
+        const localEstimates = JSON.parse(localStorage.getItem('savedEstimates') || '[]');
+        setEstimates(localEstimates);
+        console.log('📱 Estimados cargados desde localStorage');
+      } catch (localError) {
+        console.error('❌ Error con localStorage:', localError);
+      }
+
       toast({
-        title: "Error",
-        description: "No se pudieron cargar los estimados guardados",
-        variant: "destructive"
+        title: "Aviso",
+        description: "Se cargaron los estimados desde respaldo local",
+        variant: "default"
       });
     } finally {
       setLoading(false);

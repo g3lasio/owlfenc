@@ -740,56 +740,51 @@ export default function EstimatesWizardFixed() {
 
       console.log('💾 Guardando estimado:', estimateData);
 
-      // 3. Save to backend using robust endpoint
-      const response = await fetch('/api/estimates-simple', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(estimateData)
-      });
-
-      let result;
-      const responseText = await response.text();
+      // 3. Save directly to Firebase (primary storage)
+      console.log('💾 Guardando directamente en Firebase...');
       
+      const estimateDoc = {
+        ...estimateData,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        type: 'estimate',
+        source: 'estimates-wizard'
+      };
+
+      // Save to Firebase estimates collection
+      const estimateRef = await addDoc(collection(db, 'estimates'), estimateDoc);
+      console.log('✅ Estimado guardado en Firebase estimates:', estimateRef.id);
+
+      // Also save to Firebase projects collection for dashboard integration
+      const projectDoc = {
+        ...estimateData,
+        projectId: estimateRef.id,
+        estimateId: estimateRef.id,
+        type: 'project',
+        source: 'estimate',
+        status: 'estimate',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      const projectRef = await addDoc(collection(db, 'projects'), projectDoc);
+      console.log('✅ Estimado guardado en Firebase projects:', projectRef.id);
+
+      // 4. Save to localStorage as final backup
       try {
-        result = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error('❌ Error parsing response:', responseText);
-        throw new Error('Error en el formato de respuesta del servidor');
-      }
-
-      if (!response.ok) {
-        throw new Error(result?.error || `Error del servidor: ${response.status}`);
-      }
-
-      if (!result.success) {
-        throw new Error(result?.error || 'Error guardando en el servidor');
-      }
-
-      console.log('✅ Estimado guardado en servidor:', result);
-
-      // 4. Try to save directly to Firebase as backup (estimate collection)
-      try {
-        const estimateDoc = {
+        const localData = {
           ...estimateData,
-          id: result.data?.id || `est_${Date.now()}`,
-          firebaseUserId: currentUser.uid,
-          syncedAt: new Date(),
-          source: 'wizard'
+          savedAt: new Date().toISOString(),
+          estimateId: estimateRef.id,
+          projectId: projectRef.id
         };
-
-        // Save to estimates collection
-        await addDoc(collection(db, 'estimates'), estimateDoc);
-        console.log('📄 Backup guardado en colección estimates');
-
-        // Also save to user's estimates subcollection  
-        await addDoc(collection(db, 'users', currentUser.uid, 'estimates'), estimateDoc);
-        console.log('👤 Guardado en subcollección personal de estimados');
-
-      } catch (firebaseError) {
-        console.warn('⚠️ Error guardando backup en Firebase, pero el estimado principal se guardó:', firebaseError);
+        
+        const existingEstimates = JSON.parse(localStorage.getItem('savedEstimates') || '[]');
+        existingEstimates.push(localData);
+        localStorage.setItem('savedEstimates', JSON.stringify(existingEstimates));
+        console.log('✅ Estimado guardado en localStorage como respaldo');
+      } catch (localError) {
+        console.warn('⚠️ No se pudo guardar en localStorage:', localError);
       }
 
       // 5. Success feedback
