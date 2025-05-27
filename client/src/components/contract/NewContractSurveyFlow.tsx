@@ -42,7 +42,8 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
-  DialogFooter
+  DialogFooter,
+  DialogDescription
 } from "@/components/ui/dialog";
 import { enhanceDescriptionWithAI, generateAdditionalClauses } from "@/services/openaiService";
 import { IntelligentContractService } from "@/services/intelligentContractService";

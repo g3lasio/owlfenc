@@ -122,7 +122,7 @@ export class IntelligentContractService {
         }]
       });
 
-      return response.content[0].text;
+      return response.content[0].type === 'text' ? response.content[0].text : '';
 
     } catch (error) {
       console.error('Error generating legal clauses:', error);
@@ -160,7 +160,7 @@ export class IntelligentContractService {
         }]
       });
 
-      return response.content[0].text;
+      return response.content[0].type === 'text' ? response.content[0].text : basicDescription;
 
     } catch (error) {
       console.error('Error enhancing description:', error);
@@ -262,7 +262,7 @@ export class IntelligentContractService {
         }]
       });
 
-      return response.content[0].text;
+      return response.content[0].type === 'text' ? response.content[0].text : `Progreso: ${this.calculateCompletionPercentage(collectedData)}% completado`;
 
     } catch (error) {
       console.error('Error generating progress summary:', error);
