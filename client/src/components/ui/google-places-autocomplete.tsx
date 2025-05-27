@@ -40,6 +40,16 @@ export default function GooglePlacesAutocompleteComponent({
   const checkGoogleMapsAPI = useCallback(() => {
     console.log("🗺️ [GooglePlaces] Verificando estado de Google Maps API...");
     
+    // Información detallada del dominio actual
+    const currentDomain = window.location.hostname;
+    const currentUrl = window.location.href;
+    const currentProtocol = window.location.protocol;
+    
+    console.log("📍 [GooglePlaces] Información del dominio:");
+    console.log("  - Dominio actual:", currentDomain);
+    console.log("  - URL completa:", currentUrl);
+    console.log("  - Protocolo:", currentProtocol);
+    
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
     
     if (!apiKey) {
@@ -51,6 +61,12 @@ export default function GooglePlacesAutocompleteComponent({
     }
 
     console.log("✅ [GooglePlaces] API key encontrada:", `${apiKey.substring(0, 10)}...`);
+    console.log("🔧 [GooglePlaces] Dominios que debes agregar a las restricciones:");
+    console.log(`  - ${currentDomain}`);
+    console.log(`  - *.${currentDomain.split('.').slice(-2).join('.')}`);
+    console.log("  - *.replit.dev");
+    console.log("  - *.replit.com");
+    console.log("  - localhost");
 
     // Verificar si Google Maps está cargado
     if (typeof window !== 'undefined') {
@@ -91,7 +107,21 @@ export default function GooglePlacesAutocompleteComponent({
         
         let errorMessage = "Error de configuración de Google Maps";
         if (event.message.includes("InvalidKeyMapError")) {
-          errorMessage = "La API key de Google Maps requiere configuración adicional. Verifica las restricciones de dominio y los servicios habilitados.";
+          const currentDomain = window.location.hostname;
+          console.error("🚨 [GooglePlaces] InvalidKeyMapError detectado");
+          console.error("🔧 [GooglePlaces] SOLUCIÓN REQUERIDA:");
+          console.error("1. Ve a Google Cloud Console → APIs & Services → Credentials");
+          console.error("2. Edita tu API key");
+          console.error("3. En 'Application restrictions' → 'HTTP referrers'");
+          console.error("4. Agrega estos dominios:");
+          console.error(`   - ${currentDomain}/*`);
+          console.error(`   - *.${currentDomain.split('.').slice(-2).join('.')}/*`);
+          console.error("   - *.replit.dev/*");
+          console.error("   - *.replit.com/*");
+          console.error("   - localhost/*");
+          console.error("5. Guarda los cambios y espera 1-2 minutos");
+          
+          errorMessage = `Restricciones de dominio requeridas. Dominio actual: ${currentDomain}`;
         } else if (event.message.includes("ApiNotActivatedMapError")) {
           errorMessage = "Los servicios necesarios de Google Maps no están activados en tu proyecto.";
         }
