@@ -436,39 +436,140 @@ export default function PermitAdvisor() {
                     <TabsContent value="permits" className="space-y-4">
                       {permitData.requiredPermits && permitData.requiredPermits.length > 0 ? (
                         <div className="space-y-4">
-                          {permitData.requiredPermits.map((permit: PermitData, idx: number) => (
+                          {permitData.requiredPermits.map((permit: any, idx: number) => (
                             <div key={idx} className="relative">
-                              {/* Mini cyberpunk frame for each permit */}
-                              <div className="absolute inset-0 border border-teal-400/20">
-                                <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-teal-300/50"></div>
-                                <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-teal-300/50"></div>
-                                <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-teal-300/50"></div>
-                                <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-teal-300/50"></div>
-                              </div>
-                              <Card className="relative bg-gray-700/50 border-teal-500/20">
+                              {/* Holographic border effect */}
+                              <div className="absolute inset-0 bg-gradient-to-r from-teal-400/20 via-cyan-400/20 to-blue-400/20 animate-pulse rounded-lg"></div>
+                              <Card className="relative bg-gray-800/90 border-teal-400/30 backdrop-blur-sm hover:shadow-lg hover:shadow-teal-400/20 transition-all duration-300 m-1">
                                 <CardHeader>
-                                  <CardTitle className="text-lg text-teal-200">{permit.name}</CardTitle>
-                                  <CardDescription className="text-gray-400">{permit.issuingAuthority}</CardDescription>
+                                  <CardTitle className="text-teal-300 flex items-center gap-2">
+                                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                                    {permit.name}
+                                  </CardTitle>
+                                  <CardDescription className="text-teal-200/70">
+                                    {permit.issuingAuthority}
+                                  </CardDescription>
                                 </CardHeader>
-                                <CardContent>
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                      <h4 className="font-medium mb-2 text-teal-300">Estimated Time</h4>
-                                      <p className="text-sm text-gray-300">{permit.estimatedTimeline}</p>
+                                <CardContent className="space-y-4">
+                                  {/* Responsible Party */}
+                                  {permit.responsibleParty && (
+                                    <div className="bg-amber-500/10 border border-amber-400/30 rounded-lg p-3">
+                                      <h4 className="text-amber-400 font-medium mb-1 flex items-center gap-2">
+                                        👤 Who's Responsible
+                                      </h4>
+                                      <p className="text-amber-200 text-sm font-medium">{permit.responsibleParty}</p>
                                     </div>
+                                  )}
+
+                                  {permit.description && (
+                                    <p className="text-gray-300 text-sm">{permit.description}</p>
+                                  )}
+                                  
+                                  <div className="grid grid-cols-2 gap-4">
+                                    {permit.estimatedTimeline && (
+                                      <div>
+                                        <h4 className="text-teal-400 font-medium mb-1">Timeline</h4>
+                                        <p className="text-sm text-gray-300">{permit.estimatedTimeline}</p>
+                                      </div>
+                                    )}
                                     {permit.averageCost && (
                                       <div>
-                                        <h4 className="font-medium mb-2 text-teal-300">Average Cost</h4>
+                                        <h4 className="text-teal-400 font-medium mb-1">Cost</h4>
                                         <p className="text-sm text-gray-300">{permit.averageCost}</p>
                                       </div>
                                     )}
-                                    {permit.description && (
-                                      <div className="col-span-1 md:col-span-2">
-                                        <h4 className="font-medium mb-2 text-teal-300">Description</h4>
-                                        <p className="text-sm text-gray-300">{permit.description}</p>
+                                  </div>
+
+                                  {/* Required Documents */}
+                                  {permit.requiredDocuments && permit.requiredDocuments.length > 0 && (
+                                    <div>
+                                      <h4 className="text-purple-400 font-medium mb-2 flex items-center gap-2">
+                                        📋 Required Documents
+                                      </h4>
+                                      <div className="grid grid-cols-1 gap-2">
+                                        {permit.requiredDocuments.map((doc: string, docIdx: number) => (
+                                          <div key={docIdx} className="flex items-center gap-2 text-sm bg-purple-500/10 p-2 rounded border-l-2 border-purple-400">
+                                            <span className="text-purple-300">•</span>
+                                            <span className="text-gray-300">{doc}</span>
+                                          </div>
+                                        ))}
                                       </div>
+                                    </div>
+                                  )}
+
+                                  {/* Official Links */}
+                                  <div className="space-y-3">
+                                    {permit.applicationFormUrl && (
+                                      <a 
+                                        href={permit.applicationFormUrl} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-3 bg-blue-500/10 border border-blue-400/30 rounded-lg p-3 hover:bg-blue-500/20 transition-colors group"
+                                      >
+                                        <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center group-hover:bg-blue-500/30">
+                                          📄
+                                        </div>
+                                        <div>
+                                          <h4 className="text-blue-300 font-medium">Application Form</h4>
+                                          <p className="text-blue-200/70 text-sm">Download official permit application</p>
+                                        </div>
+                                        <div className="ml-auto text-blue-400">→</div>
+                                      </a>
+                                    )}
+
+                                    {permit.website && (
+                                      <a 
+                                        href={permit.website} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-3 bg-green-500/10 border border-green-400/30 rounded-lg p-3 hover:bg-green-500/20 transition-colors group"
+                                      >
+                                        <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center group-hover:bg-green-500/30">
+                                          🌐
+                                        </div>
+                                        <div>
+                                          <h4 className="text-green-300 font-medium">Official Website</h4>
+                                          <p className="text-green-200/70 text-sm">Visit department website</p>
+                                        </div>
+                                        <div className="ml-auto text-green-400">→</div>
+                                      </a>
+                                    )}
+
+                                    {permit.contactPhone && (
+                                      <a 
+                                        href={`tel:${permit.contactPhone.replace(/\D/g, '')}`}
+                                        className="flex items-center gap-3 bg-teal-500/10 border border-teal-400/30 rounded-lg p-3 hover:bg-teal-500/20 transition-colors group"
+                                      >
+                                        <div className="w-8 h-8 bg-teal-500/20 rounded-full flex items-center justify-center group-hover:bg-teal-500/30">
+                                          📞
+                                        </div>
+                                        <div>
+                                          <h4 className="text-teal-300 font-medium">Call Department</h4>
+                                          <p className="text-teal-200/70 text-sm font-mono">{permit.contactPhone}</p>
+                                        </div>
+                                        <div className="ml-auto text-teal-400">→</div>
+                                      </a>
                                     )}
                                   </div>
+
+                                  {/* Submission Method */}
+                                  {permit.submissionMethod && (
+                                    <div className="bg-cyan-500/10 border border-cyan-400/30 rounded-lg p-3">
+                                      <h4 className="text-cyan-400 font-medium mb-1 flex items-center gap-2">
+                                        📤 How to Submit
+                                      </h4>
+                                      <p className="text-cyan-200 text-sm">{permit.submissionMethod}</p>
+                                    </div>
+                                  )}
+
+                                  {permit.requirements && (
+                                    <div>
+                                      <h4 className="text-cyan-400 font-medium mb-2">Additional Requirements</h4>
+                                      <p className="text-sm text-gray-300 bg-gray-700/50 p-3 rounded border-l-4 border-cyan-400">
+                                        {permit.requirements}
+                                      </p>
+                                    </div>
+                                  )}
                                 </CardContent>
                               </Card>
                             </div>

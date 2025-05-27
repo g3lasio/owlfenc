@@ -361,15 +361,16 @@ CRITICAL: Provide REAL, SPECIFIC information including:
 - Jurisdiction-specific processes and forms
 
 Return detailed JSON with:
-- requiredPermits: [name, issuingAuthority, estimatedTimeline, averageCost, description, requirements, contactPhone, applicationForms]
-- process: [detailed step-by-step with dependencies and timing]
-- specialConsiderations: [specific local regulations, environmental, zoning]
-- contactInformation: [department, directPhone, email, physicalAddress, website, inspectorName, hours]
-- jurisdictionDetails: [city, county, buildingDept, planningDept, zoneDept, fireDept]
-- localCodes: [specific code sections, measurements, restrictions]
-- inspectionSchedule: [type, timing, contactInfo, requirements]
-- costBreakdown: [detailed fee structure]
-- timeline: [critical path, dependencies, seasonal considerations]
+- requiredPermits: [name, issuingAuthority, estimatedTimeline, averageCost, description, requirements, responsibleParty, applicationFormUrl, submissionMethod, requiredDocuments]
+- process: [detailed step-by-step with dependencies, timing, responsibleParty, requiredDocuments, officialLinks]
+- specialConsiderations: [specific local regulations, environmental, zoning, penalties, deadlines]
+- contactInformation: [department, directPhone, email, physicalAddress, website, inspectorName, hours, onlinePortal]
+- jurisdictionDetails: [city, county, buildingDept, planningDept, zoneDept, fireDept, permitPortalUrl]
+- localCodes: [specific code sections, measurements, restrictions, complianceDocuments]
+- inspectionSchedule: [type, timing, contactInfo, requirements, schedulingUrl]
+- costBreakdown: [detailed fee structure, paymentMethods, onlinePaymentUrl]
+- timeline: [critical path, dependencies, seasonal considerations, deadlines]
+- officialResources: [formUrls, guidanceDocuments, checklistUrls, portalLinks]
 
 Provide premium-level detail that justifies professional subscription cost.`
           },
@@ -377,30 +378,45 @@ Provide premium-level detail that justifies professional subscription cost.`
             role: "user",
             content: `${context}
 
-IMPORTANT: Include specific building code sections with real numbers like:
-- IBC (International Building Code) Section 105.1
-- IRC (International Residential Code) Chapter 3
-- Local city ordinances with section numbers
-- Specific measurements, clearances, and requirements
-- Real permit numbers, application forms, and submission requirements
+CRITICAL REQUIREMENTS for professional-grade information:
 
-Example format for localCodes:
+1. DIRECT OFFICIAL LINKS - Include actual URLs to:
+   - Permit application forms (.gov websites)
+   - Online submission portals
+   - Fee payment systems
+   - Building code documents
+   - Inspection scheduling systems
+
+2. CLEAR RESPONSIBILITY ASSIGNMENT:
+   - Who submits each permit (contractor, property owner, architect)
+   - Who is responsible for inspections
+   - Who handles approvals at each stage
+
+3. SPECIFIC DOCUMENTATION REQUIREMENTS:
+   - Required drawings and plans
+   - Engineering stamps needed
+   - Environmental assessments
+   - Property surveys requirements
+
+4. REAL GOVERNMENT CONTACT INFORMATION:
+   - Building department phone/email
+   - Planning department contacts
+   - Fire department contacts
+   - Utility connection departments
+
+Example format for permits:
 {
-  "section": "IBC Section 105.1",
-  "type": "Building Permit Required",
-  "details": "A building permit is required for construction, alteration, repair, enlargement, or demolition of any building or structure",
-  "restrictions": "Must submit plans showing structural details, materials, and compliance with fire safety codes"
+  "name": "Building Permit",
+  "responsibleParty": "Licensed General Contractor",
+  "applicationFormUrl": "https://cityname.gov/building/permits/application",
+  "submissionMethod": "Online portal or in-person",
+  "requiredDocuments": ["Site plan", "Construction drawings", "Engineering calculations"],
+  "issuingAuthority": "City Building Department",
+  "contactPhone": "(555) 123-4567",
+  "website": "https://cityname.gov/building"
 }
 
-Provide real contact information including:
-- Specific department names (Building Division, Planning Department, etc.)
-- Real phone numbers with area codes
-- Government email addresses ending in .gov
-- Physical addresses of offices
-- Inspector names where possible
-- Office hours
-
-Make this worth $100/month subscription by providing professional-grade information.`
+Provide professional contractor-grade information with real links and clear responsibilities.`
           }
         ],
         response_format: { type: "json_object" },
