@@ -189,7 +189,7 @@ export default function Materials() {
     }
     
     // Filtrar por categoría seleccionada
-    if (selectedCategory) {
+    if (selectedCategory && selectedCategory !== 'todas') {
       filtered = filtered.filter(m => m.category === selectedCategory);
     }
     
@@ -515,15 +515,16 @@ export default function Materials() {
           </p>
         </div>
 
-        {/* Barra de acciones */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        {/* Barra de acciones optimizada responsive */}
+        <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4 mb-6">
+          {/* Controles de búsqueda y filtrado */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 max-w-2xl">
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               <Input
                 type="search"
-                placeholder="Buscar materiales..."
-                className="pl-8"
+                placeholder="Buscar por nombre, SKU, proveedor..."
+                className="pl-10 h-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -533,8 +534,8 @@ export default function Materials() {
               value={selectedCategory}
               onValueChange={setSelectedCategory}
             >
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Categoría" />
+              <SelectTrigger className="w-full sm:w-48 h-10">
+                <SelectValue placeholder="Todas las categorías" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todas">Todas las categorías</SelectItem>
@@ -547,10 +548,16 @@ export default function Materials() {
             </Select>
           </div>
           
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Button variant="outline" className="relative" disabled={isUploading}>
+          {/* Botones de acción */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:w-auto">
+            <Button 
+              variant="outline" 
+              className="relative h-10 flex-1 sm:flex-none" 
+              disabled={isUploading}
+            >
               <FileUp className="mr-2 h-4 w-4" />
-              <span>Importar CSV</span>
+              <span className="hidden sm:inline">Importar CSV</span>
+              <span className="sm:hidden">Importar</span>
               <Input
                 type="file"
                 accept=".csv"
@@ -560,23 +567,38 @@ export default function Materials() {
               />
             </Button>
             
-            <Button onClick={() => setShowAddDialog(true)}>
+            <Button onClick={() => setShowAddDialog(true)} className="h-10 flex-1 sm:flex-none">
               <Plus className="mr-2 h-4 w-4" />
-              <span>Agregar Material</span>
+              <span className="hidden sm:inline">Agregar Material</span>
+              <span className="sm:hidden">Agregar</span>
             </Button>
           </div>
         </div>
 
-        {/* Tabs para filtrado rápido */}
+        {/* Tabs para filtrado rápido optimizados */}
         <Tabs 
           defaultValue="todos" 
           className="w-full mb-6"
           value={activeTab}
           onValueChange={setActiveTab}
         >
-          <TabsList className="mb-4">
-            <TabsTrigger value="todos">Todos los materiales</TabsTrigger>
-            <TabsTrigger value="bajo-stock">Bajo stock</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 mb-4 h-10">
+            <TabsTrigger value="todos" className="text-sm">
+              <span className="hidden sm:inline">Todos los materiales</span>
+              <span className="sm:hidden">Todos</span>
+              <span className="ml-1 text-xs opacity-70">({materials.length})</span>
+            </TabsTrigger>
+            <TabsTrigger value="bajo-stock" className="text-sm">
+              <span className="hidden sm:inline">Bajo stock</span>
+              <span className="sm:hidden">Stock bajo</span>
+              <span className="ml-1 text-xs opacity-70">
+                ({materials.filter(m => 
+                  typeof m.stock === 'number' && 
+                  typeof m.minStock === 'number' && 
+                  m.stock <= m.minStock
+                ).length})
+              </span>
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="todos">
@@ -619,12 +641,12 @@ export default function Materials() {
         </Tabs>
       </div>
 
-      {/* Dialog para agregar material */}
+      {/* Dialog para agregar material optimizado responsive */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Agregar Nuevo Material</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-lg sm:text-xl">Agregar Nuevo Material</DialogTitle>
+            <DialogDescription className="text-sm sm:text-base">
               Completa los detalles del material para agregarlo al inventario.
             </DialogDescription>
           </DialogHeader>
@@ -1065,25 +1087,35 @@ export default function Materials() {
       </div>
     );
 
-    // Vista móvil: tarjetas
+    // Vista móvil: tarjetas optimizadas
     const mobileView = (
-      <div className="grid grid-cols-1 gap-4 md:hidden">
+      <div className="grid grid-cols-1 gap-3 md:hidden">
         {filteredMaterials.map((material) => (
-          <div key={material.id} className="bg-card border rounded-lg shadow-sm overflow-hidden">
+          <div key={material.id} className="bg-card border rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
             <div className="p-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-medium text-base">{material.name}</h3>
-                  <p className="text-muted-foreground text-sm">{material.category}</p>
+              {/* Header de la tarjeta */}
+              <div className="flex justify-between items-start mb-3">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-base truncate">{material.name}</h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-full">
+                      {material.category}
+                    </span>
+                    {material.sku && (
+                      <span className="text-xs text-muted-foreground">
+                        {material.sku}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex space-x-1">
+                <div className="flex space-x-1 ml-2">
                   <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => openEditDialog(material)}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
                     </svg>
                   </Button>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => openDeleteDialog(material)}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive" onClick={() => openDeleteDialog(material)}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M3 6h18"></path>
                       <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
                       <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
@@ -1092,14 +1124,16 @@ export default function Materials() {
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-3 mt-3 text-sm">
+              {/* Información principal */}
+              <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="text-muted-foreground block">Precio:</span>
-                  <div className="font-medium">{formatPrice(material.price)} / {material.unit}</div>
+                  <span className="text-muted-foreground text-xs uppercase tracking-wide block mb-1">Precio</span>
+                  <div className="font-semibold text-base">{formatPrice(material.price)}</div>
+                  <div className="text-xs text-muted-foreground">por {material.unit}</div>
                 </div>
                 <div>
-                  <span className="text-muted-foreground block">Stock:</span>
-                  <div className="font-medium flex items-center">
+                  <span className="text-muted-foreground text-xs uppercase tracking-wide block mb-1">Stock</span>
+                  <div className="font-semibold text-base flex items-center">
                     <span className={
                       typeof material.stock === 'number' && 
                       typeof material.minStock === 'number' && 
@@ -1113,23 +1147,31 @@ export default function Materials() {
                     {typeof material.stock === 'number' && 
                      typeof material.minStock === 'number' && 
                      material.stock <= material.minStock && (
-                      <AlertCircle className="h-3 w-3 ml-1 text-destructive" />
+                      <AlertCircle className="h-4 w-4 ml-2 text-destructive" />
                     )}
                   </div>
+                  {typeof material.minStock === 'number' && material.minStock > 0 && (
+                    <div className="text-xs text-muted-foreground">min: {material.minStock}</div>
+                  )}
                 </div>
-                {material.sku && (
-                  <div className="col-span-2">
-                    <span className="text-muted-foreground block">SKU:</span>
-                    <div className="font-medium">{material.sku}</div>
-                  </div>
-                )}
-                {material.supplier && (
-                  <div className="col-span-2">
-                    <span className="text-muted-foreground block">Proveedor:</span>
-                    <div className="font-medium">{material.supplier}</div>
-                  </div>
-                )}
               </div>
+              
+              {/* Información adicional */}
+              {(material.description || material.supplier) && (
+                <div className="mt-3 pt-3 border-t border-border/50">
+                  {material.description && (
+                    <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                      {material.description}
+                    </p>
+                  )}
+                  {material.supplier && (
+                    <div className="text-xs">
+                      <span className="text-muted-foreground">Proveedor: </span>
+                      <span className="font-medium">{material.supplier}</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         ))}
