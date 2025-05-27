@@ -256,7 +256,7 @@ export default function PermitAdvisor() {
                 onClick={() => setShowHistory(!showHistory)}
                 className="w-full sm:w-auto border-teal-500/30 text-teal-300 hover:bg-teal-500/10 h-12 text-sm sm:text-base px-4"
               >
-                <Clock className="h-4 w-4 mr-2" />
+                📅
                 <span className="hidden sm:inline">{showHistory ? "Hide History" : "Show History"}</span>
                 <span className="sm:hidden">History</span>
               </Button>
@@ -310,35 +310,36 @@ export default function PermitAdvisor() {
 
       {/* Results */}
       {permitData && (
-        <div className="max-w-6xl mx-auto p-6">
-          <div className="space-y-6">
-            <Card className="bg-gray-800/50 border-teal-500/20 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-2xl text-teal-300 flex items-center gap-2">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
+          <div className="space-y-4 sm:space-y-6">
+            <Card className="bg-gray-800/50 border-teal-500/20 backdrop-blur-sm overflow-hidden">
+              <CardHeader className="text-center px-4 sm:px-6">
+                <CardTitle className="text-lg sm:text-xl lg:text-2xl text-teal-300 flex items-center justify-center gap-2">
                   <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                  DeepSearch Results
+                  <span className="truncate">DeepSearch Results</span>
                 </CardTitle>
-                <CardDescription className="text-gray-400">
+                <CardDescription className="text-gray-400 text-sm sm:text-base">
                   Project: {permitData.meta?.projectType} at {permitData.meta?.location}
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-2 sm:px-4 lg:px-6">
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  <TabsList className="grid w-full grid-cols-6 bg-gray-900/80 border border-teal-400/30 relative overflow-hidden">
+                  {/* Responsive tabs - scrollable on mobile, grid on larger screens */}
+                  <TabsList className="flex w-full overflow-x-auto sm:grid sm:grid-cols-5 bg-gray-900/80 border border-teal-400/30 relative p-1 gap-1 scrollbar-thin scrollbar-thumb-teal-500/30">
                     <div className="absolute inset-0 bg-gradient-to-r from-teal-500/10 via-transparent to-cyan-500/10 animate-pulse"></div>
-                    <TabsTrigger value="permits" className="relative text-teal-300 data-[state=active]:bg-teal-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-teal-500/50 transition-all duration-300">
+                    <TabsTrigger value="permits" className="relative text-teal-300 data-[state=active]:bg-teal-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-teal-500/50 transition-all duration-300 whitespace-nowrap min-w-[80px] text-xs sm:text-sm">
                       <span className="relative z-10">Permits</span>
                     </TabsTrigger>
-                    <TabsTrigger value="contacts" className="relative text-teal-300 data-[state=active]:bg-cyan-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/50 transition-all duration-300">
+                    <TabsTrigger value="contacts" className="relative text-teal-300 data-[state=active]:bg-cyan-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/50 transition-all duration-300 whitespace-nowrap min-w-[80px] text-xs sm:text-sm">
                       <span className="relative z-10">Contacts</span>
                     </TabsTrigger>
-                    <TabsTrigger value="codes" className="relative text-teal-300 data-[state=active]:bg-emerald-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/50 transition-all duration-300">
+                    <TabsTrigger value="codes" className="relative text-teal-300 data-[state=active]:bg-emerald-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/50 transition-all duration-300 whitespace-nowrap min-w-[80px] text-xs sm:text-sm">
                       <span className="relative z-10">Codes</span>
                     </TabsTrigger>
-                    <TabsTrigger value="process" className="relative text-teal-300 data-[state=active]:bg-blue-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/50 transition-all duration-300">
+                    <TabsTrigger value="process" className="relative text-teal-300 data-[state=active]:bg-blue-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/50 transition-all duration-300 whitespace-nowrap min-w-[80px] text-xs sm:text-sm">
                       <span className="relative z-10">Process</span>
                     </TabsTrigger>
-                    <TabsTrigger value="considerations" className="relative text-teal-300 data-[state=active]:bg-amber-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-amber-500/50 transition-all duration-300">
+                    <TabsTrigger value="considerations" className="relative text-teal-300 data-[state=active]:bg-amber-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-amber-500/50 transition-all duration-300 whitespace-nowrap min-w-[80px] text-xs sm:text-sm">
                       <span className="relative z-10">Alerts</span>
                     </TabsTrigger>
                   </TabsList>
