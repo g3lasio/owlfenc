@@ -40,6 +40,7 @@ import AppleCallback from "@/pages/AppleCallback";
 import SecuritySettings from "@/pages/SecuritySettings";
 import ContractGenerator from "@/pages/ContractGenerator";
 import CyberpunkContractGenerator from "@/pages/CyberpunkContractGenerator";
+import LegalContractEngine from "@/pages/LegalContractEngine";
 import AITestingPage from "@/pages/AITestingPage";
 import DeepSearchDemo from "@/pages/DeepSearchDemo";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -157,6 +158,9 @@ function Router() {
       </Route>
       <Route path="/contract-generator">
         {() => <ProtectedRoute component={CyberpunkContractGenerator} />}
+      </Route>
+      <Route path="/legal-contract-engine">
+        {() => <ProtectedRoute component={LegalContractEngine} />}
       </Route>
       <Route path="/ai-testing">
         {() => <ProtectedRoute component={AITestingPage} />}
