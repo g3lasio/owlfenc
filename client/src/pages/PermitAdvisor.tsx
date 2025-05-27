@@ -176,6 +176,7 @@ export default function PermitAdvisor() {
                 <label className="text-sm font-medium text-teal-300">Property Address</label>
                 <MapboxPlacesAutocomplete
                   onPlaceSelect={handleAddressSelect}
+                  onChange={() => {}} 
                   className="bg-gray-700/50 border-teal-500/30 text-white placeholder-gray-400 focus:border-teal-400 focus:ring-teal-400/20"
                   placeholder="Enter property address..."
                 />
