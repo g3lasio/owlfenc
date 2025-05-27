@@ -144,9 +144,10 @@ export default function PermitAdvisor() {
     },
     onError: (error: any) => {
       console.error('Error in permit search:', error);
+      const errorMessage = error?.message || error?.response?.data?.message || "Could not get permit information.";
       toast({
         title: "Search Error",
-        description: error.message || "Could not get permit information.",
+        description: errorMessage,
         variant: "destructive",
       });
     },
