@@ -186,11 +186,17 @@ export default function EstimatesDashboard() {
       console.log('🐒 [PDFMonkey Integration] Datos mapeados para template específico');
       
       // Usar el nuevo endpoint con template específico y fallback automático
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 segundos total
+      
       const response = await fetch('/api/pdfmonkey-estimates/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(pdfMonkeyData),
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
       
       console.log('⏱️ [PDFMonkey Integration] Respuesta en:', Date.now() - startTime, 'ms');
       
@@ -255,10 +261,23 @@ export default function EstimatesDashboard() {
       console.log('🎯 [PDFMonkey Integration] Proceso total completado en:', Date.now() - startTime, 'ms');
       
     } catch (error) {
-      console.error('❌ [UNIFIED-PDF] Error:', error);
+      console.error('❌ [PDFMonkey Integration] Error:', error);
+      
+      let errorMessage = "Error desconocido al generar PDF";
+      
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMessage = "La generación de PDF tardó demasiado. Intente nuevamente.";
+        } else if (error.message.includes('fetch')) {
+          errorMessage = "Error de conexión. Verifique su internet e intente nuevamente.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
-        title: "Error",
-        description: "No se pudo generar el PDF. Intente nuevamente.",
+        title: "Error al generar PDF",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

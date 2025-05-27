@@ -164,6 +164,7 @@ router.post('/generate', async (req, res) => {
       
       console.log('🐒 [PDFMonkey Estimates] Datos mapeados:', JSON.stringify(templateData, null, 2));
 
+      // Usar endpoint asíncrono para evitar timeouts y obtener URL directa
       const response = await axios.post('https://api.pdfmonkey.io/api/v1/documents', {
         document: {
           document_template_id: '2E4DC55E-044E-4FD3-B511-FEBF950071FA',
@@ -177,19 +178,69 @@ router.post('/generate', async (req, res) => {
           'Authorization': `Bearer ${pdfMonkeyApiKey}`,
           'Content-Type': 'application/json'
         },
-        timeout: 30000
+        timeout: 10000  // Reducir timeout inicial
       });
 
-      if (response.data?.document?.download_url) {
-        console.log('✅ [PDFMonkey Estimates] PDF generado exitosamente con template específico');
-        return res.json({
-          success: true,
-          downloadUrl: response.data.document.download_url,
-          method: 'pdfmonkey',
-          documentId: response.data.document.id
-        });
+      if (response.data?.document) {
+        const document = response.data.document;
+        
+        // Si ya tiene URL de descarga, devolver inmediatamente
+        if (document.download_url) {
+          console.log('✅ [PDFMonkey Estimates] PDF listo inmediatamente');
+          return res.json({
+            success: true,
+            downloadUrl: document.download_url,
+            method: 'pdfmonkey',
+            documentId: document.id
+          });
+        }
+        
+        // Si no, esperar a que esté listo (máximo 3 intentos)
+        if (document.id) {
+          console.log('🔄 [PDFMonkey Estimates] Esperando procesamiento del documento...');
+          
+          for (let attempt = 1; attempt <= 3; attempt++) {
+            await new Promise(resolve => setTimeout(resolve, 2000)); // Esperar 2 segundos
+            
+            try {
+              const statusResponse = await axios.get(`https://api.pdfmonkey.io/api/v1/documents/${document.id}`, {
+                headers: {
+                  'Authorization': `Bearer ${pdfMonkeyApiKey}`
+                },
+                timeout: 5000
+              });
+              
+              const updatedDoc = statusResponse.data?.document;
+              
+              if (updatedDoc?.download_url) {
+                console.log(`✅ [PDFMonkey Estimates] PDF listo después de ${attempt} intentos`);
+                return res.json({
+                  success: true,
+                  downloadUrl: updatedDoc.download_url,
+                  method: 'pdfmonkey',
+                  documentId: updatedDoc.id
+                });
+              }
+              
+              if (updatedDoc?.status === 'error') {
+                console.log('❌ [PDFMonkey Estimates] Error en procesamiento:', updatedDoc.error);
+                throw new Error(`PDFMonkey processing error: ${updatedDoc.error}`);
+              }
+              
+              console.log(`⏳ [PDFMonkey Estimates] Intento ${attempt}/3 - Estado: ${updatedDoc?.status}`);
+              
+            } catch (statusError) {
+              console.log(`⚠️ [PDFMonkey Estimates] Error verificando estado (intento ${attempt}):`, statusError);
+              if (attempt === 3) {
+                throw new Error('PDFMonkey status check failed after 3 attempts');
+              }
+            }
+          }
+        }
+        
+        throw new Error('PDFMonkey document not ready after waiting');
       } else {
-        throw new Error('PDFMonkey response missing download URL');
+        throw new Error('PDFMonkey response missing document');
       }
 
     } catch (pdfMonkeyError) {
@@ -214,39 +265,182 @@ async function handleFallback(estimateData: EstimateData, res: express.Response)
     
     const html = await generateFallbackHTML(estimateData);
     
-    if (!html) {
-      throw new Error('Claude failed to generate HTML');
+    if (!html || html.length < 100) {
+      throw new Error('Claude failed to generate valid HTML');
     }
 
     console.log('🤖 [Claude Fallback] HTML generado exitosamente, convirtiendo a PDF...');
 
-    // Importar el servicio PDF existente para conversión
-    const { pdfMonkeyService } = await import('../services/PDFMonkeyService');
+    // Usar un método de conversión más simple y confiable
+    const puppeteer = await import('puppeteer');
     
-    const pdfResult = await pdfMonkeyService.generatePdf(html, {
-      title: `Estimado-${estimateData.estimateNumber || Date.now()}`,
-      filename: `estimate-${estimateData.estimateNumber || Date.now()}.pdf`
-    });
-
-    if (pdfResult.success && pdfResult.buffer) {
-      console.log('✅ [Claude Fallback] PDF generado exitosamente');
+    let browser;
+    try {
+      browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+      });
+      
+      const page = await browser.newPage();
+      
+      // Configurar el tamaño de página
+      await page.setViewport({ width: 1200, height: 1600 });
+      
+      // Cargar HTML y esperar a que se renderice
+      await page.setContent(html, { waitUntil: 'networkidle0' });
+      
+      // Generar PDF con configuración optimizada
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: {
+          top: '0.5in',
+          right: '0.5in',
+          bottom: '0.5in',
+          left: '0.5in'
+        }
+      });
+      
+      console.log('✅ [Claude Fallback] PDF generado exitosamente con Puppeteer');
       
       // Enviar PDF como respuesta
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="estimate-${estimateData.estimateNumber || Date.now()}.pdf"`);
-      res.send(pdfResult.buffer);
-    } else {
-      throw new Error(pdfResult.error || 'PDF generation failed');
+      res.send(pdfBuffer);
+      
+    } finally {
+      if (browser) {
+        await browser.close();
+      }
     }
 
   } catch (fallbackError) {
     console.error('❌ [Claude Fallback] Error:', fallbackError);
-    res.status(500).json({
-      success: false,
-      error: 'Both PDFMonkey and Claude fallback failed',
-      method: 'fallback-failed'
-    });
+    
+    // Último recurso: generar un PDF simple con los datos básicos
+    try {
+      console.log('📄 [Last Resort] Generando PDF básico de emergencia...');
+      
+      const basicHtml = generateBasicFallbackHTML(estimateData);
+      const puppeteer = await import('puppeteer');
+      
+      let browser;
+      try {
+        browser = await puppeteer.launch({
+          headless: true,
+          args: ['--no-sandbox', '--disable-setuid-sandbox']
+        });
+        
+        const page = await browser.newPage();
+        await page.setContent(basicHtml);
+        const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
+        
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="estimate-basic-${Date.now()}.pdf"`);
+        res.send(pdfBuffer);
+        
+        console.log('✅ [Last Resort] PDF básico generado exitosamente');
+        
+      } finally {
+        if (browser) {
+          await browser.close();
+        }
+      }
+      
+    } catch (lastResortError) {
+      console.error('❌ [Last Resort] Error final:', lastResortError);
+      res.status(500).json({
+        success: false,
+        error: 'All PDF generation methods failed',
+        method: 'complete-failure'
+      });
+    }
   }
+}
+
+// Función para generar HTML básico de emergencia
+function generateBasicFallbackHTML(estimateData: EstimateData): string {
+  const currentDate = new Date().toLocaleDateString('en-US');
+  
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Estimate ${estimateData.estimateNumber || 'DRAFT'}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; color: #333; }
+        .header { border-bottom: 3px solid #00BCD4; padding-bottom: 20px; margin-bottom: 30px; }
+        .title { color: #00BCD4; font-size: 24px; font-weight: bold; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+        .section { background: #f9f9f9; padding: 15px; border-radius: 5px; }
+        .label { font-weight: bold; color: #555; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #00BCD4; color: white; }
+        .total { font-size: 18px; font-weight: bold; color: #00BCD4; text-align: right; }
+        .footer { margin-top: 40px; text-align: center; color: #00BCD4; font-style: italic; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">ESTIMATE</div>
+        <div>No: ${estimateData.estimateNumber || `EST-${Date.now()}`}</div>
+        <div>Date: ${estimateData.date || currentDate}</div>
+    </div>
+    
+    <div class="info-grid">
+        <div class="section">
+            <div class="label">Client Information:</div>
+            <div>Name: ${estimateData.clientName || 'N/A'}</div>
+            <div>Address: ${estimateData.clientAddress || 'N/A'}</div>
+            <div>Email: ${estimateData.clientEmail || 'N/A'}</div>
+            <div>Phone: ${estimateData.clientPhone || 'N/A'}</div>
+        </div>
+        <div class="section">
+            <div class="label">Project Details:</div>
+            <div>${estimateData.projectDescription || 'Construction project'}</div>
+        </div>
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th>Description</th>
+                <th>Qty</th>
+                <th>Unit</th>
+                <th>Unit Price</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${(estimateData.items || []).map(item => `
+                <tr>
+                    <td>${item.name}</td>
+                    <td>${item.description}</td>
+                    <td>${item.quantity}</td>
+                    <td>${item.unit}</td>
+                    <td>$${(item.unitPrice / 100).toFixed(2)}</td>
+                    <td>$${(item.totalPrice / 100).toFixed(2)}</td>
+                </tr>
+            `).join('')}
+        </tbody>
+    </table>
+    
+    <div class="total">
+        <div>Subtotal: $${((estimateData.subtotal || 0) / 100).toFixed(2)}</div>
+        <div>Tax (${estimateData.taxPercentage || 0}%): $${((estimateData.tax || 0) / 100).toFixed(2)}</div>
+        <div>TOTAL: $${((estimateData.total || 0) / 100).toFixed(2)}</div>
+    </div>
+    
+    ${estimateData.notes ? `<div style="margin-top: 30px;"><strong>Notes:</strong><br>${estimateData.notes}</div>` : ''}
+    
+    <div class="footer">
+        Building the Future, One Project at a Time.
+    </div>
+</body>
+</html>`;
 }
 
 export default router;
