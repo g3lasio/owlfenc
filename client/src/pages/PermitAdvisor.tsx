@@ -774,7 +774,7 @@ export default function PermitAdvisor() {
                                       <div className="mt-3">
                                         <h5 className="text-xs text-gray-400 uppercase tracking-wide mb-2">Required Documents:</h5>
                                         <div className="flex flex-wrap gap-1">
-                                          {step.requiredDocuments.map((doc: string, docIdx: number) => (
+                                          {(Array.isArray(step.requiredDocuments) ? step.requiredDocuments : [step.requiredDocuments]).map((doc: string, docIdx: number) => (
                                             <span key={docIdx} className="text-xs bg-gray-700/50 text-gray-300 px-2 py-1 rounded border border-gray-600/30">
                                               📄 {doc}
                                             </span>
