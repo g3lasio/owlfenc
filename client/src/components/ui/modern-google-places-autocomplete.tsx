@@ -131,15 +131,22 @@ export default function ModernGooglePlacesAutocomplete({
         const currentDomain = window.location.hostname;
         
         if (event.message.includes("InvalidKeyMapError")) {
-          console.error("🚨 [ModernGooglePlaces] SOLUCIÓN REQUERIDA:");
-          console.error("1. Ve a Google Cloud Console → APIs & Services → Credentials");
-          console.error("2. Edita tu API key");
-          console.error("3. En 'Application restrictions' → 'HTTP referrers'");
-          console.error("4. Agrega este dominio exacto:");
-          console.error(`   ${currentDomain}/*`);
-          console.error("5. Guarda y espera 1-2 minutos");
+          console.error("🚨 [ModernGooglePlaces] InvalidKeyMapError persistente detectado");
+          console.error("📋 [ModernGooglePlaces] Información de diagnóstico:");
+          console.error(`   - Dominio actual: ${currentDomain}`);
+          console.error(`   - URL completa: ${window.location.href}`);
+          console.error(`   - Referrer: ${document.referrer || 'No disponible'}`);
+          console.error("🔧 [ModernGooglePlaces] Posibles soluciones:");
+          console.error("1. Verificar que TODOS estos formatos estén en las restricciones:");
+          console.error(`   - ${currentDomain}/*`);
+          console.error(`   - *.${currentDomain.split('.').slice(-2).join('.')}/*`);
+          console.error(`   - https://${currentDomain}/*`);
+          console.error(`   - http://${currentDomain}/*`);
+          console.error("2. Remover temporalmente TODAS las restricciones para probar");
+          console.error("3. Verificar que la API key tenga permisos para Places API");
+          console.error("4. Considerar generar una nueva API key sin restricciones");
           
-          setApiError(`Dominio no autorizado: ${currentDomain}`);
+          setApiError(`API key con restricciones incompatibles. Dominio: ${currentDomain}`);
         } else {
           setApiError("Error de configuración de Google Maps");
         }
@@ -149,13 +156,22 @@ export default function ModernGooglePlacesAutocomplete({
       }
     };
 
+    // Verificar estado cada 5 segundos para detectar cambios en la configuración
+    const statusCheck = setInterval(() => {
+      if (apiStatus === 'error' && window.google && window.google.maps && window.google.maps.places) {
+        console.log("🔄 [ModernGooglePlaces] Reintentando inicialización...");
+        initializeGoogleMaps();
+      }
+    }, 5000);
+
     window.addEventListener('error', handleGoogleMapsError);
     initializeGoogleMaps();
 
     return () => {
       window.removeEventListener('error', handleGoogleMapsError);
+      clearInterval(statusCheck);
     };
-  }, [initializeGoogleMaps]);
+  }, [initializeGoogleMaps, apiStatus]);
 
   // Buscar sugerencias
   const searchSuggestions = useCallback(async (input: string) => {
