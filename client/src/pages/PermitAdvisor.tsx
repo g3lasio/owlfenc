@@ -96,15 +96,16 @@ export default function PermitAdvisor() {
     try {
       console.log("===== INICIANDO SOLICITUD MERVIN DEEPSEARCH =====");
       
-      const response = await apiRequest('/api/permit/check', 'POST', {
+      const response = await apiRequest('POST', '/api/permit/check', {
         address: selectedAddress,
         projectType,
         projectDescription: projectDescription || `${projectType} project`,
         coordinates
       });
 
-      console.log("✅ Respuesta recibida del servidor:", response);
-      setPermitData(response as PermitResponse);
+      const data = await response.json();
+      console.log("✅ Respuesta recibida del servidor:", data);
+      setPermitData(data);
       
       toast({
         title: "✅ DeepSearch Complete",
@@ -268,7 +269,7 @@ export default function PermitAdvisor() {
                 </div>
               )}
               
-              {historyQuery.data && historyQuery.data.length > 0 ? (
+              {historyQuery.data && Array.isArray(historyQuery.data) && historyQuery.data.length > 0 ? (
                 <div className="space-y-3">
                   {historyQuery.data.map((item: SearchHistoryItem) => (
                     <div
