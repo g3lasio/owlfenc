@@ -271,18 +271,28 @@ export default function EstimatesWizardFixed() {
           });
         }
 
-        // También manejar laborServices si viene del endpoint combinado
-        if (result.laborServices) {
-          result.laborServices.forEach((service: any) => {
+        // También manejar labor si viene del endpoint combinado
+        if (result.labor) {
+          result.labor.forEach((service: any) => {
+            // Mapear unidades de construcción reales
+            const unitMapping: Record<string, string> = {
+              'linear_ft': 'ft lineal',
+              'square_ft': 'ft²',
+              'cubic_yard': 'yd³',
+              'square': 'escuadra',
+              'project': 'proyecto',
+              'per_unit': 'unidad'
+            };
+
             newItems.push({
               id: `ai_lab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
               materialId: service.id || '',
               name: service.name,
               description: service.description || '',
-              quantity: service.quantity,
-              price: service.price,
-              unit: service.unit,
-              total: service.total
+              quantity: service.quantity || 1,
+              price: service.unitPrice || service.totalPrice || service.totalCost || 0,
+              unit: unitMapping[service.unit] || service.unit || 'servicio',
+              total: service.totalCost || service.totalPrice || (service.unitPrice * service.quantity) || 0
             });
           });
         }
