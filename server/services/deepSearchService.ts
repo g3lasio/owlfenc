@@ -214,7 +214,7 @@ ALL TEXT MUST BE IN ENGLISH ONLY.
       // Extraer el JSON de la respuesta
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        throw new Error('No se encontró JSON válido en la respuesta');
+        throw new Error('No valid JSON found in response');
       }
 
       const jsonData = JSON.parse(jsonMatch[0]);
