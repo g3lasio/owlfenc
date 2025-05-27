@@ -197,7 +197,7 @@ export default function EstimatesWizardFixed() {
           successMessage = 'materiales';
           break;
         case 'labor':
-          endpoint = '/api/labor-deepsearch';
+          endpoint = '/api/labor-deepsearch/generate-items';
           successMessage = 'servicios de labor';
           break;
         case 'both':
@@ -245,7 +245,23 @@ export default function EstimatesWizardFixed() {
           });
         }
 
-        // Agregar servicios de labor si existen
+        // Agregar servicios de labor si existen (usando 'items' para labor endpoint)
+        if (result.items) {
+          result.items.forEach((service: any) => {
+            newItems.push({
+              id: `ai_lab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              materialId: service.id || '',
+              name: service.name,
+              description: service.description || '',
+              quantity: service.quantity || service.hours || 1,
+              price: service.price || service.totalCost || 0,
+              unit: service.unit || 'servicio',
+              total: service.total || service.totalCost || (service.price * (service.quantity || 1))
+            });
+          });
+        }
+
+        // También manejar laborServices si viene del endpoint combinado
         if (result.laborServices) {
           result.laborServices.forEach((service: any) => {
             newItems.push({
@@ -1339,117 +1355,104 @@ export default function EstimatesWizardFixed() {
                   Agregar Materiales ({estimate.items.length})
                 </div>
                 <div className="flex gap-2">
-                  {/* Smart DeepSearch Button con opciones */}
-                  <Dialog open={showSmartSearchDialog} onOpenChange={setShowSmartSearchDialog}>
-                    <DialogTrigger asChild>
-                      <Button 
-                        size="sm"
-                        variant="outline"
-                        disabled={!estimate.projectDetails.trim()}
-                        className="flex items-center gap-2"
-                      >
-                        <Brain className="h-4 w-4" />
-                        Smart Search IA
-                        <ChevronDown className="h-3 w-3" />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
-                      <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                          <Brain className="h-5 w-5 text-blue-500" />
+                  {/* Smart Search IA - Interfaz Compacta y Elegante */}
+                  <div className="relative">
+                    <Button 
+                      size="sm"
+                      variant="outline"
+                      disabled={!estimate.projectDetails.trim() || isAIProcessing}
+                      className="flex items-center gap-2 min-w-[140px]"
+                      onClick={() => setShowSmartSearchDialog(!showSmartSearchDialog)}
+                    >
+                      {isAIProcessing ? (
+                        <>
+                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
+                          {aiProgress}%
+                        </>
+                      ) : (
+                        <>
+                          <Brain className="h-4 w-4" />
                           Smart Search IA
-                        </DialogTitle>
-                        <DialogDescription>
-                          Elige qué tipo de análisis necesitas para tu proyecto
-                        </DialogDescription>
-                      </DialogHeader>
-
-                      <div className="grid grid-cols-3 gap-4 my-6">
-                        <Card 
-                          className={`cursor-pointer transition-all border-2 ${
-                            smartSearchMode === 'materials' 
-                              ? 'border-blue-500 bg-blue-50' 
-                              : 'border-gray-200 hover:border-gray-300'
-                          }`}
-                          onClick={() => setSmartSearchMode('materials')}
-                        >
-                          <CardContent className="p-4 text-center">
-                            <Package className="h-8 w-8 mx-auto mb-2 text-blue-500" />
-                            <h3 className="font-medium mb-1">Solo Materiales</h3>
-                            <p className="text-xs text-gray-500">Lista de materiales con precios</p>
-                          </CardContent>
-                        </Card>
-
-                        <Card 
-                          className={`cursor-pointer transition-all border-2 ${
-                            smartSearchMode === 'labor' 
-                              ? 'border-orange-500 bg-orange-50' 
-                              : 'border-gray-200 hover:border-gray-300'
-                          }`}
-                          onClick={() => setSmartSearchMode('labor')}
-                        >
-                          <CardContent className="p-4 text-center">
-                            <Wrench className="h-8 w-8 mx-auto mb-2 text-orange-500" />
-                            <h3 className="font-medium mb-1">Solo Labor</h3>
-                            <p className="text-xs text-gray-500">Servicios y mano de obra</p>
-                          </CardContent>
-                        </Card>
-
-                        <Card 
-                          className={`cursor-pointer transition-all border-2 ${
-                            smartSearchMode === 'both' 
-                              ? 'border-green-500 bg-green-50' 
-                              : 'border-gray-200 hover:border-gray-300'
-                          }`}
-                          onClick={() => setSmartSearchMode('both')}
-                        >
-                          <CardContent className="p-4 text-center">
-                            <Combine className="h-8 w-8 mx-auto mb-2 text-green-500" />
-                            <h3 className="font-medium mb-1">Ambos</h3>
-                            <p className="text-xs text-gray-500">Materiales + Labor</p>
-                            <Badge variant="secondary" className="mt-1 text-xs">Recomendado</Badge>
-                          </CardContent>
-                        </Card>
-                      </div>
-
-                      {isAIProcessing && (
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between text-sm">
-                            <span>Procesando con IA...</span>
-                            <span>{aiProgress}%</span>
-                          </div>
-                          <Progress value={aiProgress} className="w-full" />
-                        </div>
+                          <ChevronDown className={`h-3 w-3 transition-transform ${showSmartSearchDialog ? 'rotate-180' : ''}`} />
+                        </>
                       )}
+                    </Button>
 
-                      <div className="flex justify-between pt-4">
-                        <Button 
-                          variant="outline" 
-                          onClick={() => setShowSmartSearchDialog(false)}
-                          disabled={isAIProcessing}
-                        >
-                          Cancelar
-                        </Button>
-                        <Button 
-                          onClick={handleSmartSearch}
-                          disabled={isAIProcessing || !estimate.projectDetails.trim()}
-                          className="flex items-center gap-2"
-                        >
-                          {isAIProcessing ? (
-                            <>
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                              Generando...
-                            </>
-                          ) : (
-                            <>
-                              <Brain className="h-4 w-4" />
-                              Generar {smartSearchMode === 'materials' ? 'Materiales' : smartSearchMode === 'labor' ? 'Labor' : 'Ambos'}
-                            </>
-                          )}
-                        </Button>
+                    {/* Dropdown Compacto */}
+                    {showSmartSearchDialog && !isAIProcessing && (
+                      <div className="absolute top-full mt-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[280px]">
+                        <div className="p-3">
+                          <div className="text-xs text-gray-500 mb-2 font-medium">Selecciona el tipo de análisis:</div>
+                          
+                          <div className="space-y-1">
+                            {/* Solo Materiales */}
+                            <button
+                              onClick={() => {
+                                setSmartSearchMode('materials');
+                                handleSmartSearch();
+                              }}
+                              className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-blue-50 transition-colors text-left"
+                            >
+                              <Package className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                              <div>
+                                <div className="text-sm font-medium">Solo Materiales</div>
+                                <div className="text-xs text-gray-500">Lista de materiales con precios</div>
+                              </div>
+                            </button>
+
+                            {/* Solo Labor */}
+                            <button
+                              onClick={() => {
+                                setSmartSearchMode('labor');
+                                handleSmartSearch();
+                              }}
+                              className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-orange-50 transition-colors text-left"
+                            >
+                              <Wrench className="h-4 w-4 text-orange-500 flex-shrink-0" />
+                              <div>
+                                <div className="text-sm font-medium">Solo Labor</div>
+                                <div className="text-xs text-gray-500">Servicios y mano de obra</div>
+                              </div>
+                            </button>
+
+                            {/* Ambos - Recomendado */}
+                            <button
+                              onClick={() => {
+                                setSmartSearchMode('both');
+                                handleSmartSearch();
+                              }}
+                              className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-green-50 transition-colors text-left border border-green-200 bg-green-50"
+                            >
+                              <Combine className="h-4 w-4 text-green-500 flex-shrink-0" />
+                              <div className="flex-1">
+                                <div className="text-sm font-medium flex items-center gap-2">
+                                  Materiales + Labor
+                                  <Badge variant="secondary" className="text-xs">Recomendado</Badge>
+                                </div>
+                                <div className="text-xs text-gray-500">Análisis completo del proyecto</div>
+                              </div>
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                    </DialogContent>
-                  </Dialog>
+                    )}
+
+                    {/* Overlay para cerrar el dropdown */}
+                    {showSmartSearchDialog && !isAIProcessing && (
+                      <div 
+                        className="fixed inset-0 z-0" 
+                        onClick={() => setShowSmartSearchDialog(false)}
+                      />
+                    )}
+                  </div>
+
+                  {/* Barra de progreso compacta cuando está procesando */}
+                  {isAIProcessing && (
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Progress value={aiProgress} className="w-24 h-2" />
+                      <span className="text-xs">Generando...</span>
+                    </div>
+                  )}
                 </div>
                 <Dialog open={showMaterialDialog} onOpenChange={setShowMaterialDialog}>
                     <DialogTrigger asChild>
