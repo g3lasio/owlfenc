@@ -65,7 +65,7 @@ import {
 } from "lucide-react";
 import MapboxPlacesAutocomplete from "@/components/ui/mapbox-places-autocomplete";
 
-// Tipos básicos para el componente
+// Basic types for the component
 interface PermitData {
   name: string;
   issuingAuthority: string;
@@ -101,7 +101,7 @@ interface PermitResponse {
   [key: string]: any;
 }
 
-// Componente principal
+// Main component
 export default function PermitAdvisor() {
   const { toast } = useToast();
   const [address, setAddress] = useState("");
@@ -112,63 +112,72 @@ export default function PermitAdvisor() {
   const [showSearchForm, setShowSearchForm] = useState(true);
   const [projectDescription, setProjectDescription] = useState("");
 
-  // Mutación para buscar permisos
+  // Mutation to search permits
   const permitMutation = useMutation({
     mutationFn: async (data: {
       address: string;
       projectType: string;
       projectDescription?: string;
     }) => {
-      return apiRequest("/api/permit/search", {
+      const response = await fetch("/api/permit/search", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(data),
       });
+      
+      if (!response.ok) {
+        throw new Error("Failed to search permits");
+      }
+      
+      return response.json();
     },
     onSuccess: (data) => {
       setPermitData(data);
       setShowSearchForm(false);
       queryClient.invalidateQueries({ queryKey: ['/api/permit/history'] });
       toast({
-        title: "Consulta exitosa",
-        description: "Se encontró información de permisos para tu proyecto.",
+        title: "Search Successful",
+        description: "Found permit information for your project.",
       });
     },
     onError: (error: any) => {
-      console.error('Error en consulta de permisos:', error);
+      console.error('Error in permit search:', error);
       toast({
-        title: "Error en la consulta",
-        description: error.message || "No se pudo obtener información de permisos.",
+        title: "Search Error",
+        description: error.message || "Could not get permit information.",
         variant: "destructive",
       });
     },
   });
 
-  // Consulta para obtener el historial
+  // Query to get history
   const historyQuery = useQuery({
     queryKey: ['/api/permit/history'],
     queryFn: async () => {
       const response = await fetch('/api/permit/history');
       if (!response.ok) {
-        throw new Error('Error al obtener el historial de búsquedas');
+        throw new Error('Error getting search history');
       }
       return response.json() as Promise<SearchHistoryItem[]>;
     },
     enabled: true,
   });
 
-  // Handler para el autocompletado de Mapbox
+  // Handler for Mapbox autocomplete
   const handlePlaceSelect = (placeData: any) => {
     if (placeData?.place_name) {
       setAddress(placeData.place_name);
     }
   };
 
-  // Handler para la búsqueda
+  // Search handler
   const handleSearch = () => {
     if (!address.trim()) {
       toast({
-        title: "Dirección requerida",
-        description: "Por favor ingresa una dirección para continuar.",
+        title: "Address Required",
+        description: "Please enter an address to continue.",
         variant: "destructive",
       });
       return;
@@ -181,12 +190,12 @@ export default function PermitAdvisor() {
     });
   };
 
-  // Handler para volver al formulario
+  // Handler to return to form
   const handleBackToSearch = () => {
     setShowSearchForm(true);
   };
 
-  // Handler para cargar un elemento del historial
+  // Handler to load a history item
   const handleLoadHistoryItem = (item: SearchHistoryItem) => {
     setAddress(item.address);
     setProjectType(item.projectType);
@@ -195,308 +204,360 @@ export default function PermitAdvisor() {
     setShowHistory(false);
     setShowSearchForm(false);
     toast({
-      title: "Búsqueda cargada",
-      description: `Se cargó la búsqueda: ${item.title}`,
+      title: "Search Loaded",
+      description: `Loaded search: ${item.title}`,
     });
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-black p-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            🏗️ Asesor de Permisos de Construcción
+          <div className="relative inline-block">
+            {/* Futuristic icon frame */}
+            <div className="relative p-4 mb-4">
+              <div className="absolute inset-0 border-2 border-cyan-400 opacity-60">
+                {/* Corner brackets */}
+                <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-cyan-300"></div>
+                <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-cyan-300"></div>
+                <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-cyan-300"></div>
+                <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-cyan-300"></div>
+                {/* Scanning lines */}
+                <div className="absolute top-2 left-2 right-2 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-60 animate-pulse"></div>
+                <div className="absolute bottom-2 left-2 right-2 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-60 animate-pulse delay-1000"></div>
+              </div>
+              <div className="relative text-6xl">🛡️</div>
+            </div>
+          </div>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-blue-600 bg-clip-text text-transparent mb-2">
+            Construction Permit Advisor
           </h1>
-          <p className="text-lg text-gray-600">
-            Obtén información detallada sobre permisos y regulaciones para tu proyecto
+          <p className="text-lg text-gray-300">
+            Get detailed information about permits and regulations for your project
           </p>
         </div>
 
-        {/* Formulario de búsqueda */}
+        {/* Search Form */}
         {showSearchForm && (
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Search className="h-5 w-5 text-primary" />
-                Información del Proyecto
-              </CardTitle>
-              <CardDescription>
-                Ingresa los detalles de tu proyecto para obtener información específica sobre permisos
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Botón de historial */}
-              <div className="flex justify-end">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowHistory(true)}
-                  className="flex items-center gap-2"
-                >
-                  <History className="h-4 w-4" />
-                  Ver Historial
-                </Button>
-              </div>
-
-              {/* Dirección */}
-              <div className="space-y-2">
-                <Label htmlFor="address">Dirección del Proyecto</Label>
-                <MapboxPlacesAutocomplete
-                  value={address}
-                  onChange={setAddress}
-                  onPlaceSelect={handlePlaceSelect}
-                  placeholder="Ingresa la dirección del proyecto"
-                  countries={["mx", "us", "es"]}
-                  language="es"
-                />
-              </div>
-
-              {/* Tipo de proyecto */}
-              <div className="space-y-2">
-                <Label htmlFor="projectType">Tipo de Proyecto</Label>
-                <Select value={projectType} onValueChange={setProjectType}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona el tipo de proyecto" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="fence">Cerca/Valla</SelectItem>
-                    <SelectItem value="addition">Adición a la Casa</SelectItem>
-                    <SelectItem value="deck">Terraza/Deck</SelectItem>
-                    <SelectItem value="pool">Piscina</SelectItem>
-                    <SelectItem value="shed">Cobertizo</SelectItem>
-                    <SelectItem value="garage">Garaje</SelectItem>
-                    <SelectItem value="renovation">Renovación</SelectItem>
-                    <SelectItem value="driveway">Entrada de Autos</SelectItem>
-                    <SelectItem value="other">Otro</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Descripción del proyecto */}
-              <div className="space-y-2">
-                <Label htmlFor="description">Descripción del Proyecto (Opcional)</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Describe los detalles específicos de tu proyecto..."
-                  value={projectDescription}
-                  onChange={(e) => setProjectDescription(e.target.value)}
-                  rows={3}
-                />
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button
-                onClick={handleSearch}
-                disabled={permitMutation.isPending}
-                className="w-full"
-              >
-                {permitMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Consultando...
-                  </>
-                ) : (
-                  <>
-                    <Search className="mr-2 h-4 w-4" />
-                    Consultar Permisos
-                  </>
-                )}
-              </Button>
-            </CardFooter>
-          </Card>
-        )}
-
-        {/* Resultados */}
-        {permitData && !showSearchForm && (
-          <div className="space-y-6">
-            {/* Header de resultados */}
-            <div className="flex items-center justify-between">
-              <Button
-                variant="outline"
-                onClick={handleBackToSearch}
-                className="flex items-center gap-2"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Nueva Búsqueda
-              </Button>
-              <div className="text-right">
-                <h2 className="text-lg font-semibold">Resultados para:</h2>
-                <p className="text-sm text-muted-foreground">{permitData.meta?.location}</p>
-              </div>
+          <div className="relative mb-8">
+            {/* Cyberpunk outer frame */}
+            <div className="absolute inset-0 border border-cyan-400 opacity-30">
+              {/* Corner brackets */}
+              <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-cyan-300"></div>
+              <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-cyan-300"></div>
+              <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-cyan-300"></div>
+              <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-cyan-300"></div>
+              {/* Scanning lines */}
+              <div className="absolute top-3 left-3 right-3 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-40 animate-pulse"></div>
+              <div className="absolute bottom-3 left-3 right-3 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-40 animate-pulse delay-1000"></div>
             </div>
-
-            {/* Contenido de resultados */}
-            <Card>
+            <Card className="relative bg-gray-800/80 border-cyan-500/30 backdrop-blur-sm">
               <CardHeader>
-                <CardTitle>Información de Permisos</CardTitle>
-                <CardDescription>
-                  Proyecto: {permitData.meta?.projectType} en {permitData.meta?.location}
+                <CardTitle className="flex items-center gap-2 text-cyan-300">
+                  <Search className="h-5 w-5 text-cyan-400" />
+                  Project Information
+                </CardTitle>
+                <CardDescription className="text-gray-300">
+                  Enter your project details to get specific permit information
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="permits">Permisos</TabsTrigger>
-                    <TabsTrigger value="process">Proceso</TabsTrigger>
-                    <TabsTrigger value="considerations">Consideraciones</TabsTrigger>
-                  </TabsList>
+              <CardContent className="space-y-6">
+                {/* History button */}
+                <div className="flex justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowHistory(true)}
+                    className="flex items-center gap-2 bg-gray-700/50 border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20"
+                  >
+                    <History className="h-4 w-4" />
+                    View History
+                  </Button>
+                </div>
 
-                  <TabsContent value="permits" className="space-y-4">
-                    {permitData.requiredPermits && permitData.requiredPermits.length > 0 ? (
-                      <div className="space-y-4">
-                        {permitData.requiredPermits.map((permit: PermitData, idx: number) => (
-                          <Card key={idx}>
-                            <CardHeader>
-                              <CardTitle className="text-lg">{permit.name}</CardTitle>
-                              <CardDescription>{permit.issuingAuthority}</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                  <h4 className="font-medium mb-2">Tiempo Estimado</h4>
-                                  <p className="text-sm">{permit.estimatedTimeline}</p>
-                                </div>
-                                {permit.averageCost && (
-                                  <div>
-                                    <h4 className="font-medium mb-2">Costo Promedio</h4>
-                                    <p className="text-sm">{permit.averageCost}</p>
-                                  </div>
-                                )}
-                                {permit.description && (
-                                  <div className="col-span-1 md:col-span-2">
-                                    <h4 className="font-medium mb-2">Descripción</h4>
-                                    <p className="text-sm">{permit.description}</p>
-                                  </div>
-                                )}
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8">
-                        <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium">No se requieren permisos específicos</h3>
-                        <p className="text-muted-foreground">
-                          Según la información disponible, tu proyecto puede no requerir permisos especiales.
-                        </p>
-                      </div>
-                    )}
-                  </TabsContent>
+                {/* Address */}
+                <div className="space-y-2">
+                  <Label htmlFor="address" className="text-cyan-300">Project Address</Label>
+                  <MapboxPlacesAutocomplete
+                    value={address}
+                    onChange={setAddress}
+                    onPlaceSelect={handlePlaceSelect}
+                    placeholder="Enter the project address"
+                    countries={["mx", "us", "es"]}
+                    language="en"
+                  />
+                </div>
 
-                  <TabsContent value="process" className="space-y-4">
-                    {permitData.process && permitData.process.length > 0 ? (
-                      <div className="space-y-3">
-                        {permitData.process.map((step: string, idx: number) => (
-                          <div key={idx} className="flex items-start gap-3">
-                            <div className="flex-shrink-0 w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
-                              {idx + 1}
-                            </div>
-                            <p className="text-sm">{step}</p>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8">
-                        <Info className="h-12 w-12 text-blue-500 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium">Proceso no especificado</h3>
-                        <p className="text-muted-foreground">
-                          Consulta con las autoridades locales para obtener información específica del proceso.
-                        </p>
-                      </div>
-                    )}
-                  </TabsContent>
+                {/* Project type */}
+                <div className="space-y-2">
+                  <Label htmlFor="projectType" className="text-cyan-300">Project Type</Label>
+                  <Select value={projectType} onValueChange={setProjectType}>
+                    <SelectTrigger className="bg-gray-700/50 border-cyan-500/30 text-gray-200">
+                      <SelectValue placeholder="Select project type" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-800 border-cyan-500/30">
+                      <SelectItem value="fence">Fence</SelectItem>
+                      <SelectItem value="addition">House Addition</SelectItem>
+                      <SelectItem value="deck">Deck/Patio</SelectItem>
+                      <SelectItem value="pool">Pool</SelectItem>
+                      <SelectItem value="shed">Shed</SelectItem>
+                      <SelectItem value="garage">Garage</SelectItem>
+                      <SelectItem value="renovation">Renovation</SelectItem>
+                      <SelectItem value="driveway">Driveway</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                  <TabsContent value="considerations" className="space-y-4">
-                    {permitData.specialConsiderations && permitData.specialConsiderations.length > 0 ? (
-                      <div className="space-y-3">
-                        {permitData.specialConsiderations.map((consideration: string, idx: number) => (
-                          <Alert key={idx}>
-                            <AlertTriangle className="h-4 w-4" />
-                            <AlertDescription>{consideration}</AlertDescription>
-                          </Alert>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8">
-                        <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium">Sin consideraciones especiales</h3>
-                        <p className="text-muted-foreground">
-                          No se identificaron consideraciones especiales para tu proyecto.
-                        </p>
-                      </div>
-                    )}
-                  </TabsContent>
-                </Tabs>
+                {/* Project description */}
+                <div className="space-y-2">
+                  <Label htmlFor="description" className="text-cyan-300">Project Description (Optional)</Label>
+                  <Textarea
+                    id="description"
+                    placeholder="Describe the specific details of your project..."
+                    value={projectDescription}
+                    onChange={(e) => setProjectDescription(e.target.value)}
+                    rows={3}
+                    className="bg-gray-700/50 border-cyan-500/30 text-gray-200 placeholder:text-gray-400"
+                  />
+                </div>
               </CardContent>
+              <CardFooter>
+                <Button
+                  onClick={handleSearch}
+                  disabled={permitMutation.isPending}
+                  className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0"
+                >
+                  {permitMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Searching...
+                    </>
+                  ) : (
+                    <>
+                      <Search className="mr-2 h-4 w-4" />
+                      Search Permits
+                    </>
+                  )}
+                </Button>
+              </CardFooter>
             </Card>
           </div>
         )}
 
-        {/* Modal de historial */}
+        {/* Results */}
+        {permitData && !showSearchForm && (
+          <div className="space-y-6">
+            {/* Results header */}
+            <div className="flex items-center justify-between">
+              <Button
+                variant="outline"
+                onClick={handleBackToSearch}
+                className="flex items-center gap-2 bg-gray-700/50 border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                New Search
+              </Button>
+              <div className="text-right">
+                <h2 className="text-lg font-semibold text-cyan-300">Results for:</h2>
+                <p className="text-sm text-gray-400">{permitData.meta?.location}</p>
+              </div>
+            </div>
+
+            {/* Results content */}
+            <div className="relative">
+              {/* Cyberpunk outer frame */}
+              <div className="absolute inset-0 border border-cyan-400 opacity-30">
+                {/* Corner brackets */}
+                <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-cyan-300"></div>
+                <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-cyan-300"></div>
+                <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-cyan-300"></div>
+                <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-cyan-300"></div>
+                {/* Scanning lines */}
+                <div className="absolute top-3 left-3 right-3 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-40 animate-pulse"></div>
+                <div className="absolute bottom-3 left-3 right-3 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-40 animate-pulse delay-1000"></div>
+              </div>
+              <Card className="relative bg-gray-800/80 border-cyan-500/30 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="text-cyan-300">Permit Information</CardTitle>
+                  <CardDescription className="text-gray-300">
+                    Project: {permitData.meta?.projectType} at {permitData.meta?.location}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Tabs value={activeTab} onValueChange={setActiveTab}>
+                    <TabsList className="grid w-full grid-cols-3 bg-gray-700/50">
+                      <TabsTrigger value="permits" className="text-cyan-300 data-[state=active]:bg-cyan-500/20">Permits</TabsTrigger>
+                      <TabsTrigger value="process" className="text-cyan-300 data-[state=active]:bg-cyan-500/20">Process</TabsTrigger>
+                      <TabsTrigger value="considerations" className="text-cyan-300 data-[state=active]:bg-cyan-500/20">Considerations</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="permits" className="space-y-4">
+                      {permitData.requiredPermits && permitData.requiredPermits.length > 0 ? (
+                        <div className="space-y-4">
+                          {permitData.requiredPermits.map((permit: PermitData, idx: number) => (
+                            <div key={idx} className="relative">
+                              {/* Mini cyberpunk frame for each permit */}
+                              <div className="absolute inset-0 border border-cyan-400/20">
+                                <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-cyan-300/50"></div>
+                                <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-cyan-300/50"></div>
+                                <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-cyan-300/50"></div>
+                                <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-cyan-300/50"></div>
+                              </div>
+                              <Card className="relative bg-gray-700/50 border-cyan-500/20">
+                                <CardHeader>
+                                  <CardTitle className="text-lg text-cyan-200">{permit.name}</CardTitle>
+                                  <CardDescription className="text-gray-400">{permit.issuingAuthority}</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                      <h4 className="font-medium mb-2 text-cyan-300">Estimated Time</h4>
+                                      <p className="text-sm text-gray-300">{permit.estimatedTimeline}</p>
+                                    </div>
+                                    {permit.averageCost && (
+                                      <div>
+                                        <h4 className="font-medium mb-2 text-cyan-300">Average Cost</h4>
+                                        <p className="text-sm text-gray-300">{permit.averageCost}</p>
+                                      </div>
+                                    )}
+                                    {permit.description && (
+                                      <div className="col-span-1 md:col-span-2">
+                                        <h4 className="font-medium mb-2 text-cyan-300">Description</h4>
+                                        <p className="text-sm text-gray-300">{permit.description}</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <CheckCircle2 className="h-12 w-12 text-green-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-cyan-300">No specific permits required</h3>
+                          <p className="text-gray-400">
+                            According to available information, your project may not require special permits.
+                          </p>
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    <TabsContent value="process" className="space-y-4">
+                      {permitData.process && permitData.process.length > 0 ? (
+                        <div className="space-y-3">
+                          {permitData.process.map((step: string, idx: number) => (
+                            <div key={idx} className="flex items-start gap-3">
+                              <div className="flex-shrink-0 w-6 h-6 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                                {idx + 1}
+                              </div>
+                              <p className="text-sm text-gray-300">{step}</p>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <Info className="h-12 w-12 text-blue-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-cyan-300">Process not specified</h3>
+                          <p className="text-gray-400">
+                            Check with local authorities for specific process information.
+                          </p>
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    <TabsContent value="considerations" className="space-y-4">
+                      {permitData.specialConsiderations && permitData.specialConsiderations.length > 0 ? (
+                        <div className="space-y-3">
+                          {permitData.specialConsiderations.map((consideration: string, idx: number) => (
+                            <Alert key={idx} className="bg-yellow-500/10 border-yellow-500/30">
+                              <AlertTriangle className="h-4 w-4 text-yellow-400" />
+                              <AlertDescription className="text-gray-300">{consideration}</AlertDescription>
+                            </Alert>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <CheckCircle2 className="h-12 w-12 text-green-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-cyan-300">No special considerations</h3>
+                          <p className="text-gray-400">
+                            No special considerations identified for your project.
+                          </p>
+                        </div>
+                      )}
+                    </TabsContent>
+                  </Tabs>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+
+        {/* History modal */}
         <Dialog open={showHistory} onOpenChange={setShowHistory}>
-          <DialogContent className="sm:max-w-[625px]">
+          <DialogContent className="sm:max-w-[625px] bg-gray-800 border-cyan-500/30">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <History className="h-5 w-5 text-primary" />
-                Historial de Búsquedas
+              <DialogTitle className="flex items-center gap-2 text-cyan-300">
+                <History className="h-5 w-5 text-cyan-400" />
+                Search History
               </DialogTitle>
-              <DialogDescription>
-                Consulta y carga búsquedas anteriores para evitar realizar la misma búsqueda nuevamente.
+              <DialogDescription className="text-gray-300">
+                View and load previous searches to avoid repeating the same search.
               </DialogDescription>
             </DialogHeader>
 
             <div className="py-4">
               {historyQuery.isLoading ? (
                 <div className="flex flex-col items-center justify-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-                  <p className="text-sm text-muted-foreground">Cargando historial...</p>
+                  <Loader2 className="h-8 w-8 animate-spin text-cyan-400 mb-4" />
+                  <p className="text-sm text-gray-400">Loading history...</p>
                 </div>
               ) : historyQuery.isError ? (
-                <div className="text-center p-4 border rounded-md bg-red-50">
-                  <AlertTriangle className="h-8 w-8 text-red-500 mx-auto mb-2" />
-                  <h3 className="font-medium">Error al cargar el historial</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {historyQuery.error instanceof Error ? historyQuery.error.message : 'Error desconocido'}
+                <div className="text-center p-4 border rounded-md bg-red-500/10 border-red-500/30">
+                  <AlertTriangle className="h-8 w-8 text-red-400 mx-auto mb-2" />
+                  <h3 className="font-medium text-red-300">Error loading history</h3>
+                  <p className="text-sm text-gray-400">
+                    {historyQuery.error instanceof Error ? historyQuery.error.message : 'Unknown error'}
                   </p>
                 </div>
               ) : !historyQuery.data || historyQuery.data.length === 0 ? (
-                <div className="text-center p-8 border rounded-md bg-gray-50">
-                  <Info className="h-10 w-10 text-primary/50 mx-auto mb-2" />
-                  <h3 className="font-medium text-lg">No hay búsquedas previas</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Cuando realices consultas de permisos, se guardarán aquí para facilitar su acceso posterior.
+                <div className="text-center p-8 border rounded-md bg-gray-700/50 border-cyan-500/30">
+                  <Info className="h-10 w-10 text-cyan-400 mx-auto mb-2" />
+                  <h3 className="font-medium text-lg text-cyan-300">No previous searches</h3>
+                  <p className="text-sm text-gray-400 mt-1">
+                    When you perform permit searches, they will be saved here for easy access later.
                   </p>
                 </div>
               ) : (
                 <ScrollArea className="h-[min(65vh,400px)] pr-4">
                   <div className="space-y-3">
                     {historyQuery.data.map((item) => (
-                      <Card key={item.id} className="hover:bg-primary/5 transition-colors">
+                      <Card key={item.id} className="hover:bg-cyan-500/10 transition-colors bg-gray-700/50 border-cyan-500/30">
                         <CardHeader className="p-4 pb-2">
-                          <CardTitle className="text-base">{item.title}</CardTitle>
-                          <CardDescription className="text-xs">
+                          <CardTitle className="text-base text-cyan-300">{item.title}</CardTitle>
+                          <CardDescription className="text-xs text-gray-400">
                             {new Date(item.createdAt).toLocaleDateString()} {new Date(item.createdAt).toLocaleTimeString()}
                           </CardDescription>
                         </CardHeader>
                         <CardContent className="p-4 pt-0">
                           <div className="grid grid-cols-2 gap-2 text-sm">
                             <div>
-                              <span className="font-medium block text-xs">Dirección:</span>
-                              <span className="text-muted-foreground text-xs">{item.address}</span>
+                              <span className="font-medium block text-xs text-cyan-300">Address:</span>
+                              <span className="text-gray-300 text-xs">{item.address}</span>
                             </div>
                             <div>
-                              <span className="font-medium block text-xs">Tipo:</span>
-                              <span className="text-muted-foreground text-xs">{item.projectType}</span>
+                              <span className="font-medium block text-xs text-cyan-300">Type:</span>
+                              <span className="text-gray-300 text-xs">{item.projectType}</span>
                             </div>
                           </div>
                           <Button
                             size="sm"
-                            className="mt-3 w-full"
+                            className="mt-3 w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700"
                             onClick={() => handleLoadHistoryItem(item)}
                           >
-                            Cargar Búsqueda
+                            Load Search
                           </Button>
                         </CardContent>
                       </Card>
