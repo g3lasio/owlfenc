@@ -30,13 +30,14 @@ interface LaborItem {
   name: string;
   description: string;
   category: string; // 'preparation', 'installation', 'cleanup', 'demolition', 'hauling', 'specialty'
-  hours: number;
-  hourlyRate: number;
+  quantity: number;
+  unit: string; // 'linear_ft', 'square_ft', 'cubic_yard', 'square', 'project', 'per_unit'
+  unitPrice: number;
   totalCost: number;
   skillLevel: string; // 'helper', 'skilled', 'specialist', 'foreman'
-  crew: number; // número de personas necesarias
-  dependencies?: string[]; // tareas que deben completarse antes
-  equipment?: string[]; // equipo necesario para la tarea
+  complexity: string; // 'low', 'medium', 'high'
+  estimatedTime: string; // duración estimada
+  includes?: string[]; // qué incluye este servicio
 }
 
 interface LaborAnalysisResult {
@@ -101,7 +102,7 @@ export class LaborDeepSearchService {
    */
   private buildLaborAnalysisPrompt(projectDescription: string, location?: string, projectType?: string): string {
     return `
-Eres un experto en construcción y estimación de costos de mano de obra. Analiza la siguiente descripción de proyecto y genera una lista detallada de todas las tareas de labor/servicios necesarios.
+Eres un experto contratista con 20+ años de experiencia en estimación de costos laborales reales. Analiza la descripción del proyecto y genera costos de labor usando MÉTODOS REALES DE LA INDUSTRIA.
 
 DESCRIPCIÓN DEL PROYECTO:
 ${projectDescription}
@@ -109,44 +110,49 @@ ${projectDescription}
 TIPO DE PROYECTO: ${projectType || 'General'}
 UBICACIÓN: ${location || 'Estados Unidos'}
 
-INSTRUCCIONES:
-1. Identifica SOLO las tareas de LABOR/SERVICIOS (NO incluyas materiales)
-2. Considera que el cliente puede estar proporcionando los materiales
-3. Enfócate en servicios como: instalación, preparación, demolición, limpieza, hauling, etc.
-4. Estima horas realistas y costos de mano de obra por región
-5. Incluye diferentes niveles de habilidad necesarios
-6. Considera equipos y herramientas necesarios
+MÉTODOS DE CÁLCULO REALES (NUNCA uses solo horas):
+• PIE LINEAL: Para cercas, instalación de vigas, molduras, canaletas
+• PIE CUADRADO: Para pisos, techos, paredes, pintura, drywall
+• YARDA CÚBICA: Para concreto, excavación, relleno, demolición
+• ESCUADRA (100 sqft): Para techos y siding
+• POR PROYECTO: Para trabajos especializados o pequeños
+• POR UNIDAD: Para puertas, ventanas, postes
 
-CATEGORÍAS DE LABOR A CONSIDERAR:
+INSTRUCCIONES CRÍTICAS:
+1. SOLO incluye LABOR/SERVICIOS (NO materiales)
+2. Usa las unidades de medida REALES que usan los contratistas
+3. Calcula precios competitivos pero realistas para la región
+4. Considera complejidad, acceso al sitio, y condiciones especiales
+5. Incluye preparación, instalación, limpieza según corresponda
+
+CATEGORÍAS DE LABOR:
 - Preparación del sitio (excavación, nivelación, marcado)
 - Demolición y remoción
-- Instalación y construcción
+- Instalación y construcción principal
 - Acabados y detalles
-- Limpieza y cleanup
+- Limpieza y cleanup final
 - Hauling y disposal
-- Servicios especializados
 
 RESPONDE EN FORMATO JSON EXACTO:
 {
   "laborItems": [
     {
       "id": "labor_001",
-      "name": "Nombre de la tarea",
-      "description": "Descripción detallada del trabajo",
+      "name": "Nombre descriptivo del servicio",
+      "description": "Descripción detallada incluyendo lo que está incluido",
       "category": "preparation|installation|cleanup|demolition|hauling|specialty",
-      "hours": 8.0,
-      "hourlyRate": 45.00,
-      "totalCost": 360.00,
+      "quantity": 100,
+      "unit": "linear_ft|square_ft|cubic_yard|square|project|per_unit",
+      "unitPrice": 12.50,
+      "totalCost": 1250.00,
       "skillLevel": "helper|skilled|specialist|foreman",
-      "crew": 2,
-      "dependencies": ["tarea_previa"],
-      "equipment": ["herramientas necesarias"]
+      "complexity": "low|medium|high",
+      "estimatedTime": "2-3 días",
+      "includes": ["Lo que incluye este servicio"]
     }
   ],
-  "totalHours": 40.0,
-  "totalLaborCost": 2400.00,
-  "estimatedDuration": "3-5 días",
-  "crewSize": 3,
+  "totalLaborCost": 5500.00,
+  "estimatedDuration": "1-2 semanas",
   "projectComplexity": "medium",
   "specialRequirements": ["permisos especiales", "certificaciones"],
   "safetyConsiderations": ["consideraciones de seguridad"]
@@ -216,16 +222,16 @@ Ajusta las tarifas según la ubicación y complejidad del proyecto.
     return laborResult.laborItems.map(labor => ({
       id: labor.id,
       name: labor.name,
-      description: `${labor.description} (${labor.hours} horas, ${labor.crew} personas)`,
+      description: `${labor.description} (${labor.complexity} complejidad, ${labor.estimatedTime})`,
       category: 'labor',
-      quantity: labor.hours,
-      unit: 'horas',
-      unitPrice: labor.hourlyRate,
+      quantity: labor.quantity,
+      unit: labor.unit,
+      unitPrice: labor.unitPrice,
       totalPrice: labor.totalCost,
       skillLevel: labor.skillLevel,
-      crew: labor.crew,
-      equipment: labor.equipment || [],
-      dependencies: labor.dependencies || []
+      complexity: labor.complexity,
+      estimatedTime: labor.estimatedTime,
+      includes: labor.includes || []
     }));
   }
 

@@ -201,7 +201,7 @@ export default function EstimatesWizardFixed() {
           successMessage = 'servicios de labor';
           break;
         case 'both':
-          endpoint = '/api/deepsearch/combined';
+          endpoint = '/api/labor-deepsearch/combined';
           successMessage = 'materiales y labor';
           break;
       }
@@ -248,15 +248,25 @@ export default function EstimatesWizardFixed() {
         // Agregar servicios de labor si existen (usando 'items' para labor endpoint)
         if (result.items) {
           result.items.forEach((service: any) => {
+            // Mapear unidades de construcción reales
+            const unitMapping: Record<string, string> = {
+              'linear_ft': 'ft lineal',
+              'square_ft': 'ft²',
+              'cubic_yard': 'yd³',
+              'square': 'escuadra',
+              'project': 'proyecto',
+              'per_unit': 'unidad'
+            };
+
             newItems.push({
               id: `ai_lab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
               materialId: service.id || '',
               name: service.name,
               description: service.description || '',
-              quantity: service.quantity || service.hours || 1,
-              price: service.price || service.totalCost || 0,
-              unit: service.unit || 'servicio',
-              total: service.total || service.totalCost || (service.price * (service.quantity || 1))
+              quantity: service.quantity || 1,
+              price: service.unitPrice || service.totalCost || 0,
+              unit: unitMapping[service.unit] || service.unit || 'servicio',
+              total: service.totalCost || (service.unitPrice * service.quantity) || 0
             });
           });
         }
