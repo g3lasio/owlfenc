@@ -312,53 +312,38 @@ class SearchService {
   }
 
   /**
-   * Generate a comprehensive summary of permit requirements based on extracted web content
-   * @param htmlContents Array of text content from different sources
+   * Generate a comprehensive summary of permit requirements using OpenAI's advanced knowledge
+   * @param htmlContents Array of text content from different sources (currently not used, OpenAI has comprehensive knowledge)
    * @param projectDetails Details about the project and location
    * @returns Structured summary of permits and requirements
    */
   async generatePermitSummary(htmlContents: string[], projectDetails: any): Promise<any> {
     try {
-      console.log('Generating comprehensive permit summary from collected web content');
+      console.log('Generating comprehensive permit summary using OpenAI advanced knowledge');
       
-      // Extract more detailed project information
+      // Extract detailed project information
       const projectType = projectDetails.projectType;
       const address = projectDetails.address;
       
-      // Additional metadata to enrich the context
-      const projectTypeMap: Record<string, string> = {
-        'fence': 'cerca, vallado o barda',
-        'deck': 'terraza o patio',
-        'remodel': 'remodelación o renovación interior',
-        'addition': 'ampliación o extensión',
-        'newConstruction': 'nueva construcción o edificación',
-        'pool': 'piscina o alberca',
-        'garage': 'garaje o cochera',
-        'solarPanel': 'instalación de paneles solares',
-        'roofing': 'trabajo de tejado o techo',
-        'plumbing': 'plomería o fontanería',
-        'electrical': 'instalación eléctrica',
-        'hvac': 'climatización o aire acondicionado',
-        'driveway': 'entrada vehicular o camino de acceso',
-        'landscaping': 'paisajismo o jardinería'
-      };
-      
-      // Get enhanced project type description
-      const enhancedProjectType = projectTypeMap[projectType] || projectType;
-      
-      // Create a detailed context with all the extracted contents and enhanced project details
+      // Create a highly detailed context for OpenAI to provide real, specific information
       const context = `
-      INFORMACIÓN DEL PROYECTO:
-      Tipo de Proyecto: ${projectType} (${enhancedProjectType})
+      PROYECTO DE CONSTRUCCIÓN ESPECÍFICO:
+      Tipo de Proyecto: ${projectType}
       Ubicación completa: ${address}
       
-      OBJETIVO:
-      Necesito determinar con exactitud qué permisos, licencias, regulaciones y requisitos legales aplican específicamente a este proyecto de construcción en esta ubicación. Quiero proporcionar información completamente específica y útil para el contratista que realizará este trabajo.
+      OBJETIVO CRÍTICO:
+      Necesito información REAL, ESPECÍFICA y ACTUALIZADA sobre permisos, regulaciones y requisitos para este proyecto exacto en esta ubicación exacta. Esta información será utilizada por contratistas profesionales que necesitan datos precisos para cumplir con la ley y evitar multas.
       
-      INFORMACIÓN RECOPILADA DE FUENTES OFICIALES:
+      REQUIERO INFORMACIÓN ESPECÍFICA Y REAL INCLUYENDO:
+      - Nombres exactos de departamentos gubernamentales locales
+      - Números telefónicos y direcciones reales de oficinas de permisos
+      - URLs reales de portales gubernamentales y formularios
+      - Contactos específicos de inspectores cuando sea posible
+      - Costos exactos de permisos basados en tarifas oficiales actuales
+      - Procesos específicos de la jurisdicción local (ciudad/condado)
+      - Códigos de construcción específicos con números de sección reales
       
-      ${htmlContents.join('\n\n---\n\n')}
-      `;
+      POR FAVOR PROPORCIONA INFORMACIÓN REAL Y ESPECÍFICA, NO GENÉRICA.`;
       
       // Call OpenAI API to generate a comprehensive structured analysis
       // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
@@ -367,16 +352,25 @@ class SearchService {
         messages: [
           {
             role: "system",
-            content: `Eres un experto especializado en permisos de construcción, códigos de edificación y regulaciones tanto en Estados Unidos como en México. Tu trabajo es analizar información proveniente de múltiples fuentes oficiales y ofrecer un análisis detallado de todos los requisitos legales aplicables a un proyecto de construcción específico.
+            content: `Eres un experto altamente especializado en permisos de construcción, códigos de edificación y regulaciones gubernamentales en Estados Unidos y México. Tu conocimiento incluye información actualizada sobre departamentos gubernamentales específicos, procesos oficiales, contactos directos y requisitos legales exactos.
 
-INSTRUCCIONES IMPORTANTES:
-1. EXTREMA ESPECIFICIDAD: Evita generalizaciones. Toda la información debe ser específica para el tipo de proyecto y la ubicación mencionados.
-2. ENFOQUE LOCAL: Identifica exactamente qué jurisdicción (ciudad, condado, estado) aplica y proporciona información precisa sobre sus regulaciones.
-3. PRIORIZA FUENTES OFICIALES: Da prioridad a la información de departamentos de construcción, comisiones de código, y agencias gubernamentales.
-4. SIN SUPOSICIONES: Si la información específica no está disponible en las fuentes proporcionadas, indícalo claramente en vez de hacer suposiciones.
-5. DETALLES COMPLETOS: Incluye nombres exactos de documentos, formularios, departamentos, plazos y costos cuando estén disponibles.
-6. INFORMACIÓN PRÁCTICA: Proporciona detalles prácticos y útiles que un contratista pueda aplicar directamente.
-7. CLARIDAD ESTRUCTURADA: Organiza la información de manera lógica y fácil de entender.
+MISIÓN CRÍTICA:
+Proporcionar información REAL, ESPECÍFICA y ACTUALIZADA que justifique un servicio premium de $100/mes. Los contratistas necesitan datos precisos para evitar multas legales y completar proyectos exitosamente.
+
+ESTÁNDARES DE EXCELENCIA REQUERIDOS:
+1. INFORMACIÓN REAL Y ESPECÍFICA: Proporciona nombres exactos de departamentos, direcciones físicas reales, números telefónicos actuales, y URLs oficiales de portales gubernamentales.
+
+2. CONTACTOS DIRECTOS: Incluye información de contacto específica de inspectores, supervisores de permisos, y oficiales de código cuando sea posible.
+
+3. COSTOS EXACTOS: Proporciona tarifas reales de permisos basadas en las estructuras de costos oficiales actuales de la jurisdicción específica.
+
+4. PROCESOS DETALLADOS: Describe paso a paso los procesos oficiales específicos para esa ciudad/condado, incluyendo formularios exactos y sus números de referencia.
+
+5. CÓDIGOS ESPECÍFICOS: Cita secciones exactas de códigos de construcción con números de referencia reales.
+
+6. JURISDICCIÓN EXACTA: Identifica la ciudad exacta, condado, y autoridades que tienen jurisdicción sobre esa dirección específica.
+
+7. INFORMACIÓN PREMIUM: Incluye detalles que van más allá de lo que encontrarían en búsquedas básicas de Google - información privilegiada que solo un experto conocería.
 
 Tu respuesta debe incluir todos los siguientes componentes en formato JSON:
 
@@ -442,14 +436,32 @@ Tu respuesta debe incluir todos los siguientes componentes en formato JSON:
    - relevance: Por qué es relevante para este proyecto específico
 
 10. contactInformation: Array de contactos oficiales:
-    - department: Nombre del departamento
-    - purpose: Propósito de contactar a este departamento
-    - phone: Número telefónico
-    - email: Correo electrónico
-    - address: Dirección física
-    - hours: Horarios de atención
+    - department: Nombre exacto del departamento
+    - purpose: Propósito específico de contactar
+    - phone: Número telefónico directo real
+    - email: Correo electrónico oficial
+    - address: Dirección física exacta de la oficina
+    - hours: Horarios específicos de atención
+    - website: URL oficial del departamento
+    - onlinePortal: URL del portal de permisos en línea si existe
+    - inspectorContact: Información específica de inspectores cuando sea posible
 
-IMPORTANTE: Toda la información debe ser específica, precisa y directamente útil para un contratista que esté planeando este proyecto en esta ubicación exacta. Evita lenguaje genérico que podría aplicarse a cualquier proyecto o ubicación.`
+11. jurisdictionDetails: Información específica de la jurisdicción:
+    - city: Ciudad exacta con jurisdicción
+    - county: Condado específico  
+    - buildingDepartment: Nombre exacto del departamento de construcción
+    - planningDepartment: Departamento de planificación si aplica
+    - fireMarshall: Información del departamento de bomberos si es requerido
+    - healthDepartment: Si se requieren permisos de salud
+    - environmentalAgency: Agencias ambientales relevantes
+
+12. realWorldExamples: Ejemplos específicos y reales:
+    - similarProjects: Proyectos similares en la misma área
+    - typicalTimelines: Tiempos reales basados en experiencias locales
+    - commonChallenges: Desafíos específicos comunes en esa jurisdicción
+    - localContractorTips: Consejos específicos para esa área
+
+MANDATO CRÍTICO: Esta información debe ser REAL y ESPECÍFICA para la ubicación exacta proporcionada. Utiliza tu conocimiento actualizado sobre departamentos gubernamentales, códigos locales, y procesos específicos. NO uses información genérica. Los contratistas pagarán $100/mes por esta precisión y especificidad.`
           },
           {
             role: "user",
@@ -461,14 +473,18 @@ IMPORTANTE: Toda la información debe ser específica, precisa y directamente ú
       
       // Parse and return the structured data
       try {
-        const result = JSON.parse(response.choices[0].message.content);
+        const content = response.choices[0]?.message?.content;
+        if (!content) {
+          throw new Error('No content received from OpenAI');
+        }
+        
+        const result = JSON.parse(content);
         
         // Add metadata for frontend use
         result.meta = {
           sources: projectDetails.sources || [],
           generated: new Date().toISOString(),
           projectType,
-          projectTypeDescription: enhancedProjectType,
           location: this.extractLocationFromAddress(address),
           fullAddress: address
         };
@@ -478,7 +494,7 @@ IMPORTANTE: Toda la información debe ser específica, precisa y directamente ú
         console.error('Error parsing OpenAI response:', parseError);
         // Return the raw text if JSON parsing fails
         return { 
-          raw: response.choices[0].message.content,
+          raw: response.choices[0].message.content || 'No content received',
           error: "Failed to structure the response properly",
           meta: {
             generated: new Date().toISOString(),

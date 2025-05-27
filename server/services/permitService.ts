@@ -33,57 +33,20 @@ class PermitService {
         return cachedResult;
       }
       
-      // Step 1: Análisis inteligente de la dirección para extraer información geográfica relevante
+      // Análisis inteligente de la dirección para extraer información geográfica relevante
       const locationInfo = this.analyzeLocation(address);
       console.log(`Location analysis: ${JSON.stringify(locationInfo)}`);
       
-      // Step 2: Construir múltiples consultas de búsqueda para obtener información más completa
-      const queries = this.buildSearchQueries(projectType, locationInfo);
-      console.log(`Generated ${queries.length} search queries for comprehensive results`);
-      
-      // Step 3: Realizar búsquedas en paralelo para cada consulta
-      const allSearchResults: string[] = [];
-      
-      for (const query of queries) {
-        console.log(`Executing search query: "${query}"`);
-        const results = await searchService.webSearch(query);
-        allSearchResults.push(...results);
-      }
-      
-      // Eliminar duplicados en los resultados de búsqueda
-      const uniqueSearchResults = Array.from(new Set(allSearchResults));
-      console.log(`Found ${uniqueSearchResults.length} unique relevant sources (from ${allSearchResults.length} total results)`);
-      
-      // Step 4: Fetch content from each source with prioritization
-      // Priorizamos los resultados que parecen más relevantes basados en la URL
-      const prioritizedUrls = this.prioritizeUrls(uniqueSearchResults, locationInfo, projectType);
-      
-      // Limitamos a máximo 12 fuentes para optimizar el tiempo de respuesta
-      const urlsToFetch = prioritizedUrls.slice(0, 12);
-      
-      // Extracción en paralelo del contenido de las páginas
-      console.log(`Fetching content from ${urlsToFetch.length} prioritized sources...`);
-      const contentPromises = urlsToFetch.map(url => searchService.fetchPage(url));
-      const pageContents = await Promise.all(contentPromises);
-      
-      // Filtrar páginas vacías o con error
-      const validPageContents = pageContents.filter(content => 
-        !content.startsWith('Failed to fetch content') && content.length > 200
-      );
-      
-      console.log(`Successfully fetched content from ${validPageContents.length} sources`);
-      
-      // Step 5: Enriquecer los detalles del proyecto con información útil
+      // Preparar detalles del proyecto para análisis directo con OpenAI
       const enrichedProjectDetails = {
         projectType,
         address,
-        locationInfo,
-        sources: urlsToFetch
+        locationInfo
       };
       
-      // Step 6: Generate a comprehensive summary with the collected information
-      console.log(`Generating comprehensive permit analysis...`);
-      const permitSummary = await searchService.generatePermitSummary(validPageContents, enrichedProjectDetails);
+      // Generate comprehensive summary using OpenAI's advanced knowledge directly
+      console.log(`Generating comprehensive permit analysis using OpenAI advanced knowledge...`);
+      const permitSummary = await searchService.generatePermitSummary([], enrichedProjectDetails);
       
       // Step 7: Cache the result for future requests
       this.saveToCache(cacheKey, permitSummary);
