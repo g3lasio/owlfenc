@@ -15,6 +15,7 @@ const mervinLogoUrl = "https://ik.imagekit.io/lp5czyx2a/ChatGPT%20Image%20May%20
 import { getClients as getFirebaseClients, saveClient } from '@/lib/clientFirebase';
 import { collection, query, where, getDocs, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { MaterialInventoryService } from '../services/materialInventoryService';
 import { 
   Search, 
   Plus, 
@@ -229,8 +230,8 @@ export default function EstimatesWizardFixed() {
       if (result.success) {
         const newItems: EstimateItem[] = [];
         
-        // Agregar materiales si existen
-        if (result.materials) {
+        // Agregar materiales si existen Y guardarlos automáticamente al inventario
+        if (result.materials && result.materials.length > 0) {
           result.materials.forEach((material: any) => {
             newItems.push({
               id: `ai_mat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -243,6 +244,19 @@ export default function EstimatesWizardFixed() {
               total: material.total
             });
           });
+
+          // Auto-guardar materiales al inventario de Firebase
+          if (currentUser?.uid) {
+            MaterialInventoryService.addMaterialsFromDeepSearch(
+              result.materials,
+              currentUser.uid,
+              estimate.projectDetails
+            ).then((saveResults) => {
+              console.log('📦 Auto-save to inventory completed:', saveResults);
+            }).catch((error) => {
+              console.error('❌ Error auto-saving materials to inventory:', error);
+            });
+          }
         }
 
         // Agregar servicios de labor si existen (usando 'items' para labor endpoint)
@@ -269,6 +283,30 @@ export default function EstimatesWizardFixed() {
               total: service.totalCost || (service.unitPrice * service.quantity) || 0
             });
           });
+
+          // Auto-guardar servicios de labor como "materiales" en el inventario para reutilización futura
+          if (currentUser?.uid) {
+            // Convertir servicios de labor a formato de material para el inventario
+            const laborMaterials = result.items.map((service: any) => ({
+              name: service.name,
+              category: 'Labor Services',
+              description: service.description || `Labor service: ${service.name}`,
+              unit: service.unit || 'servicio',
+              price: service.unitPrice || service.totalCost || 0,
+              source: 'deepsearch-labor',
+              tags: ['labor', 'service', 'ai-generated']
+            }));
+
+            MaterialInventoryService.addMaterialsFromDeepSearch(
+              laborMaterials,
+              currentUser.uid,
+              estimate.projectDetails
+            ).then((saveResults) => {
+              console.log('🔧 Auto-save labor services to inventory completed:', saveResults);
+            }).catch((error) => {
+              console.error('❌ Error auto-saving labor services to inventory:', error);
+            });
+          }
         }
 
         // También manejar labor si viene del endpoint combinado
@@ -295,6 +333,30 @@ export default function EstimatesWizardFixed() {
               total: service.totalCost || service.totalPrice || (service.unitPrice * service.quantity) || 0
             });
           });
+
+          // Auto-guardar servicios de labor del endpoint combinado al inventario
+          if (currentUser?.uid) {
+            // Convertir servicios de labor a formato de material para el inventario
+            const combinedLaborMaterials = result.labor.map((service: any) => ({
+              name: service.name,
+              category: 'Labor Services',
+              description: service.description || `Labor service: ${service.name}`,
+              unit: service.unit || 'servicio',
+              price: service.unitPrice || service.totalCost || 0,
+              source: 'deepsearch-combined',
+              tags: ['labor', 'service', 'ai-generated', 'combined-analysis']
+            }));
+
+            MaterialInventoryService.addMaterialsFromDeepSearch(
+              combinedLaborMaterials,
+              currentUser.uid,
+              estimate.projectDetails
+            ).then((saveResults) => {
+              console.log('🔧 Auto-save combined labor services to inventory completed:', saveResults);
+            }).catch((error) => {
+              console.error('❌ Error auto-saving combined labor services to inventory:', error);
+            });
+          }
         }
 
         setEstimate(prev => ({
