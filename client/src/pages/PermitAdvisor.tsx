@@ -94,30 +94,75 @@ export default function PermitAdvisor() {
       if (!currentUser?.uid) return [];
       
       try {
-        // Crear la colección si no existe
-        const q = query(
-          collection(db, 'permit_search_history'),
-          where('userId', '==', currentUser.uid),
-          orderBy('createdAt', 'desc'),
-          limit(50) // Obtener hasta 50 búsquedas recientes
-        );
+        // Intentar diferentes estrategias para cargar el historial
+        let q;
+        try {
+          // Primero intentar con orderBy
+          q = query(
+            collection(db, 'permit_search_history'),
+            where('userId', '==', currentUser.uid),
+            orderBy('createdAt', 'desc'),
+            limit(50)
+          );
+        } catch (error) {
+          // Si falla orderBy, intentar sin él
+          console.log('⚠️ OrderBy failed, trying without...');
+          q = query(
+            collection(db, 'permit_search_history'),
+            where('userId', '==', currentUser.uid),
+            limit(50)
+          );
+        }
         
         const querySnapshot = await getDocs(q);
         const history: any[] = [];
         
         querySnapshot.forEach((doc) => {
+          const data = doc.data();
           history.push({
             id: doc.id,
-            ...doc.data()
+            ...data,
+            // Asegurar compatibilidad con timestamps
+            createdAt: data.createdAt || data.timestamp || new Date(),
           });
+        });
+        
+        // Ordenar manualmente por fecha si no se pudo hacer en la query
+        history.sort((a, b) => {
+          const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
+          const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+          return dateB.getTime() - dateA.getTime();
         });
         
         console.log(`📋 Historial cargado: ${history.length} búsquedas encontradas`);
         return history;
       } catch (error) {
         console.error('❌ Error obteniendo historial:', error);
-        // En caso de error, crear una estructura vacía
-        return [];
+        
+        // Fallback: intentar obtener todas las búsquedas sin filtros complejos
+        try {
+          console.log('🔄 Intentando fallback simple...');
+          const simpleQuery = collection(db, 'permit_search_history');
+          const snapshot = await getDocs(simpleQuery);
+          const fallbackHistory: any[] = [];
+          
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            if (data.userId === currentUser.uid) {
+              fallbackHistory.push({
+                id: doc.id,
+                ...data,
+                createdAt: data.createdAt || data.timestamp || new Date(),
+              });
+            }
+          });
+          
+          console.log(`📋 Fallback cargado: ${fallbackHistory.length} búsquedas`);
+          return fallbackHistory.slice(0, 50); // Limitar a 50
+        } catch (fallbackError) {
+          console.error('❌ Fallback también falló:', fallbackError);
+          return [];
+        }
       }
     },
     enabled: !!currentUser?.uid,
