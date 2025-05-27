@@ -542,7 +542,11 @@ export function formatAnswersForContract(answers: Record<string, any>): Record<s
   }
   
   // Format penalty for late payments
-  if (formatted.payment?.latePenalty) {
+  if (!formatted.payment) {
+    formatted.payment = {};
+  }
+  
+  if (formatted.payment.latePenalty) {
     formatted.payment.lateFee = formatted.payment.latePenalty.replace(/[^0-9.]/g, '');
   } else {
     formatted.payment.lateFee = '2'; // Default value
