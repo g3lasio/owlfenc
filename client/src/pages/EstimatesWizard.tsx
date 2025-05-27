@@ -740,19 +740,35 @@ export default function EstimatesWizardFixed() {
 
       console.log('💾 Guardando estimado:', estimateData);
 
-      // 3. Save to backend using existing working endpoint
+      // 3. Save to backend using robust endpoint
       const response = await fetch('/api/estimates-simple', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify(estimateData)
       });
 
-      if (!response.ok) {
-        throw new Error(`Error del servidor: ${response.status}`);
+      let result;
+      const responseText = await response.text();
+      
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('❌ Error parsing response:', responseText);
+        throw new Error('Error en el formato de respuesta del servidor');
       }
 
-      const result = await response.json();
-      console.log('✅ Estimado guardado exitosamente:', result);
+      if (!response.ok) {
+        throw new Error(result?.error || `Error del servidor: ${response.status}`);
+      }
+
+      if (!result.success) {
+        throw new Error(result?.error || 'Error guardando en el servidor');
+      }
+
+      console.log('✅ Estimado guardado en servidor:', result);
 
       // 4. Try to save directly to Firebase as backup (estimate collection)
       try {

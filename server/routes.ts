@@ -430,6 +430,105 @@ Output in English regardless of input language. Make it suitable for contracts a
   // Registrar rutas de mejora de descripciones con IA
   app.use('/api/project', aiEnhancementRoutes);
 
+  // Endpoint robusto para guardar estimados
+  app.post('/api/estimates-simple', async (req: Request, res: Response) => {
+    try {
+      console.log('💾 Recibiendo estimado para guardar:', req.body);
+      
+      const estimateData = req.body;
+      const firebaseUserId = estimateData.firebaseUserId || 'dev-user';
+      
+      // Crear proyecto usando el sistema existente
+      const projectData = {
+        userId: 1, // ID numérico para PostgreSQL
+        projectName: estimateData.title || `Estimado ${estimateData.estimateNumber}`,
+        clientName: estimateData.clientName,
+        clientEmail: estimateData.clientEmail,
+        clientPhone: estimateData.clientPhone,
+        address: estimateData.clientAddress,
+        city: estimateData.clientCity || '',
+        state: estimateData.clientState || '',
+        zipCode: estimateData.clientZipCode || '',
+        projectType: estimateData.projectType || 'estimate',
+        description: estimateData.projectDescription || estimateData.scope || '',
+        status: 'estimate',
+        estimateAmount: estimateData.total || 0,
+        firebaseUserId: firebaseUserId,
+        estimateData: JSON.stringify(estimateData)
+      };
+
+      // Guardar en PostgreSQL usando el storage existente
+      const project = await storage.createProject(projectData);
+      
+      console.log('✅ Estimado guardado como proyecto:', project.id);
+      
+      res.json({
+        success: true,
+        message: 'Estimado guardado exitosamente',
+        data: {
+          projectId: project.id,
+          estimateNumber: estimateData.estimateNumber
+        }
+      });
+      
+    } catch (error) {
+      console.error('❌ Error guardando estimado:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor'
+      });
+    }
+  });
+
+  // Endpoint robusto para obtener estimados guardados
+  app.get('/api/estimates-simple', async (req: Request, res: Response) => {
+    try {
+      const projects = await storage.getProjectsByUserId(1);
+      const estimates = projects
+        .filter(p => p.status === 'estimate' && p.estimateData)
+        .map(p => {
+          try {
+            const estimateData = JSON.parse(p.estimateData || '{}');
+            return {
+              id: p.id,
+              projectId: p.id,
+              estimateNumber: estimateData.estimateNumber || `EST-${p.id}`,
+              title: p.projectName,
+              clientName: p.clientName,
+              clientEmail: p.clientEmail,
+              total: p.estimateAmount || 0,
+              status: estimateData.status || 'draft',
+              createdAt: p.createdAt,
+              ...estimateData
+            };
+          } catch {
+            return {
+              id: p.id,
+              projectId: p.id,
+              estimateNumber: `EST-${p.id}`,
+              title: p.projectName,
+              clientName: p.clientName,
+              total: p.estimateAmount || 0,
+              status: 'draft',
+              createdAt: p.createdAt
+            };
+          }
+        });
+
+      res.json({
+        success: true,
+        data: estimates
+      });
+      
+    } catch (error) {
+      console.error('❌ Error obteniendo estimados:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor'
+      });
+    }
+  });
+
   // Add API routes
   app.get('/api/projects', async (req: Request, res: Response) => {
     try {

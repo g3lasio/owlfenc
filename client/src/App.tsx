@@ -32,6 +32,7 @@ import History from "@/pages/History";
 import ProjectPayments from "@/pages/ProjectPayments";
 import EstimatesDashboard from "@/pages/EstimatesDashboard";
 import EstimateGenerator from "@/pages/EstimateGenerator";
+import MisEstimados from "@/pages/MisEstimados";
 import AuthPage from "@/pages/Login"; // Renombrado el import aunque el archivo sigue siendo Login.tsx
 import RecuperarPassword from "@/pages/RecuperarPassword";
 import ResetPassword from "@/pages/ResetPassword";
@@ -176,6 +177,9 @@ function Router() {
       </Route>
       <Route path="/estimate-generator">
         {() => <ProtectedRoute component={EstimateGenerator} />}
+      </Route>
+      <Route path="/mis-estimados">
+        {() => <ProtectedRoute component={MisEstimados} />}
       </Route>
       <Route path="/estimates-dashboard">
         {() => <ProtectedRoute component={EstimatesDashboard} />}
