@@ -61,6 +61,7 @@ export default function MapboxPlacesAutocomplete({
   // Buscar sugerencias con Mapbox Geocoding API
   const searchSuggestions = useCallback(async (input: string) => {
     if (!input.trim() || input.length < 3 || apiStatus !== 'ready') {
+      console.log("⏭️ [MapboxPlaces] Saltando búsqueda:", { input: input.length, apiStatus });
       setSuggestions([]);
       setShowSuggestions(false);
       return;
@@ -81,20 +82,38 @@ export default function MapboxPlacesAutocomplete({
       
       const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodedInput}.json?access_token=${mapboxToken}&types=address&language=${language}${countryParam}&limit=5`;
       
-      console.log("🔍 [MapboxPlaces] Buscando sugerencias para:", input);
+      console.log("🔍 [MapboxPlaces] Realizando petición:");
+      console.log("  - Input:", input);
+      console.log("  - Token:", mapboxToken ? `${mapboxToken.substring(0, 20)}...` : "NO ENCONTRADO");
+      console.log("  - URL:", url.replace(mapboxToken, 'TOKEN_OCULTO'));
       
+      const startTime = Date.now();
       const response = await fetch(url, {
         signal: abortControllerRef.current.signal
       });
+      const responseTime = Date.now() - startTime;
+
+      console.log("📡 [MapboxPlaces] Respuesta recibida:");
+      console.log("  - Status:", response.status, response.statusText);
+      console.log("  - Tiempo:", `${responseTime}ms`);
 
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+        const errorText = await response.text();
+        console.error("❌ [MapboxPlaces] Error en respuesta:", errorText);
+        throw new Error(`Error ${response.status}: ${response.statusText} - ${errorText}`);
       }
 
       const data = await response.json();
       
+      console.log("📊 [MapboxPlaces] Datos recibidos:");
+      console.log("  - Features:", data.features?.length || 0);
+      console.log("  - Query:", data.query);
+      
       if (data.features && data.features.length > 0) {
-        console.log(`✅ [MapboxPlaces] ${data.features.length} sugerencias encontradas`);
+        console.log("✅ [MapboxPlaces] Ejemplos de resultados:");
+        data.features.slice(0, 2).forEach((feature: any, index: number) => {
+          console.log(`    ${index + 1}. ${feature.place_name}`);
+        });
         setSuggestions(data.features);
         setShowSuggestions(true);
       } else {
@@ -104,13 +123,21 @@ export default function MapboxPlacesAutocomplete({
       }
     } catch (error: any) {
       if (error.name !== 'AbortError') {
-        console.error("❌ [MapboxPlaces] Error al buscar sugerencias:", error);
+        console.error("❌ [MapboxPlaces] Error al buscar sugerencias:");
+        console.error("  - Tipo:", error.name);
+        console.error("  - Mensaje:", error.message);
+        console.error("  - Stack:", error.stack);
+        
         setSuggestions([]);
         setShowSuggestions(false);
         
         if (error.message.includes('401')) {
           setApiError("Token de Mapbox inválido");
           setApiStatus('error');
+        } else if (error.message.includes('network')) {
+          setApiError("Error de conectividad con Mapbox");
+        } else {
+          setApiError(`Error de Mapbox: ${error.message}`);
         }
       }
     } finally {
@@ -124,12 +151,15 @@ export default function MapboxPlacesAutocomplete({
     setInputValue(newValue);
     onChange(newValue);
     
-    // Debounce la búsqueda
-    setTimeout(() => {
-      if (newValue === inputValue) {
-        searchSuggestions(newValue);
-      }
-    }, 300);
+    // Buscar inmediatamente si tiene suficientes caracteres
+    if (newValue.length >= 3) {
+      console.log("🔍 [MapboxPlaces] Iniciando búsqueda para:", newValue);
+      searchSuggestions(newValue);
+    } else {
+      console.log("⏳ [MapboxPlaces] Esperando más caracteres:", newValue.length, "/3");
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
   };
 
   // Manejar selección de sugerencia
