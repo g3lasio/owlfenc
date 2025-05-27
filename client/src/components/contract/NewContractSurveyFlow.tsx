@@ -124,8 +124,8 @@ const NewContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
       }));
       
       toast({
-        title: "🤖 Mervin AI - Auto-completado inteligente",
-        description: `Estado detectado automáticamente: ${extractedState}`,
+        title: "🤖 Mervin AI - Smart Auto-completion",
+        description: `State automatically detected: ${extractedState}`,
         variant: "default"
       });
     }
@@ -166,8 +166,8 @@ const NewContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
           }));
           
           toast({
-            title: "⚖️ Cláusulas legales generadas",
-            description: "Mervin AI ha creado cláusulas específicas para proteger tu contrato",
+            title: "⚖️ Legal Clauses Generated",
+            description: "Mervin AI has created specific clauses to protect your contract",
             variant: "default"
           });
         }
@@ -205,8 +205,8 @@ const NewContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
         nextStep = nextStep + 1 < questionGroups.length ? nextStep + 1 : nextStep;
         
         toast({
-          title: "🚀 Flujo optimizado",
-          description: `Pregunta del estado omitida - detectado automáticamente: ${extractedState}`,
+          title: "🚀 Optimized Flow",
+          description: `State question skipped - automatically detected: ${extractedState}`,
         });
       }
       
@@ -581,7 +581,63 @@ const NewContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
       <div className="mb-8">
         <h2 className="text-2xl font-bold mb-2">Contract Builder</h2>
         <p className="text-muted-foreground">Complete the form to generate your professional contract.</p>
-        <Progress value={progress} className="mt-4" />
+        
+        {/* Cyberpunk Progress Indicator */}
+        <div className="mt-6 space-y-3">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-cyan-400 font-mono">System Progress</span>
+            <span className="text-cyan-400 font-mono">{Math.round(progress)}%</span>
+          </div>
+          
+          <div className="relative">
+            {/* Progress Bar Background */}
+            <div className="w-full h-4 bg-black border border-cyan-500/30 rounded-lg overflow-hidden relative">
+              {/* Animated Progress Fill */}
+              <div 
+                className="h-full bg-gradient-to-r from-cyan-500 via-cyan-400 to-cyan-300 transition-all duration-700 ease-out relative"
+                style={{ width: `${progress}%` }}
+              >
+                {/* Scanning Line Effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse"></div>
+              </div>
+              
+              {/* Holographic Border Effect */}
+              <div className="absolute inset-0 border border-cyan-400/50 rounded-lg pointer-events-none"></div>
+              
+              {/* Corner Brackets */}
+              <div className="absolute top-0 left-0 w-2 h-2 border-l-2 border-t-2 border-cyan-400"></div>
+              <div className="absolute top-0 right-0 w-2 h-2 border-r-2 border-t-2 border-cyan-400"></div>
+              <div className="absolute bottom-0 left-0 w-2 h-2 border-l-2 border-b-2 border-cyan-400"></div>
+              <div className="absolute bottom-0 right-0 w-2 h-2 border-r-2 border-b-2 border-cyan-400"></div>
+            </div>
+            
+            {/* Progress Steps Indicators */}
+            <div className="absolute -bottom-6 left-0 right-0 flex justify-between text-xs text-cyan-400/60">
+              {questionGroups.map((_, index) => (
+                <div 
+                  key={index}
+                  className={`flex flex-col items-center ${
+                    index <= currentStep ? 'text-cyan-400' : 'text-gray-600'
+                  }`}
+                >
+                  <div className={`w-2 h-2 rounded-full mb-1 ${
+                    index <= currentStep 
+                      ? 'bg-cyan-400 shadow-sm shadow-cyan-400/50' 
+                      : 'bg-gray-600'
+                  }`}></div>
+                  <span className="font-mono text-[10px]">{index + 1}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          {/* Dynamic Status Text */}
+          <div className="text-center">
+            <span className="text-xs text-cyan-400/80 font-mono">
+              Step {currentStep + 1} of {questionGroups.length} • {currentGroup?.title || 'Processing'}
+            </span>
+          </div>
+        </div>
       </div>
       
       <Card>
@@ -601,10 +657,10 @@ const NewContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
           
           {/* Company profile loading indicator */}
           {isProfileLoading && currentGroup?.questions.some(q => q.useCompanyProfile) && (
-            <Alert className="mt-4">
-              <AlertDescription className="flex items-center">
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Loading your company profile information...
+            <Alert className="mt-4 border-cyan-500/30 bg-cyan-500/5">
+              <AlertDescription className="flex items-center text-cyan-400">
+                <Loader2 className="h-4 w-4 mr-2 animate-spin text-cyan-400" />
+                <span className="font-mono">Loading your company profile information...</span>
               </AlertDescription>
             </Alert>
           )}
@@ -616,6 +672,7 @@ const NewContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
           variant="outline" 
           onClick={handlePrevious}
           disabled={currentStep === 0}
+          className="border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
         >
           <ChevronLeft className="mr-2 h-4 w-4" />
           Previous
@@ -625,13 +682,17 @@ const NewContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
           <Button 
             variant="outline" 
             onClick={handlePreview}
+            className="border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
           >
             <Eye className="mr-2 h-4 w-4" />
             Preview
           </Button>
           
-          <Button onClick={handleNext}>
-            {isLastStep ? 'Complete' : 'Next'}
+          <Button 
+            onClick={handleNext}
+            className="bg-gradient-to-r from-cyan-500 to-cyan-400 text-black hover:from-cyan-400 hover:to-cyan-300 border-0 shadow-lg shadow-cyan-500/20"
+          >
+            {isLastStep ? 'Complete Contract' : 'Next Step'}
             {!isLastStep && <ChevronRight className="ml-2 h-4 w-4" />}
           </Button>
         </div>
