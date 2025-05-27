@@ -351,16 +351,27 @@ class SearchService {
         messages: [
           {
             role: "system",
-            content: `You are an expert in construction permits and building codes. Provide specific, actionable information for contractors.
+            content: `You are a premium construction permit expert providing $100/month value through comprehensive, specific information.
 
-Return JSON with these sections:
-- requiredPermits: Array with name, issuingAuthority, estimatedTimeline, averageCost, description
-- process: Array of step-by-step process
-- specialConsiderations: Array of important considerations
-- contactInformation: Array with department, phone, email, address, website
-- jurisdictionDetails: Specific city/county information
+CRITICAL: Provide REAL, SPECIFIC information including:
+- Exact department names, addresses, phone numbers
+- Specific permit costs, timelines, and requirements
+- Direct contact information for inspectors
+- Local building code sections with numbers
+- Jurisdiction-specific processes and forms
 
-Focus on real, specific information for the exact location provided.`
+Return detailed JSON with:
+- requiredPermits: [name, issuingAuthority, estimatedTimeline, averageCost, description, requirements, contactPhone, applicationForms]
+- process: [detailed step-by-step with dependencies and timing]
+- specialConsiderations: [specific local regulations, environmental, zoning]
+- contactInformation: [department, directPhone, email, physicalAddress, website, inspectorName, hours]
+- jurisdictionDetails: [city, county, buildingDept, planningDept, zoneDept, fireDept]
+- localCodes: [specific code sections, measurements, restrictions]
+- inspectionSchedule: [type, timing, contactInfo, requirements]
+- costBreakdown: [detailed fee structure]
+- timeline: [critical path, dependencies, seasonal considerations]
+
+Provide premium-level detail that justifies professional subscription cost.`
           },
           {
             role: "user",

@@ -410,10 +410,27 @@ export default function PermitAdvisor() {
                 </CardHeader>
                 <CardContent>
                   <Tabs value={activeTab} onValueChange={setActiveTab}>
-                    <TabsList className="grid w-full grid-cols-3 bg-gray-700/50">
-                      <TabsTrigger value="permits" className="text-teal-300 data-[state=active]:bg-teal-500/20">Permits</TabsTrigger>
-                      <TabsTrigger value="process" className="text-teal-300 data-[state=active]:bg-teal-500/20">Process</TabsTrigger>
-                      <TabsTrigger value="considerations" className="text-teal-300 data-[state=active]:bg-teal-500/20">Considerations</TabsTrigger>
+                    <TabsList className="grid w-full grid-cols-6 bg-gray-900/80 border border-teal-400/30 relative overflow-hidden">
+                      {/* Animated background */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-teal-500/10 via-transparent to-cyan-500/10 animate-pulse"></div>
+                      <TabsTrigger value="permits" className="relative text-teal-300 data-[state=active]:bg-teal-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-teal-500/50 transition-all duration-300">
+                        <span className="relative z-10">Permits</span>
+                      </TabsTrigger>
+                      <TabsTrigger value="contacts" className="relative text-teal-300 data-[state=active]:bg-cyan-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/50 transition-all duration-300">
+                        <span className="relative z-10">Contacts</span>
+                      </TabsTrigger>
+                      <TabsTrigger value="codes" className="relative text-teal-300 data-[state=active]:bg-emerald-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/50 transition-all duration-300">
+                        <span className="relative z-10">Codes</span>
+                      </TabsTrigger>
+                      <TabsTrigger value="process" className="relative text-teal-300 data-[state=active]:bg-blue-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/50 transition-all duration-300">
+                        <span className="relative z-10">Process</span>
+                      </TabsTrigger>
+                      <TabsTrigger value="timeline" className="relative text-teal-300 data-[state=active]:bg-purple-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/50 transition-all duration-300">
+                        <span className="relative z-10">Timeline</span>
+                      </TabsTrigger>
+                      <TabsTrigger value="considerations" className="relative text-teal-300 data-[state=active]:bg-amber-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-amber-500/50 transition-all duration-300">
+                        <span className="relative z-10">Alerts</span>
+                      </TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="permits" className="space-y-4">
@@ -468,15 +485,192 @@ export default function PermitAdvisor() {
                       )}
                     </TabsContent>
 
+                    {/* New Premium Contacts Tab */}
+                    <TabsContent value="contacts" className="space-y-4">
+                      {permitData.contactInformation && permitData.contactInformation.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {permitData.contactInformation.map((contact: any, idx: number) => (
+                            <div key={idx} className="relative">
+                              {/* Holographic border effect */}
+                              <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/20 via-teal-400/20 to-blue-400/20 animate-pulse rounded-lg"></div>
+                              <Card className="relative bg-gray-800/90 border-cyan-400/30 backdrop-blur-sm hover:shadow-lg hover:shadow-cyan-400/20 transition-all duration-300">
+                                <CardHeader>
+                                  <CardTitle className="text-cyan-300 flex items-center gap-2">
+                                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                                    {contact.department || "Department"}
+                                  </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-3">
+                                  {contact.phone && (
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-8 h-8 bg-teal-500/20 rounded-full flex items-center justify-center">📞</div>
+                                      <div>
+                                        <p className="text-xs text-gray-400">Direct Line</p>
+                                        <p className="text-teal-300 font-mono">{contact.phone}</p>
+                                      </div>
+                                    </div>
+                                  )}
+                                  {contact.email && (
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-8 h-8 bg-cyan-500/20 rounded-full flex items-center justify-center">📧</div>
+                                      <div>
+                                        <p className="text-xs text-gray-400">Email</p>
+                                        <p className="text-cyan-300 font-mono text-sm">{contact.email}</p>
+                                      </div>
+                                    </div>
+                                  )}
+                                  {contact.address && (
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center">📍</div>
+                                      <div>
+                                        <p className="text-xs text-gray-400">Address</p>
+                                        <p className="text-blue-300 text-sm">{contact.address}</p>
+                                      </div>
+                                    </div>
+                                  )}
+                                  {contact.hours && (
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-8 h-8 bg-emerald-500/20 rounded-full flex items-center justify-center">🕒</div>
+                                      <div>
+                                        <p className="text-xs text-gray-400">Hours</p>
+                                        <p className="text-emerald-300 text-sm">{contact.hours}</p>
+                                      </div>
+                                    </div>
+                                  )}
+                                </CardContent>
+                              </Card>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <div className="w-16 h-16 bg-gradient-to-r from-cyan-500 to-teal-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-spin">
+                            📞
+                          </div>
+                          <h3 className="text-lg font-medium text-cyan-300">Contact Info Loading...</h3>
+                          <p className="text-gray-400">Premium contact details will appear here</p>
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    {/* New Premium Building Codes Tab */}
+                    <TabsContent value="codes" className="space-y-4">
+                      {permitData.localCodes && permitData.localCodes.length > 0 ? (
+                        <div className="space-y-4">
+                          {permitData.localCodes.map((code: any, idx: number) => (
+                            <div key={idx} className="relative">
+                              {/* Matrix-style border */}
+                              <div className="absolute inset-0 border border-emerald-400/30">
+                                <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-emerald-400"></div>
+                                <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-emerald-400"></div>
+                                <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-emerald-400"></div>
+                                <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-emerald-400"></div>
+                              </div>
+                              <Card className="relative bg-gray-900/90 border-emerald-500/20 m-1">
+                                <CardHeader>
+                                  <CardTitle className="text-emerald-300 font-mono">
+                                    {code.section || `Code Section ${idx + 1}`}
+                                  </CardTitle>
+                                  <CardDescription className="text-emerald-200/70">
+                                    {code.type || "Building Code Regulation"}
+                                  </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                  <div className="space-y-3">
+                                    {code.details && (
+                                      <div>
+                                        <h4 className="text-emerald-400 font-medium mb-2">Requirements</h4>
+                                        <p className="text-gray-300 text-sm bg-gray-800/50 p-3 rounded border-l-4 border-emerald-400">
+                                          {typeof code.details === 'string' ? code.details : JSON.stringify(code.details)}
+                                        </p>
+                                      </div>
+                                    )}
+                                    {code.restrictions && (
+                                      <div>
+                                        <h4 className="text-amber-400 font-medium mb-2">Restrictions</h4>
+                                        <p className="text-gray-300 text-sm bg-amber-500/10 p-3 rounded border-l-4 border-amber-400">
+                                          {typeof code.restrictions === 'string' ? code.restrictions : JSON.stringify(code.restrictions)}
+                                        </p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-green-500 rounded-lg flex items-center justify-center mx-auto mb-4 transform rotate-45 animate-pulse">
+                            <span className="transform -rotate-45">📋</span>
+                          </div>
+                          <h3 className="text-lg font-medium text-emerald-300">Building Codes Loading...</h3>
+                          <p className="text-gray-400">Specific code sections will appear here</p>
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    {/* New Premium Timeline Tab */}
+                    <TabsContent value="timeline" className="space-y-4">
+                      {permitData.timeline ? (
+                        <div className="space-y-6">
+                          {/* Critical Path Visualization */}
+                          <div className="relative">
+                            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-purple-500/10 rounded-lg animate-pulse"></div>
+                            <Card className="relative bg-gray-800/90 border-purple-400/30">
+                              <CardHeader>
+                                <CardTitle className="text-purple-300 flex items-center gap-2">
+                                  <div className="w-3 h-3 bg-purple-400 rounded-full animate-ping"></div>
+                                  Project Timeline Analysis
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                  {permitData.timeline.totalEstimatedTime && (
+                                    <div className="text-center p-4 bg-purple-500/10 rounded-lg border border-purple-400/20">
+                                      <h4 className="text-purple-300 font-medium">Total Time</h4>
+                                      <p className="text-2xl font-bold text-white mt-2">{permitData.timeline.totalEstimatedTime}</p>
+                                    </div>
+                                  )}
+                                  {permitData.timeline.criticalPathItems && (
+                                    <div className="text-center p-4 bg-red-500/10 rounded-lg border border-red-400/20">
+                                      <h4 className="text-red-300 font-medium">Critical Items</h4>
+                                      <p className="text-2xl font-bold text-white mt-2">{Array.isArray(permitData.timeline.criticalPathItems) ? permitData.timeline.criticalPathItems.length : '1'}</p>
+                                    </div>
+                                  )}
+                                  {permitData.timeline.bestTimeToApply && (
+                                    <div className="text-center p-4 bg-green-500/10 rounded-lg border border-green-400/20">
+                                      <h4 className="text-green-300 font-medium">Best Time</h4>
+                                      <p className="text-sm font-medium text-white mt-2">{permitData.timeline.bestTimeToApply}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+                            📅
+                          </div>
+                          <h3 className="text-lg font-medium text-purple-300">Timeline Analysis Loading...</h3>
+                          <p className="text-gray-400">Critical path analysis will appear here</p>
+                        </div>
+                      )}
+                    </TabsContent>
+
                     <TabsContent value="process" className="space-y-4">
                       {permitData.process && permitData.process.length > 0 ? (
                         <div className="space-y-3">
-                          {permitData.process.map((step: string, idx: number) => (
+                          {permitData.process.map((step: any, idx: number) => (
                             <div key={idx} className="flex items-start gap-3">
                               <div className="flex-shrink-0 w-6 h-6 bg-gradient-to-r from-teal-500 to-emerald-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
                                 {idx + 1}
                               </div>
-                              <p className="text-sm text-gray-300">{step}</p>
+                              <p className="text-sm text-gray-300">
+                                {typeof step === 'string' ? step : step.step || JSON.stringify(step)}
+                              </p>
                             </div>
                           ))}
                         </div>
@@ -494,10 +688,12 @@ export default function PermitAdvisor() {
                     <TabsContent value="considerations" className="space-y-4">
                       {permitData.specialConsiderations && permitData.specialConsiderations.length > 0 ? (
                         <div className="space-y-3">
-                          {permitData.specialConsiderations.map((consideration: string, idx: number) => (
+                          {permitData.specialConsiderations.map((consideration: any, idx: number) => (
                             <Alert key={idx} className="bg-amber-500/10 border-amber-500/30">
                               <AlertTriangle className="h-4 w-4 text-amber-400" />
-                              <AlertDescription className="text-gray-300">{consideration}</AlertDescription>
+                              <AlertDescription className="text-gray-300">
+                                {typeof consideration === 'string' ? consideration : consideration.aspect || JSON.stringify(consideration)}
+                              </AlertDescription>
                             </Alert>
                           ))}
                         </div>
