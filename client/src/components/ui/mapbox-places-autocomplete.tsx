@@ -82,10 +82,7 @@ export default function MapboxPlacesAutocomplete({
       
       const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodedInput}.json?access_token=${mapboxToken}&types=address&language=${language}${countryParam}&limit=5`;
       
-      console.log("🔍 [MapboxPlaces] Realizando petición:");
-      console.log("  - Input:", input);
-      console.log("  - Token:", mapboxToken ? `${mapboxToken.substring(0, 20)}...` : "NO ENCONTRADO");
-      console.log("  - URL:", url.replace(mapboxToken, 'TOKEN_OCULTO'));
+      console.log(`🔍 [MapboxPlaces] Buscando: "${input}"`);
       
       const startTime = Date.now();
       const response = await fetch(url, {
@@ -93,40 +90,30 @@ export default function MapboxPlacesAutocomplete({
       });
       const responseTime = Date.now() - startTime;
 
-      console.log("📡 [MapboxPlaces] Respuesta recibida:");
-      console.log("  - Status:", response.status, response.statusText);
-      console.log("  - Tiempo:", `${responseTime}ms`);
-
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("❌ [MapboxPlaces] Error en respuesta:", errorText);
-        throw new Error(`Error ${response.status}: ${response.statusText} - ${errorText}`);
+        console.error("❌ [MapboxPlaces] Error:", response.status, errorText);
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
       
-      console.log("📊 [MapboxPlaces] Datos recibidos:");
-      console.log("  - Features:", data.features?.length || 0);
-      console.log("  - Query:", data.query);
-      
       if (data.features && data.features.length > 0) {
-        console.log("✅ [MapboxPlaces] Ejemplos de resultados:");
-        data.features.slice(0, 2).forEach((feature: any, index: number) => {
-          console.log(`    ${index + 1}. ${feature.place_name}`);
-        });
+        console.log(`✅ [MapboxPlaces] ${data.features.length} sugerencias encontradas (${responseTime}ms)`);
         setSuggestions(data.features);
         setShowSuggestions(true);
       } else {
-        console.log("📭 [MapboxPlaces] No se encontraron sugerencias");
+        console.log("📭 [MapboxPlaces] Sin resultados");
         setSuggestions([]);
         setShowSuggestions(false);
       }
     } catch (error: any) {
-      if (error.name !== 'AbortError') {
+      if (error.name === 'AbortError') {
+        console.log("🚫 [MapboxPlaces] Búsqueda cancelada (normal)");
+      } else {
         console.error("❌ [MapboxPlaces] Error al buscar sugerencias:");
         console.error("  - Tipo:", error.name);
         console.error("  - Mensaje:", error.message);
-        console.error("  - Stack:", error.stack);
         
         setSuggestions([]);
         setShowSuggestions(false);
@@ -145,16 +132,32 @@ export default function MapboxPlacesAutocomplete({
     }
   }, [countries, language, apiStatus]);
 
-  // Manejar cambios en el input
+  // Debounce timer para búsqueda
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Manejar cambios en el input con debounce
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     setInputValue(newValue);
     onChange(newValue);
     
-    // Buscar inmediatamente si tiene suficientes caracteres
+    // Cancelar timer anterior
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // Cancelar petición anterior para evitar conflictos
+    if (abortControllerRef.current) {
+      console.log("🚫 [MapboxPlaces] Cancelando búsqueda anterior");
+      abortControllerRef.current.abort();
+    }
+
     if (newValue.length >= 3) {
-      console.log("🔍 [MapboxPlaces] Iniciando búsqueda para:", newValue);
-      searchSuggestions(newValue);
+      console.log("⏳ [MapboxPlaces] Programando búsqueda para:", newValue);
+      // Debounce de 300ms para evitar demasiadas peticiones
+      debounceTimerRef.current = setTimeout(() => {
+        searchSuggestions(newValue);
+      }, 300);
     } else {
       console.log("⏳ [MapboxPlaces] Esperando más caracteres:", newValue.length, "/3");
       setSuggestions([]);
