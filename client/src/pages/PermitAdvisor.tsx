@@ -399,32 +399,32 @@ export default function PermitAdvisor() {
                           {permitData.requiredPermits.map((permit: PermitData, idx: number) => (
                             <div key={idx} className="relative">
                               {/* Mini cyberpunk frame for each permit */}
-                              <div className="absolute inset-0 border border-cyan-400/20">
-                                <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-cyan-300/50"></div>
-                                <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-cyan-300/50"></div>
-                                <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-cyan-300/50"></div>
-                                <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-cyan-300/50"></div>
+                              <div className="absolute inset-0 border border-teal-400/20">
+                                <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-teal-300/50"></div>
+                                <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-teal-300/50"></div>
+                                <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-teal-300/50"></div>
+                                <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-teal-300/50"></div>
                               </div>
-                              <Card className="relative bg-gray-700/50 border-cyan-500/20">
+                              <Card className="relative bg-gray-700/50 border-teal-500/20">
                                 <CardHeader>
-                                  <CardTitle className="text-lg text-cyan-200">{permit.name}</CardTitle>
+                                  <CardTitle className="text-lg text-teal-200">{permit.name}</CardTitle>
                                   <CardDescription className="text-gray-400">{permit.issuingAuthority}</CardDescription>
                                 </CardHeader>
                                 <CardContent>
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                      <h4 className="font-medium mb-2 text-cyan-300">Estimated Time</h4>
+                                      <h4 className="font-medium mb-2 text-teal-300">Estimated Time</h4>
                                       <p className="text-sm text-gray-300">{permit.estimatedTimeline}</p>
                                     </div>
                                     {permit.averageCost && (
                                       <div>
-                                        <h4 className="font-medium mb-2 text-cyan-300">Average Cost</h4>
+                                        <h4 className="font-medium mb-2 text-teal-300">Average Cost</h4>
                                         <p className="text-sm text-gray-300">{permit.averageCost}</p>
                                       </div>
                                     )}
                                     {permit.description && (
                                       <div className="col-span-1 md:col-span-2">
-                                        <h4 className="font-medium mb-2 text-cyan-300">Description</h4>
+                                        <h4 className="font-medium mb-2 text-teal-300">Description</h4>
                                         <p className="text-sm text-gray-300">{permit.description}</p>
                                       </div>
                                     )}
@@ -437,7 +437,7 @@ export default function PermitAdvisor() {
                       ) : (
                         <div className="text-center py-8">
                           <CheckCircle2 className="h-12 w-12 text-green-400 mx-auto mb-4" />
-                          <h3 className="text-lg font-medium text-cyan-300">No specific permits required</h3>
+                          <h3 className="text-lg font-medium text-teal-300">No specific permits required</h3>
                           <p className="text-gray-400">
                             According to available information, your project may not require special permits.
                           </p>
@@ -450,7 +450,7 @@ export default function PermitAdvisor() {
                         <div className="space-y-3">
                           {permitData.process.map((step: string, idx: number) => (
                             <div key={idx} className="flex items-start gap-3">
-                              <div className="flex-shrink-0 w-6 h-6 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                              <div className="flex-shrink-0 w-6 h-6 bg-gradient-to-r from-teal-500 to-emerald-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
                                 {idx + 1}
                               </div>
                               <p className="text-sm text-gray-300">{step}</p>
@@ -459,8 +459,8 @@ export default function PermitAdvisor() {
                         </div>
                       ) : (
                         <div className="text-center py-8">
-                          <Info className="h-12 w-12 text-blue-400 mx-auto mb-4" />
-                          <h3 className="text-lg font-medium text-cyan-300">Process not specified</h3>
+                          <Info className="h-12 w-12 text-teal-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-teal-300">Process not specified</h3>
                           <p className="text-gray-400">
                             Check with local authorities for specific process information.
                           </p>
@@ -472,16 +472,16 @@ export default function PermitAdvisor() {
                       {permitData.specialConsiderations && permitData.specialConsiderations.length > 0 ? (
                         <div className="space-y-3">
                           {permitData.specialConsiderations.map((consideration: string, idx: number) => (
-                            <Alert key={idx} className="bg-yellow-500/10 border-yellow-500/30">
-                              <AlertTriangle className="h-4 w-4 text-yellow-400" />
+                            <Alert key={idx} className="bg-amber-500/10 border-amber-500/30">
+                              <AlertTriangle className="h-4 w-4 text-amber-400" />
                               <AlertDescription className="text-gray-300">{consideration}</AlertDescription>
                             </Alert>
                           ))}
                         </div>
                       ) : (
                         <div className="text-center py-8">
-                          <CheckCircle2 className="h-12 w-12 text-green-400 mx-auto mb-4" />
-                          <h3 className="text-lg font-medium text-cyan-300">No special considerations</h3>
+                          <CheckCircle2 className="h-12 w-12 text-emerald-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-teal-300">No special considerations</h3>
                           <p className="text-gray-400">
                             No special considerations identified for your project.
                           </p>
@@ -497,13 +497,13 @@ export default function PermitAdvisor() {
 
         {/* History modal */}
         <Dialog open={showHistory} onOpenChange={setShowHistory}>
-          <DialogContent className="sm:max-w-[625px] bg-gray-800 border-cyan-500/30">
+          <DialogContent className="sm:max-w-[625px] bg-gray-800 border-teal-500/30">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-cyan-300">
-                <History className="h-5 w-5 text-cyan-400" />
+              <DialogTitle className="flex items-center gap-2 text-teal-300">
+                <History className="h-5 w-5 text-teal-400" />
                 Search History
               </DialogTitle>
-              <DialogDescription className="text-gray-300">
+              <DialogDescription className="text-teal-200">
                 View and load previous searches to avoid repeating the same search.
               </DialogDescription>
             </DialogHeader>
@@ -511,7 +511,7 @@ export default function PermitAdvisor() {
             <div className="py-4">
               {historyQuery.isLoading ? (
                 <div className="flex flex-col items-center justify-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-cyan-400 mb-4" />
+                  <Loader2 className="h-8 w-8 animate-spin text-teal-400 mb-4" />
                   <p className="text-sm text-gray-400">Loading history...</p>
                 </div>
               ) : historyQuery.isError ? (
@@ -523,9 +523,9 @@ export default function PermitAdvisor() {
                   </p>
                 </div>
               ) : !historyQuery.data || historyQuery.data.length === 0 ? (
-                <div className="text-center p-8 border rounded-md bg-gray-700/50 border-cyan-500/30">
-                  <Info className="h-10 w-10 text-cyan-400 mx-auto mb-2" />
-                  <h3 className="font-medium text-lg text-cyan-300">No previous searches</h3>
+                <div className="text-center p-8 border rounded-md bg-gray-700/50 border-teal-500/30">
+                  <Info className="h-10 w-10 text-teal-400 mx-auto mb-2" />
+                  <h3 className="font-medium text-lg text-teal-300">No previous searches</h3>
                   <p className="text-sm text-gray-400 mt-1">
                     When you perform permit searches, they will be saved here for easy access later.
                   </p>
@@ -534,9 +534,9 @@ export default function PermitAdvisor() {
                 <ScrollArea className="h-[min(65vh,400px)] pr-4">
                   <div className="space-y-3">
                     {historyQuery.data.map((item) => (
-                      <Card key={item.id} className="hover:bg-cyan-500/10 transition-colors bg-gray-700/50 border-cyan-500/30">
+                      <Card key={item.id} className="hover:bg-teal-500/10 transition-colors bg-gray-700/50 border-teal-500/30">
                         <CardHeader className="p-4 pb-2">
-                          <CardTitle className="text-base text-cyan-300">{item.title}</CardTitle>
+                          <CardTitle className="text-base text-teal-300">{item.title}</CardTitle>
                           <CardDescription className="text-xs text-gray-400">
                             {new Date(item.createdAt).toLocaleDateString()} {new Date(item.createdAt).toLocaleTimeString()}
                           </CardDescription>
@@ -544,17 +544,17 @@ export default function PermitAdvisor() {
                         <CardContent className="p-4 pt-0">
                           <div className="grid grid-cols-2 gap-2 text-sm">
                             <div>
-                              <span className="font-medium block text-xs text-cyan-300">Address:</span>
+                              <span className="font-medium block text-xs text-teal-300">Address:</span>
                               <span className="text-gray-300 text-xs">{item.address}</span>
                             </div>
                             <div>
-                              <span className="font-medium block text-xs text-cyan-300">Type:</span>
+                              <span className="font-medium block text-xs text-teal-300">Type:</span>
                               <span className="text-gray-300 text-xs">{item.projectType}</span>
                             </div>
                           </div>
                           <Button
                             size="sm"
-                            className="mt-3 w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700"
+                            className="mt-3 w-full bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700"
                             onClick={() => handleLoadHistoryItem(item)}
                           >
                             Load Search
