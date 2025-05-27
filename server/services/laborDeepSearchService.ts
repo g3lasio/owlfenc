@@ -102,7 +102,7 @@ export class LaborDeepSearchService {
    */
   private buildLaborAnalysisPrompt(projectDescription: string, location?: string, projectType?: string): string {
     return `
-You are a veteran general contractor with 25+ years experience pricing construction labor. Think like a professional contractor who NEVER charges by the hour. Use REAL industry pricing methods that contractors actually use.
+You are a veteran general contractor with 25+ years experience pricing construction labor in various US markets. Research and analyze the SPECIFIC LOCATION to provide accurate local pricing that reflects real market conditions in that area.
 
 PROJECT DESCRIPTION:
 ${projectDescription}
@@ -110,21 +110,41 @@ ${projectDescription}
 PROJECT TYPE: ${projectType || 'General'}
 LOCATION: ${location || 'United States'}
 
+LOCATION-BASED PRICING RESEARCH:
+1. ANALYZE the specific location provided (city, state, or address)
+2. RESEARCH local market conditions for construction labor in that area
+3. CONSIDER regional factors: cost of living, labor availability, local regulations
+4. ADJUST pricing based on:
+   - Urban vs Rural location
+   - State minimum wage laws
+   - Local permit requirements
+   - Regional competition levels
+   - Seasonal demand patterns
+
 REAL CONTRACTOR PRICING METHODS (NEVER use hourly rates):
-• LINEAR FOOT: Fencing, beam installation, trim work, gutters ($8-25 per linear ft)
-• SQUARE FOOT: Flooring, roofing, walls, painting, drywall ($2-15 per sqft)
-• CUBIC YARD: Concrete, excavation, fill, demolition ($25-150 per cubic yard)
-• SQUARE (100 sqft): Roofing and siding ($300-800 per square)
-• PER PROJECT: Specialized or small jobs (flat rate $200-2000)
-• PER UNIT: Doors, windows, posts ($50-500 per unit)
+• LINEAR FOOT: Fencing, trim, gutters - Research local rates for this specific area
+• SQUARE FOOT: Roofing, flooring, walls - Adjust for local market conditions
+• CUBIC YARD: Concrete, excavation - Factor in local disposal costs and regulations
+• SQUARE (100 sqft): Roofing/siding - Consider local building codes and weather
+• PER PROJECT: Small jobs - Price according to local service rates
+• PER UNIT: Doors, windows, posts - Research local installation costs
+
+REGIONAL PRICING EXAMPLES:
+- California: Higher rates due to regulations and cost of living
+- Texas: Moderate rates, competitive market
+- Florida: Hurricane considerations affect pricing
+- New York: Higher urban rates, strict codes
+- Rural areas: Lower rates but travel costs
+- Northeast: Weather delays factor into pricing
 
 CRITICAL INSTRUCTIONS:
 1. Include ONLY LABOR/SERVICES (NO materials)
-2. Use REAL units that professional contractors use
-3. Price competitively but realistically for the region
-4. Consider complexity, site access, and special conditions
-5. Think about what a real contractor would charge for this work
+2. Research and apply LOCAL MARKET RATES for the specific location
+3. Factor in regional economic conditions and regulations
+4. Use professional contractor pricing methods for that area
+5. Consider local competition and demand
 6. Use English for all service names and descriptions
+7. Explain briefly why prices reflect local market conditions
 
 LABOR CATEGORIES:
 - Site preparation (excavation, leveling, marking)
