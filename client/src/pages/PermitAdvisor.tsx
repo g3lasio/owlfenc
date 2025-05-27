@@ -119,7 +119,7 @@ export default function PermitAdvisor() {
       projectType: string;
       projectDescription?: string;
     }) => {
-      const response = await fetch("/api/permit/search", {
+      const response = await fetch("/api/permit/check", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
