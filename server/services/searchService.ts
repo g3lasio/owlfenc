@@ -364,7 +364,7 @@ Return detailed JSON with:
 - requiredPermits: [name, issuingAuthority, estimatedTimeline, averageCost, description, requirements, responsibleParty, applicationFormUrl, submissionMethod, requiredDocuments]
 - process: [detailed step-by-step with dependencies, timing, responsibleParty, requiredDocuments, officialLinks]
 - specialConsiderations: [specific local regulations, environmental, zoning, penalties, deadlines]
-- contactInformation: [department, directPhone, email, physicalAddress, website, inspectorName, hours, onlinePortal]
+- contactInformation: [department, directPhone, email, physicalAddress, website, inspectorName, inspectorPhone, inspectorEmail, hours, onlinePortal, schedulingPhone]
 - jurisdictionDetails: [city, county, buildingDept, planningDept, zoneDept, fireDept, permitPortalUrl]
 - localCodes: [specific code sections, measurements, restrictions, complianceDocuments]
 - inspectionSchedule: [type, timing, contactInfo, requirements, schedulingUrl]
@@ -398,22 +398,34 @@ CRITICAL REQUIREMENTS for professional-grade information:
    - Environmental assessments
    - Property surveys requirements
 
-4. REAL GOVERNMENT CONTACT INFORMATION:
-   - Building department phone/email
-   - Planning department contacts
-   - Fire department contacts
-   - Utility connection departments
+4. COMPREHENSIVE INSPECTOR & DEPARTMENT CONTACT INFORMATION:
+   - Building department direct phone numbers and extensions
+   - Specific inspector names with direct phone numbers
+   - Planning department contacts with direct lines
+   - Fire department inspection scheduling numbers
+   - Utility connection departments with contact info
+   - Chief building inspector name and direct phone
+   - Electrical inspector contact information
+   - Plumbing inspector contact information
+   - Inspection scheduling department phone numbers
 
-Example format for permits:
+Example format for comprehensive contact information:
 {
-  "name": "Building Permit",
-  "responsibleParty": "Licensed General Contractor",
-  "applicationFormUrl": "https://cityname.gov/building/permits/application",
-  "submissionMethod": "Online portal or in-person",
-  "requiredDocuments": ["Site plan", "Construction drawings", "Engineering calculations"],
-  "issuingAuthority": "City Building Department",
-  "contactPhone": "(555) 123-4567",
-  "website": "https://cityname.gov/building"
+  "contactInformation": [
+    {
+      "department": "Building Department",
+      "directPhone": "(555) 123-4567",
+      "email": "building@cityname.gov",
+      "physicalAddress": "123 Main St, City, State 12345",
+      "website": "https://cityname.gov/building",
+      "inspectorName": "John Smith, Chief Building Inspector",
+      "inspectorPhone": "(555) 123-4568",
+      "inspectorEmail": "jsmith@cityname.gov",
+      "hours": "Monday-Friday 8:00 AM - 4:30 PM",
+      "onlinePortal": "https://cityname.gov/permits/portal",
+      "schedulingPhone": "(555) 123-4569"
+    }
+  ]
 }
 
 Provide professional contractor-grade information with real links and clear responsibilities.`

@@ -258,9 +258,12 @@ export default function PermitAdvisor() {
       console.log("✅ Respuesta recibida del servidor:", data);
       setPermitData(data);
       
+      // Guardar automáticamente en historial
+      await saveToHistory(data);
+      
       toast({
         title: "✅ DeepSearch Complete",
-        description: "Permit analysis generated successfully!",
+        description: "Permit analysis generated and saved to history!",
       });
 
     } catch (error) {
