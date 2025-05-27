@@ -88,7 +88,15 @@ export default function GooglePlacesAutocompleteComponent({
         event.message.includes("ApiNotActivatedMapError")
       )) {
         console.error("❌ [GooglePlaces] Error de Google Maps detectado:", event.message);
-        setApiError(`Error de Google Maps: ${event.message}`);
+        
+        let errorMessage = "Error de configuración de Google Maps";
+        if (event.message.includes("InvalidKeyMapError")) {
+          errorMessage = "La API key de Google Maps requiere configuración adicional. Verifica las restricciones de dominio y los servicios habilitados.";
+        } else if (event.message.includes("ApiNotActivatedMapError")) {
+          errorMessage = "Los servicios necesarios de Google Maps no están activados en tu proyecto.";
+        }
+        
+        setApiError(errorMessage);
         setApiStatus('error');
         setUseManualInput(true);
       }
