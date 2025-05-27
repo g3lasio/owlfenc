@@ -345,130 +345,31 @@ class SearchService {
       
       POR FAVOR PROPORCIONA INFORMACIÓN REAL Y ESPECÍFICA, NO GENÉRICA.`;
       
-      // Call OpenAI API to generate a comprehensive structured analysis
-      // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      // Call OpenAI API to generate a comprehensive structured analysis with optimized prompt
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
           {
             role: "system",
-            content: `Eres un experto altamente especializado en permisos de construcción, códigos de edificación y regulaciones gubernamentales en Estados Unidos y México. Tu conocimiento incluye información actualizada sobre departamentos gubernamentales específicos, procesos oficiales, contactos directos y requisitos legales exactos.
+            content: `You are an expert in construction permits and building codes. Provide specific, actionable information for contractors.
 
-MISIÓN CRÍTICA:
-Proporcionar información REAL, ESPECÍFICA y ACTUALIZADA que justifique un servicio premium de $100/mes. Los contratistas necesitan datos precisos para evitar multas legales y completar proyectos exitosamente.
+Return JSON with these sections:
+- requiredPermits: Array with name, issuingAuthority, estimatedTimeline, averageCost, description
+- process: Array of step-by-step process
+- specialConsiderations: Array of important considerations
+- contactInformation: Array with department, phone, email, address, website
+- jurisdictionDetails: Specific city/county information
 
-ESTÁNDARES DE EXCELENCIA REQUERIDOS:
-1. INFORMACIÓN REAL Y ESPECÍFICA: Proporciona nombres exactos de departamentos, direcciones físicas reales, números telefónicos actuales, y URLs oficiales de portales gubernamentales.
-
-2. CONTACTOS DIRECTOS: Incluye información de contacto específica de inspectores, supervisores de permisos, y oficiales de código cuando sea posible.
-
-3. COSTOS EXACTOS: Proporciona tarifas reales de permisos basadas en las estructuras de costos oficiales actuales de la jurisdicción específica.
-
-4. PROCESOS DETALLADOS: Describe paso a paso los procesos oficiales específicos para esa ciudad/condado, incluyendo formularios exactos y sus números de referencia.
-
-5. CÓDIGOS ESPECÍFICOS: Cita secciones exactas de códigos de construcción con números de referencia reales.
-
-6. JURISDICCIÓN EXACTA: Identifica la ciudad exacta, condado, y autoridades que tienen jurisdicción sobre esa dirección específica.
-
-7. INFORMACIÓN PREMIUM: Incluye detalles que van más allá de lo que encontrarían en búsquedas básicas de Google - información privilegiada que solo un experto conocería.
-
-Tu respuesta debe incluir todos los siguientes componentes en formato JSON:
-
-1. requiredPermits: Array de permisos necesarios, cada uno con:
-   - name: Nombre exacto del permiso
-   - issuingAuthority: Autoridad específica que lo emite
-   - estimatedTimeline: Tiempo de procesamiento típico
-   - averageCost: Costo promedio (si está disponible)
-   - description: Descripción detallada del propósito y alcance
-   - requirements: Requisitos específicos para obtenerlo
-   - url: Enlaces a formularios o portales oficiales (si están disponibles)
-
-2. licenseRequirements: Array de requisitos de licencia para contratistas:
-   - type: Tipo específico de licencia requerida
-   - obtainingProcess: Proceso detallado para obtenerla
-   - fees: Tarifas exactas
-   - renewalInfo: Información sobre renovación
-   - bondingInsurance: Requisitos de fianza y seguro
-   - url: Enlaces a recursos oficiales (si están disponibles)
-   - verificationProcess: Cómo los clientes pueden verificar una licencia
-
-3. buildingCodeRegulations: Array de regulaciones de código aplicables:
-   - type: Tipo de regulación (estructural, zonificación, etc.)
-   - details: Detalles específicos de la regulación
-   - codeReference: Referencia exacta al código (número, sección)
-   - restrictions: Restricciones específicas aplicables
-   - measurements: Medidas precisas cuando sea relevante (altura, distancias, etc.)
-   - applicableAreas: Áreas específicas donde aplica la regulación
-
-4. inspectionRequirements: Array de inspecciones requeridas:
-   - type: Tipo específico de inspección
-   - timing: Cuándo debe realizarse en el cronograma del proyecto
-   - contactInfo: Información de contacto del departamento de inspección
-   - schedulingProcess: Proceso exacto para programar la inspección
-   - preparationNeeded: Qué debe prepararse antes de la inspección
-   - commonIssues: Problemas comunes a evitar
-
-5. specialConsiderations: Array de consideraciones especiales para este proyecto:
-   - Incluir aspectos únicos como requisitos ambientales, históricos, de accesibilidad, etc.
-   - Ser muy específico para el tipo de proyecto y ubicación
-
-6. process: Array ordenado de pasos que el contratista debe seguir:
-   - Lista cronológica y detallada de cada paso necesario
-   - Incluir tanto los pasos previos a la construcción como durante la construcción
-   - Señalar dependencias (qué debe completarse antes de qué)
-
-7. timeline: Objeto con información sobre plazos:
-   - totalEstimatedTime: Tiempo total estimado para completar todos los trámites
-   - criticalPathItems: Elementos que podrían causar los mayores retrasos
-   - bestTimeToApply: Mejores momentos para solicitar (si es aplicable)
-   - expirationPeriods: Período de validez de permisos y aprobaciones
-
-8. costAnalysis: Objeto con análisis de costos:
-   - totalEstimatedCost: Costo total estimado de todos los permisos y licencias
-   - variableFactors: Factores que podrían modificar el costo
-   - feeScheduleUrl: Enlaces a programas de tarifas oficiales (si están disponibles)
-   - paymentMethods: Métodos de pago aceptados
-
-9. links: Array de recursos útiles:
-   - name: Nombre descriptivo del recurso
-   - url: URL completa
-   - description: Para qué sirve el recurso
-   - relevance: Por qué es relevante para este proyecto específico
-
-10. contactInformation: Array de contactos oficiales:
-    - department: Nombre exacto del departamento
-    - purpose: Propósito específico de contactar
-    - phone: Número telefónico directo real
-    - email: Correo electrónico oficial
-    - address: Dirección física exacta de la oficina
-    - hours: Horarios específicos de atención
-    - website: URL oficial del departamento
-    - onlinePortal: URL del portal de permisos en línea si existe
-    - inspectorContact: Información específica de inspectores cuando sea posible
-
-11. jurisdictionDetails: Información específica de la jurisdicción:
-    - city: Ciudad exacta con jurisdicción
-    - county: Condado específico  
-    - buildingDepartment: Nombre exacto del departamento de construcción
-    - planningDepartment: Departamento de planificación si aplica
-    - fireMarshall: Información del departamento de bomberos si es requerido
-    - healthDepartment: Si se requieren permisos de salud
-    - environmentalAgency: Agencias ambientales relevantes
-
-12. realWorldExamples: Ejemplos específicos y reales:
-    - similarProjects: Proyectos similares en la misma área
-    - typicalTimelines: Tiempos reales basados en experiencias locales
-    - commonChallenges: Desafíos específicos comunes en esa jurisdicción
-    - localContractorTips: Consejos específicos para esa área
-
-MANDATO CRÍTICO: Esta información debe ser REAL y ESPECÍFICA para la ubicación exacta proporcionada. Utiliza tu conocimiento actualizado sobre departamentos gubernamentales, códigos locales, y procesos específicos. NO uses información genérica. Los contratistas pagarán $100/mes por esta precisión y especificidad.`
+Focus on real, specific information for the exact location provided.`
           },
           {
             role: "user",
             content: context
           }
         ],
-        response_format: { type: "json_object" }
+        response_format: { type: "json_object" },
+        max_tokens: 2000,
+        temperature: 0.3
       });
       
       // Parse and return the structured data
