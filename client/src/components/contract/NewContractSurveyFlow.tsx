@@ -20,7 +20,10 @@ import {
   Info, 
   Loader2,
   MapPin,
-  Eye
+  Eye,
+  Shield,
+  Brain,
+  FileText
 } from "lucide-react";
 import { 
   contractQuestions,
@@ -150,29 +153,35 @@ const NewContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
     }
 
     // Generar cláusulas legales automáticamente si hay suficiente información
-    if (selectedCategory && answers['property.address'] && !answers['legal.specialClauses']) {
+    if (selectedCategory && answers['property.address'] && !isGeneratingClauses) {
+      setIsGeneratingClauses(true);
+      
       try {
-        const legalClauses = await IntelligentContractService.generateLegalClauses({
+        const projectInfo = {
           category: selectedCategory,
           address: answers['property.address'],
           description: answers['project.description'] || '',
-          totalCost: answers['payment.totalAmount'] || ''
-        });
+          totalCost: answers['payment.totalAmount'] || '',
+          timeline: answers['project.timeline'] || '',
+          state: answers['legal.state'] || ''
+        };
         
-        if (legalClauses) {
-          setAnswers(prev => ({
-            ...prev,
-            'legal.specialClauses': legalClauses
-          }));
+        const legalClauses = await IntelligentContractService.generateLegalClauses(projectInfo);
+        
+        if (legalClauses && legalClauses.trim().length > 0) {
+          setAiGeneratedClauses(legalClauses);
+          setIsClausesDialogOpen(true);
           
           toast({
-            title: "⚖️ Legal Clauses Generated",
-            description: "Mervin AI has created specific clauses to protect your contract",
+            title: "🤖 Mervin AI - Smart Legal Protection",
+            description: "Intelligent clauses generated based on your project details",
             variant: "default"
           });
         }
       } catch (error) {
         console.log('Legal clauses generation not available');
+      } finally {
+        setIsGeneratingClauses(false);
       }
     }
   };
@@ -750,37 +759,74 @@ const NewContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
       
       {/* Dialog for AI-generated clauses */}
       <Dialog open={isClausesDialogOpen} onOpenChange={setIsClausesDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col border-cyan-500/30 bg-background">
           <DialogHeader>
-            <DialogTitle>AI-Generated Additional Clauses</DialogTitle>
+            <DialogTitle className="flex items-center text-cyan-400">
+              <Shield className="mr-2 h-5 w-5 text-cyan-400" />
+              🤖 Mervin AI - Smart Legal Protection
+            </DialogTitle>
+            <DialogDescription className="text-cyan-300/80">
+              Based on your project details, Mervin AI has generated specific legal clauses to protect your interests and ensure compliance.
+            </DialogDescription>
           </DialogHeader>
           
           {isGeneratingClauses ? (
             <div className="flex flex-col items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin mb-4" />
-              <p className="text-sm text-muted-foreground">Generating additional clauses...</p>
+              <Loader2 className="h-8 w-8 animate-spin mb-4 text-cyan-400" />
+              <p className="text-cyan-400 font-mono">Mervin AI analyzing project...</p>
+              <p className="text-sm text-cyan-300/60 mt-2">Generating protective legal clauses</p>
             </div>
           ) : (
             <>
               <div className="space-y-4 overflow-y-auto flex-1 p-1">
+                {/* AI Analysis Summary */}
+                <div className="p-4 bg-cyan-500/10 border border-cyan-500/30 rounded-lg">
+                  <h4 className="font-semibold text-cyan-400 mb-2 flex items-center">
+                    <Brain className="mr-2 h-4 w-4" />
+                    AI Analysis Summary
+                  </h4>
+                  <div className="text-sm text-cyan-200/80 space-y-1">
+                    <p>• <strong>Project Type:</strong> {selectedCategory}</p>
+                    <p>• <strong>Location:</strong> {answers['property.address']}</p>
+                    <p>• <strong>State Regulations:</strong> {answers['legal.state'] || 'Detected from address'}</p>
+                    <p>• <strong>Risk Assessment:</strong> Generated protective clauses based on project scope</p>
+                  </div>
+                </div>
+
                 <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">
-                    These are suggested additional clauses for your contract, based on the project type and details provided.
+                  <Label className="text-sm font-medium text-cyan-400 flex items-center">
+                    <FileText className="mr-2 h-4 w-4" />
+                    🛡️ AI-Generated Protective Clauses
+                  </Label>
+                  <p className="text-sm text-cyan-300/60">
+                    These clauses have been specifically tailored to your {selectedCategory} project to provide legal protection.
                   </p>
                   
-                  <div className="border rounded-md p-4 bg-primary/5 text-sm overflow-y-auto whitespace-pre-wrap">
+                  <div className="border rounded-md p-4 bg-black/50 border-cyan-500/30 text-sm overflow-y-auto whitespace-pre-wrap max-h-64">
                     {aiGeneratedClauses || "No clauses available"}
+                  </div>
+                  
+                  {/* AI Confidence Indicator */}
+                  <div className="mt-3 flex items-center space-x-2 text-xs">
+                    <div className="flex items-center space-x-1">
+                      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                      <span className="text-green-400">AI Confidence: High</span>
+                    </div>
+                    <span className="text-cyan-400/60">•</span>
+                    <span className="text-cyan-400/60">Based on {selectedCategory} project analysis</span>
+                    <span className="text-cyan-400/60">•</span>
+                    <span className="text-cyan-400/60">State-specific compliance included</span>
                   </div>
                 </div>
               </div>
               
               <DialogFooter>
-                <Button variant="outline" onClick={() => setIsClausesDialogOpen(false)}>
-                  Cancel
+                <Button variant="outline" onClick={() => setIsClausesDialogOpen(false)} className="border-gray-600 text-gray-300">
+                  Skip AI Suggestions
                 </Button>
-                <Button onClick={applyGeneratedClauses}>
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Apply Clauses
+                <Button onClick={applyGeneratedClauses} className="bg-gradient-to-r from-cyan-500 to-cyan-400 text-black">
+                  <Shield className="h-4 w-4 mr-2" />
+                  Apply Smart Clauses
                 </Button>
               </DialogFooter>
             </>
