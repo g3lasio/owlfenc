@@ -1003,11 +1003,11 @@ export default function EstimatesWizardFixed() {
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
-                    onClick={() => generateEstimatePreview()}
-                    disabled={!estimate.client || estimate.items.length === 0}
+                    onClick={handleSaveEstimate}
+                    disabled={!estimate.client || estimate.items.length === 0 || isSaving}
                   >
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Actualizar Vista Previa
+                    <Save className="h-4 w-4 mr-2" />
+                    {isSaving ? 'Guardando...' : 'Guardar estimado'}
                   </Button>
                   <Button
                     onClick={downloadPDF}
