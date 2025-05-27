@@ -3,6 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -20,7 +21,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Search, Clock } from "lucide-react";
 import MapboxPlacesAutocomplete from "@/components/ui/mapbox-places-autocomplete";
 import { useToast } from "@/hooks/use-toast";
 
@@ -160,25 +161,25 @@ export default function PermitAdvisor() {
       </div>
 
       {/* Search Interface */}
-      <div className="max-w-6xl mx-auto p-6">
-        <Card className="bg-gray-800/50 border-teal-500/20 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-teal-300 flex items-center gap-2">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
+        <Card className="bg-gray-800/50 border-teal-500/20 backdrop-blur-sm overflow-hidden">
+          <CardHeader className="text-center px-4 sm:px-6">
+            <CardTitle className="text-lg sm:text-xl lg:text-2xl text-teal-300 flex items-center justify-center gap-2">
               <div className="w-3 h-3 bg-teal-400 rounded-full animate-pulse"></div>
-              Property & Project Analysis
+              <span className="truncate">Property & Project Analysis</span>
             </CardTitle>
-            <CardDescription className="text-gray-400">
+            <CardDescription className="text-gray-400 text-sm sm:text-base">
               Enter property details for comprehensive permit analysis
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <CardContent className="space-y-4 sm:space-y-6 px-4 sm:px-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-teal-300">Property Address</label>
                 <MapboxPlacesAutocomplete
                   onPlaceSelect={handleAddressSelect}
                   onChange={() => {}} 
-                  className="bg-gray-700/50 border-teal-500/30 text-white placeholder-gray-400 focus:border-teal-400 focus:ring-teal-400/20"
+                  className="w-full bg-gray-700/50 border-teal-500/30 text-white placeholder-gray-400 focus:border-teal-400 focus:ring-teal-400/20 min-h-[44px]"
                   placeholder="Enter property address..."
                 />
               </div>
@@ -186,10 +187,10 @@ export default function PermitAdvisor() {
               <div className="space-y-2">
                 <label className="text-sm font-medium text-teal-300">Project Type</label>
                 <Select value={projectType} onValueChange={setProjectType}>
-                  <SelectTrigger className="bg-gray-700/50 border-teal-500/30 text-white focus:border-teal-400">
+                  <SelectTrigger className="w-full bg-gray-700/50 border-teal-500/30 text-white focus:border-teal-400 min-h-[44px]">
                     <SelectValue placeholder="Select project type" />
                   </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-teal-500/30">
+                  <SelectContent className="bg-gray-800 border-teal-500/30 max-h-[200px] overflow-y-auto">
                     <SelectItem value="fence">Fence Installation</SelectItem>
                     <SelectItem value="deck">Deck Construction</SelectItem>
                     <SelectItem value="addition">Home Addition</SelectItem>
@@ -221,36 +222,43 @@ export default function PermitAdvisor() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-teal-300">Project Description (Optional)</label>
-              <Input
+              <Textarea
                 value={projectDescription}
                 onChange={(e) => setProjectDescription(e.target.value)}
-                placeholder="Describe your project in detail..."
-                className="bg-gray-700/50 border-teal-500/30 text-white placeholder-gray-400 focus:border-teal-400 focus:ring-teal-400/20"
+                placeholder="Describe your project in detail (e.g., materials, scope, square footage)..."
+                className="w-full bg-gray-700/50 border-teal-500/30 text-white placeholder-gray-400 focus:border-teal-400 focus:ring-teal-400/20 min-h-[80px] resize-none"
               />
             </div>
 
-            <div className="flex gap-4">
+            {/* Responsive button layout */}
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <Button
                 onClick={handleSearch}
                 disabled={isLoading || !selectedAddress || !projectType}
-                className="flex-1 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-medium transition-all duration-300 transform hover:scale-105"
+                className="w-full sm:flex-1 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-medium transition-all duration-300 h-12 text-sm sm:text-base"
               >
                 {isLoading ? (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center gap-2">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Analyzing...
+                    <span>Analyzing...</span>
                   </div>
                 ) : (
-                  "🔍 Run DeepSearch Analysis"
+                  <div className="flex items-center justify-center gap-2">
+                    🔍
+                    <span className="hidden sm:inline">Run DeepSearch Analysis</span>
+                    <span className="sm:hidden">Run Analysis</span>
+                  </div>
                 )}
               </Button>
               
               <Button
                 variant="outline"
                 onClick={() => setShowHistory(!showHistory)}
-                className="border-teal-500/30 text-teal-300 hover:bg-teal-500/10"
+                className="w-full sm:w-auto border-teal-500/30 text-teal-300 hover:bg-teal-500/10 h-12 text-sm sm:text-base px-4"
               >
-                {showHistory ? "Hide History" : "Show History"}
+                <Clock className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">{showHistory ? "Hide History" : "Show History"}</span>
+                <span className="sm:hidden">History</span>
               </Button>
             </div>
           </CardContent>
