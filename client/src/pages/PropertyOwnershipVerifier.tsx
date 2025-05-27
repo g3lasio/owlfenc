@@ -34,7 +34,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import ModernGooglePlacesAutocomplete from "@/components/ui/modern-google-places-autocomplete";
+import MapboxPlacesAutocomplete from "@/components/ui/mapbox-places-autocomplete";
 import { propertyVerifierService, PropertyDetails, OwnerHistoryEntry } from "@/services/propertyVerifierService";
 import PropertySearchHistory from "@/components/property/PropertySearchHistory";
 import { useQueryClient } from '@tanstack/react-query';
@@ -160,14 +160,13 @@ export default function PropertyOwnershipVerifier() {
               <div className="grid grid-cols-12 gap-4">
                 <div className="col-span-12 sm:col-span-9">
                   <Label htmlFor="address">Dirección de la Propiedad</Label>
-                  <ModernGooglePlacesAutocomplete
+                  <MapboxPlacesAutocomplete
                     value={address}
                     onChange={setAddress}
                     onPlaceSelect={handlePlaceSelect}
                     placeholder="Ingresa la dirección de la propiedad"
                     countries={["mx", "us", "es"]}
                     language="es"
-                    region="mx"
                   />
                 </div>
                 <div className="col-span-12 sm:col-span-3 flex items-end">
