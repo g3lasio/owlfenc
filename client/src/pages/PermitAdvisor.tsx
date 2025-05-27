@@ -324,22 +324,22 @@ export default function PermitAdvisor() {
               </CardHeader>
               <CardContent className="px-2 sm:px-4 lg:px-6">
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  {/* Responsive tabs - scrollable on mobile, grid on larger screens */}
-                  <TabsList className="flex w-full overflow-x-auto sm:grid sm:grid-cols-5 bg-gray-900/80 border border-teal-400/30 relative p-1 gap-1 scrollbar-thin scrollbar-thumb-teal-500/30">
+                  {/* Responsive tabs - fully visible on all screens */}
+                  <TabsList className="flex w-full overflow-x-auto sm:grid sm:grid-cols-5 bg-gray-900/80 border border-teal-400/30 relative p-2 gap-2">
                     <div className="absolute inset-0 bg-gradient-to-r from-teal-500/10 via-transparent to-cyan-500/10 animate-pulse"></div>
-                    <TabsTrigger value="permits" className="relative text-teal-300 data-[state=active]:bg-teal-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-teal-500/50 transition-all duration-300 whitespace-nowrap min-w-[80px] text-xs sm:text-sm">
+                    <TabsTrigger value="permits" className="relative text-teal-300 data-[state=active]:bg-teal-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-teal-500/50 transition-all duration-300 whitespace-nowrap min-w-[90px] flex-shrink-0 text-sm font-medium px-4 py-2">
                       <span className="relative z-10">Permits</span>
                     </TabsTrigger>
-                    <TabsTrigger value="contacts" className="relative text-teal-300 data-[state=active]:bg-cyan-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/50 transition-all duration-300 whitespace-nowrap min-w-[80px] text-xs sm:text-sm">
+                    <TabsTrigger value="contacts" className="relative text-teal-300 data-[state=active]:bg-cyan-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/50 transition-all duration-300 whitespace-nowrap min-w-[90px] flex-shrink-0 text-sm font-medium px-4 py-2">
                       <span className="relative z-10">Contacts</span>
                     </TabsTrigger>
-                    <TabsTrigger value="codes" className="relative text-teal-300 data-[state=active]:bg-emerald-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/50 transition-all duration-300 whitespace-nowrap min-w-[80px] text-xs sm:text-sm">
+                    <TabsTrigger value="codes" className="relative text-teal-300 data-[state=active]:bg-emerald-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/50 transition-all duration-300 whitespace-nowrap min-w-[90px] flex-shrink-0 text-sm font-medium px-4 py-2">
                       <span className="relative z-10">Codes</span>
                     </TabsTrigger>
-                    <TabsTrigger value="process" className="relative text-teal-300 data-[state=active]:bg-blue-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/50 transition-all duration-300 whitespace-nowrap min-w-[80px] text-xs sm:text-sm">
+                    <TabsTrigger value="process" className="relative text-teal-300 data-[state=active]:bg-blue-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/50 transition-all duration-300 whitespace-nowrap min-w-[90px] flex-shrink-0 text-sm font-medium px-4 py-2">
                       <span className="relative z-10">Process</span>
                     </TabsTrigger>
-                    <TabsTrigger value="considerations" className="relative text-teal-300 data-[state=active]:bg-amber-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-amber-500/50 transition-all duration-300 whitespace-nowrap min-w-[80px] text-xs sm:text-sm">
+                    <TabsTrigger value="considerations" className="relative text-teal-300 data-[state=active]:bg-amber-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-amber-500/50 transition-all duration-300 whitespace-nowrap min-w-[90px] flex-shrink-0 text-sm font-medium px-4 py-2">
                       <span className="relative z-10">Alerts</span>
                     </TabsTrigger>
                   </TabsList>
@@ -498,9 +498,17 @@ export default function PermitAdvisor() {
 
                   {/* Contacts Tab */}
                   <TabsContent value="contacts" className="space-y-4">
-                    {permitData.contactInformation && permitData.contactInformation.length > 0 ? (
+                    {(permitData.contactInformation && permitData.contactInformation.length > 0) || permitData.requiredPermits ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {permitData.contactInformation.map((contact: any, idx: number) => (
+                        {/* Extract contacts from permits if contactInformation is empty */}
+                        {(permitData.contactInformation || permitData.requiredPermits.map((permit: any) => ({
+                          department: permit.issuingAuthority,
+                          phone: permit.contactPhone,
+                          email: permit.email || permit.website?.includes('@') ? permit.website : null,
+                          website: permit.website,
+                          address: permit.address,
+                          hours: permit.hours
+                        }))).map((contact: any, idx: number) => (
                           <div key={idx} className="relative">
                             <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/20 via-teal-400/20 to-blue-400/20 animate-pulse rounded-lg"></div>
                             <Card className="relative bg-gray-800/90 border-cyan-400/30 backdrop-blur-sm hover:shadow-lg hover:shadow-cyan-400/20 transition-all duration-300">
@@ -580,14 +588,150 @@ export default function PermitAdvisor() {
                     )}
                   </TabsContent>
 
-                  {/* Other tabs with basic content */}
+                  {/* Building Codes Tab */}
                   <TabsContent value="codes" className="space-y-4">
-                    <div className="text-center py-8">
-                      <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-green-500 rounded-lg flex items-center justify-center mx-auto mb-4 transform rotate-45 animate-pulse">
-                        <span className="transform -rotate-45">📋</span>
+                    <div className="space-y-4">
+                      {/* Extract and display building codes from permit requirements */}
+                      {permitData.requiredPermits && permitData.requiredPermits.map((permit: any, idx: number) => {
+                        // Extract building codes from permit requirements
+                        const codes = [];
+                        if (permit.requirements && permit.requirements.includes('California')) {
+                          codes.push({
+                            title: "California Building Code (CBC)",
+                            code: "Title 24, Part 2",
+                            description: "State building standards that apply to all construction projects in California",
+                            compliance: "Mandatory compliance required for all permits"
+                          });
+                        }
+                        if (permit.requirements && permit.requirements.includes('Electrical')) {
+                          codes.push({
+                            title: "California Electrical Code (CEC)",
+                            code: "Title 24, Part 3",
+                            description: "Electrical installation standards and safety requirements",
+                            compliance: "Required for all electrical work"
+                          });
+                        }
+                        if (projectType === 'electrical') {
+                          codes.push({
+                            title: "National Electrical Code (NEC)",
+                            code: "NFPA 70",
+                            description: "National standard for electrical installation and safety",
+                            compliance: "Must follow current NEC standards"
+                          });
+                        }
+                        if (projectType === 'plumbing') {
+                          codes.push({
+                            title: "California Plumbing Code (CPC)",
+                            code: "Title 24, Part 5",
+                            description: "Plumbing system installation and safety standards",
+                            compliance: "Required for all plumbing modifications"
+                          });
+                        }
+                        if (projectType === 'concrete' || projectType === 'addition') {
+                          codes.push({
+                            title: "Structural Engineering Standards",
+                            code: "CBC Chapter 16-23",
+                            description: "Structural design and concrete construction requirements",
+                            compliance: "Engineer stamped plans may be required"
+                          });
+                        }
+                        
+                        // Add local codes
+                        codes.push({
+                          title: `${permitData.meta?.location || 'Local'} Municipal Code`,
+                          code: "Local Ordinances",
+                          description: "City-specific building requirements and zoning restrictions",
+                          compliance: "Must comply with local amendments to state codes"
+                        });
+
+                        return codes.length > 0 ? (
+                          <div key={idx} className="space-y-3">
+                            <h4 className="text-emerald-300 font-semibold border-b border-emerald-500/30 pb-2">
+                              Building Codes for {permit.name}
+                            </h4>
+                            {codes.map((code, codeIdx) => (
+                              <div key={codeIdx} className="relative">
+                                <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/10 via-green-400/10 to-teal-400/10 rounded-lg"></div>
+                                <Card className="relative bg-gray-800/70 border-emerald-400/30 backdrop-blur-sm">
+                                  <CardContent className="p-4">
+                                    <div className="flex items-start gap-4">
+                                      <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-lg">
+                                        📋
+                                      </div>
+                                      <div className="flex-1 space-y-2">
+                                        <div className="flex items-center gap-3">
+                                          <h5 className="text-emerald-300 font-semibold">{code.title}</h5>
+                                          <Badge variant="outline" className="border-emerald-400/30 text-emerald-300">
+                                            {code.code}
+                                          </Badge>
+                                        </div>
+                                        <p className="text-gray-300 text-sm leading-relaxed">
+                                          {code.description}
+                                        </p>
+                                        <div className="bg-emerald-500/10 border border-emerald-400/30 rounded-lg p-3 mt-3">
+                                          <p className="text-emerald-200 text-sm font-medium">
+                                            ✓ {code.compliance}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null;
+                      })}
+
+                      {/* Additional general building codes */}
+                      <div className="mt-6">
+                        <h4 className="text-emerald-300 font-semibold border-b border-emerald-500/30 pb-2 mb-4">
+                          General Construction Requirements
+                        </h4>
+                        <div className="space-y-3">
+                          <div className="relative">
+                            <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/10 via-green-400/10 to-teal-400/10 rounded-lg"></div>
+                            <Card className="relative bg-gray-800/70 border-emerald-400/30 backdrop-blur-sm">
+                              <CardContent className="p-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div className="space-y-3">
+                                    <h5 className="text-emerald-300 font-medium">📏 Setback Requirements</h5>
+                                    <ul className="text-gray-300 text-sm space-y-1">
+                                      <li>• Front setback: Check local zoning</li>
+                                      <li>• Side setback: Minimum 5 feet typical</li>
+                                      <li>• Rear setback: Varies by zone</li>
+                                    </ul>
+                                  </div>
+                                  <div className="space-y-3">
+                                    <h5 className="text-emerald-300 font-medium">🏗️ Construction Standards</h5>
+                                    <ul className="text-gray-300 text-sm space-y-1">
+                                      <li>• Licensed contractor required</li>
+                                      <li>• Proper permits before work</li>
+                                      <li>• Inspections at key milestones</li>
+                                    </ul>
+                                  </div>
+                                  <div className="space-y-3">
+                                    <h5 className="text-emerald-300 font-medium">🔧 Material Standards</h5>
+                                    <ul className="text-gray-300 text-sm space-y-1">
+                                      <li>• Use approved materials only</li>
+                                      <li>• Check manufacturer specifications</li>
+                                      <li>• Maintain material certifications</li>
+                                    </ul>
+                                  </div>
+                                  <div className="space-y-3">
+                                    <h5 className="text-emerald-300 font-medium">⚠️ Safety Requirements</h5>
+                                    <ul className="text-gray-300 text-sm space-y-1">
+                                      <li>• OSHA safety protocols</li>
+                                      <li>• Proper fall protection</li>
+                                      <li>• Site safety documentation</li>
+                                    </ul>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </div>
+                        </div>
                       </div>
-                      <h3 className="text-lg font-medium text-emerald-300">Building Codes Loading...</h3>
-                      <p className="text-gray-400">Specific code sections will appear here</p>
                     </div>
                   </TabsContent>
 
