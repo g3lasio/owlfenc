@@ -286,7 +286,7 @@ const CyberpunkContractGenerator = () => {
                   </div>
                   <div>
                     <div className="text-2xl font-bold text-blue-400">
-                      {contracts.filter(c => c.status === 'sent').length}
+                      {contracts.filter((c: Contract) => c.status === 'sent').length}
                     </div>
                     <div className="text-cyan-300/70 text-sm">ENVIADOS</div>
                   </div>
@@ -298,7 +298,7 @@ const CyberpunkContractGenerator = () => {
                   </div>
                   <div>
                     <div className="text-2xl font-bold text-yellow-400">
-                      {contracts.filter(c => c.status === 'draft').length}
+                      {contracts.filter((c: Contract) => c.status === 'draft').length}
                     </div>
                     <div className="text-cyan-300/70 text-sm">BORRADORES</div>
                   </div>
