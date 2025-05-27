@@ -102,60 +102,61 @@ export class LaborDeepSearchService {
    */
   private buildLaborAnalysisPrompt(projectDescription: string, location?: string, projectType?: string): string {
     return `
-Eres un experto contratista con 20+ años de experiencia en estimación de costos laborales reales. Analiza la descripción del proyecto y genera costos de labor usando MÉTODOS REALES DE LA INDUSTRIA.
+You are a veteran general contractor with 25+ years experience pricing construction labor. Think like a professional contractor who NEVER charges by the hour. Use REAL industry pricing methods that contractors actually use.
 
-DESCRIPCIÓN DEL PROYECTO:
+PROJECT DESCRIPTION:
 ${projectDescription}
 
-TIPO DE PROYECTO: ${projectType || 'General'}
-UBICACIÓN: ${location || 'Estados Unidos'}
+PROJECT TYPE: ${projectType || 'General'}
+LOCATION: ${location || 'United States'}
 
-MÉTODOS DE CÁLCULO REALES (NUNCA uses solo horas):
-• PIE LINEAL: Para cercas, instalación de vigas, molduras, canaletas
-• PIE CUADRADO: Para pisos, techos, paredes, pintura, drywall
-• YARDA CÚBICA: Para concreto, excavación, relleno, demolición
-• ESCUADRA (100 sqft): Para techos y siding
-• POR PROYECTO: Para trabajos especializados o pequeños
-• POR UNIDAD: Para puertas, ventanas, postes
+REAL CONTRACTOR PRICING METHODS (NEVER use hourly rates):
+• LINEAR FOOT: Fencing, beam installation, trim work, gutters ($8-25 per linear ft)
+• SQUARE FOOT: Flooring, roofing, walls, painting, drywall ($2-15 per sqft)
+• CUBIC YARD: Concrete, excavation, fill, demolition ($25-150 per cubic yard)
+• SQUARE (100 sqft): Roofing and siding ($300-800 per square)
+• PER PROJECT: Specialized or small jobs (flat rate $200-2000)
+• PER UNIT: Doors, windows, posts ($50-500 per unit)
 
-INSTRUCCIONES CRÍTICAS:
-1. SOLO incluye LABOR/SERVICIOS (NO materiales)
-2. Usa las unidades de medida REALES que usan los contratistas
-3. Calcula precios competitivos pero realistas para la región
-4. Considera complejidad, acceso al sitio, y condiciones especiales
-5. Incluye preparación, instalación, limpieza según corresponda
+CRITICAL INSTRUCTIONS:
+1. Include ONLY LABOR/SERVICES (NO materials)
+2. Use REAL units that professional contractors use
+3. Price competitively but realistically for the region
+4. Consider complexity, site access, and special conditions
+5. Think about what a real contractor would charge for this work
+6. Use English for all service names and descriptions
 
-CATEGORÍAS DE LABOR:
-- Preparación del sitio (excavación, nivelación, marcado)
-- Demolición y remoción
-- Instalación y construcción principal
-- Acabados y detalles
-- Limpieza y cleanup final
-- Hauling y disposal
+LABOR CATEGORIES:
+- Site preparation (excavation, leveling, marking)
+- Demolition and removal
+- Main installation and construction
+- Finishing and details
+- Final cleanup
+- Hauling and disposal
 
-RESPONDE EN FORMATO JSON EXACTO:
+RESPOND IN EXACT JSON FORMAT:
 {
   "laborItems": [
     {
       "id": "labor_001",
-      "name": "Nombre descriptivo del servicio",
-      "description": "Descripción detallada incluyendo lo que está incluido",
+      "name": "Service name in English",
+      "description": "Detailed description of what's included in this service",
       "category": "preparation|installation|cleanup|demolition|hauling|specialty",
-      "quantity": 100,
+      "quantity": 250,
       "unit": "linear_ft|square_ft|cubic_yard|square|project|per_unit",
-      "unitPrice": 12.50,
-      "totalCost": 1250.00,
+      "unitPrice": 16.00,
+      "totalCost": 4000.00,
       "skillLevel": "helper|skilled|specialist|foreman",
       "complexity": "low|medium|high",
-      "estimatedTime": "2-3 días",
-      "includes": ["Lo que incluye este servicio"]
+      "estimatedTime": "2-3 days",
+      "includes": ["What this service includes"]
     }
   ],
-  "totalLaborCost": 5500.00,
-  "estimatedDuration": "1-2 semanas",
+  "totalLaborCost": 4000.00,
+  "estimatedDuration": "5-7 days",
   "projectComplexity": "medium",
-  "specialRequirements": ["permisos especiales", "certificaciones"],
-  "safetyConsiderations": ["consideraciones de seguridad"]
+  "specialRequirements": ["special permits", "certifications"],
+  "safetyConsiderations": ["safety considerations"]
 }
 
 TARIFAS DE REFERENCIA POR NIVEL:
