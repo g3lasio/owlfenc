@@ -34,6 +34,7 @@ import {
   RefreshCw,
   AlertCircle
 } from 'lucide-react';
+import { saveEstimate } from '@/lib/firebase';
 
 // Types
 interface Client {
@@ -120,6 +121,7 @@ export default function EstimatesWizardFixed() {
   const [isLoadingClients, setIsLoadingClients] = useState(true);
   const [isLoadingMaterials, setIsLoadingMaterials] = useState(true);
   const [previewHtml, setPreviewHtml] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   // New client form
   const [newClient, setNewClient] = useState({
@@ -586,6 +588,90 @@ export default function EstimatesWizardFixed() {
         description: 'Could not download PDF',
         variant: 'destructive'
       });
+    }
+  };
+
+  // Save estimate to Firebase (for both "Mis estimados" and dashboard)
+  const handleSaveEstimate = async () => {
+    if (!currentUser) {
+      toast({
+        title: 'Error de autenticación',
+        description: 'Debes estar autenticado para guardar estimados',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (!estimate.client || estimate.items.length === 0) {
+      toast({
+        title: 'Datos incompletos',
+        description: 'Selecciona un cliente y agrega al menos un material',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    
+    try {
+      // Generate preview HTML for the estimate
+      const html = generateEstimatePreview();
+      
+      // Prepare estimate data for Firebase
+      const estimateData = {
+        userId: currentUser.uid,
+        estimateNumber: `EST-${Date.now()}`,
+        title: `Estimado para ${estimate.client.name}`,
+        
+        // Client information
+        clientId: estimate.client.id,
+        clientName: estimate.client.name,
+        clientEmail: estimate.client.email || '',
+        clientPhone: estimate.client.phone || '',
+        clientAddress: estimate.client.address || '',
+        
+        // Project details
+        projectType: 'fence', // Default type, can be enhanced later
+        projectDescription: estimate.projectDetails,
+        
+        // Items and financial data
+        items: estimate.items,
+        subtotal: Math.round(estimate.subtotal * 100), // Convert to cents
+        taxRate: 16, // 16% tax rate
+        taxAmount: Math.round(estimate.tax * 100), // Convert to cents
+        total: Math.round(estimate.total * 100), // Convert to cents
+        
+        // Status and metadata
+        status: 'draft',
+        htmlContent: html,
+        validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Valid for 30 days
+        
+        // Timestamps
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      // Save to Firebase using your existing saveEstimate function
+      const savedEstimate = await saveEstimate(estimateData);
+      
+      toast({
+        title: '✅ Estimado Guardado',
+        description: `El estimado para ${estimate.client.name} se ha guardado correctamente`,
+        duration: 5000
+      });
+
+      console.log('Estimado guardado exitosamente:', savedEstimate);
+      
+    } catch (error) {
+      console.error('Error saving estimate:', error);
+      toast({
+        title: '❌ Error al guardar',
+        description: 'No se pudo guardar el estimado. Por favor intente nuevamente.',
+        variant: 'destructive',
+        duration: 5000
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
