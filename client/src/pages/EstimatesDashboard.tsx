@@ -252,28 +252,7 @@ export default function EstimatesDashboard() {
         });
       }
       
-      // Descargar el archivo
-      console.log('📥 [UNIFIED-PDF] Descargando archivo...');
-      const downloadTime = Date.now();
-      
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = `estimado-${estimateData.title || 'documento'}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      
-      console.log('⏱️ [UNIFIED-PDF] Descarga completada en:', Date.now() - downloadTime, 'ms');
-      console.log('🎯 [UNIFIED-PDF] Proceso total completado en:', Date.now() - startTime, 'ms');
-      
-      toast({
-        title: "PDF descargado exitosamente",
-        description: "El documento es exactamente idéntico al preview mostrado.",
-      });
+      console.log('🎯 [PDFMonkey Integration] Proceso total completado en:', Date.now() - startTime, 'ms');
       
     } catch (error) {
       console.error('❌ [UNIFIED-PDF] Error:', error);
