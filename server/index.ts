@@ -38,13 +38,16 @@ import paymentRoutes from './routes/payment-routes';
 
 // 🐒 SISTEMA PDFMONKEY - Único procesador profesional de PDFs
 import pdfRoutes from './routes/pdf-routes';
+import pdfMonkeyEstimatesRoutes from './routes/pdfmonkey-estimates';
 
 // Registrar rutas de pagos
 app.use('/api', paymentRoutes);
 
 // 📄 Registrar sistema PDFMonkey único
 app.use('/api/pdf', pdfRoutes);
+app.use('/api/pdfmonkey-estimates', pdfMonkeyEstimatesRoutes);
 console.log('🐒 [PDFMONKEY] Sistema profesional de PDFs registrado en /api/pdf/generate');
+console.log('🐒 [PDFMONKEY] Template específico de estimados registrado en /api/pdfmonkey-estimates/generate');
 
 app.use((req, res, next) => {
   const start = Date.now();

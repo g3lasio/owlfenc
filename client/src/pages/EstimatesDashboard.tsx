@@ -140,62 +140,116 @@ export default function EstimatesDashboard() {
     }
   };
 
-  // 📄 DESCARGA PDF CON SISTEMA UNIFICADO - Garantiza identidad con preview
+  // 📄 DESCARGA PDF CON PDFMONKEY + FALLBACK - Sistema integrado profesional
   const handleDownloadPDF = async (estimateId: string) => {
     try {
       setIsPdfLoading(true);
-      console.log('📄 [UNIFIED-PDF] Iniciando descarga:', estimateId);
+      console.log('🐒 [PDFMonkey Integration] Iniciando descarga:', estimateId);
       
       const startTime = Date.now();
       
       toast({
-        title: "Generando PDF",
-        description: "Usando la misma plantilla del preview para garantizar identidad...",
+        title: "Generando PDF profesional",
+        description: "Usando PDFMonkey con template específico y fallback automático...",
       });
       
-      // Obtener datos del estimado (mismo proceso que preview)
+      // Obtener datos del estimado
       const estimateData = await getEstimateById(estimateId);
       if (!estimateData) throw new Error("Estimado no encontrado");
       
-      // Obtener datos de la empresa (mismo proceso que preview)
-      let companyData = {};
-      try {
-        const profile = localStorage.getItem('contractorProfile');
-        if (profile) companyData = JSON.parse(profile);
-      } catch (error) {
-        console.warn('⚠️ [UNIFIED-PDF] Usando datos por defecto');
-      }
+      // Mapear datos del estimado al formato requerido por PDFMonkey
+      const pdfMonkeyData = {
+        estimateNumber: estimateData.estimateNumber || `EST-${Date.now()}`,
+        date: estimateData.date || new Date().toLocaleDateString('en-US'),
+        validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US'),
+        clientName: estimateData.clientName || '',
+        clientAddress: estimateData.clientAddress || '',
+        clientEmail: estimateData.clientEmail || '',
+        clientPhone: estimateData.clientPhone || '',
+        items: (estimateData.items || []).map(item => ({
+          name: item.name,
+          description: item.description,
+          quantity: item.quantity,
+          unit: item.unit,
+          unitPrice: item.unitPrice,
+          totalPrice: item.totalPrice
+        })),
+        subtotal: estimateData.subtotal || 0,
+        discount: estimateData.discount || 0,
+        tax: estimateData.tax || 0,
+        taxPercentage: estimateData.taxPercentage || 0,
+        total: estimateData.total || 0,
+        projectDescription: estimateData.projectDescription || '',
+        notes: estimateData.notes || ''
+      };
       
-      // 🎯 USAR EXACTAMENTE LA MISMA PLANTILLA QUE EL PREVIEW
-      const { generateUnifiedEstimateHTML, convertEstimateDataToTemplate } = 
-        await import('../lib/unified-estimate-template');
+      console.log('🐒 [PDFMonkey Integration] Datos mapeados para template específico');
       
-      // Mismo proceso de conversión que en el preview
-      const templateData = convertEstimateDataToTemplate(estimateData, companyData);
-      const html = generateUnifiedEstimateHTML(templateData);
-      
-      console.log('✅ [UNIFIED-PDF] HTML idéntico al preview generado');
-      
-      // Solicitar PDF al servidor con logging de rendimiento
-      console.log('🔄 [UNIFIED-PDF] Enviando a servidor...');
-      const requestTime = Date.now();
-      
-      const response = await fetch('/api/generate-pdf', {
+      // Usar el nuevo endpoint con template específico y fallback automático
+      const response = await fetch('/api/pdfmonkey-estimates/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          html,
-          title: estimateData.title || 'Estimado',
-          estimateId 
-        }),
+        body: JSON.stringify(pdfMonkeyData),
       });
       
-      console.log('⏱️ [UNIFIED-PDF] Respuesta del servidor en:', Date.now() - requestTime, 'ms');
+      console.log('⏱️ [PDFMonkey Integration] Respuesta en:', Date.now() - startTime, 'ms');
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ [UNIFIED-PDF] Error del servidor:', errorText);
+        const errorData = await response.json();
+        console.error('❌ [PDFMonkey Integration] Error del servidor:', errorData);
         throw new Error(`Error del servidor: ${response.status}`);
+      }
+      
+      // Verificar si es una respuesta JSON (PDFMonkey exitoso) o un blob (fallback de Claude)
+      const contentType = response.headers.get('content-type');
+      
+      if (contentType && contentType.includes('application/json')) {
+        // PDFMonkey exitoso - descargar desde URL
+        const result = await response.json();
+        console.log('✅ [PDFMonkey Integration] PDF generado con PDFMonkey:', result.method);
+        
+        if (result.success && result.downloadUrl) {
+          // Descargar desde PDFMonkey
+          const downloadResponse = await fetch(result.downloadUrl);
+          const blob = await downloadResponse.blob();
+          const url = window.URL.createObjectURL(blob);
+          
+          const a = document.createElement('a');
+          a.style.display = 'none';
+          a.href = url;
+          a.download = `estimado-${pdfMonkeyData.estimateNumber}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+          
+          toast({
+            title: "PDF descargado",
+            description: `Generado con ${result.method === 'pdfmonkey' ? 'PDFMonkey' : 'sistema de respaldo'} exitosamente.`,
+          });
+        } else {
+          throw new Error(result.error || 'Error en generación de PDF');
+        }
+      } else {
+        // Fallback de Claude - descargar blob directamente
+        console.log('✅ [PDFMonkey Integration] PDF generado con fallback de Claude');
+        
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `estimado-${pdfMonkeyData.estimateNumber}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        toast({
+          title: "PDF descargado",
+          description: "Generado con sistema de respaldo profesional exitosamente.",
+        });
       }
       
       // Descargar el archivo
