@@ -179,13 +179,14 @@ RESPOND IN EXACT JSON FORMAT:
   "safetyConsiderations": ["safety considerations"]
 }
 
-TARIFAS DE REFERENCIA POR NIVEL:
-- Helper: $20-30/hora
-- Skilled: $35-50/hora  
-- Specialist: $50-75/hora
-- Foreman: $60-85/hora
+REFERENCE RATES BY SKILL LEVEL:
+- Helper: $20-30/hour
+- Skilled: $35-50/hour  
+- Specialist: $50-75/hour
+- Foreman: $60-85/hour
 
-Ajusta las tarifas según la ubicación y complejidad del proyecto.
+Adjust rates based on location and project complexity.
+ALL TEXT MUST BE IN ENGLISH ONLY.
 `;
   }
 
@@ -197,7 +198,7 @@ Ajusta las tarifas según la ubicación y complejidad del proyecto.
       // Limpiar la respuesta y extraer JSON
       const jsonMatch = claudeResponse.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        throw new Error('No se encontró JSON válido en la respuesta');
+        throw new Error('No valid JSON found in response');
       }
 
       const parsed = JSON.parse(jsonMatch[0]);
@@ -243,7 +244,7 @@ Ajusta las tarifas según la ubicación y complejidad del proyecto.
     return laborResult.laborItems.map(labor => ({
       id: labor.id,
       name: labor.name,
-      description: `${labor.description} (${labor.complexity} complejidad, ${labor.estimatedTime})`,
+      description: `${labor.description} (${labor.complexity} complexity, ${labor.estimatedTime})`,
       category: 'labor',
       quantity: labor.quantity,
       unit: labor.unit,
