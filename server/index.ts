@@ -40,6 +40,9 @@ import paymentRoutes from './routes/payment-routes';
 import pdfRoutes from './routes/pdf-routes';
 import pdfMonkeyEstimatesRoutes from './routes/pdfmonkey-estimates';
 
+// 🤖 SISTEMA INTELIGENTE DE CONTRATOS - Anthropic Claude
+import anthropicContractRoutes from './routes/anthropicContractRoutes';
+
 // Registrar rutas de pagos
 app.use('/api', paymentRoutes);
 
@@ -48,6 +51,10 @@ app.use('/api/pdf', pdfRoutes);
 app.use('/api/pdfmonkey-estimates', pdfMonkeyEstimatesRoutes);
 console.log('🐒 [PDFMONKEY] Sistema profesional de PDFs registrado en /api/pdf/generate');
 console.log('🐒 [PDFMONKEY] Template específico de estimados registrado en /api/pdfmonkey-estimates/generate');
+
+// 🤖 Registrar sistema inteligente de contratos
+app.use('/api/anthropic', anthropicContractRoutes);
+console.log('🤖 [ANTHROPIC] Sistema inteligente de contratos registrado en /api/anthropic/generate-contract');
 
 app.use((req, res, next) => {
   const start = Date.now();
