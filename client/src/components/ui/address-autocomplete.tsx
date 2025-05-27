@@ -1,142 +1,220 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Input } from "@/components/ui/input";
-import { X } from "lucide-react";
+import { MapPin, X, CheckCircle } from "lucide-react";
 
 interface AddressAutocompleteProps {
   value: string;
   onChange: (address: string) => void;
   onStateExtracted?: (state: string) => void;
   placeholder?: string;
+  className?: string;
+}
+
+interface MapboxSuggestion {
+  place_name: string;
+  center: [number, number];
+  context?: Array<{ id: string; text: string; short_code?: string }>;
 }
 
 /**
- * Campo de dirección con autocompletado de Google Maps integrado
- * Versión optimizada para permitir escritura fluida y sin mensajes intrusivos
+ * Campo de dirección con autocompletado de Mapbox
+ * Reemplaza Google Maps completamente para evitar errores de API
  */
 export function AddressAutocomplete({ 
   value, 
   onChange, 
   onStateExtracted,
-  placeholder = "Escribe la dirección completa..." 
+  placeholder = "Escribe la dirección completa...",
+  className = ""
 }: AddressAutocompleteProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const autocompleteInstance = useRef<any>(null);
   const [internalValue, setInternalValue] = useState(value);
-  const isAutocompleteChange = useRef(false);
+  const [suggestions, setSuggestions] = useState<MapboxSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasMapboxToken, setHasMapboxToken] = useState(false);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+  const debounceTimer = useRef<NodeJS.Timeout>();
 
-  // Sincronizar el valor interno cuando cambia el valor externo
+  // Verificar si el token de Mapbox está disponible
   useEffect(() => {
-    if (!isAutocompleteChange.current) {
-      setInternalValue(value);
-    }
-    isAutocompleteChange.current = false;
+    const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+    setHasMapboxToken(!!token);
+  }, []);
+
+  // Sincronizar valor interno con prop externa
+  useEffect(() => {
+    setInternalValue(value);
   }, [value]);
 
-  // Inicializar Google Places Autocomplete de forma no invasiva
-  useEffect(() => {
-    // Solo inicializar si el input existe y Google Maps está disponible
-    const initAutocomplete = () => {
-      if (!inputRef.current || !window.google?.maps?.places) return;
+  // Función para buscar direcciones con Mapbox
+  const searchAddresses = async (query: string) => {
+    if (!query.trim() || query.length < 3 || !hasMapboxToken) return;
 
-      try {
-        // Inicializar el autocompletado directamente en el campo de texto
-        const options = {
-          types: ['address'],
-          fields: ['address_components', 'formatted_address'],
-        };
+    const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+    if (!token) return;
 
-        autocompleteInstance.current = new window.google.maps.places.Autocomplete(
-          inputRef.current,
-          options
-        );
+    setIsLoading(true);
+    
+    try {
+      const response = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?` +
+        `access_token=${token}&` +
+        `country=US&` +
+        `types=address,poi&` +
+        `limit=5&` +
+        `language=es`
+      );
 
-        // Solo escuchar el evento place_changed - cuando el usuario selecciona una dirección
-        autocompleteInstance.current.addListener('place_changed', () => {
-          const place = autocompleteInstance.current.getPlace();
-          
-          if (place?.formatted_address) {
-            isAutocompleteChange.current = true;
-            setInternalValue(place.formatted_address);
-            onChange(place.formatted_address);
-            
-            // Extraer el estado si está disponible
-            if (onStateExtracted && place.address_components) {
-              const stateComponent = place.address_components.find(
-                component => component.types.includes('administrative_area_level_1')
-              );
-              
-              if (stateComponent) {
-                onStateExtracted(stateComponent.short_name);
-              }
-            }
-          }
-        });
-      } catch (err) {
-        // Capturar silenciosamente cualquier error, sin interrumpir la experiencia del usuario
-        console.error('Error al inicializar autocompletado:', err);
+      if (response.ok) {
+        const data = await response.json();
+        setSuggestions(data.features || []);
+        setShowSuggestions(true);
       }
-    };
-
-    // Intentar inicializar inmediatamente o esperar a que Google Maps se cargue
-    if (window.google?.maps?.places) {
-      initAutocomplete();
-    } else {
-      // Añadir un oyente que detecte cuando Google Maps esté disponible
-      const checkGoogleInterval = setInterval(() => {
-        if (window.google?.maps?.places) {
-          clearInterval(checkGoogleInterval);
-          initAutocomplete();
-        }
-      }, 200);
-
-      // Limpiar después de 5 segundos para no consumir recursos
-      setTimeout(() => clearInterval(checkGoogleInterval), 5000);
-      
-      return () => clearInterval(checkGoogleInterval);
+    } catch (error) {
+      console.error('Error searching addresses:', error);
+      setSuggestions([]);
+    } finally {
+      setIsLoading(false);
     }
+  };
 
-    // Limpieza
-    return () => {
-      if (autocompleteInstance.current && window.google?.maps?.event) {
-        window.google.maps.event.clearInstanceListeners(autocompleteInstance.current);
-      }
-    };
-  }, [onChange, onStateExtracted]);
-
-  // Manejar cambio de entrada
+  // Manejar cambios en el input con debounce
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     setInternalValue(newValue);
     onChange(newValue);
+
+    // Limpiar timer anterior
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+
+    // Buscar después de 300ms de inactividad
+    debounceTimer.current = setTimeout(() => {
+      searchAddresses(newValue);
+    }, 300);
+  };
+
+  // Seleccionar una sugerencia
+  const handleSelectSuggestion = (suggestion: MapboxSuggestion) => {
+    setInternalValue(suggestion.place_name);
+    onChange(suggestion.place_name);
+    setShowSuggestions(false);
+    setSuggestions([]);
+
+    // Extraer estado de los datos de contexto de Mapbox
+    if (onStateExtracted && suggestion.context) {
+      const stateContext = suggestion.context.find(ctx => 
+        ctx.id.includes('region') || ctx.id.includes('state')
+      );
+      
+      if (stateContext) {
+        const stateCode = stateContext.short_code || stateContext.text;
+        onStateExtracted(stateCode.replace('US-', ''));
+      }
+    }
   };
 
   // Limpiar dirección
   const handleClearAddress = () => {
     setInternalValue('');
     onChange('');
-    if (inputRef.current) {
-      inputRef.current.focus();
-    }
+    setShowSuggestions(false);
+    setSuggestions([]);
   };
 
+  // Cerrar sugerencias al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Limpiar timer al desmontar
+  useEffect(() => {
+    return () => {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+    };
+  }, []);
+
   return (
-    <div className="relative w-full">
-      <Input
-        ref={inputRef}
-        type="text"
-        value={internalValue}
-        onChange={handleInputChange}
-        placeholder={placeholder}
-        className="w-full pr-8"
-      />
-      {internalValue && (
-        <button
-          type="button"
-          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
-          onClick={handleClearAddress}
-        >
-          <X className="h-4 w-4" />
-        </button>
+    <div className="relative w-full" ref={suggestionsRef}>
+      <div className="relative">
+        <Input
+          type="text"
+          value={internalValue}
+          onChange={handleInputChange}
+          placeholder={placeholder}
+          className={`w-full pl-10 pr-8 ${className}`}
+        />
+        
+        {/* Icono de ubicación */}
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+          <MapPin className="h-4 w-4" />
+        </div>
+
+        {/* Botón limpiar */}
+        {internalValue && (
+          <button
+            type="button"
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+            onClick={handleClearAddress}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
+      {/* Indicador de estado */}
+      {hasMapboxToken && internalValue && (
+        <div className="flex items-center justify-between mt-1 text-xs">
+          <div className="flex items-center text-green-600">
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Autocompletado Mapbox activo
+          </div>
+          {isLoading && (
+            <div className="text-gray-500">
+              Buscando direcciones...
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Lista de sugerencias */}
+      {showSuggestions && suggestions.length > 0 && (
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+          {suggestions.map((suggestion, index) => (
+            <button
+              key={index}
+              type="button"
+              className="w-full px-4 py-3 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none border-b border-gray-100 last:border-b-0"
+              onClick={() => handleSelectSuggestion(suggestion)}
+            >
+              <div className="flex items-start">
+                <MapPin className="h-4 w-4 text-gray-400 mt-0.5 mr-3 flex-shrink-0" />
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-gray-900">
+                    {suggestion.place_name}
+                  </div>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Mensaje si no hay token de Mapbox */}
+      {!hasMapboxToken && (
+        <div className="mt-1 text-xs text-amber-600">
+          ⚠️ Autocompletado no disponible - Token de Mapbox requerido
+        </div>
       )}
     </div>
   );
