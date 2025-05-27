@@ -184,15 +184,38 @@ class PermitService {
   private buildSearchQueries(projectType: string, locationInfo: any): string[] {
     const queries: string[] = [];
     
-    // Mapear tipos de proyectos a términos específicos
+    // Mapear tipos de proyectos a términos específicos para general contractors
     const projectTermsMap: Record<string, string[]> = {
       'fence': ['fence', 'fencing', 'property boundary', 'cerca', 'vallado', 'barda'],
       'deck': ['deck', 'patio', 'outdoor structure', 'terraza'],
       'pool': ['swimming pool', 'pool', 'water feature', 'alberca', 'piscina'],
-      'remodel': ['remodel', 'renovation', 'interior work', 'remodelación', 'renovación'],
+      'renovation': ['remodel', 'renovation', 'interior work', 'remodelación', 'renovación'],
       'addition': ['home addition', 'extension', 'add room', 'ampliación'],
       'garage': ['garage', 'carport', 'vehicle storage', 'garaje', 'cochera'],
-      'roofing': ['roof', 'roofing', 'reroof', 'techo', 'tejado']
+      'roofing': ['roof', 'roofing', 'reroof', 'techo', 'tejado', 'shingles', 'metal roof'],
+      'drywall': ['drywall', 'sheetrock', 'gypsum board', 'plastering', 'tablaroca', 'yeso'],
+      'painting': ['painting', 'paint', 'interior paint', 'exterior paint', 'pintura'],
+      'electrical': ['electrical', 'wiring', 'electric panel', 'outlets', 'eléctrico', 'instalación eléctrica'],
+      'plumbing': ['plumbing', 'pipes', 'water lines', 'sewer', 'plomería', 'fontanería'],
+      'hvac': ['hvac', 'heating', 'cooling', 'air conditioning', 'ventilation', 'climatización'],
+      'concrete': ['concrete', 'masonry', 'foundation', 'slab', 'concreto', 'albañilería'],
+      'flooring': ['flooring', 'hardwood', 'tile', 'carpet', 'laminate', 'pisos'],
+      'landscaping': ['landscaping', 'gardening', 'irrigation', 'outdoor design', 'paisajismo'],
+      'insulation': ['insulation', 'thermal insulation', 'soundproofing', 'aislamiento'],
+      'cabinetry': ['cabinetry', 'carpentry', 'custom cabinets', 'built-ins', 'carpintería'],
+      'windowDoor': ['windows', 'doors', 'replacement windows', 'entry doors', 'ventanas', 'puertas'],
+      'structural': ['structural engineering', 'load bearing', 'foundation repair', 'beam installation'],
+      'waterproofing': ['waterproofing', 'moisture control', 'basement sealing', 'impermeabilización'],
+      'demolition': ['demolition', 'tear down', 'removal', 'demolición'],
+      'sitePrep': ['site preparation', 'excavation', 'grading', 'land clearing', 'excavación'],
+      'solar': ['solar panels', 'photovoltaic', 'renewable energy', 'paneles solares'],
+      'interiorDesign': ['interior design', 'space planning', 'design consultation', 'diseño interior'],
+      'concreteCutting': ['concrete cutting', 'concrete sawing', 'core drilling', 'corte de concreto'],
+      'security': ['security systems', 'alarm systems', 'surveillance', 'sistemas de seguridad'],
+      'moldRemediation': ['mold remediation', 'mold removal', 'fungus treatment', 'remediación de moho'],
+      'asbestosRemoval': ['asbestos removal', 'asbestos abatement', 'hazmat removal', 'remoción de asbesto'],
+      'shed': ['shed', 'storage building', 'outbuilding', 'caseta'],
+      'driveway': ['driveway', 'parking area', 'vehicle access', 'entrada vehicular']
     };
     
     // Obtener términos específicos para el tipo de proyecto

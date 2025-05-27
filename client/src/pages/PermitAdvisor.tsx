@@ -306,6 +306,28 @@ export default function PermitAdvisor() {
                       <SelectItem value="garage">Garage</SelectItem>
                       <SelectItem value="renovation">Renovation</SelectItem>
                       <SelectItem value="driveway">Driveway</SelectItem>
+                      <SelectItem value="roofing">Roofing</SelectItem>
+                      <SelectItem value="drywall">Drywall / Plastering</SelectItem>
+                      <SelectItem value="painting">Painting</SelectItem>
+                      <SelectItem value="electrical">Electrical</SelectItem>
+                      <SelectItem value="plumbing">Plumbing</SelectItem>
+                      <SelectItem value="hvac">HVAC</SelectItem>
+                      <SelectItem value="concrete">Concrete / Masonry</SelectItem>
+                      <SelectItem value="flooring">Flooring</SelectItem>
+                      <SelectItem value="landscaping">Landscaping</SelectItem>
+                      <SelectItem value="insulation">Insulation</SelectItem>
+                      <SelectItem value="cabinetry">Cabinetry / Carpentry</SelectItem>
+                      <SelectItem value="windowDoor">Window / Door Installation</SelectItem>
+                      <SelectItem value="structural">Structural Engineering</SelectItem>
+                      <SelectItem value="waterproofing">Waterproofing</SelectItem>
+                      <SelectItem value="demolition">Demolition</SelectItem>
+                      <SelectItem value="sitePrep">Site Preparation / Excavation</SelectItem>
+                      <SelectItem value="solar">Solar Panel Installation</SelectItem>
+                      <SelectItem value="interiorDesign">Interior Design</SelectItem>
+                      <SelectItem value="concreteCutting">Concrete Cutting / Sawing</SelectItem>
+                      <SelectItem value="security">Security Systems</SelectItem>
+                      <SelectItem value="moldRemediation">Mold Remediation</SelectItem>
+                      <SelectItem value="asbestosRemoval">Asbestos Removal</SelectItem>
                       <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
