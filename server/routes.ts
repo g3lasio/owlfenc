@@ -49,6 +49,7 @@ import { setupTemplatesRoutes } from './routes/templates';
 import { aiEnhancementRoutes } from './routes/aiEnhancementRoutes'; // Import new AI enhancement routes
 import { registerDeepSearchRoutes } from './routes/deepSearchRoutes'; // Import DeepSearch AI routes
 import { registerLaborDeepSearchRoutes } from './routes/laborDeepSearchRoutes'; // Import Labor DeepSearch AI routes
+import legalDefenseRoutes from './routes/legal-defense-routes'; // Import Legal Defense Engine routes
 import express from 'express'; // Import express to use express.raw
 
 // Initialize OpenAI API
@@ -429,6 +430,9 @@ Output in English regardless of input language. Make it suitable for contracts a
   
   // Registrar rutas de mejora de descripciones con IA
   app.use('/api/project', aiEnhancementRoutes);
+  
+  // Registrar rutas del Motor de Abogado Defensor Digital
+  app.use('/api/legal-defense', legalDefenseRoutes);
 
   // Endpoint robusto para guardar estimados
   app.post('/api/estimates-simple', async (req: Request, res: Response) => {
