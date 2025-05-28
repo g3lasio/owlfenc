@@ -33,13 +33,30 @@ export default function LegalContractEngineFixed() {
       
       // Filtrar proyectos que pueden convertirse en contratos
       const contractEligibleProjects = firebaseProjects.filter(project => {
+        console.log('🔍 Evaluando proyecto:', {
+          clientName: project.clientName,
+          address: project.address,
+          status: project.status,
+          projectProgress: project.projectProgress,
+          hasBasicInfo: !!(project.clientName && project.address)
+        });
+        
         const hasBasicInfo = project.clientName && project.address;
-        const isApproved = project.status === 'estimate' || 
+        
+        // Aceptar proyectos con status estimate, approved, o cualquier estado válido
+        const isEligible = project.status === 'estimate' || 
                           project.status === 'approved' || 
                           project.status === 'client_approved' ||
-                          project.projectProgress === 'approved';
+                          project.status === 'completed' ||
+                          project.projectProgress === 'approved' ||
+                          project.projectProgress === 'client_approved' ||
+                          // Si tiene información básica, es elegible
+                          hasBasicInfo;
         
-        return hasBasicInfo && isApproved;
+        const eligible = hasBasicInfo && isEligible;
+        console.log(`${eligible ? '✅' : '❌'} Proyecto ${project.clientName}: elegible=${eligible}`);
+        
+        return eligible;
       });
       
       console.log(`✅ Proyectos elegibles para contrato: ${contractEligibleProjects.length}`);
