@@ -89,7 +89,6 @@ app.use((req, res, next) => {
 
 (async () => {
   // Add optimized routes first
-  app.use(cleanRoutes);
   
   // Add OCR simplified routes
   app.use('/api/ocr', ocrSimpleRoutes);
