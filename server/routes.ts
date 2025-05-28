@@ -336,7 +336,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // FASE 1: Extraer texto del PDF usando pdf-parse
       console.log('📄 FASE 1: Extrayendo texto del PDF...');
-      const pdfParse = require('pdf-parse');
+      const pdfParse = (await import('pdf-parse')).default;
       const pdfData = await pdfParse(pdfBuffer);
       const extractedText = pdfData.text;
       console.log('📝 Texto extraído - longitud:', extractedText.length);
