@@ -49,7 +49,7 @@ interface ExtractedData {
 interface EditableExtractedDataProps {
   extractedData: ExtractedData;
   onDataChange: (updatedData: ExtractedData) => void;
-  onConfirm: () => void;
+  onConfirm: (updatedData: ExtractedData) => void;
   riskLevel: string;
   protectiveRecommendations: any;
 }
@@ -410,7 +410,7 @@ export default function EditableExtractedData({
       {/* Botón de Confirmación */}
       <div className="flex justify-center">
         <Button
-          onClick={onConfirm}
+          onClick={() => onConfirm(extractedData)}
           disabled={editingSection !== null}
           className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg"
         >
