@@ -155,13 +155,16 @@ function Router() {
         {() => <ProtectedRoute component={SecuritySettings} />}
       </Route>
       <Route path="/contracts">
-        {() => <ProtectedRoute component={CyberpunkContractGenerator} />}
+        {() => <ProtectedRoute component={LegalContractEngineFixed} />}
       </Route>
       <Route path="/contract-generator">
-        {() => <ProtectedRoute component={CyberpunkContractGenerator} />}
+        {() => <ProtectedRoute component={LegalContractEngineFixed} />}
       </Route>
       <Route path="/legal-contract-engine">
-        {() => <ProtectedRoute component={LegalContractEngine} />}
+        {() => <ProtectedRoute component={LegalContractEngineFixed} />}
+      </Route>
+      <Route path="/cyberpunk-contracts">
+        {() => <ProtectedRoute component={CyberpunkContractGenerator} />}
       </Route>
       <Route path="/ai-testing">
         {() => <ProtectedRoute component={AITestingPage} />}
