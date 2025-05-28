@@ -20,6 +20,7 @@ interface SavedEstimate {
   createdAt: string;
   items?: any[];
   projectType?: string;
+  projectId?: string;
 }
 
 export default function MisEstimados() {
@@ -67,7 +68,8 @@ export default function MisEstimados() {
           status: data.status || 'draft',
           createdAt: data.createdAt || new Date().toISOString(),
           items: data.items || [],
-          projectType: data.projectType || data.fenceType || 'fence'
+          projectType: data.projectType || data.fenceType || 'fence',
+          projectId: data.projectId || doc.id
         };
       }) as SavedEstimate[];
 
