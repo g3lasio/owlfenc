@@ -28,6 +28,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Importar rutas de pagos
 import paymentRoutes from './routes/payment-routes';
+import ocrSimpleRoutes from './ocrSimpleRoutes';
 
 // 🐒 SISTEMA PDFMONKEY - Único procesador profesional de PDFs
 import pdfRoutes from './routes/pdf-routes';
@@ -86,6 +87,9 @@ app.use((req, res, next) => {
 (async () => {
   // Add optimized routes first
   app.use(cleanRoutes);
+  
+  // Add OCR simplified routes
+  app.use('/api/ocr', ocrSimpleRoutes);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

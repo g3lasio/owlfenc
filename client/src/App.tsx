@@ -42,6 +42,7 @@ import SecuritySettings from "@/pages/SecuritySettings";
 import ContractGenerator from "@/pages/ContractGenerator";
 import CyberpunkContractGenerator from "@/pages/CyberpunkContractGenerator";
 import LegalContractEngineFixed from "@/pages/LegalContractEngineFixed";
+import ContractGeneratorSimplified from "@/pages/ContractGeneratorSimplified";
 import AITestingPage from "@/pages/AITestingPage";
 import DeepSearchDemo from "@/pages/DeepSearchDemo";
 import { AuthProvider } from "@/contexts/AuthContext";
