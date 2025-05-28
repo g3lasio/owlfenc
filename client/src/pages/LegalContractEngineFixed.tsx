@@ -18,22 +18,82 @@ export default function LegalContractEngineFixed() {
   const [loadingProjects, setLoadingProjects] = useState(false);
   const { toast } = useToast();
 
-  // Cargar proyectos existentes
+  // Cargar proyectos existentes desde Firebase directamente
   const loadProjects = async () => {
     setLoadingProjects(true);
     try {
-      const response = await fetch('/api/projects');
-      if (response.ok) {
-        const projectsData = await response.json();
-        setProjects(projectsData);
-      }
-    } catch (error) {
-      console.error('Error loading projects:', error);
-      toast({
-        title: "Error cargando proyectos",
-        description: "No se pudieron cargar los proyectos existentes",
-        variant: "destructive"
+      console.log('🔍 Intentando cargar proyectos desde Firebase...');
+      
+      // Importar Firebase dinámicamente
+      const { getProjects } = await import('@/lib/firebase');
+      
+      // Obtener proyectos de Firebase
+      const firebaseProjects = await getProjects();
+      console.log(`📋 Proyectos encontrados en Firebase: ${firebaseProjects.length}`);
+      
+      // Filtrar proyectos que pueden convertirse en contratos
+      const contractEligibleProjects = firebaseProjects.filter(project => {
+        const hasBasicInfo = project.clientName && project.address;
+        const isApproved = project.status === 'estimate' || 
+                          project.status === 'approved' || 
+                          project.status === 'client_approved' ||
+                          project.projectProgress === 'approved';
+        
+        return hasBasicInfo && isApproved;
       });
+      
+      console.log(`✅ Proyectos elegibles para contrato: ${contractEligibleProjects.length}`);
+      
+      // Formatear para el Contract Generator
+      const formattedProjects = contractEligibleProjects.map(project => ({
+        id: project.id,
+        clientName: project.clientName,
+        clientPhone: project.clientPhone || '',
+        clientEmail: project.clientEmail || '',
+        address: project.address,
+        projectType: project.projectType || project.fenceType || 'Proyecto de cerca',
+        projectDescription: project.projectDescription || project.description || '',
+        totalAmount: project.totalPrice || project.estimateAmount || 0,
+        status: project.status || 'approved',
+        createdAt: project.createdAt,
+        projectId: project.id
+      }));
+      
+      setProjects(formattedProjects);
+      
+      if (formattedProjects.length === 0) {
+        toast({
+          title: "Sin proyectos elegibles",
+          description: "No se encontraron proyectos aprobados que puedan convertirse en contratos",
+          variant: "default"
+        });
+      } else {
+        toast({
+          title: "Proyectos cargados exitosamente",
+          description: `Se encontraron ${formattedProjects.length} proyectos elegibles para contratos`,
+          variant: "default"
+        });
+      }
+      
+    } catch (error) {
+      console.error('❌ Error loading projects from Firebase:', error);
+      
+      // Fallback a la API original
+      try {
+        console.log('🔄 Intentando fallback con API...');
+        const response = await fetch('/api/projects');
+        if (response.ok) {
+          const projectsData = await response.json();
+          setProjects(projectsData);
+        }
+      } catch (apiError) {
+        console.error('❌ Error with API fallback:', apiError);
+        toast({
+          title: "Error cargando proyectos",
+          description: "No se pudieron cargar los proyectos desde Firebase ni la API",
+          variant: "destructive"
+        });
+      }
     } finally {
       setLoadingProjects(false);
     }
