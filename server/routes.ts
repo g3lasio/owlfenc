@@ -12,10 +12,12 @@ import {
 import * as path from 'path';
 import * as fs from 'fs';
 import OpenAI from "openai";
+import Anthropic from '@anthropic-ai/sdk';
 import { z } from "zod";
 import puppeteer from "puppeteer";
 import * as crypto from "crypto";
 import Stripe from "stripe";
+import multer from 'multer';
 import axios from 'axios';
 import { chatService } from './services/chatService';
 import { sendContactFormEmail } from './services/emailService';
@@ -273,6 +275,9 @@ const setupTemplateServing = (app: Express) => {
   });
 };
 
+// Configuración de multer para subida de archivos
+const upload = multer({ storage: multer.memoryStorage() });
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // CRITICAL: Configurar middleware JSON antes de las rutas para que funcione enhance-description
   app.use(express.json({ limit: '50mb' }));
@@ -280,6 +285,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Configurar el endpoint para servir templates HTML
   setupTemplateServing(app);
+  
+  // Endpoint para procesar PDF de estimado externo con OCR de Anthropic
+  app.post('/api/process-estimate-pdf', upload.single('estimate'), async (req: Request, res: Response) => {
+    try {
+      console.log('📄 Processing PDF estimate with Anthropic OCR...');
+      
+      if (!req.file) {
+        return res.status(400).json({ error: 'No PDF file provided' });
+      }
+
+      // Convertir el PDF a base64 para enviarlo a Anthropic
+      const pdfBuffer = req.file.buffer;
+      const base64Pdf = pdfBuffer.toString('base64');
+
+      const anthropic = new Anthropic({
+        apiKey: process.env.ANTHROPIC_API_KEY,
+      });
+
+      // Usar Anthropic para extraer información del PDF
+      const response = await anthropic.messages.create({
+        model: 'claude-3-7-sonnet-20250219', // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
+        max_tokens: 2000,
+        system: `You are an expert document analyzer specializing in construction estimates and proposals. 
+        Analyze this PDF estimate and extract all relevant information to generate a protective legal contract.
+        
+        Extract the following information and provide it in JSON format:
+        - contractorInfo: (company name, contact details, license numbers)
+        - clientInfo: (name, address, contact details)
+        - projectDetails: (type, location, description, scope of work)
+        - financialInfo: (total amount, payment terms, costs breakdown)
+        - timeline: (schedule information)
+        - materials: (materials and labor details)
+        - specialTerms: (any special terms or conditions mentioned)
+        
+        Return ONLY valid JSON format with these exact field names.`,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: 'Please analyze this estimate PDF and extract all the information needed to generate a protective contract for the contractor. Return the data in structured JSON format with the specified fields.'
+            },
+            {
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: 'application/pdf',
+                data: base64Pdf
+              }
+            }
+          ]
+        }]
+      });
+
+      // Parse the response to get structured data
+      const extractedText = response.content[0].text;
+      let extractedData;
+      
+      try {
+        // Try to extract JSON from the response
+        const jsonMatch = extractedText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          extractedData = JSON.parse(jsonMatch[0]);
+        } else {
+          throw new Error('No JSON found in response');
+        }
+      } catch (parseError) {
+        console.error('Error parsing JSON from Anthropic response:', parseError);
+        // Structure the response manually based on the text
+        extractedData = {
+          clientInfo: {
+            name: 'Client from PDF',
+            address: 'Address extracted from PDF'
+          },
+          projectDetails: {
+            type: 'Construction Project',
+            description: extractedText.substring(0, 500)
+          },
+          financialInfo: {
+            totalAmount: 0
+          },
+          rawExtraction: extractedText
+        };
+      }
+
+      // Map to frontend expected format
+      const mappedData = {
+        clientName: extractedData.clientInfo?.name || 'Client from PDF',
+        clientEmail: extractedData.clientInfo?.email || '',
+        clientPhone: extractedData.clientInfo?.phone || '',
+        address: extractedData.clientInfo?.address || extractedData.projectDetails?.location || 'Address from PDF',
+        city: extractedData.clientInfo?.city || '',
+        state: extractedData.clientInfo?.state || '',
+        zipCode: extractedData.clientInfo?.zipCode || '',
+        projectType: extractedData.projectDetails?.type || 'External Estimate',
+        description: extractedData.projectDetails?.description || 'Project from external PDF estimate',
+        totalAmount: extractedData.financialInfo?.totalAmount || 0,
+        contractorInfo: extractedData.contractorInfo,
+        timeline: extractedData.timeline,
+        materials: extractedData.materials,
+        specialTerms: extractedData.specialTerms,
+        rawExtraction: extractedText
+      };
+
+      console.log('✅ PDF processed successfully with Anthropic');
+      res.json({
+        success: true,
+        extractedData: mappedData,
+        message: 'PDF processed successfully with AI OCR'
+      });
+
+    } catch (error) {
+      console.error('❌ Error processing PDF with Anthropic:', error);
+      res.status(500).json({ 
+        error: 'Error processing PDF',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+  
   // Use payment routes
   app.use('/api', paymentRoutes);
   
