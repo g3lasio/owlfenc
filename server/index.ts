@@ -1,6 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
-import cleanRoutes from "./routes-clean";
+import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import multer from "multer";
 import pdfParse from "pdf-parse";
@@ -52,6 +52,9 @@ app.use('/api/anthropic', anthropicContractRoutes);
 app.use('/api/contracts', contractRoutes);
 console.log('🤖 [ANTHROPIC] Sistema inteligente de contratos registrado en /api/anthropic/generate-contract');
 console.log('📄 [CONTRACTS] API de contratos registrada en /api/contracts');
+
+// 🔧 Registrar rutas principales (incluye AI enhancement y DeepSearch)
+registerRoutes(app);
 
 app.use((req, res, next) => {
   const start = Date.now();

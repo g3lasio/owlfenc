@@ -743,45 +743,6 @@ app.post('/api/anthropic/generate-defensive-contract', async (req, res) => {
     });
   }
 });
-
-  } catch (error) {
-    console.error('Error in PDF processing:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Error processing PDF',
-      details: error.message 
-    });
-  }
-});
-
-      try {
-        const legalJsonMatch = legalAnalysisText.match(/\{[\s\S]*\}/);
-        if (legalJsonMatch) {
-          legalAnalysis = JSON.parse(legalJsonMatch[0]);
-          console.log('✅ Análisis legal de Mervin AI completado');
-        } else {
-          throw new Error('No JSON found in legal analysis response');
-        }
-      } catch (legalParseError) {
-        console.error('❌ Error parsing legal analysis:', legalParseError);
-        legalAnalysis = {
-          riskAnalysis: { riskLevel: 'MEDIUM', identifiedRisks: ['Standard construction risks'], vulnerabilities: ['Payment delays'] },
-          protectiveRecommendations: { paymentProtection: 'Require progress payments', scopeProtection: 'Include change order procedures' },
-          contractualRequirements: { requiredClauses: ['Payment terms', 'Scope definition'], recommendedTerms: ['Lien rights'] }
-        };
-      }
-
-      // FASE 4: Mapear datos para el frontend con análisis legal integrado
-      console.log('🔄 FASE 4: Mapeando datos híbridos para el frontend...');
-      
-      const mappedData = {
-        // Datos del cliente extraídos por Mistral AI
-        clientName: extractedData.clientInfo?.name || 'Client from PDF',
-        clientEmail: extractedData.clientInfo?.email || '',
-        clientPhone: extractedData.clientInfo?.phone || '',
-        address: extractedData.clientInfo?.address || extractedData.projectDetails?.location || 'Address from PDF',
-        city: extractedData.clientInfo?.city || '',
-        state: extractedData.clientInfo?.state || '',
         zipCode: extractedData.clientInfo?.zipCode || '',
         
         // Datos del proyecto estructurados por Mistral AI
