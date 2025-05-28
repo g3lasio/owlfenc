@@ -212,7 +212,7 @@ export default function LegalContractEngineFixed() {
               </CardHeader>
               <CardContent>
                 <EditableExtractedData
-                  data={extractedData}
+                  extractedData={extractedData}
                   onChange={setExtractedData}
                 />
                 
