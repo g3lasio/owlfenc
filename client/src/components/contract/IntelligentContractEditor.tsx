@@ -51,7 +51,9 @@ export default function IntelligentContractEditor({ extractedData, onDataChange 
     projectDescription: '',
     totalAmount: '',
     depositAmount: '',
-    paymentTerms: ''
+    paymentTerms: '',
+    startDate: undefined,
+    completionDate: undefined
   });
 
   const [aiSuggestions, setAiSuggestions] = useState<AISuggestion[]>([]);
@@ -206,7 +208,7 @@ export default function IntelligentContractEditor({ extractedData, onDataChange 
             <Label htmlFor="clientName">Nombre Completo</Label>
             <Input
               id="clientName"
-              value={contractData.clientName}
+              value={contractData.clientName || ''}
               onChange={(e) => updateField('clientName', e.target.value)}
               placeholder="Nombre del cliente"
             />
@@ -215,7 +217,7 @@ export default function IntelligentContractEditor({ extractedData, onDataChange 
             <Label htmlFor="clientPhone">Teléfono</Label>
             <Input
               id="clientPhone"
-              value={contractData.clientPhone}
+              value={contractData.clientPhone || ''}
               onChange={(e) => updateField('clientPhone', e.target.value)}
               placeholder="(555) 123-4567"
             />
@@ -225,7 +227,7 @@ export default function IntelligentContractEditor({ extractedData, onDataChange 
             <Input
               id="clientEmail"
               type="email"
-              value={contractData.clientEmail}
+              value={contractData.clientEmail || ''}
               onChange={(e) => updateField('clientEmail', e.target.value)}
               placeholder="cliente@email.com"
             />
@@ -234,7 +236,7 @@ export default function IntelligentContractEditor({ extractedData, onDataChange 
             <Label htmlFor="clientAddress">Dirección Completa</Label>
             <Textarea
               id="clientAddress"
-              value={contractData.clientAddress}
+              value={contractData.clientAddress || ''}
               onChange={(e) => updateField('clientAddress', e.target.value)}
               placeholder="Dirección completa del proyecto"
               rows={2}
@@ -253,7 +255,7 @@ export default function IntelligentContractEditor({ extractedData, onDataChange 
             <Label htmlFor="projectType">Tipo de Proyecto</Label>
             <Input
               id="projectType"
-              value={contractData.projectType}
+              value={contractData.projectType || ''}
               onChange={(e) => updateField('projectType', e.target.value)}
               placeholder="ej: Instalación de Cerca Chain Link"
             />
@@ -262,7 +264,7 @@ export default function IntelligentContractEditor({ extractedData, onDataChange 
             <Label htmlFor="projectDescription">Descripción Detallada</Label>
             <Textarea
               id="projectDescription"
-              value={contractData.projectDescription}
+              value={contractData.projectDescription || ''}
               onChange={(e) => updateField('projectDescription', e.target.value)}
               placeholder="Descripción completa del trabajo a realizar"
               rows={4}
@@ -281,7 +283,7 @@ export default function IntelligentContractEditor({ extractedData, onDataChange 
             <Label htmlFor="totalAmount">Costo Total</Label>
             <Input
               id="totalAmount"
-              value={contractData.totalAmount}
+              value={contractData.totalAmount || ''}
               onChange={(e) => updateField('totalAmount', e.target.value)}
               placeholder="$0.00"
             />
@@ -290,7 +292,7 @@ export default function IntelligentContractEditor({ extractedData, onDataChange 
             <Label htmlFor="depositAmount">Depósito Requerido</Label>
             <Input
               id="depositAmount"
-              value={contractData.depositAmount}
+              value={contractData.depositAmount || ''}
               onChange={(e) => updateField('depositAmount', e.target.value)}
               placeholder="$0.00"
             />
@@ -299,7 +301,7 @@ export default function IntelligentContractEditor({ extractedData, onDataChange 
             <Label htmlFor="paymentTerms">Términos de Pago</Label>
             <Textarea
               id="paymentTerms"
-              value={contractData.paymentTerms}
+              value={contractData.paymentTerms || ''}
               onChange={(e) => updateField('paymentTerms', e.target.value)}
               placeholder="Describe los términos de pago"
               rows={2}
