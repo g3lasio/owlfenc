@@ -24,28 +24,58 @@ const ProjectToContractSelector: React.FC<ProjectToContractSelectorProps> = ({
   const { data: projects = [], isLoading } = useQuery({
     queryKey: ['projects-for-contracts', filterStatus],
     queryFn: async () => {
-      // Cargar TODOS los proyectos primero
-      const response = await fetch('/api/projects');
-      if (!response.ok) throw new Error('Error loading projects');
-      const allProjects = await response.json();
-      
-      // Filtrar en el frontend según el estado seleccionado
-      if (filterStatus === 'all') {
-        return allProjects;
+      try {
+        // Intentar cargar desde el endpoint principal primero
+        let response = await fetch('/api/projects');
+        let allProjects = [];
+        
+        if (response.ok) {
+          allProjects = await response.json();
+        }
+        
+        // Si no hay proyectos, intentar endpoint alternativo
+        if (!allProjects || allProjects.length === 0) {
+          response = await fetch('/api/estimates-simple');
+          if (response.ok) {
+            const estimates = await response.json();
+            // Convertir estimates a formato de proyecto
+            allProjects = estimates.map((est: any) => ({
+              id: est.id,
+              projectId: est.projectId,
+              clientName: est.clientName,
+              clientEmail: est.clientEmail,
+              address: est.address || 'Address not available',
+              projectType: est.projectType || 'General Project',
+              description: est.description,
+              status: est.status || 'draft',
+              projectProgress: est.status || 'draft',
+              totalPrice: est.total || 0,
+              createdAt: est.createdAt
+            }));
+          }
+        }
+        
+        // Filtrar en el frontend según el estado seleccionado
+        if (filterStatus === 'all') {
+          return allProjects;
+        }
+        
+        // Aplicar filtros específicos
+        return allProjects.filter((project: Project) => {
+          if (filterStatus === 'approved') {
+            return project.status === 'client_approved' || project.status === 'approved' || 
+                   project.projectProgress === 'approved' || project.projectProgress === 'completed';
+          }
+          if (filterStatus === 'pending') {
+            return project.status === 'pending' || project.projectProgress === 'pending' ||
+                   project.status === 'estimate_sent';
+          }
+          return true;
+        });
+      } catch (error) {
+        console.error('Error loading projects:', error);
+        return [];
       }
-      
-      // Aplicar filtros específicos
-      return allProjects.filter((project: Project) => {
-        if (filterStatus === 'approved') {
-          return project.status === 'client_approved' || project.status === 'approved' || 
-                 project.projectProgress === 'approved' || project.projectProgress === 'completed';
-        }
-        if (filterStatus === 'pending') {
-          return project.status === 'pending' || project.projectProgress === 'pending' ||
-                 project.status === 'estimate_sent';
-        }
-        return true;
-      });
     }
   });
 
