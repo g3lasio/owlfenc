@@ -303,49 +303,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         apiKey: process.env.ANTHROPIC_API_KEY,
       });
 
-      // Usar Anthropic para extraer información del PDF
+      // Usar pdf-parse para extraer texto del PDF
+      const pdfParse = require('pdf-parse');
+      const pdfData = await pdfParse(pdfBuffer);
+      const extractedText = pdfData.text;
+
+      // Usar Anthropic para analizar el texto extraído del PDF
       const response = await anthropic.messages.create({
         model: 'claude-3-7-sonnet-20250219', // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
         max_tokens: 2000,
         system: `You are an expert document analyzer specializing in construction estimates and proposals. 
-        Analyze this PDF estimate and extract all relevant information to generate a protective legal contract.
+        Analyze this estimate document text and extract all relevant information to generate a protective legal contract.
         
         Extract the following information and provide it in JSON format:
-        - contractorInfo: (company name, contact details, license numbers)
-        - clientInfo: (name, address, contact details)
-        - projectDetails: (type, location, description, scope of work)
-        - financialInfo: (total amount, payment terms, costs breakdown)
-        - timeline: (schedule information)
-        - materials: (materials and labor details)
-        - specialTerms: (any special terms or conditions mentioned)
+        {
+          "contractorInfo": {"companyName": "", "contactDetails": "", "licenseNumbers": ""},
+          "clientInfo": {"name": "", "address": "", "contactDetails": ""},
+          "projectDetails": {"type": "", "location": "", "description": "", "scopeOfWork": ""},
+          "financialInfo": {"totalAmount": 0, "paymentTerms": "", "costsBreakdown": ""},
+          "timeline": {"schedule": ""},
+          "materials": {"materialsAndLabor": ""},
+          "specialTerms": {"terms": ""}
+        }
         
-        Return ONLY valid JSON format with these exact field names.`,
+        Return ONLY valid JSON format with these exact field names and structure.`,
         messages: [{
           role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: 'Please analyze this estimate PDF and extract all the information needed to generate a protective contract for the contractor. Return the data in structured JSON format with the specified fields.'
-            },
-            {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: 'application/pdf',
-                data: base64Pdf
-              }
-            }
-          ]
+          content: `Please analyze this estimate document text and extract all the information needed to generate a protective contract for the contractor. Return the data in structured JSON format.
+
+Document text:
+${extractedText}`
         }]
       });
 
       // Parse the response to get structured data
-      const extractedText = response.content[0].text;
+      const responseText = response.content[0].type === 'text' ? response.content[0].text : '';
       let extractedData;
       
       try {
         // Try to extract JSON from the response
-        const jsonMatch = extractedText.match(/\{[\s\S]*\}/);
+        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           extractedData = JSON.parse(jsonMatch[0]);
         } else {
@@ -361,12 +358,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           },
           projectDetails: {
             type: 'Construction Project',
-            description: extractedText.substring(0, 500)
+            description: responseText.substring(0, 500)
           },
           financialInfo: {
             totalAmount: 0
           },
-          rawExtraction: extractedText
+          rawExtraction: responseText
         };
       }
 
