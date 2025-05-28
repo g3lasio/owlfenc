@@ -41,7 +41,7 @@ import AppleCallback from "@/pages/AppleCallback";
 import SecuritySettings from "@/pages/SecuritySettings";
 import ContractGenerator from "@/pages/ContractGenerator";
 import CyberpunkContractGenerator from "@/pages/CyberpunkContractGenerator";
-import LegalContractEngine from "@/pages/LegalContractEngine";
+import LegalContractEngineFixed from "@/pages/LegalContractEngineFixed";
 import AITestingPage from "@/pages/AITestingPage";
 import DeepSearchDemo from "@/pages/DeepSearchDemo";
 import { AuthProvider } from "@/contexts/AuthContext";

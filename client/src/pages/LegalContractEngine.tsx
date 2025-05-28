@@ -475,15 +475,6 @@ const LegalContractEngine: React.FC = () => {
 };
 
 export default LegalContractEngine;
-    queryKey: ['/api/estimates'],
-    queryFn: () => fetch('/api/estimates').then(res => {
-      if (!res.ok) throw new Error('Error al cargar estimados');
-      return res.json();
-    })
-  });
-
-  // Convertir datos del backend al formato esperado por el motor legal
-  const convertBackendProject = (project: BackendProject) => {
     let details = {};
     try {
       details = project.details ? JSON.parse(project.details) : {};
