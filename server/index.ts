@@ -1,14 +1,14 @@
 import express, { type Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
-// import { registerRoutes } from "./routes";
 import cleanRoutes from "./routes-clean";
 import { setupVite, serveStatic, log } from "./vite";
-import { stripeService } from './services/stripeService';
-
-// Importamos la conexión a la base de datos para asegurar su inicialización
-import './db';
+import multer from "multer";
+import pdfParse from "pdf-parse";
 
 dotenv.config();
+
+// Initialize database connection
+import './db';
 
 // Inicializar el caché global para propiedades
 global.propertyCache = {};
@@ -94,11 +94,6 @@ app.use((req, res, next) => {
 (async () => {
   // Add optimized routes first
   app.use(cleanRoutes);
-  
-  // Basic health endpoint
-  app.get('/api/health', (req: Request, res: Response) => {
-    res.json({ status: 'OK', message: 'Contract Generator System Optimized' });
-  });
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
