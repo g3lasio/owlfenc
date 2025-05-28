@@ -772,26 +772,7 @@ export default function EstimatesWizardFixed() {
         totalItems: estimateData.items.length,
         subtotal: estimateData.displaySubtotal,
         total: estimateData.displayTotal
-      });rice: Math.round(item.price * 100), // Convert to cents
-          totalPrice: Math.round(item.total * 100), // Convert to cents
-          sortOrder: index,
-          isOptional: false
-        })),
-        
-        subtotal: Math.round(estimate.subtotal * 100), // Convert to cents
-        taxRate: estimate.taxRate || 10,
-        taxAmount: Math.round(estimate.tax * 100), // Convert to cents
-        discountAmount: Math.round(estimate.discountAmount * 100), // Convert to cents
-        discountType: estimate.discountType,
-        discountValue: estimate.discountValue,
-        discountName: estimate.discountName || '',
-        total: Math.round(estimate.total * 100), // Convert to cents
-        
-        // Content and metadata
-        htmlContent: htmlContent,
-        notes: `Estimado generado el ${new Date().toLocaleDateString()}`,
-        internalNotes: `Cliente: ${estimate.client.name}, Total: $${estimate.total.toFixed(2)}`,
-        validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Valid for 30 days
+      });
         
         // Timestamps
         createdAt: new Date(),
@@ -1241,21 +1222,66 @@ export default function EstimatesWizardFixed() {
         return null;
       }
 
+      // 🚀 DATOS COMPLETOS PARA TRANSFERENCIA AL DASHBOARD
+      // Obtener información completa del contratista
+      let contractorInfo = {};
+      try {
+        const profileData = localStorage.getItem('contractorProfile');
+        if (profileData) {
+          contractorInfo = JSON.parse(profileData);
+        }
+      } catch (error) {
+        console.warn('Usando datos por defecto del contratista');
+      }
+
       const estimateData = {
-        firebaseUserId: currentUser?.uid || 'dev-user-123', // ID del usuario autenticado
+        // ===== IDENTIFICACIÓN Y METADATOS =====
+        firebaseUserId: currentUser?.uid || 'dev-user-123',
+        estimateNumber: `EST-${Date.now()}`,
+        projectId: `proj_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+        status: 'estimate',
+        createdAt: new Date().toISOString(),
+        validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        
+        // ===== INFORMACIÓN COMPLETA DEL CLIENTE =====
+        clientId: estimate.client.id || null,
         clientName: estimate.client.name || '',
         clientEmail: estimate.client.email || '',
         clientPhone: estimate.client.phone || '',
-        clientAddress: estimate.client.address || 'Sin dirección',
+        clientAddress: estimate.client.address || '',
+        clientCity: estimate.client.city || '',
+        clientState: estimate.client.state || '',
+        clientZipCode: estimate.client.zipCode || '',
+        
+        // ===== INFORMACIÓN COMPLETA DEL CONTRATISTA =====
+        contractorCompanyName: contractorInfo.companyName || 'Owl Fence',
+        contractorAddress: contractorInfo.address || '',
+        contractorCity: contractorInfo.city || '',
+        contractorState: contractorInfo.state || '',
+        contractorZip: contractorInfo.zip || '',
+        contractorPhone: contractorInfo.phone || '',
+        contractorEmail: contractorInfo.email || '',
+        contractorLicense: contractorInfo.license || '',
+        contractorInsurance: contractorInfo.insurancePolicy || '',
+        contractorLogo: contractorInfo.logoUrl || '/owl-logo.png',
+        
+        // ===== DETALLES COMPLETOS DEL PROYECTO =====
+        projectName: `Proyecto para ${estimate.client.name}`,
         projectType: 'fence',
         projectSubtype: 'custom',
         projectDescription: estimate.projectDetails || 'Proyecto de cerca personalizado',
         scope: 'Instalación completa de cerca',
         timeline: '2-3 semanas',
+        address: estimate.client.address || '',
+        city: estimate.client.city || '',
+        state: estimate.client.state || '',
+        zipCode: estimate.client.zipCode || '',
+        
+        // ===== MATERIALES Y COSTOS COMPLETOS =====
         items: estimate.items.map((item, index) => ({
           name: item.name,
           description: item.description || item.name,
-          category: 'material' as const, // Campo requerido
+          category: 'material' as const,
           quantity: item.quantity,
           unit: item.unit || 'unit',
           unitPrice: Math.round(item.price * 100), // Centavos
@@ -1263,9 +1289,39 @@ export default function EstimatesWizardFixed() {
           sortOrder: index,
           isOptional: false
         })),
+        
+        // ===== TOTALES Y FINANCIEROS =====
+        subtotal: Math.round(estimate.subtotal * 100), // Centavos
+        discountType: estimate.discountType || null,
+        discountValue: estimate.discountValue || 0,
+        discountAmount: Math.round((estimate.discountAmount || 0) * 100), // Centavos
+        discountName: estimate.discountName || null,
         taxRate: estimate.taxRate || 10,
+        taxAmount: Math.round(estimate.tax * 100), // Centavos
+        total: Math.round(estimate.total * 100), // Centavos
+        estimateAmount: Math.round(estimate.total * 100), // Para compatibilidad
+        
+        // ===== NOTAS Y OBSERVACIONES =====
         notes: `Estimado generado el ${new Date().toLocaleDateString()}`,
-        internalNotes: `Cliente: ${estimate.client.name}, Total: $${estimate.total.toFixed(2)}`
+        internalNotes: `Cliente: ${estimate.client.name}, Total: $${estimate.total.toFixed(2)}`,
+        terms: 'Estimado válido por 30 días. Materiales y mano de obra incluidos.',
+        
+        // ===== DATOS RAW PARA REFERENCIA =====
+        estimateData: JSON.stringify({
+          client: estimate.client,
+          projectDetails: estimate.projectDetails,
+          items: estimate.items,
+          totals: {
+            subtotal: estimate.subtotal,
+            tax: estimate.tax,
+            total: estimate.total,
+            discountAmount: estimate.discountAmount
+          },
+          metadata: {
+            createdAt: new Date().toISOString(),
+            source: 'estimates-wizard'
+          }
+        })
       };
 
       console.log('📤 Enviando datos al servidor:', estimateData);

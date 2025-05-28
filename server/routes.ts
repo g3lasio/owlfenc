@@ -1006,22 +1006,111 @@ Output in English regardless of input language. Make it suitable for contracts a
       const firebaseUserId = estimateData.firebaseUserId || 'dev-user';
       
       // Crear proyecto usando el sistema existente
+      // 🚀 MAPEO COMPLETO DE DATOS PARA TRANSFERENCIA AL DASHBOARD
       const projectData = {
+        // ===== IDENTIFICACIÓN BÁSICA =====
         userId: 1, // ID numérico para PostgreSQL
-        projectName: estimateData.title || `Estimado ${estimateData.estimateNumber}`,
-        clientName: estimateData.clientName,
-        clientEmail: estimateData.clientEmail,
-        clientPhone: estimateData.clientPhone,
-        address: estimateData.clientAddress,
-        city: estimateData.clientCity || '',
-        state: estimateData.clientState || '',
-        zipCode: estimateData.clientZipCode || '',
-        projectType: estimateData.projectType || 'estimate',
-        description: estimateData.projectDescription || estimateData.scope || '',
-        status: 'estimate',
-        estimateAmount: estimateData.total || 0,
+        projectId: estimateData.projectId || `proj_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
         firebaseUserId: firebaseUserId,
-        estimateData: JSON.stringify(estimateData)
+        
+        // ===== INFORMACIÓN DEL PROYECTO =====
+        projectName: estimateData.projectName || estimateData.title || `Proyecto para ${estimateData.clientName}`,
+        description: estimateData.projectDescription || estimateData.scope || '',
+        projectType: estimateData.projectType || 'fence',
+        status: 'estimate',
+        
+        // ===== INFORMACIÓN COMPLETA DEL CLIENTE =====
+        clientName: estimateData.clientName || '',
+        clientEmail: estimateData.clientEmail || '',
+        clientPhone: estimateData.clientPhone || '',
+        
+        // ===== DIRECCIÓN COMPLETA =====
+        address: estimateData.clientAddress || estimateData.address || '',
+        city: estimateData.clientCity || estimateData.city || '',
+        state: estimateData.clientState || estimateData.state || '',
+        zipCode: estimateData.clientZipCode || estimateData.zipCode || '',
+        
+        // ===== INFORMACIÓN FINANCIERA =====
+        estimateAmount: estimateData.total || estimateData.estimateAmount || 0,
+        totalPrice: estimateData.total || estimateData.estimateAmount || 0,
+        
+        // ===== DATOS COMPLETOS PRESERVADOS =====
+        estimateData: JSON.stringify({
+          // Información básica del estimado
+          estimateNumber: estimateData.estimateNumber,
+          createdAt: estimateData.createdAt,
+          validUntil: estimateData.validUntil,
+          
+          // Información completa del cliente
+          client: {
+            id: estimateData.clientId,
+            name: estimateData.clientName,
+            email: estimateData.clientEmail,
+            phone: estimateData.clientPhone,
+            address: estimateData.clientAddress,
+            city: estimateData.clientCity,
+            state: estimateData.clientState,
+            zipCode: estimateData.clientZipCode
+          },
+          
+          // Información completa del contratista
+          contractor: {
+            companyName: estimateData.contractorCompanyName,
+            address: estimateData.contractorAddress,
+            city: estimateData.contractorCity,
+            state: estimateData.contractorState,
+            zip: estimateData.contractorZip,
+            phone: estimateData.contractorPhone,
+            email: estimateData.contractorEmail,
+            license: estimateData.contractorLicense,
+            insurance: estimateData.contractorInsurance,
+            logo: estimateData.contractorLogo
+          },
+          
+          // Detalles completos del proyecto
+          project: {
+            name: estimateData.projectName,
+            type: estimateData.projectType,
+            subtype: estimateData.projectSubtype,
+            description: estimateData.projectDescription,
+            scope: estimateData.scope,
+            timeline: estimateData.timeline,
+            address: estimateData.address,
+            city: estimateData.city,
+            state: estimateData.state,
+            zipCode: estimateData.zipCode
+          },
+          
+          // Items detallados
+          items: estimateData.items || [],
+          
+          // Información financiera completa
+          financials: {
+            subtotal: estimateData.subtotal,
+            discountType: estimateData.discountType,
+            discountValue: estimateData.discountValue,
+            discountAmount: estimateData.discountAmount,
+            discountName: estimateData.discountName,
+            taxRate: estimateData.taxRate,
+            taxAmount: estimateData.taxAmount,
+            total: estimateData.total,
+            estimateAmount: estimateData.estimateAmount
+          },
+          
+          // Notas y términos
+          notes: estimateData.notes,
+          internalNotes: estimateData.internalNotes,
+          terms: estimateData.terms,
+          
+          // Metadatos
+          metadata: {
+            source: 'estimates-wizard',
+            timestamp: new Date().toISOString()
+          },
+          
+          // Datos raw originales para máxima compatibilidad
+          originalData: estimateData
+        })
       };
 
       // Guardar en PostgreSQL usando el storage existente
