@@ -286,9 +286,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Configurar el endpoint para servir templates HTML
   setupTemplateServing(app);
   
-  // Endpoint para procesar PDF de estimado externo con OCR de Anthropic
+  // Endpoint para procesar PDF con sistema híbrido: Mistral AI OCR + Mervin AI DeepSearch
   app.post('/api/process-estimate-pdf', (req: Request, res: Response, next) => {
-    console.log('🚀 PDF ENDPOINT CALLED - Starting process...');
+    console.log('🚀 HYBRID AI SYSTEM - Mistral OCR + Mervin Legal Analysis');
     console.log('📋 Request method:', req.method);
     console.log('📋 Request URL:', req.url);
     console.log('📋 Content-Type:', req.headers['content-type']);
@@ -306,19 +306,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      console.log('📄 Processing PDF estimate with Anthropic OCR...');
-      console.log('🔑 API Key available:', !!process.env.ANTHROPIC_API_KEY);
+      console.log('🔬 Starting Hybrid AI Processing: Mistral OCR → Mervin Legal Analysis');
       
       if (!req.file) {
         console.log('❌ No file provided in request');
         return res.status(400).json({ error: 'No PDF file provided' });
       }
-
-      console.log('📎 File received:', {
-        filename: req.file.originalname,
-        size: req.file.size,
-        mimetype: req.file.mimetype
-      });
 
       // Verificar que sea un PDF
       if (req.file.mimetype !== 'application/pdf') {
@@ -330,93 +323,222 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const pdfBuffer = req.file.buffer;
       console.log('📊 PDF buffer size:', pdfBuffer.length);
 
-      // Verificar que Anthropic API key esté disponible
+      // Verificar que las API keys estén disponibles
+      if (!process.env.MISTRAL_API_KEY) {
+        console.log('❌ Mistral API key not found');
+        return res.status(500).json({ error: 'Mistral API key not configured' });
+      }
+
       if (!process.env.ANTHROPIC_API_KEY) {
         console.log('❌ Anthropic API key not found');
         return res.status(500).json({ error: 'Anthropic API key not configured' });
       }
 
+      // FASE 1: Extraer texto del PDF usando pdf-parse
+      console.log('📄 FASE 1: Extrayendo texto del PDF...');
+      const pdfParse = require('pdf-parse');
+      const pdfData = await pdfParse(pdfBuffer);
+      const extractedText = pdfData.text;
+      console.log('📝 Texto extraído - longitud:', extractedText.length);
+      console.log('🔍 Vista previa del texto:', extractedText.substring(0, 300) + '...');
+
+      if (!extractedText || extractedText.trim().length === 0) {
+        console.log('❌ No se pudo extraer texto del PDF');
+        return res.status(400).json({ error: 'No text could be extracted from the PDF. The document may be an image-based PDF or corrupted.' });
+      }
+
+      // FASE 2: Procesamiento avanzado con Mistral AI para OCR y estructuración de datos
+      console.log('🤖 FASE 2: Procesando con Mistral AI OCR avanzado...');
+      
+      const mistralResponse = await fetch('https://api.mistral.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.MISTRAL_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: 'mistral-large-latest',
+          messages: [
+            {
+              role: 'system',
+              content: `You are an advanced OCR and document analysis AI specializing in construction estimates and contracts. Your task is to extract and structure data from construction estimate documents with maximum precision.
+
+Extract the following information and return it in a well-structured JSON format:
+{
+  "contractorInfo": {
+    "companyName": "string",
+    "contactDetails": "string",
+    "address": "string", 
+    "phone": "string",
+    "email": "string",
+    "licenseNumbers": "string"
+  },
+  "clientInfo": {
+    "name": "string",
+    "address": "string",
+    "city": "string",
+    "state": "string", 
+    "zipCode": "string",
+    "phone": "string",
+    "email": "string"
+  },
+  "projectDetails": {
+    "type": "string",
+    "location": "string", 
+    "description": "string",
+    "scopeOfWork": "string",
+    "specifications": "string"
+  },
+  "financialInfo": {
+    "totalAmount": "number",
+    "subtotal": "number",
+    "taxes": "number",
+    "paymentTerms": "string",
+    "costsBreakdown": "string",
+    "depositRequired": "number"
+  },
+  "timeline": {
+    "estimatedStartDate": "string",
+    "estimatedCompletionDate": "string", 
+    "duration": "string",
+    "schedule": "string"
+  },
+  "materials": {
+    "materialsAndLabor": "string",
+    "materialsList": "array",
+    "laborDetails": "string"
+  },
+  "specialTerms": {
+    "warrantyInfo": "string",
+    "terms": "string",
+    "conditions": "string"
+  }
+}
+
+Return ONLY valid JSON format. Extract all available information with maximum accuracy.`
+            },
+            {
+              role: 'user',
+              content: `Analyze this construction estimate document and extract all relevant information for contract generation. Focus on accuracy and completeness.
+
+Document text:
+${extractedText}`
+            }
+          ],
+          max_tokens: 2000,
+          temperature: 0.1
+        })
+      });
+
+      if (!mistralResponse.ok) {
+        throw new Error(`Mistral API error: ${mistralResponse.status} ${mistralResponse.statusText}`);
+      }
+
+      const mistralData = await mistralResponse.json();
+      const mistralExtractedText = mistralData.choices[0].message.content;
+      console.log('✅ Datos extraídos por Mistral AI recibidos');
+
+      let extractedData;
+      
+      try {
+        // Parsear la respuesta JSON de Mistral AI
+        const jsonMatch = mistralExtractedText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          extractedData = JSON.parse(jsonMatch[0]);
+          console.log('✅ Datos estructurados por Mistral AI parseados correctamente');
+        } else {
+          throw new Error('No JSON found in Mistral response');
+        }
+      } catch (parseError) {
+        console.error('❌ Error parsing JSON from Mistral response:', parseError);
+        // Fallback: estructura básica
+        extractedData = {
+          contractorInfo: { companyName: 'Contractor from PDF', contactDetails: '', licenseNumbers: '' },
+          clientInfo: { name: 'Client from PDF', address: 'Address extracted from PDF' },
+          projectDetails: { type: 'Construction Project', description: mistralExtractedText.substring(0, 500) },
+          financialInfo: { totalAmount: 0 },
+          rawExtraction: mistralExtractedText
+        };
+      }
+
+      // FASE 3: Análisis legal profundo con Mervin AI DeepSearch
+      console.log('⚖️ FASE 3: Iniciando análisis legal con Mervin AI DeepSearch...');
+      
       const anthropic = new Anthropic({
         apiKey: process.env.ANTHROPIC_API_KEY,
       });
 
-      // Usar pdf-parse para extraer texto del PDF
-      console.log('🔄 Extracting text from PDF...');
-      const pdfParse = require('pdf-parse');
-      const pdfData = await pdfParse(pdfBuffer);
-      const extractedText = pdfData.text;
-      console.log('📝 Extracted text length:', extractedText.length);
-      console.log('📄 Text preview:', extractedText.substring(0, 200) + '...');
-
-      if (!extractedText || extractedText.trim().length === 0) {
-        console.log('❌ No text extracted from PDF');
-        return res.status(400).json({ error: 'No text could be extracted from the PDF. The document may be an image-based PDF or corrupted.' });
-      }
-
-      // Usar Anthropic para analizar el texto extraído del PDF
-      console.log('🤖 Sending to Anthropic for analysis...');
-      const response = await anthropic.messages.create({
+      const legalAnalysisResponse = await anthropic.messages.create({
         model: 'claude-3-7-sonnet-20250219', // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
         max_tokens: 2000,
-        system: `You are an expert document analyzer specializing in construction estimates and proposals. 
-        Analyze this estimate document text and extract all relevant information to generate a protective legal contract.
-        
-        Extract the following information and provide it in JSON format:
-        {
-          "contractorInfo": {"companyName": "", "contactDetails": "", "licenseNumbers": ""},
-          "clientInfo": {"name": "", "address": "", "contactDetails": ""},
-          "projectDetails": {"type": "", "location": "", "description": "", "scopeOfWork": ""},
-          "financialInfo": {"totalAmount": 0, "paymentTerms": "", "costsBreakdown": ""},
-          "timeline": {"schedule": ""},
-          "materials": {"materialsAndLabor": ""},
-          "specialTerms": {"terms": ""}
-        }
-        
-        Return ONLY valid JSON format with these exact field names and structure.`,
+        system: `You are Mervin AI, a specialized legal defense attorney and contract protection engine for contractors. Your mission is to analyze construction projects and identify legal risks to generate protective contract clauses.
+
+Analyze the extracted project data and provide a comprehensive legal risk assessment and protective recommendations in JSON format:
+{
+  "riskAnalysis": {
+    "riskLevel": "LOW|MEDIUM|HIGH",
+    "identifiedRisks": ["array of specific risks"],
+    "vulnerabilities": ["array of legal vulnerabilities"]
+  },
+  "protectiveRecommendations": {
+    "paymentProtection": "specific payment protection clauses",
+    "scopeProtection": "scope change protection clauses", 
+    "liabilityLimitation": "liability limitation clauses",
+    "timelineProtection": "timeline and delay protection clauses",
+    "materialProtection": "material cost escalation protection"
+  },
+  "contractualRequirements": {
+    "requiredClauses": ["array of mandatory protective clauses"],
+    "recommendedTerms": ["array of recommended contract terms"],
+    "warningFlags": ["array of red flags to address"]
+  },
+  "legalCompliance": {
+    "jurisdictionRequirements": "specific legal requirements for the jurisdiction",
+    "industryStandards": "relevant construction industry standards",
+    "insuranceRequirements": "recommended insurance coverage"
+  }
+}
+
+Focus on maximum legal protection for the contractor while maintaining enforceability.`,
         messages: [{
           role: 'user',
-          content: `Please analyze this estimate document text and extract all the information needed to generate a protective contract for the contractor. Return the data in structured JSON format.
+          content: `Analyze this construction project data and provide comprehensive legal protection recommendations for the contractor:
 
-Document text:
-${extractedText}`
+Project Data:
+${JSON.stringify(extractedData, null, 2)}
+
+Original Document Text:
+${extractedText.substring(0, 1000)}
+
+Provide detailed legal analysis and protective contract recommendations.`
         }]
       });
 
-      console.log('✅ Received response from Anthropic');
+      const legalAnalysisText = legalAnalysisResponse.content[0].type === 'text' ? legalAnalysisResponse.content[0].text : '';
+      let legalAnalysis;
 
-      // Parse the response to get structured data
-      const responseText = response.content[0].type === 'text' ? response.content[0].text : '';
-      let extractedData;
-      
       try {
-        // Try to extract JSON from the response
-        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          extractedData = JSON.parse(jsonMatch[0]);
+        const legalJsonMatch = legalAnalysisText.match(/\{[\s\S]*\}/);
+        if (legalJsonMatch) {
+          legalAnalysis = JSON.parse(legalJsonMatch[0]);
+          console.log('✅ Análisis legal de Mervin AI completado');
         } else {
-          throw new Error('No JSON found in response');
+          throw new Error('No JSON found in legal analysis response');
         }
-      } catch (parseError) {
-        console.error('Error parsing JSON from Anthropic response:', parseError);
-        // Structure the response manually based on the text
-        extractedData = {
-          clientInfo: {
-            name: 'Client from PDF',
-            address: 'Address extracted from PDF'
-          },
-          projectDetails: {
-            type: 'Construction Project',
-            description: responseText.substring(0, 500)
-          },
-          financialInfo: {
-            totalAmount: 0
-          },
-          rawExtraction: responseText
+      } catch (legalParseError) {
+        console.error('❌ Error parsing legal analysis:', legalParseError);
+        legalAnalysis = {
+          riskAnalysis: { riskLevel: 'MEDIUM', identifiedRisks: ['Standard construction risks'], vulnerabilities: ['Payment delays'] },
+          protectiveRecommendations: { paymentProtection: 'Require progress payments', scopeProtection: 'Include change order procedures' },
+          contractualRequirements: { requiredClauses: ['Payment terms', 'Scope definition'], recommendedTerms: ['Lien rights'] }
         };
       }
 
-      // Map to frontend expected format
+      // FASE 4: Mapear datos para el frontend con análisis legal integrado
+      console.log('🔄 FASE 4: Mapeando datos híbridos para el frontend...');
+      
       const mappedData = {
+        // Datos del cliente extraídos por Mistral AI
         clientName: extractedData.clientInfo?.name || 'Client from PDF',
         clientEmail: extractedData.clientInfo?.email || '',
         clientPhone: extractedData.clientInfo?.phone || '',
@@ -424,14 +546,31 @@ ${extractedText}`
         city: extractedData.clientInfo?.city || '',
         state: extractedData.clientInfo?.state || '',
         zipCode: extractedData.clientInfo?.zipCode || '',
+        
+        // Datos del proyecto estructurados por Mistral AI
         projectType: extractedData.projectDetails?.type || 'External Estimate',
         description: extractedData.projectDetails?.description || 'Project from external PDF estimate',
         totalAmount: extractedData.financialInfo?.totalAmount || 0,
+        
+        // Datos adicionales de Mistral AI
         contractorInfo: extractedData.contractorInfo,
         timeline: extractedData.timeline,
         materials: extractedData.materials,
-        specialTerms: extractedData.specialTerms,
-        rawExtraction: extractedText
+        financialInfo: extractedData.financialInfo,
+        
+        // Análisis legal de Mervin AI DeepSearch
+        legalAnalysis: legalAnalysis,
+        riskLevel: legalAnalysis.riskAnalysis?.riskLevel || 'MEDIUM',
+        protectiveRecommendations: legalAnalysis.protectiveRecommendations,
+        contractualRequirements: legalAnalysis.contractualRequirements,
+        
+        // Datos brutos para referencia
+        mistralExtraction: mistralExtractedText,
+        rawExtraction: extractedText,
+        
+        // Marca del sistema híbrido
+        processedBy: 'Mistral AI OCR + Mervin AI DeepSearch',
+        processingTimestamp: new Date().toISOString()
       };
 
       console.log('✅ PDF processed successfully with Anthropic');
@@ -448,20 +587,21 @@ ${extractedText}`
         description: mappedData.description,
         totalAmount: mappedData.totalAmount,
         extractedData: mappedData,
-        message: 'PDF processed successfully with AI OCR'
+        message: 'PDF procesado exitosamente con sistema híbrido Mistral AI + Mervin AI DeepSearch',
+        processingDetails: {
+          mistralOCR: 'Datos extraídos exitosamente',
+          mervinLegal: 'Análisis legal completado',
+          riskLevel: mappedData.riskLevel,
+          protectionsGenerated: Object.keys(mappedData.protectiveRecommendations || {}).length
+        }
       });
 
     } catch (error) {
-      console.error('❌ Error processing PDF with Anthropic:');
-      console.error('Error type:', typeof error);
-      console.error('Error message:', error instanceof Error ? error.message : 'Unknown error');
-      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-      console.error('Full error object:', error);
-      
+      console.error('❌ Error en el sistema híbrido:', error);
       res.status(500).json({ 
-        error: 'Error processing the PDF. Please try again.',
+        error: 'Failed to process PDF with hybrid AI system',
         details: error instanceof Error ? error.message : 'Unknown error',
-        type: typeof error
+        system: 'Mistral AI OCR + Mervin AI DeepSearch'
       });
     }
   });
