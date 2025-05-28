@@ -290,25 +290,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/process-estimate-pdf', upload.single('estimate'), async (req: Request, res: Response) => {
     try {
       console.log('📄 Processing PDF estimate with Anthropic OCR...');
+      console.log('🔑 API Key available:', !!process.env.ANTHROPIC_API_KEY);
       
       if (!req.file) {
+        console.log('❌ No file provided in request');
         return res.status(400).json({ error: 'No PDF file provided' });
       }
 
-      // Convertir el PDF a base64 para enviarlo a Anthropic
+      console.log('📎 File received:', {
+        filename: req.file.originalname,
+        size: req.file.size,
+        mimetype: req.file.mimetype
+      });
+
+      // Verificar que sea un PDF
+      if (req.file.mimetype !== 'application/pdf') {
+        console.log('❌ Invalid file type:', req.file.mimetype);
+        return res.status(400).json({ error: 'File must be a PDF' });
+      }
+
+      // Convertir el PDF a buffer
       const pdfBuffer = req.file.buffer;
-      const base64Pdf = pdfBuffer.toString('base64');
+      console.log('📊 PDF buffer size:', pdfBuffer.length);
+
+      // Verificar que Anthropic API key esté disponible
+      if (!process.env.ANTHROPIC_API_KEY) {
+        console.log('❌ Anthropic API key not found');
+        return res.status(500).json({ error: 'Anthropic API key not configured' });
+      }
 
       const anthropic = new Anthropic({
         apiKey: process.env.ANTHROPIC_API_KEY,
       });
 
       // Usar pdf-parse para extraer texto del PDF
+      console.log('🔄 Extracting text from PDF...');
       const pdfParse = require('pdf-parse');
       const pdfData = await pdfParse(pdfBuffer);
       const extractedText = pdfData.text;
+      console.log('📝 Extracted text length:', extractedText.length);
+      console.log('📄 Text preview:', extractedText.substring(0, 200) + '...');
+
+      if (!extractedText || extractedText.trim().length === 0) {
+        console.log('❌ No text extracted from PDF');
+        return res.status(400).json({ error: 'No text could be extracted from the PDF. The document may be an image-based PDF or corrupted.' });
+      }
 
       // Usar Anthropic para analizar el texto extraído del PDF
+      console.log('🤖 Sending to Anthropic for analysis...');
       const response = await anthropic.messages.create({
         model: 'claude-3-7-sonnet-20250219', // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
         max_tokens: 2000,
@@ -335,6 +364,8 @@ Document text:
 ${extractedText}`
         }]
       });
+
+      console.log('✅ Received response from Anthropic');
 
       // Parse the response to get structured data
       const responseText = response.content[0].type === 'text' ? response.content[0].text : '';
@@ -394,10 +425,16 @@ ${extractedText}`
       });
 
     } catch (error) {
-      console.error('❌ Error processing PDF with Anthropic:', error);
+      console.error('❌ Error processing PDF with Anthropic:');
+      console.error('Error type:', typeof error);
+      console.error('Error message:', error instanceof Error ? error.message : 'Unknown error');
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      console.error('Full error object:', error);
+      
       res.status(500).json({ 
-        error: 'Error processing PDF',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        error: 'Error processing the PDF. Please try again.',
+        details: error instanceof Error ? error.message : 'Unknown error',
+        type: typeof error
       });
     }
   });
