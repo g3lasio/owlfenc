@@ -53,7 +53,7 @@ export default function LegalContractEngineFixed() {
                           // Si tiene información básica, es elegible
                           hasBasicInfo;
         
-        const eligible = hasBasicInfo && isEligible;
+        const eligible = hasBasicInfo; // Si tiene info básica, es elegible
         console.log(`${eligible ? '✅' : '❌'} Proyecto ${project.clientName}: elegible=${eligible}`);
         
         return eligible;
@@ -65,15 +65,21 @@ export default function LegalContractEngineFixed() {
       const formattedProjects = contractEligibleProjects.map(project => ({
         id: project.id,
         clientName: project.clientName,
-        clientPhone: project.clientPhone || '',
-        clientEmail: project.clientEmail || '',
+        clientPhone: project.clientPhone || project.phone || '',
+        clientEmail: project.clientEmail || project.email || '',
         address: project.address,
-        projectType: project.projectType || project.fenceType || 'Proyecto de cerca',
-        projectDescription: project.projectDescription || project.description || '',
-        totalAmount: project.totalPrice || project.estimateAmount || 0,
+        projectType: project.projectType || project.fenceType || 'Fence Installation',
+        projectDescription: project.projectDescription || project.description || `${project.fenceType || 'Fence'} project for ${project.clientName}`,
+        totalAmount: project.totalPrice || project.estimateAmount || project.totalCost || 0,
         status: project.status || 'approved',
         createdAt: project.createdAt,
-        projectId: project.id
+        projectId: project.id?.toString() || Math.random().toString(),
+        // Campos adicionales para el contrato
+        fenceType: project.fenceType,
+        length: project.length,
+        height: project.height,
+        gates: project.gates,
+        materials: project.materials
       }));
       
       setProjects(formattedProjects);
