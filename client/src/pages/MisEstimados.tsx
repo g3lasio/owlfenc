@@ -55,11 +55,21 @@ export default function MisEstimados() {
       );
 
       const estimatesSnapshot = await getDocs(estimatesQuery);
-      const firebaseEstimates = estimatesSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt || new Date().toISOString()
-      })) as SavedEstimate[];
+      const firebaseEstimates = estimatesSnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          estimateNumber: data.estimateNumber || `EST-${doc.id.slice(-6)}`,
+          title: data.title || data.projectName || 'Estimado sin título',
+          clientName: data.clientName || 'Cliente sin nombre',
+          clientEmail: data.clientEmail || '',
+          total: data.total || data.estimateAmount || 0,
+          status: data.status || 'draft',
+          createdAt: data.createdAt || new Date().toISOString(),
+          items: data.items || [],
+          projectType: data.projectType || data.fenceType || 'fence'
+        };
+      }) as SavedEstimate[];
 
       // Also load from localStorage as backup
       const localEstimates = JSON.parse(localStorage.getItem('savedEstimates') || '[]');
