@@ -30,14 +30,43 @@ import {
   X
 } from 'lucide-react';
 
-// Types
+// Types - Complete estimate interface for dashboard
 interface Estimate {
   id: string;
+  estimateNumber: string;
   title: string;
+  
+  // Client information
   clientId: string;
   clientName: string;
+  clientEmail?: string;
+  clientPhone?: string;
+  clientAddress?: string;
+  clientCity?: string;
+  clientState?: string;
+  
+  // Contractor information
+  contractorCompanyName?: string;
+  contractorPhone?: string;
+  contractorEmail?: string;
+  
+  // Project details
+  projectType?: string;
+  projectDescription?: string;
+  scope?: string;
+  timeline?: string;
+  
+  // Financial information
+  subtotal?: number;
+  taxAmount?: number;
   total: number;
+  displayTotal?: number;
+  itemsCount?: number;
+  
+  // Status and metadata
   status: 'draft' | 'sent' | 'approved' | 'rejected';
+  date?: string;
+  validUntil?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -297,10 +326,14 @@ export default function EstimatesDashboard() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-ES', {
+    // Handle both display format (dollars) and stored format (cents)
+    const displayAmount = amount > 10000 ? amount / 100 : amount;
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
-    }).format(amount);
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(displayAmount);
   };
 
   const filteredEstimates = estimates.filter(estimate =>
@@ -314,7 +347,7 @@ export default function EstimatesDashboard() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard de Estimados</h1>
           <p className="text-gray-600 mt-2">
-            ✅ Sistema unificado garantiza preview-PDF idénticos
+            ✅ Información completa: Contratista, Cliente, Proyecto y Totales
           </p>
         </div>
         <Button className="bg-primary hover:bg-primary/90">
@@ -338,7 +371,7 @@ export default function EstimatesDashboard() {
             </div>
           </div>
           <CardDescription>
-            🎯 Preview y PDF garantizados idénticos con sistema unificado
+            📊 Información completa del proyecto, cliente, contratista y detalles financieros
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -356,8 +389,9 @@ export default function EstimatesDashboard() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left py-3 px-4 font-medium">Título</th>
+                    <th className="text-left py-3 px-4 font-medium">Estimado</th>
                     <th className="text-left py-3 px-4 font-medium">Cliente</th>
+                    <th className="text-left py-3 px-4 font-medium">Proyecto</th>
                     <th className="text-right py-3 px-4 font-medium">Total</th>
                     <th className="text-center py-3 px-4 font-medium">Estado</th>
                     <th className="text-center py-3 px-4 font-medium">Fecha</th>
@@ -367,10 +401,47 @@ export default function EstimatesDashboard() {
                 <tbody>
                   {filteredEstimates.map((estimate) => (
                     <tr key={estimate.id} className="border-b hover:bg-gray-50">
-                      <td className="py-3 px-4 font-medium">{estimate.title}</td>
-                      <td className="py-3 px-4">{estimate.clientName}</td>
-                      <td className="py-3 px-4 text-right font-semibold">
-                        {formatCurrency(estimate.total)}
+                      <td className="py-3 px-4">
+                        <div className="font-medium">{estimate.estimateNumber || estimate.title}</div>
+                        <div className="text-sm text-gray-500">
+                          {estimate.contractorCompanyName || 'Sin empresa'}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="font-medium">{estimate.clientName}</div>
+                        <div className="text-sm text-gray-500">
+                          {estimate.clientEmail || estimate.clientPhone || 'Sin contacto'}
+                        </div>
+                        {estimate.clientAddress && (
+                          <div className="text-xs text-gray-400 mt-1">
+                            {estimate.clientAddress}
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="font-medium">
+                          {estimate.projectType || 'Proyecto'} 
+                          {estimate.itemsCount && ` (${estimate.itemsCount} items)`}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {estimate.scope || estimate.projectDescription || 'Sin descripción'}
+                        </div>
+                        {estimate.timeline && (
+                          <div className="text-xs text-gray-400 mt-1">
+                            Duración: {estimate.timeline}
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <div className="font-semibold">
+                          {formatCurrency(estimate.displayTotal || estimate.total)}
+                        </div>
+                        {estimate.subtotal && estimate.taxAmount && (
+                          <div className="text-sm text-gray-500">
+                            Subtotal: {formatCurrency(estimate.subtotal)}<br/>
+                            Impuesto: {formatCurrency(estimate.taxAmount)}
+                          </div>
+                        )}
                       </td>
                       <td className="py-3 px-4 text-center">
                         <Badge 
@@ -388,6 +459,11 @@ export default function EstimatesDashboard() {
                       </td>
                       <td className="py-3 px-4 text-center text-sm text-gray-600">
                         {formatDate(estimate.createdAt)}
+                        {estimate.validUntil && (
+                          <div className="text-xs text-gray-400">
+                            Válido hasta: {formatDate(new Date(estimate.validUntil))}
+                          </div>
+                        )}
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex justify-center space-x-2">

@@ -674,19 +674,35 @@ export default function EstimatesWizardFixed() {
         `;
       }
 
-      // 2. Prepare estimate data for Firebase and backend
+      // 2. Prepare complete estimate data for Firebase and backend
       const estimateNumber = `EST-${Date.now()}`;
+      
+      // Get contractor data from profile
+      const contractorData = {
+        companyName: profile?.companyName || 'Your Company',
+        companyAddress: profile?.address || '',
+        companyCity: profile?.city || '',
+        companyState: profile?.state || '',
+        companyZip: profile?.zipCode || '',
+        companyPhone: profile?.phone || '',
+        companyEmail: profile?.email || currentUser?.email || '',
+        companyLicense: profile?.licenseNumber || '',
+        companyLogo: profile?.logoUrl || '/owl-logo.png'
+      };
+
       const estimateData = {
         // Firebase user association
         firebaseUserId: currentUser.uid,
         userId: currentUser.uid,
         
-        // Basic info
+        // Basic info with complete identification
         estimateNumber: estimateNumber,
         title: `Estimado para ${estimate.client.name}`,
         status: 'draft',
+        date: new Date().toISOString(),
+        validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         
-        // Client information
+        // Complete client information
         clientId: estimate.client.id,
         clientName: estimate.client.name,
         clientEmail: estimate.client.email || '',
@@ -696,14 +712,26 @@ export default function EstimatesWizardFixed() {
         clientState: estimate.client.state || '',
         clientZipCode: estimate.client.zipCode || '',
         
-        // Project details
-        projectType: 'fence', // Default type
-        projectSubtype: 'custom',
-        projectDescription: estimate.projectDetails,
-        scope: 'Instalación completa según especificaciones',
-        timeline: '2-3 semanas',
+        // Complete contractor information
+        contractorCompanyName: contractorData.companyName,
+        contractorAddress: contractorData.companyAddress,
+        contractorCity: contractorData.companyCity,
+        contractorState: contractorData.companyState,
+        contractorZip: contractorData.companyZip,
+        contractorPhone: contractorData.companyPhone,
+        contractorEmail: contractorData.companyEmail,
+        contractorLicense: contractorData.companyLicense,
+        contractorLogo: contractorData.companyLogo,
         
-        // Financial data
+        // Complete project details
+        projectType: 'fence',
+        projectSubtype: 'custom',
+        projectDescription: estimate.projectDetails || 'Proyecto de cerca personalizado',
+        scope: estimate.projectDetails || 'Instalación completa según especificaciones',
+        timeline: '2-3 semanas',
+        notes: `Estimado generado el ${new Date().toLocaleDateString()}`,
+        
+        // Complete financial data with proper calculations
         items: estimate.items.map((item, index) => ({
           id: item.id,
           materialId: item.materialId,
@@ -712,7 +740,39 @@ export default function EstimatesWizardFixed() {
           category: 'material',
           quantity: item.quantity,
           unit: item.unit || 'unit',
-          unitPrice: Math.round(item.price * 100), // Convert to cents
+          unitPrice: Math.round(item.price * 100), // Store in cents
+          totalPrice: Math.round(item.total * 100), // Store in cents
+          sortOrder: index,
+          isOptional: false
+        })),
+        
+        // Financial totals (stored in cents for precision)
+        subtotal: Math.round(estimate.subtotal * 100),
+        taxRate: Math.round((estimate.taxRate || 10) * 100), // Store as basis points
+        taxAmount: Math.round(estimate.tax * 100),
+        discount: 0, // Default discount
+        total: Math.round(estimate.total * 100),
+        
+        // Display-friendly totals (for dashboard compatibility)
+        displaySubtotal: estimate.subtotal,
+        displayTax: estimate.tax,
+        displayTotal: estimate.total,
+        
+        // Additional metadata for dashboard
+        itemsCount: estimate.items.length,
+        estimateDate: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      console.log('💾 Guardando estimado completo:', {
+        estimateNumber,
+        clientName: estimateData.clientName,
+        contractorCompany: estimateData.contractorCompanyName,
+        totalItems: estimateData.items.length,
+        subtotal: estimateData.displaySubtotal,
+        total: estimateData.displayTotal
+      });rice: Math.round(item.price * 100), // Convert to cents
           totalPrice: Math.round(item.total * 100), // Convert to cents
           sortOrder: index,
           isOptional: false
