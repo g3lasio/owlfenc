@@ -542,37 +542,168 @@ export default function Projects() {
       {/* Project Details Dialog */}
       {isDialogOpen && selectedProject && (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="p-0 max-w-5xl w-[95vw] h-[95vh] max-h-[95vh] overflow-hidden">
-            <div className="flex flex-col h-full">
-              <DialogHeader className="flex-shrink-0 p-4 md:p-6 border-b">
-                <DialogTitle className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                  <span className="text-base sm:text-lg">Dashboard: {selectedProject.clientName}</span>
-                  <Badge className={getProgressBadgeColor(selectedProject.projectProgress || "estimate_created")}>
-                    <i className="ri-time-line mr-1"></i>
-                    {getProgressLabel(selectedProject.projectProgress || "estimate_created")}
-                  </Badge>
+          <DialogContent className="p-0 max-w-7xl w-[98vw] h-[98vh] max-h-[98vh] overflow-hidden bg-gray-900 border-cyan-400/30 shadow-[0_0_50px_rgba(6,182,212,0.3)]">
+            <div className="flex flex-col h-full relative overflow-hidden">
+              {/* Cyberpunk Header */}
+              <DialogHeader className="flex-shrink-0 p-4 md:p-6 border-b border-cyan-400/30 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 relative">
+                {/* Corner Brackets */}
+                <div className="absolute top-0 left-0 w-6 h-6 border-l-2 border-t-2 border-cyan-400"></div>
+                <div className="absolute top-0 right-0 w-6 h-6 border-r-2 border-t-2 border-cyan-400"></div>
+                <div className="absolute bottom-0 left-0 w-6 h-6 border-l-2 border-b-2 border-cyan-400"></div>
+                <div className="absolute bottom-0 right-0 w-6 h-6 border-r-2 border-b-2 border-cyan-400"></div>
+                
+                {/* Scanning Line */}
+                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-pulse"></div>
+                
+                <DialogTitle className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-3 relative z-10">
+                  <div className="flex items-center gap-3">
+                    {/* Arc Reactor */}
+                    <div className="relative w-4 h-4">
+                      <div className="absolute inset-0 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_20px_rgba(6,182,212,0.8)]"></div>
+                      <div className="absolute inset-1 bg-white rounded-full"></div>
+                    </div>
+                    <span className="text-xl font-bold text-cyan-300 tracking-wider font-mono">
+                      DASHBOARD: {selectedProject.clientName.toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {/* Scanning Effect */}
+                    <div className="w-16 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent relative overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent w-4 animate-[scan_2s_ease-in-out_infinite]"></div>
+                    </div>
+                    <Badge className={`${getProgressBadgeColor(selectedProject.projectProgress || "estimate_created")} px-3 py-1 font-mono text-xs bg-cyan-400/20 text-cyan-300 border-cyan-400/30`}>
+                      <i className="ri-cpu-line mr-1"></i>
+                      {getProgressLabel(selectedProject.projectProgress || "estimate_created")}
+                    </Badge>
+                  </div>
                 </DialogTitle>
               </DialogHeader>
               
-              <div className="dialog-scroll-container">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 p-4 md:p-6 pb-20 md:pb-6">
-                  {/* Project Progress Column */}
-                  <div className="md:col-span-1">
+              {/* Cyberpunk Dashboard Content */}
+              <div className="flex-1 overflow-auto bg-gray-900 relative">
+                {/* Mobile Layout */}
+                <div className="lg:hidden p-4 space-y-4">
+                  {/* Mobile Stats Grid */}
+                  <div className="grid grid-cols-2 gap-3 mb-6">
+                    <div className="cyber-stat-card-mobile">
+                      <div className="text-cyan-400 text-xs mb-1 font-mono">ID PROYECTO</div>
+                      <div className="text-white text-sm font-mono">{selectedProject.id.slice(-8)}</div>
+                    </div>
+                    <div className="cyber-stat-card-mobile">
+                      <div className="text-cyan-400 text-xs mb-1 font-mono">ESTADO</div>
+                      <div className="text-green-400 text-sm font-semibold">{getStatusLabel(selectedProject.status)}</div>
+                    </div>
+                  </div>
+                  
+                  {/* Mobile Progress Section */}
+                  <div className="cyber-container-mobile">
+                    <h3 className="text-cyan-300 font-semibold mb-3 flex items-center font-mono">
+                      <i className="ri-route-line mr-2"></i>
+                      PROGRESO DEL PROYECTO
+                    </h3>
                     <ProjectProgress 
                       projectId={selectedProject.id} 
                       currentProgress={selectedProject.projectProgress || "estimate_created"} 
                       onProgressUpdate={handleProgressUpdate} 
                     />
-                    
-                    {/* Financial Summary Card */}
-                    <Card className="mt-4">
-                      <CardContent className="pt-6">
-                        <h3 className="font-medium text-lg mb-2">Resumen Financiero</h3>
-                        <div className="space-y-2">
-                          <div>
-                            <span className="text-sm text-muted-foreground">Precio Total:</span>
-                            <p className="font-bold text-lg">
-                              {selectedProject.totalPrice 
+                  </div>
+                  
+                  {/* Mobile Details Section */}
+                  <div className="cyber-container-mobile">
+                    <h3 className="text-cyan-300 font-semibold mb-3 flex items-center font-mono">
+                      <i className="ri-file-list-3-line mr-2"></i>
+                      DETALLES DEL PROYECTO
+                    </h3>
+                    <ProjectDetails 
+                      project={selectedProject} 
+                      onUpdate={handleProjectUpdate} 
+                    />
+                  </div>
+                </div>
+
+                {/* Desktop Layout: Two Columns */}
+                <div className="hidden lg:grid lg:grid-cols-2 gap-6 p-6">
+                  {/* Left Column - Progress & System Status */}
+                  <div className="space-y-6">
+                    {/* System Status */}
+                    <div className="cyber-container">
+                      <div className="cyber-header">
+                        <h3 className="text-cyan-300 font-semibold flex items-center font-mono">
+                          <i className="ri-dashboard-3-line mr-2"></i>
+                          ESTADO DEL SISTEMA
+                        </h3>
+                      </div>
+                      <div className="p-4 space-y-3">
+                        <div className="cyber-stat-card">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-cyan-400 text-xs mb-1 font-mono">PROYECTO ID</div>
+                              <div className="text-white font-mono text-sm">{selectedProject.id.slice(-12)}</div>
+                            </div>
+                            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.8)]"></div>
+                          </div>
+                        </div>
+                        
+                        <div className="cyber-stat-card">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-cyan-400 text-xs mb-1 font-mono">PRECIO TOTAL</div>
+                              <div className="text-white font-bold">
+                                {selectedProject.totalPrice 
+                                  ? `$${(selectedProject.totalPrice / 100).toLocaleString()}`
+                                  : 'No establecido'}
+                              </div>
+                            </div>
+                            <i className="ri-money-dollar-circle-line text-cyan-400 text-lg"></i>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Progress Section */}
+                    <div className="cyber-container">
+                      <div className="cyber-header">
+                        <h3 className="text-cyan-300 font-semibold flex items-center font-mono">
+                          <i className="ri-route-line mr-2"></i>
+                          PROGRESO DEL PROYECTO
+                        </h3>
+                      </div>
+                      <div className="p-4">
+                        <ProjectProgress 
+                          projectId={selectedProject.id} 
+                          currentProgress={selectedProject.projectProgress || "estimate_created"} 
+                          onProgressUpdate={handleProgressUpdate} 
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column - Project Details */}
+                  <div className="cyber-container">
+                    <div className="cyber-header">
+                      <h3 className="text-cyan-300 font-semibold flex items-center font-mono">
+                        <i className="ri-file-list-3-line mr-2"></i>
+                        DETALLES DEL PROYECTO
+                      </h3>
+                    </div>
+                    <div className="p-4">
+                      <ProjectDetails 
+                        project={selectedProject} 
+                        onUpdate={handleProjectUpdate} 
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+    </div>
+  );
+};
+
+export default Projects; 
                                 ? new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(selectedProject.totalPrice / 100)
                                 : 'No establecido'}
                             </p>
