@@ -2,305 +2,339 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Futurist Estimate Template - Navy/Neon Contrast</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Quantico:wght@700&display=swap"
-      rel="stylesheet"
-    />
+    <title>Premium Estimate Template - White Futurist</title>
     <style>
+      @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap");
       body {
-        font-family: "Segoe UI", Arial, sans-serif;
-        background: linear-gradient(135deg, #3a3e43 70%, #1b222a 100%);
+        font-family: "Orbitron", "Segoe UI", Arial, sans-serif;
         margin: 0;
         padding: 0;
-        color: #d8fdff;
+        background: #fff;
+        color: #191e2d;
+        font-size: 15px;
+        letter-spacing: 0.2px;
       }
       .container {
-        max-width: 840px;
-        margin: 42px auto;
-        background: rgba(23, 33, 43, 0.99);
-        border-radius: 22px 8px 22px 8px;
+        max-width: 860px;
+        margin: 40px auto 24px auto;
+        background: #fff;
+        border-radius: 16px;
         box-shadow:
-          0 6px 32px 0 #0de7b4b5,
-          0 0.5px 18px 0 #0c0f1050;
-        padding: 46px 38px 26px 38px;
-        border: 2.5px solid #0de7b4;
+          0 4px 38px 2px #35baff0c,
+          0 1px 8px #b0c8e610;
+        padding: 44px 52px 32px 52px;
+        border: 2px solid #1ae2ff44;
         position: relative;
         overflow: hidden;
       }
-      .header {
+      .header-row {
         display: flex;
-        align-items: flex-start;
         justify-content: space-between;
-        border-bottom: 2.5px solid #0de7b4;
-        padding-bottom: 22px;
-        margin-bottom: 28px;
-      }
-      .company-details {
-        line-height: 1.65;
+        align-items: flex-start;
+        margin-bottom: 0;
+        position: relative;
       }
       .logo {
-        max-width: 124px;
-        max-height: 68px;
-        margin-bottom: 10px;
-        background: #222831;
-        border-radius: 11px;
-        border: 1.6px solid #2fd9c0;
+        max-width: 120px;
+        max-height: 64px;
+        border-radius: 12px;
+        border: 1.8px solid #0fd1ff66;
+        box-shadow: 0 0 16px #12b6ff10;
+        background: #f5fbff;
+        padding: 7px 8px;
+        display: flex;
+        align-items: center;
+      }
+      .estimate-info {
+        min-width: 255px;
+        background: #f2fbff;
+        border-radius: 12px;
+        box-shadow: 0 0 7px #09e6fc15;
+        padding: 14px 20px;
+        border: 1.4px solid #18faff30;
+        margin-left: 24px;
+        color: #125574;
+        font-family: "Orbitron", Arial, monospace;
+        font-size: 15px;
+        text-align: right;
+      }
+      .estimate-info strong {
+        color: #0480a6;
+        font-size: 16px;
+      }
+      .info-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 30px;
+        margin-bottom: 20px;
+        margin-top: 18px;
+      }
+      .contractor-info,
+      .client-info {
+        width: 49%;
+        padding: 16px 20px 13px 20px;
+        background: #f7fbfd;
+        border-radius: 10px;
+        box-shadow: 0 0 9px #36dafb11;
+        font-size: 14px;
+        border: 1.4px solid #1ee6ff1c;
+        position: relative;
+        min-height: 105px;
+      }
+      .contractor-info {
+        border-left: 4px solid #17e9ff;
+        color: #155674;
+        text-align: left;
+      }
+      .client-info {
+        border-right: 4px solid #17e9ff;
+        color: #08304e;
+        text-align: right;
+      }
+      .contractor-info a,
+      .client-info a {
+        color: #037e9d;
+        text-decoration: underline;
+        word-break: break-all;
+      }
+      .contractor-info .website {
+        font-size: 13px;
         display: block;
-        box-shadow: 0 0 10px #0de7b460;
+        margin-top: 7px;
+        color: #14b5d4;
+        word-break: break-all;
       }
-      .company-name {
-        font-size: 1.38rem;
-        font-family: "Quantico", Arial, sans-serif;
-        color: #24ffe5;
-        font-weight: 700;
-        margin-bottom: 3px;
-        letter-spacing: 1.2px;
+      .arrow-divider {
+        width: 100%;
+        height: 10px;
+        background: repeating-linear-gradient(
+          90deg,
+          #0fd8ff 0 10px,
+          transparent 10px 30px
+        );
+        clip-path: polygon(0 0, 100% 0, 97% 100%, 3% 100%);
+        margin: 19px 0 13px 0;
+        filter: drop-shadow(0 0 7px #14d3fc66);
       }
-      .company-address {
-        font-size: 1.07rem;
-        color: #8cf3f1;
-        margin-bottom: 2px;
-      }
-      .estimate-title {
-        text-align: right;
-        font-size: 2.25rem;
-        font-family: "Quantico", Arial, sans-serif;
-        color: #0de7b4;
-        font-weight: 900;
-        letter-spacing: 2.1px;
-        text-shadow: 0 2px 12px #24ffe550;
-        margin-bottom: 2px;
-      }
-      .estimate-meta {
-        text-align: right;
-        font-size: 1.12rem;
-        color: #8cf3f1;
-        line-height: 1.45;
-      }
-      .section {
-        margin-bottom: 30px;
-      }
-      .section-title {
-        font-family: "Quantico", Arial, sans-serif;
-        font-size: 1.17rem;
-        font-weight: 700;
-        color: #21e8c5;
-        margin-bottom: 8px;
-        letter-spacing: 1.1px;
-        text-shadow: 0 1.5px 8px #13ba8850;
-        background: linear-gradient(90deg, #25303e 40%, #0de7b4 200%);
-        padding: 4px 18px 4px 15px;
-        border-left: 8px solid #0de7b4;
-        border-radius: 8px 2px 12px 2px;
-        display: inline-block;
-        box-shadow: 0 2px 7px 0 #0de7b425;
-      }
-      .details-table {
+      .table {
         width: 100%;
         border-collapse: separate;
-        border-spacing: 0 12px;
-        background: none;
-        border-radius: 14px;
+        border-spacing: 0;
+        margin: 18px 0 0 0;
+        background: #fcfdff;
+        box-shadow: 0 0 14px #14c3ff09;
+        border-radius: 9px;
         overflow: hidden;
-        margin-bottom: 8px;
       }
-      .details-table th,
-      .details-table td {
-        padding: 13px 11px;
+      .table th,
+      .table td {
+        border: none;
+        padding: 12px 9px;
         text-align: left;
-        font-family: "Quantico", Arial, sans-serif;
-        color: #25f1da;
+        position: relative;
       }
-      .details-table th {
-        background: linear-gradient(90deg, #14222e 40%, #0de7b4 210%);
-        color: #fff;
-        font-size: 1.05rem;
-        font-weight: 900;
-        border-bottom: 2px solid #0de7b4;
-        border-top-left-radius: 7px;
-        border-top-right-radius: 7px;
-        box-shadow: 0 2px 8px #0de7b425;
+      .table th {
+        background: linear-gradient(87deg, #e5faff 70%, #17e9ff18 100%);
+        font-weight: 800;
+        font-size: 15px;
+        color: #026b92;
+        border-bottom: 2.5px solid #13d6ff37;
+        letter-spacing: 0.1em;
       }
-      .details-table td {
-        background: #1c2835;
-        border-radius: 7px;
-        font-size: 1.05rem;
-        border-bottom: none;
-        box-shadow: 0 2px 8px 0 #0de7b422;
+      .table tr:not(:last-child) td {
+        border-bottom: 1.2px dashed #13c6ff18;
       }
-      .details-table tr:last-child td {
-        border-bottom: none;
+      .table td {
+        color: #232525;
+        font-size: 15px;
+        font-family: "Orbitron", Arial, monospace;
+        background: linear-gradient(90deg, #f6fbfd 92%, #13e3ff09 100%);
       }
-      .totals-row {
-        font-weight: 900;
-        background: linear-gradient(90deg, #0de7b4 40%, #25303e 130%);
-        font-size: 1.11rem;
-        color: #181f1e;
-        border-radius: 7px;
-        box-shadow: 0 2px 10px 0 #0de7b430;
+      .totals {
+        width: 100%;
+        margin-top: 16px;
+        font-size: 16px;
+        border-radius: 9px;
+        overflow: hidden;
+        background: linear-gradient(90deg, #f3faff 70%, #19f9ff09 100%);
+        box-shadow: 0 0 10px #19f9ff11;
       }
-      .project-details {
-        font-size: 1.09rem;
-        color: #c6fdff;
-        margin: 20px 0 30px 0;
-        padding: 16px 22px 11px 22px;
-        background: linear-gradient(90deg, #1c2835 60%, #0de7b4 170%);
-        border-radius: 11px;
-        border-left: 5px solid #24ffe5;
-        box-shadow: 0 2px 15px 0 #0de7b41c;
-        font-family: "Segoe UI", Arial, sans-serif;
+      .totals td {
+        padding: 7px 10px;
+        text-align: right;
+        color: #015970;
+        font-family: "Orbitron", monospace;
       }
-      .client-contact a,
-      .company-details a {
-        display: inline-block;
-        margin-right: 10px;
-        padding: 5px 13px;
-        color: #19ffd2;
-        background: #14222e;
-        border-radius: 7px;
-        text-decoration: none;
+      .totals .label {
         font-weight: 700;
-        font-family: "Quantico", Arial, sans-serif;
-        font-size: 1.01rem;
-        border: 2px solid #0de7b4;
-        box-shadow: 0 0 9px 0 #0de7b47a;
-        transition:
-          background 0.22s,
-          color 0.22s;
+        text-align: left;
+        color: #0a94b1;
       }
-      .client-contact a:hover,
-      .company-details a:hover {
-        background: #0de7b4;
-        color: #162123;
+      .totals tr:last-child td {
+        font-size: 19px;
+        color: #0e2e36;
+        text-shadow: 0 0 2px #19f9ff07;
+      }
+      .project-desc {
+        margin: 25px 0 15px 0;
+        padding: 17px 22px;
+        background: linear-gradient(93deg, #e6fafd 70%, #a7f6ff19 100%);
+        border-radius: 9px;
+        border-left: 4px solid #1eeaff;
+        box-shadow: 0 0 8px #12b6ff13;
+        color: #17446b;
+        font-size: 15px;
+        font-family: "Orbitron", Arial, monospace;
+      }
+      .notes {
+        margin-top: 13px;
+        font-style: italic;
+        color: #026e99cc;
+        font-size: 14px;
       }
       .footer {
+        margin-top: 36px;
+        padding-top: 20px;
+        border-top: 2px dashed #0fd1ff33;
         text-align: center;
-        margin-top: 21px;
-        font-size: 1.05rem;
-        color: #12f2b7;
-        padding-top: 9px;
-        border-top: 2.2px solid #0de7b4;
-        letter-spacing: 0.14px;
-        font-family: "Quantico", Arial, sans-serif;
-        text-shadow: 0 0 10px #0de7b470;
-        background: #18222c;
-        border-radius: 0 0 13px 13px;
-        box-shadow: 0 2px 14px #0de7b41a;
+        font-size: 17px;
+        font-weight: 700;
+        font-family: "Orbitron", Arial, monospace;
+        letter-spacing: 0.8px;
+        background: linear-gradient(
+          90deg,
+          #11e2ff 5%,
+          #b4edfc 60%,
+          #fafdff 100%
+        );
+        color: #065f73;
+        text-shadow: 0 0 9px #11d2fc18;
+        border-bottom-left-radius: 16px;
+        border-bottom-right-radius: 16px;
+        position: relative;
       }
-      @media (max-width: 700px) {
+      .footer:before {
+        content: "▶";
+        color: #19f9ff88;
+        font-size: 26px;
+        position: absolute;
+        left: 47%;
+        top: -22px;
+        text-shadow: 0 0 10px #11bafc41;
+      }
+      @media (max-width: 950px) {
         .container {
-          padding: 8px 2vw 18px 2vw;
+          padding: 14px 2px;
         }
-        .header,
-        .estimate-meta,
-        .company-details {
+        .header-row,
+        .info-row,
+        .details {
           flex-direction: column;
+          align-items: flex-start;
+          gap: 10px;
+        }
+        .contractor-info,
+        .client-info {
+          width: 100%;
+          margin-bottom: 5px;
           text-align: left;
         }
-        .logo {
-          margin-bottom: 16px;
-        }
-        .footer {
-          text-align: center;
+        .estimate-info {
+          text-align: left;
+          min-width: unset;
+          max-width: 100%;
+          margin-left: 0;
         }
       }
     </style>
   </head>
   <body>
     <div class="container">
-      <div class="header">
-        <div class="company-details">
-          <img src="[COMPANY_LOGO_URL]" alt="Company Logo" class="logo" />
-          <div class="company-name">[Company Name]</div>
-          <div class="company-address">[Company Address, City, State, ZIP]</div>
-          <div>
-            <a href="mailto:[COMPANY_EMAIL]">[COMPANY_EMAIL]</a>
-            <a href="tel:[COMPANY_PHONE]">[COMPANY_PHONE]</a>
-          </div>
+      <div class="header-row">
+        <div class="logo">
+          <img
+            src="{{company_logo_url}}"
+            alt="Company Logo"
+            style="max-width: 105px; max-height: 62px"
+          />
         </div>
-        <div>
-          <div class="estimate-title">ESTIMATE</div>
-          <div class="estimate-meta">
-            <div><strong>Date:</strong> [Estimate Date]</div>
-            <div><strong>Estimate #:</strong> [Estimate Number]</div>
-            <div><strong>Valid Until:</strong> [Estimate Valid Until]</div>
-          </div>
+        <div class="estimate-info">
+          <div><strong>Estimate No:</strong> {{estimate_number}}</div>
+          <div><strong>Date:</strong> {{estimate_date}}</div>
+          <div><strong>Valid Until:</strong> {{valid_until}}</div>
         </div>
       </div>
-
-      <div class="section">
-        <div class="section-title">Client</div>
-        <table class="details-table">
-          <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Phone</th>
-            <th>Address</th>
-          </tr>
-          <tr>
-            <td>[Client Name]</td>
-            <td><a href="mailto:[Client Email]">[Client Email]</a></td>
-            <td><a href="tel:[Client Phone]">[Client Phone]</a></td>
-            <td>[Client Address]</td>
-          </tr>
-        </table>
-      </div>
-
-      <div class="section">
-        <div class="section-title">Estimate Details</div>
-        <table class="details-table">
-          <tr>
-            <th>Item</th>
-            <th>Description</th>
-            <th>Quantity</th>
-            <th>Unit Price</th>
-            <th>Total</th>
-          </tr>
-          <!-- Repeat this row for each item -->
-          <tr>
-            <td>[Item Name]</td>
-            <td>[Item Description]</td>
-            <td>[Qty]</td>
-            <td>[Unit Price]</td>
-            <td>[Total]</td>
-          </tr>
-          <tr class="totals-row">
-            <td colspan="4" style="text-align: right">Total</td>
-            <td>[Grand Total]</td>
-          </tr>
-        </table>
-      </div>
-
-      <div class="section project-details">
-        <b>Scope:</b> [Scope of Work]<br />
-        <b>Timeline:</b> [Estimated Completion Timeframe]<br />
-        <b>Process:</b> [Work Process/Steps]<br />
-        <b>Includes:</b> [Included Services or Materials]<br />
-        <b>Excludes:</b> [Excluded Services or Materials]
-      </div>
-
-      <div class="section">
-        <div class="section-title">Terms & Conditions</div>
-        <div class="terms">
-          <ul style="margin: 0 0 0 1.4em; padding: 0; color: #bffcf7">
-            <li>
-              This estimate is valid for 30 days from the issue date. Prices may
-              change after this period due to fluctuations in materials, labor,
-              or market conditions.
-            </li>
-            <li>
-              Project execution, specific terms, and additional conditions will
-              be detailed in the formal contract to be signed by both parties.
-            </li>
-            <li>For questions, please contact us directly.</li>
-          </ul>
+      <div class="info-row">
+        <div class="contractor-info">
+          <strong>{{company_name}}</strong><br />
+          {{company_address}}<br />
+          <a href="mailto:{{company_email}}">{{company_email}}</a><br />
+          <a href="tel:{{company_phone}}">{{company_phone}}</a><br />
+          <span class="website"
+            ><a href="{{company_website}}" target="_blank"
+              >{{company_website}}</a
+            ></span
+          >
+        </div>
+        <div class="client-info">
+          <strong>Client:</strong> {{client_name}}<br />
+          Address:
+          <a
+            href="https://maps.google.com/?q={{client_address}}"
+            target="_blank"
+            >{{client_address}}</a
+          ><br />
+          Email: <a href="mailto:{{client_email}}">{{client_email}}</a><br />
+          Phone: <a href="tel:{{client_phone}}">{{client_phone}}</a>
         </div>
       </div>
-
+      <div class="arrow-divider"></div>
+      <table class="table">
+        <tr>
+          <th>Item</th>
+          <th>Description</th>
+          <th>Qty</th>
+          <th>Unit</th>
+          <th>Unit Price</th>
+          <th>Total</th>
+        </tr>
+        {% for item in estimate_items %}
+        <tr>
+          <td>{{item.category}}</td>
+          <td>{{item.description}}</td>
+          <td>{{item.quantity}}</td>
+          <td>{{item.unit}}</td>
+          <td>${{item.unit_price}}</td>
+          <td>${{item.total}}</td>
+        </tr>
+        {% endfor %}
+      </table>
+      <table class="totals">
+        <tr>
+          <td class="label">Subtotal:</td>
+          <td>${{subtotal}}</td>
+        </tr>
+        <tr>
+          <td class="label">Discount:</td>
+          <td>${{discount}}</td>
+        </tr>
+        <tr>
+          <td class="label">Tax ({{tax_rate}}%):</td>
+          <td>${{tax_amount}}</td>
+        </tr>
+        <tr>
+          <td class="label">Total:</td>
+          <td><strong>${{total}}</strong></td>
+        </tr>
+      </table>
+      <div class="arrow-divider"></div>
+      <div class="project-desc">
+        <strong>Project Description & Execution:</strong><br />
+        {{project_description}}
+        <div class="notes"><strong>Notes:</strong> {{project_notes}}</div>
+      </div>
       <div class="footer">
-        Powered by <b style="color: #24ffe5">Futurist AI</b>
+        {{company_name}} &mdash; Building the Future, One Project at a Time.
       </div>
     </div>
   </body>

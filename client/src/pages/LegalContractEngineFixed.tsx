@@ -1,17 +1,51 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { FileUp, Shield, Zap, CheckCircle } from 'lucide-react';
+import { FileUp, Shield, Zap, CheckCircle, FileText, Upload } from 'lucide-react';
 import EditableExtractedData from '@/components/contract/EditableExtractedData';
 
 export default function LegalContractEngineFixed() {
+  const [activeTab, setActiveTab] = useState<'projects' | 'upload'>('projects');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [extractedData, setExtractedData] = useState<any>(null);
   const [generatedContract, setGeneratedContract] = useState<string>('');
   const [riskAnalysis, setRiskAnalysis] = useState<any>(null);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [selectedProject, setSelectedProject] = useState<any>(null);
+  const [loadingProjects, setLoadingProjects] = useState(false);
   const { toast } = useToast();
+
+  // Cargar proyectos existentes
+  const loadProjects = async () => {
+    setLoadingProjects(true);
+    try {
+      const response = await fetch('/api/projects');
+      if (response.ok) {
+        const projectsData = await response.json();
+        setProjects(projectsData);
+      }
+    } catch (error) {
+      console.error('Error loading projects:', error);
+      toast({
+        title: "Error cargando proyectos",
+        description: "No se pudieron cargar los proyectos existentes",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingProjects(false);
+    }
+  };
+
+  // Cargar proyectos al cambiar a la pestaña de proyectos
+  const handleTabChange = (tab: 'projects' | 'upload') => {
+    setActiveTab(tab);
+    if (tab === 'projects' && projects.length === 0) {
+      loadProjects();
+    }
+  };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -150,6 +184,106 @@ export default function LegalContractEngineFixed() {
         </div>
       </div>
 
+      {/* Tabs for Projects and Upload */}
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="projects" className="flex items-center gap-2">
+            <FileText className="w-4 h-4" />
+            Proyectos Existentes
+          </TabsTrigger>
+          <TabsTrigger value="upload" className="flex items-center gap-2">
+            <Upload className="w-4 h-4" />
+            Subir PDF Estimate
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Tab: Proyectos Existentes */}
+        <TabsContent value="projects" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Seleccionar Proyecto Existente
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loadingProjects ? (
+                <div className="text-center py-4">
+                  <p>Cargando proyectos...</p>
+                </div>
+              ) : projects.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-gray-500">No hay proyectos disponibles</p>
+                  <Button onClick={loadProjects} className="mt-2">
+                    Recargar Proyectos
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {projects.map((project) => (
+                    <div
+                      key={project.id}
+                      className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                        selectedProject?.id === project.id
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                      onClick={() => setSelectedProject(project)}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-semibold">{project.clientName}</h3>
+                          <p className="text-sm text-gray-600">{project.address}</p>
+                          <p className="text-sm text-gray-500">{project.projectType}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-green-600">
+                            ${project.totalPrice?.toLocaleString() || 'N/A'}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {project.status || 'Pending'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {selectedProject && (
+                <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <h4 className="font-semibold text-green-800 mb-2">Proyecto Seleccionado:</h4>
+                  <p><strong>Cliente:</strong> {selectedProject.clientName}</p>
+                  <p><strong>Dirección:</strong> {selectedProject.address}</p>
+                  <p><strong>Tipo:</strong> {selectedProject.projectType}</p>
+                  <p><strong>Total:</strong> ${selectedProject.totalPrice?.toLocaleString()}</p>
+                  
+                  <Button 
+                    onClick={() => {
+                      // Convertir proyecto a datos de contrato
+                      setExtractedData({
+                        contractorName: "OWL FENC LLC",
+                        clientName: selectedProject.clientName,
+                        clientAddress: selectedProject.address,
+                        projectDescription: selectedProject.description || selectedProject.projectType,
+                        totalAmount: selectedProject.totalPrice?.toString() || "0",
+                        projectType: selectedProject.projectType
+                      });
+                      setActiveTab('upload'); // Cambiar a la vista de procesamiento
+                    }}
+                    className="mt-4 w-full"
+                  >
+                    Generar Contrato con este Proyecto
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab: Subir PDF Estimate */}
+        <TabsContent value="upload" className="space-y-6">
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Panel - Upload & Process */}
         <div className="space-y-6">
@@ -282,6 +416,8 @@ export default function LegalContractEngineFixed() {
           </Card>
         </div>
       </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
