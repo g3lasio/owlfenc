@@ -186,80 +186,88 @@ const LegalContractEngineFixed: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 p-6 space-y-6">
-      {/* Header Principal */}
-      <div className="flex items-center justify-between">
+    <div className="flex-1 p-3 md:p-6 space-y-4 md:space-y-6">
+      {/* Header Principal - Responsive */}
+      <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            <Shield className="w-8 h-8 text-blue-600" />
-            Motor de Abogado Defensor Digital
+          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2 md:gap-3">
+            <Shield className="w-6 h-6 md:w-8 md:h-8 text-blue-600" />
+            <span className="break-words">Digital Defense Attorney Engine</span>
           </h1>
-          <p className="text-muted-foreground mt-2">
-            Mervin AI convierte tus estimados aprobados en contratos que te protegen legalmente
+          <p className="text-muted-foreground mt-2 text-sm md:text-base">
+            Mervin AI converts your approved estimates into legally protective contracts
           </p>
         </div>
         {activeView !== 'selector' && (
-          <Button variant="outline" onClick={() => setActiveView('selector')}>
-            <Search className="w-4 h-4 mr-2" />
-            Seleccionar Otro Proyecto
+          <Button 
+            variant="outline" 
+            onClick={() => setActiveView('selector')}
+            className="w-full md:w-auto text-xs md:text-sm"
+          >
+            <Search className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+            <span className="hidden sm:inline">Select Another</span>
+            <span className="sm:hidden">Select</span>
           </Button>
         )}
       </div>
 
-      {/* Navegación por pestañas */}
+      {/* Navegación por pestañas - Mobile Responsive */}
       <Tabs value={activeView} onValueChange={(value) => setActiveView(value as any)}>
-        <TabsList className="w-full">
-          <TabsTrigger value="selector" className="flex-1">
-            <Search className="w-4 h-4 mr-2" />
-            Seleccionar Proyecto
+        <TabsList className="w-full grid grid-cols-3 h-auto">
+          <TabsTrigger value="selector" className="flex-1 flex flex-col sm:flex-row items-center gap-1 text-xs sm:text-sm p-2">
+            <Search className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Select Project</span>
+            <span className="sm:hidden">Select</span>
           </TabsTrigger>
-          <TabsTrigger value="generator" className="flex-1" disabled={!selectedProject}>
-            <Brain className="w-4 h-4 mr-2" />
-            Generar Contrato
+          <TabsTrigger value="generator" className="flex-1 flex flex-col sm:flex-row items-center gap-1 text-xs sm:text-sm p-2" disabled={!selectedProject}>
+            <Brain className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Generate Contract</span>
+            <span className="sm:hidden">Generate</span>
           </TabsTrigger>
-          <TabsTrigger value="preview" className="flex-1" disabled={!generatedContract}>
-            <Eye className="w-4 h-4 mr-2" />
-            Vista Previa
+          <TabsTrigger value="preview" className="flex-1 flex flex-col sm:flex-row items-center gap-1 text-xs sm:text-sm p-2" disabled={!generatedContract}>
+            <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Preview</span>
+            <span className="sm:hidden">View</span>
           </TabsTrigger>
         </TabsList>
 
         {/* Vista de Selección de Proyectos */}
-        <TabsContent value="selector" className="space-y-6">
+        <TabsContent value="selector" className="space-y-4 md:space-y-6">
           <ProjectToContractSelector
             onProjectSelected={handleProjectSelected}
-            onCancel={() => console.log('Selección cancelada')}
+            onCancel={() => console.log('Selection cancelled')}
           />
         </TabsContent>
 
         {/* Vista de Generación */}
-        <TabsContent value="generator" className="space-y-6">
+        <TabsContent value="generator" className="space-y-4 md:space-y-6">
           {selectedProject && (
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
               {/* Información del Proyecto */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="w-5 h-5" />
-                    Información del Proyecto
+                  <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                    <FileText className="w-4 h-4 md:w-5 md:h-5" />
+                    Project Information
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-3 md:space-y-4">
                   <div>
-                    <p className="text-sm text-muted-foreground">Cliente</p>
-                    <p className="font-medium">{selectedProject.clientName}</p>
+                    <p className="text-xs md:text-sm text-muted-foreground">Client</p>
+                    <p className="font-medium text-sm md:text-base">{selectedProject.clientName}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Dirección</p>
-                    <p className="font-medium">{selectedProject.address}</p>
+                    <p className="text-xs md:text-sm text-muted-foreground">Address</p>
+                    <p className="font-medium text-sm md:text-base break-words">{selectedProject.address}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Tipo de Proyecto</p>
-                    <p className="font-medium">{selectedProject.projectType || 'General'}</p>
+                    <p className="text-xs md:text-sm text-muted-foreground">Project Type</p>
+                    <p className="font-medium text-sm md:text-base">{selectedProject.projectType || 'General'}</p>
                   </div>
                   {selectedProject.totalPrice && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Valor Total</p>
-                      <p className="font-bold text-lg text-green-600">
+                      <p className="text-xs md:text-sm text-muted-foreground">Total Value</p>
+                      <p className="font-bold text-lg md:text-xl text-green-600">
                         ${(selectedProject.totalPrice / 100).toLocaleString()}
                       </p>
                     </div>
@@ -270,34 +278,34 @@ const LegalContractEngineFixed: React.FC = () => {
               {/* Análisis de Riesgo Legal */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <AlertTriangle className="w-5 h-5" />
-                    Análisis de Riesgo Legal
+                  <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                    <AlertTriangle className="w-4 h-4 md:w-5 md:h-5" />
+                    Legal Risk Analysis
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-3 md:space-y-4">
                   {riskAnalysis ? (
                     <>
                       <div>
-                        <p className="text-sm text-muted-foreground mb-2">Nivel de Riesgo</p>
+                        <p className="text-xs md:text-sm text-muted-foreground mb-2">Risk Level</p>
                         <Badge className={getRiskColor(riskAnalysis.riskLevel)}>
-                          {riskAnalysis.riskLevel.toUpperCase()} ({riskAnalysis.riskScore} puntos)
+                          {riskAnalysis.riskLevel.toUpperCase()} ({riskAnalysis.riskScore} points)
                         </Badge>
                       </div>
                       
                       <div>
-                        <p className="text-sm text-muted-foreground mb-2">Protecciones Recomendadas</p>
-                        <ul className="text-sm space-y-1">
+                        <p className="text-xs md:text-sm text-muted-foreground mb-2">Recommended Protections</p>
+                        <ul className="text-xs md:text-sm space-y-1">
                           {riskAnalysis.protectiveRecommendations.slice(0, 3).map((rec, idx) => (
                             <li key={idx} className="flex items-start gap-2">
-                              <Shield className="w-3 h-3 mt-1 text-blue-500 flex-shrink-0" />
-                              {rec}
+                              <Shield className="w-3 h-3 mt-0.5 text-blue-500 flex-shrink-0" />
+                              <span className="break-words">{rec}</span>
                             </li>
                           ))}
                         </ul>
                         {riskAnalysis.protectiveRecommendations.length > 3 && (
                           <p className="text-xs text-muted-foreground mt-2">
-                            +{riskAnalysis.protectiveRecommendations.length - 3} protecciones adicionales
+                            +{riskAnalysis.protectiveRecommendations.length - 3} additional protections
                           </p>
                         )}
                       </div>
@@ -305,7 +313,7 @@ const LegalContractEngineFixed: React.FC = () => {
                   ) : (
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Analizando riesgos legales...
+                      <span className="text-sm">Analyzing legal risks...</span>
                     </div>
                   )}
                 </CardContent>
@@ -315,32 +323,34 @@ const LegalContractEngineFixed: React.FC = () => {
 
           {/* Botón de Generación */}
           <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-            <CardContent className="pt-6">
-              <div className="text-center space-y-4">
-                <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Brain className="w-8 h-8 text-blue-600" />
+            <CardContent className="pt-4 md:pt-6">
+              <div className="text-center space-y-3 md:space-y-4">
+                <div className="mx-auto w-12 h-12 md:w-16 md:h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Brain className="w-6 h-6 md:w-8 md:h-8 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold mb-2">Generar Contrato Protector</h3>
-                  <p className="text-muted-foreground">
-                    El abogado defensor digital creará un contrato que protege tus intereses como contratista
+                  <h3 className="text-lg md:text-xl font-semibold mb-2">Generate Protective Contract</h3>
+                  <p className="text-muted-foreground text-sm md:text-base">
+                    The digital defense attorney will create a contract that protects your interests as a contractor
                   </p>
                 </div>
                 <Button 
                   onClick={handleGenerateDefensiveContract}
                   disabled={isGenerating || !selectedProject}
                   size="lg"
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-blue-600 hover:bg-blue-700 w-full md:w-auto text-sm md:text-base"
                 >
                   {isGenerating ? (
                     <>
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      Generando Contrato Defensivo...
+                      <Loader2 className="w-4 h-4 md:w-5 md:h-5 mr-2 animate-spin" />
+                      <span className="hidden sm:inline">Generating Defensive Contract...</span>
+                      <span className="sm:hidden">Generating...</span>
                     </>
                   ) : (
                     <>
-                      <Zap className="w-5 h-5 mr-2" />
-                      Generar Contrato Defensivo
+                      <Zap className="w-4 h-4 md:w-5 md:h-5 mr-2" />
+                      <span className="hidden sm:inline">Generate Defensive Contract</span>
+                      <span className="sm:hidden">Generate</span>
                     </>
                   )}
                 </Button>

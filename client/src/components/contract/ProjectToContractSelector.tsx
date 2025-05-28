@@ -48,9 +48,9 @@ const ProjectToContractSelector: React.FC<ProjectToContractSelectorProps> = ({
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'client_approved': return 'Aprobado por Cliente';
-      case 'estimate_sent': return 'Estimado Enviado';
-      case 'contract_needed': return 'Requiere Contrato';
+      case 'client_approved': return 'Client Approved';
+      case 'estimate_sent': return 'Estimate Sent';
+      case 'contract_needed': return 'Contract Needed';
       default: return status;
     }
   };
@@ -64,39 +64,39 @@ const ProjectToContractSelector: React.FC<ProjectToContractSelectorProps> = ({
     if (!project.permitStatus || project.permitStatus === 'pending') riskScore += 1; // Sin permisos
     if (!project.clientEmail) riskScore += 1; // Falta información del cliente
     
-    if (riskScore >= 3) return { level: 'alto', color: 'red', text: 'Alto Riesgo' };
-    if (riskScore >= 2) return { level: 'medio', color: 'yellow', text: 'Riesgo Medio' };
-    return { level: 'bajo', color: 'green', text: 'Bajo Riesgo' };
+    if (riskScore >= 3) return { level: 'alto', color: 'red', text: 'High Risk' };
+    if (riskScore >= 2) return { level: 'medio', color: 'yellow', text: 'Medium Risk' };
+    return { level: 'bajo', color: 'green', text: 'Low Risk' };
   };
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
         <div>
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <Shield className="w-6 h-6 text-blue-500" />
-            Seleccionar Proyecto para Contrato Legal
+          <h2 className="text-xl md:text-2xl font-bold flex items-center gap-2">
+            <Shield className="w-5 h-5 md:w-6 md:h-6 text-blue-500" />
+            <span className="break-words">Select Project for Legal Contract</span>
           </h2>
-          <p className="text-muted-foreground mt-1">
-            El abogado defensor digital convertirá tu estimado aprobado en un contrato que te protege
+          <p className="text-muted-foreground mt-1 text-sm md:text-base">
+            The digital defense attorney will convert your approved estimate into a contract that protects you
           </p>
         </div>
-        <Button variant="outline" onClick={onCancel}>
-          Cancelar
+        <Button variant="outline" onClick={onCancel} className="w-full md:w-auto text-sm">
+          Cancel
         </Button>
       </div>
 
       {/* Filtros */}
-      <div className="flex gap-4 items-center">
+      <div className="flex flex-col md:flex-row gap-3 md:gap-4 items-stretch md:items-center">
         <div className="flex-1">
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por cliente, dirección o tipo de proyecto..."
+              placeholder="Search by client, address or project type..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 text-sm"
             />
           </div>
         </div>
