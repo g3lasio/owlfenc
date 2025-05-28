@@ -52,11 +52,23 @@ export const projects = pgTable("projects", {
   clientEmail: text("client_email"),
   clientPhone: text("client_phone"),
   address: text("address").notNull(),
-  fenceType: text("fence_type").notNull(),
+
+  // Campos de tipo de proyecto actualizados
+  projectType: text("project_type").default("general"), // fencing, roofing, plumbing, etc.
+  projectSubtype: text("project_subtype"), // Wood Fence, Metal Roofing, etc.
+  projectCategory: text("project_category").default("general"), // Alias para projectType
+  projectDescription: text("project_description"),
+  projectScope: text("project_scope"),
+
+  // Campos legacy para compatibilidad con proyectos existentes
+  fenceType: text("fence_type"),
   length: integer("length"),
   height: integer("height"),
   gates: jsonb("gates"),
   additionalDetails: text("additional_details"),
+  description: text("description"),
+
+  // Campos de documentos y estado
   estimateHtml: text("estimate_html"),
   contractHtml: text("contract_html"),
   totalPrice: integer("total_price"),
@@ -75,6 +87,12 @@ export const projects = pgTable("projects", {
   paymentDetails: jsonb("payment_details"), // Payment history and details
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+
+  // Campos adicionales para organización
+  materialsList: jsonb("materials_list"), // Lista de materiales
+  laborHours: integer("labor_hours"),
+  difficulty: text("difficulty").default("medium"), // easy, medium, hard
+  priority: text("priority").default("normal"), // low, normal, high, urgent
 });
 
 export const insertProjectSchema = createInsertSchema(projects).pick({
@@ -84,11 +102,17 @@ export const insertProjectSchema = createInsertSchema(projects).pick({
   clientEmail: true,
   clientPhone: true,
   address: true,
+  projectType: true,
+  projectSubtype: true,
+  projectCategory: true,
+  projectDescription: true,
+  projectScope: true,
   fenceType: true,
   length: true,
   height: true,
   gates: true,
   additionalDetails: true,
+  description: true,
   estimateHtml: true,
   contractHtml: true,
   totalPrice: true,
@@ -104,6 +128,10 @@ export const insertProjectSchema = createInsertSchema(projects).pick({
   internalNotes: true,
   paymentStatus: true,
   paymentDetails: true,
+  materialsList: true,
+  laborHours: true,
+  difficulty: true,
+  priority: true,
 });
 
 // Templates table
@@ -453,46 +481,46 @@ export const estimates = pgTable("estimates", {
   userId: integer("user_id").references(() => users.id),
   firebaseUserId: text("firebase_user_id").notNull(), // ID de Firebase para separación completa de datos
   estimateNumber: text("estimate_number").notNull().unique(),
-  
+
   // Client Information
   clientId: integer("client_id").references(() => clients.id),
   clientName: text("client_name").notNull(),
   clientEmail: text("client_email"),
   clientPhone: text("client_phone"),
   clientAddress: text("client_address").notNull(),
-  
+
   // Project Details
   projectType: text("project_type").notNull(), // fence, roof, deck, patio, etc.
   projectSubtype: text("project_subtype"), // wood fence, metal roof, etc.
   projectDescription: text("project_description"),
   scope: text("scope"), // Scope of work
   timeline: text("timeline"), // Estimated completion timeframe
-  
+
   // Estimate Items (JSON array)
   items: jsonb("items").notNull(), // Array of estimate items
-  
+
   // Financial Information
   subtotal: integer("subtotal").notNull(), // Amount in cents
   taxRate: integer("tax_rate").default(875), // Tax rate in basis points (8.75% = 875)
   taxAmount: integer("tax_amount").notNull(), // Tax amount in cents
   total: integer("total").notNull(), // Total amount in cents
-  
+
   // Metadata
   status: text("status").default("draft"), // draft, sent, approved, expired
   validUntil: timestamp("valid_until"),
   estimateDate: timestamp("estimate_date").defaultNow(),
   sentDate: timestamp("sent_date"),
   approvedDate: timestamp("approved_date"),
-  
+
   // Generated Content
   htmlContent: text("html_content"), // Generated HTML for PDF/preview
   pdfUrl: text("pdf_url"), // URL to generated PDF
-  
+
   // Notes and Additional Info
   notes: text("notes"),
   internalNotes: text("internal_notes"),
   terms: text("terms"), // Terms and conditions
-  
+
   // Tracking
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -529,22 +557,22 @@ export const insertEstimateSchema = createInsertSchema(estimates).pick({
 export const estimateItems = pgTable("estimate_items", {
   id: serial("id").primaryKey(),
   estimateId: integer("estimate_id").references(() => estimates.id),
-  
+
   // Item Information
   name: text("name").notNull(),
   description: text("description"),
   category: text("category"), // material, labor, additional
-  
+
   // Quantity and Pricing
   quantity: integer("quantity").notNull(), // Quantity in units (can be decimal * 100)
   unit: text("unit").notNull(), // piece, sq ft, linear ft, hour, etc.
   unitPrice: integer("unit_price").notNull(), // Price per unit in cents
   totalPrice: integer("total_price").notNull(), // Total price in cents
-  
+
   // Metadata
   sortOrder: integer("sort_order").default(0),
   isOptional: boolean("is_optional").default(false),
-  
+
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -565,18 +593,18 @@ export const insertEstimateItemSchema = createInsertSchema(estimateItems).pick({
 export const estimateTemplates = pgTable("estimate_templates", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id),
-  
+
   name: text("name").notNull(),
   description: text("description"),
   projectType: text("project_type").notNull(),
-  
+
   // Template Items (JSON array)
   defaultItems: jsonb("default_items").notNull(), // Default items for this template
-  
+
   // Settings
   isActive: boolean("is_active").default(true),
   isDefault: boolean("is_default").default(false),
-  
+
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

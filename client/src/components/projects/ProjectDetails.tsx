@@ -24,14 +24,14 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
   const handleNotesUpdate = async () => {
     try {
       setIsSaving(true);
-      
+
       const updatedProject = await updateProject(project.id, {
         clientNotes: editableNotes.clientNotes,
         internalNotes: editableNotes.internalNotes
       });
-      
+
       onUpdate(updatedProject);
-      
+
       toast({
         title: "Notas actualizadas",
         description: "Las notas del proyecto han sido actualizadas correctamente."
@@ -50,11 +50,11 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
 
   const formatDate = (date: any) => {
     if (!date) return 'No establecida';
-    
+
     if (typeof date === 'object' && date.toDate) {
       date = date.toDate();
     }
-    
+
     return new Intl.DateTimeFormat('es-ES', {
       year: 'numeric',
       month: 'short',
@@ -64,7 +64,7 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
 
   const formatCurrency = (amount: number) => {
     if (!amount && amount !== 0) return 'No establecido';
-    
+
     return new Intl.NumberFormat('es-MX', {
       style: 'currency',
       currency: 'MXN'
@@ -73,19 +73,19 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
 
   const getPaymentStatusBadge = (status: string) => {
     if (!status) return null;
-    
+
     const statusColors: {[key: string]: string} = {
       pending: 'bg-yellow-500',
       partial: 'bg-blue-500',
       paid: 'bg-green-500'
     };
-    
+
     const statusLabels: {[key: string]: string} = {
       pending: 'Pendiente',
       partial: 'Pago Parcial',
       paid: 'Pagado'
     };
-    
+
     return (
       <Badge className={`${statusColors[status]} text-white`}>
         {statusLabels[status]}
@@ -95,21 +95,21 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
 
   const getPermitStatusBadge = (status: string) => {
     if (!status) return null;
-    
+
     const statusColors: {[key: string]: string} = {
       not_required: 'bg-slate-500',
       pending: 'bg-yellow-500',
       approved: 'bg-green-500',
       rejected: 'bg-red-500'
     };
-    
+
     const statusLabels: {[key: string]: string} = {
       not_required: 'No Requerido',
       pending: 'En Trámite',
       approved: 'Aprobado',
       rejected: 'Rechazado'
     };
-    
+
     return (
       <Badge className={`${statusColors[status]} text-white`}>
         {statusLabels[status]}
@@ -126,7 +126,7 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
           <TabsTrigger value="documents" className="flex-1">Documentos</TabsTrigger>
           <TabsTrigger value="payment" className="flex-1">Pagos</TabsTrigger>
         </TabsList>
-        
+
         {/* SECCIÓN DE CLIENTE */}
         <TabsContent value="client">
           <Card>
@@ -138,26 +138,26 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
                 <h3 className="font-medium">Nombre</h3>
                 <p>{project.clientName}</p>
               </div>
-              
+
               {project.clientEmail && (
                 <div>
                   <h3 className="font-medium">Email</h3>
                   <p>{project.clientEmail}</p>
                 </div>
               )}
-              
+
               {project.clientPhone && (
                 <div>
                   <h3 className="font-medium">Teléfono</h3>
                   <p>{project.clientPhone}</p>
                 </div>
               )}
-              
+
               <div>
                 <h3 className="font-medium">Dirección del Proyecto</h3>
                 <p>{project.address}</p>
               </div>
-              
+
               <div>
                 <h3 className="font-medium">Notas del Cliente</h3>
                 <Dialog>
@@ -204,7 +204,7 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         {/* SECCIÓN DE PROYECTO */}
         <TabsContent value="project">
           <Card>
@@ -213,27 +213,66 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h3 className="font-medium">Tipo de Cerca</h3>
-                  <p>{project.fenceType}</p>
+                <div className="space-y-3">
+                  {/* Categoría del Proyecto */}
+                  <div>
+                    <label className="text-xs text-cyan-400 mb-1 block font-mono">CATEGORÍA DEL PROYECTO</label>
+                    <div className="bg-gray-800/50 border border-cyan-400/20 rounded px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        {(() => {
+                          const projectType = project.projectType || project.projectCategory || 'general';
+                          const projectCategories = {
+                            fencing: { name: "Cercas y Portones", icon: "fence" },
+                            roofing: { name: "Techos", icon: "home" },
+                            plumbing: { name: "Plomería", icon: "droplet" },
+                            electrical: { name: "Electricidad", icon: "zap" },
+                            carpentry: { name: "Carpintería", icon: "hammer" },
+                            concrete: { name: "Concreto", icon: "square" },
+                            landscaping: { name: "Paisajismo", icon: "tree" },
+                            painting: { name: "Pintura", icon: "paint-bucket" },
+                            flooring: { name: "Pisos", icon: "grid" },
+                            hvac: { name: "HVAC", icon: "thermometer" },
+                            general: { name: "Contratista General", icon: "tool" }
+                          };
+                          const category = projectCategories[projectType as keyof typeof projectCategories] || projectCategories.general;
+                          return (
+                            <>
+                              <i className={`ri-${category.icon}-line text-cyan-400`}></i>
+                              <span className="text-white text-sm">{category.name}</span>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tipo Específico */}
+                  <div>
+                    <label className="text-xs text-cyan-400 mb-1 block font-mono">TIPO ESPECÍFICO</label>
+                    <div className="bg-gray-800/50 border border-cyan-400/20 rounded px-3 py-2">
+                      <span className="text-white text-sm">
+                        {project.projectSubtype || project.fenceType || 'No especificado'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                
+
                 <div>
                   <h3 className="font-medium">Altura</h3>
                   <p>{project.height || 'No especificada'} {project.height ? 'ft' : ''}</p>
                 </div>
-                
+
                 <div>
                   <h3 className="font-medium">Longitud</h3>
                   <p>{project.length || 'No especificada'} {project.length ? 'ft' : ''}</p>
                 </div>
-                
+
                 <div>
                   <h3 className="font-medium">ID del Proyecto</h3>
                   <p className="text-sm">{project.projectId}</p>
                 </div>
               </div>
-              
+
               {project.gates && project.gates.length > 0 && (
                 <div>
                   <h3 className="font-medium">Puertas</h3>
@@ -247,19 +286,19 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
                   </ul>
                 </div>
               )}
-              
+
               {project.permitStatus && (
                 <div>
                   <h3 className="font-medium">Estado del Permiso</h3>
                   <p>{getPermitStatusBadge(project.permitStatus)}</p>
                 </div>
               )}
-              
+
               <div>
                 <h3 className="font-medium">Fecha Programada</h3>
                 <p>{formatDate(project.scheduledDate)}</p>
               </div>
-              
+
               <div>
                 <h3 className="font-medium">Notas Internas</h3>
                 <Dialog>
@@ -306,7 +345,7 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         {/* SECCIÓN DE DOCUMENTOS */}
         <TabsContent value="documents">
           <Card>
@@ -325,7 +364,7 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
                   <p className="text-muted-foreground">No hay presupuesto disponible</p>
                 )}
               </div>
-              
+
               <div>
                 <h3 className="font-medium mb-2">Contrato</h3>
                 {project.contractHtml ? (
@@ -337,7 +376,7 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
                   <p className="text-muted-foreground">No hay contrato disponible</p>
                 )}
               </div>
-              
+
               <div>
                 <h3 className="font-medium mb-2">Documentos Adjuntos</h3>
                 {project.attachments && Object.keys(project.attachments).length > 0 ? (
@@ -355,7 +394,7 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
                   <p className="text-muted-foreground">No hay documentos adjuntos</p>
                 )}
               </div>
-              
+
               <div className="flex justify-end">
                 <Button>
                   <i className="ri-upload-line mr-2"></i>
@@ -365,7 +404,7 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         {/* SECCIÓN DE PAGOS */}
         <TabsContent value="payment">
           <Card>
@@ -385,7 +424,7 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
                   </div>
                 </div>
               </div>
-              
+
               <div>
                 <h3 className="font-medium mb-2">Historial de Pagos</h3>
                 {project.paymentDetails && project.paymentDetails.history && project.paymentDetails.history.length > 0 ? (
@@ -413,7 +452,7 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
                   <p className="text-muted-foreground">No hay historial de pagos</p>
                 )}
               </div>
-              
+
               <div className="flex justify-end space-x-2">
                 <Button variant="outline">
                   <i className="ri-money-dollar-circle-line mr-2"></i>

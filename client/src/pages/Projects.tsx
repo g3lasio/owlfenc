@@ -23,13 +23,18 @@ interface Project {
   id: string;
   clientName: string;
   address: string;
-  fenceType: string;
+  // Campos actualizados para múltiples tipos de proyecto
+  projectType: string; // Categoría principal (fencing, roofing, etc.)
+  projectSubtype?: string; // Tipo específico (Wood Fence, Metal Roofing, etc.)
+  projectDescription?: string;
+  // Campos legacy para compatibilidad
+  fenceType?: string;
   fenceHeight?: number;
   height?: number;
-  projectType?: string;
+  // Campos de estado
   status: string;
   createdAt: { toDate: () => Date };
-  // Campos nuevos
+  // Campos adicionales
   projectProgress?: string;
   estimateHtml?: string;
   contractHtml?: string;
@@ -44,22 +49,183 @@ interface Project {
   internalNotes?: string;
   paymentStatus?: string;
   paymentDetails?: any;
+  // Nuevos campos para mejor organización
+  projectCategory?: string;
+  projectScope?: string;
+  materialsList?: any[];
+  laborHours?: number;
+  difficulty?: string;
 }
 
-// Tipos de cercas disponibles
-const fenceTypes = [
-  "Wood Fence",
-  "Metal Fence",
-  "Iron Fence",
-  "Chain Link Fence",
-  "Mesh Fence",
-  "Vinyl Fence",
-  "Composite Fence",
-  "Bamboo Fence",
-  "Aluminum Fence",
-  "Privacy Fence",
-  "Picket Fence"
-];
+// Categorías de proyectos disponibles
+const projectCategories = {
+  fencing: {
+    name: "Cercas y Portones",
+    icon: "fence",
+    types: [
+      "Wood Fence",
+      "Metal Fence", 
+      "Iron Fence",
+      "Chain Link Fence",
+      "Mesh Fence",
+      "Vinyl Fence",
+      "Composite Fence",
+      "Bamboo Fence",
+      "Aluminum Fence",
+      "Privacy Fence",
+      "Picket Fence"
+    ]
+  },
+  roofing: {
+    name: "Techos",
+    icon: "home",
+    types: [
+      "Asphalt Shingles",
+      "Metal Roofing",
+      "Tile Roofing",
+      "Slate Roofing",
+      "Flat Roofing",
+      "Roof Repair",
+      "Gutter Installation",
+      "Skylight Installation"
+    ]
+  },
+  plumbing: {
+    name: "Plomería",
+    icon: "droplet",
+    types: [
+      "Pipe Installation",
+      "Leak Repair",
+      "Drain Cleaning",
+      "Water Heater",
+      "Bathroom Remodel",
+      "Kitchen Plumbing",
+      "Sewer Line",
+      "Fixture Installation"
+    ]
+  },
+  electrical: {
+    name: "Electricidad",
+    icon: "zap",
+    types: [
+      "Panel Upgrade",
+      "Outlet Installation",
+      "Lighting Installation",
+      "Ceiling Fan",
+      "Security System",
+      "Smart Home",
+      "Generator Installation",
+      "Electrical Repair"
+    ]
+  },
+  carpentry: {
+    name: "Carpintería",
+    icon: "hammer",
+    types: [
+      "Custom Cabinets",
+      "Deck Building",
+      "Trim Work",
+      "Door Installation",
+      "Window Installation",
+      "Built-in Storage",
+      "Staircase",
+      "Furniture Repair"
+    ]
+  },
+  concrete: {
+    name: "Concreto",
+    icon: "square",
+    types: [
+      "Driveway",
+      "Patio",
+      "Sidewalk",
+      "Foundation",
+      "Retaining Wall",
+      "Concrete Repair",
+      "Stamped Concrete",
+      "Garage Floor"
+    ]
+  },
+  landscaping: {
+    name: "Paisajismo",
+    icon: "tree",
+    types: [
+      "Garden Design",
+      "Lawn Installation",
+      "Tree Services",
+      "Irrigation System",
+      "Hardscaping",
+      "Landscape Lighting",
+      "Plant Installation",
+      "Yard Cleanup"
+    ]
+  },
+  painting: {
+    name: "Pintura",
+    icon: "paint-bucket",
+    types: [
+      "Interior Painting",
+      "Exterior Painting",
+      "Cabinet Painting",
+      "Deck Staining",
+      "Pressure Washing",
+      "Wallpaper Installation",
+      "Texture Repair",
+      "Commercial Painting"
+    ]
+  },
+  flooring: {
+    name: "Pisos",
+    icon: "grid",
+    types: [
+      "Hardwood Installation",
+      "Tile Installation",
+      "Carpet Installation",
+      "Laminate Flooring",
+      "Vinyl Flooring",
+      "Floor Refinishing",
+      "Subfloor Repair",
+      "Baseboard Installation"
+    ]
+  },
+  hvac: {
+    name: "HVAC",
+    icon: "thermometer",
+    types: [
+      "AC Installation",
+      "Heating Installation",
+      "Duct Work",
+      "HVAC Repair",
+      "Air Quality",
+      "Thermostat Installation",
+      "Ventilation",
+      "Heat Pump"
+    ]
+  },
+  general: {
+    name: "Contratista General",
+    icon: "tool",
+    types: [
+      "Home Renovation",
+      "Kitchen Remodel",
+      "Bathroom Remodel",
+      "Addition",
+      "Basement Finishing",
+      "Garage Conversion",
+      "Whole House",
+      "Commercial Build"
+    ]
+  }
+};
+
+// Obtener todos los tipos de proyecto únicos
+const getAllProjectTypes = () => {
+  const allTypes: string[] = [];
+  Object.values(projectCategories).forEach(category => {
+    allTypes.push(...category.types);
+  });
+  return allTypes;
+};
 
 // Estados de proyecto
 const projectStatuses = ["draft", "sent", "approved", "completed"];
@@ -93,7 +259,8 @@ function Projects() {
   const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
-  const [selectedFenceType, setSelectedFenceType] = useState("");
+  const [selectedProjectCategory, setSelectedProjectCategory] = useState("");
+  const [selectedProjectType, setSelectedProjectType] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -137,9 +304,20 @@ function Projects() {
       result = result.filter(project => project.status === activeTab);
     }
     
-    // Filter by fence type
-    if (selectedFenceType && selectedFenceType !== 'all') {
-      result = result.filter(project => project.fenceType === selectedFenceType);
+    // Filter by project category
+    if (selectedProjectCategory && selectedProjectCategory !== 'all') {
+      result = result.filter(project => {
+        const projectCategory = project.projectType || project.projectCategory || 'general';
+        return projectCategory === selectedProjectCategory;
+      });
+    }
+    
+    // Filter by specific project type
+    if (selectedProjectType && selectedProjectType !== 'all') {
+      result = result.filter(project => {
+        const projectSubtype = project.projectSubtype || project.fenceType;
+        return projectSubtype === selectedProjectType;
+      });
     }
     
     // Filter by search term
@@ -148,12 +326,16 @@ function Projects() {
       result = result.filter(
         project => 
           project.clientName.toLowerCase().includes(term) || 
-          project.address.toLowerCase().includes(term)
+          project.address.toLowerCase().includes(term) ||
+          (project.projectType && project.projectType.toLowerCase().includes(term)) ||
+          (project.projectSubtype && project.projectSubtype.toLowerCase().includes(term)) ||
+          (project.fenceType && project.fenceType.toLowerCase().includes(term)) ||
+          (project.projectDescription && project.projectDescription.toLowerCase().includes(term))
       );
     }
     
     setFilteredProjects(result);
-  }, [activeTab, selectedFenceType, searchTerm, projects]);
+  }, [activeTab, selectedProjectCategory, selectedProjectType, searchTerm, projects]);
   
   const formatDate = (date: any) => {
     try {
@@ -209,6 +391,29 @@ function Projects() {
       default:
         return status;
     }
+  };
+
+  // Helper function to get project category info
+  const getProjectCategoryInfo = (project: Project) => {
+    const projectType = project.projectType || project.projectCategory || 'general';
+    const category = projectCategories[projectType as keyof typeof projectCategories] || projectCategories.general;
+    
+    return {
+      categoryName: category.name,
+      categoryIcon: category.icon,
+      subtype: project.projectSubtype || project.fenceType || 'No especificado'
+    };
+  };
+
+  // Helper function to get project display info
+  const getProjectDisplayInfo = (project: Project) => {
+    const categoryInfo = getProjectCategoryInfo(project);
+    
+    return {
+      ...categoryInfo,
+      height: project.fenceHeight || project.height,
+      description: project.projectDescription || `${categoryInfo.subtype} en ${project.address}`
+    };
   };
 
   // Helper function to get progress stage badge color
@@ -389,21 +594,45 @@ function Projects() {
               className="w-full"
             />
           </div>
-          <div className="w-full md:w-72">
-            <Select value={selectedFenceType} onValueChange={setSelectedFenceType}>
+          <div className="w-full md:w-64">
+            <Select value={selectedProjectCategory} onValueChange={(value) => {
+              setSelectedProjectCategory(value);
+              setSelectedProjectType(""); // Reset specific type when category changes
+            }}>
               <SelectTrigger>
-                <SelectValue placeholder="Filtrar por tipo de cerca" />
+                <SelectValue placeholder="Filtrar por categoría" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos los tipos</SelectItem>
-                {fenceTypes.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type}
+                <SelectItem value="all">Todas las categorías</SelectItem>
+                {Object.entries(projectCategories).map(([key, category]) => (
+                  <SelectItem key={key} value={key}>
+                    <div className="flex items-center gap-2">
+                      <i className={`ri-${category.icon}-line`}></i>
+                      {category.name}
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+          
+          {selectedProjectCategory && selectedProjectCategory !== 'all' && (
+            <div className="w-full md:w-64">
+              <Select value={selectedProjectType} onValueChange={setSelectedProjectType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Tipo específico" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los tipos</SelectItem>
+                  {projectCategories[selectedProjectCategory as keyof typeof projectCategories]?.types.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
         
         {/* Status Tabs */}
@@ -452,15 +681,45 @@ function Projects() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-sm mb-1">
-                  <span className="font-medium">Dirección:</span> {project.address}
-                </p>
-                <p className="text-sm mb-1">
-                  <span className="font-medium">Tipo de Cerca:</span> {project.fenceType}
-                  {(project.fenceHeight || project.height) && (
-                    <span className="ml-1">{project.fenceHeight || project.height} ft</span>
-                  )}
-                </p>
+                {(() => {
+                  const displayInfo = getProjectDisplayInfo(project);
+                  return (
+                    <>
+                      <p className="text-sm mb-1">
+                        <span className="font-medium">Dirección:</span> {project.address}
+                      </p>
+                      <div className="flex items-center gap-2 text-sm mb-1">
+                        <span className="font-medium">Categoría:</span>
+                        <div className="flex items-center gap-1">
+                          <i className={`ri-${displayInfo.categoryIcon}-line text-primary`}></i>
+                          <span>{displayInfo.categoryName}</span>
+                        </div>
+                      </div>
+                      <p className="text-sm mb-1">
+                        <span className="font-medium">Tipo:</span> {displayInfo.subtype}
+                        {displayInfo.height && (
+                          <span className="ml-1">{displayInfo.height} ft</span>
+                        )}
+                      </p>
+                      {project.projectDescription && (
+                        <p className="text-sm mb-1 text-muted-foreground">
+                          {project.projectDescription.length > 80 
+                            ? `${project.projectDescription.substring(0, 80)}...` 
+                            : project.projectDescription}
+                        </p>
+                      )}
+                      {project.totalPrice && (
+                        <p className="text-sm mb-1">
+                          <span className="font-medium">Precio:</span> 
+                          <span className="text-green-600 font-semibold ml-1">
+                            ${(project.totalPrice / 100).toLocaleString()}
+                          </span>
+                        </p>
+                      )}
+                    </>
+                  );
+                })()}
+              </CardContent>
                 
                 {/* Progress Badge */}
                 <div className="mt-3 mb-2">
@@ -490,7 +749,8 @@ function Projects() {
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Dirección</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Tipo</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Categoría</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Tipo</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Fecha</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Progreso</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
@@ -507,7 +767,21 @@ function Projects() {
                     {project.address}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap hidden sm:table-cell">
-                    {project.fenceType}
+                    {(() => {
+                      const displayInfo = getProjectDisplayInfo(project);
+                      return (
+                        <div className="flex items-center gap-1">
+                          <i className={`ri-${displayInfo.categoryIcon}-line text-primary`}></i>
+                          <span className="text-xs">{displayInfo.categoryName}</span>
+                        </div>
+                      );
+                    })()}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap hidden lg:table-cell text-sm">
+                    {(() => {
+                      const displayInfo = getProjectDisplayInfo(project);
+                      return displayInfo.subtype;
+                    })()}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap hidden sm:table-cell">
                     {formatDate(project.createdAt)}
