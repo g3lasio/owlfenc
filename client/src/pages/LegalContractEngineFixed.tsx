@@ -58,23 +58,78 @@ const LegalContractEngineFixed: React.FC = () => {
     console.log('🎯 Proyecto seleccionado para contrato legal:', project.clientName);
     setSelectedProject(project);
     setActiveView('generator');
-    
-    // Analizar riesgos inmediatamente
+  };
+
+  // Handler para procesar PDF subido
+  const handlePdfProcessed = (data: any, analysis: any) => {
+    console.log('📄 PDF procesado con datos extraídos:', data);
+    setExtractedData(data);
+    setRiskAnalysis(analysis);
+    setActiveView('editData');
+  };
+
+  // Handler para confirmar datos editados
+  const handleDataConfirmed = (updatedData: any) => {
+    console.log('✅ Datos confirmados y listos para generar contrato:', updatedData);
+    setExtractedData(updatedData);
+    // Proceder a generar el contrato con los datos editados
+    generateContractFromExtractedData(updatedData);
+  };
+
+  // Generar contrato desde datos extraídos
+  const generateContractFromExtractedData = async (data: any) => {
+    setIsGenerating(true);
     try {
-      const analysis = await LegalDefenseEngine.analyzeLegalRisks(project);
-      setRiskAnalysis(analysis);
+      console.log('🔧 Generando contrato legal desde datos extraídos...');
+      
+      const response = await fetch('/api/generate-contract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          extractedData: data,
+          riskAnalysis: riskAnalysis,
+          contractType: 'legal-defensive'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Error generando contrato');
+      }
+
+      const result = await response.json();
+      
+      const contract: GeneratedContract = {
+        id: `contract-${Date.now()}`,
+        projectId: 'pdf-extracted',
+        clientName: data.clientInfo?.name || 'Cliente',
+        html: result.contractHtml,
+        riskAnalysis: result.riskAnalysis,
+        protections: result.protections || [],
+        generatedAt: new Date().toISOString()
+      };
+
+      setGeneratedContract(contract);
+      setActiveView('preview');
       
       toast({
-        title: "🔍 Análisis legal completado",
-        description: `Riesgo detectado: ${analysis.riskLevel} - ${analysis.protectiveRecommendations.length} recomendaciones`,
+        title: "🎉 Contrato defensivo generado",
+        description: `Contrato legal creado desde PDF con ${result.protections?.length || 0} protecciones aplicadas`,
       });
+      
     } catch (error) {
-      console.error('Error en análisis de riesgo:', error);
+      console.error('Error generando contrato desde PDF:', error);
+      toast({
+        title: "❌ Error en generación",
+        description: "No se pudo generar el contrato desde el PDF. Intenta nuevamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGenerating(false);
     }
   };
 
-  // Generar contrato defensivo
-  const handleGenerateDefensiveContract = async () => {
+  // Generar contrato desde proyecto seleccionado
+  const handleGenerateContract = async () => {
     if (!selectedProject) return;
     
     setIsGenerating(true);
@@ -359,6 +414,33 @@ const LegalContractEngineFixed: React.FC = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Vista de Edición de Datos Extraídos */}
+        <TabsContent value="editData" className="space-y-4 md:space-y-6">
+          {extractedData && (
+            <div className="space-y-6">
+              <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+                <CardHeader>
+                  <CardTitle className="text-xl font-bold text-green-800 flex items-center">
+                    <FileText className="mr-3 h-6 w-6" />
+                    Revisar y Corregir Datos Extraídos del PDF
+                  </CardTitle>
+                  <p className="text-green-700 mt-2">
+                    Verifica que toda la información extraída sea correcta antes de generar el contrato legal defensivo
+                  </p>
+                </CardHeader>
+              </Card>
+
+              <EditableExtractedData
+                extractedData={extractedData}
+                onDataChange={setExtractedData}
+                onConfirm={handleDataConfirmed}
+                riskLevel={riskAnalysis?.riskLevel || 'MEDIUM'}
+                protectiveRecommendations={riskAnalysis?.protectiveRecommendations || {}}
+              />
+            </div>
+          )}
         </TabsContent>
 
         {/* Vista de Previsualización */}
