@@ -773,11 +773,30 @@ export default function EstimatesWizardFixed() {
         subtotal: estimateData.displaySubtotal,
         total: estimateData.displayTotal
       });
-        
-        // Timestamps
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
+
+      // Guardar también en Firebase para máxima compatibilidad
+      try {
+        const firebaseDoc = {
+          ...estimateData,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          type: 'estimate',
+          source: 'estimates-wizard'
+        };
+
+        const estimateRef = await addDoc(collection(db, 'estimates'), firebaseDoc);
+        console.log('✅ También guardado en Firebase:', estimateRef.id);
+
+        const projectRef = await addDoc(collection(db, 'projects'), {
+          ...firebaseDoc,
+          projectId: estimateData.projectId,
+          status: 'estimate',
+          type: 'project'
+        });
+        console.log('✅ Proyecto creado en Firebase:', projectRef.id);
+      } catch (firebaseError) {
+        console.warn('⚠️ No se pudo guardar en Firebase, pero PostgreSQL funcionó:', firebaseError);
+      }
 
       console.log('💾 Guardando estimado:', estimateData);
 
