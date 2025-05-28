@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { useQuery } from "@tanstack/react-query";
 import { Project } from "@shared/schema";
-import { Search, FileText, Shield, AlertTriangle, CheckCircle } from "lucide-react";
+import { Search, FileText, Shield, AlertTriangle, CheckCircle, Upload } from "lucide-react";
 
 interface ProjectToContractSelectorProps {
   onProjectSelected: (project: Project) => void;
@@ -19,6 +19,66 @@ const ProjectToContractSelector: React.FC<ProjectToContractSelectorProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Función para manejar la subida de PDF de estimado externo
+  const handleUploadEstimate = () => {
+    fileInputRef.current?.click();
+  };
+
+  // Función para procesar el archivo PDF subido
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || file.type !== 'application/pdf') {
+      alert('Please select a valid PDF file');
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('estimate', file);
+
+      // Llamar al endpoint que procesará el PDF con OCR
+      const response = await fetch('/api/process-estimate-pdf', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Error processing PDF');
+      }
+
+      const extractedData = await response.json();
+      
+      // Crear un proyecto ficticio con los datos extraídos para pasarlo al generador
+      const estimateProject: Project = {
+        id: Date.now(), // ID temporal
+        projectId: `EXT-${Date.now()}`,
+        clientName: extractedData.clientName || 'External Client',
+        clientEmail: extractedData.clientEmail || '',
+        clientPhone: extractedData.clientPhone || '',
+        address: extractedData.address || 'Address from PDF',
+        city: extractedData.city || '',
+        state: extractedData.state || '',
+        zipCode: extractedData.zipCode || '',
+        projectType: extractedData.projectType || 'External Estimate',
+        description: extractedData.description || 'Project from external PDF estimate',
+        status: 'approved',
+        projectProgress: 'approved',
+        totalPrice: extractedData.totalAmount || 0,
+        createdAt: new Date(),
+        // Datos adicionales extraídos del PDF
+        extractedData: extractedData
+      };
+
+      // Pasar el proyecto creado al generador de contratos
+      onProjectSelected(estimateProject);
+      
+    } catch (error) {
+      console.error('Error uploading estimate:', error);
+      alert('Error processing the PDF. Please try again.');
+    }
+  };
 
   // Cargar proyectos que pueden convertirse a contrato
   const { data: projects = [], isLoading } = useQuery({
@@ -182,9 +242,24 @@ const ProjectToContractSelector: React.FC<ProjectToContractSelectorProps> = ({
           <div className="col-span-full text-center py-8">
             <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-medium mb-2">No Projects Available</h3>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground mb-6">
               No projects found that need contracts with current filters
             </p>
+            
+            {/* Alternative: Upload External Estimate PDF */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 max-w-md mx-auto">
+              <h4 className="text-lg font-semibold text-blue-900 mb-2">Alternative Option</h4>
+              <p className="text-blue-700 text-sm mb-4">
+                Upload an external estimate PDF and our AI will extract all the necessary information to generate your protective contract
+              </p>
+              <Button 
+                onClick={() => handleUploadEstimate()}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                Upload Estimate PDF
+              </Button>
+            </div>
           </div>
         ) : (
           filteredProjects.map((project: Project) => {
@@ -251,23 +326,32 @@ const ProjectToContractSelector: React.FC<ProjectToContractSelectorProps> = ({
         )}
       </div>
 
-      {/* Información sobre el Abogado Defensor */}
+      {/* Hidden file input for PDF upload */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf"
+        onChange={handleFileUpload}
+        style={{ display: 'none' }}
+      />
+
+      {/* Digital Defense Attorney Info */}
       <Card className="bg-blue-50 border-blue-200">
         <CardContent className="pt-6">
           <div className="flex items-start gap-3">
             <Shield className="w-8 h-8 text-blue-600 mt-1" />
             <div>
               <h3 className="font-semibold text-blue-900 mb-2">
-                🤖 Abogado Defensor Digital - Mervin AI
+                🤖 Digital Defense Attorney - Mervin AI
               </h3>
               <p className="text-sm text-blue-800 mb-2">
-                Nuestro motor legal DeepSearch analiza cada proyecto y genera contratos que te protegen como contratista:
+                Our legal DeepSearch engine analyzes each project and generates contracts that protect you as a contractor:
               </p>
               <ul className="text-xs text-blue-700 space-y-1">
-                <li>• Cláusulas de protección contra cambios de alcance</li>
-                <li>• Términos de pago que aseguran tu flujo de efectivo</li>
-                <li>• Protección contra responsabilidades excesivas</li>
-                <li>• Lenguaje legal que favorece al contratista</li>
+                <li>• Protection clauses against scope changes</li>
+                <li>• Payment terms that secure your cash flow</li>
+                <li>• Protection against excessive liabilities</li>
+                <li>• Legal language that favors the contractor</li>
               </ul>
             </div>
           </div>
