@@ -18,15 +18,34 @@ const ProjectToContractSelector: React.FC<ProjectToContractSelectorProps> = ({
   onCancel
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState("approved");
+  const [filterStatus, setFilterStatus] = useState("all");
 
   // Cargar proyectos que pueden convertirse a contrato
   const { data: projects = [], isLoading } = useQuery({
     queryKey: ['projects-for-contracts', filterStatus],
     queryFn: async () => {
-      const response = await fetch(`/api/projects?status=${filterStatus}&needsContract=true`);
+      // Cargar TODOS los proyectos primero
+      const response = await fetch('/api/projects');
       if (!response.ok) throw new Error('Error loading projects');
-      return await response.json();
+      const allProjects = await response.json();
+      
+      // Filtrar en el frontend según el estado seleccionado
+      if (filterStatus === 'all') {
+        return allProjects;
+      }
+      
+      // Aplicar filtros específicos
+      return allProjects.filter((project: Project) => {
+        if (filterStatus === 'approved') {
+          return project.status === 'client_approved' || project.status === 'approved' || 
+                 project.projectProgress === 'approved' || project.projectProgress === 'completed';
+        }
+        if (filterStatus === 'pending') {
+          return project.status === 'pending' || project.projectProgress === 'pending' ||
+                 project.status === 'estimate_sent';
+        }
+        return true;
+      });
     }
   });
 
@@ -101,13 +120,13 @@ const ProjectToContractSelector: React.FC<ProjectToContractSelectorProps> = ({
           </div>
         </div>
         <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Filtrar por estado" />
+          <SelectTrigger className="w-full md:w-48">
+            <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="approved">Aprobados por Cliente</SelectItem>
-            <SelectItem value="all">Todos los Proyectos</SelectItem>
-            <SelectItem value="pending">Pendientes de Aprobación</SelectItem>
+            <SelectItem value="all">All Projects</SelectItem>
+            <SelectItem value="approved">Client Approved</SelectItem>
+            <SelectItem value="pending">Pending Approval</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -132,9 +151,9 @@ const ProjectToContractSelector: React.FC<ProjectToContractSelectorProps> = ({
         ) : filteredProjects.length === 0 ? (
           <div className="col-span-full text-center py-8">
             <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">No hay proyectos disponibles</h3>
+            <h3 className="text-lg font-medium mb-2">No Projects Available</h3>
             <p className="text-muted-foreground">
-              No se encontraron proyectos que necesiten contratos con los filtros actuales
+              No projects found that need contracts with current filters
             </p>
           </div>
         ) : (
@@ -165,7 +184,7 @@ const ProjectToContractSelector: React.FC<ProjectToContractSelectorProps> = ({
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div>
-                    <p className="text-sm font-medium">{project.projectType || 'Proyecto General'}</p>
+                    <p className="text-sm font-medium">{project.projectType || 'General Project'}</p>
                     <p className="text-xs text-muted-foreground">{project.address}</p>
                   </div>
                   
@@ -178,7 +197,7 @@ const ProjectToContractSelector: React.FC<ProjectToContractSelectorProps> = ({
                   <div className="flex gap-2 text-xs">
                     {project.permitStatus && (
                       <Badge variant="secondary" className="text-xs">
-                        Permisos: {project.permitStatus}
+                        Permits: {project.permitStatus}
                       </Badge>
                     )}
                     {project.projectType && (
@@ -193,7 +212,7 @@ const ProjectToContractSelector: React.FC<ProjectToContractSelectorProps> = ({
                     onClick={() => onProjectSelected(project)}
                   >
                     <Shield className="w-4 h-4 mr-2" />
-                    Generar Contrato Protector
+                    Generate Protective Contract
                   </Button>
                 </CardContent>
               </Card>
