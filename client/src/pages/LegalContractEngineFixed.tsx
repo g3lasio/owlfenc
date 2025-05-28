@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { FileUp, Shield, Zap, CheckCircle, FileText, Upload } from 'lucide-react';
-import IntelligentContractEditor from '@/components/contract/IntelligentContractEditor';
+import EditableContractForm from '@/components/contract/EditableContractForm';
 
 export default function LegalContractEngineFixed() {
   const [activeTab, setActiveTab] = useState<'projects' | 'upload'>('projects');
@@ -16,6 +16,7 @@ export default function LegalContractEngineFixed() {
   const [projects, setProjects] = useState<any[]>([]);
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [loadingProjects, setLoadingProjects] = useState(false);
+  const [showContractEditor, setShowContractEditor] = useState(false);
   const { toast } = useToast();
 
   // Cargar proyectos existentes desde Firebase directamente
@@ -364,12 +365,20 @@ export default function LegalContractEngineFixed() {
               {extractedData && (
                 <Card>
                   <CardHeader>
-                    <CardTitle>Edit Extracted Data</CardTitle>
+                    <CardTitle>📝 Editor de Contrato - Completamente Editable</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <IntelligentContractEditor 
-                      extractedData={extractedData} 
-                      onDataChange={setExtractedData}
+                    <EditableContractForm 
+                      initialData={extractedData} 
+                      onSave={(contractData) => {
+                        console.log('💾 Datos del contrato guardados:', contractData);
+                        setExtractedData(contractData);
+                        toast({
+                          title: "✅ Contrato actualizado",
+                          description: "Todos los cambios han sido guardados correctamente",
+                          variant: "default"
+                        });
+                      }}
                     />
                   </CardContent>
                 </Card>
