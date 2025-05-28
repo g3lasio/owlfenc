@@ -1,9 +1,8 @@
-
 # 🦉 Owl Fence & Mervin AI - Radiografía Completa del Sistema
 
 ## 📋 Descripción General del Proyecto
 
-**Owl Fence** es una plataforma integral SaaS diseñada específicamente para contratistas de cercas que revoluciona la industria mediante la integración de inteligencia artificial avanzada (Mervin AI). La plataforma automatiza y optimiza procesos críticos desde la estimación hasta la gestión completa de proyectos.
+**Owl Fence** es una plataforma integral SaaS diseñada no unicamente para contratistas de cercas sino para todo tipo de contratistas inclusive general contractors que revoluciona la industria mediante la integración de inteligencia artificial avanzada (Mervin AI). La plataforma automatiza y optimiza procesos críticos desde la estimación hasta la gestión completa de proyectos.
 
 ---
 
@@ -17,7 +16,7 @@
 - **Cumplimiento Legal**: Dificultad para mantenerse al día con regulaciones y permisos
 
 ### Solución Integral
-Una plataforma unificada que combina IA conversacional, automatización de procesos y herramientas especializadas para la industria de cercas.
+Una plataforma unificada que combina IA conversacional, automatización de procesos y herramientas especializadas para la industria de la construccion.
 
 ---
 
@@ -42,7 +41,7 @@ Una plataforma unificada que combina IA conversacional, automatización de proce
 
 #### **Servicios Externos**
 - **ATTOM Data** para verificación de propiedades
-- **Google Maps API** para geolocalización
+- **Mapbox API** para geolocalización
 - **PDFMonkey** para generación avanzada de documentos
 
 ---
@@ -58,9 +57,10 @@ Una plataforma unificada que combina IA conversacional, automatización de proce
 - **Memoria Contextual**: Recordar proyectos y preferencias del usuario
 - **Conocimiento Especializado**: Base de datos de materiales, precios y regulaciones
 - **Personalidad Adaptativa**: Se ajusta al estilo profesional del contratista
+- **Gestor operador**: crear estimados , generar contratos, investigar ownership de propiedades, revisar permisos aplicables para proyectos
 
 #### Potencial de Negocio: 🔥🔥🔥🔥🔥
-- **Diferenciador Principal**: Único en el mercado con IA especializada en cercas
+- **Diferenciador Principal**: Único en el mercado con IA especializada en construccion
 - **Reducción de Tiempo**: 80% menos tiempo en estimaciones
 - **Precisión Mejorada**: 95% de precisión vs 60% manual
 
@@ -77,9 +77,9 @@ Una plataforma unificada que combina IA conversacional, automatización de proce
 **Estado: ✅ FUNCIONAL**
 
 #### Planes Disponibles:
-- **Primo Chambeador**: Plan básico
-- **Mero Patrón**: Plan intermedio
-- **Chingón Mayor**: Plan premium
+- **Basica**: Plan básico
+- **Intermedio**: Plan intermedio
+- **Premium**: Plan premium
 
 #### Integración Stripe:
 - Pagos recurrentes automatizados
@@ -149,23 +149,20 @@ Una plataforma unificada que combina IA conversacional, automatización de proce
 - Seguimiento de progreso en tiempo real
 - Notificaciones automáticas
 
+### 💸 **Owl Funding**
+**Estado: ✅ FUNCIONAL**
+
+#### Sistema de financiamiento disponible para contratistas:
+- Financiamiento de maquinaria
+- Financiamiento de proyectos
+- Líneas de crédito
+- Financiamiento corporativo
+
 ---
 
 ## 🔮 Funcionalidades Futuras (Roadmap)
 
 ### Q2 2024
-
-#### 📱 **AR Fence Estimator**
-**Estado: 🔜 PLANIFICADO**
-
-- Realidad aumentada para visualización
-- Mediciones automáticas con cámara
-- Experiencia inmersiva para clientes
-
-**Potencial de Negocio: 🔥🔥🔥🔥🔥**
-- **Innovación Disruptiva**: Primer AR en la industria
-- **Conversión de Ventas**: +40% en cierre de proyectos
-- **Diferenciación Total**: Competencia 2-3 años atrás
 
 #### 🤖 **AI Project Manager**
 **Estado: 🔜 PLANIFICADO**
@@ -202,6 +199,11 @@ Una plataforma unificada que combina IA conversacional, automatización de proce
 - Funcionalidad offline
 - Sincronización en tiempo real
 
+### **Owl Academy**
+**Estado: 🔜 PLANIFICADO**
+
+- Una academia para preparacion y certificacion de contratistas sin licencia con contenido potenciado con IA.
+
 ---
 
 ## 🎯 Diferenciadores Competitivos
@@ -209,7 +211,7 @@ Una plataforma unificada que combina IA conversacional, automatización de proce
 ### 🥇 **Ventajas Únicas**
 
 #### 1. **IA Conversacional Especializada**
-- **Único en el mercado**: Ningún competidor tiene IA específica para cercas
+- **Único en el mercado**: Ningún competidor tiene IA específica para construccion
 - **Procesamiento en Español**: Adaptado al mercado hispanohablante
 - **Conocimiento Profundo**: 10+ años de experiencia en la industria
 
@@ -234,7 +236,7 @@ Una plataforma unificada que combina IA conversacional, automatización de proce
 
 ### 🎯 **Mercado Primario**
 
-#### **Contratistas de Cercas Establecidos**
+#### **Contratistas Establecidos**
 - **Experiencia**: 3-15 años en el negocio
 - **Volumen**: $500K - $5M anuales
 - **Empleados**: 3-25 trabajadores
@@ -268,7 +270,7 @@ Una plataforma unificada que combina IA conversacional, automatización de proce
 #### **Limitaciones de la Competencia Actual:**
 
 1. **ServiceTitan, Jobber, etc.**
-   - ❌ No especializados en cercas
+   - ❌ No especializados en construccion
    - ❌ Sin IA conversacional
    - ❌ Muy genéricos y complejos
    - ❌ Caros ($200-500/mes)
@@ -284,7 +286,7 @@ Una plataforma unificada que combina IA conversacional, automatización de proce
 #### **Diferenciadores Clave:**
 
 1. **Especialización Total**
-   - ✅ 100% enfocado en cercas
+   - ✅ 100% enfocado en construccion
    - ✅ Conocimiento de industria integrado
    - ✅ Workflows optimizados
 
@@ -310,7 +312,7 @@ Una plataforma unificada que combina IA conversacional, automatización de proce
 ### 🌎 **Tamaño del Mercado**
 
 #### **Estados Unidos:**
-- **Contratistas de Cercas**: ~15,000 empresas
+- **Contratistas**: ~15,000 empresas
 - **Mercado Anual**: $8.2 billones
 - **Penetración Objetivo**: 5-10% en 5 años
 
@@ -322,9 +324,9 @@ Una plataforma unificada que combina IA conversacional, automatización de proce
 ### 💵 **Proyección de Ingresos**
 
 #### **Modelo de Suscripción:**
-- **Plan Básico**: $99/mes × 1,000 usuarios = $1.2M anuales
-- **Plan Intermedio**: $199/mes × 800 usuarios = $1.9M anuales  
-- **Plan Premium**: $299/mes × 500 usuarios = $1.8M anuales
+- **Plan Básico**: $29.99/mes × 1,000 usuarios = $359,880 anuales
+- **Plan Intermedio**: $49.99/mes × 800 usuarios = $479,904 anuales  
+- **Plan Premium**: $99.99/mes × 500 usuarios = $599,940 anuales
 
 #### **Ingresos Adicionales:**
 - **Marketplace**: 3% comisión = $1.5M anuales
@@ -378,7 +380,6 @@ Una plataforma unificada que combina IA conversacional, automatización de proce
 - ✅ Sistema de pagos
 
 #### **Fase 2: Automatización Avanzada (Q2 2024)**
-- 🔄 AR Estimator
 - 🔄 AI Project Manager
 - 🔄 Verificación de propiedades
 - 🔄 Mobile app
@@ -464,7 +465,7 @@ Una plataforma unificada que combina IA conversacional, automatización de proce
 
 ## 🎯 Conclusión Ejecutiva
 
-**Owl Fence & Mervin AI** representa una oportunidad única de **disrumpir completamente** la industria de cercas mediante tecnología de inteligencia artificial avanzada. 
+**Owl Fence & Mervin AI** representa una oportunidad única de **disrumpir completamente** la industria de construccion mediante tecnología de inteligencia artificial avanzada.
 
 ### 🏆 **Factores de Éxito Clave:**
 
@@ -476,7 +477,7 @@ Una plataforma unificada que combina IA conversacional, automatización de proce
 
 ### 💰 **Potencial Financiero:**
 - **Año 1**: $500K ARR
-- **Año 3**: $7M ARR  
+- **Año 3**: $7M ARR
 - **Año 5**: $25M ARR
 - **Valoración Objetivo**: $100M+
 
@@ -486,10 +487,10 @@ Una plataforma unificada que combina IA conversacional, automatización de proce
 3. **Escalar Marketing** → Capturar mercado rápidamente
 4. **Levantar Serie A** → Acelerar crecimiento
 
-**Owl Fence no es solo una app, es el futuro de la industria de cercas.**
+**Owl Fence no es solo una app, es el futuro de la industria de construccion.**
 
 ---
 
-*Documento generado: Mayo 2025*  
-*Versión: 2.0*  
+*Documento generado: Mayo 2025*
+*Versión: 2.0*
 *Clasificación: Estratégico*
