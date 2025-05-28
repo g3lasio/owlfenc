@@ -164,6 +164,9 @@ function Router() {
       <Route path="/legal-contract-engine">
         {() => <ProtectedRoute component={LegalContractEngineFixed} />}
       </Route>
+      <Route path="/contract-generator-simplified">
+        {() => <ProtectedRoute component={ContractGeneratorSimplified} />}
+      </Route>
       <Route path="/cyberpunk-contracts">
         {() => <ProtectedRoute component={CyberpunkContractGenerator} />}
       </Route>
