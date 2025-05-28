@@ -719,7 +719,6 @@ function Projects() {
                     </>
                   );
                 })()}
-              </CardContent>
                 
                 {/* Progress Badge */}
                 <div className="mt-3 mb-2">
@@ -740,7 +739,7 @@ function Projects() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+        ))}
         </div>
       ) : (
         <div className="overflow-x-auto border rounded-lg">
