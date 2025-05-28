@@ -287,11 +287,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setupTemplateServing(app);
   
   // Endpoint para procesar PDF de estimado externo con OCR de Anthropic
-  app.post('/api/process-estimate-pdf', upload.single('estimate'), async (req: Request, res: Response) => {
+  app.post('/api/process-estimate-pdf', (req: Request, res: Response, next) => {
     console.log('🚀 PDF ENDPOINT CALLED - Starting process...');
     console.log('📋 Request method:', req.method);
     console.log('📋 Request URL:', req.url);
     console.log('📋 Content-Type:', req.headers['content-type']);
+    console.log('📋 Request size:', req.headers['content-length']);
+    next();
+  }, upload.single('estimate'), async (req: Request, res: Response) => {
+    console.log('📦 After multer processing...');
+    console.log('📂 File received:', !!req.file);
+    if (req.file) {
+      console.log('📎 File details:', {
+        filename: req.file.originalname,
+        size: req.file.size,
+        mimetype: req.file.mimetype
+      });
+    }
     
     try {
       console.log('📄 Processing PDF estimate with Anthropic OCR...');
