@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import ProjectToContractSelector from "@/components/contract/ProjectToContractSelector";
 import LegalDefenseEngine, { LegalRiskAnalysis } from "@/services/legalDefenseEngine";
+import EditableExtractedData from "@/components/contract/EditableExtractedData";
 
 interface GeneratedContract {
   id: string;
@@ -44,10 +45,11 @@ const LegalContractEngineFixed: React.FC = () => {
   const queryClient = useQueryClient();
   
   // Estados principales
-  const [activeView, setActiveView] = useState<'selector' | 'generator' | 'preview'>('selector');
+  const [activeView, setActiveView] = useState<'selector' | 'generator' | 'preview' | 'editData'>('selector');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [generatedContract, setGeneratedContract] = useState<GeneratedContract | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [extractedData, setExtractedData] = useState<any>(null);
   const [riskAnalysis, setRiskAnalysis] = useState<LegalRiskAnalysis | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
