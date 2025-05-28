@@ -1099,13 +1099,47 @@ Output in English regardless of input language. Make it suitable for contracts a
   // Add API routes
   app.get('/api/projects', async (req: Request, res: Response) => {
     try {
-      // In a real app, we would get the user ID from the session
-      const userId = 1; // Default user ID
-      const projects = await storage.getProjectsByUserId(userId);
-      res.json(projects);
+      console.log('🔍 Obteniendo proyectos para contratos...');
+      
+      // Obtener todos los proyectos del sistema (usando userId por defecto)
+      const allProjects = await storage.getProjectsByUserId(1);
+      console.log(`📋 Total de proyectos encontrados: ${allProjects.length}`);
+      
+      // Filtrar proyectos existentes que pueden convertirse en contratos
+      const contractEligibleProjects = allProjects.filter(project => {
+        return project.clientName && 
+               project.address && 
+               (project.status === 'client_approved' || 
+                project.status === 'approved' || 
+                project.status === 'estimate_sent' ||
+                project.projectProgress === 'approved' ||
+                project.projectProgress === 'client_approved');
+      });
+      
+      console.log(`✅ Proyectos elegibles para contrato: ${contractEligibleProjects.length}`);
+      
+      // Formatear datos para el frontend
+      const formattedProjects = contractEligibleProjects.map(project => ({
+        id: project.id,
+        clientName: project.clientName,
+        clientPhone: project.clientPhone || '',
+        clientEmail: project.clientEmail || '',
+        address: project.address,
+        projectType: project.projectType || 'Proyecto de cerca',
+        projectDescription: project.projectDescription || project.description || '',
+        totalAmount: project.totalPrice || 0,
+        status: project.status || project.projectProgress || 'approved',
+        createdAt: project.createdAt,
+        projectId: project.projectId || project.id.toString()
+      }));
+      
+      res.json(formattedProjects);
     } catch (error) {
-      console.error('Error fetching projects:', error);
-      res.status(500).json({ message: 'Failed to fetch projects' });
+      console.error('❌ Error fetching projects:', error);
+      res.status(500).json({ 
+        message: 'Failed to fetch projects',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
