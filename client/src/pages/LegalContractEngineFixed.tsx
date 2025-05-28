@@ -392,7 +392,7 @@ const LegalContractEngineFixed: React.FC = () => {
                   </p>
                 </div>
                 <Button 
-                  onClick={handleGenerateDefensiveContract}
+                  onClick={handleGenerateContract}
                   disabled={isGenerating || !selectedProject}
                   size="lg"
                   className="bg-blue-600 hover:bg-blue-700 w-full md:w-auto text-sm md:text-base"
