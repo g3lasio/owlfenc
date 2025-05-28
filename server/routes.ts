@@ -743,39 +743,13 @@ app.post('/api/anthropic/generate-defensive-contract', async (req, res) => {
     });
   }
 });
-        address: mappedData.address,
-        city: mappedData.city,
-        state: mappedData.state,
-        zipCode: mappedData.zipCode,
-        projectType: mappedData.projectType,
-        description: mappedData.description,
-        totalAmount: mappedData.totalAmount,
-        extractedData: mappedData,
-        message: 'PDF procesado exitosamente con sistema híbrido Mistral AI + Mervin AI DeepSearch',
-        processingDetails: {
-          mistralOCR: 'Datos extraídos exitosamente',
-          mervinLegal: 'Análisis legal completado',
-          riskLevel: mappedData.riskLevel,
-          protectionsGenerated: Object.keys(mappedData.protectiveRecommendations || {}).length
-        }
-      });
 
-    } catch (error) {
-      console.error('❌ Error en el sistema híbrido:', error);
-      res.status(500).json({ 
-        error: 'Failed to process PDF with hybrid AI system',
-        details: error instanceof Error ? error.message : 'Unknown error',
-        system: 'Mistral AI OCR + Mervin AI DeepSearch'
-      });
-    }
-  });
-  
   // Use payment routes
   app.use('/api', paymentRoutes);
   
   // Registro del endpoint simple para autoguardado de estimados
   console.log('🔧 Registrando endpoint simple para estimados...');
-  app.use('/api/estimates', estimatesSimpleRoutes);
+  app.use('/api/estimates-simple', estimatesSimpleRoutes);
   // NEW: Simple and direct AI description enhancement 
   app.post("/api/ai-enhance", async (req: Request, res: Response) => {
     console.log('=== NEW AI ENHANCE ENDPOINT ===');
