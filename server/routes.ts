@@ -744,10 +744,15 @@ app.post('/api/anthropic/generate-defensive-contract', async (req, res) => {
   }
 });
 
-// Resto del código de routes.ts continúa aquí...
-
-      const legalAnalysisText = legalAnalysisResponse.content[0].type === 'text' ? legalAnalysisResponse.content[0].text : '';
-      let legalAnalysis;
+  } catch (error) {
+    console.error('Error in PDF processing:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Error processing PDF',
+      details: error.message 
+    });
+  }
+});
 
       try {
         const legalJsonMatch = legalAnalysisText.match(/\{[\s\S]*\}/);

@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
-import { registerRoutes } from "./routes";
+// import { registerRoutes } from "./routes";
+import cleanRoutes from "./routes-clean";
 import { setupVite, serveStatic, log } from "./vite";
 import { stripeService } from './services/stripeService';
 
@@ -91,7 +92,13 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  const server = await registerRoutes(app);
+  // Add optimized routes first
+  app.use(cleanRoutes);
+  
+  // Basic health endpoint
+  app.get('/api/health', (req: Request, res: Response) => {
+    res.json({ status: 'OK', message: 'Contract Generator System Optimized' });
+  });
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
