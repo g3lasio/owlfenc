@@ -743,40 +743,6 @@ app.post('/api/anthropic/generate-defensive-contract', async (req, res) => {
     });
   }
 });
-        zipCode: extractedData.clientInfo?.zipCode || '',
-        
-        // Datos del proyecto estructurados por Mistral AI
-        projectType: extractedData.projectDetails?.type || 'External Estimate',
-        description: extractedData.projectDetails?.description || 'Project from external PDF estimate',
-        totalAmount: extractedData.financialInfo?.totalAmount || 0,
-        
-        // Datos adicionales de Mistral AI
-        contractorInfo: extractedData.contractorInfo,
-        timeline: extractedData.timeline,
-        materials: extractedData.materials,
-        financialInfo: extractedData.financialInfo,
-        
-        // Análisis legal de Mervin AI DeepSearch
-        legalAnalysis: legalAnalysis,
-        riskLevel: legalAnalysis.riskAnalysis?.riskLevel || 'MEDIUM',
-        protectiveRecommendations: legalAnalysis.protectiveRecommendations,
-        contractualRequirements: legalAnalysis.contractualRequirements,
-        
-        // Datos brutos para referencia
-        mistralExtraction: mistralExtractedText,
-        rawExtraction: extractedText,
-        
-        // Marca del sistema híbrido
-        processedBy: 'Mistral AI OCR + Mervin AI DeepSearch',
-        processingTimestamp: new Date().toISOString()
-      };
-
-      console.log('✅ PDF processed successfully with Anthropic');
-      res.json({
-        success: true,
-        clientName: mappedData.clientName,
-        clientEmail: mappedData.clientEmail,
-        clientPhone: mappedData.clientPhone,
         address: mappedData.address,
         city: mappedData.city,
         state: mappedData.state,
