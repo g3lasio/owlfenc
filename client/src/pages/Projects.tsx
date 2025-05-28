@@ -77,7 +77,7 @@ const projectProgressStages = [
   "cancelled"
 ];
 
-export default function Projects() {
+function Projects() {
   // Asegurarse de que la página tenga scroll en móviles
   useEffect(() => {
     // Forzar el reflow para activar el scrolling
@@ -703,58 +703,4 @@ export default function Projects() {
   );
 };
 
-export default Projects; 
-                                ? new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(selectedProject.totalPrice / 100)
-                                : 'No establecido'}
-                            </p>
-                          </div>
-                          <div>
-                            <span className="text-sm text-muted-foreground">Estado de Pago:</span>
-                            <p>
-                              <Badge className={`${selectedProject.paymentStatus === 'paid' ? 'bg-green-500' : selectedProject.paymentStatus === 'partial' ? 'bg-blue-500' : 'bg-yellow-500'} text-white mt-1`}>
-                                {selectedProject.paymentStatus === 'paid' ? 'Pagado' : selectedProject.paymentStatus === 'partial' ? 'Pago Parcial' : 'Pendiente'}
-                              </Badge>
-                            </p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    
-                    {/* Important Dates Card */}
-                    <Card className="mt-4">
-                      <CardContent className="pt-6">
-                        <h3 className="font-medium text-lg mb-2">Fechas Importantes</h3>
-                        <div className="space-y-2">
-                          <div>
-                            <span className="text-sm text-muted-foreground">Fecha de Creación:</span>
-                            <p>{formatDate(selectedProject.createdAt)}</p>
-                          </div>
-                          <div>
-                            <span className="text-sm text-muted-foreground">Instalación Programada:</span>
-                            <p>{selectedProject.scheduledDate ? formatDate(new Date(selectedProject.scheduledDate)) : 'No programada'}</p>
-                          </div>
-                          <div>
-                            <span className="text-sm text-muted-foreground">Fecha de Completado:</span>
-                            <p>{selectedProject.completedDate ? formatDate(new Date(selectedProject.completedDate)) : 'No completado'}</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                  
-                  {/* Project Details Column */}
-                  <div className="md:col-span-2">
-                    <ProjectDetails 
-                      project={selectedProject} 
-                      onUpdate={handleProjectUpdate} 
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
-    </div>
-  );
-}
+export default Projects;
