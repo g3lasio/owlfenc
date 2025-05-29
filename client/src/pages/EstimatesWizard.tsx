@@ -2121,13 +2121,13 @@ export default function EstimatesWizardFixed() {
                   
                   <div className="border-t pt-4 space-y-3">
                     {/* Sleek Dark Tax and Discount Controls */}
-                    <div className="bg-gradient-to-r from-gray-900 via-black to-gray-900 rounded-xl px-4 py-3 border border-gray-700 shadow-lg">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-6">
+                    <div className="bg-gradient-to-r from-gray-900 via-black to-gray-900 rounded-xl px-3 py-3 border border-gray-700 shadow-lg">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6 w-full sm:w-auto">
                           {/* Tax Rate - Sleek Dark */}
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
                             <span className="text-gray-300 text-xs font-medium tracking-wide">IMPUESTO</span>
-                            <div className="flex items-center bg-gray-800 rounded-lg px-2 py-1 border border-gray-600">
+                            <div className="flex items-center bg-gray-800 rounded-lg px-2 py-1 border border-gray-600 flex-1 sm:flex-initial">
                               <input
                                 type="number"
                                 value={estimate.taxRate}
@@ -2288,7 +2288,7 @@ export default function EstimatesWizardFixed() {
                       className="flex-1 text-xs"
                     >
                       <Save className="h-3 w-3 mr-1" />
-                      <span className="hidden sm:inline">{isSaving ? 'Guardando...' : 'Guardar'}</span> Estimado
+                      <span className="hidden sm:inline">{isSaving ? 'Guardando...' : 'Guardar'}</span><span className="sm:hidden">Est.</span><span className="hidden sm:inline"> Estimado</span>
                     </Button>
                     <Button
                       onClick={() => setShowPreview(true)}
@@ -2297,7 +2297,7 @@ export default function EstimatesWizardFixed() {
                       size="sm"
                     >
                       <Eye className="h-3 w-3 mr-1" />
-                      Preview & Send
+<span className="hidden sm:inline">Preview & Send</span><span className="sm:hidden">Preview</span>
                     </Button>
                     <Button
                       onClick={downloadPDF}
@@ -2323,16 +2323,19 @@ export default function EstimatesWizardFixed() {
                 </div>
               ) : (
                 <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
-                  <div
-                    style={{
-                      color: '#000000',
-                      '--tw-text-opacity': '1'
-                    }}
-                    className="[&_*]:!text-black [&_td]:!text-black [&_th]:!text-black [&_p]:!text-black [&_span]:!text-black [&_div]:!text-black"
-                    dangerouslySetInnerHTML={{ 
-                      __html: previewHtml || generateEstimatePreview()
-                    }}
-                  />
+                  <div className="overflow-x-auto">
+                    <div
+                      style={{
+                        color: '#000000',
+                        '--tw-text-opacity': '1',
+                        minWidth: '320px'
+                      }}
+                      className="[&_*]:!text-black [&_td]:!text-black [&_th]:!text-black [&_p]:!text-black [&_span]:!text-black [&_div]:!text-black [&_table]:w-full [&_table]:min-w-full [&_td]:text-xs [&_th]:text-xs [&_td]:px-2 [&_th]:px-2 [&_td]:py-1 [&_th]:py-1"
+                      dangerouslySetInnerHTML={{ 
+                        __html: previewHtml || generateEstimatePreview()
+                      }}
+                    />
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -2345,43 +2348,43 @@ export default function EstimatesWizardFixed() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Crear Nuevo Estimado</h1>
-            <p className="text-muted-foreground">
+    <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 max-w-6xl">
+      <div className="mb-6 sm:mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2 truncate">Crear Nuevo Estimado</h1>
+            <p className="text-muted-foreground text-sm sm:text-base">
               Sigue los pasos para crear un estimado profesional para tu cliente
             </p>
           </div>
           <Button
             variant="outline"
             onClick={() => setShowEstimatesHistory(true)}
-            className="border-blue-300 text-blue-600 hover:bg-blue-50"
+            className="border-blue-300 text-blue-600 hover:bg-blue-50 w-full sm:w-auto shrink-0"
           >
             <FileText className="h-4 w-4 mr-2" />
-            Mis Estimados
+            <span className="hidden sm:inline">Mis </span>Estimados
           </Button>
         </div>
       </div>
 
       {/* Progress Steps */}
-      <div className="mb-8">
-        <div className="flex items-center justify-center">
+      <div className="mb-6 sm:mb-8">
+        <div className="flex items-center justify-center overflow-x-auto px-2">
           {STEPS.map((step, index) => {
             const Icon = step.icon;
             const isActive = index === currentStep;
             const isCompleted = index < currentStep;
             
             return (
-              <div key={step.id} className="flex items-center">
+              <div key={step.id} className="flex items-center shrink-0">
                 <div
-                  className={`flex flex-col items-center ${
+                  className={`flex flex-col items-center min-w-0 ${
                     isActive ? 'text-primary' : isCompleted ? 'text-green-600' : 'text-muted-foreground'
                   }`}
                 >
                   <div
-                    className={`flex items-center justify-center w-10 h-10 rounded-full border-2 mb-2 ${
+                    className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 mb-1 sm:mb-2 ${
                       isActive
                         ? 'border-primary bg-primary text-primary-foreground'
                         : isCompleted
@@ -2390,16 +2393,16 @@ export default function EstimatesWizardFixed() {
                     }`}
                   >
                     {isCompleted ? (
-                      <Check className="h-5 w-5" />
+                      <Check className="h-3 w-3 sm:h-5 sm:w-5" />
                     ) : (
-                      <Icon className="h-5 w-5" />
+                      <Icon className="h-3 w-3 sm:h-5 sm:w-5" />
                     )}
                   </div>
-                  <span className="text-xs font-medium">{step.title}</span>
+                  <span className="text-[10px] sm:text-xs font-medium text-center leading-tight max-w-16 truncate">{step.title}</span>
                 </div>
                 {index < STEPS.length - 1 && (
                   <div
-                    className={`w-24 h-0.5 mx-4 ${
+                    className={`w-12 sm:w-24 h-0.5 mx-2 sm:mx-4 ${
                       isCompleted ? 'bg-green-600' : 'bg-muted-foreground/30'
                     }`}
                   />
@@ -2416,30 +2419,32 @@ export default function EstimatesWizardFixed() {
       </div>
 
       {/* Navigation Buttons */}
-      <div className="flex justify-between">
+      <div className="flex flex-col sm:flex-row gap-2 sm:justify-between">
         <Button
           variant="outline"
           onClick={prevStep}
           disabled={currentStep === 0}
+          className="w-full sm:w-auto order-2 sm:order-1"
         >
           <ChevronLeft className="h-4 w-4 mr-2" />
           Anterior
         </Button>
         
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 order-1 sm:order-2">
           {currentStep === STEPS.length - 1 ? (
             <Button
               onClick={downloadPDF}
               disabled={!estimate.client || estimate.items.length === 0}
-              className="bg-green-600 hover:bg-green-700"
+              className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
             >
               <Download className="h-4 w-4 mr-2" />
-              Finalizar y Descargar
+              <span className="hidden sm:inline">Finalizar y </span>Descargar
             </Button>
           ) : (
             <Button
               onClick={nextStep}
               disabled={!canProceedToNext()}
+              className="w-full sm:w-auto"
             >
               Siguiente
               <ChevronRight className="h-4 w-4 ml-2" />
