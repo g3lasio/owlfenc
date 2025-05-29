@@ -1615,7 +1615,7 @@ export default function EstimatesWizardFixed() {
                       <DialogTitle>Crear Nuevo Cliente</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <Label htmlFor="name">Nombre *</Label>
                           <Input
@@ -1634,7 +1634,7 @@ export default function EstimatesWizardFixed() {
                           />
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <Label htmlFor="phone">Teléfono</Label>
                           <Input
@@ -1708,16 +1708,16 @@ export default function EstimatesWizardFixed() {
                         }`}
                         onClick={() => selectClient(client)}
                       >
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-start justify-between">
                           <div className="min-w-0 flex-1">
                             <h4 className="font-medium text-sm truncate">{client.name}</h4>
-                            <div className="flex gap-3 text-xs text-muted-foreground">
+                            <div className="flex flex-col sm:flex-row sm:gap-3 text-xs text-muted-foreground">
                               <span className="truncate">{client.email || 'Sin email'}</span>
                               <span className="flex-shrink-0">{client.phone || 'Sin teléfono'}</span>
                             </div>
                           </div>
                           {estimate.client?.id === client.id && (
-                            <Check className="h-4 w-4 text-primary flex-shrink-0 ml-2" />
+                            <Check className="h-4 w-4 text-primary flex-shrink-0 ml-2 mt-1" />
                           )}
                         </div>
                       </div>
@@ -1740,7 +1740,7 @@ export default function EstimatesWizardFixed() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div>
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
                   <Label htmlFor="projectDetails" className="text-base font-medium flex items-center gap-2">
                     <Building2 className="h-4 w-4" />
                     Project Details
@@ -1748,18 +1748,20 @@ export default function EstimatesWizardFixed() {
                   <Button
                     onClick={enhanceProjectWithAI}
                     disabled={isAIProcessing || !estimate.projectDetails.trim()}
-                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 w-full sm:w-auto"
                     size="sm"
                   >
                     {isAIProcessing ? (
                       <>
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Procesando...
+                        <span className="hidden sm:inline">Procesando...</span>
+                        <span className="sm:hidden">Procesando...</span>
                       </>
                     ) : (
                       <>
                         <Brain className="h-4 w-4 mr-2" />
-                        Enhance with Mervin AI
+                        <span className="hidden sm:inline">Enhance with Mervin AI</span>
+                        <span className="sm:hidden">Mervin AI</span>
                       </>
                     )}
                   </Button>
@@ -1786,18 +1788,18 @@ export default function EstimatesWizardFixed() {
         return (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
+              <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <Package className="h-5 w-5" />
                   Agregar Materiales ({estimate.items.length})
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   {/* Smart Search IA - Interfaz Futurista Tony Stark */}
                   <div className="relative">
                     <button 
                       disabled={!estimate.projectDetails.trim() || isAIProcessing}
                       className={`
-                        relative overflow-hidden px-4 py-2 min-w-[160px] text-sm font-medium transition-all duration-300
+                        relative overflow-hidden px-3 sm:px-4 py-2 w-full sm:min-w-[160px] text-sm font-medium transition-all duration-300
                         bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900
                         border border-cyan-400/30 rounded-lg
                         hover:border-cyan-400/60 hover:shadow-lg hover:shadow-cyan-400/20
@@ -1829,7 +1831,7 @@ export default function EstimatesWizardFixed() {
 
                     {/* Dropdown Futurista Holográfico */}
                     {showSmartSearchDialog && !isAIProcessing && (
-                      <div className="absolute top-full mt-2 left-0 z-20 min-w-[320px]">
+                      <div className="absolute top-full mt-2 left-0 right-0 sm:left-0 sm:right-auto z-20 sm:min-w-[320px]">
                         {/* Panel Holográfico Principal */}
                         <div className="
                           bg-gradient-to-b from-slate-900/95 via-slate-800/98 to-slate-900/95 
