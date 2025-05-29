@@ -2065,59 +2065,63 @@ export default function EstimatesWizardFixed() {
               ) : (
                 <div className="space-y-4">
                   {estimate.items.map((item, index) => (
-                    <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex-1">
-                        <h4 className="font-medium">{item.name}</h4>
-                        <p className="text-sm text-muted-foreground">{item.description}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-sm">$</span>
-                          <Input
-                            type="number"
-                            value={item.price.toFixed(2)}
-                            onChange={(e) => updateItemPrice(item.id, parseFloat(e.target.value) || 0)}
-                            className="w-20 h-6 text-sm"
-                            step="0.01"
-                            min="0"
-                          />
-                          <span className="text-sm">/ {item.unit}</span>
+                    <div key={item.id} className="p-3 sm:p-4 border rounded-lg">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium truncate">{item.name}</h4>
+                          <p className="text-sm text-muted-foreground line-clamp-2">{item.description}</p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="text-sm">$</span>
+                            <Input
+                              type="number"
+                              value={item.price.toFixed(2)}
+                              onChange={(e) => updateItemPrice(item.id, parseFloat(e.target.value) || 0)}
+                              className="w-16 sm:w-20 h-6 text-sm"
+                              step="0.01"
+                              min="0"
+                            />
+                            <span className="text-sm">/ {item.unit}</span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3">
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => updateItemQuantity(item.id, item.quantity - 1)}
+                              disabled={item.quantity <= 1}
+                              className="h-7 w-7 p-0"
+                            >
+                              <Minus className="h-3 w-3" />
+                            </Button>
+                            <Input
+                              type="number"
+                              value={item.quantity}
+                              onChange={(e) => updateItemQuantity(item.id, parseInt(e.target.value) || 1)}
+                              className="w-12 sm:w-16 h-7 text-center text-sm"
+                              min="1"
+                            />
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => updateItemQuantity(item.id, item.quantity + 1)}
+                              className="h-7 w-7 p-0"
+                            >
+                              <Plus className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          <div className="text-right min-w-16">
+                            <p className="font-medium text-sm sm:text-base">${item.total.toFixed(2)}</p>
+                          </div>
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => updateItemQuantity(item.id, item.quantity - 1)}
-                            disabled={item.quantity <= 1}
+                            onClick={() => removeItemFromEstimate(item.id)}
+                            className="text-destructive hover:text-destructive h-7 w-7 p-0"
                           >
-                            <Minus className="h-3 w-3" />
-                          </Button>
-                          <Input
-                            type="number"
-                            value={item.quantity}
-                            onChange={(e) => updateItemQuantity(item.id, parseInt(e.target.value) || 1)}
-                            className="w-16 h-8 text-center"
-                            min="1"
-                          />
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => updateItemQuantity(item.id, item.quantity + 1)}
-                          >
-                            <Plus className="h-3 w-3" />
+                            <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
-                        <div className="text-right">
-                          <p className="font-medium">${item.total.toFixed(2)}</p>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeItemFromEstimate(item.id)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
                       </div>
                     </div>
                   ))}
