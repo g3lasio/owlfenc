@@ -1262,85 +1262,124 @@ export default function EstimatesWizardFixed() {
         createdAt: new Date().toISOString(),
         validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         
-        // ===== INFORMACIÓN COMPLETA DEL CLIENTE =====
+        // ===== CLIENT INFORMATION - Datos estructurados del cliente =====
+        clientInformation: {
+          id: estimate.client.id || null,
+          name: estimate.client.name || '',
+          email: estimate.client.email || '',
+          phone: estimate.client.phone || '',
+          address: estimate.client.address || '',
+          city: estimate.client.city || '',
+          state: estimate.client.state || '',
+          zipCode: estimate.client.zipCode || '',
+          fullAddress: `${estimate.client.address || ''}, ${estimate.client.city || ''}, ${estimate.client.state || ''} ${estimate.client.zipCode || ''}`.trim(),
+          contactPreference: 'email',
+          lastContact: new Date().toISOString()
+        },
+        
+        // ===== CONTRACT INFORMATION - Información del contratista =====
+        contractInformation: {
+          companyName: contractorInfo.companyName || 'Owl Fence',
+          companyAddress: contractorInfo.address || '',
+          companyCity: contractorInfo.city || '',
+          companyState: contractorInfo.state || '',
+          companyZip: contractorInfo.zip || '',
+          companyPhone: contractorInfo.phone || '',
+          companyEmail: contractorInfo.email || '',
+          companyWebsite: contractorInfo.website || '',
+          licenseNumber: contractorInfo.license || '',
+          insurancePolicy: contractorInfo.insurancePolicy || '',
+          logoUrl: contractorInfo.logoUrl || '/owl-logo.png',
+          fullAddress: `${contractorInfo.address || ''}, ${contractorInfo.city || ''}, ${contractorInfo.state || ''} ${contractorInfo.zip || ''}`.trim(),
+          businessType: 'Construction Services',
+          yearsInBusiness: contractorInfo.yearsInBusiness || 'N/A'
+        },
+        
+        // ===== PROJECT TOTAL COSTS - Desglose completo de costos =====
+        projectTotalCosts: {
+          materialCosts: {
+            items: estimate.items.map((item, index) => ({
+              name: item.name,
+              description: item.description || item.name,
+              category: 'material',
+              quantity: item.quantity,
+              unit: item.unit || 'unit',
+              unitPrice: item.price,
+              totalPrice: item.total,
+              unitPriceCents: Math.round(item.price * 100),
+              totalPriceCents: Math.round(item.total * 100),
+              sortOrder: index,
+              isOptional: false
+            })),
+            subtotal: estimate.subtotal,
+            subtotalCents: Math.round(estimate.subtotal * 100),
+            itemsCount: estimate.items.length
+          },
+          laborCosts: {
+            estimatedHours: Math.ceil(estimate.items.length * 2),
+            hourlyRate: 45.00,
+            totalLabor: Math.round(estimate.total * 0.3),
+            description: 'Professional installation and labor services'
+          },
+          additionalCosts: {
+            taxRate: estimate.taxRate || 10,
+            taxRateBasisPoints: Math.round((estimate.taxRate || 10) * 100),
+            taxAmount: estimate.tax,
+            taxAmountCents: Math.round(estimate.tax * 100),
+            discountType: estimate.discountType || null,
+            discountValue: estimate.discountValue || 0,
+            discountAmount: estimate.discountAmount || 0,
+            discountAmountCents: Math.round((estimate.discountAmount || 0) * 100)
+          },
+          totalSummary: {
+            subtotal: estimate.subtotal,
+            tax: estimate.tax,
+            discount: estimate.discountAmount || 0,
+            finalTotal: estimate.total,
+            subtotalCents: Math.round(estimate.subtotal * 100),
+            taxCents: Math.round(estimate.tax * 100),
+            discountCents: Math.round((estimate.discountAmount || 0) * 100),
+            finalTotalCents: Math.round(estimate.total * 100)
+          }
+        },
+        
+        // ===== DETALLES DEL PROYECTO =====
+        projectDetails: {
+          name: `Proyecto para ${estimate.client.name}`,
+          type: 'fence',
+          subtype: 'custom',
+          description: estimate.projectDetails || 'Proyecto de cerca personalizado',
+          scope: 'Instalación completa de cerca',
+          timeline: '2-3 semanas',
+          startDate: null,
+          completionDate: null,
+          priority: 'normal',
+          notes: `Estimado generado el ${new Date().toLocaleDateString()}`,
+          terms: 'Estimado válido por 30 días. Materiales y mano de obra incluidos.'
+        },
+        
+        // ===== CAMPOS LEGACY PARA COMPATIBILIDAD =====
         clientId: estimate.client.id || null,
         clientName: estimate.client.name || '',
         clientEmail: estimate.client.email || '',
         clientPhone: estimate.client.phone || '',
-        clientAddress: estimate.client.address || '',
-        clientCity: estimate.client.city || '',
-        clientState: estimate.client.state || '',
-        clientZipCode: estimate.client.zipCode || '',
-        
-        // ===== INFORMACIÓN COMPLETA DEL CONTRATISTA =====
         contractorCompanyName: contractorInfo.companyName || 'Owl Fence',
-        contractorAddress: contractorInfo.address || '',
-        contractorCity: contractorInfo.city || '',
-        contractorState: contractorInfo.state || '',
-        contractorZip: contractorInfo.zip || '',
-        contractorPhone: contractorInfo.phone || '',
-        contractorEmail: contractorInfo.email || '',
-        contractorLicense: contractorInfo.license || '',
-        contractorInsurance: contractorInfo.insurancePolicy || '',
-        contractorLogo: contractorInfo.logoUrl || '/owl-logo.png',
-        
-        // ===== DETALLES COMPLETOS DEL PROYECTO =====
-        projectName: `Proyecto para ${estimate.client.name}`,
-        projectType: 'fence',
-        projectSubtype: 'custom',
-        projectDescription: estimate.projectDetails || 'Proyecto de cerca personalizado',
-        scope: 'Instalación completa de cerca',
-        timeline: '2-3 semanas',
-        address: estimate.client.address || '',
-        city: estimate.client.city || '',
-        state: estimate.client.state || '',
-        zipCode: estimate.client.zipCode || '',
-        
-        // ===== MATERIALES Y COSTOS COMPLETOS =====
+        subtotal: Math.round(estimate.subtotal * 100),
+        total: Math.round(estimate.total * 100),
         items: estimate.items.map((item, index) => ({
           name: item.name,
           description: item.description || item.name,
           category: 'material' as const,
           quantity: item.quantity,
           unit: item.unit || 'unit',
-          unitPrice: Math.round(item.price * 100), // Centavos
-          totalPrice: Math.round(item.total * 100), // Centavos
+          unitPrice: Math.round(item.price * 100),
+          totalPrice: Math.round(item.total * 100),
           sortOrder: index,
           isOptional: false
         })),
-        
-        // ===== TOTALES Y FINANCIEROS =====
-        subtotal: Math.round(estimate.subtotal * 100), // Centavos
-        discountType: estimate.discountType || null,
-        discountValue: estimate.discountValue || 0,
-        discountAmount: Math.round((estimate.discountAmount || 0) * 100), // Centavos
-        discountName: estimate.discountName || null,
         taxRate: estimate.taxRate || 10,
-        taxAmount: Math.round(estimate.tax * 100), // Centavos
-        total: Math.round(estimate.total * 100), // Centavos
-        estimateAmount: Math.round(estimate.total * 100), // Para compatibilidad
-        
-        // ===== NOTAS Y OBSERVACIONES =====
-        notes: `Estimado generado el ${new Date().toLocaleDateString()}`,
-        internalNotes: `Cliente: ${estimate.client.name}, Total: $${estimate.total.toFixed(2)}`,
-        terms: 'Estimado válido por 30 días. Materiales y mano de obra incluidos.',
-        
-        // ===== DATOS RAW PARA REFERENCIA =====
-        estimateData: JSON.stringify({
-          client: estimate.client,
-          projectDetails: estimate.projectDetails,
-          items: estimate.items,
-          totals: {
-            subtotal: estimate.subtotal,
-            tax: estimate.tax,
-            total: estimate.total,
-            discountAmount: estimate.discountAmount
-          },
-          metadata: {
-            createdAt: new Date().toISOString(),
-            source: 'estimates-wizard'
-          }
-        })
+        taxAmount: Math.round(estimate.tax * 100),
+        estimateAmount: Math.round(estimate.total * 100)
       };
 
       console.log('📤 Enviando datos al servidor:', estimateData);
