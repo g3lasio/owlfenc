@@ -2145,9 +2145,9 @@ export default function EstimatesWizardFixed() {
                           </div>
 
                           {/* Discount - Sleek Dark */}
-                          <div className="flex items-center gap-3">
-                            <span className="text-gray-300 text-xs font-medium tracking-wide">DESCUENTO</span>
-                            <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+                            <span className="text-gray-300 text-xs font-medium tracking-wide">DESC.</span>
+                            <div className="flex items-center gap-1 sm:gap-2 flex-1 sm:flex-initial">
                               {/* Discount Name */}
                               <input
                                 type="text"
@@ -2156,7 +2156,7 @@ export default function EstimatesWizardFixed() {
                                   ...prev, 
                                   discountName: e.target.value 
                                 }))}
-                                className="w-20 bg-gray-800 text-white text-xs border border-gray-600 rounded px-2 py-1 focus:outline-none focus:border-blue-500"
+                                className="w-16 sm:w-20 bg-gray-800 text-white text-xs border border-gray-600 rounded px-1 sm:px-2 py-1 focus:outline-none focus:border-blue-500"
                                 placeholder="Tipo"
                               />
                               {/* Discount Type */}
@@ -2166,13 +2166,13 @@ export default function EstimatesWizardFixed() {
                                   ...prev, 
                                   discountType: e.target.value as 'percentage' | 'fixed' 
                                 }))}
-                                className="bg-gray-800 text-white text-xs border border-gray-600 rounded px-1 py-1 focus:outline-none focus:border-blue-500"
+                                className="bg-gray-800 text-white text-xs border border-gray-600 rounded px-1 py-1 focus:outline-none focus:border-blue-500 min-w-0"
                               >
                                 <option value="percentage">%</option>
                                 <option value="fixed">$</option>
                               </select>
                               {/* Discount Value */}
-                              <div className="bg-gray-800 rounded-lg px-2 py-1 border border-gray-600">
+                              <div className="bg-gray-800 rounded-lg px-1 sm:px-2 py-1 border border-gray-600">
                                 <input
                                   type="number"
                                   value={estimate.discountValue}
@@ -2180,7 +2180,7 @@ export default function EstimatesWizardFixed() {
                                     ...prev, 
                                     discountValue: parseFloat(e.target.value) || 0 
                                   }))}
-                                  className="w-12 bg-transparent text-white text-xs text-center focus:outline-none"
+                                  className="w-10 sm:w-12 bg-transparent text-white text-xs text-center focus:outline-none"
                                   min="0"
                                   step="0.01"
                                   placeholder="0"
