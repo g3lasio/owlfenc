@@ -488,10 +488,16 @@ export default function EstimatesWizardFixed() {
   const loadClients = async () => {
     try {
       setIsLoadingClients(true);
-      const clientsData = await getFirebaseClients();
-      setClients(clientsData);
+      // Use the same PostgreSQL endpoint as the Clients page
+      const response = await fetch('/api/clients');
+      if (response.ok) {
+        const clientsData = await response.json();
+        setClients(clientsData);
+      } else {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
     } catch (error) {
-      console.error('Error loading clients from Firebase:', error);
+      console.error('Error loading clients:', error);
       toast({
         title: 'Error',
         description: 'No se pudieron cargar los clientes',
@@ -918,8 +924,8 @@ export default function EstimatesWizardFixed() {
   const createNewClient = async () => {
     if (!newClient.name || !newClient.email) {
       toast({
-        title: 'Required Data',
-        description: 'Name and email are required',
+        title: 'Datos Requeridos',
+        description: 'Nombre y email son requeridos',
         variant: 'destructive'
       });
       return;
@@ -927,7 +933,6 @@ export default function EstimatesWizardFixed() {
 
     try {
       const clientData = {
-        clientId: `client_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
         name: newClient.name,
         email: newClient.email,
         phone: newClient.phone || '',
@@ -942,18 +947,26 @@ export default function EstimatesWizardFixed() {
         tags: []
       };
 
-      const savedClient = await saveClient(clientData);
+      // Use the same PostgreSQL endpoint as the Clients page
+      const response = await fetch('/api/clients', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(clientData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const savedClient = await response.json();
       
-      const clientWithId = { 
-        id: savedClient.id, 
-        ...clientData,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
+      // Add to local clients list and select for estimate
+      setClients(prev => [savedClient, ...prev]);
+      setEstimate(prev => ({ ...prev, client: savedClient }));
       
-      setClients(prev => [clientWithId, ...prev]);
-      setEstimate(prev => ({ ...prev, client: clientWithId }));
-      
+      // Reset form and close dialog
       setNewClient({
         name: '',
         email: '',
@@ -967,14 +980,14 @@ export default function EstimatesWizardFixed() {
       setShowAddClientDialog(false);
       
       toast({
-        title: 'Client Created',
-        description: `${clientData.name} has been created and selected`
+        title: 'Cliente Creado',
+        description: `${savedClient.name} ha sido creado y seleccionado`
       });
     } catch (error) {
       console.error('Error creating client:', error);
       toast({
         title: 'Error',
-        description: 'Could not create client',
+        description: 'No se pudo crear el cliente',
         variant: 'destructive'
       });
     }
