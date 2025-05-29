@@ -2373,21 +2373,21 @@ export default function EstimatesWizardFixed() {
 
       {/* Progress Steps */}
       <div className="mb-6 sm:mb-8">
-        <div className="flex items-center justify-center overflow-x-auto px-2">
+        <div className="flex items-center justify-between px-4 max-w-full overflow-hidden">
           {STEPS.map((step, index) => {
             const Icon = step.icon;
             const isActive = index === currentStep;
             const isCompleted = index < currentStep;
             
             return (
-              <div key={step.id} className="flex items-center shrink-0">
+              <div key={step.id} className="flex items-center flex-1 min-w-0">
                 <div
                   className={`flex flex-col items-center min-w-0 ${
                     isActive ? 'text-primary' : isCompleted ? 'text-green-600' : 'text-muted-foreground'
                   }`}
                 >
                   <div
-                    className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 mb-1 sm:mb-2 ${
+                    className={`flex items-center justify-center w-7 h-7 sm:w-10 sm:h-10 rounded-full border-2 mb-1 sm:mb-2 ${
                       isActive
                         ? 'border-primary bg-primary text-primary-foreground'
                         : isCompleted
@@ -2401,11 +2401,11 @@ export default function EstimatesWizardFixed() {
                       <Icon className="h-3 w-3 sm:h-5 sm:w-5" />
                     )}
                   </div>
-                  <span className="text-[10px] sm:text-xs font-medium text-center leading-tight max-w-16 truncate">{step.title}</span>
+                  <span className="text-[9px] sm:text-xs font-medium text-center leading-tight max-w-12 sm:max-w-16 truncate">{step.title}</span>
                 </div>
                 {index < STEPS.length - 1 && (
                   <div
-                    className={`w-12 sm:w-24 h-0.5 mx-2 sm:mx-4 ${
+                    className={`flex-1 h-0.5 mx-1 sm:mx-3 min-w-4 sm:min-w-8 ${
                       isCompleted ? 'bg-green-600' : 'bg-muted-foreground/30'
                     }`}
                   />
