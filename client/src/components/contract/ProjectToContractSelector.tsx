@@ -85,43 +85,130 @@ const ProjectToContractSelector: React.FC<ProjectToContractSelectorProps> = ({
     queryKey: ['projects-for-contracts', filterStatus],
     queryFn: async () => {
       try {
-        // Intentar cargar desde el endpoint principal primero
-        let response = await fetch('/api/projects');
+        console.log('🔄 Cargando proyectos para contratos...');
+        
+        // Cargar desde múltiples fuentes para obtener datos completos
         let allProjects = [];
         
-        if (response.ok) {
-          allProjects = await response.json();
-        }
-        
-        // Si no hay proyectos, intentar endpoint alternativo
-        if (!allProjects || allProjects.length === 0) {
-          response = await fetch('/api/estimates-simple');
-          if (response.ok) {
-            const estimates = await response.json();
-            // Convertir estimates a formato de proyecto
-            allProjects = estimates.map((est: any) => ({
-              id: est.id,
-              projectId: est.projectId,
-              clientName: est.clientName,
-              clientEmail: est.clientEmail,
-              address: est.address || 'Address not available',
-              projectType: est.projectType || 'General Project',
-              description: est.description,
-              status: est.status || 'draft',
-              projectProgress: est.status || 'draft',
-              totalPrice: est.total || 0,
-              createdAt: est.createdAt
-            }));
+        // 1. Intentar cargar proyectos desde el endpoint principal
+        try {
+          const projectsResponse = await fetch('/api/projects');
+          if (projectsResponse.ok) {
+            const projects = await projectsResponse.json();
+            console.log('📊 Proyectos cargados desde /api/projects:', projects.length);
+            allProjects = [...allProjects, ...projects];
           }
+        } catch (error) {
+          console.warn('⚠️ Error cargando desde /api/projects:', error);
         }
         
-        // Filtrar en el frontend según el estado seleccionado
+        // 2. Cargar estimados con datos estructurados completos
+        try {
+          const estimatesResponse = await fetch('/api/estimates');
+          if (estimatesResponse.ok) {
+            const estimates = await estimatesResponse.json();
+            console.log('💰 Estimados cargados desde /api/estimates:', estimates.length);
+            
+            // Convertir estimates con datos estructurados a formato de proyecto
+            const estimateProjects = estimates.map((est: any) => {
+              // Extraer datos de las estructuras organizadas que creamos
+              const clientInfo = est.clientInformation || {};
+              const projectCosts = est.projectTotalCosts || {};
+              const contractInfo = est.contractInformation || {};
+              
+              return {
+                id: est.id || est.estimateNumber,
+                projectId: est.projectId || est.estimateNumber,
+                clientName: clientInfo.name || est.clientName || 'Cliente no especificado',
+                clientEmail: clientInfo.email || est.clientEmail || '',
+                clientPhone: clientInfo.phone || est.clientPhone || '',
+                address: clientInfo.fullAddress || clientInfo.address || est.address || 'Dirección no especificada',
+                city: clientInfo.city || est.city || '',
+                state: clientInfo.state || est.state || '',
+                zipCode: clientInfo.zipCode || est.zipCode || '',
+                projectType: est.projectType || 'fence',
+                description: est.projectDescription || est.description || `Proyecto de ${est.projectType || 'construcción'}`,
+                status: est.status || 'estimate',
+                projectProgress: est.status || 'estimate_created',
+                
+                // Información financiera completa desde projectTotalCosts
+                totalPrice: projectCosts.totalSummary?.finalTotal || 
+                           (est.total && typeof est.total === 'number' ? est.total : 
+                           (est.total && typeof est.total === 'string' ? parseFloat(est.total) : 
+                           (est.totalCents ? est.totalCents / 100 : 0))),
+                           
+                subtotal: projectCosts.totalSummary?.subtotal || 
+                         (est.subtotal && typeof est.subtotal === 'number' ? est.subtotal :
+                         (est.subtotalCents ? est.subtotalCents / 100 : 0)),
+                         
+                taxAmount: projectCosts.totalSummary?.tax || 
+                          (est.taxAmount && typeof est.taxAmount === 'number' ? est.taxAmount :
+                          (est.taxAmountCents ? est.taxAmountCents / 100 : 0)),
+                
+                // Información del contratista
+                contractorInfo: contractInfo,
+                
+                // Datos completos para referencia
+                clientInformation: clientInfo,
+                projectTotalCosts: projectCosts,
+                contractInformation: contractInfo,
+                
+                createdAt: est.createdAt || new Date(),
+                estimateNumber: est.estimateNumber,
+                
+                // Verificar si tiene información básica completa
+                hasBasicInfo: !!(clientInfo.name && (projectCosts.totalSummary?.finalTotal || est.total))
+              };
+            });
+            
+            allProjects = [...allProjects, ...estimateProjects];
+          }
+        } catch (error) {
+          console.warn('⚠️ Error cargando desde /api/estimates:', error);
+        }
+        
+        // 3. Eliminar duplicados basado en ID o nombre del cliente
+        const uniqueProjects = allProjects.filter((project, index, self) => 
+          index === self.findIndex(p => 
+            p.id === project.id || 
+            (p.clientName === project.clientName && p.address === project.address)
+          )
+        );
+        
+        console.log('✅ Total proyectos únicos cargados:', uniqueProjects.length);
+        
+        // 4. Filtrar proyectos elegibles para contratos
+        const eligibleProjects = uniqueProjects.filter(project => {
+          const isEligible = project.hasBasicInfo && 
+                           project.clientName && 
+                           project.totalPrice > 0;
+          
+          console.log('🔍 Evaluando proyecto:', {
+            clientName: project.clientName,
+            address: project.address,
+            status: project.status,
+            projectProgress: project.projectProgress,
+            hasBasicInfo: project.hasBasicInfo
+          });
+          
+          if (isEligible) {
+            console.log('✅ Proyecto', project.clientName + ':', 'elegible=' + project.address);
+          } else {
+            console.log('❌ Proyecto', project.clientName + ':', 'elegible=' + project.hasBasicInfo);
+          }
+          
+          return isEligible;
+        });
+        
+        console.log('✅ Proyectos elegibles para contrato:', eligibleProjects.length);
+        
+        // Filtrar según el estado seleccionado
         if (filterStatus === 'all') {
-          return allProjects;
+          return eligibleProjects;
         }
         
         // Aplicar filtros específicos
-        return allProjects.filter((project: Project) => {
+        return eligibleProjects.filter((project: any) => {
           if (filterStatus === 'approved') {
             return project.status === 'client_approved' || project.status === 'approved' || 
                    project.projectProgress === 'approved' || project.projectProgress === 'completed';
@@ -293,9 +380,15 @@ const ProjectToContractSelector: React.FC<ProjectToContractSelectorProps> = ({
                     <p className="text-xs text-muted-foreground">{project.address}</p>
                   </div>
                   
-                  {project.totalPrice && (
+                  {project.totalPrice && project.totalPrice > 0 ? (
                     <p className="text-lg font-bold text-green-600">
-                      ${(project.totalPrice / 100).toLocaleString()}
+                      ${typeof project.totalPrice === 'number' ? 
+                        project.totalPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : 
+                        parseFloat(project.totalPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Price pending
                     </p>
                   )}
 
