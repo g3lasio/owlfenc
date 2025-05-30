@@ -389,49 +389,8 @@ export default function PermitAdvisor() {
 
       {/* Search Interface */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
-        <Card className="relative overflow-visible bg-transparent border-0 shadow-none">
-          {/* Cyberpunk corner borders */}
-          <div className="absolute inset-0 pointer-events-none">
-            {/* Corner arrows - top left */}
-            <div className="absolute top-0 left-0 w-8 h-8">
-              <div className="absolute top-0 left-0 w-6 h-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
-              <div className="absolute top-0 left-0 w-0.5 h-6 bg-gradient-to-b from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
-              <div className="absolute top-1.5 left-1.5 w-3 h-0.5 bg-cyan-400/60"></div>
-              <div className="absolute top-1.5 left-1.5 w-0.5 h-3 bg-cyan-400/60"></div>
-            </div>
-            
-            {/* Corner arrows - top right */}
-            <div className="absolute top-0 right-0 w-8 h-8">
-              <div className="absolute top-0 right-0 w-6 h-0.5 bg-gradient-to-l from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
-              <div className="absolute top-0 right-0 w-0.5 h-6 bg-gradient-to-b from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
-              <div className="absolute top-1.5 right-1.5 w-3 h-0.5 bg-cyan-400/60"></div>
-              <div className="absolute top-1.5 right-1.5 w-0.5 h-3 bg-cyan-400/60"></div>
-            </div>
-            
-            {/* Corner arrows - bottom left */}
-            <div className="absolute bottom-0 left-0 w-8 h-8">
-              <div className="absolute bottom-0 left-0 w-6 h-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
-              <div className="absolute bottom-0 left-0 w-0.5 h-6 bg-gradient-to-t from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
-              <div className="absolute bottom-1.5 left-1.5 w-3 h-0.5 bg-cyan-400/60"></div>
-              <div className="absolute bottom-1.5 left-1.5 w-0.5 h-3 bg-cyan-400/60"></div>
-            </div>
-            
-            {/* Corner arrows - bottom right */}
-            <div className="absolute bottom-0 right-0 w-8 h-8">
-              <div className="absolute bottom-0 right-0 w-6 h-0.5 bg-gradient-to-l from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
-              <div className="absolute bottom-0 right-0 w-0.5 h-6 bg-gradient-to-t from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
-              <div className="absolute bottom-1.5 right-1.5 w-3 h-0.5 bg-cyan-400/60"></div>
-              <div className="absolute bottom-1.5 right-1.5 w-0.5 h-3 bg-cyan-400/60"></div>
-            </div>
-            
-            {/* Side scanning lines */}
-            <div className="absolute top-4 left-0 w-0.5 h-1/3 bg-gradient-to-b from-transparent via-cyan-400/80 to-transparent opacity-60 animate-pulse"></div>
-            <div className="absolute top-4 right-0 w-0.5 h-1/3 bg-gradient-to-b from-transparent via-cyan-400/80 to-transparent opacity-60 animate-pulse delay-300"></div>
-            <div className="absolute bottom-4 left-4 w-1/3 h-0.5 bg-gradient-to-r from-transparent via-blue-500/80 to-transparent opacity-60 animate-pulse delay-500"></div>
-            <div className="absolute bottom-4 right-4 w-1/3 h-0.5 bg-gradient-to-l from-transparent via-blue-500/80 to-transparent opacity-60 animate-pulse delay-700"></div>
-          </div>
-
-          <CardHeader className="relative z-10 text-center px-4 sm:px-6">
+        <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-sm">
+          <CardHeader className="text-center px-4 sm:px-6">
             <CardTitle className="text-lg sm:text-xl lg:text-2xl text-cyan-300 flex items-center justify-center gap-2">
               <div className="w-3 h-3 bg-cyan-400 rounded-full animate-pulse"></div>
               <span className="truncate">Property & Project Analysis</span>
@@ -440,51 +399,143 @@ export default function PermitAdvisor() {
               Enter property details for comprehensive permit analysis
             </CardDescription>
           </CardHeader>
-          <CardContent className="relative z-10 space-y-4 sm:space-y-6 px-4 sm:px-6">
+          <CardContent className="space-y-4 sm:space-y-6 px-4 sm:px-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-cyan-300">Property Address</label>
-                <MapboxPlacesAutocomplete
-                  onPlaceSelect={handleAddressSelect}
-                  onChange={() => {}} 
-                  className="w-full bg-slate-900/50 border-cyan-500/30 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400/20 min-h-[44px]"
-                  placeholder="Enter property address..."
-                />
+              {/* Address Input with Cyberpunk Border */}
+              <div className="relative overflow-visible bg-transparent">
+              {/* Cyberpunk corner borders for address */}
+              <div className="absolute inset-0 pointer-events-none">
+                {/* Corner arrows - top left */}
+                <div className="absolute top-0 left-0 w-8 h-8">
+                  <div className="absolute top-0 left-0 w-6 h-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+                  <div className="absolute top-0 left-0 w-0.5 h-6 bg-gradient-to-b from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+                  <div className="absolute top-1.5 left-1.5 w-3 h-0.5 bg-cyan-400/60"></div>
+                  <div className="absolute top-1.5 left-1.5 w-0.5 h-3 bg-cyan-400/60"></div>
+                </div>
+                
+                {/* Corner arrows - top right */}
+                <div className="absolute top-0 right-0 w-8 h-8">
+                  <div className="absolute top-0 right-0 w-6 h-0.5 bg-gradient-to-l from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+                  <div className="absolute top-0 right-0 w-0.5 h-6 bg-gradient-to-b from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+                  <div className="absolute top-1.5 right-1.5 w-3 h-0.5 bg-cyan-400/60"></div>
+                  <div className="absolute top-1.5 right-1.5 w-0.5 h-3 bg-cyan-400/60"></div>
+                </div>
+                
+                {/* Corner arrows - bottom left */}
+                <div className="absolute bottom-0 left-0 w-8 h-8">
+                  <div className="absolute bottom-0 left-0 w-6 h-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+                  <div className="absolute bottom-0 left-0 w-0.5 h-6 bg-gradient-to-t from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+                  <div className="absolute bottom-1.5 left-1.5 w-3 h-0.5 bg-cyan-400/60"></div>
+                  <div className="absolute bottom-1.5 left-1.5 w-0.5 h-3 bg-cyan-400/60"></div>
+                </div>
+                
+                {/* Corner arrows - bottom right */}
+                <div className="absolute bottom-0 right-0 w-8 h-8">
+                  <div className="absolute bottom-0 right-0 w-6 h-0.5 bg-gradient-to-l from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+                  <div className="absolute bottom-0 right-0 w-0.5 h-6 bg-gradient-to-t from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+                  <div className="absolute bottom-1.5 right-1.5 w-3 h-0.5 bg-cyan-400/60"></div>
+                  <div className="absolute bottom-1.5 right-1.5 w-0.5 h-3 bg-cyan-400/60"></div>
+                </div>
+                
+                {/* Side scanning lines */}
+                <div className="absolute top-4 left-0 w-0.5 h-1/3 bg-gradient-to-b from-transparent via-cyan-400/80 to-transparent opacity-60 animate-pulse"></div>
+                <div className="absolute top-4 right-0 w-0.5 h-1/3 bg-gradient-to-b from-transparent via-cyan-400/80 to-transparent opacity-60 animate-pulse delay-300"></div>
+                <div className="absolute bottom-4 left-4 w-1/3 h-0.5 bg-gradient-to-r from-transparent via-blue-500/80 to-transparent opacity-60 animate-pulse delay-500"></div>
+                <div className="absolute bottom-4 right-4 w-1/3 h-0.5 bg-gradient-to-l from-transparent via-blue-500/80 to-transparent opacity-60 animate-pulse delay-700"></div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-cyan-300">Project Type</label>
-                <Select value={projectType} onValueChange={setProjectType}>
-                  <SelectTrigger className="w-full bg-slate-900/50 border-cyan-500/30 text-white focus:border-cyan-400 min-h-[44px]">
-                    <SelectValue placeholder="Select project type" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-900 border-cyan-500/30 max-h-[200px] overflow-y-auto">
-                    <SelectItem value="fence">Fence Installation</SelectItem>
-                    <SelectItem value="deck">Deck Construction</SelectItem>
-                    <SelectItem value="addition">Home Addition</SelectItem>
-                    <SelectItem value="renovation">Renovation</SelectItem>
-                    <SelectItem value="electrical">Electrical Work</SelectItem>
-                    <SelectItem value="plumbing">Plumbing</SelectItem>
-                    <SelectItem value="roofing">Roofing</SelectItem>
-                    <SelectItem value="hvac">HVAC Installation</SelectItem>
-                    <SelectItem value="concrete">Concrete Work</SelectItem>
-                    <SelectItem value="landscaping">Landscaping</SelectItem>
-                    <SelectItem value="pool">Pool Installation</SelectItem>
-                    <SelectItem value="solar">Solar Panel Installation</SelectItem>
-                    <SelectItem value="siding">Siding</SelectItem>
-                    <SelectItem value="windows">Window Replacement</SelectItem>
-                    <SelectItem value="demolition">Demolition</SelectItem>
-                    <SelectItem value="garage">Garage Construction</SelectItem>
-                    <SelectItem value="shed">Shed Installation</SelectItem>
-                    <SelectItem value="driveway">Driveway</SelectItem>
-                    <SelectItem value="bathroom">Bathroom Remodel</SelectItem>
-                    <SelectItem value="kitchen">Kitchen Remodel</SelectItem>
-                    <SelectItem value="basement">Basement Finishing</SelectItem>
-                    <SelectItem value="attic">Attic Conversion</SelectItem>
-                    <SelectItem value="porch">Porch/Patio</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="relative z-10 p-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-cyan-300">Property Address</label>
+                    <MapboxPlacesAutocomplete
+                      onPlaceSelect={handleAddressSelect}
+                      onChange={() => {}} 
+                      className="w-full bg-slate-900/50 border-cyan-500/30 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400/20 min-h-[44px]"
+                      placeholder="Enter property address..."
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Project Type with Cyberpunk Border */}
+              <div className="relative overflow-visible bg-transparent">
+                {/* Cyberpunk corner borders for project type */}
+                <div className="absolute inset-0 pointer-events-none">
+                  {/* Corner arrows - top left */}
+                  <div className="absolute top-0 left-0 w-8 h-8">
+                    <div className="absolute top-0 left-0 w-6 h-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+                    <div className="absolute top-0 left-0 w-0.5 h-6 bg-gradient-to-b from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+                    <div className="absolute top-1.5 left-1.5 w-3 h-0.5 bg-cyan-400/60"></div>
+                    <div className="absolute top-1.5 left-1.5 w-0.5 h-3 bg-cyan-400/60"></div>
+                  </div>
+                  
+                  {/* Corner arrows - top right */}
+                  <div className="absolute top-0 right-0 w-8 h-8">
+                    <div className="absolute top-0 right-0 w-6 h-0.5 bg-gradient-to-l from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+                    <div className="absolute top-0 right-0 w-0.5 h-6 bg-gradient-to-b from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+                    <div className="absolute top-1.5 right-1.5 w-3 h-0.5 bg-cyan-400/60"></div>
+                    <div className="absolute top-1.5 right-1.5 w-0.5 h-3 bg-cyan-400/60"></div>
+                  </div>
+                  
+                  {/* Corner arrows - bottom left */}
+                  <div className="absolute bottom-0 left-0 w-8 h-8">
+                    <div className="absolute bottom-0 left-0 w-6 h-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+                    <div className="absolute bottom-0 left-0 w-0.5 h-6 bg-gradient-to-t from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+                    <div className="absolute bottom-1.5 left-1.5 w-3 h-0.5 bg-cyan-400/60"></div>
+                    <div className="absolute bottom-1.5 left-1.5 w-0.5 h-3 bg-cyan-400/60"></div>
+                  </div>
+                  
+                  {/* Corner arrows - bottom right */}
+                  <div className="absolute bottom-0 right-0 w-8 h-8">
+                    <div className="absolute bottom-0 right-0 w-6 h-0.5 bg-gradient-to-l from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+                    <div className="absolute bottom-0 right-0 w-0.5 h-6 bg-gradient-to-t from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+                    <div className="absolute bottom-1.5 right-1.5 w-3 h-0.5 bg-cyan-400/60"></div>
+                    <div className="absolute bottom-1.5 right-1.5 w-0.5 h-3 bg-cyan-400/60"></div>
+                  </div>
+                  
+                  {/* Side scanning lines */}
+                  <div className="absolute top-4 left-0 w-0.5 h-1/3 bg-gradient-to-b from-transparent via-cyan-400/80 to-transparent opacity-60 animate-pulse delay-200"></div>
+                  <div className="absolute top-4 right-0 w-0.5 h-1/3 bg-gradient-to-b from-transparent via-cyan-400/80 to-transparent opacity-60 animate-pulse delay-500"></div>
+                  <div className="absolute bottom-4 left-4 w-1/3 h-0.5 bg-gradient-to-r from-transparent via-blue-500/80 to-transparent opacity-60 animate-pulse delay-700"></div>
+                  <div className="absolute bottom-4 right-4 w-1/3 h-0.5 bg-gradient-to-l from-transparent via-blue-500/80 to-transparent opacity-60 animate-pulse delay-900"></div>
+                </div>
+
+                <div className="relative z-10 p-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-cyan-300">Project Type</label>
+                    <Select value={projectType} onValueChange={setProjectType}>
+                      <SelectTrigger className="w-full bg-slate-900/50 border-cyan-500/30 text-white focus:border-cyan-400 min-h-[44px]">
+                        <SelectValue placeholder="Select project type" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-900 border-cyan-500/30 max-h-[200px] overflow-y-auto">
+                        <SelectItem value="fence">Fence Installation</SelectItem>
+                        <SelectItem value="deck">Deck Construction</SelectItem>
+                        <SelectItem value="addition">Home Addition</SelectItem>
+                        <SelectItem value="renovation">Renovation</SelectItem>
+                        <SelectItem value="electrical">Electrical Work</SelectItem>
+                        <SelectItem value="plumbing">Plumbing</SelectItem>
+                        <SelectItem value="roofing">Roofing</SelectItem>
+                        <SelectItem value="hvac">HVAC Installation</SelectItem>
+                        <SelectItem value="concrete">Concrete Work</SelectItem>
+                        <SelectItem value="landscaping">Landscaping</SelectItem>
+                        <SelectItem value="pool">Pool Installation</SelectItem>
+                        <SelectItem value="solar">Solar Panel Installation</SelectItem>
+                        <SelectItem value="siding">Siding</SelectItem>
+                        <SelectItem value="windows">Window Replacement</SelectItem>
+                        <SelectItem value="demolition">Demolition</SelectItem>
+                        <SelectItem value="garage">Garage Construction</SelectItem>
+                        <SelectItem value="shed">Shed Installation</SelectItem>
+                        <SelectItem value="driveway">Driveway</SelectItem>
+                        <SelectItem value="bathroom">Bathroom Remodel</SelectItem>
+                        <SelectItem value="kitchen">Kitchen Remodel</SelectItem>
+                        <SelectItem value="basement">Basement Finishing</SelectItem>
+                        <SelectItem value="attic">Attic Conversion</SelectItem>
+                        <SelectItem value="porch">Porch/Patio</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
             </div>
 
