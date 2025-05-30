@@ -108,6 +108,14 @@ const firebaseConfig = {
   measurementId: "G-Z2PWQXHEN0"
 };
 
+// Lista de dominios autorizados para desarrollo
+const authorizedDomains = [
+  'owl-fenc.firebaseapp.com',
+  'owl-fenc.web.app',
+  '4d52eb7d-89c5-4768-b289-5b2d76991682-00-1ovgjat7mg0re.riker.replit.dev',
+  window.location.hostname
+];
+
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
@@ -918,7 +926,7 @@ const initReplAuth = () => {
   });
 };
 
-// Iniciar sesión con Apple
+// Iniciar sesión con Apple - VERSIÓN CORREGIDA
 export const loginWithApple = async () => {
   try {
     // Si estamos en modo de desarrollo, usar autenticación simulada
@@ -934,122 +942,51 @@ export const loginWithApple = async () => {
       return devUser;
     }
     
-    console.log("=== INICIANDO AUTENTICACIÓN APPLE - DIAGNÓSTICO COMPLETO ===");
-    console.log("1. Timestamp:", new Date().toISOString());
-    console.log("2. Dominio actual:", window.location.hostname);
-    console.log("3. URL completa:", window.location.href);
-    console.log("4. AuthDomain configurado:", auth.app.options.authDomain);
-    console.log("5. Project ID:", auth.app.options.projectId);
-    console.log("6. API Key (primeros 10 chars):", auth.app.options.apiKey?.substring(0, 10) + "...");
-    console.log("7. User Agent:", navigator.userAgent);
-    console.log("8. Es Replit Dev:", isReplitDev);
-    console.log("9. Cookies habilitadas:", navigator.cookieEnabled);
-    console.log("10. Local Storage disponible:", typeof Storage !== "undefined");
+    console.log("=== APPLE SIGN-IN CORREGIDO ===");
+    console.log("Dominio:", window.location.hostname);
+    console.log("AuthDomain:", auth.app.options.authDomain);
     
-    // Verificar estado actual de auth
-    console.log("11. Estado actual auth.currentUser:", auth.currentUser ? "Usuario presente" : "No hay usuario");
+    // Crear proveedor con configuración limpia
+    const provider = new OAuthProvider('apple.com');
+    provider.addScope('email');
+    provider.addScope('name');
     
-    // Verificar red y conectividad
-    console.log("12. Estado de red:", navigator.onLine ? "Online" : "Offline");
+    // Configurar parámetros específicos para Replit
+    provider.setCustomParameters({
+      'locale': 'en_US'
+    });
     
-    // Crear proveedor simple de Apple
-    console.log("13. Creando proveedor de Apple...");
-    const appleProvider = createAppleProvider();
+    // Guardar estado para el callback
+    sessionStorage.setItem('apple_auth_redirect', JSON.stringify({
+      timestamp: Date.now(),
+      from: window.location.href,
+      domain: window.location.hostname
+    }));
     
-    console.log("14. Proveedor Apple configurado correctamente");
+    console.log("Iniciando redirección a Apple...");
     
-    // Detectar si estamos en móvil
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    console.log("15. Dispositivo móvil detectado:", isMobile);
+    // Usar redirección directa (más confiable que popup en Replit)
+    await signInWithRedirect(auth, provider);
     
-    // En móviles, usar redirección directamente
-    if (isMobile) {
-      console.log("16. FLUJO MÓVIL: Usando redirección directa");
-      
-      try {
-        await signInWithRedirect(auth, appleProvider);
-        console.log("17. Redirección móvil iniciada exitosamente");
-        return null; // Redirección iniciada
-      } catch (redirectError: any) {
-        console.error("17. ERROR en redirección móvil:", redirectError);
-        
-        // Si falla en móvil y estamos en Replit, usar Repl Auth
-        if (isReplitDev && redirectError.code === 'auth/internal-error') {
-          console.log("18. Fallback a Repl Auth en móvil");
-          return await initReplAuth();
-        }
-        
-        throw redirectError;
-      }
-    }
+    // Si llegamos aquí, la redirección se inició correctamente
+    return null;
     
-    // En desktop, intentar autenticación simple
-    console.log("16. FLUJO DESKTOP: Intentando autenticación con Apple");
-    
-    try {
-      // Primero intentar con popup
-      const result = await signInWithPopup(auth, appleProvider);
-      console.log("17. AUTENTICACIÓN EXITOSA:");
-      console.log("18. UID:", result.user.uid);
-      console.log("19. Email:", result.user.email);
-      console.log("20. DisplayName:", result.user.displayName);
-      
-      return result.user;
-    } catch (popupError: any) {
-      console.error("17. ERROR EN POPUP APPLE:");
-      console.error("18. Código:", popupError.code);
-      console.error("19. Mensaje:", popupError.message);
-      
-      // Si el popup es bloqueado o cancelado, usar redirección
-      if (['auth/popup-blocked', 'auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(popupError.code)) {
-        console.log("20. POPUP BLOQUEADO - Usando redirección");
-        try {
-          await signInWithRedirect(auth, appleProvider);
-          console.log("Redirección a Apple iniciada, no hay usuario inmediato");
-          return null; // La redirección manejará el resto
-        } catch (redirectError: any) {
-          console.error("21. Error en redirección Apple:", redirectError);
-          throw new Error("No se pudo abrir la página de autenticación de Apple. Verifica que los popups estén habilitados o intenta de nuevo.");
-        }
-      }
-      
-      // Para errores de dominio en desarrollo, usar fallback
-      if (popupError.code === 'auth/unauthorized-domain' && isReplitDev) {
-        console.log("20. DOMINIO NO AUTORIZADO - Usando fallback");
-        return await initReplAuth();
-      }
-      
-      // Para errores internos, intentar redirección
-      if (popupError.code === 'auth/internal-error') {
-        console.log("20. ERROR INTERNO - Intentando redirección");
-        try {
-          await signInWithRedirect(auth, appleProvider);
-          return null;
-        } catch (redirectError: any) {
-          console.error("21. Error en redirección tras error interno:", redirectError);
-          if (isReplitDev) {
-            return await initReplAuth();
-          }
-          throw new Error("Error de configuración con Apple. Por favor, contacta soporte técnico.");
-        }
-      }
-      
-      throw popupError;
-    }
   } catch (error: any) {
-    console.error("=== ERROR CRÍTICO FINAL EN APPLE AUTH ===");
-    console.error("Error Code:", error.code || 'NO_CODE');
-    console.error("Error Message:", error.message || 'NO_MESSAGE');
-    console.error("Timestamp:", new Date().toISOString());
+    console.error("Error en Apple Sign-In:", error);
+    console.error("Código:", error.code);
+    console.error("Mensaje:", error.message);
     
-    // Si estamos en entorno de desarrollo o Replit y hay error crítico
-    if (devMode || isReplitDev) {
-      console.log("FALLBACK DE EMERGENCIA: Usuario de desarrollo");
-      const devUser = createDevUser();
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('dev-auth-change', { detail: { user: devUser } }));
-      }, 500);
-      return devUser;
+    // Para entornos de desarrollo, usar fallback
+    if (isReplitDev) {
+      console.log("Usando fallback de Repl Auth");
+      return await initReplAuth();
+    }
+    
+    // Proporcionar error específico
+    if (error.code === 'auth/unauthorized-domain') {
+      throw new Error("Dominio no autorizado. Verifica la configuración en Firebase Console > Authentication > Settings > Authorized domains");
+    } else if (error.code === 'auth/invalid-oauth-provider') {
+      throw new Error("Apple Sign-In no está configurado en Firebase Console > Authentication > Sign-in method");
     }
     
     throw error;
