@@ -74,6 +74,7 @@ type ProjectPayment = {
   createdAt: string;
   updatedAt: string;
 };
+
 import { useToast } from '@/hooks/use-toast';
 
 interface ProjectPaymentWorkflowProps {
