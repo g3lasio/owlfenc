@@ -1,12 +1,10 @@
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { 
   CheckCircle, 
   Clock, 
   AlertCircle, 
-  TrendingUp,
-  Zap,
-  Shield
+  TrendingUp
 } from 'lucide-react';
 
 interface PaymentSummary {
@@ -34,226 +32,180 @@ export default function FuturisticPaymentDashboard({
     }).format(amount / 100);
   };
 
-  const calculatePercentages = () => {
-    const total = paymentSummary.totalRevenue;
-    if (total === 0) return { paid: 0, pending: 0, overdue: 0 };
-    
-    return {
-      paid: (paymentSummary.totalPaid / total) * 100,
-      pending: (paymentSummary.totalPending / total) * 100,
-      overdue: (paymentSummary.totalOverdue / total) * 100
-    };
-  };
-
-  const percentages = calculatePercentages();
-
-  // Calculate stroke-dasharray for each segment
-  const circumference = 2 * Math.PI * 120;
-  const paidStroke = (percentages.paid / 100) * circumference;
-  const pendingStroke = (percentages.pending / 100) * circumference;
-  const overdueStroke = (percentages.overdue / 100) * circumference;
+  // Prepare data for the donut chart
+  const data = [
+    { 
+      name: 'Payments Completed', 
+      value: paymentSummary.totalPaid,
+      color: '#00ff88', // Bright green
+      glowColor: 'rgba(0, 255, 136, 0.3)',
+      count: paymentSummary.paidCount
+    },
+    { 
+      name: 'Payments Pending', 
+      value: paymentSummary.totalPending,
+      color: '#ffaa00', // Bright orange/amber
+      glowColor: 'rgba(255, 170, 0, 0.3)',
+      count: paymentSummary.pendingCount
+    },
+    { 
+      name: 'Payments Overdue', 
+      value: paymentSummary.totalOverdue,
+      color: '#ff4444', // Bright red
+      glowColor: 'rgba(255, 68, 68, 0.3)',
+      count: 0 // Assuming we don't have overdue count
+    }
+  ].filter(item => item.value > 0); // Only show segments with data
 
   if (isLoading) {
     return (
-      <Card className="bg-gradient-to-br from-slate-900 via-blue-900 to-cyan-900 border-cyan-500/30">
-        <CardContent className="p-8">
-          <div className="flex items-center justify-center">
-            <div className="w-64 h-64 rounded-full border-4 border-cyan-500/30 animate-pulse"></div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="bg-gradient-to-br from-gray-900 via-blue-900 to-black min-h-[500px] rounded-2xl flex items-center justify-center border border-cyan-500/20">
+        <div className="w-80 h-80 rounded-full border-4 border-cyan-500/30 animate-pulse"></div>
+      </div>
     );
   }
 
   return (
-    <div className="relative">
-      {/* Main Futuristic Dashboard */}
-      <Card className="bg-gradient-to-br from-slate-900 via-blue-900 to-cyan-900 border-cyan-500/30 shadow-2xl shadow-cyan-500/20 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-500/5 to-transparent animate-pulse"></div>
-        
-        <CardContent className="p-8 relative z-10">
-          <div className="flex items-center justify-center relative">
-            {/* Outer Glow Ring */}
-            <div className="absolute w-80 h-80 rounded-full border border-cyan-500/20 animate-ping"></div>
-            <div className="absolute w-72 h-72 rounded-full border border-cyan-400/30"></div>
-            
-            {/* Main Circular Chart */}
-            <div className="relative w-64 h-64">
-              <svg width="256" height="256" className="transform -rotate-90">
-                {/* Background Circle */}
-                <circle
-                  cx="128"
-                  cy="128"
-                  r="120"
-                  fill="none"
-                  stroke="rgba(6, 182, 212, 0.1)"
-                  strokeWidth="8"
-                />
-                
-                {/* Paid Amount Arc */}
-                <circle
-                  cx="128"
-                  cy="128"
-                  r="120"
-                  fill="none"
-                  stroke="url(#paidGradient)"
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                  strokeDasharray={`${paidStroke} ${circumference}`}
-                  className="transition-all duration-1000 ease-out"
-                  style={{
-                    filter: 'drop-shadow(0 0 10px rgba(34, 197, 94, 0.5))'
-                  }}
-                />
-                
-                {/* Pending Amount Arc */}
-                <circle
-                  cx="128"
-                  cy="128"
-                  r="120"
-                  fill="none"
-                  stroke="url(#pendingGradient)"
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                  strokeDasharray={`${pendingStroke} ${circumference}`}
-                  strokeDashoffset={-paidStroke}
-                  className="transition-all duration-1000 ease-out"
-                  style={{
-                    filter: 'drop-shadow(0 0 10px rgba(251, 146, 60, 0.5))'
-                  }}
-                />
-                
-                {/* Overdue Amount Arc */}
-                <circle
-                  cx="128"
-                  cy="128"
-                  r="120"
-                  fill="none"
-                  stroke="url(#overdueGradient)"
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                  strokeDasharray={`${overdueStroke} ${circumference}`}
-                  strokeDashoffset={-(paidStroke + pendingStroke)}
-                  className="transition-all duration-1000 ease-out"
-                  style={{
-                    filter: 'drop-shadow(0 0 10px rgba(239, 68, 68, 0.5))'
-                  }}
-                />
-                
-                {/* Gradients */}
+    <div className="bg-gradient-to-br from-gray-900 via-blue-900 to-black min-h-[500px] rounded-2xl relative overflow-hidden border border-cyan-500/20">
+      {/* Background grid effect */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `
+            linear-gradient(rgba(6, 182, 212, 0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(6, 182, 212, 0.1) 1px, transparent 1px)
+          `,
+          backgroundSize: '40px 40px'
+        }}></div>
+      </div>
+
+      {/* Main content */}
+      <div className="relative z-10 p-8">
+        {/* Central donut chart */}
+        <div className="flex items-center justify-center mb-8">
+          <div className="relative w-80 h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
                 <defs>
-                  <linearGradient id="paidGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#22c55e" />
-                    <stop offset="100%" stopColor="#16a34a" />
-                  </linearGradient>
-                  <linearGradient id="pendingGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#fb923c" />
-                    <stop offset="100%" stopColor="#ea580c" />
-                  </linearGradient>
-                  <linearGradient id="overdueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#ef4444" />
-                    <stop offset="100%" stopColor="#dc2626" />
-                  </linearGradient>
+                  <filter id="glow">
+                    <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                    <feMerge> 
+                      <feMergeNode in="coloredBlur"/>
+                      <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                  </filter>
                 </defs>
-              </svg>
-              
-              {/* Center Content */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="w-16 h-16 mx-auto mb-3 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-full flex items-center justify-center shadow-lg shadow-cyan-500/50">
-                    <TrendingUp className="h-8 w-8 text-white" />
-                  </div>
-                  <div className="text-2xl font-bold text-cyan-100">
-                    {formatCurrency(paymentSummary.totalRevenue)}
-                  </div>
-                  <div className="text-sm text-cyan-300 font-medium">
-                    Total Revenue
-                  </div>
+                <Pie
+                  data={data}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={90}
+                  outerRadius={140}
+                  paddingAngle={2}
+                  dataKey="value"
+                  strokeWidth={0}
+                  filter="url(#glow)"
+                >
+                  {data.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={entry.color}
+                      style={{
+                        filter: `drop-shadow(0 0 10px ${entry.glowColor})`
+                      }}
+                    />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+            
+            {/* Center content */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center">
+                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-full flex items-center justify-center" style={{
+                  boxShadow: '0 0 20px rgba(6, 182, 212, 0.5)'
+                }}>
+                  <TrendingUp className="h-8 w-8 text-white" />
+                </div>
+                <div className="text-4xl font-bold text-white mb-2">
+                  {formatCurrency(paymentSummary.totalRevenue)}
+                </div>
+                <div className="text-cyan-300 text-lg font-medium">
+                  Total Revenue
                 </div>
               </div>
             </div>
           </div>
-          
-          {/* Stats Grid */}
-          <div className="grid grid-cols-3 gap-4 mt-8">
-            {/* Paid Stats */}
-            <div className="text-center group">
-              <div className="w-12 h-12 mx-auto mb-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-lg shadow-green-500/30 group-hover:shadow-green-500/50 transition-all duration-300">
-                <CheckCircle className="h-6 w-6 text-white" />
-              </div>
-              <div className="text-xl font-bold text-green-400">
-                {formatCurrency(paymentSummary.totalPaid)}
-              </div>
-              <div className="text-xs text-green-300">
-                {paymentSummary.paidCount} Payments
-              </div>
-              <div className="text-xs text-cyan-200">
-                {percentages.paid.toFixed(1)}% Complete
-              </div>
+        </div>
+
+        {/* Bottom stats cards */}
+        <div className="grid grid-cols-3 gap-6">
+          {/* Payments Completed */}
+          <div className="bg-gradient-to-br from-green-500/10 to-green-600/5 border border-green-500/30 rounded-xl p-6 text-center backdrop-blur-sm" style={{
+            boxShadow: '0 0 20px rgba(0, 255, 136, 0.1)'
+          }}>
+            <div className="w-14 h-14 mx-auto mb-4 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center" style={{
+              boxShadow: '0 0 15px rgba(0, 255, 136, 0.3)'
+            }}>
+              <CheckCircle className="h-7 w-7 text-white" />
             </div>
-            
-            {/* Pending Stats */}
-            <div className="text-center group">
-              <div className="w-12 h-12 mx-auto mb-2 bg-gradient-to-br from-orange-500 to-amber-600 rounded-lg flex items-center justify-center shadow-lg shadow-orange-500/30 group-hover:shadow-orange-500/50 transition-all duration-300">
-                <Clock className="h-6 w-6 text-white" />
-              </div>
-              <div className="text-xl font-bold text-orange-400">
-                {formatCurrency(paymentSummary.totalPending)}
-              </div>
-              <div className="text-xs text-orange-300">
-                {paymentSummary.pendingCount} Pending
-              </div>
-              <div className="text-xs text-cyan-200">
-                {percentages.pending.toFixed(1)}% Waiting
-              </div>
+            <div className="text-3xl font-bold text-green-400 mb-2">
+              {formatCurrency(paymentSummary.totalPaid)}
             </div>
-            
-            {/* Overdue Stats */}
-            <div className="text-center group">
-              <div className="w-12 h-12 mx-auto mb-2 bg-gradient-to-br from-red-500 to-rose-600 rounded-lg flex items-center justify-center shadow-lg shadow-red-500/30 group-hover:shadow-red-500/50 transition-all duration-300">
-                <AlertCircle className="h-6 w-6 text-white" />
-              </div>
-              <div className="text-xl font-bold text-red-400">
-                {formatCurrency(paymentSummary.totalOverdue)}
-              </div>
-              <div className="text-xs text-red-300">
-                Overdue
-              </div>
-              <div className="text-xs text-cyan-200">
-                {percentages.overdue.toFixed(1)}% Critical
-              </div>
+            <div className="text-green-300 text-sm font-medium">
+              {paymentSummary.paidCount} Payments
+            </div>
+            <div className="text-white/60 text-xs mt-1">
+              Completed
             </div>
           </div>
-        </CardContent>
-        
-        {/* Bottom Glow Effect */}
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent"></div>
-      </Card>
-      
-      {/* Side Accent Cards */}
-      <div className="absolute -right-6 top-1/2 transform -translate-y-1/2 space-y-4">
-        <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-cyan-500/50 animate-pulse">
-          <Zap className="h-6 w-6 text-white" />
-        </div>
-        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/50">
-          <Shield className="h-6 w-6 text-white" />
+
+          {/* Payments Pending */}
+          <div className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border border-orange-500/30 rounded-xl p-6 text-center backdrop-blur-sm" style={{
+            boxShadow: '0 0 20px rgba(255, 170, 0, 0.1)'
+          }}>
+            <div className="w-14 h-14 mx-auto mb-4 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center" style={{
+              boxShadow: '0 0 15px rgba(255, 170, 0, 0.3)'
+            }}>
+              <Clock className="h-7 w-7 text-white" />
+            </div>
+            <div className="text-3xl font-bold text-orange-400 mb-2">
+              {formatCurrency(paymentSummary.totalPending)}
+            </div>
+            <div className="text-orange-300 text-sm font-medium">
+              {paymentSummary.pendingCount} Pending
+            </div>
+            <div className="text-white/60 text-xs mt-1">
+              Awaiting Payment
+            </div>
+          </div>
+
+          {/* Payments Overdue */}
+          <div className="bg-gradient-to-br from-red-500/10 to-red-600/5 border border-red-500/30 rounded-xl p-6 text-center backdrop-blur-sm" style={{
+            boxShadow: '0 0 20px rgba(255, 68, 68, 0.1)'
+          }}>
+            <div className="w-14 h-14 mx-auto mb-4 bg-gradient-to-br from-red-400 to-red-600 rounded-xl flex items-center justify-center" style={{
+              boxShadow: '0 0 15px rgba(255, 68, 68, 0.3)'
+            }}>
+              <AlertCircle className="h-7 w-7 text-white" />
+            </div>
+            <div className="text-3xl font-bold text-red-400 mb-2">
+              {formatCurrency(paymentSummary.totalOverdue)}
+            </div>
+            <div className="text-red-300 text-sm font-medium">
+              Overdue
+            </div>
+            <div className="text-white/60 text-xs mt-1">
+              Requires Attention
+            </div>
+          </div>
         </div>
       </div>
-      
-      <div className="absolute -left-6 top-1/2 transform -translate-y-1/2 space-y-4">
-        <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/50">
-          <TrendingUp className="h-6 w-6 text-white" />
-        </div>
-        <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center shadow-lg shadow-purple-500/50 animate-pulse">
-          <CheckCircle className="h-6 w-6 text-white" />
-        </div>
-      </div>
-      
-      {/* Corner Effects */}
-      <div className="absolute top-0 left-0 w-8 h-8 border-l-2 border-t-2 border-cyan-500/50"></div>
-      <div className="absolute top-0 right-0 w-8 h-8 border-r-2 border-t-2 border-cyan-500/50"></div>
-      <div className="absolute bottom-0 left-0 w-8 h-8 border-l-2 border-b-2 border-cyan-500/50"></div>
-      <div className="absolute bottom-0 right-0 w-8 h-8 border-r-2 border-b-2 border-cyan-500/50"></div>
+
+      {/* Subtle corner accents */}
+      <div className="absolute top-4 left-4 w-8 h-8 border-l-2 border-t-2 border-cyan-400/50 rounded-tl-lg"></div>
+      <div className="absolute top-4 right-4 w-8 h-8 border-r-2 border-t-2 border-cyan-400/50 rounded-tr-lg"></div>
+      <div className="absolute bottom-4 left-4 w-8 h-8 border-l-2 border-b-2 border-cyan-400/50 rounded-bl-lg"></div>
+      <div className="absolute bottom-4 right-4 w-8 h-8 border-r-2 border-b-2 border-cyan-400/50 rounded-br-lg"></div>
     </div>
   );
 }
