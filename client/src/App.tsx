@@ -48,6 +48,7 @@ import DeepSearchDemo from "@/pages/DeepSearchDemo";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import AuthDiagnostic from './pages/AuthDiagnostic';
+import AppleAuthTest from './pages/AppleAuthTest';
 import { lazy } from 'react';
 
 // Componente para páginas protegidas
@@ -90,7 +91,7 @@ function Router() {
       <Route path="/login/email-link-callback" component={EmailLinkCallback} />
       <Route path="/apple-callback" component={AppleCallback} />
       <Route path="/auth-diagnostic" component={AuthDiagnostic} />
-      <Route path="/apple-auth-diagnostic" component={lazy(() => import('./pages/AppleAuthDiagnostic'))} />
+      <Route path="/apple-auth-test" component={AppleAuthTest} />
       <Route path="/about-owlfenc" component={AboutOwlFence} />
       <Route path="/about-mervin" component={AboutMervin} />
       <Route path="/legal-policy" component={LegalPolicy} />

@@ -117,17 +117,11 @@ export const storage = getStorage(app);
 // Proveedores de autenticación
 const googleProvider = new GoogleAuthProvider();
 
-// Configuración correcta del proveedor de Apple
+// Configuración correcta del proveedor de Apple - versión simplificada
 const createAppleProvider = () => {
   const provider = new OAuthProvider('apple.com');
   provider.addScope('email');
   provider.addScope('name');
-  
-  // Configuración específica para Apple
-  provider.setCustomParameters({
-    locale: 'es_ES'
-  });
-  
   return provider;
 };
 
@@ -960,19 +954,11 @@ export const loginWithApple = async () => {
     
     // Crear proveedor fresco de Apple con configuración corregida
     console.log("13. Creando proveedor de Apple con configuración mejorada...");
-    const appleProvider = new OAuthProvider('apple.com');
+    const appleProvider = createAppleProvider();
     
-    // Configuración específica y corregida para Apple
-    appleProvider.addScope('email');
-    appleProvider.addScope('name');
-    
-    // Configuración más específica para evitar auth/internal-error
+    // Configuración adicional para evitar errores internos
     appleProvider.setCustomParameters({
-      locale: 'es_ES',
-      prompt: 'select_account',
-      response_type: 'code',
-      response_mode: 'form_post',
-      state: `apple-auth-${Date.now()}`
+      locale: 'en'
     });
     
     console.log("14. Proveedor Apple configurado correctamente");
@@ -1002,87 +988,55 @@ export const loginWithApple = async () => {
       }
     }
     
-    // En desktop, intentar popup con manejo mejorado
-    console.log("16. FLUJO DESKTOP: Intentando autenticación con popup");
+    // En desktop, intentar autenticación simple
+    console.log("16. FLUJO DESKTOP: Intentando autenticación con Apple");
     
     try {
+      // Primero intentar con popup
       const result = await signInWithPopup(auth, appleProvider);
-      console.log("17. POPUP EXITOSO:");
+      console.log("17. AUTENTICACIÓN EXITOSA:");
       console.log("18. UID:", result.user.uid);
       console.log("19. Email:", result.user.email);
       console.log("20. DisplayName:", result.user.displayName);
       
       return result.user;
     } catch (popupError: any) {
-      console.error("17. ERROR EN POPUP:");
+      console.error("17. ERROR EN POPUP APPLE:");
       console.error("18. Código:", popupError.code);
       console.error("19. Mensaje:", popupError.message);
       
-      // Manejo específico para auth/internal-error
-      if (popupError.code === 'auth/internal-error') {
-        console.log("20. ERROR INTERNO DETECTADO - Intentando fallbacks");
-        
-        // Si estamos en Replit, usar Repl Auth como fallback principal
-        if (isReplitDev) {
-          console.log("21. FALLBACK PRINCIPAL: Usando Repl Auth");
-          try {
-            return await initReplAuth();
-          } catch (replError) {
-            console.error("22. Error en Repl Auth fallback:", replError);
-            
-            // Último fallback: usuario de desarrollo
-            console.log("23. ÚLTIMO FALLBACK: Usuario de desarrollo");
-            const devUser = createDevUser();
-            setTimeout(() => {
-              window.dispatchEvent(new CustomEvent('dev-auth-change', { detail: { user: devUser } }));
-            }, 500);
-            return devUser;
-          }
-        }
-        
-        // Si no estamos en Replit, intentar redirección como último recurso
-        console.log("21. FALLBACK SECUNDARIO: Intentando redirección");
+      // Si el popup es bloqueado o cancelado, usar redirección
+      if (['auth/popup-blocked', 'auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(popupError.code)) {
+        console.log("20. POPUP BLOQUEADO - Usando redirección");
         try {
           await signInWithRedirect(auth, appleProvider);
-          return null;
+          console.log("Redirección a Apple iniciada, no hay usuario inmediato");
+          return null; // La redirección manejará el resto
         } catch (redirectError: any) {
-          console.error("22. Error en redirección fallback:", redirectError);
-          throw new Error("No se pudo completar la autenticación con Apple. Problema de configuración interna de Firebase.");
+          console.error("21. Error en redirección Apple:", redirectError);
+          throw new Error("No se pudo abrir la página de autenticación de Apple. Verifica que los popups estén habilitados o intenta de nuevo.");
         }
       }
       
-      // Otros errores específicos
-      const shouldUseRedirect = [
-        'auth/popup-blocked',
-        'auth/popup-closed-by-user',
-        'auth/cancelled-popup-request',
-        'auth/operation-not-supported-in-this-environment',
-        'auth/network-request-failed'
-      ].includes(popupError.code);
-      
-      if (shouldUseRedirect) {
-        console.log("20. FALLBACK A REDIRECCIÓN por:", popupError.code);
-        
-        try {
-          await signInWithRedirect(auth, appleProvider);
-          return null;
-        } catch (redirectError: any) {
-          console.error("21. Error en redirección:", redirectError);
-          
-          // Si falla redirección y estamos en Replit, usar Repl Auth
-          if (isReplitDev) {
-            console.log("22. FALLBACK FINAL: Repl Auth");
-            return await initReplAuth();
-          }
-          
-          throw redirectError;
-        }
-      }
-      
-      // Dominio no autorizado
+      // Para errores de dominio en desarrollo, usar fallback
       if (popupError.code === 'auth/unauthorized-domain' && isReplitDev) {
-        console.log("20. DOMINIO NO AUTORIZADO - Usando Repl Auth");
+        console.log("20. DOMINIO NO AUTORIZADO - Usando fallback");
         return await initReplAuth();
+      }
+      
+      // Para errores internos, intentar redirección
+      if (popupError.code === 'auth/internal-error') {
+        console.log("20. ERROR INTERNO - Intentando redirección");
+        try {
+          await signInWithRedirect(auth, appleProvider);
+          return null;
+        } catch (redirectError: any) {
+          console.error("21. Error en redirección tras error interno:", redirectError);
+          if (isReplitDev) {
+            return await initReplAuth();
+          }
+          throw new Error("Error de configuración con Apple. Por favor, contacta soporte técnico.");
+        }
       }
       
       throw popupError;
