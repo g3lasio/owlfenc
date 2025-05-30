@@ -646,6 +646,11 @@ const ProjectPayments: React.FC = () => {
           </TabsTrigger>
         </TabsList>
 
+        {/* Quick Flow Tab */}
+        <TabsContent value="quick-flow" className="space-y-6">
+          <QuickProjectFlow />
+        </TabsContent>
+
         {/* Dashboard Tab */}
         <TabsContent value="dashboard" className="space-y-6">
           {/* Summary Cards */}
