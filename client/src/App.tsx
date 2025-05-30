@@ -30,7 +30,7 @@ import Account from "./pages/Account";
 import Billing from "./pages/Billing";
 import History from "@/pages/History";
 import ProjectPayments from "@/pages/ProjectPayments";
-import ContractorPayments from "@/pages/ContractorPayments";
+
 import EstimatesDashboard from "@/pages/EstimatesDashboard";
 import EstimateGenerator from "@/pages/EstimateGenerator";
 import MisEstimados from "@/pages/MisEstimados";
@@ -111,9 +111,7 @@ function Router() {
       <Route path="/project-payments">
         {() => <ProtectedRoute component={ProjectPayments} />}
       </Route>
-      <Route path="/contractor-payments">
-        {() => <ProtectedRoute component={ContractorPayments} />}
-      </Route>
+
       <Route path="/clients" component={() => <ProtectedRoute component={NuevoClientes} />} />
       <Route path="/materials">
         {() => <ProtectedRoute component={Materials} />}

@@ -78,12 +78,7 @@ export const navigationGroups: NavigationGroup[] = [
         path: "/project-payments",
         icon: "ri-money-dollar-circle-line"
       },
-      {
-        id: "contractor-payments",
-        label: "navigation.contractorPayments",
-        path: "/contractor-payments",
-        icon: "ri-bank-card-line"
-      },
+
       {
         id: "permit-advisor",
         label: "navigation.permitAdvisor",
