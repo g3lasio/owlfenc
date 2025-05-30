@@ -963,37 +963,78 @@ export const loginWithApple = async () => {
       domain: window.location.hostname
     }));
     
-    console.log("Iniciando redirección a Apple...");
+    console.log("Iniciando autenticación optimizada con Apple...");
     
-    // Mostrar mensaje informativo al usuario
-    const toast = (window as any).showToast || console.log;
-    toast({
-      title: "Redirigiendo a Apple",
-      description: "Se abrirá la página de Apple ID. Este proceso puede tardar unos segundos.",
-    });
+    // Verificar conectividad básica
+    if (!navigator.onLine) {
+      throw new Error('NO_INTERNET');
+    }
     
-    // Usar redirección directa (más confiable que popup en Replit)
-    await signInWithRedirect(auth, provider);
+    // Implementar reintentos con timeouts progresivos
+    let attempts = 0;
+    const maxAttempts = 3;
     
-    // Si llegamos aquí, la redirección se inició correctamente
-    return null;
+    while (attempts < maxAttempts) {
+      attempts++;
+      console.log(`Intento ${attempts}/${maxAttempts} de conectar con Apple`);
+      
+      try {
+        const timeoutDuration = 5000 + (attempts * 2000); // 5s, 7s, 9s
+        
+        const redirectPromise = signInWithRedirect(auth, provider);
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('TIMEOUT')), timeoutDuration);
+        });
+        
+        await Promise.race([redirectPromise, timeoutPromise]);
+        console.log("Redirección a Apple iniciada exitosamente");
+        return null;
+        
+      } catch (attemptError: any) {
+        console.log(`Intento ${attempts} falló:`, attemptError.message);
+        
+        if (attempts === maxAttempts) {
+          throw new Error('APPLE_UNRESPONSIVE');
+        }
+        
+        // Esperar antes del siguiente intento
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
+      }
+    }
+    
+    throw new Error('MAX_ATTEMPTS_REACHED');
     
   } catch (error: any) {
     console.error("Error en Apple Sign-In:", error);
     console.error("Código:", error.code);
     console.error("Mensaje:", error.message);
     
-    // Para entornos de desarrollo, usar fallback
-    if (isReplitDev) {
-      console.log("Usando fallback de Repl Auth");
+    // Manejo específico de errores de Apple
+    if (error.message === 'APPLE_UNRESPONSIVE' || error.message === 'MAX_ATTEMPTS_REACHED' || error.message === 'NO_INTERNET') {
+      console.log("Apple no responde después de múltiples intentos - activando fallback");
+      if (isReplitDev) {
+        console.log("Usando sistema alternativo de autenticación");
+        try {
+          return await initReplAuth();
+        } catch (replError) {
+          console.error("Error en sistema alternativo:", replError);
+          throw new Error("Apple ID no responde. Por favor, intenta con Google o ingresa con email y contraseña.");
+        }
+      }
+      throw new Error("Apple ID no responde después de varios intentos. Intenta con otro método de autenticación.");
+    }
+    
+    // Para otros errores en entornos de desarrollo, usar fallback
+    if (isReplitDev && (error.code === 'auth/unauthorized-domain' || error.code === 'auth/network-request-failed')) {
+      console.log("Error de conectividad con Apple - usando fallback");
       return await initReplAuth();
     }
     
-    // Proporcionar error específico
+    // Proporcionar error específico para producción
     if (error.code === 'auth/unauthorized-domain') {
-      throw new Error("Dominio no autorizado. Verifica la configuración en Firebase Console > Authentication > Settings > Authorized domains");
+      throw new Error("Dominio no autorizado en Apple Developer Console");
     } else if (error.code === 'auth/invalid-oauth-provider') {
-      throw new Error("Apple Sign-In no está configurado en Firebase Console > Authentication > Sign-in method");
+      throw new Error("Apple Sign-In no está configurado correctamente");
     }
     
     throw error;
