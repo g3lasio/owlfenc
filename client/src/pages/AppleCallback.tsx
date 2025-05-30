@@ -231,50 +231,45 @@ export default function AppleCallback() {
               // Si llegamos aquí, esperamos a ver si Firebase procesa automáticamente
               console.log("13. Esperando procesamiento automático de Firebase (espera extendida)");
               
-              // Esperamos por más tiempo para ver si el sistema procesa la autenticación
-              setTimeout(() => {
-                if (!auth.currentUser) {
-                  console.log("14. No se completó la autenticación automática después de 10 segundos");
-                  console.log("15. Datos completos de diagnóstico:", {
-                    urlActual: window.location.href,
-                    codePresente: !!codeParam,
-                    statePresente: !!stateParam,
-                    idTokenPresente: !!idTokenParam,
-                    authDomain: auth.app.options.authDomain || "No configurado",
-                    projectId: auth.app.options.projectId || "No configurado",
-                    cookiesHabilitadas: navigator.cookieEnabled,
-                    fechaHora: new Date().toISOString(),
-                    redirectReason: diagnosticData.redirectReason || "desconocido"
-                  });
-                  
-                  // Mensaje detallado con información de diagnóstico y recomendaciones
-                  setError(
-                    "La autenticación con Apple no se completó correctamente. " +
-                    "Diagnóstico: Recibimos el código de Apple, pero Firebase no pudo procesar la autenticación. " +
-                    "\n\nPosibles causas: " +
-                    "\n1. Dominio no autorizado en la consola de desarrollador de Apple" +
-                    "\n2. Problema en la configuración de Firebase (authDomain: " + 
-                    (auth.app.options.authDomain || "No configurado") + ")" +
-                    "\n3. Restricciones de cookies de terceros en tu navegador" +
-                    "\n4. La sesión de verificación puede haber expirado" +
-                    "\n\nRecomendaciones:" +
-                    "\n• Intenta iniciar sesión con Google u otro método" +
-                    "\n• Verifica que tu navegador permite cookies de terceros" +
-                    "\n• Asegúrate de completar el proceso sin demoras excesivas"
-                  );
-                  
-                  setIsProcessing(false);
-                } else {
-                  // Si ya hay un usuario, significa que el procesamiento automático funcionó con retraso
-                  console.log("14. Autenticación automática completada con retraso!");
+              // Verificar estado cada segundo por 15 segundos
+              let attempts = 0;
+              const maxAttempts = 15;
+              
+              const checkAuthState = () => {
+                attempts++;
+                console.log(`Verificando autenticación... intento ${attempts}/${maxAttempts}`);
+                
+                if (auth.currentUser) {
+                  console.log("¡Autenticación completada exitosamente!");
                   setSuccess(true);
                   toast({
                     title: "Inicio de sesión exitoso",
-                    description: "Autenticación con Apple completada con éxito.",
+                    description: "Autenticación con Apple completada.",
                   });
                   setTimeout(() => navigate("/"), 1500);
+                  return;
                 }
-              }, 10000); // Aumentamos a 10 segundos para dar más tiempo
+                
+                if (attempts >= maxAttempts) {
+                  console.log("Tiempo de espera agotado para autenticación automática");
+                  setError(
+                    "La autenticación con Apple está tardando más de lo esperado. " +
+                    "Esto puede deberse a problemas de conectividad con los servidores de Apple. " +
+                    "\n\nSugerencias:" +
+                    "\n• Intenta nuevamente en unos minutos" +
+                    "\n• Verifica tu conexión a internet" +
+                    "\n• Usa otro método de autenticación como Google"
+                  );
+                  setIsProcessing(false);
+                  return;
+                }
+                
+                // Continuar verificando
+                setTimeout(checkAuthState, 1000);
+              };
+              
+              // Iniciar verificación
+              setTimeout(checkAuthState, 1000);
             } else {
               // No hay información útil, mostrar error
               console.log("12. No hay información de autenticación útil en la URL");

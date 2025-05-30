@@ -965,6 +965,13 @@ export const loginWithApple = async () => {
     
     console.log("Iniciando redirección a Apple...");
     
+    // Mostrar mensaje informativo al usuario
+    const toast = (window as any).showToast || console.log;
+    toast({
+      title: "Redirigiendo a Apple",
+      description: "Se abrirá la página de Apple ID. Este proceso puede tardar unos segundos.",
+    });
+    
     // Usar redirección directa (más confiable que popup en Replit)
     await signInWithRedirect(auth, provider);
     
