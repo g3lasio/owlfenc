@@ -21,6 +21,7 @@ import { apiRequest } from '@/lib/queryClient';
 import ProjectPaymentWorkflow from '@/components/payments/ProjectPaymentWorkflow';
 import PaymentSettings from '@/components/payments/PaymentSettings';
 import PaymentHistory from '@/components/payments/PaymentHistory';
+import FuturisticPaymentDashboard from '@/components/payments/FuturisticPaymentDashboard';
 
 // Payment data types
 type ProjectPayment = {
@@ -302,72 +303,13 @@ const ProjectPayments: React.FC = () => {
         </div>
       </div>
 
-      {/* Summary Dashboard */}
-      {!summaryLoading && paymentSummary && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Paid</p>
-                  <p className="text-lg font-bold text-green-600">
-                    {formatCurrency(paymentSummary.totalPaid)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <Clock className="h-5 w-5 text-orange-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Pending</p>
-                  <p className="text-lg font-bold text-orange-600">
-                    {formatCurrency(paymentSummary.totalPending)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <AlertCircle className="h-5 w-5 text-red-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Overdue</p>
-                  <p className="text-lg font-bold text-red-600">
-                    {formatCurrency(paymentSummary.totalOverdue)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <TrendingUp className="h-5 w-5 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Revenue</p>
-                  <p className="text-lg font-bold text-blue-600">
-                    {formatCurrency(paymentSummary.totalRevenue)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      {/* Futuristic Dashboard */}
+      {paymentSummary && (
+        <div className="mb-8">
+          <FuturisticPaymentDashboard 
+            paymentSummary={paymentSummary}
+            isLoading={summaryLoading}
+          />
         </div>
       )}
 
