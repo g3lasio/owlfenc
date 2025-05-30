@@ -898,14 +898,14 @@ export default function PermitAdvisor() {
                     {(permitData.contactInformation && permitData.contactInformation.length > 0) || permitData.requiredPermits ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Extract contacts from permits if contactInformation is empty */}
-                        {(permitData.contactInformation || permitData.requiredPermits.map((permit: any) => ({
+                        {(permitData.contactInformation || (Array.isArray(permitData.requiredPermits) ? permitData.requiredPermits.map((permit: any) => ({
                           department: permit.issuingAuthority,
                           phone: permit.contactPhone,
                           email: permit.email || permit.website?.includes('@') ? permit.website : null,
                           website: permit.website,
                           address: permit.address,
                           hours: permit.hours
-                        }))).map((contact: any, idx: number) => (
+                        })) : [])).map((contact: any, idx: number) => (
                           <div key={idx} className="relative">
                             <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/20 via-teal-400/20 to-blue-400/20 animate-pulse rounded-lg"></div>
                             <Card className="relative bg-gray-800/90 border-cyan-400/30 backdrop-blur-sm hover:shadow-lg hover:shadow-cyan-400/20 transition-all duration-300">
@@ -1133,7 +1133,7 @@ export default function PermitAdvisor() {
                   </TabsContent>
 
                   <TabsContent value="process" className="space-y-4">
-                    {permitData.process && permitData.process.length > 0 ? (
+                    {permitData.process && Array.isArray(permitData.process) && permitData.process.length > 0 ? (
                       <div className="space-y-4">
                         {permitData.process.map((step: any, idx: number) => (
                           <div key={idx} className="relative">
@@ -1181,21 +1181,32 @@ export default function PermitAdvisor() {
                                     )}
 
                                     {/* Official links */}
-                                    {typeof step === 'object' && step.officialLinks && step.officialLinks.length > 0 && (
+                                    {typeof step === 'object' && step.officialLinks && (
                                       <div className="mt-3">
                                         <h5 className="text-xs text-gray-400 uppercase tracking-wide mb-2">Official Resources:</h5>
                                         <div className="flex flex-wrap gap-2">
-                                          {step.officialLinks.map((link: string, linkIdx: number) => (
-                                            <a
-                                              key={linkIdx}
-                                              href={link}
-                                              target="_blank"
-                                              rel="noopener noreferrer"
-                                              className="text-xs bg-blue-500/20 text-blue-300 px-3 py-1 rounded border border-blue-400/30 hover:bg-blue-500/30 transition-colors"
-                                            >
-                                              🔗 Official Form
-                                            </a>
-                                          ))}
+                                          {Array.isArray(step.officialLinks) ? 
+                                            step.officialLinks.map((link: string, linkIdx: number) => (
+                                              <a
+                                                key={linkIdx}
+                                                href={link}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-xs bg-blue-500/20 text-blue-300 px-3 py-1 rounded border border-blue-400/30 hover:bg-blue-500/30 transition-colors"
+                                              >
+                                                🔗 Official Form
+                                              </a>
+                                            )) : (
+                                              <a
+                                                href={step.officialLinks}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-xs bg-blue-500/20 text-blue-300 px-3 py-1 rounded border border-blue-400/30 hover:bg-blue-500/30 transition-colors"
+                                              >
+                                                🔗 Official Form
+                                              </a>
+                                            )
+                                          }
                                         </div>
                                       </div>
                                     )}
@@ -1218,7 +1229,7 @@ export default function PermitAdvisor() {
 
 
                   <TabsContent value="considerations" className="space-y-4">
-                    {permitData.specialConsiderations && permitData.specialConsiderations.length > 0 ? (
+                    {permitData.specialConsiderations && Array.isArray(permitData.specialConsiderations) && permitData.specialConsiderations.length > 0 ? (
                       <div className="space-y-4">
                         {permitData.specialConsiderations.map((consideration: any, idx: number) => {
                           // Parse the consideration if it's a string containing JSON-like data
