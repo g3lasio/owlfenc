@@ -21,7 +21,7 @@ import {
   ArrowDownRight, CheckCircle, Clock, X, Copy, Mail, Receipt,
   Plus, FileText, BanknoteIcon, Wallet, Calculator
 } from 'lucide-react';
-import QuickProjectFlow from '@/components/unified-workflow/QuickProjectFlow';
+
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
@@ -119,7 +119,7 @@ const ProjectPayments: React.FC = () => {
   });
 
   // Fetch projects for payment creation
-  const { data: projects } = useQuery({
+  const { data: projects, isLoading: projectsLoading } = useQuery({
     queryKey: ['/api/projects'],
     queryFn: async () => {
       try {
@@ -630,11 +630,8 @@ const ProjectPayments: React.FC = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="quick-flow" value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="quick-flow">
-            <Calculator className="mr-2 h-4 w-4" /> Quick Flow
-          </TabsTrigger>
+      <Tabs defaultValue="dashboard" value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="dashboard">
             <BarChart4 className="mr-2 h-4 w-4" /> Dashboard
           </TabsTrigger>
@@ -645,11 +642,6 @@ const ProjectPayments: React.FC = () => {
             <FileText className="mr-2 h-4 w-4" /> By Projects
           </TabsTrigger>
         </TabsList>
-
-        {/* Quick Flow Tab */}
-        <TabsContent value="quick-flow" className="space-y-6">
-          <QuickProjectFlow />
-        </TabsContent>
 
         {/* Dashboard Tab */}
         <TabsContent value="dashboard" className="space-y-6">
@@ -974,131 +966,192 @@ const ProjectPayments: React.FC = () => {
 
         {/* Projects Tab */}
         <TabsContent value="projects" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Project Payment Management</CardTitle>
-              <CardDescription>Create and manage payments by project</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {projects?.map((project: any) => {
-                  const projectPayments = payments?.filter(p => p.projectId === project.id) || [];
-                  const totalAmount = project.totalPrice ? project.totalPrice / 100 : 0;
-                  const depositAmount = totalAmount * 0.5;
-                  const finalAmount = totalAmount * 0.5;
-                  
-                  return (
-                    <Card key={project.id} className="border">
-                      <CardHeader>
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <CardTitle className="text-lg">{project.clientName}</CardTitle>
-                            <CardDescription>{project.address}</CardDescription>
-                            {totalAmount > 0 && (
-                              <div className="mt-2 text-sm text-muted-foreground">
-                                Total Project Value: {formatCurrency(totalAmount)}
-                              </div>
-                            )}
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-2xl font-semibold">Project Payment Management</h2>
+              <p className="text-muted-foreground">
+                Manage payments for your {projects?.length || 0} active projects
+              </p>
+            </div>
+            <Button onClick={() => window.location.href = '/projects'}>
+              <FileText className="mr-2 h-4 w-4" />
+              View All Projects
+            </Button>
+          </div>
+
+          {projectsLoading ? (
+            <Card>
+              <CardContent className="text-center py-12">
+                <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto" />
+                <p className="mt-4 text-muted-foreground">Loading projects...</p>
+              </CardContent>
+            </Card>
+          ) : !projects || projects.length === 0 ? (
+            <Card>
+              <CardContent className="text-center py-12">
+                <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
+                <h3 className="mt-4 text-lg font-medium">No projects found</h3>
+                <p className="text-muted-foreground">Create projects first to manage their payments.</p>
+                <Button className="mt-4" onClick={() => window.location.href = '/projects'}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Go to Projects
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {projects.map((project: any) => {
+                const projectPayments = payments?.filter(p => p.projectId === project.id) || [];
+                const totalPaid = projectPayments.filter(p => p.status === 'paid' || p.status === 'succeeded').reduce((sum, p) => sum + p.amount, 0);
+                const totalPending = projectPayments.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0);
+                
+                // Obtener estado del proyecto basado en la estructura real
+                const getProjectStatus = (status: string) => {
+                  switch(status?.toLowerCase()) {
+                    case 'estimate': return { label: 'Estimate', color: 'bg-blue-100 text-blue-800' };
+                    case 'borrador': return { label: 'Draft', color: 'bg-gray-100 text-gray-800' };
+                    case 'enviado': return { label: 'Sent', color: 'bg-yellow-100 text-yellow-800' };
+                    case 'aprobado': return { label: 'Approved', color: 'bg-green-100 text-green-800' };
+                    case 'completado': return { label: 'Completed', color: 'bg-purple-100 text-purple-800' };
+                    default: return { label: status || 'Active', color: 'bg-gray-100 text-gray-800' };
+                  }
+                };
+                
+                const statusInfo = getProjectStatus(project.status);
+                const totalAmount = project.totalPrice ? project.totalPrice / 100 : 0;
+                const depositAmount = totalAmount * 0.5;
+                const finalAmount = totalAmount * 0.5;
+                
+                return (
+                  <Card key={project.id} className="hover:shadow-md transition-shadow">
+                    <CardHeader>
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-3">
+                            <h3 className="text-lg font-medium">{project.clientName}</h3>
+                            <Badge className={statusInfo.color}>
+                              {statusInfo.label}
+                            </Badge>
                           </div>
-                          <div className="flex space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedProject(project.id.toString());
-                                setPaymentType('deposit');
-                                setPaymentAmount((depositAmount).toString());
-                                setClientName(project.clientName);
-                                setClientEmail(project.clientEmail || '');
-                                setShowPaymentLinkModal(true);
-                              }}
-                            >
-                              Create Deposit {depositAmount > 0 && `(${formatCurrency(depositAmount)})`}
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedProject(project.id.toString());
-                                setPaymentType('final');
-                                setPaymentAmount((finalAmount).toString());
-                                setClientName(project.clientName);
-                                setClientEmail(project.clientEmail || '');
-                                setShowPaymentLinkModal(true);
-                              }}
-                            >
-                              Create Final {finalAmount > 0 && `(${formatCurrency(finalAmount)})`}
-                            </Button>
+                          <p className="text-sm text-muted-foreground">{project.address}</p>
+                          {totalAmount > 0 && (
+                            <p className="text-sm font-medium">
+                              Total Project Value: {formatCurrency(totalAmount)}
+                            </p>
+                          )}
+                          <div className="flex gap-4 text-sm">
+                            <span className="flex items-center gap-1">
+                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                              Paid: ${(totalPaid / 100).toFixed(2)}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                              Pending: ${(totalPending / 100).toFixed(2)}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                              Payments: {projectPayments.length}
+                            </span>
                           </div>
                         </div>
-                      </CardHeader>
-                      {projectPayments.length > 0 && (
-                        <CardContent>
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Invoice</TableHead>
-                                <TableHead>Type</TableHead>
-                                <TableHead>Amount</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Method</TableHead>
-                                <TableHead>Actions</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {projectPayments.map((payment) => (
-                                <TableRow key={payment.id}>
-                                  <TableCell className="font-mono">
-                                    {payment.invoiceNumber || `PAY-${payment.id}`}
-                                  </TableCell>
-                                  <TableCell>{formatPaymentType(payment.type)}</TableCell>
-                                  <TableCell>{formatCurrency(payment.amount / 100)}</TableCell>
-                                  <TableCell>{formatPaymentStatus(payment.status)}</TableCell>
-                                  <TableCell>
-                                    <Badge variant="outline">
-                                      {payment.paymentMethod || 'Online'}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex space-x-2">
-                                      {payment.checkoutUrl && (
-                                        <Button
-                                          variant="outline"
-                                          size="sm"
-                                          onClick={() => copyPaymentLink(payment.checkoutUrl!)}
-                                        >
-                                          <Copy className="h-3 w-3" />
-                                        </Button>
-                                      )}
-                                      {payment.status === 'pending' && (
-                                        <Button
-                                          variant="outline"
-                                          size="sm"
-                                          onClick={() => resendPaymentLink(payment.id)}
-                                          disabled={resendPaymentLinkMutation.isPending}
-                                        >
-                                          <Send className="h-3 w-3" />
-                                        </Button>
-                                      )}
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </CardContent>
-                      )}
-                    </Card>
-                  );
-                })}
-                {!projects || projects.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No projects found. Create projects first to manage their payments.
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                        <div className="flex flex-col gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedProject(project.id.toString());
+                              setPaymentType('deposit');
+                              setPaymentAmount(depositAmount > 0 ? depositAmount.toString() : '');
+                              setClientName(project.clientName);
+                              setClientEmail(project.clientEmail || '');
+                              setShowPaymentLinkModal(true);
+                            }}
+                          >
+                            <DollarSign className="mr-2 h-4 w-4" />
+                            Deposit {depositAmount > 0 && `(${formatCurrency(depositAmount)})`}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedProject(project.id.toString());
+                              setPaymentType('final');
+                              setPaymentAmount(finalAmount > 0 ? finalAmount.toString() : '');
+                              setClientName(project.clientName);
+                              setClientEmail(project.clientEmail || '');
+                              setShowPaymentLinkModal(true);
+                            }}
+                          >
+                            <CheckCircle className="mr-2 h-4 w-4" />
+                            Final {finalAmount > 0 && `(${formatCurrency(finalAmount)})`}
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => window.location.href = `/projects?projectId=${project.id}`}
+                          >
+                            <FileText className="mr-2 h-4 w-4" />
+                            View Details
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    
+                    {projectPayments.length > 0 && (
+                      <CardContent>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-medium">Payment History</h4>
+                            <Button variant="ghost" size="sm" className="text-xs h-6">
+                              View All ({projectPayments.length})
+                            </Button>
+                          </div>
+                          {projectPayments.slice(0, 3).map((payment) => (
+                            <div key={payment.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${
+                                  payment.type === 'deposit' ? 'bg-blue-100 text-blue-700' :
+                                  payment.type === 'final' ? 'bg-green-100 text-green-700' :
+                                  payment.type === 'cash' ? 'bg-purple-100 text-purple-700' :
+                                  'bg-gray-100 text-gray-700'
+                                }`}>
+                                  {payment.type === 'deposit' ? 'D' : 
+                                   payment.type === 'final' ? 'F' : 
+                                   payment.type === 'cash' ? 'C' : 'P'}
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium capitalize">{formatPaymentType(payment.type)}</span>
+                                    <span className="text-sm font-medium">{formatCurrency(payment.amount / 100)}</span>
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {payment.invoiceNumber || `PAY-${payment.id}`} • {formatDate(payment.createdAt)}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {formatPaymentStatus(payment.status)}
+                                {payment.checkoutUrl && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => copyPaymentLink(payment.checkoutUrl!)}
+                                    className="h-6 w-6 p-0"
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    )}
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>
