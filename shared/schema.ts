@@ -348,20 +348,45 @@ export const insertPaymentHistorySchema = createInsertSchema(paymentHistory).pic
   receiptUrl: true,
 });
 
-// Project payments table
+// Project payments table - Enhanced for contractor workflow
 export const projectPayments = pgTable("project_payments", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").references(() => projects.id),
   userId: integer("user_id").references(() => users.id),
+  
+  // Stripe integration
   stripePaymentIntentId: text("stripe_payment_intent_id"),
   stripeCheckoutSessionId: text("stripe_checkout_session_id"),
+  stripePaymentLinkId: text("stripe_payment_link_id"),
+  
+  // Payment details
   amount: integer("amount").notNull(), // Amount in cents
-  type: text("type").notNull(), // deposit, final
-  status: text("status").notNull(), // pending, succeeded, failed, canceled
+  type: text("type").notNull(), // deposit, final, milestone, additional
+  status: text("status").notNull(), // pending, succeeded, failed, canceled, expired
   paymentMethod: text("payment_method"), // card, bank_transfer, etc.
+  
+  // URLs and receipts
   receiptUrl: text("receipt_url"),
+  invoiceUrl: text("invoice_url"),
   checkoutUrl: text("checkout_url"), // URL for Stripe Checkout Session
+  paymentLinkUrl: text("payment_link_url"), // URL for Stripe Payment Link
+  
+  // Client information
+  clientEmail: text("client_email"),
+  clientName: text("client_name"),
+  
+  // Invoice details
+  invoiceNumber: text("invoice_number"),
+  description: text("description"),
+  dueDate: timestamp("due_date"),
+  paidDate: timestamp("paid_date"),
+  
+  // Metadata
+  notes: text("notes"),
   paymentDate: timestamp("payment_date"),
+  sentDate: timestamp("sent_date"), // When payment link was sent
+  reminderSent: boolean("reminder_sent").default(false),
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -371,13 +396,25 @@ export const insertProjectPaymentSchema = createInsertSchema(projectPayments).pi
   userId: true,
   stripePaymentIntentId: true,
   stripeCheckoutSessionId: true,
+  stripePaymentLinkId: true,
   amount: true,
   type: true,
   status: true,
   paymentMethod: true,
   receiptUrl: true,
+  invoiceUrl: true,
   checkoutUrl: true,
+  paymentLinkUrl: true,
+  clientEmail: true,
+  clientName: true,
+  invoiceNumber: true,
+  description: true,
+  dueDate: true,
+  paidDate: true,
+  notes: true,
   paymentDate: true,
+  sentDate: true,
+  reminderSent: true,
 });
 
 export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
