@@ -66,146 +66,141 @@ export default function FuturisticPaymentDashboard({
   }
 
   return (
-    <div className="bg-gradient-to-br from-gray-900 via-blue-900 to-black min-h-[500px] rounded-2xl relative overflow-hidden border border-cyan-500/20">
-      {/* Background grid effect */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `
-            linear-gradient(rgba(6, 182, 212, 0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(6, 182, 212, 0.1) 1px, transparent 1px)
-          `,
-          backgroundSize: '40px 40px'
-        }}></div>
-      </div>
-
-      {/* Main content */}
-      <div className="relative z-10 p-8">
-        {/* Central donut chart */}
-        <div className="flex items-center justify-center mb-8">
-          <div className="relative w-80 h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <defs>
-                  <filter id="glow">
-                    <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
-                    <feMerge> 
-                      <feMergeNode in="coloredBlur"/>
-                      <feMergeNode in="SourceGraphic"/>
-                    </feMerge>
-                  </filter>
-                </defs>
-                <Pie
-                  data={data}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={90}
-                  outerRadius={140}
-                  paddingAngle={2}
-                  dataKey="value"
-                  strokeWidth={0}
-                  filter="url(#glow)"
-                >
-                  {data.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={entry.color}
-                      style={{
-                        filter: `drop-shadow(0 0 10px ${entry.glowColor})`
-                      }}
-                    />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-            
-            {/* Center content */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center">
-                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-full flex items-center justify-center" style={{
-                  boxShadow: '0 0 20px rgba(6, 182, 212, 0.5)'
-                }}>
-                  <TrendingUp className="h-8 w-8 text-white" />
-                </div>
-                <div className="text-4xl font-bold text-white mb-2">
-                  {formatCurrency(paymentSummary.totalRevenue)}
-                </div>
-                <div className="text-cyan-300 text-lg font-medium">
-                  Total Revenue
-                </div>
+    <div className="bg-gradient-to-br from-gray-900 via-blue-900 to-black rounded-xl relative overflow-hidden border border-cyan-500/20 p-6">
+      {/* Main content container */}
+      <div className="flex items-center justify-center mb-6">
+        {/* Circular chart */}
+        <div className="relative w-72 h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <defs>
+                {/* Neon glow filters */}
+                <filter id="greenGlow" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                  <feMerge> 
+                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                  </feMerge>
+                </filter>
+                <filter id="orangeGlow" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                  <feMerge> 
+                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                  </feMerge>
+                </filter>
+                <filter id="redGlow" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                  <feMerge> 
+                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                  </feMerge>
+                </filter>
+              </defs>
+              <Pie
+                data={data}
+                cx="50%"
+                cy="50%"
+                innerRadius={70}
+                outerRadius={120}
+                paddingAngle={3}
+                dataKey="value"
+                strokeWidth={2}
+                stroke="rgba(0,0,0,0.8)"
+              >
+                {data.map((entry, index) => (
+                  <Cell 
+                    key={`cell-${index}`} 
+                    fill={entry.color}
+                    filter={
+                      entry.name.includes('Completed') ? 'url(#greenGlow)' :
+                      entry.name.includes('Pending') ? 'url(#orangeGlow)' :
+                      'url(#redGlow)'
+                    }
+                  />
+                ))}
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+          
+          {/* Center content */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-12 h-12 mx-auto mb-2 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-full flex items-center justify-center" style={{
+                boxShadow: '0 0 15px rgba(6, 182, 212, 0.6)'
+              }}>
+                <TrendingUp className="h-6 w-6 text-white" />
+              </div>
+              <div className="text-3xl font-bold text-white mb-1">
+                {formatCurrency(paymentSummary.totalRevenue)}
+              </div>
+              <div className="text-cyan-300 text-sm font-medium">
+                Total Revenue
               </div>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Bottom stats cards */}
-        <div className="grid grid-cols-3 gap-6">
-          {/* Payments Completed */}
-          <div className="bg-gradient-to-br from-green-500/10 to-green-600/5 border border-green-500/30 rounded-xl p-6 text-center backdrop-blur-sm" style={{
-            boxShadow: '0 0 20px rgba(0, 255, 136, 0.1)'
+      {/* Bottom stats cards */}
+      <div className="grid grid-cols-3 gap-4">
+        {/* Payments Completed */}
+        <div className="bg-gradient-to-br from-green-500/20 to-green-600/10 border border-green-500/40 rounded-lg p-4 text-center backdrop-blur-sm" style={{
+          boxShadow: '0 0 15px rgba(0, 255, 136, 0.2)'
+        }}>
+          <div className="w-10 h-10 mx-auto mb-2 bg-gradient-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center" style={{
+            boxShadow: '0 0 10px rgba(0, 255, 136, 0.4)'
           }}>
-            <div className="w-14 h-14 mx-auto mb-4 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center" style={{
-              boxShadow: '0 0 15px rgba(0, 255, 136, 0.3)'
-            }}>
-              <CheckCircle className="h-7 w-7 text-white" />
-            </div>
-            <div className="text-3xl font-bold text-green-400 mb-2">
-              {formatCurrency(paymentSummary.totalPaid)}
-            </div>
-            <div className="text-green-300 text-sm font-medium">
-              {paymentSummary.paidCount} Payments
-            </div>
-            <div className="text-white/60 text-xs mt-1">
-              Completed
-            </div>
+            <CheckCircle className="h-5 w-5 text-white" />
           </div>
-
-          {/* Payments Pending */}
-          <div className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border border-orange-500/30 rounded-xl p-6 text-center backdrop-blur-sm" style={{
-            boxShadow: '0 0 20px rgba(255, 170, 0, 0.1)'
-          }}>
-            <div className="w-14 h-14 mx-auto mb-4 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center" style={{
-              boxShadow: '0 0 15px rgba(255, 170, 0, 0.3)'
-            }}>
-              <Clock className="h-7 w-7 text-white" />
-            </div>
-            <div className="text-3xl font-bold text-orange-400 mb-2">
-              {formatCurrency(paymentSummary.totalPending)}
-            </div>
-            <div className="text-orange-300 text-sm font-medium">
-              {paymentSummary.pendingCount} Pending
-            </div>
-            <div className="text-white/60 text-xs mt-1">
-              Awaiting Payment
-            </div>
+          <div className="text-xl font-bold text-green-400 mb-1">
+            {formatCurrency(paymentSummary.totalPaid)}
           </div>
+          <div className="text-green-300 text-xs">
+            {paymentSummary.paidCount} Payments completed
+          </div>
+        </div>
 
-          {/* Payments Overdue */}
-          <div className="bg-gradient-to-br from-red-500/10 to-red-600/5 border border-red-500/30 rounded-xl p-6 text-center backdrop-blur-sm" style={{
-            boxShadow: '0 0 20px rgba(255, 68, 68, 0.1)'
+        {/* Payments Pending */}
+        <div className="bg-gradient-to-br from-orange-500/20 to-orange-600/10 border border-orange-500/40 rounded-lg p-4 text-center backdrop-blur-sm" style={{
+          boxShadow: '0 0 15px rgba(255, 170, 0, 0.2)'
+        }}>
+          <div className="w-10 h-10 mx-auto mb-2 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center" style={{
+            boxShadow: '0 0 10px rgba(255, 170, 0, 0.4)'
           }}>
-            <div className="w-14 h-14 mx-auto mb-4 bg-gradient-to-br from-red-400 to-red-600 rounded-xl flex items-center justify-center" style={{
-              boxShadow: '0 0 15px rgba(255, 68, 68, 0.3)'
-            }}>
-              <AlertCircle className="h-7 w-7 text-white" />
-            </div>
-            <div className="text-3xl font-bold text-red-400 mb-2">
-              {formatCurrency(paymentSummary.totalOverdue)}
-            </div>
-            <div className="text-red-300 text-sm font-medium">
-              Overdue
-            </div>
-            <div className="text-white/60 text-xs mt-1">
-              Requires Attention
-            </div>
+            <Clock className="h-5 w-5 text-white" />
+          </div>
+          <div className="text-xl font-bold text-orange-400 mb-1">
+            {formatCurrency(paymentSummary.totalPending)}
+          </div>
+          <div className="text-orange-300 text-xs">
+            {paymentSummary.pendingCount} Pending
+          </div>
+        </div>
+
+        {/* Payments Overdue */}
+        <div className="bg-gradient-to-br from-red-500/20 to-red-600/10 border border-red-500/40 rounded-lg p-4 text-center backdrop-blur-sm" style={{
+          boxShadow: '0 0 15px rgba(255, 68, 68, 0.2)'
+        }}>
+          <div className="w-10 h-10 mx-auto mb-2 bg-gradient-to-br from-red-400 to-red-600 rounded-lg flex items-center justify-center" style={{
+            boxShadow: '0 0 10px rgba(255, 68, 68, 0.4)'
+          }}>
+            <AlertCircle className="h-5 w-5 text-white" />
+          </div>
+          <div className="text-xl font-bold text-red-400 mb-1">
+            {formatCurrency(paymentSummary.totalOverdue)}
+          </div>
+          <div className="text-red-300 text-xs">
+            Overdue
           </div>
         </div>
       </div>
 
-      {/* Subtle corner accents */}
-      <div className="absolute top-4 left-4 w-8 h-8 border-l-2 border-t-2 border-cyan-400/50 rounded-tl-lg"></div>
-      <div className="absolute top-4 right-4 w-8 h-8 border-r-2 border-t-2 border-cyan-400/50 rounded-tr-lg"></div>
-      <div className="absolute bottom-4 left-4 w-8 h-8 border-l-2 border-b-2 border-cyan-400/50 rounded-bl-lg"></div>
-      <div className="absolute bottom-4 right-4 w-8 h-8 border-r-2 border-b-2 border-cyan-400/50 rounded-br-lg"></div>
+      {/* Corner accents */}
+      <div className="absolute top-2 left-2 w-6 h-6 border-l-2 border-t-2 border-cyan-400/60"></div>
+      <div className="absolute top-2 right-2 w-6 h-6 border-r-2 border-t-2 border-cyan-400/60"></div>
+      <div className="absolute bottom-2 left-2 w-6 h-6 border-l-2 border-b-2 border-cyan-400/60"></div>
+      <div className="absolute bottom-2 right-2 w-6 h-6 border-r-2 border-b-2 border-cyan-400/60"></div>
     </div>
   );
 }
