@@ -256,7 +256,6 @@ export default function AuthPage() {
             Diagnosticar
           </Button>
         ),
-        description: errorMessage,
       });
     } finally {
       setIsLoading(false);
