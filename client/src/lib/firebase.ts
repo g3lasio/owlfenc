@@ -952,14 +952,9 @@ export const loginWithApple = async () => {
     // Verificar red y conectividad
     console.log("12. Estado de red:", navigator.onLine ? "Online" : "Offline");
     
-    // Crear proveedor fresco de Apple con configuración corregida
-    console.log("13. Creando proveedor de Apple con configuración mejorada...");
+    // Crear proveedor simple de Apple
+    console.log("13. Creando proveedor de Apple...");
     const appleProvider = createAppleProvider();
-    
-    // Configuración adicional para evitar errores internos
-    appleProvider.setCustomParameters({
-      locale: 'en'
-    });
     
     console.log("14. Proveedor Apple configurado correctamente");
     
