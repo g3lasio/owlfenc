@@ -935,28 +935,48 @@ export const loginWithApple = async () => {
       }
     }
     
-    // En desktop, intentar popup primero
+    // En desktop, verificar primero si los popups están permitidos
+    console.log("18. FLUJO DESKTOP: Verificando disponibilidad de popups");
+    sessionStorage.setItem('appleAuth_flow_type', 'desktop_popup');
+    sessionStorage.setItem('appleAuth_popup_timestamp', timestamp.toString());
+    
+    // Prueba más robusta de detección de popup bloqueado
+    let popupBlocked = false;
     try {
-      console.log("18. FLUJO DESKTOP: Intentando popup");
-      sessionStorage.setItem('appleAuth_flow_type', 'desktop_popup');
-      sessionStorage.setItem('appleAuth_popup_timestamp', timestamp.toString());
-      
-      // Verificar si los popups están bloqueados antes de intentar
-      const testPopup = window.open('', '_blank', 'width=1,height=1');
-      if (!testPopup || testPopup.closed || typeof testPopup.closed == 'undefined') {
-        console.log("19. POPUP BLOQUEADO: Saltando directamente a redirección");
-        throw new Error('Popup blocked, using redirect');
+      const testPopup = window.open('', '_blank', 'width=1,height=1,left=9999,top=9999');
+      if (!testPopup || testPopup.closed || typeof testPopup.closed === 'undefined') {
+        popupBlocked = true;
+        console.log("19. POPUP BLOQUEADO: Detección inicial - popup es null o cerrado");
       } else {
+        // Esperar un momento para verificar si el popup se cierra automáticamente
+        setTimeout(() => {
+          if (testPopup.closed) {
+            popupBlocked = true;
+            console.log("19. POPUP BLOQUEADO: Detección secundaria - popup cerrado automáticamente");
+          }
+        }, 100);
         testPopup.close();
-        console.log("19. Popup test exitoso, continuando...");
+        console.log("19. Popup test inicial exitoso");
       }
-      
+    } catch (testError) {
+      popupBlocked = true;
+      console.log("19. POPUP BLOQUEADO: Error en test:", testError);
+    }
+    
+    // Si detectamos popup bloqueado, ir directamente a redirección
+    if (popupBlocked) {
+      console.log("20. SALTANDO A REDIRECCIÓN: Popup detectado como bloqueado");
+      throw new Error('Popup blocked, using redirect immediately');
+    }
+    
+    try {
+      console.log("20. INTENTANDO POPUP: Popups parecen estar permitidos");
       const result = await signInWithPopup(auth, appleProvider);
-      console.log("20. POPUP EXITOSO:");
-      console.log("21. UID:", result.user.uid);
-      console.log("22. Email:", result.user.email);
-      console.log("23. DisplayName:", result.user.displayName);
-      console.log("24. PhotoURL:", result.user.photoURL);
+      console.log("21. POPUP EXITOSO:");
+      console.log("22. UID:", result.user.uid);
+      console.log("23. Email:", result.user.email);
+      console.log("24. DisplayName:", result.user.displayName);
+      console.log("25. PhotoURL:", result.user.photoURL);
       
       // Limpiar datos de diagnóstico exitoso
       sessionStorage.removeItem('appleAuth_diagnostic_info');
@@ -965,11 +985,10 @@ export const loginWithApple = async () => {
       
       return result.user;
     } catch (popupError: any) {
-      console.error("20. ERROR EN POPUP:");
-      console.error("21. Código:", popupError.code);
-      console.error("22. Mensaje:", popupError.message);
-      console.error("23. Name:", popupError.name);
-      console.error("24. Stack:", popupError.stack);
+      console.error("26. ERROR EN POPUP:");
+      console.error("27. Código:", popupError.code);
+      console.error("28. Mensaje:", popupError.message);
+      console.error("29. Name:", popupError.name);
       
       // Guardar error para diagnóstico
       sessionStorage.setItem('appleAuth_popup_error', JSON.stringify({
@@ -979,21 +998,27 @@ export const loginWithApple = async () => {
         timestamp: Date.now()
       }));
       
-      // Si el popup falla, usar redirección como fallback
+      // Lista ampliada de códigos que requieren fallback a redirección
       const shouldFallback = [
         'auth/popup-blocked',
         'auth/popup-closed-by-user',
         'auth/cancelled-popup-request',
         'auth/operation-not-supported-in-this-environment',
-        'auth/internal-error'
-      ].includes(popupError.code) || popupError.message.includes('Popup blocked');
+        'auth/internal-error',
+        'auth/network-request-failed'
+      ].includes(popupError.code) || 
+      popupError.message.includes('Popup blocked') ||
+      popupError.message.includes('popup blocked') ||
+      popupError.message.includes('blocked by') ||
+      popupError.toString().includes('Popup blocked');
       
-      console.log("25. ¿Debería usar fallback?", shouldFallback);
+      console.log("30. ¿Debería usar fallback?", shouldFallback);
+      console.log("31. Razón del fallback:", popupError.code || 'mensaje contiene popup blocked');
       
-      if (shouldFallback) {
-        console.log("26. FALLBACK: Iniciando redirección como alternativa");
+      if (shouldFallback || popupError.message === 'Popup blocked, using redirect immediately') {
+        console.log("32. FALLBACK AUTOMÁTICO: Iniciando redirección");
         sessionStorage.setItem('appleAuth_flow_type', 'desktop_redirect_fallback');
-        sessionStorage.setItem('appleAuth_fallback_reason', popupError.code || 'unknown');
+        sessionStorage.setItem('appleAuth_fallback_reason', popupError.code || 'popup_blocked_detected');
         sessionStorage.setItem('appleAuth_fallback_timestamp', Date.now().toString());
         
         // Crear nuevo proveedor para evitar estado corrupto
@@ -1004,11 +1029,12 @@ export const loginWithApple = async () => {
         });
         
         try {
+          console.log("33. Iniciando redirección como alternativa al popup bloqueado");
           await signInWithRedirect(auth, fallbackProvider);
-          console.log("27. Redirección fallback iniciada exitosamente");
+          console.log("34. Redirección fallback iniciada exitosamente");
           return null;
         } catch (fallbackError: any) {
-          console.error("27. ERROR en redirección fallback:", fallbackError);
+          console.error("34. ERROR en redirección fallback:", fallbackError);
           throw fallbackError;
         }
       }

@@ -77,15 +77,15 @@ export default function AuthPage() {
   // Mostrar efecto de congratulación después de login exitoso
   const showSuccessEffect = () => {
     setShowSuccess(true);
-    
+
     // Reproducir sonido de éxito con tono Iron Man/Stark Industries
     const audio = new Audio();
     audio.volume = 0.3;
-    audio.src = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tAwAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAFAAAKhQCFhYWFhYWFhYWFhYWFhYWFhYWFvb29vb29vb29vb29vb29vb29vb3Z2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2fT09PT09PT09PT09PT09PT09PT0//////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAZqAAAAAAAACoXOVK+FAAAAAAD/+xDEAAAKTEVv9BSAIrLHrj81gFBMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQD/+xDEGQANQJV3+aQAI1QpqP81hARMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQD/+xDEPgAUZfl//msAo3glLvnNMARMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQD/+xDEWAAUTHVH+awAo5Qirfz3gBFMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQD/+0DEggAAAZYFAAAIAAADSAAAAQAAANIAAAAAAAAA0gAAAAETEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQ==';
-    
+    audio.src = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tAwAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAFAAAKhQCFhYWFhYWFhYWFhYWFhYWFhYWFvb29vb29vb29vb29vb29vb29vb3Z2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2fT09PT09PT09PT09PT09PT09PT0//////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAZqAAAAAAAACoXOVK+FAAAAAAD/+xDEAAAKTEVv9BSAIrLHrj81gFBMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQD/+xDEGQANQJV3+aQAI1QpqP81hARMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQD/+xDEPgAUZfl//msAo3glLvnNMARMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQD/+xDEWAAUTHVH/awAo5Qirfz3gBFMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQD/+0DEggAAAZYFAAAIAAADSAAAAQAAANIAAAAAAAAA0gAAAAETEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQ==';
+
     // Reproducir el audio
     audio.play().catch(e => console.log("Audio play prevented: ", e));
-    
+
     // Ocultar el efecto después de 3 segundos
     setTimeout(() => {
       setShowSuccess(false);
@@ -100,23 +100,23 @@ export default function AuthPage() {
       clearError();
       if (loginMethod === "email") {
         console.log("Intentando iniciar sesión con:", data.email);
-        
+
         // Verificar que los campos no estén vacíos antes de intentar login
         if (!data.email.trim() || !data.password.trim()) {
           throw new Error("Por favor completa todos los campos");
         }
-        
+
         await login(data.email, data.password);
         console.log("Login exitoso para:", data.email);
         showSuccessEffect();
       } else if (loginMethod === "emailLink") {
         console.log("Enviando enlace de inicio de sesión a:", data.email);
-        
+
         // Verificar que el correo no esté vacío
         if (!data.email.trim()) {
           throw new Error("Por favor ingresa tu correo electrónico");
         }
-        
+
         await sendEmailLoginLink(data.email);
         toast({
           title: "Enlace enviado",
@@ -125,10 +125,10 @@ export default function AuthPage() {
       }
     } catch (err: any) {
       console.error("Error de inicio de sesión:", err);
-      
+
       // Manejo específico de errores comunes
       let errorMessage = err.message || "Ocurrió un error al iniciar sesión. Intenta de nuevo.";
-      
+
       // Simplificar mensajes de error para mejor experiencia de usuario
       if (errorMessage.includes("user-not-found") || errorMessage.includes("wrong-password") || 
           errorMessage.includes("invalid-credential")) {
@@ -138,7 +138,7 @@ export default function AuthPage() {
       } else if (errorMessage.includes("network")) {
         errorMessage = "Problema de conexión. Verifica tu internet e intenta de nuevo.";
       }
-      
+
       toast({
         variant: "destructive",
         title: "Error de inicio de sesión",
@@ -155,7 +155,7 @@ export default function AuthPage() {
     try {
       clearError();
       await registerUser(data.email, data.password, data.name);
-      
+
       showSuccessEffect();
     } catch (err: any) {
       console.error("Error de registro:", err);
@@ -193,44 +193,44 @@ export default function AuthPage() {
     setIsLoading(true);
     try {
       clearError();
-      
+
       console.log("=== INICIANDO APPLE AUTH DESDE LOGIN PAGE ===");
       console.log("1. Timestamp:", new Date().toISOString());
       console.log("2. Auth mode:", authMode);
       console.log("3. User Agent:", navigator.userAgent);
       console.log("4. Window location:", window.location.href);
-      
+
       // Limpiar cualquier dato anterior de diagnóstico
       const oldKeys = Object.keys(sessionStorage).filter(key => key.startsWith('appleAuth_'));
       console.log("5. Limpiando datos anteriores:", oldKeys.length, "claves");
       oldKeys.forEach(key => sessionStorage.removeItem(key));
-      
+
       // Marcar inicio del proceso
       sessionStorage.setItem('appleAuth_login_start', JSON.stringify({
         timestamp: Date.now(),
         authMode,
         url: window.location.href
       }));
-      
+
       console.log("6. Llamando a loginWithApple()...");
       const result = await loginWithApple();
-      
+
       if (result) {
         // Si tenemos un resultado inmediato (modo desarrollo)
         console.log("7. LOGIN EXITOSO - Resultado inmediato:");
         console.log("8. UID:", result.uid);
         console.log("9. Email:", result.email);
         console.log("10. DisplayName:", result.displayName);
-        
+
         // Limpiar datos de diagnóstico exitoso
         sessionStorage.removeItem('appleAuth_login_start');
-        
+
         showSuccessEffect();
       } else {
         // En producción, se inicia redirección
         console.log("7. REDIRECCIÓN INICIADA - No hay resultado inmediato");
         console.log("8. Esto es normal para Apple Auth en producción");
-        
+
         toast({
           title: "Redirigiendo a Apple",
           description: "Se abrirá la página de autenticación de Apple. Por favor, completa el proceso.",
@@ -243,7 +243,7 @@ export default function AuthPage() {
       console.error("Mensaje:", err.message || "NO_MESSAGE");
       console.error("Name:", err.name || "NO_NAME");
       console.error("Stack:", err.stack || "NO_STACK");
-      
+
       // Información adicional de contexto
       console.error("Contexto adicional:");
       console.error("- Auth Mode:", authMode);
@@ -252,7 +252,7 @@ export default function AuthPage() {
       console.error("- User Agent:", navigator.userAgent);
       console.error("- Cookies habilitadas:", navigator.cookieEnabled);
       console.error("- Online:", navigator.onLine);
-      
+
       // Almacenar error detallado para diagnóstico
       sessionStorage.setItem('appleAuth_login_error', JSON.stringify({
         timestamp: Date.now(),
@@ -265,10 +265,10 @@ export default function AuthPage() {
         cookiesEnabled: navigator.cookieEnabled,
         online: navigator.onLine
       }));
-      
+
       let errorMessage = "Error al iniciar la autenticación con Apple";
       let errorDetails = null;
-      
+
       // Análisis detallado según el tipo de error
       if (err.code === 'auth/internal-error') {
         errorMessage = "Error interno de Firebase Auth";
@@ -280,8 +280,17 @@ export default function AuthPage() {
         errorMessage = "Ventana de autenticación cerrada";
         errorDetails = "Cerraste la ventana antes de completar el proceso. Intenta nuevamente y mantén la ventana abierta hasta completar la autenticación.";
       } else if (err.code === 'auth/popup-blocked') {
-        errorMessage = "Popup bloqueado por el navegador";
-        errorDetails = "Tu navegador ha bloqueado la ventana emergente de Apple. Ve a configuración del navegador y permite ventanas emergentes para este sitio, luego intenta nuevamente.";
+        errorMessage = "Redirección iniciada";
+        errorDetails = "Tu navegador bloqueó la ventana emergente, pero se está iniciando una redirección automática a Apple. Por favor, espera un momento y completa el proceso en la nueva página.";
+
+        // Para popup bloqueado, mostrar un toast informativo en lugar de error
+        toast({
+          title: "Redirigiendo a Apple",
+          description: "Tu navegador bloqueó la ventana emergente. Se abrirá la página de Apple en la misma ventana. Por favor, completa el proceso y serás redirigido de vuelta.",
+        });
+
+        // No mostrar como error si es solo popup bloqueado
+        return;
       } else if (err.code === 'auth/unauthorized-domain') {
         errorMessage = "Dominio no autorizado";
         errorDetails = "Este dominio no está registrado en la configuración de Firebase. Esto debe ser configurado por el administrador del sistema.";
@@ -291,7 +300,7 @@ export default function AuthPage() {
       } else {
         errorDetails = `Detalles técnicos:\nCódigo: ${err.code || 'desconocido'}\nMensaje: ${err.message || 'No disponible'}\n\nPor favor, usa el botón Diagnosticar para obtener más información técnica.`;
       }
-      
+
       toast({
         variant: "destructive",
         title: errorMessage,
@@ -316,32 +325,32 @@ export default function AuthPage() {
   const toggleAuthMode = () => {
     // Activar la transición
     setIsTransitioning(true);
-    
+
     // Efecto de escaneo holográfico estilo Jarvis/Friday
     if (cardRef.current) {
       // Aplicar efecto de escaneo 
       cardRef.current.classList.add('stark-scan-effect');
-      
+
       // Reproducir sonido de transición tipo UI de Iron Man (sutil)
       const audio = new Audio();
       audio.volume = 0.2;
       audio.src = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tAwAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAAFDgCenp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6e//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAVBAAAAAAAABQ5+7pVfAAAA//tAxAAABIQTe3UQAAJ4QW/84YAkAEAQBAEAfB8H3/ggCAIB8EAQdwfggGCD4IBgg7g+D4Pg+D4IAgf///CLveKAgCAIZO4IAgCAIAgH///uCH///wnPggCAJleKAgCAIf/hAEAQ/8Jz4PwQBAMP/hAEAQBAEP////CLu4PggCAf/8IBggyvoIBggydzBB8HwfggCAf/+EAQBAEDnwQDCh4QZUuCX+DIEzSK1u4WPyuNIpNLqPQ5HBMZCcdhELhgkCpLig2CZFcUzBCt3DtAYRRJlgliYRFZ4qF2UJuJg5BoCpALShTAoO0fTdBxGwaNr5e8iFQEEGxTMjl8yrtvCJZQGPh0TyeQzcl9sbUMvcvVDTpYnCcvvgOFRsIhfE/DT3W1e+MvkNWOzHyrfOCKyxzEVWtjIm5lmYu/qpurKWaS6vIZw5LdfL53K7qqtbqVYysJV8L2pM1pLuXc3Fn8xbxE3nsZTN5qljUutm/17Ln6Rltq2/2b//tAxLEAE/YdW9mMAJOkPqz7N7ADU+26plSqVLc2qiuWwsz8rmsPSllbK6W+6mqJVy2XFspRKZvMzJXMg3i0aXy2P4vL622K8nBvFuvVktlJt9aQdI1P4rE/FVUPQVRHbEf/+lEITv9oCQIAUD/9/pv/AAD8UGACRbv6BRR//8gA//+h9//WTIIAEL0BkKFGaGdl7fxfLZvLZvLZvLZvLZvLZvLZvLZvLZvLZvLZvLZvLZvLZvLZvLaVJZm5fy/l7Y4EEBBCwQIz+X9jgQQEEDfxTLZvKkmQAAAAAAA4c8X///////xz///////////8c////////+DP6A';
-      
+
       // Reproducir el audio
       audio.play().catch(e => console.log("Audio play prevented: ", e));
     }
-    
+
     // Retraso para cambiar de modo
     setTimeout(() => {
       // Cambiar entre login y signup
       setAuthMode(authMode === "login" ? "signup" : "login");
-      
+
       // Limpiar los formularios
       loginForm.reset();
       signupForm.reset();
       setShowPassword(false);
       clearError();
-      
+
       // Desactivar la transición después de completarla
       setTimeout(() => {
         setIsTransitioning(false);
@@ -370,7 +379,7 @@ export default function AuthPage() {
             <div className="success-circle absolute inset-0 rounded-full border-2 border-primary animate-ping" style={{opacity: 0.3}}></div>
             <div className="success-circle absolute inset-0 rounded-full border border-primary animate-ping" style={{animationDelay: '0.5s', opacity: 0.4}}></div>
             <div className="success-circle absolute inset-0 rounded-full border border-primary animate-ping" style={{animationDelay: '1s', opacity: 0.5}}></div>
-            
+
             {/* Icono y mensaje de éxito */}
             <div className="success-content w-64 h-64 flex flex-col items-center justify-center bg-black/50 rounded-full border border-primary/20 backdrop-blur-md shadow-lg">
               <RiCheckboxCircleLine className="text-primary w-20 h-20" />
@@ -387,13 +396,13 @@ export default function AuthPage() {
           <h2 className="text-3xl font-bold text-primary">Owl Fenc</h2>
           <p className="text-sm text-muted-foreground mt-1">The AI Force Crafting the Future Skyline</p>
         </div>
-        
+
         {/* Toggle entre login y signup */}
         <div className="relative mx-auto w-28 h-11 mb-5 z-20">
           <div 
             className="absolute inset-0 rounded-full bg-primary/20 border border-primary/30 backdrop-blur-sm"
           ></div>
-          
+
           <div 
             className="absolute top-1 bottom-1 w-[48%] bg-primary rounded-full transition-all duration-500 ease-spring shadow-lg"
             style={{ 
@@ -402,7 +411,7 @@ export default function AuthPage() {
               filter: "brightness(1.1)"
             }}
           ></div>
-          
+
           <div className="absolute inset-0 flex items-stretch">
             <button 
               className={`flex-1 flex items-center justify-center text-xs font-semibold relative z-10 rounded-l-full transition-colors ${
@@ -422,7 +431,7 @@ export default function AuthPage() {
             </button>
           </div>
         </div>
-        
+
         {/* Tarjeta principal con estilo Stark Industries/Iron Man */}
         <Card 
           ref={cardRef}
@@ -434,14 +443,14 @@ export default function AuthPage() {
           <CardHeader className="bg-gradient-to-r from-primary/20 to-accent/20 px-6 py-5 border-b border-primary/20 relative">
             {/* Línea de escaneo para efecto Jarvis */}
             <div className={`absolute inset-0 stark-scan-line pointer-events-none ${isTransitioning ? 'scanning' : ''}`}></div>
-            
+
             <CardTitle className="text-2xl font-semibold text-center stark-text-glow">
               {authMode === "login" ? t("auth.login") : t("auth.createAccount")}
             </CardTitle>
             <CardDescription className="text-center text-muted-foreground">
               {authMode === "login" ? t("auth.alreadyAccount") : t("auth.noAccount")}
             </CardDescription>
-            
+
             {/* Icono de estado en la esquina */}
             <div className="absolute top-4 right-4">
               {authMode === "login" ? (
@@ -451,7 +460,7 @@ export default function AuthPage() {
               )}
             </div>
           </CardHeader>
-          
+
           <CardContent className="px-6 py-6">
             <div className="space-y-5">
               {/* Botones de proveedor */}
@@ -618,19 +627,19 @@ export default function AuthPage() {
                                 type="button"
                                 className="absolute right-3 top-1/2 -translate-y-1/2"
                                 onClick={() => setShowPassword(!showPassword)}
-                              >
-                                {showPassword ? (
-                                  <RiEyeOffLine className="h-5 w-5 text-muted-foreground" />
-                                ) : (
-                                  <RiEyeLine className="h-5 w-5 text-muted-foreground" />
-                                )}
-                              </button>
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                                >
+                                  {showPassword ? (
+                                    <RiEyeOffLine className="h-5 w-5 text-muted-foreground" />
+                                  ) : (
+                                    <RiEyeLine className="h-5 w-5 text-muted-foreground" />
+                                  )}
+                                </button>
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     <FormField
                       control={signupForm.control}
                       name="confirmPassword"
