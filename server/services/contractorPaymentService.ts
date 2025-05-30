@@ -133,7 +133,7 @@ export class ContractorPaymentService {
 
     return {
       paymentId: payment.id,
-      paymentLinkUrl: paymentLink.url,
+      paymentLinkUrl: session.url || '',
       invoiceNumber,
     };
   }
@@ -272,11 +272,11 @@ export class ContractorPaymentService {
       throw new Error(`${type} payment already completed`);
     }
 
-    if (existingPayment && existingPayment.paymentLinkUrl) {
+    if (existingPayment && existingPayment.checkoutUrl) {
       // Return existing payment link
       return {
         paymentId: existingPayment.id,
-        paymentLinkUrl: existingPayment.paymentLinkUrl,
+        paymentLinkUrl: existingPayment.checkoutUrl,
         invoiceNumber: existingPayment.invoiceNumber || '',
       };
     }

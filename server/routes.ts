@@ -45,6 +45,7 @@ import contactRoutes from './routes/contact-route';
 import anthropicRoutes from './routes/anthropic';
 import pdfRoutes from './routes/pdf-routes';
 import paymentRoutes from './routes/payment-routes'; // Import payment routes
+import contractorPaymentRoutes from './routes/contractor-payment-routes'; // Import contractor payment routes
 import estimatesRoutes from './routes/estimates'; // Import new estimates routes
 import estimatesSimpleRoutes from './routes/estimates-simple'; // Import simple estimates routes
 import { setupTemplatesRoutes } from './routes/templates';
@@ -955,6 +956,9 @@ Output in English regardless of input language. Make it suitable for contracts a
   
   // Registrar rutas del Motor de Abogado Defensor Digital
   app.use('/api/legal-defense', legalDefenseRoutes);
+  
+  // Registrar rutas del sistema de pagos para contratistas
+  app.use('/api/contractor-payments', contractorPaymentRoutes);
 
   // Endpoint robusto para guardar estimados
   app.post('/api/estimates-simple', async (req: Request, res: Response) => {
