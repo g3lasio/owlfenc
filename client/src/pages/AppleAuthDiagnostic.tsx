@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { auth, loginWithApple, toggleFirebaseMode, devMode } from "@/lib/firebase";
+import { auth, createAppleProvider, devMode } from "@/lib/firebase";
+import { signInWithPopup, OAuthProvider } from "firebase/auth";
 
 export default function AppleAuthDiagnostic() {
   const [, navigate] = useLocation();
@@ -22,223 +23,399 @@ export default function AppleAuthDiagnostic() {
     details?: string;
   }>({ status: "idle", message: "" });
 
-  // Cargar información de diagnóstico al iniciar
   useEffect(() => {
-    // Información básica de entorno
-    const envInfo = {
-      isDevelopment: window.location.hostname.includes('.replit.dev') || 
-                    window.location.hostname.includes('.id.repl.co') ||
-                    window.location.hostname === 'localhost',
+    loadDiagnosticInfo();
+  }, []);
+
+  const loadDiagnosticInfo = () => {
+    // Recopilar toda la información de diagnóstico
+    const diagnosticKeys = Object.keys(sessionStorage).filter(key => 
+      key.startsWith('appleAuth_')
+    );
+    
+    const info: Record<string, any> = {
+      // Información básica del entorno
+      timestamp: new Date().toISOString(),
       hostname: window.location.hostname,
-      protocol: window.location.protocol,
+      url: window.location.href,
       userAgent: navigator.userAgent,
       cookiesEnabled: navigator.cookieEnabled,
+      onlineStatus: navigator.onLine,
       devMode: devMode,
-      isUserAuthenticated: !!currentUser,
+      
+      // Configuración de Firebase
       firebaseConfig: {
         authDomain: auth.app.options.authDomain,
         projectId: auth.app.options.projectId,
-      }
+        apiKey: auth.app.options.apiKey?.substring(0, 10) + "...",
+      },
+      
+      // Usuario actual
+      currentUser: currentUser ? {
+        uid: currentUser.uid,
+        email: currentUser.email,
+        displayName: currentUser.displayName
+      } : null,
+      
+      // Datos de sessionStorage relacionados con Apple Auth
+      sessionData: {}
     };
     
-    setDiagnosticInfo(envInfo);
-  }, [currentUser]);
+    // Recuperar datos de sessionStorage
+    diagnosticKeys.forEach(key => {
+      try {
+        const value = sessionStorage.getItem(key);
+        if (value) {
+          try {
+            info.sessionData[key] = JSON.parse(value);
+          } catch {
+            info.sessionData[key] = value;
+          }
+        }
+      } catch (e) {
+        console.error(`Error procesando clave ${key}:`, e);
+      }
+    });
+    
+    setDiagnosticInfo(info);
+  };
 
-  // Iniciar proceso de autenticación con Apple
-  const startAppleAuth = async () => {
+  const runAppleAuthTest = async () => {
     setIsLoading(true);
-    setTestResults({ status: "running", message: "Iniciando autenticación con Apple..." });
+    setTestResults({ status: "running", message: "Iniciando prueba de Apple Auth..." });
     
     try {
-      // Guardar información del intento para diagnóstico
-      sessionStorage.setItem('appleAuth_diagnostic_start', JSON.stringify({
+      console.log("=== INICIANDO PRUEBA DE APPLE AUTH ===");
+      
+      // Guardar información del intento
+      sessionStorage.setItem('appleAuth_diagnostic_test', JSON.stringify({
         timestamp: Date.now(),
-        url: window.location.href,
-        devMode: devMode
+        url: window.location.href
       }));
       
-      // Intentar autenticación
-      console.log("Iniciando prueba de autenticación con Apple");
-      await loginWithApple();
+      // Crear proveedor de Apple
+      console.log("1. Creando proveedor de Apple...");
+      const appleProvider = createAppleProvider();
       
-      // Si llegamos aquí en modo de desarrollo, es porque se usó el usuario simulado
-      if (devMode) {
+      // Configurar parámetros de test
+      const testParams = {
+        prompt: 'select_account',
+        locale: 'es_ES',
+        state: `apple-test-${Date.now()}`
+      };
+      
+      appleProvider.setCustomParameters(testParams);
+      console.log("2. Proveedor configurado con parámetros:", testParams);
+      
+      // Intentar autenticación con popup (para test)
+      console.log("3. Intentando popup de prueba...");
+      
+      try {
+        const result = await signInWithPopup(auth, appleProvider);
+        
         setTestResults({ 
           status: "success", 
-          message: "Autenticación simulada en modo desarrollo completada con éxito",
-          details: "Se usó el usuario de desarrollo. Para probar con Apple real, desactiva el modo de desarrollo."
+          message: "¡Prueba exitosa! Apple Auth funciona correctamente.",
+          details: `Usuario autenticado: ${result.user.email} (${result.user.uid})`
         });
-      } else {
-        // En producción, esto redireccionará a Apple y no veremos este mensaje
+        
+        toast({
+          title: "Test exitoso",
+          description: "Apple Auth funciona correctamente en tu entorno.",
+        });
+        
+      } catch (error: any) {
+        console.error("Error en prueba de Apple Auth:", error);
+        
+        let errorAnalysis = "Análisis del error:\n\n";
+        
+        if (error.code === 'auth/internal-error') {
+          errorAnalysis += "• ERROR INTERNO DE FIREBASE\n";
+          errorAnalysis += "• Esto indica un problema de configuración\n";
+          errorAnalysis += "• Posibles causas:\n";
+          errorAnalysis += "  - Configuración incorrecta en Firebase Console\n";
+          errorAnalysis += "  - Apple Developer configuración problemática\n";
+          errorAnalysis += "  - Dominio no autorizado correctamente\n";
+          errorAnalysis += "  - Problema de red o cookies\n\n";
+          errorAnalysis += "• Recomendaciones:\n";
+          errorAnalysis += "  1. Verificar configuración en Firebase Console\n";
+          errorAnalysis += "  2. Revisar Apple Developer Console\n";
+          errorAnalysis += "  3. Comprobar dominios autorizados\n";
+          errorAnalysis += "  4. Verificar configuración de cookies";
+        } else if (error.code === 'auth/popup-blocked') {
+          errorAnalysis += "• POPUP BLOQUEADO\n";
+          errorAnalysis += "• Tu navegador está bloqueando ventanas emergentes\n";
+          errorAnalysis += "• Solución: Permitir popups para este sitio";
+        } else if (error.code === 'auth/popup-closed-by-user') {
+          errorAnalysis += "• POPUP CERRADO POR USUARIO\n";
+          errorAnalysis += "• La ventana de autenticación fue cerrada\n";
+          errorAnalysis += "• Esto es normal si cerraste la ventana manualmente";
+        } else if (error.code === 'auth/unauthorized-domain') {
+          errorAnalysis += "• DOMINIO NO AUTORIZADO\n";
+          errorAnalysis += `• El dominio '${window.location.hostname}' no está autorizado\n`;
+          errorAnalysis += "• Debe agregarse en Firebase Console > Authentication > Authorized domains";
+        } else {
+          errorAnalysis += `• CÓDIGO DE ERROR: ${error.code || 'desconocido'}\n`;
+          errorAnalysis += `• MENSAJE: ${error.message || 'No disponible'}\n`;
+          errorAnalysis += "• Este es un error no catalogado específicamente";
+        }
+        
         setTestResults({ 
-          status: "running", 
-          message: "Redirigiendo a Apple para autenticación...",
-          details: "Si ves este mensaje por más de unos segundos, es posible que la redirección haya fallado."
+          status: "error", 
+          message: `Error en la prueba: ${error.code || 'unknown'}`,
+          details: errorAnalysis
         });
+        
+        // Guardar error para análisis
+        sessionStorage.setItem('appleAuth_test_error', JSON.stringify({
+          timestamp: Date.now(),
+          code: error.code,
+          message: error.message,
+          name: error.name
+        }));
       }
       
     } catch (err: any) {
-      console.error("Error iniciando autenticación con Apple:", err);
-      
+      console.error("Error crítico en prueba:", err);
       setTestResults({ 
         status: "error", 
-        message: "Error al iniciar la autenticación con Apple", 
-        details: `${err.code || ""}: ${err.message || "Error desconocido"}`
-      });
-      
-      toast({
-        variant: "destructive",
-        title: "Error de autenticación",
-        description: err.message || "Ocurrió un error al intentar autenticar con Apple"
+        message: "Error crítico durante la prueba",
+        details: `Error: ${err.message}`
       });
     } finally {
       setIsLoading(false);
+      // Recargar información de diagnóstico
+      loadDiagnosticInfo();
     }
   };
 
-  // Cambiar entre modo de desarrollo y producción
-  const toggleDevMode = () => {
-    toggleFirebaseMode();
+  const clearDiagnosticData = () => {
+    // Limpiar todos los datos de Apple Auth del sessionStorage
+    const keysToRemove = Object.keys(sessionStorage).filter(key => 
+      key.startsWith('appleAuth_')
+    );
+    
+    keysToRemove.forEach(key => sessionStorage.removeItem(key));
+    
     toast({
-      title: "Modo cambiado",
-      description: `Cambiando a modo ${devMode ? "producción" : "desarrollo"}. La página se recargará.`
+      title: "Datos limpiados",
+      description: "Se han eliminado todos los datos de diagnóstico de Apple Auth.",
+    });
+    
+    // Recargar información
+    loadDiagnosticInfo();
+    setTestResults({ status: "idle", message: "" });
+  };
+
+  const copyDiagnosticInfo = () => {
+    const diagnosticText = JSON.stringify(diagnosticInfo, null, 2);
+    navigator.clipboard.writeText(diagnosticText).then(() => {
+      toast({
+        title: "Información copiada",
+        description: "La información de diagnóstico se ha copiado al portapapeles.",
+      });
+    }).catch(() => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo copiar la información al portapapeles.",
+      });
     });
   };
 
   return (
-    <div className="container py-10">
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle className="text-2xl">Diagnóstico de Autenticación con Apple</CardTitle>
-          <CardDescription>
-            Esta herramienta te permite probar y diagnosticar problemas con la autenticación de Apple.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Información del entorno */}
-          <div>
-            <h3 className="text-lg font-medium mb-2">Información del Entorno</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-              <div className="flex items-center justify-between bg-card border p-3 rounded-md">
-                <span className="text-sm">Modo Firebase:</span>
-                <Badge variant={devMode ? "outline" : "default"}>
-                  {devMode ? "Desarrollo (Simulado)" : "Producción (Firebase real)"}
-                </Badge>
+    <div className="container mx-auto max-w-4xl py-6">
+      <div className="mb-6">
+        <Button 
+          variant="outline" 
+          onClick={() => navigate("/login")}
+          className="mb-4"
+        >
+          ← Volver al login
+        </Button>
+        
+        <h1 className="text-3xl font-bold mb-2">Diagnóstico de Apple Auth</h1>
+        <p className="text-muted-foreground">
+          Herramientas para diagnosticar problemas con la autenticación de Apple
+        </p>
+      </div>
+
+      <div className="grid gap-6">
+        {/* Estado actual */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Estado Actual</CardTitle>
+            <CardDescription>
+              Información básica del sistema y usuario
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Usuario actual:</label>
+                <div className="text-sm">
+                  {currentUser ? (
+                    <Badge variant="secondary">
+                      {currentUser.email} ({currentUser.uid.substring(0, 8)}...)
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline">No autenticado</Badge>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center justify-between bg-card border p-3 rounded-md">
-                <span className="text-sm">Hostname:</span>
-                <span className="text-xs font-mono">{diagnosticInfo.hostname}</span>
+              
+              <div>
+                <label className="text-sm font-medium">Modo de desarrollo:</label>
+                <div className="text-sm">
+                  <Badge variant={devMode ? "destructive" : "secondary"}>
+                    {devMode ? "Desarrollo" : "Producción"}
+                  </Badge>
+                </div>
               </div>
-              <div className="flex items-center justify-between bg-card border p-3 rounded-md">
-                <span className="text-sm">Auth Domain:</span>
-                <span className="text-xs font-mono">{diagnosticInfo.firebaseConfig?.authDomain}</span>
+              
+              <div>
+                <label className="text-sm font-medium">Dominio:</label>
+                <div className="text-sm font-mono">{diagnosticInfo.hostname}</div>
               </div>
-              <div className="flex items-center justify-between bg-card border p-3 rounded-md">
-                <span className="text-sm">Proyecto ID:</span>
-                <span className="text-xs font-mono">{diagnosticInfo.firebaseConfig?.projectId}</span>
-              </div>
-              <div className="flex items-center justify-between bg-card border p-3 rounded-md">
-                <span className="text-sm">Cookies:</span>
-                <Badge variant={diagnosticInfo.cookiesEnabled ? "default" : "destructive"}>
-                  {diagnosticInfo.cookiesEnabled ? "Habilitadas" : "Deshabilitadas"}
-                </Badge>
-              </div>
-              <div className="flex items-center justify-between bg-card border p-3 rounded-md">
-                <span className="text-sm">Usuario autenticado:</span>
-                <Badge variant={diagnosticInfo.isUserAuthenticated ? "default" : "secondary"}>
-                  {diagnosticInfo.isUserAuthenticated ? "Sí" : "No"}
-                </Badge>
+              
+              <div>
+                <label className="text-sm font-medium">Cookies:</label>
+                <div className="text-sm">
+                  <Badge variant={diagnosticInfo.cookiesEnabled ? "secondary" : "destructive"}>
+                    {diagnosticInfo.cookiesEnabled ? "Habilitadas" : "Deshabilitadas"}
+                  </Badge>
+                </div>
               </div>
             </div>
-            
-            {/* Alerta si hay problemas evidentes */}
-            {(!diagnosticInfo.cookiesEnabled || 
-              (diagnosticInfo.isDevelopment && !devMode)) && (
-              <Alert variant="destructive" className="mb-4">
+          </CardContent>
+        </Card>
+
+        {/* Configuración de Firebase */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Configuración de Firebase</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div>
+                <strong>Auth Domain:</strong> {diagnosticInfo.firebaseConfig?.authDomain}
+              </div>
+              <div>
+                <strong>Project ID:</strong> {diagnosticInfo.firebaseConfig?.projectId}
+              </div>
+              <div>
+                <strong>API Key:</strong> {diagnosticInfo.firebaseConfig?.apiKey}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Datos de sesión */}
+        {Object.keys(diagnosticInfo.sessionData || {}).length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Datos de Sesión de Apple Auth</CardTitle>
+              <CardDescription>
+                Información almacenada durante intentos de autenticación
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {Object.entries(diagnosticInfo.sessionData || {}).map(([key, value]) => (
+                  <div key={key} className="border-l-2 border-primary pl-4">
+                    <div className="font-medium text-sm">{key}</div>
+                    <div className="text-xs text-muted-foreground font-mono mt-1">
+                      {typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Prueba de Apple Auth */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Prueba de Apple Auth</CardTitle>
+            <CardDescription>
+              Ejecutar una prueba de autenticación con Apple para diagnosticar problemas
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {testResults.status === "idle" && (
+              <Alert>
                 <AlertDescription>
-                  {!diagnosticInfo.cookiesEnabled && (
-                    <p>Las cookies están deshabilitadas. La autenticación OAuth requiere cookies.</p>
-                  )}
-                  {(diagnosticInfo.isDevelopment && !devMode) && (
-                    <p>Estás en un entorno de desarrollo pero usando Firebase real. Esto puede causar problemas de dominio. Considera activar el modo de desarrollo.</p>
+                  Esta prueba intentará una autenticación real con Apple. Tendrás que autorizar el acceso si la prueba es exitosa.
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            {testResults.status === "running" && (
+              <Alert>
+                <AlertDescription>{testResults.message}</AlertDescription>
+              </Alert>
+            )}
+            
+            {testResults.status === "success" && (
+              <Alert className="border-green-200 bg-green-50">
+                <AlertDescription>
+                  <div className="font-semibold text-green-800">{testResults.message}</div>
+                  {testResults.details && (
+                    <div className="text-green-700 mt-2">{testResults.details}</div>
                   )}
                 </AlertDescription>
               </Alert>
             )}
-          </div>
-          
-          <Separator />
-          
-          {/* Resultados de la prueba */}
-          {testResults.status !== "idle" && (
-            <div className="mb-4">
-              <h3 className="text-lg font-medium mb-2">Resultado de la Prueba</h3>
-              <Alert variant={
-                testResults.status === "success" ? "default" : 
-                testResults.status === "error" ? "destructive" : 
-                "default"
-              }>
-                <div className="flex items-center gap-2 mb-2">
-                  {testResults.status === "running" && (
-                    <div className="h-4 w-4 rounded-full border-2 border-t-transparent border-primary animate-spin"></div>
+            
+            {testResults.status === "error" && (
+              <Alert className="border-red-200 bg-red-50">
+                <AlertDescription>
+                  <div className="font-semibold text-red-800">{testResults.message}</div>
+                  {testResults.details && (
+                    <div className="text-red-700 mt-2 whitespace-pre-line">{testResults.details}</div>
                   )}
-                  <span className="font-medium">{testResults.message}</span>
-                </div>
-                {testResults.details && (
-                  <AlertDescription>
-                    <p className="text-sm whitespace-pre-line">{testResults.details}</p>
-                  </AlertDescription>
-                )}
+                </AlertDescription>
               </Alert>
-            </div>
-          )}
-        </CardContent>
-        <CardFooter className="flex-col space-y-2 sm:flex-row sm:justify-between sm:space-y-0">
-          <div className="flex flex-col gap-2 w-full sm:w-auto">
+            )}
+          </CardContent>
+          <CardFooter className="flex gap-2">
             <Button 
-              onClick={startAppleAuth}
+              onClick={runAppleAuthTest}
               disabled={isLoading}
-              className="w-full sm:w-auto"
             >
-              {isLoading ? (
-                <>
-                  <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
-                  Probando...
-                </>
-              ) : "Probar Autenticación con Apple"}
+              {isLoading ? "Ejecutando prueba..." : "Ejecutar prueba"}
+            </Button>
+          </CardFooter>
+        </Card>
+
+        {/* Acciones */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Acciones</CardTitle>
+          </CardHeader>
+          <CardContent className="flex gap-4">
+            <Button 
+              variant="outline" 
+              onClick={copyDiagnosticInfo}
+            >
+              Copiar información de diagnóstico
             </Button>
             <Button 
               variant="outline" 
-              onClick={toggleDevMode}
-              className="w-full sm:w-auto"
+              onClick={clearDiagnosticData}
             >
-              Cambiar a Modo {devMode ? "Producción" : "Desarrollo"}
+              Limpiar datos de diagnóstico
             </Button>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => navigate("/auth-diagnostic")}>
-              Ver Diagnóstico General
+            <Button 
+              variant="outline" 
+              onClick={loadDiagnosticInfo}
+            >
+              Recargar información
             </Button>
-            <Button variant="default" onClick={() => navigate("/login")}>
-              Ir a Login
-            </Button>
-          </div>
-        </CardFooter>
-      </Card>
-      
-      {/* Información para desarrolladores */}
-      {currentUser && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Información de Usuario Actual</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <pre className="bg-muted p-4 rounded-md overflow-auto text-xs">
-              {JSON.stringify(currentUser, null, 2)}
-            </pre>
           </CardContent>
         </Card>
-      )}
+      </div>
     </div>
   );
 }

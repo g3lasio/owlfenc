@@ -194,52 +194,102 @@ export default function AuthPage() {
     try {
       clearError();
       
-      // Limpiar cualquier dato anterior de diagnóstico
-      Object.keys(sessionStorage)
-        .filter(key => key.startsWith('appleAuth_'))
-        .forEach(key => sessionStorage.removeItem(key));
+      console.log("=== INICIANDO APPLE AUTH DESDE LOGIN PAGE ===");
+      console.log("1. Timestamp:", new Date().toISOString());
+      console.log("2. Auth mode:", authMode);
+      console.log("3. User Agent:", navigator.userAgent);
+      console.log("4. Window location:", window.location.href);
       
-      console.log("Iniciando autenticación con Apple desde Login");
+      // Limpiar cualquier dato anterior de diagnóstico
+      const oldKeys = Object.keys(sessionStorage).filter(key => key.startsWith('appleAuth_'));
+      console.log("5. Limpiando datos anteriores:", oldKeys.length, "claves");
+      oldKeys.forEach(key => sessionStorage.removeItem(key));
+      
+      // Marcar inicio del proceso
+      sessionStorage.setItem('appleAuth_login_start', JSON.stringify({
+        timestamp: Date.now(),
+        authMode,
+        url: window.location.href
+      }));
+      
+      console.log("6. Llamando a loginWithApple()...");
       const result = await loginWithApple();
       
       if (result) {
         // Si tenemos un resultado inmediato (modo desarrollo)
-        console.log("Login con Apple completado directamente:", result);
+        console.log("7. LOGIN EXITOSO - Resultado inmediato:");
+        console.log("8. UID:", result.uid);
+        console.log("9. Email:", result.email);
+        console.log("10. DisplayName:", result.displayName);
+        
+        // Limpiar datos de diagnóstico exitoso
+        sessionStorage.removeItem('appleAuth_login_start');
+        
         showSuccessEffect();
       } else {
         // En producción, se inicia redirección
-        console.log("Redirección a Apple iniciada");
+        console.log("7. REDIRECCIÓN INICIADA - No hay resultado inmediato");
+        console.log("8. Esto es normal para Apple Auth en producción");
+        
         toast({
           title: "Redirigiendo a Apple",
           description: "Se abrirá la página de autenticación de Apple. Por favor, completa el proceso.",
         });
       }
     } catch (err: any) {
-      console.error("Error de autenticación con Apple:", err);
+      console.error("=== ERROR EN APPLE AUTH DESDE LOGIN ===");
+      console.error("Error completo:", err);
+      console.error("Código:", err.code || "NO_CODE");
+      console.error("Mensaje:", err.message || "NO_MESSAGE");
+      console.error("Name:", err.name || "NO_NAME");
+      console.error("Stack:", err.stack || "NO_STACK");
       
-      // Almacenar error para diagnóstico
+      // Información adicional de contexto
+      console.error("Contexto adicional:");
+      console.error("- Auth Mode:", authMode);
+      console.error("- Timestamp:", new Date().toISOString());
+      console.error("- URL actual:", window.location.href);
+      console.error("- User Agent:", navigator.userAgent);
+      console.error("- Cookies habilitadas:", navigator.cookieEnabled);
+      console.error("- Online:", navigator.onLine);
+      
+      // Almacenar error detallado para diagnóstico
       sessionStorage.setItem('appleAuth_login_error', JSON.stringify({
         timestamp: Date.now(),
         code: err.code || "unknown",
-        message: err.message || "Error desconocido"
+        message: err.message || "Error desconocido",
+        name: err.name || "unknown",
+        authMode,
+        url: window.location.href,
+        userAgent: navigator.userAgent,
+        cookiesEnabled: navigator.cookieEnabled,
+        online: navigator.onLine
       }));
       
-      let errorMessage = "Error al iniciar la autenticación con Apple. Por favor, intenta de nuevo.";
+      let errorMessage = "Error al iniciar la autenticación con Apple";
       let errorDetails = null;
       
-      // Mensajes específicos según el tipo de error
-      if (err.message && err.message.includes('appleid.apple.com refused to connect')) {
-        errorMessage = "No se puede conectar con los servidores de Apple";
-        errorDetails = "Posibles causas:\n• El dominio no está autorizado en Apple Developer\n• Problemas de configuración en Firebase\n• Restricciones de red o firewall";
+      // Análisis detallado según el tipo de error
+      if (err.code === 'auth/internal-error') {
+        errorMessage = "Error interno de Firebase Auth";
+        errorDetails = `Código: ${err.code}\n\nEsto indica un problema de configuración o conectividad.\n\nPosibles causas:\n• Configuración incorrecta en Firebase Console\n• Problema en la configuración de Apple Developer\n• Restricciones de red o cookies\n• Dominio no autorizado correctamente\n\nRecomendación: Usa el botón Diagnosticar para más información.`;
+      } else if (err.message && err.message.includes('appleid.apple.com refused to connect')) {
+        errorMessage = "No se puede conectar con Apple";
+        errorDetails = "Posibles causas:\n• El dominio no está autorizado en Apple Developer Console\n• Problemas de configuración en Firebase\n• Restricciones de red o firewall\n• Cookies de terceros bloqueadas";
       } else if (err.code === 'auth/popup-closed-by-user') {
-        errorMessage = "Ventana de inicio de sesión cerrada";
-        errorDetails = "Cerraste la ventana antes de completar el proceso. Intenta nuevamente.";
+        errorMessage = "Ventana de autenticación cerrada";
+        errorDetails = "Cerraste la ventana antes de completar el proceso. Intenta nuevamente y mantén la ventana abierta hasta completar la autenticación.";
       } else if (err.code === 'auth/popup-blocked') {
         errorMessage = "Popup bloqueado por el navegador";
-        errorDetails = "Tu navegador ha bloqueado la ventana emergente. Permite ventanas emergentes para este sitio e intenta nuevamente.";
+        errorDetails = "Tu navegador ha bloqueado la ventana emergente de Apple. Ve a configuración del navegador y permite ventanas emergentes para este sitio, luego intenta nuevamente.";
       } else if (err.code === 'auth/unauthorized-domain') {
         errorMessage = "Dominio no autorizado";
-        errorDetails = "Este dominio no está registrado en la configuración de Firebase. Contacta al administrador.";
+        errorDetails = "Este dominio no está registrado en la configuración de Firebase. Esto debe ser configurado por el administrador del sistema.";
+      } else if (err.code === 'auth/operation-not-supported-in-this-environment') {
+        errorMessage = "Operación no soportada";
+        errorDetails = "La autenticación con Apple no es compatible con este entorno. Intenta con otro método de inicio de sesión.";
+      } else {
+        errorDetails = `Detalles técnicos:\nCódigo: ${err.code || 'desconocido'}\nMensaje: ${err.message || 'No disponible'}\n\nPor favor, usa el botón Diagnosticar para obtener más información técnica.`;
       }
       
       toast({

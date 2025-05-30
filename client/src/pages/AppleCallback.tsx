@@ -75,10 +75,20 @@ export default function AppleCallback() {
       const auth = getAuth();
       try {
         // Logs detallados para diagnóstico
-        console.log("=== PROCESANDO REDIRECCIÓN DE APPLE ===");
-        console.log("URL completa:", window.location.href);
-        console.log("Fecha y hora:", new Date().toISOString());
-        console.log("Tipo de flujo detectado:", diagnosticData.flowType);
+        console.log("=== PROCESANDO REDIRECCIÓN DE APPLE - DIAGNÓSTICO DETALLADO ===");
+        console.log("1. URL completa:", window.location.href);
+        console.log("2. Fecha y hora:", new Date().toISOString());
+        console.log("3. Tipo de flujo detectado:", diagnosticData.flowType);
+        console.log("4. Hostname:", window.location.hostname);
+        console.log("5. Protocol:", window.location.protocol);
+        console.log("6. Port:", window.location.port);
+        console.log("7. Pathname:", window.location.pathname);
+        console.log("8. Search params:", window.location.search);
+        console.log("9. Hash:", window.location.hash);
+        console.log("10. Referrer:", document.referrer);
+        console.log("11. User Agent:", navigator.userAgent);
+        console.log("12. Cookies enabled:", navigator.cookieEnabled);
+        console.log("13. Online:", navigator.onLine);
         
         // Verificar todos los parámetros de la URL para diagnóstico
         const urlParams = new URLSearchParams(window.location.search);
