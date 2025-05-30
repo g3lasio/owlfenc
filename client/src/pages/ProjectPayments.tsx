@@ -25,6 +25,7 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
+import IntegratedProjectPaymentFlow from '@/components/payments/IntegratedProjectPaymentFlow';
 import { 
   AreaChart, Area, LineChart, Line, BarChart, Bar, 
   PieChart as RechartsPieChart, Pie, Cell, RadarChart, PolarGrid, 
