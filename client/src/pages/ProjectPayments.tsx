@@ -19,8 +19,9 @@ import {
   AlertCircle, BarChart4, CreditCard, DollarSign, Send, Settings, 
   User, TrendingUp, Activity, PieChart, Calendar, ArrowUpRight, 
   ArrowDownRight, CheckCircle, Clock, X, Copy, Mail, Receipt,
-  Plus, FileText, BanknotesIcon, Wallet
+  Plus, FileText, BanknoteIcon, Wallet, Calculator
 } from 'lucide-react';
+import QuickProjectFlow from '@/components/unified-workflow/QuickProjectFlow';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
@@ -541,7 +542,7 @@ const ProjectPayments: React.FC = () => {
           <Dialog open={showCashPaymentModal} onOpenChange={setShowCashPaymentModal}>
             <DialogTrigger asChild>
               <Button variant="outline" className="border-green-600 text-green-600 hover:bg-green-50">
-                <BanknotesIcon className="mr-2 h-4 w-4" />
+                <BanknoteIcon className="mr-2 h-4 w-4" />
                 Record Cash
               </Button>
             </DialogTrigger>
@@ -629,8 +630,11 @@ const ProjectPayments: React.FC = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="dashboard" value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+      <Tabs defaultValue="quick-flow" value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="quick-flow">
+            <Calculator className="mr-2 h-4 w-4" /> Quick Flow
+          </TabsTrigger>
           <TabsTrigger value="dashboard">
             <BarChart4 className="mr-2 h-4 w-4" /> Dashboard
           </TabsTrigger>
