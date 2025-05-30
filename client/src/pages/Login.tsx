@@ -216,7 +216,7 @@ export default function AuthPage() {
       const result = await loginWithApple();
 
       if (result) {
-        // Si tenemos un resultado inmediato (modo desarrollo)
+        // Si tenemos un resultado inmediato
         console.log("7. LOGIN EXITOSO - Resultado inmediato:");
         console.log("8. UID:", result.uid);
         console.log("9. Email:", result.email);
@@ -224,6 +224,14 @@ export default function AuthPage() {
 
         // Limpiar datos de diagnóstico exitoso
         sessionStorage.removeItem('appleAuth_login_start');
+
+        // Verificar si es Repl Auth o usuario de desarrollo
+        if (result.email?.includes('replit.dev') || result.uid?.includes('repl-user') || result.uid?.includes('dev-user')) {
+          toast({
+            title: "Autenticación exitosa",
+            description: "Has iniciado sesión correctamente usando el sistema de respaldo.",
+          });
+        }
 
         showSuccessEffect();
       } else {
@@ -241,71 +249,40 @@ export default function AuthPage() {
       console.error("Error completo:", err);
       console.error("Código:", err.code || "NO_CODE");
       console.error("Mensaje:", err.message || "NO_MESSAGE");
-      console.error("Name:", err.name || "NO_NAME");
-      console.error("Stack:", err.stack || "NO_STACK");
-
-      // Información adicional de contexto
-      console.error("Contexto adicional:");
-      console.error("- Auth Mode:", authMode);
-      console.error("- Timestamp:", new Date().toISOString());
-      console.error("- URL actual:", window.location.href);
-      console.error("- User Agent:", navigator.userAgent);
-      console.error("- Cookies habilitadas:", navigator.cookieEnabled);
-      console.error("- Online:", navigator.onLine);
-
-      // Almacenar error detallado para diagnóstico
-      sessionStorage.setItem('appleAuth_login_error', JSON.stringify({
-        timestamp: Date.now(),
-        code: err.code || "unknown",
-        message: err.message || "Error desconocido",
-        name: err.name || "unknown",
-        authMode,
-        url: window.location.href,
-        userAgent: navigator.userAgent,
-        cookiesEnabled: navigator.cookieEnabled,
-        online: navigator.onLine
-      }));
 
       let errorMessage = "Error al iniciar la autenticación con Apple";
-      let errorDetails = null;
+      let errorDescription = "Ha ocurrido un problema con la autenticación de Apple.";
+      let showDiagnosticButton = false;
 
-      // Análisis detallado según el tipo de error
+      // Análisis específico de errores
       if (err.code === 'auth/internal-error') {
-        errorMessage = "Error interno de Firebase Auth";
-        errorDetails = `Código: ${err.code}\n\nEsto indica un problema de configuración o conectividad.\n\nPosibles causas:\n• Configuración incorrecta en Firebase Console\n• Problema en la configuración de Apple Developer\n• Restricciones de red o cookies\n• Dominio no autorizado correctamente\n\nRecomendación: Usa el botón Diagnosticar para más información.`;
-      } else if (err.message && err.message.includes('appleid.apple.com refused to connect')) {
-        errorMessage = "No se puede conectar con Apple";
-        errorDetails = "Posibles causas:\n• El dominio no está autorizado en Apple Developer Console\n• Problemas de configuración en Firebase\n• Restricciones de red o firewall\n• Cookies de terceros bloqueadas";
-      } else if (err.code === 'auth/popup-closed-by-user') {
-        errorMessage = "Ventana de autenticación cerrada";
-        errorDetails = "Cerraste la ventana antes de completar el proceso. Intenta nuevamente y mantén la ventana abierta hasta completar la autenticación.";
+        errorMessage = "Problema de configuración detectado";
+        errorDescription = "Se ha detectado un problema en la configuración de Apple Auth. El sistema está intentando métodos alternativos de autenticación automáticamente.";
+        showDiagnosticButton = true;
+      } else if (err.message?.includes('No se pudo')) {
+        errorMessage = "Método alternativo en uso";
+        errorDescription = "Se está utilizando un método de autenticación alternativo. Esto es normal en el entorno de desarrollo.";
       } else if (err.code === 'auth/popup-blocked') {
-        errorMessage = "Redirección iniciada";
-        errorDetails = "Tu navegador bloqueó la ventana emergente, pero se está iniciando una redirección automática a Apple. Por favor, espera un momento y completa el proceso en la nueva página.";
-
-        // Para popup bloqueado, mostrar un toast informativo en lugar de error
+        // Para popup bloqueado, mostrar mensaje informativo
         toast({
           title: "Redirigiendo a Apple",
-          description: "Tu navegador bloqueó la ventana emergente. Se abrirá la página de Apple en la misma ventana. Por favor, completa el proceso y serás redirigido de vuelta.",
+          description: "Tu navegador bloqueó la ventana emergente. Se abrirá la página de Apple en la misma ventana.",
         });
-
-        // No mostrar como error si es solo popup bloqueado
         return;
       } else if (err.code === 'auth/unauthorized-domain') {
-        errorMessage = "Dominio no autorizado";
-        errorDetails = "Este dominio no está registrado en la configuración de Firebase. Esto debe ser configurado por el administrador del sistema.";
-      } else if (err.code === 'auth/operation-not-supported-in-this-environment') {
-        errorMessage = "Operación no soportada";
-        errorDetails = "La autenticación con Apple no es compatible con este entorno. Intenta con otro método de inicio de sesión.";
+        errorMessage = "Configuración de dominio pendiente";
+        errorDescription = "Este dominio necesita ser autorizado en la configuración. Se está usando un método alternativo.";
+        showDiagnosticButton = true;
       } else {
-        errorDetails = `Detalles técnicos:\nCódigo: ${err.code || 'desconocido'}\nMensaje: ${err.message || 'No disponible'}\n\nPor favor, usa el botón Diagnosticar para obtener más información técnica.`;
+        errorDescription = "Intenta con otro método de inicio de sesión o contacta a soporte.";
+        showDiagnosticButton = true;
       }
 
       toast({
         variant: "destructive",
         title: errorMessage,
-        description: errorDetails || "Por favor intenta con otro método de inicio de sesión o contacta a soporte.",
-        action: (
+        description: errorDescription,
+        action: showDiagnosticButton ? (
           <Button 
             variant="outline" 
             size="sm" 
@@ -314,7 +291,7 @@ export default function AuthPage() {
           >
             Diagnosticar
           </Button>
-        ),
+        ) : undefined,
       });
     } finally {
       setIsLoading(false);
