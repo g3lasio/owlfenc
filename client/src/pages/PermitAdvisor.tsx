@@ -781,18 +781,25 @@ export default function PermitAdvisor() {
                                 </div>
 
                                 {/* Required Documents */}
-                                {permit.requiredDocuments && permit.requiredDocuments.length > 0 && (
+                                {permit.requiredDocuments && (
                                   <div>
                                     <h4 className="text-purple-400 font-medium mb-2 flex items-center gap-2">
                                       📋 Required Documents
                                     </h4>
                                     <div className="grid grid-cols-1 gap-2">
-                                      {permit.requiredDocuments.map((doc: string, docIdx: number) => (
-                                        <div key={docIdx} className="flex items-center gap-2 text-sm bg-purple-500/10 p-2 rounded border-l-2 border-purple-400">
-                                          <span className="text-purple-300">•</span>
-                                          <span className="text-gray-300">{doc}</span>
-                                        </div>
-                                      ))}
+                                      {Array.isArray(permit.requiredDocuments) ? 
+                                        permit.requiredDocuments.map((doc: string, docIdx: number) => (
+                                          <div key={docIdx} className="flex items-center gap-2 text-sm bg-purple-500/10 p-2 rounded border-l-2 border-purple-400">
+                                            <span className="text-purple-300">•</span>
+                                            <span className="text-gray-300">{doc}</span>
+                                          </div>
+                                        )) : (
+                                          <div className="flex items-center gap-2 text-sm bg-purple-500/10 p-2 rounded border-l-2 border-purple-400">
+                                            <span className="text-purple-300">•</span>
+                                            <span className="text-gray-300">{permit.requiredDocuments}</span>
+                                          </div>
+                                        )
+                                      }
                                     </div>
                                   </div>
                                 )}
