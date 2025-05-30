@@ -367,19 +367,19 @@ export default function PermitAdvisor() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-teal-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-800">
       {/* Header with cyberpunk styling */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-teal-900/50 to-gray-900/50 backdrop-blur-sm">
+      <div className="relative overflow-hidden bg-gradient-to-r from-slate-900/50 to-gray-900/50 backdrop-blur-sm">
         <div className="absolute inset-0 bg-gray-800/10 opacity-30"></div>
         <div className="relative max-w-6xl mx-auto px-6 py-12">
           <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-teal-300 via-cyan-300 to-blue-300 bg-clip-text text-transparent mb-4">
+            <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-cyan-300 via-blue-300 to-cyan-300 bg-clip-text text-transparent mb-4">
               Mervin DeepSearch
             </h1>
             <p className="text-xl text-gray-300 mb-8">
               AI-Powered Permit Analysis & Regulatory Intelligence
             </p>
-            <div className="flex items-center justify-center gap-2 text-teal-300">
+            <div className="flex items-center justify-center gap-2 text-cyan-300">
               <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
               <span className="text-sm font-mono">Professional Grade Intelligence</span>
             </div>
@@ -389,35 +389,76 @@ export default function PermitAdvisor() {
 
       {/* Search Interface */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
-        <Card className="bg-gray-800/50 border-teal-500/20 backdrop-blur-sm overflow-hidden">
-          <CardHeader className="text-center px-4 sm:px-6">
-            <CardTitle className="text-lg sm:text-xl lg:text-2xl text-teal-300 flex items-center justify-center gap-2">
-              <div className="w-3 h-3 bg-teal-400 rounded-full animate-pulse"></div>
+        <Card className="relative overflow-visible bg-transparent border-0 shadow-none">
+          {/* Cyberpunk corner borders */}
+          <div className="absolute inset-0 pointer-events-none">
+            {/* Corner arrows - top left */}
+            <div className="absolute top-0 left-0 w-8 h-8">
+              <div className="absolute top-0 left-0 w-6 h-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+              <div className="absolute top-0 left-0 w-0.5 h-6 bg-gradient-to-b from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+              <div className="absolute top-1.5 left-1.5 w-3 h-0.5 bg-cyan-400/60"></div>
+              <div className="absolute top-1.5 left-1.5 w-0.5 h-3 bg-cyan-400/60"></div>
+            </div>
+            
+            {/* Corner arrows - top right */}
+            <div className="absolute top-0 right-0 w-8 h-8">
+              <div className="absolute top-0 right-0 w-6 h-0.5 bg-gradient-to-l from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+              <div className="absolute top-0 right-0 w-0.5 h-6 bg-gradient-to-b from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+              <div className="absolute top-1.5 right-1.5 w-3 h-0.5 bg-cyan-400/60"></div>
+              <div className="absolute top-1.5 right-1.5 w-0.5 h-3 bg-cyan-400/60"></div>
+            </div>
+            
+            {/* Corner arrows - bottom left */}
+            <div className="absolute bottom-0 left-0 w-8 h-8">
+              <div className="absolute bottom-0 left-0 w-6 h-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+              <div className="absolute bottom-0 left-0 w-0.5 h-6 bg-gradient-to-t from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+              <div className="absolute bottom-1.5 left-1.5 w-3 h-0.5 bg-cyan-400/60"></div>
+              <div className="absolute bottom-1.5 left-1.5 w-0.5 h-3 bg-cyan-400/60"></div>
+            </div>
+            
+            {/* Corner arrows - bottom right */}
+            <div className="absolute bottom-0 right-0 w-8 h-8">
+              <div className="absolute bottom-0 right-0 w-6 h-0.5 bg-gradient-to-l from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+              <div className="absolute bottom-0 right-0 w-0.5 h-6 bg-gradient-to-t from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+              <div className="absolute bottom-1.5 right-1.5 w-3 h-0.5 bg-cyan-400/60"></div>
+              <div className="absolute bottom-1.5 right-1.5 w-0.5 h-3 bg-cyan-400/60"></div>
+            </div>
+            
+            {/* Side scanning lines */}
+            <div className="absolute top-4 left-0 w-0.5 h-1/3 bg-gradient-to-b from-transparent via-cyan-400/80 to-transparent opacity-60 animate-pulse"></div>
+            <div className="absolute top-4 right-0 w-0.5 h-1/3 bg-gradient-to-b from-transparent via-cyan-400/80 to-transparent opacity-60 animate-pulse delay-300"></div>
+            <div className="absolute bottom-4 left-4 w-1/3 h-0.5 bg-gradient-to-r from-transparent via-blue-500/80 to-transparent opacity-60 animate-pulse delay-500"></div>
+            <div className="absolute bottom-4 right-4 w-1/3 h-0.5 bg-gradient-to-l from-transparent via-blue-500/80 to-transparent opacity-60 animate-pulse delay-700"></div>
+          </div>
+
+          <CardHeader className="relative z-10 text-center px-4 sm:px-6">
+            <CardTitle className="text-lg sm:text-xl lg:text-2xl text-cyan-300 flex items-center justify-center gap-2">
+              <div className="w-3 h-3 bg-cyan-400 rounded-full animate-pulse"></div>
               <span className="truncate">Property & Project Analysis</span>
             </CardTitle>
             <CardDescription className="text-gray-400 text-sm sm:text-base">
               Enter property details for comprehensive permit analysis
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4 sm:space-y-6 px-4 sm:px-6">
+          <CardContent className="relative z-10 space-y-4 sm:space-y-6 px-4 sm:px-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-teal-300">Property Address</label>
+                <label className="text-sm font-medium text-cyan-300">Property Address</label>
                 <MapboxPlacesAutocomplete
                   onPlaceSelect={handleAddressSelect}
                   onChange={() => {}} 
-                  className="w-full bg-gray-700/50 border-teal-500/30 text-white placeholder-gray-400 focus:border-teal-400 focus:ring-teal-400/20 min-h-[44px]"
+                  className="w-full bg-slate-900/50 border-cyan-500/30 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400/20 min-h-[44px]"
                   placeholder="Enter property address..."
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-teal-300">Project Type</label>
+                <label className="text-sm font-medium text-cyan-300">Project Type</label>
                 <Select value={projectType} onValueChange={setProjectType}>
-                  <SelectTrigger className="w-full bg-gray-700/50 border-teal-500/30 text-white focus:border-teal-400 min-h-[44px]">
+                  <SelectTrigger className="w-full bg-slate-900/50 border-cyan-500/30 text-white focus:border-cyan-400 min-h-[44px]">
                     <SelectValue placeholder="Select project type" />
                   </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-teal-500/30 max-h-[200px] overflow-y-auto">
+                  <SelectContent className="bg-slate-900 border-cyan-500/30 max-h-[200px] overflow-y-auto">
                     <SelectItem value="fence">Fence Installation</SelectItem>
                     <SelectItem value="deck">Deck Construction</SelectItem>
                     <SelectItem value="addition">Home Addition</SelectItem>
@@ -448,12 +489,12 @@ export default function PermitAdvisor() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-teal-300">Project Description (Optional)</label>
+              <label className="text-sm font-medium text-cyan-300">Project Description (Optional)</label>
               <Textarea
                 value={projectDescription}
                 onChange={(e) => setProjectDescription(e.target.value)}
                 placeholder="Describe your project in detail (e.g., materials, scope, square footage)..."
-                className="w-full bg-gray-700/50 border-teal-500/30 text-white placeholder-gray-400 focus:border-teal-400 focus:ring-teal-400/20 min-h-[80px] resize-none"
+                className="w-full bg-slate-900/50 border-cyan-500/30 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400/20 min-h-[80px] resize-none"
               />
             </div>
 
@@ -462,19 +503,24 @@ export default function PermitAdvisor() {
               <Button
                 onClick={handleSearch}
                 disabled={isLoading || !selectedAddress || !projectType}
-                className="w-full sm:flex-1 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-medium transition-all duration-300 h-12 text-sm sm:text-base"
+                className="w-full sm:flex-1 relative overflow-hidden bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 border border-cyan-400/30 shadow-lg shadow-cyan-400/20 transition-all duration-300 h-12 text-sm sm:text-base"
               >
-                {isLoading ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    <span>Analyzing...</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center gap-2">
-                    🔍
-                    <span className="hidden sm:inline">Run DeepSearch Analysis</span>
-                    <span className="sm:hidden">Run Analysis</span>
-                  </div>
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  {isLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      <span>Analyzing...</span>
+                    </>
+                  ) : (
+                    <>
+                      🔍
+                      <span className="hidden sm:inline">Run DeepSearch Analysis</span>
+                      <span className="sm:hidden">Run Analysis</span>
+                    </>
+                  )}
+                </span>
+                {!isLoading && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/20 to-blue-400/20 opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
                 )}
               </Button>
               
@@ -482,10 +528,10 @@ export default function PermitAdvisor() {
                 <DialogTrigger asChild>
                   <Button
                     variant="outline"
-                    className="w-full sm:w-auto border-teal-500/30 text-teal-300 hover:bg-teal-500/10 h-12 text-sm sm:text-base px-4"
+                    className="w-full sm:w-auto border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/10 h-12 text-sm sm:text-base px-4"
                   >
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 bg-teal-500/20 rounded-md flex items-center justify-center">
+                      <div className="w-6 h-6 bg-cyan-500/20 rounded-md flex items-center justify-center">
                         📋
                       </div>
                       <span className="hidden sm:inline">Search History</span>
@@ -494,10 +540,10 @@ export default function PermitAdvisor() {
                   </Button>
                 </DialogTrigger>
                 
-                <DialogContent className="max-w-2xl bg-gray-900/95 border-teal-400/30 backdrop-blur-md">
+                <DialogContent className="max-w-2xl bg-slate-900/95 border-cyan-400/30 backdrop-blur-md">
                   <DialogHeader>
-                    <DialogTitle className="text-teal-300 flex items-center gap-3">
-                      <div className="w-8 h-8 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full flex items-center justify-center">
+                    <DialogTitle className="text-cyan-300 flex items-center gap-3">
+                      <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
                         📋
                       </div>
                       Recent Searches
@@ -506,23 +552,23 @@ export default function PermitAdvisor() {
 
                   <ScrollArea className="max-h-[60vh] pr-4">
                     {/* Buscador de historial */}
-                    <div className="mb-4 p-3 bg-gray-800/30 rounded-lg border border-gray-700/50">
+                    <div className="mb-4 p-3 bg-slate-900/30 rounded-lg border border-cyan-400/30">
                       <Input
                         placeholder="Buscar en historial... (dirección, tipo de proyecto)"
                         value={searchFilter}
                         onChange={(e) => setSearchFilter(e.target.value)}
-                        className="bg-gray-900/50 border-gray-600/50 text-gray-300 placeholder-gray-500"
+                        className="bg-slate-900/50 border-cyan-600/50 text-cyan-300 placeholder-gray-400"
                       />
                     </div>
 
                     {historyLoading ? (
                       <div className="text-center py-12">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-400 mx-auto mb-4"></div>
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400 mx-auto mb-4"></div>
                         <p className="text-gray-400">Cargando historial...</p>
                       </div>
                     ) : filteredHistory.length === 0 ? (
                       <div className="text-center py-12">
-                        <div className="w-16 h-16 bg-gradient-to-r from-gray-600 to-gray-500 rounded-full flex items-center justify-center mx-auto mb-4 opacity-50">
+                        <div className="w-16 h-16 bg-gradient-to-r from-slate-600 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-4 opacity-50">
                           📋
                         </div>
                         <h3 className="text-lg font-medium text-gray-400 mb-2">No search history found</h3>
@@ -534,10 +580,10 @@ export default function PermitAdvisor() {
                           <div key={item.id}>
                             <div 
                               onClick={() => loadFromHistory(item)}
-                              className="group relative p-4 bg-gray-800/40 hover:bg-gray-800/70 border border-gray-700/50 hover:border-teal-400/30 rounded-lg cursor-pointer transition-all duration-300"
+                              className="group relative p-4 bg-slate-900/40 hover:bg-slate-900/70 border border-cyan-400/30 hover:border-cyan-300/50 rounded-lg cursor-pointer transition-all duration-300"
                             >
                               {/* Holographic border effect */}
-                              <div className="absolute inset-0 bg-gradient-to-r from-teal-500/10 via-transparent to-cyan-500/10 opacity-0 group-hover:opacity-100 rounded-lg transition-opacity duration-300"></div>
+                              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-transparent to-blue-500/10 opacity-0 group-hover:opacity-100 rounded-lg transition-opacity duration-300"></div>
                               
                               <div className="relative space-y-3">
                                 {/* Header with project type and date */}
@@ -555,7 +601,7 @@ export default function PermitAdvisor() {
 
                                 {/* Address */}
                                 <div className="space-y-1">
-                                  <p className="text-teal-300 font-medium text-sm line-clamp-1">
+                                  <p className="text-cyan-300 font-medium text-sm line-clamp-1">
                                     {item.address}
                                   </p>
                                 </div>
@@ -577,12 +623,12 @@ export default function PermitAdvisor() {
 
                               {/* Hover effect indicator */}
                               <div className="absolute right-4 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                <div className="w-2 h-2 bg-teal-400 rounded-full animate-pulse"></div>
+                                <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
                               </div>
                             </div>
                             
                             {index < filteredHistory.length - 1 && (
-                              <Separator className="my-3 bg-gray-700/30" />
+                              <Separator className="my-3 bg-cyan-400/30" />
                             )}
                           </div>
                         ))}
@@ -603,45 +649,24 @@ export default function PermitAdvisor() {
           </CardContent>
         </Card>
 
-        {/* Search History */}
-        {showHistory && (
-          <Card className="mt-6 bg-gray-800/50 border-gray-600/30">
-            <CardHeader>
-              <CardTitle className="text-gray-300">Search History</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {historyQuery.isLoading && (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-400"></div>
+        {/* Error Message */}
+        {error && (
+          <Card className="mt-6 relative overflow-visible bg-transparent border-0 shadow-none">
+            {/* Cyberpunk error border */}
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="absolute top-0 left-0 w-6 h-0.5 bg-gradient-to-r from-red-400 to-orange-500 shadow-lg shadow-red-400/50"></div>
+              <div className="absolute top-0 left-0 w-0.5 h-6 bg-gradient-to-b from-red-400 to-orange-500 shadow-lg shadow-red-400/50"></div>
+              <div className="absolute top-0 right-0 w-6 h-0.5 bg-gradient-to-l from-red-400 to-orange-500 shadow-lg shadow-red-400/50"></div>
+              <div className="absolute top-0 right-0 w-0.5 h-6 bg-gradient-to-b from-red-400 to-orange-500 shadow-lg shadow-red-400/50"></div>
+            </div>
+            <CardContent className="relative z-10 p-4">
+              <div className="bg-red-900/20 border border-red-400/50 rounded-lg p-4 backdrop-blur-sm">
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
+                  <p className="text-red-300 font-medium">Error</p>
                 </div>
-              )}
-              
-              {historyQuery.data && Array.isArray(historyQuery.data) && historyQuery.data.length > 0 ? (
-                <div className="space-y-3">
-                  {historyQuery.data.map((item: SearchHistoryItem) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between p-3 bg-gray-700/30 rounded-lg border border-gray-600/30 hover:border-teal-500/30 transition-colors"
-                    >
-                      <div>
-                        <p className="font-medium text-gray-300">{item.title}</p>
-                        <p className="text-sm text-gray-400">{item.address}</p>
-                        <p className="text-xs text-gray-500">{new Date(item.createdAt).toLocaleDateString()}</p>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleLoadHistoryItem(item)}
-                        className="border-teal-500/30 text-teal-300 hover:bg-teal-500/10"
-                      >
-                        Load
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-400 text-center py-4">No search history found</p>
-              )}
+                <p className="text-red-200 mt-2">{error}</p>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -651,9 +676,33 @@ export default function PermitAdvisor() {
       {permitData && (
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
           <div className="space-y-4 sm:space-y-6">
-            <Card className="bg-gray-800/50 border-teal-500/20 backdrop-blur-sm overflow-hidden">
-              <CardHeader className="text-center px-4 sm:px-6">
-                <CardTitle className="text-lg sm:text-xl lg:text-2xl text-teal-300 flex items-center justify-center gap-2">
+            <Card className="relative overflow-visible bg-transparent border-0 shadow-none">
+              {/* Cyberpunk results border */}
+              <div className="absolute inset-0 pointer-events-none">
+                {/* Corner arrows - top left */}
+                <div className="absolute top-0 left-0 w-8 h-8">
+                  <div className="absolute top-0 left-0 w-6 h-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+                  <div className="absolute top-0 left-0 w-0.5 h-6 bg-gradient-to-b from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+                </div>
+                {/* Corner arrows - top right */}
+                <div className="absolute top-0 right-0 w-8 h-8">
+                  <div className="absolute top-0 right-0 w-6 h-0.5 bg-gradient-to-l from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+                  <div className="absolute top-0 right-0 w-0.5 h-6 bg-gradient-to-b from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+                </div>
+                {/* Corner arrows - bottom left */}
+                <div className="absolute bottom-0 left-0 w-8 h-8">
+                  <div className="absolute bottom-0 left-0 w-6 h-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+                  <div className="absolute bottom-0 left-0 w-0.5 h-6 bg-gradient-to-t from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+                </div>
+                {/* Corner arrows - bottom right */}
+                <div className="absolute bottom-0 right-0 w-8 h-8">
+                  <div className="absolute bottom-0 right-0 w-6 h-0.5 bg-gradient-to-l from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+                  <div className="absolute bottom-0 right-0 w-0.5 h-6 bg-gradient-to-t from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+                </div>
+              </div>
+
+              <CardHeader className="relative z-10 text-center px-4 sm:px-6">
+                <CardTitle className="text-lg sm:text-xl lg:text-2xl text-cyan-300 flex items-center justify-center gap-2">
                   <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
                   <span className="truncate">DeepSearch Results</span>
                 </CardTitle>
@@ -661,25 +710,25 @@ export default function PermitAdvisor() {
                   Project: {permitData.meta?.projectType} at {permitData.meta?.location}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="px-2 sm:px-4 lg:px-6">
+              <CardContent className="relative z-10 px-2 sm:px-4 lg:px-6">
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  {/* Responsive tabs - fully visible on all screens */}
-                  <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-teal-500/30">
-                    <TabsList className="flex w-max min-w-full sm:grid sm:grid-cols-5 sm:w-full bg-gray-900/80 border border-teal-400/30 relative p-2 gap-2">
-                      <div className="absolute inset-0 bg-gradient-to-r from-teal-500/10 via-transparent to-cyan-500/10 animate-pulse"></div>
-                    <TabsTrigger value="permits" className="relative text-teal-300 data-[state=active]:bg-teal-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-teal-500/50 transition-all duration-300 whitespace-nowrap min-w-[90px] flex-shrink-0 text-sm font-medium px-4 py-2">
+                  {/* Responsive tabs */}
+                  <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-cyan-500/30">
+                    <TabsList className="flex w-max min-w-full sm:grid sm:grid-cols-5 sm:w-full bg-slate-900/80 border border-cyan-400/30 relative p-2 gap-2">
+                      <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-transparent to-blue-500/10 animate-pulse"></div>
+                    <TabsTrigger value="permits" className="relative text-cyan-300 data-[state=active]:bg-cyan-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/50 transition-all duration-300 whitespace-nowrap min-w-[90px] flex-shrink-0 text-sm font-medium px-4 py-2">
                       <span className="relative z-10">Permits</span>
                     </TabsTrigger>
-                    <TabsTrigger value="contacts" className="relative text-teal-300 data-[state=active]:bg-cyan-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/50 transition-all duration-300 whitespace-nowrap min-w-[90px] flex-shrink-0 text-sm font-medium px-4 py-2">
+                    <TabsTrigger value="contacts" className="relative text-cyan-300 data-[state=active]:bg-blue-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/50 transition-all duration-300 whitespace-nowrap min-w-[90px] flex-shrink-0 text-sm font-medium px-4 py-2">
                       <span className="relative z-10">Contacts</span>
                     </TabsTrigger>
-                    <TabsTrigger value="codes" className="relative text-teal-300 data-[state=active]:bg-emerald-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/50 transition-all duration-300 whitespace-nowrap min-w-[90px] flex-shrink-0 text-sm font-medium px-4 py-2">
+                    <TabsTrigger value="codes" className="relative text-cyan-300 data-[state=active]:bg-emerald-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/50 transition-all duration-300 whitespace-nowrap min-w-[90px] flex-shrink-0 text-sm font-medium px-4 py-2">
                       <span className="relative z-10">Codes</span>
                     </TabsTrigger>
-                    <TabsTrigger value="process" className="relative text-teal-300 data-[state=active]:bg-blue-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/50 transition-all duration-300 whitespace-nowrap min-w-[90px] flex-shrink-0 text-sm font-medium px-4 py-2">
+                    <TabsTrigger value="process" className="relative text-cyan-300 data-[state=active]:bg-indigo-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-indigo-500/50 transition-all duration-300 whitespace-nowrap min-w-[90px] flex-shrink-0 text-sm font-medium px-4 py-2">
                       <span className="relative z-10">Process</span>
                     </TabsTrigger>
-                    <TabsTrigger value="considerations" className="relative text-teal-300 data-[state=active]:bg-amber-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-amber-500/50 transition-all duration-300 whitespace-nowrap min-w-[90px] flex-shrink-0 text-sm font-medium px-4 py-2">
+                    <TabsTrigger value="considerations" className="relative text-cyan-300 data-[state=active]:bg-amber-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-amber-500/50 transition-all duration-300 whitespace-nowrap min-w-[90px] flex-shrink-0 text-sm font-medium px-4 py-2">
                       <span className="relative z-10">Alerts</span>
                     </TabsTrigger>
                     </TabsList>
@@ -690,14 +739,14 @@ export default function PermitAdvisor() {
                       <div className="space-y-4">
                         {permitData.requiredPermits.map((permit: any, idx: number) => (
                           <div key={idx} className="relative">
-                            <div className="absolute inset-0 bg-gradient-to-r from-teal-400/20 via-cyan-400/20 to-blue-400/20 animate-pulse rounded-lg"></div>
-                            <Card className="relative bg-gray-800/90 border-teal-400/30 backdrop-blur-sm hover:shadow-lg hover:shadow-teal-400/20 transition-all duration-300 m-1">
+                            <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/20 via-blue-400/20 to-cyan-400/20 animate-pulse rounded-lg"></div>
+                            <Card className="relative bg-slate-900/90 border-cyan-400/30 backdrop-blur-sm hover:shadow-lg hover:shadow-cyan-400/20 transition-all duration-300 m-1">
                               <CardHeader>
-                                <CardTitle className="text-teal-300 flex items-center gap-2">
+                                <CardTitle className="text-cyan-300 flex items-center gap-2">
                                   <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                                   {permit.name}
                                 </CardTitle>
-                                <CardDescription className="text-teal-200/70">
+                                <CardDescription className="text-cyan-200/70">
                                   {permit.issuingAuthority}
                                 </CardDescription>
                               </CardHeader>
