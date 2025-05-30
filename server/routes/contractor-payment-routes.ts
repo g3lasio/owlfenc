@@ -43,6 +43,9 @@ const quickPaymentSchema = z.object({
  */
 router.post('/projects/:projectId/payment-structure', isAuthenticated, async (req: Request, res: Response) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
     const userId = req.user.id;
     const projectId = parseInt(req.params.projectId);
     const validatedData = createPaymentStructureSchema.parse({
@@ -78,6 +81,9 @@ router.post('/projects/:projectId/payment-structure', isAuthenticated, async (re
  */
 router.post('/payments', isAuthenticated, async (req: Request, res: Response) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
     const userId = req.user.id;
     const validatedData = createPaymentSchema.parse(req.body);
 
@@ -135,6 +141,9 @@ router.post('/payments/quick-link', isAuthenticated, async (req: Request, res: R
  */
 router.post('/payments/:paymentId/send', isAuthenticated, async (req: Request, res: Response) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
     const paymentId = parseInt(req.params.paymentId);
     
     // Verify payment belongs to user
