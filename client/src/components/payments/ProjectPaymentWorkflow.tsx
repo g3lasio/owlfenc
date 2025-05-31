@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,19 +8,20 @@ import { Separator } from '@/components/ui/separator';
 import { 
   ArrowLeft, 
   ArrowRight, 
+  CheckCircle, 
+  Clock, 
   CreditCard, 
   DollarSign, 
   FileText, 
-  Link as LinkIcon,
+  LinkIcon,
   Mail,
-  User,
-  Phone,
   MapPin,
-  Calculator,
-  Clock,
-  CheckCircle
+  Phone,
+  User,
+  Calculator
 } from 'lucide-react';
-// Define local types to match the schema
+
+// Types (same as in ProjectPayments.tsx)
 type Project = {
   id: number;
   userId: number;
@@ -75,8 +75,6 @@ type ProjectPayment = {
   updatedAt: string;
 };
 
-import { useToast } from '@/hooks/use-toast';
-
 interface ProjectPaymentWorkflowProps {
   projects: Project[] | undefined;
   payments: ProjectPayment[] | undefined;
@@ -92,9 +90,6 @@ export default function ProjectPaymentWorkflow({
   onSendInvoice,
   isCreatingPayment
 }: ProjectPaymentWorkflowProps) {
-  const { t } = useTranslation();
-  const { toast } = useToast();
-  
   // Workflow state
   const [currentStep, setCurrentStep] = useState<'select' | 'preview' | 'payment' | 'confirmation'>('select');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -111,33 +106,23 @@ export default function ProjectPaymentWorkflow({
   };
 
   const calculatePayments = (project: Project) => {
-    const totalAmount = project.totalPrice ? project.totalPrice / 100 : 0;
+    const totalAmount = project.totalPrice ? project.totalPrice / 100 : 0; // Convert from cents
+    
+    // Calculate paid amount from existing payments
     const projectPayments = payments?.filter(p => p.projectId === project.id) || [];
     const totalPaid = projectPayments
       .filter(p => p.status === 'succeeded')
-      .reduce((sum, p) => sum + p.amount, 0) / 100;
-    
-    const depositAmount = totalAmount * 0.5;
+      .reduce((sum, p) => sum + (p.amount / 100), 0); // Convert from cents
+
     const remainingBalance = totalAmount - totalPaid;
+    const depositAmount = totalAmount * 0.5; // 50% deposit
 
     return {
       totalAmount,
       totalPaid,
-      depositAmount,
       remainingBalance,
-      projectPayments
+      depositAmount
     };
-  };
-
-  const getProjectStatusBadge = (status: string) => {
-    const statusMap = {
-      'estimate': { label: 'Estimate', variant: 'secondary' as const },
-      'approved': { label: 'Approved', variant: 'default' as const },
-      'in_progress': { label: 'In Progress', variant: 'outline' as const },
-      'completed': { label: 'Completed', variant: 'destructive' as const }
-    };
-    
-    return statusMap[status as keyof typeof statusMap] || { label: status, variant: 'secondary' as const };
   };
 
   // Step 1: Project Selection
@@ -146,76 +131,74 @@ export default function ProjectPaymentWorkflow({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <DollarSign className="h-5 w-5" />
-          Step 1: Select Project
+          Paso 1: Seleccionar Proyecto
         </CardTitle>
         <CardDescription>
-          Choose the project for which you want to create a payment
+          Selecciona el proyecto para procesar el pago
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {projects?.map((project) => {
-          const amounts = calculatePayments(project);
-          const statusBadge = getProjectStatusBadge(project.status || '');
-          
-          return (
-            <Card 
-              key={project.id} 
-              className={`cursor-pointer transition-colors hover:bg-muted/50 ${
-                selectedProject?.id === project.id ? 'ring-2 ring-primary' : ''
-              }`}
-              onClick={() => {
-                setSelectedProject(project);
-                setEditableAmount(amounts.depositAmount.toString());
-                setClientEmail(project.clientEmail || '');
-              }}
-            >
-              <CardContent className="p-4">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="space-y-1">
-                    <h4 className="font-medium">{project.projectType || 'General Project'}</h4>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <User className="h-4 w-4" />
-                      {project.clientName}
+      <CardContent>
+        {!projects || projects.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">
+              No hay proyectos disponibles. Los proyectos se cargan automáticamente desde Firebase.
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-4">
+            {projects.map((project) => {
+              const amounts = calculatePayments(project);
+              
+              return (
+                <Card 
+                  key={project.id}
+                  className={`cursor-pointer transition-colors hover:bg-muted/50 ${
+                    selectedProject?.id === project.id ? 'ring-2 ring-primary' : ''
+                  }`}
+                  onClick={() => {
+                    setSelectedProject(project);
+                    setClientEmail(project.clientEmail || '');
+                    setEditableAmount(amounts.depositAmount.toString());
+                  }}
+                >
+                  <CardContent className="p-4">
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div>
+                        <h4 className="font-medium">{project.clientName}</h4>
+                        <p className="text-sm text-muted-foreground">{project.projectType || 'Proyecto General'}</p>
+                        <p className="text-xs text-muted-foreground">{project.address}</p>
+                      </div>
+                      <div className="text-sm">
+                        <div className="flex justify-between">
+                          <span>Total:</span>
+                          <span className="font-medium">{formatCurrency(amounts.totalAmount)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Pagado:</span>
+                          <span className="text-green-600">{formatCurrency(amounts.totalPaid)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Pendiente:</span>
+                          <span className="text-orange-600">{formatCurrency(amounts.remainingBalance)}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-end">
+                        <Badge variant={amounts.remainingBalance > 0 ? "secondary" : "default"}>
+                          {amounts.remainingBalance > 0 ? 'Pendiente' : 'Completado'}
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <MapPin className="h-4 w-4" />
-                      {project.address}
-                    </div>
-                  </div>
-                  <Badge variant={statusBadge.variant}>
-                    {statusBadge.label}
-                  </Badge>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <div className="font-medium">Total Project</div>
-                    <div className="text-lg font-bold text-primary">
-                      {formatCurrency(amounts.totalAmount)}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="font-medium">Paid</div>
-                    <div className="text-lg font-bold text-green-600">
-                      {formatCurrency(amounts.totalPaid)}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="font-medium">Remaining</div>
-                    <div className="text-lg font-bold text-orange-600">
-                      {formatCurrency(amounts.remainingBalance)}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-        
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+
         {selectedProject && (
-          <div className="flex justify-end pt-4">
+          <div className="mt-6 flex justify-end">
             <Button onClick={() => setCurrentStep('preview')}>
-              Continue to Preview
+              Continuar al Resumen
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
@@ -224,21 +207,22 @@ export default function ProjectPaymentWorkflow({
     </Card>
   );
 
-  // Step 2: Payment Preview
+  // Step 2: Enhanced Payment Preview
   const renderPaymentPreview = () => {
     if (!selectedProject) return null;
     
     const amounts = calculatePayments(selectedProject);
-    
+    const previewAmount = parseFloat(editableAmount) || 0;
+
     return (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Step 2: Payment Preview & Edit
+            Paso 2: Resumen Detallado del Proyecto
           </CardTitle>
           <CardDescription>
-            Review and adjust payment details before processing
+            Revisa la información completa del cliente, detalles del proyecto y costos totales
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -353,91 +337,77 @@ export default function ProjectPaymentWorkflow({
               </div>
               <div className="text-center p-4 bg-white rounded-lg shadow-sm border">
                 <div className="text-2xl font-bold text-blue-600">
-                  {formatCurrency(parseFloat(editableAmount) || 0)}
+                  {formatCurrency(previewAmount)}
                 </div>
                 <div className="text-sm text-gray-600">Este Pago</div>
               </div>
             </div>
           </div>
 
-          {/* Client Information */}
-          <div className="space-y-3">
-            <h4 className="font-medium">Client Contact</h4>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="clientEmail">Email Address</Label>
+          {/* Editable Payment Amount */}
+          <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
+            <Label htmlFor="paymentAmount" className="text-base font-medium">Monto del Pago</Label>
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  id="clientEmail"
-                  type="email"
-                  value={clientEmail}
-                  onChange={(e) => setClientEmail(e.target.value)}
-                  placeholder="client@example.com"
+                  id="paymentAmount"
+                  type="number"
+                  value={editableAmount}
+                  onChange={(e) => setEditableAmount(e.target.value)}
+                  className="pl-10 text-lg"
+                  placeholder="0.00"
+                  step="0.01"
+                  min="0"
+                  max={amounts.remainingBalance}
                 />
               </div>
-              <div>
-                <Label>Phone</Label>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2">
-                  <Phone className="h-4 w-4" />
-                  {selectedProject.clientPhone || 'No phone provided'}
-                </div>
-              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setEditableAmount(amounts.depositAmount.toString())}
+              >
+                Depósito 50%
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setEditableAmount(amounts.remainingBalance.toString())}
+              >
+                Saldo Completo
+              </Button>
             </div>
           </div>
 
-          {/* Payment Amount */}
-          <div className="space-y-3">
-            <h4 className="font-medium">Payment Amount</h4>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="paymentAmount">Initial Payment (50%)</Label>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="paymentAmount"
-                    type="number"
-                    step="0.01"
-                    value={editableAmount}
-                    onChange={(e) => setEditableAmount(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  Suggested: {formatCurrency(amounts.depositAmount)}
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Payment Breakdown</Label>
-                <div className="text-sm space-y-1">
-                  <div className="flex justify-between">
-                    <span>Total Project:</span>
-                    <span className="font-medium">{formatCurrency(amounts.totalAmount)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Already Paid:</span>
-                    <span className="font-medium text-green-600">{formatCurrency(amounts.totalPaid)}</span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between font-medium">
-                    <span>Remaining:</span>
-                    <span className="text-orange-600">{formatCurrency(amounts.remainingBalance)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+          {/* Client Email for Invoice */}
+          <div className="space-y-2">
+            <Label htmlFor="clientEmail" className="text-base font-medium">Email del Cliente (para factura)</Label>
+            <Input
+              id="clientEmail"
+              type="email"
+              value={clientEmail}
+              onChange={(e) => setClientEmail(e.target.value)}
+              placeholder="cliente@ejemplo.com"
+              className="text-base"
+            />
           </div>
 
           {/* Navigation */}
           <div className="flex justify-between pt-4">
-            <Button variant="outline" onClick={() => setCurrentStep('select')}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Projects
-            </Button>
-            <Button 
-              onClick={() => setCurrentStep('payment')}
-              disabled={!editableAmount || !clientEmail}
+            <Button
+              variant="outline"
+              onClick={() => setCurrentStep('select')}
             >
-              Continue to Payment
-              <ArrowRight className="ml-2 h-4 w-4" />
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Volver a Proyectos
+            </Button>
+            <Button
+              onClick={() => setCurrentStep('payment')}
+              disabled={!previewAmount || previewAmount <= 0 || !clientEmail}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Continuar al Pago
+              <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           </div>
         </CardContent>
@@ -451,10 +421,10 @@ export default function ProjectPaymentWorkflow({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <CreditCard className="h-5 w-5" />
-          Step 3: Select Payment Method
+          Paso 3: Seleccionar Método de Pago
         </CardTitle>
         <CardDescription>
-          Choose how you want to collect the payment
+          Elige cómo quieres procesar el pago del cliente
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -760,210 +730,6 @@ export default function ProjectPaymentWorkflow({
       </div>
 
       {/* Current Step Content */}
-      {currentStep === 'select' && renderProjectSelection()}
-      {currentStep === 'preview' && renderPaymentPreview()}
-      {currentStep === 'payment' && renderPaymentMethod()}
-      {currentStep === 'confirmation' && renderConfirmation()}
-    </div>
-  );
-};
-                This will record the payment as received and automatically send an invoice receipt to the client.
-              </p>
-            </div>
-          )}
-          {paymentMethod === 'digital' && (
-            <div className="space-y-2">
-              <h4 className="font-medium text-blue-600">Digital Payment</h4>
-              <p className="text-sm">
-                Use your mobile device or card terminal to process the payment immediately with the client present.
-              </p>
-            </div>
-          )}
-          {paymentMethod === 'link' && (
-            <div className="space-y-2">
-              <h4 className="font-medium text-purple-600">Payment Link</h4>
-              <p className="text-sm">
-                A secure payment link will be generated and sent to {clientEmail}. The client can pay at their convenience.
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Navigation */}
-        <div className="flex justify-between pt-4">
-          <Button variant="outline" onClick={() => setCurrentStep('preview')}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Preview
-          </Button>
-          <Button 
-            onClick={() => {
-              handleProcessPayment();
-              setCurrentStep('confirmation');
-            }}
-            disabled={isCreatingPayment}
-          >
-            {isCreatingPayment ? (
-              <>Processing...</>
-            ) : (
-              <>
-                {paymentMethod === 'cash' ? 'Record Payment' : 
-                 paymentMethod === 'digital' ? 'Process Payment' : 
-                 'Generate Payment Link'}
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </>
-            )}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-
-  // Step 4: Confirmation
-  const renderConfirmation = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <CheckCircle className="h-5 w-5 text-green-600" />
-          Payment Processed Successfully
-        </CardTitle>
-        <CardDescription>
-          Your payment has been processed and invoice sent to client
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-          <div className="flex items-center gap-2 mb-3">
-            <CheckCircle className="h-5 w-5 text-green-600" />
-            <h4 className="font-medium text-green-800">Payment Completed</h4>
-          </div>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span>Amount:</span>
-              <span className="font-medium">{formatCurrency(parseFloat(editableAmount))}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Method:</span>
-              <span className="font-medium capitalize">{paymentMethod}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Client:</span>
-              <span className="font-medium">{selectedProject?.clientName}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Invoice sent to:</span>
-              <span className="font-medium">{clientEmail}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Next Steps */}
-        <div className="space-y-3">
-          <h4 className="font-medium">Next Steps</h4>
-          <div className="space-y-2 text-sm">
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              <span>Project progress updated automatically</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Mail className="h-4 w-4 text-muted-foreground" />
-              <span>Invoice receipt sent to client</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Calculator className="h-4 w-4 text-muted-foreground" />
-              <span>Remaining balance calculated and tracked</span>
-            </div>
-          </div>
-        </div>
-
-        <Button 
-          onClick={() => {
-            setCurrentStep('select');
-            setSelectedProject(null);
-            setEditableAmount('');
-            setPaymentMethod('digital');
-            setClientEmail('');
-          }}
-          className="w-full"
-        >
-          Process Another Payment
-        </Button>
-      </CardContent>
-    </Card>
-  );
-
-  const handleProcessPayment = () => {
-    if (!selectedProject || !editableAmount) return;
-
-    const paymentData = {
-      projectId: selectedProject.id,
-      amount: Math.round(parseFloat(editableAmount) * 100), // Convert to cents
-      type: 'deposit',
-      clientEmail,
-      clientName: selectedProject.clientName,
-      paymentMethod: paymentMethod === 'cash' ? 'cash' : 'card',
-      description: `Initial payment for ${selectedProject.projectType || 'project'} at ${selectedProject.address}`,
-      autoSendInvoice: true
-    };
-
-    if (paymentMethod === 'cash') {
-      // Record cash payment immediately
-      onCreatePayment({
-        ...paymentData,
-        status: 'succeeded',
-        paidDate: new Date().toISOString()
-      });
-    } else if (paymentMethod === 'link') {
-      // Create payment link
-      onCreatePayment({
-        ...paymentData,
-        status: 'pending',
-        createPaymentLink: true
-      });
-    } else {
-      // Process digital payment (would integrate with card terminal)
-      onCreatePayment(paymentData);
-    }
-
-    // Send invoice
-    onSendInvoice({
-      ...paymentData,
-      invoiceData: {
-        projectName: selectedProject.projectType || 'Project',
-        clientName: selectedProject.clientName,
-        totalAmount: selectedProject.totalPrice ? selectedProject.totalPrice / 100 : 0,
-        paidAmount: parseFloat(editableAmount),
-        remainingAmount: (selectedProject.totalPrice ? selectedProject.totalPrice / 100 : 0) - parseFloat(editableAmount),
-        projectProgress: 'payment_received'
-      }
-    });
-  };
-
-  return (
-    <div className="space-y-6">
-      {/* Progress Indicator */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-2">
-          {['select', 'preview', 'payment', 'confirmation'].map((step, index) => (
-            <div key={step} className="flex items-center">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                currentStep === step ? 'bg-primary text-primary-foreground' :
-                ['select', 'preview', 'payment', 'confirmation'].indexOf(currentStep) > index ? 
-                'bg-green-500 text-white' : 'bg-muted text-muted-foreground'
-              }`}>
-                {index + 1}
-              </div>
-              {index < 3 && (
-                <div className={`w-12 h-1 mx-2 ${
-                  ['select', 'preview', 'payment', 'confirmation'].indexOf(currentStep) > index ? 
-                  'bg-green-500' : 'bg-muted'
-                }`} />
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Step Content */}
       {currentStep === 'select' && renderProjectSelection()}
       {currentStep === 'preview' && renderPaymentPreview()}
       {currentStep === 'payment' && renderPaymentMethod()}
