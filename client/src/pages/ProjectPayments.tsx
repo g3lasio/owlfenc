@@ -92,44 +92,70 @@ const ProjectPayments: React.FC = () => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('workflow');
 
-  // Fetch projects data directly from Firebase
+  // Fetch projects data directly from Firebase with authentication check
   const { data: projects, isLoading: projectsLoading, error: projectsError } = useQuery<Project[]>({
     queryKey: ['/firebase/projects'],
     queryFn: async () => {
       try {
-        // Import Firebase functions
-        const { getProjects } = await import('@/lib/firebase');
-        const firebaseProjects = await getProjects({ status: 'approved' });
+        // Import Firebase functions and auth
+        const { getProjects, auth } = await import('@/lib/firebase');
+        const { onAuthStateChanged } = await import('firebase/auth');
         
-        // Convert Firebase projects to our Project type
-        return firebaseProjects.map((project: any) => ({
-          id: project.id || Math.random(),
-          userId: 1, // Default user ID for now
-          projectId: project.id || project.projectId || '',
-          clientName: project.clientName || project.customerName || 'Unknown Client',
-          clientEmail: project.clientEmail || project.customerEmail || '',
-          clientPhone: project.clientPhone || project.customerPhone || '',
-          address: project.address || project.projectAddress || '',
-          projectType: project.projectType || project.fenceType || 'Fence Project',
-          projectSubtype: project.projectSubtype || project.fenceStyle || '',
-          projectCategory: project.projectCategory || 'Fencing',
-          projectDescription: project.projectDescription || project.description || '',
-          projectScope: project.projectScope || '',
-          estimateHtml: project.estimateHtml || '',
-          contractHtml: project.contractHtml || '',
-          totalPrice: project.totalPrice ? Number(project.totalPrice) * 100 : 0, // Convert to cents
-          status: project.status || 'approved',
-          projectProgress: project.projectProgress || 'approved',
-          paymentStatus: project.paymentStatus || 'pending',
-          paymentDetails: project.paymentDetails || {},
-          createdAt: project.createdAt?.toDate ? project.createdAt.toDate().toISOString() : new Date().toISOString(),
-          updatedAt: project.updatedAt?.toDate ? project.updatedAt.toDate().toISOString() : new Date().toISOString(),
-        }));
+        // Wait for authentication state to be ready
+        return new Promise((resolve, reject) => {
+          const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            unsubscribe(); // Clean up listener
+            
+            if (!user) {
+              console.log('No user authenticated, returning empty array');
+              resolve([]);
+              return;
+            }
+            
+            try {
+              // Get all projects (not just approved ones for payment processing)
+              const firebaseProjects = await getProjects();
+              
+              // Convert Firebase projects to our Project type
+              const convertedProjects = firebaseProjects.map((project: any) => ({
+                id: project.id || Math.random(),
+                userId: 1, // Default user ID for now
+                projectId: project.id || project.projectId || '',
+                clientName: project.clientName || project.customerName || 'Unknown Client',
+                clientEmail: project.clientEmail || project.customerEmail || '',
+                clientPhone: project.clientPhone || project.customerPhone || '',
+                address: project.address || project.projectAddress || '',
+                projectType: project.projectType || project.fenceType || 'Fence Project',
+                projectSubtype: project.projectSubtype || project.fenceStyle || '',
+                projectCategory: project.projectCategory || 'Fencing',
+                projectDescription: project.projectDescription || project.description || '',
+                projectScope: project.projectScope || '',
+                estimateHtml: project.estimateHtml || '',
+                contractHtml: project.contractHtml || '',
+                totalPrice: project.totalPrice ? Number(project.totalPrice) * 100 : 0, // Convert to cents
+                status: project.status || 'approved',
+                projectProgress: project.projectProgress || 'approved',
+                paymentStatus: project.paymentStatus || 'pending',
+                paymentDetails: project.paymentDetails || {},
+                createdAt: project.createdAt?.toDate ? project.createdAt.toDate().toISOString() : new Date().toISOString(),
+                updatedAt: project.updatedAt?.toDate ? project.updatedAt.toDate().toISOString() : new Date().toISOString(),
+              }));
+              
+              console.log(`Successfully loaded ${convertedProjects.length} projects from Firebase`);
+              resolve(convertedProjects);
+            } catch (error) {
+              console.error('Error fetching projects from Firebase:', error);
+              resolve([]); // Return empty array instead of rejecting to avoid breaking the UI
+            }
+          });
+        });
       } catch (error) {
-        console.error('Error fetching projects from Firebase:', error);
+        console.error('Error setting up Firebase auth listener:', error);
         return [];
       }
     },
+    retry: 1, // Only retry once
+    retryDelay: 1000, // Wait 1 second before retry
   });
 
   // Fetch payment data
