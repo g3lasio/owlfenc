@@ -125,82 +125,86 @@ export default function ProjectPaymentWorkflow({
     };
   };
 
-  // Step 1: Project Selection
+  // Step 1: Compact Project Selection
   const renderProjectSelection = () => (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <DollarSign className="h-5 w-5" />
-          Paso 1: Seleccionar Proyecto
+          Step 1: Select Project
         </CardTitle>
         <CardDescription>
-          Selecciona el proyecto para procesar el pago
+          Choose the project to process payment
         </CardDescription>
       </CardHeader>
       <CardContent>
         {!projects || projects.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-muted-foreground">
-              No hay proyectos disponibles. Los proyectos se cargan automáticamente desde Firebase.
+              No projects available. Projects load automatically from Firebase.
             </p>
           </div>
         ) : (
-          <div className="grid gap-4">
-            {projects.map((project) => {
-              const amounts = calculatePayments(project);
-              
-              return (
-                <Card 
-                  key={project.id}
-                  className={`cursor-pointer transition-colors hover:bg-muted/50 ${
-                    selectedProject?.id === project.id ? 'ring-2 ring-primary' : ''
-                  }`}
-                  onClick={() => {
-                    setSelectedProject(project);
-                    setClientEmail(project.clientEmail || '');
-                    setEditableAmount(amounts.depositAmount.toString());
-                  }}
-                >
-                  <CardContent className="p-4">
-                    <div className="grid md:grid-cols-3 gap-4">
-                      <div>
-                        <h4 className="font-medium">{project.clientName}</h4>
-                        <p className="text-sm text-muted-foreground">{project.projectType || 'Proyecto General'}</p>
-                        <p className="text-xs text-muted-foreground">{project.address}</p>
-                      </div>
-                      <div className="text-sm">
-                        <div className="flex justify-between">
-                          <span>Total:</span>
-                          <span className="font-medium">{formatCurrency(amounts.totalAmount)}</span>
+          <div className="space-y-4">
+            {/* Compact Project List - Show max 3 at a time */}
+            <div className="max-h-80 overflow-y-auto space-y-3 border rounded-lg p-4">
+              {projects.map((project) => {
+                const amounts = calculatePayments(project);
+                
+                return (
+                  <Card 
+                    key={project.id}
+                    className={`cursor-pointer transition-all hover:shadow-md ${
+                      selectedProject?.id === project.id ? 'ring-2 ring-blue-500 bg-blue-50' : 'hover:bg-gray-50'
+                    }`}
+                    onClick={() => {
+                      setSelectedProject(project);
+                      setClientEmail(project.clientEmail || '');
+                      setEditableAmount(amounts.depositAmount.toString());
+                    }}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-lg">{project.clientName}</h4>
+                          <p className="text-sm text-gray-600">{project.projectType || 'General Project'}</p>
                         </div>
-                        <div className="flex justify-between">
-                          <span>Pagado:</span>
-                          <span className="text-green-600">{formatCurrency(amounts.totalPaid)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Pendiente:</span>
-                          <span className="text-orange-600">{formatCurrency(amounts.remainingBalance)}</span>
+                        <div className="text-right space-y-1">
+                          <div className="flex justify-between gap-4">
+                            <span className="text-sm text-gray-600">Total:</span>
+                            <span className="font-medium">{formatCurrency(amounts.totalAmount)}</span>
+                          </div>
+                          <div className="flex justify-between gap-4">
+                            <span className="text-sm text-gray-600">Paid:</span>
+                            <span className="text-green-600 font-medium">{formatCurrency(amounts.totalPaid)}</span>
+                          </div>
+                          <div className="flex justify-between gap-4">
+                            <span className="text-sm text-gray-600">Pending:</span>
+                            <span className="text-orange-600 font-medium">{formatCurrency(amounts.remainingBalance)}</span>
+                          </div>
+                          <Badge variant={amounts.remainingBalance > 0 ? "secondary" : "default"} className="ml-auto">
+                            {amounts.remainingBalance > 0 ? 'Pending' : 'Completed'}
+                          </Badge>
                         </div>
                       </div>
-                      <div className="flex items-center justify-end">
-                        <Badge variant={amounts.remainingBalance > 0 ? "secondary" : "default"}>
-                          {amounts.remainingBalance > 0 ? 'Pendiente' : 'Completado'}
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
 
-        {selectedProject && (
-          <div className="mt-6 flex justify-end">
-            <Button onClick={() => setCurrentStep('preview')}>
-              Continuar al Resumen
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+            {/* Immediate Next Button - No Scrolling Required */}
+            {selectedProject && (
+              <div className="flex justify-between items-center pt-4 border-t">
+                <div className="text-sm text-gray-600">
+                  Selected: <span className="font-medium">{selectedProject.clientName}</span>
+                </div>
+                <Button onClick={() => setCurrentStep('preview')} className="bg-blue-600 hover:bg-blue-700">
+                  Continue to Review
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </CardContent>
@@ -219,10 +223,10 @@ export default function ProjectPaymentWorkflow({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Paso 2: Resumen Detallado del Proyecto
+            Step 2: Detailed Project Summary
           </CardTitle>
           <CardDescription>
-            Revisa la información completa del cliente, detalles del proyecto y costos totales
+            Review complete client information, project details and total costs
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -230,14 +234,14 @@ export default function ProjectPaymentWorkflow({
           <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-6 rounded-lg border">
             <h4 className="font-semibold text-lg mb-4 flex items-center gap-2">
               <User className="h-5 w-5 text-blue-600" />
-              Información del Cliente
+              Client Information
             </h4>
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
                   <div>
-                    <div className="text-sm text-gray-600">Nombre Completo</div>
+                    <div className="text-sm text-gray-600">Full Name</div>
                     <div className="font-semibold text-lg">{selectedProject.clientName}</div>
                   </div>
                 </div>
@@ -256,7 +260,7 @@ export default function ProjectPaymentWorkflow({
                   <div className="flex items-center gap-3">
                     <Phone className="h-4 w-4 text-blue-600" />
                     <div>
-                      <div className="text-sm text-gray-600">Teléfono</div>
+                      <div className="text-sm text-gray-600">Phone</div>
                       <div className="text-sm font-medium">{selectedProject.clientPhone}</div>
                     </div>
                   </div>
@@ -264,7 +268,7 @@ export default function ProjectPaymentWorkflow({
                 <div className="flex items-start gap-3">
                   <MapPin className="h-4 w-4 text-blue-600 mt-1" />
                   <div>
-                    <div className="text-sm text-gray-600">Dirección del Proyecto</div>
+                    <div className="text-sm text-gray-600">Project Address</div>
                     <div className="text-sm font-medium">{selectedProject.address}</div>
                   </div>
                 </div>
@@ -276,31 +280,31 @@ export default function ProjectPaymentWorkflow({
           <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-lg border">
             <h4 className="font-semibold text-lg mb-4 flex items-center gap-2">
               <Calculator className="h-5 w-5 text-green-600" />
-              Detalles del Proyecto
+              Project Details
             </h4>
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-3">
                 <div>
-                  <div className="text-sm text-gray-600">Tipo de Proyecto</div>
-                  <div className="font-semibold">{selectedProject.projectType || 'Proyecto General'}</div>
+                  <div className="text-sm text-gray-600">Project Type</div>
+                  <div className="font-semibold">{selectedProject.projectType || 'General Project'}</div>
                 </div>
                 {selectedProject.projectSubtype && (
                   <div>
-                    <div className="text-sm text-gray-600">Estilo/Subtipo</div>
+                    <div className="text-sm text-gray-600">Style/Subtype</div>
                     <div className="font-medium">{selectedProject.projectSubtype}</div>
                   </div>
                 )}
                 <div>
-                  <div className="text-sm text-gray-600">Estado</div>
+                  <div className="text-sm text-gray-600">Status</div>
                   <Badge variant="default" className="bg-green-100 text-green-800">
-                    {selectedProject.status === 'approved' ? 'Aprobado' : selectedProject.status}
+                    {selectedProject.status === 'approved' ? 'Approved' : selectedProject.status}
                   </Badge>
                 </div>
               </div>
               <div className="space-y-3">
                 {selectedProject.projectDescription && (
                   <div>
-                    <div className="text-sm text-gray-600">Descripción</div>
+                    <div className="text-sm text-gray-600">Description</div>
                     <div className="text-sm bg-white p-3 rounded border">
                       {selectedProject.projectDescription}
                     </div>
@@ -314,39 +318,39 @@ export default function ProjectPaymentWorkflow({
           <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-6 rounded-lg border">
             <h4 className="font-semibold text-lg mb-4 flex items-center gap-2">
               <DollarSign className="h-5 w-5 text-purple-600" />
-              Costos Totales
+              Total Costs
             </h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center p-4 bg-white rounded-lg shadow-sm border">
                 <div className="text-2xl font-bold text-purple-600">
                   {formatCurrency(amounts.totalAmount)}
                 </div>
-                <div className="text-sm text-gray-600">Costo Total</div>
+                <div className="text-sm text-gray-600">Total Cost</div>
               </div>
               <div className="text-center p-4 bg-white rounded-lg shadow-sm border">
                 <div className="text-2xl font-bold text-green-600">
                   {formatCurrency(amounts.totalPaid)}
                 </div>
-                <div className="text-sm text-gray-600">Pagado</div>
+                <div className="text-sm text-gray-600">Paid</div>
               </div>
               <div className="text-center p-4 bg-white rounded-lg shadow-sm border">
                 <div className="text-2xl font-bold text-orange-600">
                   {formatCurrency(amounts.remainingBalance)}
                 </div>
-                <div className="text-sm text-gray-600">Pendiente</div>
+                <div className="text-sm text-gray-600">Pending</div>
               </div>
               <div className="text-center p-4 bg-white rounded-lg shadow-sm border">
                 <div className="text-2xl font-bold text-blue-600">
                   {formatCurrency(previewAmount)}
                 </div>
-                <div className="text-sm text-gray-600">Este Pago</div>
+                <div className="text-sm text-gray-600">This Payment</div>
               </div>
             </div>
           </div>
 
           {/* Editable Payment Amount */}
           <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
-            <Label htmlFor="paymentAmount" className="text-base font-medium">Monto del Pago</Label>
+            <Label htmlFor="paymentAmount" className="text-base font-medium">Payment Amount</Label>
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
                 <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -367,27 +371,27 @@ export default function ProjectPaymentWorkflow({
                 size="sm"
                 onClick={() => setEditableAmount(amounts.depositAmount.toString())}
               >
-                Depósito 50%
+                50% Deposit
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setEditableAmount(amounts.remainingBalance.toString())}
               >
-                Saldo Completo
+                Full Balance
               </Button>
             </div>
           </div>
 
           {/* Client Email for Invoice */}
           <div className="space-y-2">
-            <Label htmlFor="clientEmail" className="text-base font-medium">Email del Cliente (para factura)</Label>
+            <Label htmlFor="clientEmail" className="text-base font-medium">Client Email (for invoice)</Label>
             <Input
               id="clientEmail"
               type="email"
               value={clientEmail}
               onChange={(e) => setClientEmail(e.target.value)}
-              placeholder="cliente@ejemplo.com"
+              placeholder="client@example.com"
               className="text-base"
             />
           </div>
@@ -399,14 +403,14 @@ export default function ProjectPaymentWorkflow({
               onClick={() => setCurrentStep('select')}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Volver a Proyectos
+              Back to Projects
             </Button>
             <Button
               onClick={() => setCurrentStep('payment')}
               disabled={!previewAmount || previewAmount <= 0 || !clientEmail}
               className="bg-blue-600 hover:bg-blue-700"
             >
-              Continuar al Pago
+              Continue to Payment
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           </div>
@@ -421,10 +425,10 @@ export default function ProjectPaymentWorkflow({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <CreditCard className="h-5 w-5" />
-          Paso 3: Seleccionar Método de Pago
+          Step 3: Select Payment Method
         </CardTitle>
         <CardDescription>
-          Elige cómo quieres procesar el pago del cliente
+          Choose how you want to process the client's payment
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -438,12 +442,12 @@ export default function ProjectPaymentWorkflow({
           >
             <CardContent className="p-6 text-center">
               <DollarSign className="h-12 w-12 mx-auto mb-3 text-green-600" />
-              <h4 className="font-semibold text-lg">Efectivo</h4>
+              <h4 className="font-semibold text-lg">Cash</h4>
               <p className="text-sm text-muted-foreground mt-2">
-                Registrar pago en efectivo recibido en persona
+                Record cash payment received in person
               </p>
               <Badge variant="secondary" className="mt-3 bg-green-100 text-green-800">
-                Disponible
+                Available
               </Badge>
             </CardContent>
           </Card>
@@ -458,10 +462,10 @@ export default function ProjectPaymentWorkflow({
               <Phone className="h-12 w-12 mx-auto mb-3 text-blue-600" />
               <h4 className="font-semibold text-lg">Zelle</h4>
               <p className="text-sm text-muted-foreground mt-2">
-                Transferencia bancaria instantánea via Zelle
+                Instant bank transfer via Zelle
               </p>
               <Badge variant="secondary" className="mt-3 bg-blue-100 text-blue-800">
-                Disponible
+                Available
               </Badge>
             </CardContent>
           </Card>
