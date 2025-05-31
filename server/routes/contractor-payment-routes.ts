@@ -79,6 +79,41 @@ router.post('/projects/:projectId/payment-structure', isAuthenticated, async (re
 /**
  * Create individual payment and payment link
  */
+router.post('/create', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+    const userId = req.user.id;
+    const validatedData = createPaymentSchema.parse(req.body);
+
+    const result = await contractorPaymentService.createProjectPayment({
+      projectId: validatedData.projectId,
+      userId,
+      amount: validatedData.amount,
+      type: validatedData.type,
+      description: validatedData.description,
+      clientEmail: validatedData.clientEmail,
+      clientName: validatedData.clientName,
+      dueDate: validatedData.dueDate ? new Date(validatedData.dueDate) : undefined,
+    });
+
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    console.error('Error creating payment:', error);
+    res.status(500).json({ 
+      message: 'Error creating payment',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * Create individual payment and payment link
+ */
 router.post('/payments', isAuthenticated, async (req: Request, res: Response) => {
   try {
     if (!req.user) {
@@ -106,6 +141,57 @@ router.post('/payments', isAuthenticated, async (req: Request, res: Response) =>
     console.error('Error creating payment:', error);
     res.status(500).json({ 
       message: 'Error creating payment',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * Send invoice to client via email
+ */
+router.post('/send-invoice', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const { projectName, clientName, clientEmail, totalAmount, paidAmount, remainingAmount } = req.body;
+    
+    // Import the email service
+    const { sendEmail } = require('../services/emailService');
+    
+    // Create invoice HTML content
+    const invoiceHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">
+          Payment Invoice
+        </h2>
+        <div style="margin: 20px 0;">
+          <h3>Project Details:</h3>
+          <p><strong>Project:</strong> ${projectName}</p>
+          <p><strong>Client:</strong> ${clientName}</p>
+          <p><strong>Total Amount:</strong> $${totalAmount.toFixed(2)}</p>
+          <p><strong>Amount Paid:</strong> $${paidAmount.toFixed(2)}</p>
+          <p><strong>Remaining Balance:</strong> $${remainingAmount.toFixed(2)}</p>
+        </div>
+        <div style="margin-top: 30px; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
+          <p>Thank you for your business!</p>
+          <p>If you have any questions about this invoice, please contact us.</p>
+        </div>
+      </div>
+    `;
+
+    // Send the email
+    await sendEmail(clientEmail, `Invoice for ${projectName}`, invoiceHtml, invoiceHtml);
+
+    res.json({
+      success: true,
+      message: 'Invoice sent successfully'
+    });
+  } catch (error) {
+    console.error('Error sending invoice:', error);
+    res.status(500).json({ 
+      message: 'Error sending invoice',
       error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
