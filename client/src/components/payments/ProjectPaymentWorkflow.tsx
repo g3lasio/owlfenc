@@ -478,12 +478,12 @@ export default function ProjectPaymentWorkflow({
           >
             <CardContent className="p-6 text-center">
               <LinkIcon className="h-12 w-12 mx-auto mb-3 text-purple-600" />
-              <h4 className="font-semibold text-lg">Enlace de Pago</h4>
+              <h4 className="font-semibold text-lg">Payment Link</h4>
               <p className="text-sm text-muted-foreground mt-2">
-                Generar enlace para que el cliente pague online
+                Generate link for client to pay online
               </p>
               <Badge variant="secondary" className="mt-3 bg-orange-100 text-orange-800">
-                En Desarrollo
+                In Development
               </Badge>
             </CardContent>
           </Card>
@@ -496,12 +496,12 @@ export default function ProjectPaymentWorkflow({
           >
             <CardContent className="p-6 text-center">
               <CreditCard className="h-12 w-12 mx-auto mb-3 text-gray-500" />
-              <h4 className="font-semibold text-lg">Tarjeta</h4>
+              <h4 className="font-semibold text-lg">Credit Card</h4>
               <p className="text-sm text-muted-foreground mt-2">
-                Terminal de tarjetas (Stripe Connect)
+                Card terminal (Stripe Connect)
               </p>
               <Badge variant="secondary" className="mt-3 bg-gray-100 text-gray-600">
-                Pausado
+                Paused
               </Badge>
             </CardContent>
           </Card>
@@ -516,10 +516,10 @@ export default function ProjectPaymentWorkflow({
               <Calculator className="h-12 w-12 mx-auto mb-3 text-gray-500" />
               <h4 className="font-semibold text-lg">ACH</h4>
               <p className="text-sm text-muted-foreground mt-2">
-                Transferencia bancaria ACH directa
+                Direct ACH bank transfer
               </p>
               <Badge variant="secondary" className="mt-3 bg-gray-100 text-gray-600">
-                Pausado
+                Paused
               </Badge>
             </CardContent>
           </Card>
@@ -528,20 +528,20 @@ export default function ProjectPaymentWorkflow({
         {/* Payment Method Details */}
         {paymentMethod && (
           <div className="bg-gray-50 p-4 rounded-lg">
-            <h5 className="font-medium mb-2">Instrucciones del Método Seleccionado</h5>
+            <h5 className="font-medium mb-2">Selected Method Instructions</h5>
             {paymentMethod === 'cash' && (
               <p className="text-sm text-gray-600">
-                ✅ Confirma que has recibido el pago en efectivo antes de procesar.
+                ✅ Confirm you have received the cash payment before processing.
               </p>
             )}
             {paymentMethod === 'zelle' && (
               <p className="text-sm text-gray-600">
-                📱 Proporciona tu número de Zelle al cliente y confirma la transferencia.
+                📱 Provide your Zelle number to the client and confirm the transfer.
               </p>
             )}
             {paymentMethod === 'link' && (
               <p className="text-sm text-gray-600">
-                🔗 Se generará un enlace seguro que puedes enviar al cliente por email.
+                🔗 A secure link will be generated that you can send to the client via email.
               </p>
             )}
           </div>
@@ -551,14 +551,14 @@ export default function ProjectPaymentWorkflow({
         <div className="flex justify-between pt-4">
           <Button variant="outline" onClick={() => setCurrentStep('preview')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Volver al Resumen
+            Back to Summary
           </Button>
           <Button 
             onClick={() => setCurrentStep('confirmation')}
             disabled={!paymentMethod}
             className="bg-blue-600 hover:bg-blue-700"
           >
-            Procesar Pago
+            Process Payment
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </div>
