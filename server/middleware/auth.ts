@@ -13,15 +13,35 @@ declare global {
   }
 }
 
-export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
   try {
     // Asegurar que siempre devolvemos JSON, no HTML
     res.setHeader('Content-Type', 'application/json');
     
-    // Para desarrollo y producción, usar usuario demo consistente
-    // Esto evita problemas de autenticación mientras configuramos Stripe
+    // Para desarrollo y producción, crear usuario demo si no existe
+    const { storage } = await import('../storage');
+    const userId = 1;
+    
+    try {
+      // Intentar obtener el usuario existente
+      await storage.getUser(userId);
+    } catch (error) {
+      // Si no existe, crear usuario demo
+      try {
+        await storage.createUser({
+          username: 'contractor_demo',
+          email: 'contractor@owlfence.com', 
+          password: 'demo_password',
+          company: 'Demo Contractor LLC'
+        });
+        console.log('Created demo user for Stripe Connect testing');
+      } catch (createError) {
+        console.log('Demo user might already exist or creation failed:', createError);
+      }
+    }
+    
     req.user = {
-      id: 1,
+      id: userId,
       email: 'contractor@owlfence.com',
       username: 'contractor_demo'
     };
