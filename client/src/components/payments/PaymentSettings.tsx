@@ -23,9 +23,15 @@ import { useToast } from '@/hooks/use-toast';
 interface PaymentSettingsProps {
   stripeAccountStatus?: {
     hasStripeAccount: boolean;
-    accountId?: string;
-    chargesEnabled?: boolean;
-    detailsSubmitted?: boolean;
+    accountDetails?: {
+      id: string;
+      email?: string;
+      businessType?: string;
+      chargesEnabled: boolean;
+      payoutsEnabled: boolean;
+      defaultCurrency?: string;
+      country?: string;
+    } | null;
   };
   onConnectStripe: () => void;
 }
@@ -57,10 +63,10 @@ export default function PaymentSettings({
     if (!stripeAccountStatus?.hasStripeAccount) {
       return <Badge variant="destructive">Not Connected</Badge>;
     }
-    if (!stripeAccountStatus.chargesEnabled) {
+    if (!stripeAccountStatus.accountDetails?.chargesEnabled) {
       return <Badge variant="secondary">Setup Required</Badge>;
     }
-    return <Badge variant="default">Connected</Badge>;
+    return <Badge variant="default">Connected & Active</Badge>;
   };
 
   return (
@@ -91,41 +97,45 @@ export default function PaymentSettings({
               {getStripeStatusBadge()}
               <Button 
                 onClick={onConnectStripe}
-                disabled={stripeAccountStatus?.hasStripeAccount && stripeAccountStatus?.chargesEnabled}
+                disabled={stripeAccountStatus?.hasStripeAccount && stripeAccountStatus?.accountDetails?.chargesEnabled}
                 variant={stripeAccountStatus?.hasStripeAccount ? "outline" : "default"}
               >
                 {stripeAccountStatus?.hasStripeAccount ? 
-                  (stripeAccountStatus?.chargesEnabled ? 'Connected' : 'Complete Setup') : 
+                  (stripeAccountStatus?.accountDetails?.chargesEnabled ? 'Connected' : 'Complete Setup') : 
                   'Connect Bank Account'
                 }
               </Button>
             </div>
           </div>
 
-          {stripeAccountStatus?.hasStripeAccount && (
+          {stripeAccountStatus?.hasStripeAccount && stripeAccountStatus.accountDetails && (
             <div className="bg-muted/30 p-4 rounded-lg space-y-2">
               <h5 className="font-medium text-sm">Account Status</h5>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="flex items-center gap-2">
-                  {stripeAccountStatus.detailsSubmitted ? 
+                  {stripeAccountStatus.accountDetails.payoutsEnabled ? 
                     <CheckCircle className="h-4 w-4 text-green-600" /> : 
                     <AlertCircle className="h-4 w-4 text-orange-600" />
                   }
-                  <span>Account Details: {stripeAccountStatus.detailsSubmitted ? 'Complete' : 'Pending'}</span>
+                  <span>Bank Account: {stripeAccountStatus.accountDetails.payoutsEnabled ? 'Connected' : 'Pending'}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  {stripeAccountStatus.chargesEnabled ? 
+                  {stripeAccountStatus.accountDetails.chargesEnabled ? 
                     <CheckCircle className="h-4 w-4 text-green-600" /> : 
                     <AlertCircle className="h-4 w-4 text-orange-600" />
                   }
-                  <span>Payments: {stripeAccountStatus.chargesEnabled ? 'Enabled' : 'Disabled'}</span>
+                  <span>Payments: {stripeAccountStatus.accountDetails.chargesEnabled ? 'Enabled' : 'Disabled'}</span>
                 </div>
               </div>
-              {stripeAccountStatus.accountId && (
-                <div className="text-xs text-muted-foreground">
-                  Account ID: {stripeAccountStatus.accountId}
-                </div>
-              )}
+              <div className="text-xs text-muted-foreground space-y-1">
+                <div>Account ID: {stripeAccountStatus.accountDetails.id}</div>
+                {stripeAccountStatus.accountDetails.country && (
+                  <div>Country: {stripeAccountStatus.accountDetails.country.toUpperCase()}</div>
+                )}
+                {stripeAccountStatus.accountDetails.defaultCurrency && (
+                  <div>Currency: {stripeAccountStatus.accountDetails.defaultCurrency.toUpperCase()}</div>
+                )}
+              </div>
             </div>
           )}
         </CardContent>

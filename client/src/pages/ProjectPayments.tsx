@@ -155,10 +155,10 @@ const ProjectPayments: React.FC = () => {
 
   // Fetch Stripe account status
   const { data: stripeAccountStatus, isLoading: stripeLoading } = useQuery({
-    queryKey: ['/api/stripe/account-status'],
+    queryKey: ['/api/contractor-payments/stripe/account-status'],
     queryFn: async () => {
       try {
-        const response = await apiRequest('GET', '/api/stripe/account-status');
+        const response = await apiRequest('GET', '/api/contractor-payments/stripe/account-status');
         if (!response.ok) {
           throw new Error('Failed to fetch Stripe status');
         }
@@ -166,7 +166,7 @@ const ProjectPayments: React.FC = () => {
         return data;
       } catch (error) {
         console.error('Error fetching Stripe status:', error);
-        return { hasStripeAccount: false };
+        return { hasStripeAccount: false, accountDetails: null };
       }
     }
   });
@@ -252,14 +252,20 @@ const ProjectPayments: React.FC = () => {
   // Connect to Stripe
   const connectToStripe = async () => {
     try {
-      const response = await apiRequest('POST', '/api/stripe/connect-account');
+      const response = await apiRequest('POST', '/api/contractor-payments/stripe/connect', {
+        businessType: 'individual', // Default to individual, can be made configurable
+        country: 'US' // Default to US, can be made configurable
+      });
+      
       if (!response.ok) {
         throw new Error('Failed to connect to Stripe');
       }
+      
       const data = await response.json();
       
-      if (data.accountLinkUrl) {
-        window.location.href = data.accountLinkUrl;
+      if (data.url) {
+        // Redirect to Stripe onboarding
+        window.location.href = data.url;
       } else {
         toast({
           title: "Connection Error",
@@ -269,8 +275,8 @@ const ProjectPayments: React.FC = () => {
       }
     } catch (error: any) {
       toast({
-        title: "Stripe Connection Failed",
-        description: error.message || "Failed to connect to Stripe. Please try again.",
+        title: "Bank Connection Failed",
+        description: error.message || "Failed to set up bank account connection. Please try again.",
         variant: "destructive",
       });
     }
