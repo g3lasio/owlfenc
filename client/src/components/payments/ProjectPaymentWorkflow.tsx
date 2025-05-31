@@ -433,96 +433,146 @@ export default function ProjectPaymentWorkflow({
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Enhanced Payment Options */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Card 
-            className={`cursor-pointer transition-all hover:shadow-md ${
-              paymentMethod === 'cash' ? 'ring-2 ring-green-500 bg-green-50' : 'hover:bg-muted/50'
-            }`}
+        <div className="space-y-3">
+          {/* Cash Payment */}
+          <div 
+            className={`relative cursor-pointer transition-all duration-300 group ${
+              paymentMethod === 'cash' ? 'bg-gray-900 border-cyan-400' : 'bg-gray-800 border-gray-600 hover:border-cyan-500'
+            } border-2 rounded-lg p-4`}
             onClick={() => setPaymentMethod('cash')}
           >
-            <CardContent className="p-6 text-center">
-              <DollarSign className="h-12 w-12 mx-auto mb-3 text-green-600" />
-              <h4 className="font-semibold text-lg">Cash</h4>
-              <p className="text-sm text-muted-foreground mt-2">
-                Record cash payment received in person
-              </p>
-              <Badge variant="secondary" className="mt-3 bg-green-100 text-green-800">
-                Available
-              </Badge>
-            </CardContent>
-          </Card>
+            {/* Cyberpunk Corner Brackets */}
+            <div className="absolute top-1 left-1 w-3 h-3 border-l-2 border-t-2 border-cyan-400"></div>
+            <div className="absolute top-1 right-1 w-3 h-3 border-r-2 border-t-2 border-cyan-400"></div>
+            <div className="absolute bottom-1 left-1 w-3 h-3 border-l-2 border-b-2 border-cyan-400"></div>
+            <div className="absolute bottom-1 right-1 w-3 h-3 border-r-2 border-b-2 border-cyan-400"></div>
+            
+            {/* Scanning Line Animation */}
+            {paymentMethod === 'cash' && (
+              <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-pulse"></div>
+            )}
+            
+            <div className="flex items-center gap-4">
+              <div className="flex-shrink-0">
+                <DollarSign className="h-8 w-8 text-green-400" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-semibold text-lg text-white">Cash</h4>
+                <p className="text-sm text-gray-300">Record cash payment received in person</p>
+              </div>
+              <Badge className="bg-green-600 text-white border-0">Available</Badge>
+            </div>
+          </div>
 
-          <Card 
-            className={`cursor-pointer transition-all hover:shadow-md ${
-              paymentMethod === 'zelle' ? 'ring-2 ring-blue-500 bg-blue-50' : 'hover:bg-muted/50'
-            }`}
+          {/* Zelle Payment */}
+          <div 
+            className={`relative cursor-pointer transition-all duration-300 group ${
+              paymentMethod === 'zelle' ? 'bg-gray-900 border-cyan-400' : 'bg-gray-800 border-gray-600 hover:border-cyan-500'
+            } border-2 rounded-lg p-4`}
             onClick={() => setPaymentMethod('zelle')}
           >
-            <CardContent className="p-6 text-center">
-              <Phone className="h-12 w-12 mx-auto mb-3 text-blue-600" />
-              <h4 className="font-semibold text-lg">Zelle</h4>
-              <p className="text-sm text-muted-foreground mt-2">
-                Instant bank transfer via Zelle
-              </p>
-              <Badge variant="secondary" className="mt-3 bg-blue-100 text-blue-800">
-                Available
-              </Badge>
-            </CardContent>
-          </Card>
+            {/* Cyberpunk Corner Brackets */}
+            <div className="absolute top-1 left-1 w-3 h-3 border-l-2 border-t-2 border-cyan-400"></div>
+            <div className="absolute top-1 right-1 w-3 h-3 border-r-2 border-t-2 border-cyan-400"></div>
+            <div className="absolute bottom-1 left-1 w-3 h-3 border-l-2 border-b-2 border-cyan-400"></div>
+            <div className="absolute bottom-1 right-1 w-3 h-3 border-r-2 border-b-2 border-cyan-400"></div>
+            
+            {/* Scanning Line Animation */}
+            {paymentMethod === 'zelle' && (
+              <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-pulse"></div>
+            )}
+            
+            <div className="flex items-center gap-4">
+              <div className="flex-shrink-0">
+                <Phone className="h-8 w-8 text-blue-400" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-semibold text-lg text-white">Zelle</h4>
+                <p className="text-sm text-gray-300">Instant bank transfer via Zelle</p>
+              </div>
+              <Badge className="bg-blue-600 text-white border-0">Available</Badge>
+            </div>
+          </div>
 
-          <Card 
-            className={`cursor-pointer transition-all hover:shadow-md ${
-              paymentMethod === 'link' ? 'ring-2 ring-purple-500 bg-purple-50' : 'hover:bg-muted/50'
-            }`}
+          {/* Payment Link */}
+          <div 
+            className={`relative cursor-pointer transition-all duration-300 group ${
+              paymentMethod === 'link' ? 'bg-gray-900 border-cyan-400' : 'bg-gray-800 border-gray-600 hover:border-cyan-500'
+            } border-2 rounded-lg p-4`}
             onClick={() => setPaymentMethod('link')}
           >
-            <CardContent className="p-6 text-center">
-              <LinkIcon className="h-12 w-12 mx-auto mb-3 text-purple-600" />
-              <h4 className="font-semibold text-lg">Payment Link</h4>
-              <p className="text-sm text-muted-foreground mt-2">
-                Generate link for client to pay online
-              </p>
-              <Badge variant="secondary" className="mt-3 bg-orange-100 text-orange-800">
-                In Development
-              </Badge>
-            </CardContent>
-          </Card>
+            {/* Cyberpunk Corner Brackets */}
+            <div className="absolute top-1 left-1 w-3 h-3 border-l-2 border-t-2 border-cyan-400"></div>
+            <div className="absolute top-1 right-1 w-3 h-3 border-r-2 border-t-2 border-cyan-400"></div>
+            <div className="absolute bottom-1 left-1 w-3 h-3 border-l-2 border-b-2 border-cyan-400"></div>
+            <div className="absolute bottom-1 right-1 w-3 h-3 border-r-2 border-b-2 border-cyan-400"></div>
+            
+            {/* Scanning Line Animation */}
+            {paymentMethod === 'link' && (
+              <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-pulse"></div>
+            )}
+            
+            <div className="flex items-center gap-4">
+              <div className="flex-shrink-0">
+                <LinkIcon className="h-8 w-8 text-purple-400" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-semibold text-lg text-white">Payment Link</h4>
+                <p className="text-sm text-gray-300">Generate link for client to pay online</p>
+              </div>
+              <Badge className="bg-orange-600 text-white border-0">In Development</Badge>
+            </div>
+          </div>
 
-          <Card 
-            className={`cursor-pointer transition-all hover:shadow-md opacity-60 ${
-              paymentMethod === 'card' ? 'ring-2 ring-gray-400 bg-gray-50' : 'hover:bg-muted/30'
-            }`}
+          {/* Credit Card (Paused) */}
+          <div 
+            className={`relative cursor-pointer transition-all duration-300 group opacity-60 ${
+              paymentMethod === 'card' ? 'bg-gray-900 border-gray-500' : 'bg-gray-800 border-gray-600 hover:border-gray-500'
+            } border-2 rounded-lg p-4`}
             onClick={() => setPaymentMethod('card')}
           >
-            <CardContent className="p-6 text-center">
-              <CreditCard className="h-12 w-12 mx-auto mb-3 text-gray-500" />
-              <h4 className="font-semibold text-lg">Credit Card</h4>
-              <p className="text-sm text-muted-foreground mt-2">
-                Card terminal (Stripe Connect)
-              </p>
-              <Badge variant="secondary" className="mt-3 bg-gray-100 text-gray-600">
-                Paused
-              </Badge>
-            </CardContent>
-          </Card>
+            {/* Cyberpunk Corner Brackets */}
+            <div className="absolute top-1 left-1 w-3 h-3 border-l-2 border-t-2 border-gray-500"></div>
+            <div className="absolute top-1 right-1 w-3 h-3 border-r-2 border-t-2 border-gray-500"></div>
+            <div className="absolute bottom-1 left-1 w-3 h-3 border-l-2 border-b-2 border-gray-500"></div>
+            <div className="absolute bottom-1 right-1 w-3 h-3 border-r-2 border-b-2 border-gray-500"></div>
+            
+            <div className="flex items-center gap-4">
+              <div className="flex-shrink-0">
+                <CreditCard className="h-8 w-8 text-gray-500" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-semibold text-lg text-gray-400">Credit Card</h4>
+                <p className="text-sm text-gray-500">Card terminal (Stripe Connect)</p>
+              </div>
+              <Badge className="bg-gray-600 text-gray-300 border-0">Paused</Badge>
+            </div>
+          </div>
 
-          <Card 
-            className={`cursor-pointer transition-all hover:shadow-md opacity-60 ${
-              paymentMethod === 'ach' ? 'ring-2 ring-gray-400 bg-gray-50' : 'hover:bg-muted/30'
-            }`}
+          {/* ACH (Paused) */}
+          <div 
+            className={`relative cursor-pointer transition-all duration-300 group opacity-60 ${
+              paymentMethod === 'ach' ? 'bg-gray-900 border-gray-500' : 'bg-gray-800 border-gray-600 hover:border-gray-500'
+            } border-2 rounded-lg p-4`}
             onClick={() => setPaymentMethod('ach')}
           >
-            <CardContent className="p-6 text-center">
-              <Calculator className="h-12 w-12 mx-auto mb-3 text-gray-500" />
-              <h4 className="font-semibold text-lg">ACH</h4>
-              <p className="text-sm text-muted-foreground mt-2">
-                Direct ACH bank transfer
-              </p>
-              <Badge variant="secondary" className="mt-3 bg-gray-100 text-gray-600">
-                Paused
-              </Badge>
-            </CardContent>
-          </Card>
+            {/* Cyberpunk Corner Brackets */}
+            <div className="absolute top-1 left-1 w-3 h-3 border-l-2 border-t-2 border-gray-500"></div>
+            <div className="absolute top-1 right-1 w-3 h-3 border-r-2 border-t-2 border-gray-500"></div>
+            <div className="absolute bottom-1 left-1 w-3 h-3 border-l-2 border-b-2 border-gray-500"></div>
+            <div className="absolute bottom-1 right-1 w-3 h-3 border-r-2 border-b-2 border-gray-500"></div>
+            
+            <div className="flex items-center gap-4">
+              <div className="flex-shrink-0">
+                <Calculator className="h-8 w-8 text-gray-500" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-semibold text-lg text-gray-400">ACH</h4>
+                <p className="text-sm text-gray-500">Direct ACH bank transfer</p>
+              </div>
+              <Badge className="bg-gray-600 text-gray-300 border-0">Paused</Badge>
+            </div>
+          </div>
         </div>
 
         {/* Payment Method Details */}
