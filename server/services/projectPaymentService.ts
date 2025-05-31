@@ -88,16 +88,24 @@ export class ProjectPaymentService {
         throw new Error('Could not establish connection with Stripe. Please verify API credentials.');
       }
       
-      // First, check if the user already has a Stripe Connect account
-      const user = await storage.getUser(options.userId);
-      if (!user) {
-        throw new Error(`User with ID ${options.userId} not found`);
+      let existingAccountId: string | null = null;
+      
+      // Try to get existing user, but don't fail if user doesn't exist in storage
+      try {
+        const user = await storage.getUser(options.userId);
+        if (user && user.stripeConnectAccountId) {
+          existingAccountId = user.stripeConnectAccountId;
+        }
+      } catch (error) {
+        console.log(`[${new Date().toISOString()}] User not found in storage, creating new Stripe account`);
+        // Continue without failing - we'll create a new account
       }
       
-      // If user already has a Connect account, get a new onboarding link
-      if (user.stripeConnectAccountId) {
+      // If user has existing Connect account, refresh the onboarding link
+      if (existingAccountId) {
+        console.log(`[${new Date().toISOString()}] Existing Stripe account found: ${existingAccountId}`);
         return await this.refreshConnectAccountLink(
-          user.stripeConnectAccountId, 
+          existingAccountId, 
           options.refreshUrl, 
           options.returnUrl
         );
@@ -114,14 +122,21 @@ export class ProjectPaymentService {
           transfers: { requested: true },
         },
         metadata: {
-          userId: options.userId.toString()
+          userId: options.userId.toString(),
+          created: new Date().toISOString()
         }
       });
       
-      // Update user record with Stripe Connect account ID
-      await storage.updateUser(options.userId, {
-        stripeConnectAccountId: account.id
-      });
+      // Try to update user record, but don't fail if storage operation fails
+      try {
+        await storage.updateUser(options.userId, {
+          stripeConnectAccountId: account.id
+        });
+        console.log(`[${new Date().toISOString()}] User storage updated with Stripe account ID`);
+      } catch (storageError) {
+        console.warn(`[${new Date().toISOString()}] Could not update user storage:`, storageError);
+        // Continue - Stripe account is already created successfully
+      }
       
       // Create an account link for onboarding
       const accountLink = await stripe.accountLinks.create({
@@ -131,10 +146,21 @@ export class ProjectPaymentService {
         type: 'account_onboarding',
       });
       
-      console.log(`[${new Date().toISOString()}] Stripe Connect account created with ID: ${account.id}`);
+      console.log(`[${new Date().toISOString()}] Stripe Connect account created successfully: ${account.id}`);
       return accountLink.url;
     } catch (error) {
       console.error(`[${new Date().toISOString()}] Error creating Stripe Connect account:`, error);
+      
+      // Provide more specific error messages
+      if (error instanceof Error) {
+        if (error.message.includes('Invalid API Key')) {
+          throw new Error('Stripe API key is invalid or not configured properly');
+        }
+        if (error.message.includes('connection')) {
+          throw new Error('Could not connect to Stripe services. Please check connectivity');
+        }
+      }
+      
       throw error;
     }
   }

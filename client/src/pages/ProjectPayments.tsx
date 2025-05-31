@@ -159,16 +159,32 @@ const ProjectPayments: React.FC = () => {
     queryFn: async () => {
       try {
         const response = await apiRequest('GET', '/api/contractor-payments/stripe/account-status');
+        
+        // Verificar que la respuesta sea válida
         if (!response.ok) {
-          throw new Error('Failed to fetch Stripe status');
+          const errorText = await response.text();
+          console.error('Stripe status error response:', errorText);
+          throw new Error(`Server error: ${response.status}`);
         }
+        
+        // Intentar parsear como JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await response.text();
+          console.error('Non-JSON response received:', text);
+          throw new Error('Server returned invalid response format');
+        }
+        
         const data = await response.json();
         return data;
       } catch (error) {
         console.error('Error fetching Stripe status:', error);
+        // Devolver estado por defecto en caso de error
         return { hasStripeAccount: false, accountDetails: null };
       }
-    }
+    },
+    retry: 2,
+    retryDelay: 1000
   });
 
   // Create payment mutation
@@ -253,27 +269,41 @@ const ProjectPayments: React.FC = () => {
   const connectToStripe = async () => {
     try {
       const response = await apiRequest('POST', '/api/contractor-payments/stripe/connect', {
-        businessType: 'individual', // Default to individual, can be made configurable
-        country: 'US' // Default to US, can be made configurable
+        businessType: 'individual',
+        country: 'US'
       });
       
+      // Verificar que la respuesta sea válida
       if (!response.ok) {
-        throw new Error('Failed to connect to Stripe');
+        const errorText = await response.text();
+        console.error('Stripe connect error response:', errorText);
+        throw new Error(`Server error: ${response.status}`);
+      }
+      
+      // Verificar que sea JSON válido
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('Non-JSON response received:', text);
+        throw new Error('Server returned invalid response format');
       }
       
       const data = await response.json();
       
       if (data.url) {
         // Redirect to Stripe onboarding
+        console.log('Redirecting to Stripe onboarding:', data.url);
         window.location.href = data.url;
       } else {
+        console.error('No URL received from Stripe Connect:', data);
         toast({
-          title: "Connection Error",
-          description: "Unable to create Stripe connection. Please try again.",
+          title: "Configuration Error",
+          description: "Unable to create bank account connection. Please check Stripe configuration.",
           variant: "destructive",
         });
       }
     } catch (error: any) {
+      console.error('Stripe connect error:', error);
       toast({
         title: "Bank Connection Failed",
         description: error.message || "Failed to set up bank account connection. Please try again.",
