@@ -663,59 +663,59 @@ export default function ProjectPaymentWorkflow({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CheckCircle className="h-5 w-5" />
-            Paso 4: Confirmación del Pago
+            Step 4: Payment Confirmation
           </CardTitle>
           <CardDescription>
-            Revisa y confirma todos los detalles antes de procesar
+            Review and confirm all details before processing
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Payment Summary */}
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-lg border">
-            <h4 className="font-semibold text-lg mb-4">Resumen del Pago</h4>
+          <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-6 rounded-lg border border-cyan-400">
+            <h4 className="font-semibold text-lg mb-4 text-white">Payment Summary</h4>
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-3">
                 <div>
-                  <div className="text-sm text-gray-600">Cliente</div>
-                  <div className="font-semibold">{selectedProject.clientName}</div>
+                  <div className="text-sm text-gray-300">Client</div>
+                  <div className="font-semibold text-white">{selectedProject.clientName}</div>
                 </div>
                 <div>
-                  <div className="text-sm text-gray-600">Proyecto</div>
-                  <div className="font-medium">{selectedProject.projectType || 'Proyecto General'}</div>
+                  <div className="text-sm text-gray-300">Project</div>
+                  <div className="font-medium text-white">{selectedProject.projectType || 'General Project'}</div>
                 </div>
                 <div>
-                  <div className="text-sm text-gray-600">Método de Pago</div>
-                  <Badge variant="outline" className="font-medium">
-                    {paymentMethod === 'cash' ? 'Efectivo' : 
+                  <div className="text-sm text-gray-300">Payment Method</div>
+                  <Badge className="font-medium bg-cyan-600 text-white border-0">
+                    {paymentMethod === 'cash' ? 'Cash' : 
                      paymentMethod === 'zelle' ? 'Zelle' : 
-                     paymentMethod === 'link' ? 'Enlace de Pago' : paymentMethod}
+                     paymentMethod === 'link' ? 'Payment Link' : paymentMethod}
                   </Badge>
                 </div>
               </div>
               <div className="space-y-3">
                 <div>
-                  <div className="text-sm text-gray-600">Monto del Pago</div>
-                  <div className="text-2xl font-bold text-green-600">
+                  <div className="text-sm text-gray-300">Payment Amount</div>
+                  <div className="text-2xl font-bold text-green-400">
                     {formatCurrency(parseFloat(editableAmount) || 0)}
                   </div>
                 </div>
                 <div>
-                  <div className="text-sm text-gray-600">Email para Factura</div>
-                  <div className="font-medium">{clientEmail}</div>
+                  <div className="text-sm text-gray-300">Invoice Email</div>
+                  <div className="font-medium text-white">{clientEmail}</div>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Next Steps */}
-          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-            <h5 className="font-medium text-blue-900 mb-2">Qué sucederá:</h5>
-            <ul className="text-sm text-blue-800 space-y-1">
-              <li>✅ Se registrará el pago en el historial</li>
-              <li>📧 Se enviará una factura por email al cliente</li>
-              <li>📊 Se actualizará el estado del proyecto</li>
+          <div className="bg-gray-800 p-4 rounded-lg border border-cyan-400">
+            <h5 className="font-medium text-cyan-400 mb-2">What will happen:</h5>
+            <ul className="text-sm text-gray-300 space-y-1">
+              <li>✅ Payment will be registered in history</li>
+              <li>📧 Invoice will be sent to client via email</li>
+              <li>📊 Project status will be updated</li>
               {paymentMethod === 'link' && (
-                <li>🔗 Se generará un enlace de pago seguro</li>
+                <li>🔗 Secure payment link will be generated</li>
               )}
             </ul>
           </div>
@@ -724,7 +724,7 @@ export default function ProjectPaymentWorkflow({
           <div className="flex gap-3 pt-4">
             <Button variant="outline" onClick={() => setCurrentStep('payment')} className="flex-1">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Cambiar Método
+              Change Method
             </Button>
             <Button 
               onClick={handlePaymentSubmit}
@@ -734,17 +734,17 @@ export default function ProjectPaymentWorkflow({
               {isCreatingPayment ? (
                 <>
                   <Clock className="mr-2 h-4 w-4 animate-spin" />
-                  Procesando...
+                  Processing...
                 </>
               ) : (
                 <>
                   <CheckCircle className="mr-2 h-4 w-4" />
-                  Confirmar Pago
+                  Confirm Payment
                 </>
               )}
             </Button>
             <Button variant="outline" onClick={handleStartOver} className="flex-1">
-              Nuevo Pago
+              New Payment
             </Button>
           </div>
         </CardContent>
