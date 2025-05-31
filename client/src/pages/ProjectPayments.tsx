@@ -92,19 +92,41 @@ const ProjectPayments: React.FC = () => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('workflow');
 
-  // Fetch projects data
+  // Fetch projects data directly from Firebase
   const { data: projects, isLoading: projectsLoading, error: projectsError } = useQuery<Project[]>({
-    queryKey: ['/api/projects'],
+    queryKey: ['/firebase/projects'],
     queryFn: async () => {
       try {
-        const response = await apiRequest('GET', '/api/projects');
-        if (!response.ok) {
-          throw new Error('Failed to fetch projects');
-        }
-        const data = await response.json();
-        return data.data || [];
+        // Import Firebase functions
+        const { getProjects } = await import('@/lib/firebase');
+        const firebaseProjects = await getProjects({ status: 'approved' });
+        
+        // Convert Firebase projects to our Project type
+        return firebaseProjects.map((project: any) => ({
+          id: project.id || Math.random(),
+          userId: 1, // Default user ID for now
+          projectId: project.id || project.projectId || '',
+          clientName: project.clientName || project.customerName || 'Unknown Client',
+          clientEmail: project.clientEmail || project.customerEmail || '',
+          clientPhone: project.clientPhone || project.customerPhone || '',
+          address: project.address || project.projectAddress || '',
+          projectType: project.projectType || project.fenceType || 'Fence Project',
+          projectSubtype: project.projectSubtype || project.fenceStyle || '',
+          projectCategory: project.projectCategory || 'Fencing',
+          projectDescription: project.projectDescription || project.description || '',
+          projectScope: project.projectScope || '',
+          estimateHtml: project.estimateHtml || '',
+          contractHtml: project.contractHtml || '',
+          totalPrice: project.totalPrice ? Number(project.totalPrice) * 100 : 0, // Convert to cents
+          status: project.status || 'approved',
+          projectProgress: project.projectProgress || 'approved',
+          paymentStatus: project.paymentStatus || 'pending',
+          paymentDetails: project.paymentDetails || {},
+          createdAt: project.createdAt?.toDate ? project.createdAt.toDate().toISOString() : new Date().toISOString(),
+          updatedAt: project.updatedAt?.toDate ? project.updatedAt.toDate().toISOString() : new Date().toISOString(),
+        }));
       } catch (error) {
-        console.error('Error fetching projects:', error);
+        console.error('Error fetching projects from Firebase:', error);
         return [];
       }
     },
