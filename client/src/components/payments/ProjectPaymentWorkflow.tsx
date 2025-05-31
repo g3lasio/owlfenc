@@ -231,26 +231,26 @@ export default function ProjectPaymentWorkflow({
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Enhanced Client Information Section */}
-          <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-6 rounded-lg border">
-            <h4 className="font-semibold text-lg mb-4 flex items-center gap-2">
-              <User className="h-5 w-5 text-blue-600" />
+          <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-6 rounded-lg border border-cyan-400">
+            <h4 className="font-semibold text-lg mb-4 flex items-center gap-2 text-white">
+              <User className="h-5 w-5 text-cyan-400" />
               Client Information
             </h4>
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                  <div className="w-2 h-2 bg-cyan-400 rounded-full"></div>
                   <div>
-                    <div className="text-sm text-gray-600">Full Name</div>
-                    <div className="font-semibold text-lg">{selectedProject.clientName}</div>
+                    <div className="text-sm text-gray-300">Full Name</div>
+                    <div className="font-semibold text-lg text-white">{selectedProject.clientName}</div>
                   </div>
                 </div>
                 {selectedProject.clientEmail && (
                   <div className="flex items-center gap-3">
-                    <Mail className="h-4 w-4 text-blue-600" />
+                    <Mail className="h-4 w-4 text-cyan-400" />
                     <div>
-                      <div className="text-sm text-gray-600">Email</div>
-                      <div className="text-sm font-medium">{selectedProject.clientEmail}</div>
+                      <div className="text-sm text-gray-300">Email</div>
+                      <div className="text-sm font-medium text-white">{selectedProject.clientEmail}</div>
                     </div>
                   </div>
                 )}
@@ -258,18 +258,18 @@ export default function ProjectPaymentWorkflow({
               <div className="space-y-3">
                 {selectedProject.clientPhone && (
                   <div className="flex items-center gap-3">
-                    <Phone className="h-4 w-4 text-blue-600" />
+                    <Phone className="h-4 w-4 text-cyan-400" />
                     <div>
-                      <div className="text-sm text-gray-600">Phone</div>
-                      <div className="text-sm font-medium">{selectedProject.clientPhone}</div>
+                      <div className="text-sm text-gray-300">Phone</div>
+                      <div className="text-sm font-medium text-white">{selectedProject.clientPhone}</div>
                     </div>
                   </div>
                 )}
                 <div className="flex items-start gap-3">
-                  <MapPin className="h-4 w-4 text-blue-600 mt-1" />
+                  <MapPin className="h-4 w-4 text-cyan-400 mt-1" />
                   <div>
-                    <div className="text-sm text-gray-600">Project Address</div>
-                    <div className="text-sm font-medium">{selectedProject.address}</div>
+                    <div className="text-sm text-gray-300">Project Address</div>
+                    <div className="text-sm font-medium text-white">{selectedProject.address}</div>
                   </div>
                 </div>
               </div>
@@ -277,26 +277,26 @@ export default function ProjectPaymentWorkflow({
           </div>
 
           {/* Enhanced Project Details Section */}
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-lg border">
-            <h4 className="font-semibold text-lg mb-4 flex items-center gap-2">
-              <Calculator className="h-5 w-5 text-green-600" />
+          <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-6 rounded-lg border border-cyan-400">
+            <h4 className="font-semibold text-lg mb-4 flex items-center gap-2 text-white">
+              <Calculator className="h-5 w-5 text-cyan-400" />
               Project Details
             </h4>
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-3">
                 <div>
-                  <div className="text-sm text-gray-600">Project Type</div>
-                  <div className="font-semibold">{selectedProject.projectType || 'General Project'}</div>
+                  <div className="text-sm text-gray-300">Project Type</div>
+                  <div className="font-semibold text-white">{selectedProject.projectType || 'General Project'}</div>
                 </div>
                 {selectedProject.projectSubtype && (
                   <div>
-                    <div className="text-sm text-gray-600">Style/Subtype</div>
-                    <div className="font-medium">{selectedProject.projectSubtype}</div>
+                    <div className="text-sm text-gray-300">Style/Subtype</div>
+                    <div className="font-medium text-white">{selectedProject.projectSubtype}</div>
                   </div>
                 )}
                 <div>
-                  <div className="text-sm text-gray-600">Status</div>
-                  <Badge variant="default" className="bg-green-100 text-green-800">
+                  <div className="text-sm text-gray-300">Status</div>
+                  <Badge variant="default" className="bg-cyan-600 text-white">
                     {selectedProject.status === 'approved' ? 'Approved' : selectedProject.status}
                   </Badge>
                 </div>
@@ -304,8 +304,8 @@ export default function ProjectPaymentWorkflow({
               <div className="space-y-3">
                 {selectedProject.projectDescription && (
                   <div>
-                    <div className="text-sm text-gray-600">Description</div>
-                    <div className="text-sm bg-white p-3 rounded border">
+                    <div className="text-sm text-gray-300">Description</div>
+                    <div className="text-sm bg-gray-700 text-white p-3 rounded border border-gray-600">
                       {selectedProject.projectDescription}
                     </div>
                   </div>
@@ -315,55 +315,55 @@ export default function ProjectPaymentWorkflow({
           </div>
 
           {/* Enhanced Total Costs Section */}
-          <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-6 rounded-lg border">
-            <h4 className="font-semibold text-lg mb-4 flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-purple-600" />
+          <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-6 rounded-lg border border-cyan-400">
+            <h4 className="font-semibold text-lg mb-4 flex items-center gap-2 text-white">
+              <DollarSign className="h-5 w-5 text-cyan-400" />
               Total Costs
             </h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-4 bg-white rounded-lg shadow-sm border">
-                <div className="text-2xl font-bold text-purple-600">
-                  {formatCurrency(amounts.totalAmount)}
+              <div className="text-center p-4 bg-gray-700 rounded-lg shadow-sm border border-cyan-500">
+                <div className="text-2xl font-bold text-purple-400">
+                  {formatCurrency((selectedProject.totalPrice || 0) / 100)}
                 </div>
-                <div className="text-sm text-gray-600">Total Cost</div>
+                <div className="text-sm text-gray-300">Total Cost</div>
               </div>
-              <div className="text-center p-4 bg-white rounded-lg shadow-sm border">
-                <div className="text-2xl font-bold text-green-600">
+              <div className="text-center p-4 bg-gray-700 rounded-lg shadow-sm border border-cyan-500">
+                <div className="text-2xl font-bold text-green-400">
                   {formatCurrency(amounts.totalPaid)}
                 </div>
-                <div className="text-sm text-gray-600">Paid</div>
+                <div className="text-sm text-gray-300">Paid</div>
               </div>
-              <div className="text-center p-4 bg-white rounded-lg shadow-sm border">
-                <div className="text-2xl font-bold text-orange-600">
-                  {formatCurrency(amounts.remainingBalance)}
+              <div className="text-center p-4 bg-gray-700 rounded-lg shadow-sm border border-cyan-500">
+                <div className="text-2xl font-bold text-orange-400">
+                  {formatCurrency(((selectedProject.totalPrice || 0) / 100) - amounts.totalPaid)}
                 </div>
-                <div className="text-sm text-gray-600">Pending</div>
+                <div className="text-sm text-gray-300">Pending</div>
               </div>
-              <div className="text-center p-4 bg-white rounded-lg shadow-sm border">
-                <div className="text-2xl font-bold text-blue-600">
+              <div className="text-center p-4 bg-gray-700 rounded-lg shadow-sm border border-cyan-500">
+                <div className="text-2xl font-bold text-blue-400">
                   {formatCurrency(previewAmount)}
                 </div>
-                <div className="text-sm text-gray-600">This Payment</div>
+                <div className="text-sm text-gray-300">This Payment</div>
               </div>
             </div>
           </div>
 
           {/* Editable Payment Amount */}
-          <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
-            <Label htmlFor="paymentAmount" className="text-base font-medium">Payment Amount</Label>
+          <div className="space-y-4 bg-gray-800 p-4 rounded-lg border border-cyan-400">
+            <Label htmlFor="paymentAmount" className="text-base font-medium text-white">Payment Amount</Label>
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
-                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-300" />
                 <Input
                   id="paymentAmount"
                   type="number"
                   value={editableAmount}
                   onChange={(e) => setEditableAmount(e.target.value)}
-                  className="pl-10 text-lg"
+                  className="pl-10 text-lg bg-gray-700 text-white border-gray-600"
                   placeholder="0.00"
                   step="0.01"
                   min="0"
-                  max={amounts.remainingBalance}
+                  max={((selectedProject.totalPrice || 0) / 100) - amounts.totalPaid}
                 />
               </div>
               <Button
