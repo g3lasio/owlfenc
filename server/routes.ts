@@ -745,8 +745,11 @@ app.post('/api/anthropic/generate-defensive-contract', async (req, res) => {
   }
 });
 
-  // Use payment routes
+  // Use payment routes for general payments
   app.use('/api', paymentRoutes);
+  
+  // Use contractor payment routes for Stripe Connect functionality
+  app.use('/api/contractor-payments', paymentRoutes);
   
   // Registro del endpoint simple para autoguardado de estimados
   console.log('🔧 Registrando endpoint simple para estimados...');
