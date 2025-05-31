@@ -47,46 +47,76 @@ router.get('/stripe/account-status', async (req: Request, res: Response) => {
   }
 });
 
-// Create Stripe Connect account - simplified version for testing
+// Create Stripe Connect account using OAuth
 router.post('/stripe/connect', async (req: Request, res: Response) => {
   try {
-    console.log('Creating Stripe Connect account for demo contractor');
+    console.log('Initiating Stripe Connect OAuth flow');
     
     const validatedData = connectAccountSchema.parse(req.body);
 
-    const baseUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
-    const refreshUrl = `${baseUrl}/project-payments?refresh=true`;
-    const returnUrl = `${baseUrl}/project-payments?setup=success`;
-
-    // Directly create Stripe Connect account
-    const account = await stripe.accounts.create({
-      type: 'express',
-      email: 'contractor@owlfence.com',
-      business_type: validatedData.businessType || 'individual',
-      country: validatedData.country || 'US',
-      capabilities: {
-        card_payments: { requested: true },
-        transfers: { requested: true },
-      },
-      metadata: {
-        demo: 'true',
-        created: new Date().toISOString()
-      }
-    });
-
-    // Create account link for onboarding
-    const accountLink = await stripe.accountLinks.create({
-      account: account.id,
-      refresh_url: refreshUrl,
-      return_url: returnUrl,
-      type: 'account_onboarding',
-    });
-
-    console.log(`Stripe Connect account created: ${account.id}`);
-    res.json({ url: accountLink.url });
+    const baseUrl = 'https://4d52eb7d-89c5-4768-b289-5b2d76991682-00-1ovgjat7mg0re.riker.replit.dev';
+    const clientId = 'ca_SPYH601QeKcuZgmB8iBIQRh7sjokOagL';
+    
+    // Generate a unique state parameter for security
+    const state = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Build OAuth URL for Stripe Connect
+    const oauthUrl = new URL('https://connect.stripe.com/oauth/authorize');
+    oauthUrl.searchParams.append('response_type', 'code');
+    oauthUrl.searchParams.append('client_id', clientId);
+    oauthUrl.searchParams.append('scope', 'read_write');
+    oauthUrl.searchParams.append('redirect_uri', `${baseUrl}/project-payments?setup=oauth`);
+    oauthUrl.searchParams.append('state', state);
+    
+    // Optional: suggest account type based on business type
+    if (validatedData.businessType === 'individual') {
+      oauthUrl.searchParams.append('stripe_user[business_type]', 'individual');
+    } else if (validatedData.businessType === 'company') {
+      oauthUrl.searchParams.append('stripe_user[business_type]', 'company');
+    }
+    
+    // Optional: suggest country
+    if (validatedData.country) {
+      oauthUrl.searchParams.append('stripe_user[country]', validatedData.country);
+    }
+    
+    console.log(`Stripe Connect OAuth URL generated: ${oauthUrl.toString()}`);
+    res.json({ url: oauthUrl.toString() });
   } catch (error) {
-    console.error('Error creating Stripe Connect account:', error);
-    return res.status(500).json({ message: 'Error creating Stripe Connect account' });
+    console.error('Error creating Stripe Connect OAuth URL:', error);
+    return res.status(500).json({ message: 'Error creating Stripe Connect OAuth URL' });
+  }
+});
+
+// Handle OAuth callback from Stripe Connect
+router.get('/stripe/oauth/callback', async (req: Request, res: Response) => {
+  try {
+    const { code, state, error } = req.query;
+
+    if (error) {
+      console.error('Stripe OAuth error:', error);
+      return res.redirect('/project-payments?error=oauth_failed');
+    }
+
+    if (!code) {
+      return res.status(400).json({ message: 'Authorization code is required' });
+    }
+
+    // Exchange authorization code for access token
+    const tokenResponse = await stripe.oauth.token({
+      grant_type: 'authorization_code',
+      code: code as string,
+    });
+
+    const { stripe_user_id, access_token } = tokenResponse;
+
+    console.log(`Stripe Connect account connected: ${stripe_user_id}`);
+
+    // Redirect back to the payments page with success
+    res.redirect('/project-payments?setup=success&account=' + stripe_user_id);
+  } catch (error) {
+    console.error('Error handling Stripe OAuth callback:', error);
+    res.redirect('/project-payments?error=oauth_failed');
   }
 });
 
