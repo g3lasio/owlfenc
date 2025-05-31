@@ -89,21 +89,21 @@ export default function PaymentSettings({
               <div>
                 <h4 className="font-medium">Stripe Connect Account</h4>
                 <p className="text-sm text-muted-foreground">
-                  Secure payment processing with instant transfers
+                  Conexión bancaria temporalmente suspendida durante revisión de compliance
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              {getStripeStatusBadge()}
+              <Badge variant="secondary" className="bg-orange-50 text-orange-700 border-orange-200">
+                <Clock className="h-3 w-3 mr-1" />
+                En Revisión
+              </Badge>
               <Button 
-                onClick={onConnectStripe}
-                disabled={stripeAccountStatus?.hasStripeAccount && stripeAccountStatus?.accountDetails?.chargesEnabled}
-                variant={stripeAccountStatus?.hasStripeAccount ? "outline" : "default"}
+                disabled={true}
+                variant="outline"
+                className="opacity-50 cursor-not-allowed"
               >
-                {stripeAccountStatus?.hasStripeAccount ? 
-                  (stripeAccountStatus?.accountDetails?.chargesEnabled ? 'Connected' : 'Complete Setup') : 
-                  'Connect Bank Account'
-                }
+                Deployment en Progreso
               </Button>
             </div>
           </div>
