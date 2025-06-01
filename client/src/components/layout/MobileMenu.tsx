@@ -269,8 +269,10 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                             </Link>
                           </motion.div>
                         ) : null
-                  )}
-                </div>
+                      )}
+                    </div>
+                  </>
+                )}
                 
                 {/* Añadir separador después del segundo grupo (entre Funcionalidades y Mi Perfil) */}
                 {groupIndex === 1 && (
