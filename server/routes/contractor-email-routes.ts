@@ -9,35 +9,53 @@ const router = express.Router();
  */
 router.post('/verify', async (req, res) => {
   try {
-    const { contractorEmail, contractorName } = req.body;
+    const { email, name } = req.body;
 
-    if (!contractorEmail || !contractorName) {
+    if (!email || !name) {
       return res.status(400).json({
         success: false,
-        message: 'Contractor email and name are required'
+        message: 'Email and name are required'
       });
     }
 
-    const result = await ContractorEmailService.verifyContractorEmail(contractorEmail, contractorName);
+    const result = await ContractorEmailService.verifyContractorEmail(email, name);
 
-    if (result) {
-      res.json({
-        success: true,
-        message: 'Verification email sent to contractor. Please check your email and click the verification link.',
-        action: 'verification_sent'
-      });
-    } else {
-      res.status(500).json({
-        success: false,
-        message: 'Failed to send verification email. Please try again.'
-      });
-    }
+    res.json(result);
   } catch (error) {
     console.error('Error in email verification:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error during email verification'
     });
+  }
+});
+
+/**
+ * Complete email verification when user clicks the link
+ * GET /api/contractor-email/complete-verification
+ */
+router.get('/complete-verification', async (req, res) => {
+  try {
+    const { token, email } = req.query;
+
+    if (!token || !email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Verification token and email are required'
+      });
+    }
+
+    const result = await ContractorEmailService.completeEmailVerification(token as string, email as string);
+    
+    if (result.success) {
+      // Redirect to success page
+      res.redirect(`${process.env.APP_URL || 'https://owlfence.replit.app'}/profile?verified=true`);
+    } else {
+      res.redirect(`${process.env.APP_URL || 'https://owlfence.replit.app'}/profile?verified=false&error=${encodeURIComponent(result.message || 'Verification failed')}`);
+    }
+  } catch (error) {
+    console.error('Error completing verification:', error);
+    res.redirect(`${process.env.APP_URL || 'https://owlfence.replit.app'}/profile?verified=false&error=server_error`);
   }
 });
 

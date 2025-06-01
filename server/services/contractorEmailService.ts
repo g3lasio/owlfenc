@@ -41,19 +41,70 @@ export class ContractorEmailService {
    */
   static async verifyContractorEmail(contractorEmail: string, contractorName: string): Promise<{success: boolean, message?: string}> {
     try {
-      // In production, this would create a single sender verification request
-      console.log(`Verification requested for: ${contractorEmail}`);
+      if (!process.env.SENDGRID_API_KEY) {
+        return {
+          success: false,
+          message: 'Email verification requires SendGrid API key. Please provide SENDGRID_API_KEY in environment variables.'
+        };
+      }
+
+      console.log(`Sending real verification email to: ${contractorEmail}`);
       
-      // For now, return success to allow testing
+      // Initialize SendGrid
+      const sgMail = require('@sendgrid/mail');
+      sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+      // Create verification token
+      const verificationToken = require('crypto').randomBytes(32).toString('hex');
+      const verificationUrl = `${process.env.APP_URL || 'https://owlfence.replit.app'}/verify-email?token=${verificationToken}&email=${encodeURIComponent(contractorEmail)}`;
+      
+      // Store pending verification (in production, use database)
+      if (!this.pendingVerifications) {
+        this.pendingVerifications = new Map();
+      }
+      this.pendingVerifications.set(verificationToken, {
+        email: contractorEmail,
+        name: contractorName,
+        timestamp: Date.now()
+      });
+
+      const verificationEmail = {
+        to: contractorEmail,
+        from: {
+          email: 'noreply@owlfenc.com',
+          name: 'Owl Fence Email Verification'
+        },
+        subject: 'Verify Your Email Address - Owl Fence',
+        html: `
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
+            <h2 style="color: #1f2937;">Verify Your Email Address</h2>
+            <p>Hello ${contractorName},</p>
+            <p>Please click the button below to verify your email address:</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${verificationUrl}" 
+                 style="background: #10b981; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                Verify Email Address
+              </a>
+            </div>
+            <p style="color: #6b7280; font-size: 14px;">
+              Link: ${verificationUrl}
+            </p>
+          </div>
+        `,
+        text: `Hello ${contractorName}, please verify your email: ${verificationUrl}`
+      };
+
+      await sgMail.send(verificationEmail);
+      
       return {
         success: true,
-        message: 'Verification email sent successfully'
+        message: 'Verification email sent successfully. Please check your email and click the verification link.'
       };
-    } catch (error) {
-      console.error('Error requesting email verification:', error);
+    } catch (error: any) {
+      console.error('Error sending verification email:', error);
       return {
         success: false,
-        message: 'Failed to send verification email'
+        message: 'Failed to send verification email. Please ensure SendGrid is properly configured.'
       };
     }
   }
@@ -61,21 +112,34 @@ export class ContractorEmailService {
   /**
    * Check email verification status
    */
-  static async checkVerificationStatus(email: string): Promise<{ verified: boolean; pending: boolean }> {
+  static async checkVerificationStatus(email: string): Promise<{ verified: boolean; pending: boolean; confirmedByProvider?: boolean }> {
     try {
-      // In production, this would check SendGrid's API for verification status
       console.log(`Checking verification status for: ${email}`);
       
-      // For now, return verified true to allow testing
+      // Para implementar verificación real con SendGrid, necesitamos:
+      // 1. Mantener un registro de emails pendientes de verificación
+      // 2. Solo marcar como verificado cuando SendGrid confirme via webhook
+      // 3. Nunca asumir que un email está verificado solo por existir
+      
+      // Por ahora, solo emails específicamente verificados están permitidos
+      const verifiedEmails = [
+        // Lista de emails que han completado el proceso de verificación real
+        // Esta lista se actualizaría via webhook de SendGrid en producción
+      ];
+      
+      const isVerified = verifiedEmails.includes(email);
+      
       return {
-        verified: true,
-        pending: false
+        verified: false, // Nunca verificado automáticamente
+        pending: false,  // No hay verificaciones pendientes sin proceso real
+        confirmedByProvider: false // Requiere confirmación real de SendGrid
       };
     } catch (error) {
       console.error('Error checking verification status:', error);
       return {
         verified: false,
-        pending: false
+        pending: false,
+        confirmedByProvider: false
       };
     }
   }

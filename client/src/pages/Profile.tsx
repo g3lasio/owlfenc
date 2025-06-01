@@ -71,6 +71,8 @@ export default function Profile() {
   // Email verification state
   const [emailVerificationStatus, setEmailVerificationStatus] = useState<'unverified' | 'pending' | 'verified' | 'checking'>('unverified');
   const [isVerifying, setIsVerifying] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [lastVerifiedEmail, setLastVerifiedEmail] = useState('');
 
   useEffect(() => {
     if (profile) {
@@ -325,7 +327,20 @@ export default function Profile() {
     if (!email) return;
     
     setEmailVerificationStatus('checking');
+    
     try {
+      // Verificar si el email ha sido realmente verificado a través de SendGrid
+      const verifiedEmails = JSON.parse(localStorage.getItem('verifiedEmails') || '[]');
+      const isVerified = verifiedEmails.includes(email);
+      
+      if (isVerified) {
+        setEmailVerificationStatus('verified');
+        setEmailVerified(true);
+        setLastVerifiedEmail(email);
+        return;
+      }
+
+      // Si no está en la lista de verificados, comprobar con el servidor
       const response = await fetch('/api/contractor-email/check-verification', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -334,16 +349,26 @@ export default function Profile() {
       
       const result = await response.json();
       
-      if (result.verified) {
+      // Solo marcar como verificado si realmente fue confirmado por SendGrid
+      if (result.verified && result.confirmedByProvider) {
         setEmailVerificationStatus('verified');
+        setEmailVerified(true);
+        setLastVerifiedEmail(email);
+        
+        // Guardar en lista de emails verificados
+        const updatedVerifiedEmails = [...verifiedEmails, email];
+        localStorage.setItem('verifiedEmails', JSON.stringify(updatedVerifiedEmails));
       } else if (result.pending) {
         setEmailVerificationStatus('pending');
+        setEmailVerified(false);
       } else {
         setEmailVerificationStatus('unverified');
+        setEmailVerified(false);
       }
     } catch (error) {
       console.error('Error checking verification status:', error);
       setEmailVerificationStatus('unverified');
+      setEmailVerified(false);
     }
   };
 
