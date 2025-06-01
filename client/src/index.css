@@ -134,6 +134,122 @@
     right: 10px;
   }
 
+  /* Advanced Sidebar Border */
+  .sci-fi-sidebar-border {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      #00ffff 10%,
+      #0066ff 25%,
+      #00ffff 50%,
+      #0066ff 75%,
+      #00ffff 90%,
+      transparent 100%
+    );
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+    overflow: hidden;
+  }
+
+  .sci-fi-sidebar-border::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 20px;
+    background: linear-gradient(180deg, #00ffff 0%, transparent 100%);
+    animation: electricPulse 3s ease-in-out infinite;
+  }
+
+  .sci-fi-sidebar-border::after {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: #00ffff;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    box-shadow: 
+      0 0 12px rgba(0, 255, 255, 0.9),
+      inset 0 0 6px rgba(255, 255, 255, 0.5);
+    left: -2px;
+    top: 50%;
+    transform: translateY(-50%);
+    animation: powerNodePulse 2s ease-in-out infinite alternate;
+  }
+
+  /* Power Nodes at corners */
+  .power-node-top,
+  .power-node-bottom {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    right: -2px;
+    background: #00ffff;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    box-shadow: 
+      0 0 15px rgba(0, 255, 255, 0.9),
+      inset 0 0 8px rgba(255, 255, 255, 0.3);
+    animation: powerNodePulse 2.5s ease-in-out infinite alternate;
+  }
+
+  .power-node-top {
+    top: 20px;
+    animation-delay: 0.5s;
+  }
+
+  .power-node-bottom {
+    bottom: 20px;
+    animation-delay: 1s;
+  }
+
+  /* Bracket connectors */
+  .sci-fi-bracket-top,
+  .sci-fi-bracket-bottom {
+    position: absolute;
+    right: 0;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #00ffff;
+    box-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
+  }
+
+  .sci-fi-bracket-top {
+    top: 0;
+    border-bottom: none;
+    border-left: none;
+  }
+
+  .sci-fi-bracket-bottom {
+    bottom: 0;
+    border-top: none;
+    border-left: none;
+  }
+
+  /* Discontinuous line effect */
+  .dashed-sci-fi-line {
+    position: absolute;
+    top: 0;
+    right: 2px;
+    width: 2px;
+    height: 100%;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      #00ffff 0px,
+      #00ffff 10px,
+      transparent 10px,
+      transparent 15px
+    );
+    opacity: 0.7;
+    animation: dashAnimation 4s linear infinite;
+  }
+
   .power-pulse {
     animation: powerPulse 4s ease-in-out infinite;
   }
@@ -160,6 +276,29 @@
     box-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
     opacity: 1;
   }
+}
+
+@keyframes electricPulse {
+  0% { transform: translateY(-100%); opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translateY(calc(100vh + 100%)); opacity: 0; }
+}
+
+@keyframes powerNodePulse {
+  0% { 
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.9), inset 0 0 8px rgba(255, 255, 255, 0.3);
+    transform: translateY(-50%) scale(1);
+  }
+  100% { 
+    box-shadow: 0 0 25px rgba(0, 255, 255, 1), inset 0 0 12px rgba(255, 255, 255, 0.5);
+    transform: translateY(-50%) scale(1.1);
+  }
+}
+
+@keyframes dashAnimation {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 25px; }
 }
 
 /* Estilos para el efecto de escritura sin temblores */

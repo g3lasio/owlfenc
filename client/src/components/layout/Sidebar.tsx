@@ -127,8 +127,18 @@ export default function Sidebar() {
 
   return (
     <aside className="hidden md:flex md:w-72 flex-col bg-card border-r border-border h-screen overflow-hidden relative">
-      {/* Futuristic border enhancement */}
-      <div className="absolute top-0 right-0 w-1 h-full futuristic-divider"></div>
+      {/* Advanced Sci-Fi Border System */}
+      <div className="sci-fi-sidebar-border">
+        <div className="dashed-sci-fi-line"></div>
+      </div>
+      
+      {/* Power Nodes */}
+      <div className="power-node-top"></div>
+      <div className="power-node-bottom"></div>
+      
+      {/* Corner Brackets */}
+      <div className="sci-fi-bracket-top"></div>
+      <div className="sci-fi-bracket-bottom"></div>
       
       {/* Todo el contenido en un contenedor con scroll */}
       <div className="flex flex-col h-full overflow-y-auto">
