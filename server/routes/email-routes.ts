@@ -41,7 +41,7 @@ router.post('/send-estimate-email', async (req, res) => {
       });
     }
 
-    // Professional email template
+    // Professional email template with custom message
     const emailHtml = `
     <!DOCTYPE html>
     <html>
@@ -58,7 +58,7 @@ router.post('/send-estimate-email', async (req, res) => {
             .estimate-summary { background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0; }
             .total-amount { font-size: 24px; font-weight: bold; color: #1e3a8a; text-align: center; margin: 20px 0; }
             .contact-info { background: #fafafa; padding: 15px; border-radius: 8px; margin: 20px 0; }
-            .btn { display: inline-block; background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 10px 0; }
+            .custom-message { background: #fff7ed; border-left: 4px solid #f97316; padding: 20px; margin: 20px 0; }
         </style>
     </head>
     <body>
@@ -74,15 +74,20 @@ router.post('/send-estimate-email', async (req, res) => {
             </div>
             
             <div class="content">
+                ${customMessage ? `
+                <div class="custom-message">
+                    <div style="white-space: pre-wrap;">${customMessage}</div>
+                </div>
+                ` : `
                 <h2>Estimado Sr./Sra. ${clientName},</h2>
-                
-                <p>Nos complace presentarle el estimado detallado para su proyecto de construcción. Hemos preparado una propuesta profesional que incluye todos los materiales y servicios necesarios para completar su proyecto con los más altos estándares de calidad.</p>
+                <p>Nos complace presentarle el estimado detallado para su proyecto de construcción.</p>
+                `}
                 
                 <div class="estimate-summary">
-                    <h3>Resumen del Proyecto</h3>
+                    <h3>📊 Resumen del Proyecto</h3>
                     <p><strong>Descripción:</strong> ${projectDescription || 'Proyecto de construcción personalizado'}</p>
                     <div class="total-amount">
-                        Total del Estimado: $${totalAmount.toFixed(2)}
+                        Total del Estimado: $${totalAmount.toLocaleString()}
                     </div>
                 </div>
                 
@@ -91,22 +96,14 @@ router.post('/send-estimate-email', async (req, res) => {
                     ${estimateHtml}
                 </div>
                 
-                <h3>Próximos Pasos</h3>
-                <ul>
-                    <li>Revise cuidadosamente todos los detalles del estimado</li>
-                    <li>Si tiene alguna pregunta, no dude en contactarnos</li>
-                    <li>Para proceder con el proyecto, responda este correo confirmando su aprobación</li>
-                    <li>Coordinaremos una fecha de inicio una vez confirmado</li>
-                </ul>
-                
                 <div class="contact-info">
                     <h4>Información de Contacto</h4>
                     <p><strong>${contractorName}</strong></p>
-                    <p>Email: ${contractorEmail}</p>
+                    <p>📧 Email: ${contractorEmail}</p>
+                    ${contractorProfile?.phone ? `<p>📞 Teléfono: ${contractorProfile.phone}</p>` : ''}
+                    ${contractorProfile?.website ? `<p>🌐 Website: ${contractorProfile.website}</p>` : ''}
                     <p>Para cualquier consulta sobre este estimado, contáctenos directamente.</p>
                 </div>
-                
-                <p>Agradecemos la oportunidad de trabajar en su proyecto y esperamos su respuesta.</p>
                 
                 <p>Atentamente,<br>
                 <strong>${contractorName}</strong></p>
@@ -125,10 +122,23 @@ router.post('/send-estimate-email', async (req, res) => {
     const msg = {
       to: clientEmail,
       from: contractorEmail || 'noreply@owlfence.com',
-      subject: `Estimado de Proyecto #${estimateNumber} - ${contractorName}`,
+      subject: customSubject || `Estimado de Proyecto #${estimateNumber} - ${contractorName}`,
       html: emailHtml,
-      text: `Estimado ${clientName},\n\nAdjunto encontrará el estimado detallado para su proyecto.\n\nTotal: $${totalAmount.toFixed(2)}\n\nPara cualquier consulta, contáctenos en ${contractorEmail}\n\nAtentamente,\n${contractorName}`
+      text: customMessage || `Estimado ${clientName},\n\nAdjunto encontrará el estimado detallado para su proyecto.\n\nTotal: $${totalAmount.toLocaleString()}\n\nPara cualquier consulta, contáctenos en ${contractorEmail}\n\nAtentamente,\n${contractorName}`
     };
+
+    // Send copy to contractor if requested
+    if (sendCopy && contractorEmail) {
+      const copyMsg = {
+        to: contractorEmail,
+        from: contractorEmail || 'noreply@owlfence.com',
+        subject: `[COPIA] ${customSubject || `Estimado de Proyecto #${estimateNumber} - ${contractorName}`}`,
+        html: `<p><strong>Esta es una copia del correo enviado a su cliente.</strong></p><hr>${emailHtml}`,
+        text: `COPIA del correo enviado a ${clientName} (${clientEmail})\n\n${customMessage || 'Estimado enviado correctamente.'}`
+      };
+      
+      await mailService.send(copyMsg);
+    }
 
     await mailService.send(msg);
 

@@ -26,7 +26,6 @@ import {
   Package, 
   FileText, 
   Eye, 
-  Send, 
   Save, 
   Trash2, 
   Users, 
@@ -48,7 +47,6 @@ import {
   Wrench,
   Combine,
   ArrowLeft,
-  Eye,
   Send
 } from 'lucide-react';
 
@@ -3720,7 +3718,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
                 {/* Company Signature */}
                 <div className="border-t pt-4 mt-6 text-gray-600">
                   <div className="text-sm">
-                    <div className="font-bold text-blue-600">{profile?.company || 'Su Empresa'}</div>
+                    <div className="font-bold text-blue-600">{profile?.companyName || 'Su Empresa'}</div>
                     {profile?.phone && <div>📞 {profile.phone}</div>}
                     {profile?.email && <div>📧 {profile.email}</div>}
                     {profile?.website && <div>🌐 {profile.website}</div>}
