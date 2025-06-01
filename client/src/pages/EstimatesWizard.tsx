@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
+import { MervinWorkingEffect } from '@/components/ui/mervin-working-effect';
 // Usar el logo correcto de OWL FENCE
 const mervinLogoUrl = "https://ik.imagekit.io/lp5czyx2a/ChatGPT%20Image%20May%2010,%202025,%2005_35_38%20PM.png?updatedAt=1748157114019";
 import { getClients as getFirebaseClients, saveClient } from '@/lib/clientFirebase';
@@ -149,6 +150,7 @@ export default function EstimatesWizardFixed() {
   const [showSmartSearchDialog, setShowSmartSearchDialog] = useState(false);
   const [smartSearchMode, setSmartSearchMode] = useState<'materials' | 'labor' | 'both'>('both');
   const [isAIProcessing, setIsAIProcessing] = useState(false);
+  const [showMervinWorking, setShowMervinWorking] = useState(false);
   const [aiProgress, setAiProgress] = useState(0);
 
   // New client form
@@ -660,7 +662,7 @@ export default function EstimatesWizardFixed() {
     }
   };
 
-  // AI Enhancement Function - Simplified for single field
+  // AI Enhancement Function - Using new Mervin Working Effect
   const enhanceProjectWithAI = async () => {
     if (!estimate.projectDetails.trim()) {
       toast({
@@ -672,6 +674,7 @@ export default function EstimatesWizardFixed() {
     }
 
     setIsAIProcessing(true);
+    setShowMervinWorking(true);
     
     try {
       console.log('🤖 Starting Mervin AI enhancement...');
@@ -715,6 +718,7 @@ export default function EstimatesWizardFixed() {
       });
     } finally {
       setIsAIProcessing(false);
+      setShowMervinWorking(false);
     }
   };
 
@@ -2004,8 +2008,8 @@ export default function EstimatesWizardFixed() {
                     ) : (
                       <>
                         <Brain className="h-4 w-4 mr-2" />
-                        <span className="hidden sm:inline">Enhance with Mervin AI</span>
-                        <span className="sm:hidden">Mervin AI</span>
+                        <span className="hidden sm:inline">Mejorar enhance with Mervin AI</span>
+                        <span className="sm:hidden">Mejorar Mervin AI</span>
                       </>
                     )}
                   </Button>
