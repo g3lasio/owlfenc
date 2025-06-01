@@ -13,7 +13,7 @@ if (process.env.SENDGRID_API_KEY) {
 router.post('/email-preferences', async (req: Request, res: Response) => {
   try {
     const { type, enabled } = req.body;
-    const userId = req.user?.uid;
+    const userId = req.user?.id;
     
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
@@ -63,7 +63,7 @@ router.post('/email-preferences', async (req: Request, res: Response) => {
 router.post('/sms-preferences', async (req: Request, res: Response) => {
   try {
     const { type, enabled } = req.body;
-    const userId = req.user?.uid;
+    const userId = req.user?.id;
     
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
@@ -94,7 +94,7 @@ router.post('/sms-preferences', async (req: Request, res: Response) => {
 // Get current notification preferences
 router.get('/preferences', async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.uid;
+    const userId = req.user?.id;
     
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
@@ -128,7 +128,7 @@ router.get('/preferences', async (req: Request, res: Response) => {
 router.post('/test', async (req: Request, res: Response) => {
   try {
     const { type } = req.body; // 'email' or 'sms'
-    const userId = req.user?.uid;
+    const userId = req.user?.id;
     
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
