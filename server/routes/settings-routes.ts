@@ -2,9 +2,13 @@ import express from 'express';
 import { UserPreferencesService } from '../services/userPreferencesService.js';
 import { SubscriptionService } from '../services/subscriptionService.js';
 import { insertUserPreferencesSchema } from '../../shared/schema.js';
+import { requireAuth } from '../middleware/auth.js';
 import { z } from 'zod';
 
 const router = express.Router();
+
+// Apply authentication middleware to all routes
+router.use(requireAuth);
 
 // Initialize default subscription plans
 SubscriptionService.initializeDefaultPlans();
