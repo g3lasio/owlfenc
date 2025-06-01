@@ -150,7 +150,7 @@ export default function Sidebar() {
           {navigationGroups.map((group, index) => (
             <div key={`group-${index}`}>
               <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">
-                {t(`navigation.${group.title.toLowerCase()}`)}
+                {t(`navigation.${group.title}`)}
               </h2>
               <div className="space-y-1 mb-6">
                 {/* Filtrar el elemento de Mervin AI si existe */}

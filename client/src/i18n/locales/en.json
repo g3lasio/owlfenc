@@ -8,10 +8,8 @@
   },
   "navigation": {
     "tools": "Tools",
-    "projects": "Dashboard",
-    "projectPayments": "Project Payments",
-  "paymentTracker": "Payment Tracker",
     "features": "Features",
+    "account": "Account",
     "dashboard": "Dashboard",
     "talkToMervin": "Talk to Mervin",
     "clients": "Clients",
@@ -32,7 +30,9 @@
     "companyProfile": "Company Profile",
     "myProfile": "My Profile",
     "estimateGenerator": "Estimate Generator",
-    "contractGenerator": "Contract Generator"
+    "contractGenerator": "Contract Generator",
+    "projectPayments": "Project Payments",
+    "paymentTracker": "Payment Tracker"
   },
   "sidebar": {
     "toggleSidebar": "Toggle Sidebar",
@@ -64,7 +64,5 @@
     "passwordsMatch": "Passwords must match",
     "success": "Successful!",
     "redirecting": "Redirecting to dashboard..."
-  },
- "navigation.estimates": "Estimates",
-    "navigation.estimateGenerator": "Estimate Generator"
+  }
 }

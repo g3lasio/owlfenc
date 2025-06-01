@@ -23,7 +23,7 @@ export interface NavigationGroup {
 // Definición de todos los elementos de navegación
 export const navigationGroups: NavigationGroup[] = [
   {
-    title: "navigation.tools",
+    title: "tools",
     items: [
       {
         id: "mervin",
@@ -52,7 +52,7 @@ export const navigationGroups: NavigationGroup[] = [
     ]
   },
   {
-    title: "navigation.features",
+    title: "features",
     items: [
       {
         id: "estimates",
@@ -100,7 +100,7 @@ export const navigationGroups: NavigationGroup[] = [
     ]
   },
   {
-    title: "navigation.account",
+    title: "account",
     items: [
       {
         id: "profile",

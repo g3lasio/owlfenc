@@ -8,10 +8,8 @@
   },
   "navigation": {
     "tools": "Herramientas",
-    "projects": "Dashboard",
-    "projectPayments": "Pagos de Proyectos",
-  "paymentTracker": "Seguimiento de Pagos",
     "features": "Funcionalidades",
+    "account": "Cuenta",
     "dashboard": "Dashboard",
     "talkToMervin": "Hablar con Mervin",
     "clients": "Clientes",
@@ -31,7 +29,10 @@
     "security": "Seguridad",
     "billing": "Facturación",
     "companyProfile": "Perfil de Empresa",
-    "myProfile": "Mi Perfil"
+    "myProfile": "Mi Perfil",
+    "estimateGenerator": "Generador de Estimados",
+    "projectPayments": "Pagos de Proyectos",
+    "paymentTracker": "Seguimiento de Pagos"
   },
   "sidebar": {
     "toggleSidebar": "Cambiar Barra Lateral",
