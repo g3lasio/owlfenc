@@ -3009,76 +3009,76 @@ export default function EstimatesWizardFixed() {
                 </p>
               </div>
             ) : (
-              <div className="grid gap-4 max-h-96 overflow-y-auto">
-                {savedEstimates.map((estimate) => (
-                  <div key={estimate.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-semibold text-lg">{estimate.estimateNumber}</h3>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            estimate.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
-                            estimate.status === 'sent' ? 'bg-blue-100 text-blue-800' :
-                            estimate.status === 'approved' ? 'bg-green-100 text-green-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {estimate.status === 'draft' ? 'Borrador' :
-                             estimate.status === 'sent' ? 'Enviado' :
-                             estimate.status === 'approved' ? 'Aprobado' : estimate.status}
-                          </span>
+              <div className="max-h-80 overflow-y-auto px-2">
+                <div className="space-y-2">
+                  {savedEstimates.map((estimate) => (
+                    <div key={estimate.id} className="border rounded-lg p-3 hover:bg-gray-50/50 transition-colors">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-base truncate">{estimate.estimateNumber}</h3>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
+                              estimate.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
+                              estimate.status === 'sent' ? 'bg-blue-100 text-blue-800' :
+                              estimate.status === 'approved' ? 'bg-green-100 text-green-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {estimate.status === 'draft' ? 'Borrador' :
+                               estimate.status === 'sent' ? 'Enviado' :
+                               estimate.status === 'approved' ? 'Aprobado' : estimate.status}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-4 text-sm text-gray-600">
+                            <div className="truncate">
+                              <span className="font-medium">Cliente:</span> {estimate.clientName}
+                            </div>
+                            <div className="truncate">
+                              <span className="font-medium">Total:</span> ${(estimate.total / 100).toFixed(2)}
+                            </div>
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {estimate.projectType || 'Cerca'} • {new Date(estimate.estimateDate).toLocaleDateString('es-ES')}
+                          </div>
                         </div>
-                        <p className="text-sm text-gray-600 mb-1">
-                          <strong>Cliente:</strong> {estimate.clientName}
-                        </p>
-                        <p className="text-sm text-gray-600 mb-1">
-                          <strong>Proyecto:</strong> {estimate.projectType || 'Cerca'}
-                        </p>
-                        <p className="text-sm text-gray-600 mb-2">
-                          <strong>Total:</strong> ${(estimate.total / 100).toFixed(2)}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          Creado: {new Date(estimate.estimateDate).toLocaleDateString('es-ES')}
-                        </p>
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            // Abrir PDF si existe
-                            if (estimate.pdfUrl) {
-                              window.open(estimate.pdfUrl, '_blank');
-                            } else {
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              if (estimate.pdfUrl) {
+                                window.open(estimate.pdfUrl, '_blank');
+                              } else {
+                                toast({
+                                  title: 'PDF no disponible',
+                                  description: 'Este estimado no tiene PDF generado',
+                                  variant: 'destructive'
+                                });
+                              }
+                            }}
+                            className="h-8 px-2"
+                          >
+                            <Download className="h-3 w-3" />
+                            <span className="hidden sm:inline ml-1">PDF</span>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
                               toast({
-                                title: 'PDF no disponible',
-                                description: 'Este estimado no tiene PDF generado',
-                                variant: 'destructive'
+                                title: 'Función próximamente',
+                                description: 'Pronto podrás editar estimados guardados'
                               });
-                            }
-                          }}
-                        >
-                          <Download className="h-3 w-3 mr-1" />
-                          PDF
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            // Cargar estimado para editar
-                            // Aquí se puede implementar la funcionalidad de cargar un estimado existente
-                            toast({
-                              title: 'Función próximamente',
-                              description: 'Pronto podrás editar estimados guardados'
-                            });
-                          }}
-                        >
-                          <Edit className="h-3 w-3 mr-1" />
-                          Editar
-                        </Button>
+                            }}
+                            className="h-8 px-2"
+                          >
+                            <Edit className="h-3 w-3" />
+                            <span className="hidden sm:inline ml-1">Editar</span>
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
           </div>
