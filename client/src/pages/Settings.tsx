@@ -28,18 +28,149 @@ import {
   Users,
   Settings2,
   Lock,
+  DollarSign,
   Eye,
   AlertTriangle
 } from "lucide-react";
+import axios from 'axios';
 
 export default function Settings() {
   const [saveLoading, setSaveLoading] = useState(false);
   const { toast } = useToast();
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [autoSaveEstimates, setAutoSaveEstimates] = useState(true);
+  
+  // Integration status states
+  const [quickbooksStatus, setQuickbooksStatus] = useState({ connected: false, loading: true });
+  const [hubspotStatus, setHubspotStatus] = useState({ connected: false, loading: true });
+  const [squareStatus, setSquareStatus] = useState({ connected: false, loading: true });
+  const [stripeStatus, setStripeStatus] = useState({ connected: false, loading: true });
+  const [sendgridStatus, setSendgridStatus] = useState({ connected: false, loading: true });
   const [showTooltips, setShowTooltips] = useState(true);
   const [language, setLanguage] = useState("en");
   const [timezone, setTimezone] = useState("pst");
+
+  // Check integration statuses on component mount
+  useEffect(() => {
+    checkIntegrationStatuses();
+  }, []);
+
+  const checkIntegrationStatuses = async () => {
+    try {
+      // Check QuickBooks status
+      try {
+        const qbResponse = await axios.get('/api/quickbooks/status');
+        setQuickbooksStatus({ connected: qbResponse.data.connected, loading: false });
+      } catch (error) {
+        setQuickbooksStatus({ connected: false, loading: false });
+      }
+
+      // Check HubSpot status
+      try {
+        const hsResponse = await axios.get('/api/hubspot/status');
+        setHubspotStatus({ connected: hsResponse.data.connected, loading: false });
+      } catch (error) {
+        setHubspotStatus({ connected: false, loading: false });
+      }
+
+      // Check Square status
+      try {
+        const sqResponse = await axios.get('/api/square/status');
+        setSquareStatus({ connected: sqResponse.data.connected, loading: false });
+      } catch (error) {
+        setSquareStatus({ connected: false, loading: false });
+      }
+
+      // Check Stripe status
+      try {
+        const stripeResponse = await axios.get('/api/stripe/status');
+        setStripeStatus({ connected: stripeResponse.data.connected, loading: false });
+      } catch (error) {
+        setStripeStatus({ connected: false, loading: false });
+      }
+
+      // Check SendGrid status (already connected since we have the API key)
+      setSendgridStatus({ connected: true, loading: false });
+
+    } catch (error) {
+      console.error('Error checking integration statuses:', error);
+    }
+  };
+
+  // Handle integration connections
+  const handleConnectIntegration = async (service: string) => {
+    try {
+      switch (service) {
+        case 'quickbooks':
+          window.open('/api/quickbooks/auth', '_blank');
+          break;
+        case 'hubspot':
+          window.open('/api/hubspot/auth', '_blank');
+          break;
+        case 'square':
+          window.open('/api/square/auth', '_blank');
+          break;
+        case 'stripe':
+          window.open('/api/stripe/auth', '_blank');
+          break;
+        case 'sendgrid':
+          toast({
+            title: "SendGrid ya está configurado",
+            description: "El servicio de correo SendGrid está activo y funcionando.",
+          });
+          break;
+        default:
+          toast({
+            title: "Integración no disponible",
+            description: "Esta integración no está disponible actualmente.",
+            variant: "destructive",
+          });
+      }
+    } catch (error) {
+      toast({
+        title: "Error de conexión",
+        description: "No se pudo iniciar la conexión con el servicio.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleConfigureIntegration = async (service: string) => {
+    try {
+      switch (service) {
+        case 'quickbooks':
+          window.open('/api/quickbooks/config', '_blank');
+          break;
+        case 'hubspot':
+          window.open('/api/hubspot/config', '_blank');
+          break;
+        case 'square':
+          window.open('/api/square/config', '_blank');
+          break;
+        case 'stripe':
+          window.open('/api/stripe/config', '_blank');
+          break;
+        case 'sendgrid':
+          toast({
+            title: "Configuración de SendGrid",
+            description: "Las configuraciones de email se manejan en la sección de Notificaciones.",
+          });
+          break;
+        default:
+          toast({
+            title: "Configuración no disponible",
+            description: "La configuración para esta integración no está disponible.",
+            variant: "destructive",
+          });
+      }
+    } catch (error) {
+      toast({
+        title: "Error de configuración",
+        description: "No se pudo acceder a la configuración del servicio.",
+        variant: "destructive",
+      });
+    }
+  };
   
   // Security & Privacy states
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
@@ -724,27 +855,38 @@ export default function Settings() {
                   {[
                     { 
                       name: "QuickBooks", 
-                      description: "Sync invoices and payments", 
-                      connected: true,
-                      icon: Calculator
+                      description: "Gestión de clientes, facturación y materiales", 
+                      connected: quickbooksStatus.connected,
+                      icon: Calculator,
+                      service: 'quickbooks'
                     },
                     { 
-                      name: "Google Maps", 
-                      description: "Enhanced location services", 
-                      connected: true,
-                      icon: MapPin
+                      name: "HubSpot", 
+                      description: "CRM para gestión de leads y clientes", 
+                      connected: hubspotStatus.connected,
+                      icon: Users,
+                      service: 'hubspot'
                     },
                     { 
-                      name: "Mailchimp", 
-                      description: "Email marketing automation", 
-                      connected: false,
-                      icon: Mail
+                      name: "Square", 
+                      description: "Procesamiento de pagos", 
+                      connected: squareStatus.connected,
+                      icon: CreditCard,
+                      service: 'square'
                     },
                     { 
-                      name: "Zapier", 
-                      description: "Workflow automation", 
-                      connected: false,
-                      icon: Database
+                      name: "Stripe", 
+                      description: "Cobros directos y suscripciones", 
+                      connected: stripeStatus.connected,
+                      icon: DollarSign,
+                      service: 'stripe'
+                    },
+                    { 
+                      name: "SendGrid", 
+                      description: "Sistema oficial de envío de correos", 
+                      connected: sendgridStatus.connected,
+                      icon: Mail,
+                      service: 'sendgrid'
                     },
                   ].map((integration, i) => (
                     <div key={i} className="flex items-center justify-between p-4 border rounded-lg">
@@ -761,12 +903,19 @@ export default function Settings() {
                             <Badge variant="secondary" className="bg-green-100 text-green-800">
                               Connected
                             </Badge>
-                            <Button variant="outline" size="sm">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleConfigureIntegration(integration.service)}
+                            >
                               Configure
                             </Button>
                           </>
                         ) : (
-                          <Button size="sm">
+                          <Button 
+                            size="sm"
+                            onClick={() => handleConnectIntegration(integration.service)}
+                          >
                             Connect
                           </Button>
                         )}
