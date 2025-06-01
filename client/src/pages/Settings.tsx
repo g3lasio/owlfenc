@@ -55,232 +55,305 @@ export default function Settings() {
   };
   
   return (
-    <div className="flex-1 p-6 overflow-auto">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-2">Settings</h1>
-        <p className="text-muted-foreground mb-6">
-          Manage your account preferences, billing, and business settings.
-        </p>
+    <div className="flex-1 p-3 md:p-6 overflow-auto bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 min-h-screen">
+      {/* Cyberpunk Background Effects */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-0 left-0 w-32 h-32 border-t-2 border-l-2 border-cyan-400/30"></div>
+        <div className="absolute top-0 right-0 w-32 h-32 border-t-2 border-r-2 border-cyan-400/30"></div>
+        <div className="absolute bottom-0 left-0 w-32 h-32 border-b-2 border-l-2 border-cyan-400/30"></div>
+        <div className="absolute bottom-0 right-0 w-32 h-32 border-b-2 border-r-2 border-cyan-400/30"></div>
+        
+        {/* Scanning Lines */}
+        <div className="absolute inset-0">
+          <div className="h-px bg-gradient-to-r from-transparent via-cyan-400/20 to-transparent animate-pulse"></div>
+          <div className="h-px bg-gradient-to-r from-transparent via-blue-400/20 to-transparent animate-pulse delay-300 mt-20"></div>
+          <div className="h-px bg-gradient-to-r from-transparent via-purple-400/20 to-transparent animate-pulse delay-700 mt-40"></div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto relative z-10">
+        {/* Futuristic Header */}
+        <div className="relative mb-8">
+          <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 blur-xl"></div>
+          <div className="relative p-6 border border-cyan-400/30 bg-slate-900/50 backdrop-blur-sm">
+            <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-cyan-400"></div>
+            <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-cyan-400"></div>
+            <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-cyan-400"></div>
+            <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-cyan-400"></div>
+            
+            <h1 className="text-3xl md:text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">
+              SYSTEM CONFIGURATION
+            </h1>
+            <p className="text-slate-300 text-sm md:text-base">
+              Advanced system preferences and operational parameters
+            </p>
+          </div>
+        </div>
         
         <Tabs defaultValue="account" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="account" className="flex items-center gap-2">
-              <Settings2 className="h-4 w-4" />
-              Account
-            </TabsTrigger>
-            <TabsTrigger value="billing" className="flex items-center gap-2">
-              <CreditCard className="h-4 w-4" />
-              Billing
-            </TabsTrigger>
-            <TabsTrigger value="notifications" className="flex items-center gap-2">
-              <Bell className="h-4 w-4" />
-              Notifications
-            </TabsTrigger>
-            <TabsTrigger value="business" className="flex items-center gap-2">
-              <Building2 className="h-4 w-4" />
-              Business
-            </TabsTrigger>
-            <TabsTrigger value="integrations" className="flex items-center gap-2">
-              <Database className="h-4 w-4" />
-              Integrations
-            </TabsTrigger>
-            <TabsTrigger value="security" className="flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              Security
-            </TabsTrigger>
-          </TabsList>
+          {/* Mobile-First Tab Navigation */}
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-blue-500/5 blur-lg"></div>
+            <TabsList className="relative grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-1 md:gap-2 p-1 bg-slate-900/80 backdrop-blur border border-cyan-400/30">
+              <TabsTrigger 
+                value="account" 
+                className="flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 md:p-3 text-xs md:text-sm bg-slate-800/50 border border-slate-700/50 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/50 data-[state=active]:text-cyan-300 hover:bg-slate-700/50 transition-all duration-300"
+              >
+                <Settings2 className="h-3 w-3 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Account</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="billing" 
+                className="flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 md:p-3 text-xs md:text-sm bg-slate-800/50 border border-slate-700/50 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/50 data-[state=active]:text-cyan-300 hover:bg-slate-700/50 transition-all duration-300"
+              >
+                <CreditCard className="h-3 w-3 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Billing</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="notifications" 
+                className="flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 md:p-3 text-xs md:text-sm bg-slate-800/50 border border-slate-700/50 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/50 data-[state=active]:text-cyan-300 hover:bg-slate-700/50 transition-all duration-300"
+              >
+                <Bell className="h-3 w-3 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Alerts</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="business" 
+                className="flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 md:p-3 text-xs md:text-sm bg-slate-800/50 border border-slate-700/50 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/50 data-[state=active]:text-cyan-300 hover:bg-slate-700/50 transition-all duration-300"
+              >
+                <Building2 className="h-3 w-3 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Business</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="integrations" 
+                className="flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 md:p-3 text-xs md:text-sm bg-slate-800/50 border border-slate-700/50 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/50 data-[state=active]:text-cyan-300 hover:bg-slate-700/50 transition-all duration-300"
+              >
+                <Database className="h-3 w-3 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Connect</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="security" 
+                className="flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 md:p-3 text-xs md:text-sm bg-slate-800/50 border border-slate-700/50 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/50 data-[state=active]:text-cyan-300 hover:bg-slate-700/50 transition-all duration-300"
+              >
+                <Shield className="h-3 w-3 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Security</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
           
           {/* ACCOUNT TAB */}
-          <TabsContent value="account" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings2 className="h-5 w-5" />
-                  Account Preferences
-                </CardTitle>
-                <CardDescription>
-                  Manage your personal account settings and preferences.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="language">Language</Label>
-                    <Select defaultValue="en">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="en">English</SelectItem>
-                        <SelectItem value="es">Español</SelectItem>
-                        <SelectItem value="fr">Français</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="timezone">Timezone</Label>
-                    <Select defaultValue="pst">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pst">Pacific Standard Time (PST)</SelectItem>
-                        <SelectItem value="mst">Mountain Standard Time (MST)</SelectItem>
-                        <SelectItem value="cst">Central Standard Time (CST)</SelectItem>
-                        <SelectItem value="est">Eastern Standard Time (EST)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+          <TabsContent value="account" className="space-y-4 md:space-y-6">
+            {/* Cyberpunk Card */}
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 blur-xl group-hover:blur-2xl transition-all duration-500"></div>
+              <Card className="relative bg-slate-900/80 backdrop-blur border border-cyan-400/30 hover:border-cyan-400/50 transition-all duration-300">
+                {/* Corner Brackets */}
+                <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-cyan-400"></div>
+                <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-cyan-400"></div>
+                <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-cyan-400"></div>
+                <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-cyan-400"></div>
                 
-                <Separator />
-                
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label className="text-base">Dark Mode</Label>
-                      <p className="text-sm text-muted-foreground">Use dark theme throughout the app</p>
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-2 text-cyan-300">
+                    <Settings2 className="h-5 w-5" />
+                    ACCOUNT PREFERENCES
+                  </CardTitle>
+                  <CardDescription className="text-slate-400">
+                    Manage your personal account settings and preferences.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="language" className="text-cyan-300 text-sm font-medium">Language</Label>
+                      <Select defaultValue="en">
+                        <SelectTrigger className="bg-slate-800/50 border-slate-600/50 text-slate-200 hover:border-cyan-400/50 focus:border-cyan-400">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-800 border-slate-600">
+                          <SelectItem value="en">English</SelectItem>
+                          <SelectItem value="es">Español</SelectItem>
+                          <SelectItem value="fr">Français</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-                    <Switch defaultChecked />
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="timezone" className="text-cyan-300 text-sm font-medium">Timezone</Label>
+                      <Select defaultValue="pst">
+                        <SelectTrigger className="bg-slate-800/50 border-slate-600/50 text-slate-200 hover:border-cyan-400/50 focus:border-cyan-400">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-800 border-slate-600">
+                          <SelectItem value="pst">Pacific Standard Time (PST)</SelectItem>
+                          <SelectItem value="mst">Mountain Standard Time (MST)</SelectItem>
+                          <SelectItem value="cst">Central Standard Time (CST)</SelectItem>
+                          <SelectItem value="est">Eastern Standard Time (EST)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label className="text-base">Auto-save Estimates</Label>
-                      <p className="text-sm text-muted-foreground">Automatically save estimates as you work</p>
-                    </div>
-                    <Switch defaultChecked />
-                  </div>
+                  <Separator className="bg-slate-700/50" />
                   
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label className="text-base">Show Tooltips</Label>
-                      <p className="text-sm text-muted-foreground">Display helpful tooltips and hints</p>
+                  <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded bg-slate-800/30 border border-slate-700/50">
+                      <div className="flex-1">
+                        <Label className="text-base text-cyan-300">Dark Mode</Label>
+                        <p className="text-sm text-slate-400">Use dark theme throughout the app</p>
+                      </div>
+                      <Switch defaultChecked className="data-[state=checked]:bg-cyan-600" />
                     </div>
-                    <Switch defaultChecked />
+                    
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded bg-slate-800/30 border border-slate-700/50">
+                      <div className="flex-1">
+                        <Label className="text-base text-cyan-300">Auto-save Estimates</Label>
+                        <p className="text-sm text-slate-400">Automatically save estimates as you work</p>
+                      </div>
+                      <Switch defaultChecked className="data-[state=checked]:bg-cyan-600" />
+                    </div>
+                    
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded bg-slate-800/30 border border-slate-700/50">
+                      <div className="flex-1">
+                        <Label className="text-base text-cyan-300">Show Tooltips</Label>
+                        <p className="text-sm text-slate-400">Display helpful tooltips and hints</p>
+                      </div>
+                      <Switch defaultChecked className="data-[state=checked]:bg-cyan-600" />
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
           
           {/* BILLING TAB */}
-          <TabsContent value="billing" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="h-5 w-5" />
-                  Subscription & Billing
-                </CardTitle>
-                <CardDescription>
-                  Manage your subscription, payment methods, and billing history.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Current Plan */}
-                <div className="p-6 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg border border-primary/20">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-xl font-bold text-primary mb-1">Premium Plan</h3>
-                      <p className="text-muted-foreground">Full access to all features</p>
-                    </div>
-                    <Badge variant="secondary" className="bg-green-100 text-green-800">
-                      Active
-                    </Badge>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Monthly Price</p>
-                      <p className="text-2xl font-bold">$49.99</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Next Billing</p>
-                      <p className="font-semibold">Dec 15, 2024</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Payment Method</p>
-                      <p className="font-semibold">•••• 4242</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-3">
-                    <Button variant="outline">
-                      Change Plan
-                    </Button>
-                    <Button variant="outline">
-                      Update Payment Method
-                    </Button>
-                    <Button variant="outline">
-                      Cancel Subscription
-                    </Button>
-                  </div>
-                </div>
+          <TabsContent value="billing" className="space-y-4 md:space-y-6">
+            {/* Current Plan - Cyberpunk Style */}
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 blur-xl group-hover:blur-2xl transition-all duration-500"></div>
+              <Card className="relative bg-slate-900/80 backdrop-blur border border-cyan-400/30 hover:border-cyan-400/50 transition-all duration-300">
+                {/* Corner Brackets */}
+                <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-cyan-400"></div>
+                <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-cyan-400"></div>
+                <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-cyan-400"></div>
+                <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-cyan-400"></div>
                 
-                {/* Payment Methods */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">Payment Methods</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <CreditCard className="h-5 w-5 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium">Visa ending in 4242</p>
-                          <p className="text-sm text-muted-foreground">Expires 12/2027</p>
-                        </div>
-                        <Badge variant="secondary">Default</Badge>
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-2 text-cyan-300">
+                    <CreditCard className="h-5 w-5" />
+                    SUBSCRIPTION & BILLING
+                  </CardTitle>
+                  <CardDescription className="text-slate-400">
+                    Manage your subscription, payment methods, and billing history.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Current Plan */}
+                  <div className="relative p-4 md:p-6 bg-gradient-to-r from-cyan-500/20 via-blue-500/10 to-purple-500/20 rounded-lg border border-cyan-400/50 backdrop-blur-sm">
+                    {/* Arc Reactor Effect */}
+                    <div className="absolute top-2 right-2 w-3 h-3 bg-cyan-400 rounded-full animate-pulse shadow-cyan-400/50 shadow-lg"></div>
+                    
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-4">
+                      <div>
+                        <h3 className="text-xl md:text-2xl font-bold text-cyan-300 mb-1">PREMIUM PLAN</h3>
+                        <p className="text-slate-300 text-sm md:text-base">Full access to all features</p>
                       </div>
-                      <Button variant="ghost" size="sm">
-                        Edit
+                      <Badge className="bg-green-500/20 border-green-400/50 text-green-300 text-xs md:text-sm px-3 py-1">
+                        ACTIVE
+                      </Badge>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                      <div className="text-center sm:text-left">
+                        <p className="text-xs md:text-sm text-slate-400 uppercase tracking-wide">Monthly Price</p>
+                        <p className="text-xl md:text-2xl font-bold text-cyan-300">$49.99</p>
+                      </div>
+                      <div className="text-center sm:text-left">
+                        <p className="text-xs md:text-sm text-slate-400 uppercase tracking-wide">Next Billing</p>
+                        <p className="font-semibold text-slate-200">Dec 15, 2024</p>
+                      </div>
+                      <div className="text-center sm:text-left">
+                        <p className="text-xs md:text-sm text-slate-400 uppercase tracking-wide">Payment Method</p>
+                        <p className="font-semibold text-slate-200">•••• 4242</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col sm:flex-row gap-2 md:gap-3">
+                      <Button variant="outline" className="bg-slate-800/50 border-cyan-400/50 text-cyan-300 hover:bg-cyan-400/10 hover:border-cyan-400 text-xs md:text-sm">
+                        Change Plan
+                      </Button>
+                      <Button variant="outline" className="bg-slate-800/50 border-cyan-400/50 text-cyan-300 hover:bg-cyan-400/10 hover:border-cyan-400 text-xs md:text-sm">
+                        Update Payment
+                      </Button>
+                      <Button variant="outline" className="bg-slate-800/50 border-red-400/50 text-red-300 hover:bg-red-400/10 hover:border-red-400 text-xs md:text-sm">
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                
+                  {/* Payment Methods */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3 text-cyan-300 uppercase tracking-wide">Payment Methods</h3>
+                    <div className="space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-slate-800/30 border border-slate-700/50 rounded-lg hover:border-cyan-400/30 transition-all duration-300">
+                        <div className="flex items-center gap-3">
+                          <CreditCard className="h-5 w-5 text-cyan-400" />
+                          <div>
+                            <p className="font-medium text-slate-200">Visa ending in 4242</p>
+                            <p className="text-sm text-slate-400">Expires 12/2027</p>
+                          </div>
+                          <Badge className="bg-cyan-500/20 border-cyan-400/50 text-cyan-300 text-xs">Default</Badge>
+                        </div>
+                        <Button variant="ghost" size="sm" className="text-cyan-300 hover:bg-cyan-400/10">
+                          Edit
+                        </Button>
+                      </div>
+                      
+                      <Button variant="outline" className="w-full bg-slate-800/50 border-cyan-400/50 text-cyan-300 hover:bg-cyan-400/10 hover:border-cyan-400">
+                        <CreditCard className="h-4 w-4 mr-2" />
+                        Add Payment Method
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* Billing History */}
+                  <div>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                      <h3 className="text-lg font-semibold text-cyan-300 uppercase tracking-wide">Billing History</h3>
+                      <Button variant="outline" size="sm" className="bg-slate-800/50 border-cyan-400/50 text-cyan-300 hover:bg-cyan-400/10 hover:border-cyan-400 text-xs md:text-sm">
+                        <Download className="h-4 w-4 mr-2" />
+                        Download All
                       </Button>
                     </div>
                     
-                    <Button variant="outline" className="w-full">
-                      <CreditCard className="h-4 w-4 mr-2" />
-                      Add Payment Method
-                    </Button>
-                  </div>
-                </div>
-                
-                {/* Billing History */}
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-lg font-semibold">Billing History</h3>
-                    <Button variant="outline" size="sm">
-                      <Download className="h-4 w-4 mr-2" />
-                      Download All
-                    </Button>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    {[
-                      { date: "Nov 15, 2024", amount: "$49.99", status: "Paid", invoice: "INV-001" },
-                      { date: "Oct 15, 2024", amount: "$49.99", status: "Paid", invoice: "INV-002" },
-                      { date: "Sep 15, 2024", amount: "$49.99", status: "Paid", invoice: "INV-003" },
-                    ].map((bill, i) => (
-                      <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex items-center gap-4">
-                          <div>
-                            <p className="font-medium">{bill.date}</p>
-                            <p className="text-sm text-muted-foreground">{bill.invoice}</p>
+                    <div className="space-y-2">
+                      {[
+                        { date: "Nov 15, 2024", amount: "$49.99", status: "Paid", invoice: "INV-001" },
+                        { date: "Oct 15, 2024", amount: "$49.99", status: "Paid", invoice: "INV-002" },
+                        { date: "Sep 15, 2024", amount: "$49.99", status: "Paid", invoice: "INV-003" },
+                      ].map((bill, i) => (
+                        <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-slate-800/30 border border-slate-700/50 rounded-lg hover:border-cyan-400/30 transition-all duration-300">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                            <div>
+                              <p className="font-medium text-slate-200 text-sm md:text-base">{bill.date}</p>
+                              <p className="text-xs md:text-sm text-slate-400">{bill.invoice}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold text-cyan-300">{bill.amount}</p>
+                              <Badge className="bg-green-500/20 border-green-400/50 text-green-300 text-xs">
+                                {bill.status}
+                              </Badge>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-semibold">{bill.amount}</p>
-                            <Badge variant="secondary" className="text-xs">
-                              {bill.status}
-                            </Badge>
-                          </div>
+                          <Button variant="ghost" size="sm" className="text-cyan-300 hover:bg-cyan-400/10 self-end sm:self-center">
+                            <Download className="h-4 w-4" />
+                          </Button>
                         </div>
-                        <Button variant="ghost" size="sm">
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
           
           {/* NOTIFICATIONS TAB */}
@@ -675,15 +748,30 @@ export default function Settings() {
           </TabsContent>
         </Tabs>
         
-        {/* Save Button */}
-        <div className="flex justify-end pt-6 border-t">
-          <Button 
-            onClick={handleSaveSettings}
-            disabled={saveLoading}
-            className="px-8"
-          >
-            {saveLoading ? "Saving..." : "Save All Settings"}
-          </Button>
+        {/* Cyberpunk Save Button */}
+        <div className="flex justify-center md:justify-end pt-6 border-t border-slate-700/50">
+          <div className="relative group">
+            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 blur-xl group-hover:blur-2xl transition-all duration-500"></div>
+            <Button 
+              onClick={handleSaveSettings}
+              disabled={saveLoading}
+              className="relative px-6 md:px-8 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold border border-cyan-400/50 hover:border-cyan-400 transition-all duration-300 disabled:opacity-50"
+            >
+              <div className="flex items-center gap-2">
+                {saveLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <span>SAVING...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>SAVE ALL SETTINGS</span>
+                    <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
+                  </>
+                )}
+              </div>
+            </Button>
+          </div>
         </div>
       </div>
     </div>
