@@ -174,7 +174,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                   >
                     <Button
                       variant="ghost"
-                      className="w-full justify-center text-xs font-semibold py-3 text-muted-foreground uppercase tracking-wider hover:bg-accent scanning-line hover:text-cyan-400 transition-colors"
+                      className="w-full justify-center text-xs font-semibold py-3 text-muted-foreground uppercase tracking-wider hover:bg-accent hover:text-cyan-400 transition-colors"
                       onClick={() => setExpanded(!isExpanded)}
                     >
                       <span className="flex items-center justify-center w-full">
