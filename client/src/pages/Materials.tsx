@@ -651,14 +651,22 @@ export default function Materials() {
               <CardContent className="p-4">
                 <div className="space-y-3">
                   <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <h3 className="font-medium">{material.name}</h3>
-                      {material.description && (
-                        <p className="text-sm text-muted-foreground mt-1">{material.description}</p>
-                      )}
-                      {material.sku && (
-                        <p className="text-xs text-muted-foreground">SKU: {material.sku}</p>
-                      )}
+                    <div className="flex items-start gap-3 flex-1">
+                      <Checkbox 
+                        checked={selectedMaterials.has(material.id)}
+                        onCheckedChange={() => toggleMaterialSelection(material.id)}
+                        aria-label={`Seleccionar ${material.name}`}
+                        className="mt-1"
+                      />
+                      <div className="flex-1">
+                        <h3 className="font-medium">{material.name}</h3>
+                        {material.description && (
+                          <p className="text-sm text-muted-foreground mt-1">{material.description}</p>
+                        )}
+                        {material.sku && (
+                          <p className="text-xs text-muted-foreground">SKU: {material.sku}</p>
+                        )}
+                      </div>
                     </div>
                     <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
                       {material.category}
@@ -1131,6 +1139,43 @@ export default function Materials() {
             </DialogClose>
             <Button variant="destructive" onClick={deleteMaterial} className="w-full sm:w-auto">
               Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo de confirmación para eliminación en lote */}
+      <Dialog open={showBatchDeleteDialog} onOpenChange={setShowBatchDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar eliminación en lote</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que deseas eliminar {selectedMaterials.size} materiales seleccionados? 
+              Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="max-h-60 overflow-y-auto border rounded-md p-3 bg-muted/50">
+            <p className="text-sm font-medium mb-2">Materiales a eliminar:</p>
+            <ul className="text-sm space-y-1">
+              {materials
+                .filter(m => selectedMaterials.has(m.id))
+                .map(material => (
+                  <li key={material.id} className="flex items-center gap-2">
+                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                    {material.name} ({material.category})
+                  </li>
+                ))
+              }
+            </ul>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBatchDeleteDialog(false)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={deleteBatchMaterials}>
+              Eliminar {selectedMaterials.size} materiales
             </Button>
           </DialogFooter>
         </DialogContent>
