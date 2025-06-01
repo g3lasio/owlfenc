@@ -1530,12 +1530,7 @@ export default function EstimatesWizardFixed() {
 
 
 
-  // Load estimates when history modal opens
-  useEffect(() => {
-    if (showEstimatesHistory) {
-      loadSavedEstimates();
-    }
-  }, [showEstimatesHistory]);
+
 
   // Initialize email data when dialog opens
   useEffect(() => {
