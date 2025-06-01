@@ -64,24 +64,42 @@ export class ContractorEmailService {
       const verificationEmail = {
         to: contractorEmail,
         from: {
-          email: 'noreply@owlfence.replit.app',
+          email: 'mervin@owlfenc.com',
           name: 'Owl Fence Email Verification'
         },
         subject: 'Verify Your Email Address - Owl Fence',
         html: `
           <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
-            <h2 style="color: #1f2937;">Verify Your Email Address</h2>
-            <p>Hello ${contractorName},</p>
-            <p>Please click the button below to verify your email address:</p>
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${verificationUrl}" 
-                 style="background: #10b981; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block;">
-                Verify Email Address
-              </a>
+            <div style="background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+              <h1>🔐 Email Verification</h1>
+              <p>Owl Fence Professional Platform</p>
             </div>
-            <p style="color: #6b7280; font-size: 14px;">
-              Link: ${verificationUrl}
-            </p>
+            <div style="background: white; padding: 30px; border: 1px solid #e5e7eb;">
+              <h2 style="color: #1f2937;">Hello ${contractorName},</h2>
+              <p>Welcome to Owl Fence! To start sending professional emails to your clients, please verify your email address.</p>
+              
+              <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h3 style="color: #1e40af; margin: 0 0 10px 0;">✅ What happens after verification:</h3>
+                <ul style="color: #374151; margin: 0; padding-left: 20px;">
+                  <li>Send professional estimates to clients</li>
+                  <li>Email contracts and payment links</li>
+                  <li>All emails will show your name and contact info</li>
+                  <li>Clients can reply directly to your personal email</li>
+                </ul>
+              </div>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${verificationUrl}" 
+                   style="background: #10b981; color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold; font-size: 16px;">
+                  ✅ Verify My Email Address
+                </a>
+              </div>
+              
+              <p style="color: #6b7280; font-size: 14px; text-align: center;">
+                If the button doesn't work, copy and paste this link:<br>
+                ${verificationUrl}
+              </p>
+            </div>
           </div>
         `,
         text: `Hello ${contractorName}, please verify your email: ${verificationUrl}`
@@ -212,14 +230,17 @@ export class ContractorEmailService {
         };
       }
 
-      // Main email to client
+      // Main email to client using verified domain but contractor's reply-to
       const clientMessage = {
         to: clientEmail,
         from: {
+          email: 'mervin@owlfenc.com',
+          name: `${contractorName || 'Contractor'} via Owl Fence`
+        },
+        replyTo: {
           email: contractorEmail,
           name: contractorName || 'Contractor'
         },
-        replyTo: contractorEmail,
         subject: template.subject,
         html: ContractorEmailService.addMervinSignature(template.html),
         text: template.text + '\n\n---\nPowered by Mervin AI - Professional contractor solutions'
@@ -243,10 +264,13 @@ export class ContractorEmailService {
         const copyMessage = {
           to: contractorEmail,
           from: {
-            email: contractorEmail,
-            name: contractorName || 'Contractor'
+            email: 'mervin@owlfenc.com',
+            name: 'Owl Fence - Email Copy'
           },
-          replyTo: contractorEmail,
+          replyTo: {
+            email: 'mervin@owlfenc.com',
+            name: 'Owl Fence Support'
+          },
           subject: `[COPY] ${template.subject}`,
           html: `
             <div style="background: #f0f9ff; padding: 20px; border-left: 4px solid #3b82f6; margin-bottom: 20px;">
@@ -352,7 +376,7 @@ export class ContractorEmailService {
                     <p>📧 Email: ${contractorProfile?.email}</p>
                     ${contractorProfile?.phone ? `<p>📞 Phone: ${contractorProfile.phone}</p>` : ''}
                     ${contractorProfile?.website ? `<p>🌐 Website: ${contractorProfile.website}</p>` : ''}
-                    <p>For any questions about this estimate, please contact me directly.</p>
+                    <p><strong>Important:</strong> Please reply directly to this email to reach me personally. All responses will come straight to my inbox.</p>
                 </div>
                 
                 <p>Best regards,<br>
