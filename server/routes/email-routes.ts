@@ -119,22 +119,42 @@ router.post('/send-estimate-email', async (req, res) => {
     </body>
     </html>`;
 
+    // Ensure we have a contractor email to send from
+    if (!contractorEmail) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Contractor email is required to send emails. Please update your profile.' 
+      });
+    }
+
     const msg = {
       to: clientEmail,
-      from: contractorEmail || 'noreply@owlfence.com',
-      subject: customSubject || `Estimado de Proyecto #${estimateNumber} - ${contractorName}`,
+      from: {
+        email: contractorEmail,
+        name: contractorName || 'Contractor'
+      },
+      replyTo: contractorEmail,
+      subject: customSubject || `Your Professional Estimate is Ready - ${contractorName}`,
       html: emailHtml,
-      text: customMessage || `Estimado ${clientName},\n\nAdjunto encontrará el estimado detallado para su proyecto.\n\nTotal: $${totalAmount.toLocaleString()}\n\nPara cualquier consulta, contáctenos en ${contractorEmail}\n\nAtentamente,\n${contractorName}`
+      text: customMessage || `Dear ${clientName},\n\nPlease find your detailed project estimate attached.\n\nTotal: $${totalAmount.toLocaleString()}\n\nFor any questions, please contact us directly at ${contractorEmail}\n\nBest regards,\n${contractorName}`
     };
 
     // Send copy to contractor if requested
     if (sendCopy && contractorEmail) {
       const copyMsg = {
         to: contractorEmail,
-        from: contractorEmail || 'noreply@owlfence.com',
-        subject: `[COPIA] ${customSubject || `Estimado de Proyecto #${estimateNumber} - ${contractorName}`}`,
-        html: `<p><strong>Esta es una copia del correo enviado a su cliente.</strong></p><hr>${emailHtml}`,
-        text: `COPIA del correo enviado a ${clientName} (${clientEmail})\n\n${customMessage || 'Estimado enviado correctamente.'}`
+        from: {
+          email: contractorEmail,
+          name: contractorName || 'Contractor'
+        },
+        replyTo: contractorEmail,
+        subject: `[COPY] ${customSubject || `Your Professional Estimate is Ready - ${contractorName}`}`,
+        html: `<div style="background: #f0f9ff; padding: 20px; border-left: 4px solid #3b82f6; margin-bottom: 20px;">
+          <p style="margin: 0; color: #1e40af;"><strong>📧 Copy of email sent to your client</strong></p>
+          <p style="margin: 5px 0 0 0; color: #64748b;">Sent to: ${clientName} (${clientEmail})</p>
+        </div>
+        ${emailHtml}`,
+        text: `COPY of email sent to ${clientName} (${clientEmail})\n\n${customMessage || 'Estimate sent successfully.'}`
       };
       
       await mailService.send(copyMsg);
