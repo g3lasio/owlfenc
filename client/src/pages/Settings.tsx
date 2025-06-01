@@ -8,7 +8,16 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, CreditCard, Globe, Bell, Shield, User } from 'lucide-react';
+import { 
+  Settings2, 
+  CreditCard, 
+  Bell, 
+  Shield, 
+  User, 
+  Palette,
+  AlertCircle,
+  Globe
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { UserPreferences, UserSubscription, SubscriptionPlan, PaymentHistory } from '../../../shared/schema';
@@ -17,7 +26,7 @@ const Settings: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState('preferences');
+  const [activeSection, setActiveSection] = useState('general');
 
   // Fetch user preferences
   const { data: preferences, isLoading: preferencesLoading } = useQuery({
@@ -72,10 +81,10 @@ const Settings: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/settings/preferences'] });
-      toast({ title: 'Preferencias actualizadas', description: 'Tus preferencias han sido guardadas exitosamente' });
+      toast({ title: 'Configuración actualizada', description: 'Los cambios han sido guardados exitosamente' });
     },
     onError: () => {
-      toast({ title: 'Error', description: 'No se pudieron actualizar las preferencias', variant: 'destructive' });
+      toast({ title: 'Error', description: 'No se pudieron guardar los cambios', variant: 'destructive' });
     }
   });
 
@@ -96,7 +105,7 @@ const Settings: React.FC = () => {
       }
     },
     onError: () => {
-      toast({ title: 'Error', description: 'No se pudo crear la suscripción', variant: 'destructive' });
+      toast({ title: 'Error', description: 'No se pudo procesar la suscripción', variant: 'destructive' });
     }
   });
 
@@ -109,7 +118,7 @@ const Settings: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/settings/subscription/current'] });
-      toast({ title: 'Suscripción cancelada', description: 'Tu suscripción se cancelará al final del período actual' });
+      toast({ title: 'Suscripción cancelada', description: 'Se cancelará al final del período actual' });
     },
     onError: () => {
       toast({ title: 'Error', description: 'No se pudo cancelar la suscripción', variant: 'destructive' });
@@ -129,9 +138,18 @@ const Settings: React.FC = () => {
     return (cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
   };
 
+  const configSections = [
+    { id: 'general', label: 'General', icon: Settings2 },
+    { id: 'account', label: 'Cuenta', icon: User },
+    { id: 'billing', label: 'Facturación', icon: CreditCard },
+    { id: 'notifications', label: 'Notificaciones', icon: Bell },
+    { id: 'security', label: 'Seguridad', icon: Shield },
+    { id: 'appearance', label: 'Apariencia', icon: Palette }
+  ];
+
   if (preferencesLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
         <div className="flex items-center justify-center py-20">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400"></div>
         </div>
@@ -140,317 +158,403 @@ const Settings: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
-      <div className="max-w-md mx-auto">
-        {/* Header - Exact match to reference image */}
-        <div className="text-center mb-6">
-          <div className="text-cyan-400 text-sm font-medium mb-2">
-            The AI Force Crafting the Future Skyline
-          </div>
-          <h1 className="text-white text-xl font-medium leading-tight">
-            Customize your experience and<br />
-            manage your subscription
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
+      <div className="container mx-auto max-w-6xl">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 mb-2">
+            Configuración del Sistema
           </h1>
+          <p className="text-slate-300 text-lg">
+            Personaliza tu experiencia y gestiona tu cuenta
+          </p>
         </div>
 
-        {/* Navigation Tabs - Exact match to reference image */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mb-6">
-          <TabsList className="grid w-full grid-cols-4 bg-transparent border-b border-slate-700/50 h-auto p-0 rounded-none">
-            <TabsTrigger 
-              value="preferences" 
-              className="text-cyan-400 border-b-2 border-cyan-400 bg-transparent data-[state=inactive]:text-slate-400 data-[state=inactive]:border-transparent rounded-none pb-3"
-            >
-              Preferences
-            </TabsTrigger>
-            <TabsTrigger 
-              value="billing" 
-              className="text-slate-400 border-b-2 border-transparent bg-transparent data-[state=active]:text-cyan-400 data-[state=active]:border-cyan-400 rounded-none pb-3"
-            >
-              Billing
-            </TabsTrigger>
-            <TabsTrigger 
-              value="notifications" 
-              className="text-slate-400 border-b-2 border-transparent bg-transparent data-[state=active]:text-cyan-400 data-[state=active]:border-cyan-400 rounded-none pb-3"
-            >
-              Notifications
-            </TabsTrigger>
-            <TabsTrigger 
-              value="security" 
-              className="text-slate-400 border-b-2 border-transparent bg-transparent data-[state=active]:text-cyan-400 data-[state=active]:border-cyan-400 rounded-none pb-3"
-            >
-              Security
-            </TabsTrigger>
-          </TabsList>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Navigation Sidebar */}
+          <div className="lg:col-span-1">
+            <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-cyan-400">Configuración</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {configSections.map((section) => {
+                  const IconComponent = section.icon;
+                  return (
+                    <Button
+                      key={section.id}
+                      variant={activeSection === section.id ? "default" : "ghost"}
+                      className={`w-full justify-start gap-3 ${
+                        activeSection === section.id
+                          ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
+                          : 'text-slate-300 hover:text-cyan-400 hover:bg-slate-700/50'
+                      }`}
+                      onClick={() => setActiveSection(section.id)}
+                    >
+                      <IconComponent className="w-4 h-4" />
+                      {section.label}
+                    </Button>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          </div>
 
-          {/* Preferences Tab Content - Exact match to reference image */}
-          <TabsContent value="preferences" className="mt-8 space-y-6">
-            <div>
-              <div className="flex items-center gap-3 mb-6">
-                <Globe className="w-6 h-6 text-cyan-400" />
-                <h2 className="text-cyan-400 text-xl font-medium">Language</h2>
-              </div>
-
-              <div className="space-y-6">
-                <div>
-                  <Label className="text-white text-base mb-3 block">Language</Label>
-                  <Select 
-                    value={preferences?.language || 'en'} 
-                    onValueChange={handleLanguageChange}
-                  >
-                    <SelectTrigger className="w-full bg-slate-800/80 border-slate-600/50 text-white h-12 rounded-lg">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-slate-800 border-slate-600">
-                      <SelectItem value="en" className="text-white">English</SelectItem>
-                      <SelectItem value="es" className="text-white">Español</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label className="text-white text-base mb-3 block">Timezone</Label>
-                  <Select 
-                    value={preferences?.timezone || 'America/Los_Angeles'} 
-                    onValueChange={(value) => handlePreferenceChange('timezone', value)}
-                  >
-                    <SelectTrigger className="w-full bg-slate-800/80 border-slate-600/50 text-white h-12 rounded-lg">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-slate-800 border-slate-600">
-                      <SelectItem value="America/Los_Angeles" className="text-white">Pacific Time</SelectItem>
-                      <SelectItem value="America/Denver" className="text-white">Mountain Time</SelectItem>
-                      <SelectItem value="America/Chicago" className="text-white">Central Time</SelectItem>
-                      <SelectItem value="America/New_York" className="text-white">Eastern Time</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label className="text-white text-base mb-3 block">Currency</Label>
-                  <Select 
-                    value={preferences?.currency || 'USD'} 
-                    onValueChange={(value) => handlePreferenceChange('currency', value)}
-                  >
-                    <SelectTrigger className="w-full bg-slate-800/80 border-slate-600/50 text-white h-12 rounded-lg">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-slate-800 border-slate-600">
-                      <SelectItem value="USD" className="text-white">USD - Dólar</SelectItem>
-                      <SelectItem value="MXN" className="text-white">MXN - Peso Mexicano</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label className="text-white text-base mb-3 block">Date Format</Label>
-                  <Select 
-                    value={preferences?.dateFormat || 'MM/DD/YYYY'} 
-                    onValueChange={(value) => handlePreferenceChange('dateFormat', value)}
-                  >
-                    <SelectTrigger className="w-full bg-slate-800/80 border-slate-600/50 text-white h-12 rounded-lg">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-slate-800 border-slate-600">
-                      <SelectItem value="MM/DD/YYYY" className="text-white">MM/DD/YYYY</SelectItem>
-                      <SelectItem value="DD/MM/YYYY" className="text-white">DD/MM/YYYY</SelectItem>
-                      <SelectItem value="YYYY-MM-DD" className="text-white">YYYY-MM-DD</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-
-          {/* Billing Tab Content */}
-          <TabsContent value="billing" className="mt-8 space-y-6">
-            <div>
-              <div className="flex items-center gap-3 mb-6">
-                <CreditCard className="w-6 h-6 text-cyan-400" />
-                <h2 className="text-cyan-400 text-xl font-medium">Billing & Subscription</h2>
-              </div>
-
-              {/* Current Subscription */}
-              {subscription && (
-                <div className="bg-slate-800/50 border border-slate-600/30 rounded-lg p-6 mb-6">
-                  <h3 className="text-white text-lg font-medium mb-4">Plan Actual</h3>
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <p className="text-white font-medium">
-                        {plans?.find(p => p.id === subscription.planId)?.name}
-                      </p>
-                      <p className="text-slate-400 text-sm">
-                        {subscription.billingCycle === 'yearly' ? 'Anual' : 'Mensual'}
-                      </p>
+          {/* Main Content */}
+          <div className="lg:col-span-3">
+            {/* General Settings */}
+            {activeSection === 'general' && (
+              <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="text-cyan-400 flex items-center gap-2">
+                    <Settings2 className="w-5 h-5" />
+                    Configuración General
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label className="text-slate-300">Idioma del Sistema</Label>
+                      <Select 
+                        value={preferences?.language || 'es'} 
+                        onValueChange={handleLanguageChange}
+                      >
+                        <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="es">Español</SelectItem>
+                          <SelectItem value="en">English</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-                    <div className="text-right">
-                      <p className="text-cyan-400 text-xl font-bold">
-                        {formatPrice(
-                          subscription.billingCycle === 'yearly' 
-                            ? plans?.find(p => p.id === subscription.planId)?.yearlyPrice || 0
-                            : plans?.find(p => p.id === subscription.planId)?.price || 0
-                        )}
-                      </p>
-                      <p className="text-slate-400 text-sm">
-                        /{subscription.billingCycle === 'yearly' ? 'año' : 'mes'}
-                      </p>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-slate-300">Zona Horaria</Label>
+                      <Select 
+                        value={preferences?.timezone || 'America/Mexico_City'} 
+                        onValueChange={(value) => handlePreferenceChange('timezone', value)}
+                      >
+                        <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="America/Mexico_City">Ciudad de México</SelectItem>
+                          <SelectItem value="America/Los_Angeles">Pacífico</SelectItem>
+                          <SelectItem value="America/New_York">Este</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-slate-300">Moneda</Label>
+                      <Select 
+                        value={preferences?.currency || 'USD'} 
+                        onValueChange={(value) => handlePreferenceChange('currency', value)}
+                      >
+                        <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="USD">USD - Dólar</SelectItem>
+                          <SelectItem value="MXN">MXN - Peso Mexicano</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-slate-300">Formato de Fecha</Label>
+                      <Select 
+                        value={preferences?.dateFormat || 'DD/MM/YYYY'} 
+                        onValueChange={(value) => handlePreferenceChange('dateFormat', value)}
+                      >
+                        <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
+                          <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
+                          <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
-                  <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                    {subscription.status}
-                  </Badge>
-                  
-                  {subscription.cancelAtPeriodEnd && (
-                    <Alert className="mt-4 border-yellow-500/50 bg-yellow-500/10">
-                      <AlertCircle className="h-4 w-4 text-yellow-400" />
-                      <AlertDescription className="text-yellow-300">
-                        Tu suscripción se cancelará al final del período actual.
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                  
-                  <Button
-                    variant="outline"
-                    onClick={() => cancelSubscriptionMutation.mutate()}
-                    disabled={cancelSubscriptionMutation.isPending || subscription.cancelAtPeriodEnd}
-                    className="mt-4 border-red-500/50 text-red-400 hover:bg-red-500/10"
-                  >
-                    {subscription.cancelAtPeriodEnd 
-                      ? 'Cancelación Programada'
-                      : 'Cancelar Suscripción'
-                    }
-                  </Button>
-                </div>
-              )}
+                </CardContent>
+              </Card>
+            )}
 
-              {/* Available Plans */}
-              {plans && (
-                <div className="space-y-4">
-                  <h3 className="text-white text-lg font-medium">Planes Disponibles</h3>
-                  {plans.map((plan) => (
-                    <div 
-                      key={plan.id} 
-                      className="bg-slate-800/50 border border-slate-600/30 rounded-lg p-6"
-                    >
-                      <div className="flex items-center justify-between">
+            {/* Account Settings */}
+            {activeSection === 'account' && (
+              <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="text-cyan-400 flex items-center gap-2">
+                    <User className="w-5 h-5" />
+                    Información de Cuenta
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="p-4 bg-slate-700/30 rounded-lg border border-slate-600/30">
+                    <p className="text-white font-medium">Usuario Demo</p>
+                    <p className="text-slate-400">contractor@owlfence.com</p>
+                  </div>
+                  
+                  <Alert className="border-blue-500/50 bg-blue-500/10">
+                    <AlertCircle className="h-4 w-4 text-blue-400" />
+                    <AlertDescription className="text-blue-300">
+                      Funcionalidad completa disponible con datos reales del backend.
+                    </AlertDescription>
+                  </Alert>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Billing Settings */}
+            {activeSection === 'billing' && (
+              <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="text-cyan-400 flex items-center gap-2">
+                    <CreditCard className="w-5 h-5" />
+                    Facturación y Suscripción
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Current Subscription */}
+                  {subscription && (
+                    <div className="p-6 bg-slate-700/30 rounded-lg border border-slate-600/30">
+                      <div className="flex items-center justify-between mb-4">
                         <div>
-                          <h4 className="text-white font-medium">{plan.name}</h4>
-                          <p className="text-slate-400 text-sm">{plan.motto}</p>
-                          <p className="text-cyan-400 font-bold text-lg mt-2">
-                            {formatPrice(plan.price)}/mes
+                          <h3 className="text-white text-lg font-semibold">
+                            {plans?.find(p => p.id === subscription.planId)?.name || 'Plan Activo'}
+                          </h3>
+                          <p className="text-slate-400">
+                            {subscription.billingCycle === 'yearly' ? 'Facturación Anual' : 'Facturación Mensual'}
                           </p>
                         </div>
-                        <Button
-                          onClick={() => createSubscriptionMutation.mutate({ 
-                            planId: plan.id, 
-                            billingCycle: 'monthly' 
-                          })}
-                          disabled={createSubscriptionMutation.isPending || subscription?.planId === plan.id}
-                          className="bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/30"
-                        >
-                          {subscription?.planId === plan.id ? 'Actual' : 'Seleccionar'}
-                        </Button>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-cyan-400">
+                            {formatPrice(
+                              subscription.billingCycle === 'yearly' 
+                                ? plans?.find(p => p.id === subscription.planId)?.yearlyPrice || 0
+                                : plans?.find(p => p.id === subscription.planId)?.price || 0
+                            )}
+                          </p>
+                          <p className="text-slate-400">
+                            /{subscription.billingCycle === 'yearly' ? 'año' : 'mes'}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <Badge className="bg-green-500/20 text-green-400 border-green-500/30 mb-4">
+                        {subscription.status}
+                      </Badge>
+                      
+                      {subscription.cancelAtPeriodEnd && (
+                        <Alert className="mb-4 border-yellow-500/50 bg-yellow-500/10">
+                          <AlertCircle className="h-4 w-4 text-yellow-400" />
+                          <AlertDescription className="text-yellow-300">
+                            Tu suscripción se cancelará al final del período actual.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                      
+                      <Button
+                        variant="outline"
+                        onClick={() => cancelSubscriptionMutation.mutate()}
+                        disabled={cancelSubscriptionMutation.isPending || subscription.cancelAtPeriodEnd}
+                        className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+                      >
+                        {subscription.cancelAtPeriodEnd 
+                          ? 'Cancelación Programada'
+                          : 'Cancelar Suscripción'
+                        }
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Available Plans */}
+                  {plans && plans.length > 0 && (
+                    <div className="space-y-4">
+                      <h3 className="text-white text-lg font-semibold">Planes Disponibles</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {plans.map((plan) => (
+                          <div 
+                            key={plan.id} 
+                            className="p-4 bg-slate-700/30 rounded-lg border border-slate-600/30"
+                          >
+                            <div className="text-center space-y-3">
+                              <h4 className="text-white font-bold">{plan.name}</h4>
+                              <p className="text-slate-400 text-sm">{plan.motto}</p>
+                              <div>
+                                <p className="text-2xl font-bold text-cyan-400">
+                                  {formatPrice(plan.price)}
+                                </p>
+                                <p className="text-slate-400 text-sm">/mes</p>
+                              </div>
+                              <Button
+                                onClick={() => createSubscriptionMutation.mutate({ 
+                                  planId: plan.id, 
+                                  billingCycle: 'monthly' 
+                                })}
+                                disabled={createSubscriptionMutation.isPending || subscription?.planId === plan.id}
+                                className="w-full bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/30"
+                              >
+                                {subscription?.planId === plan.id ? 'Plan Actual' : 'Seleccionar'}
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </TabsContent>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
-          {/* Notifications Tab Content */}
-          <TabsContent value="notifications" className="mt-8 space-y-6">
-            <div>
-              <div className="flex items-center gap-3 mb-6">
-                <Bell className="w-6 h-6 text-cyan-400" />
-                <h2 className="text-cyan-400 text-xl font-medium">Notifications</h2>
-              </div>
+            {/* Notifications Settings */}
+            {activeSection === 'notifications' && (
+              <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="text-cyan-400 flex items-center gap-2">
+                    <Bell className="w-5 h-5" />
+                    Preferencias de Notificación
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg">
+                      <div>
+                        <Label className="text-white">Notificaciones por Email</Label>
+                        <p className="text-slate-400 text-sm">Recibe actualizaciones importantes</p>
+                      </div>
+                      <Switch
+                        checked={preferences?.emailNotifications ?? true}
+                        onCheckedChange={(checked) => handlePreferenceChange('emailNotifications', checked)}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg">
+                      <div>
+                        <Label className="text-white">Notificaciones SMS</Label>
+                        <p className="text-slate-400 text-sm">Alertas urgentes por mensaje</p>
+                      </div>
+                      <Switch
+                        checked={preferences?.smsNotifications ?? false}
+                        onCheckedChange={(checked) => handlePreferenceChange('smsNotifications', checked)}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg">
+                      <div>
+                        <Label className="text-white">Notificaciones Push</Label>
+                        <p className="text-slate-400 text-sm">Alertas en el navegador</p>
+                      </div>
+                      <Switch
+                        checked={preferences?.pushNotifications ?? true}
+                        onCheckedChange={(checked) => handlePreferenceChange('pushNotifications', checked)}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg">
+                      <div>
+                        <Label className="text-white">Emails de Marketing</Label>
+                        <p className="text-slate-400 text-sm">Ofertas y novedades</p>
+                      </div>
+                      <Switch
+                        checked={preferences?.marketingEmails ?? false}
+                        onCheckedChange={(checked) => handlePreferenceChange('marketingEmails', checked)}
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-white text-base">Email Notifications</Label>
-                    <p className="text-slate-400 text-sm">Recibe actualizaciones importantes</p>
+            {/* Security Settings */}
+            {activeSection === 'security' && (
+              <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="text-cyan-400 flex items-center gap-2">
+                    <Shield className="w-5 h-5" />
+                    Configuración de Seguridad
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg">
+                    <div>
+                      <Label className="text-white">Autoguardado de Estimados</Label>
+                      <p className="text-slate-400 text-sm">Guardar automáticamente mientras trabajas</p>
+                    </div>
+                    <Switch
+                      checked={preferences?.autoSaveEstimates ?? true}
+                      onCheckedChange={(checked) => handlePreferenceChange('autoSaveEstimates', checked)}
+                    />
                   </div>
-                  <Switch
-                    checked={preferences?.emailNotifications ?? true}
-                    onCheckedChange={(checked) => handlePreferenceChange('emailNotifications', checked)}
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-white text-base">SMS Notifications</Label>
-                    <p className="text-slate-400 text-sm">Alertas urgentes por SMS</p>
-                  </div>
-                  <Switch
-                    checked={preferences?.smsNotifications ?? false}
-                    onCheckedChange={(checked) => handlePreferenceChange('smsNotifications', checked)}
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-white text-base">Push Notifications</Label>
-                    <p className="text-slate-400 text-sm">Notificaciones en el navegador</p>
-                  </div>
-                  <Switch
-                    checked={preferences?.pushNotifications ?? true}
-                    onCheckedChange={(checked) => handlePreferenceChange('pushNotifications', checked)}
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-white text-base">Marketing Emails</Label>
-                    <p className="text-slate-400 text-sm">Ofertas especiales y novedades</p>
-                  </div>
-                  <Switch
-                    checked={preferences?.marketingEmails ?? false}
-                    onCheckedChange={(checked) => handlePreferenceChange('marketingEmails', checked)}
-                  />
-                </div>
-              </div>
-            </div>
-          </TabsContent>
+                  
+                  <Alert className="border-green-500/50 bg-green-500/10">
+                    <Shield className="h-4 w-4 text-green-400" />
+                    <AlertDescription className="text-green-300">
+                      Todos tus datos están protegidos con encriptación de nivel empresarial.
+                    </AlertDescription>
+                  </Alert>
+                </CardContent>
+              </Card>
+            )}
 
-          {/* Security Tab Content */}
-          <TabsContent value="security" className="mt-8 space-y-6">
-            <div>
-              <div className="flex items-center gap-3 mb-6">
-                <Shield className="w-6 h-6 text-cyan-400" />
-                <h2 className="text-cyan-400 text-xl font-medium">Security</h2>
-              </div>
-
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-white text-base">Auto Save</Label>
-                    <p className="text-slate-400 text-sm">Guardar estimados automáticamente</p>
+            {/* Appearance Settings */}
+            {activeSection === 'appearance' && (
+              <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="text-cyan-400 flex items-center gap-2">
+                    <Palette className="w-5 h-5" />
+                    Configuración de Apariencia
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="text-slate-300">Tema del Sistema</Label>
+                      <Select 
+                        value={preferences?.theme || 'dark'} 
+                        onValueChange={(value) => handlePreferenceChange('theme', value)}
+                      >
+                        <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="dark">Modo Oscuro</SelectItem>
+                          <SelectItem value="light">Modo Claro</SelectItem>
+                          <SelectItem value="system">Sistema</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-slate-300">Formato de Hora</Label>
+                      <Select 
+                        value={preferences?.timeFormat || '24'} 
+                        onValueChange={(value) => handlePreferenceChange('timeFormat', value)}
+                      >
+                        <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="12">12 Horas (AM/PM)</SelectItem>
+                          <SelectItem value="24">24 Horas</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <Switch
-                    checked={preferences?.autoSaveEstimates ?? true}
-                    onCheckedChange={(checked) => handlePreferenceChange('autoSaveEstimates', checked)}
-                  />
-                </div>
-                
-                <Alert className="border-blue-500/50 bg-blue-500/10">
-                  <AlertCircle className="h-4 w-4 text-blue-400" />
-                  <AlertDescription className="text-blue-300">
-                    Todos tus datos están encriptados y protegidos.
-                  </AlertDescription>
-                </Alert>
-              </div>
-            </div>
-          </TabsContent>
-        </Tabs>
-
-        {/* Footer - Match reference design */}
-        <div className="flex justify-between items-center text-xs text-slate-500 pt-6 border-t border-slate-700/30">
-          <span>Política de Privacidad</span>
-          <span>|</span>
-          <span>Términos Legales</span>
-          <span>|</span>
-          <span>© 2025 Owl Fence</span>
+                  
+                  <Alert className="border-cyan-500/50 bg-cyan-500/10">
+                    <Palette className="h-4 w-4 text-cyan-400" />
+                    <AlertDescription className="text-cyan-300">
+                      El tema cyberpunk está optimizado para la mejor experiencia visual.
+                    </AlertDescription>
+                  </Alert>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
       </div>
     </div>
