@@ -1,12 +1,6 @@
 import { MailService } from '@sendgrid/mail';
 
-if (!process.env.SENDGRID_API_KEY) {
-  console.error("SENDGRID_API_KEY environment variable is not set");
-  throw new Error("SENDGRID_API_KEY environment variable must be set");
-}
-
-const mailService = new MailService();
-mailService.setApiKey(process.env.SENDGRID_API_KEY);
+// Don't throw error immediately, let individual methods handle missing API key
 
 interface EmailTemplate {
   subject: string;

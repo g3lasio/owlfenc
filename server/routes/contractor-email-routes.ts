@@ -1,5 +1,5 @@
 import express from 'express';
-import ContractorEmailService from '../services/contractorEmailService.js';
+import { ContractorEmailService } from '../services/contractorEmailService.js';
 
 const router = express.Router();
 
