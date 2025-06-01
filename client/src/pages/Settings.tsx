@@ -126,12 +126,14 @@ const Settings: React.FC = () => {
   });
 
   const handlePreferenceChange = (key: keyof UserPreferences, value: any) => {
+    // Update immediately without confirmation
     updatePreferencesMutation.mutate({ [key]: value });
   };
 
   const handleLanguageChange = (language: string) => {
+    // Change language immediately and save to backend
     i18n.changeLanguage(language);
-    handlePreferenceChange('language', language);
+    updatePreferencesMutation.mutate({ language });
   };
 
   const formatPrice = (cents: number) => {
