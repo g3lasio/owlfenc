@@ -547,6 +547,92 @@ export default function EstimatesWizardFixed() {
     }
   };
 
+  // Load saved estimates from Firebase
+  const loadSavedEstimates = async () => {
+    if (!currentUser?.uid) return;
+    
+    try {
+      setIsLoadingEstimates(true);
+      console.log('📥 Cargando estimados desde Firebase...');
+
+      // Import Firebase functions
+      const { collection, query, where, orderBy, getDocs } = await import('firebase/firestore');
+      const { db } = await import('../lib/firebase');
+
+      // Load from Firebase estimates collection
+      const estimatesQuery = query(
+        collection(db, 'estimates'),
+        where('firebaseUserId', '==', currentUser.uid),
+        orderBy('createdAt', 'desc')
+      );
+
+      const estimatesSnapshot = await getDocs(estimatesQuery);
+      const firebaseEstimates = estimatesSnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          estimateNumber: data.estimateNumber || `EST-${doc.id.slice(-6)}`,
+          title: data.title || data.projectName || 'Estimado sin título',
+          clientName: data.clientName || 'Cliente sin nombre',
+          clientEmail: data.clientEmail || '',
+          total: data.total || data.estimateAmount || 0,
+          status: data.status || 'draft',
+          estimateDate: data.createdAt ? data.createdAt.toDate?.() || new Date(data.createdAt) : new Date(),
+          items: data.items || [],
+          projectType: data.projectType || data.fenceType || 'fence',
+          projectId: data.projectId || doc.id,
+          pdfUrl: data.pdfUrl || null
+        };
+      });
+
+      // Also check projects collection for estimates saved there
+      const projectsQuery = query(
+        collection(db, 'projects'),
+        where('firebaseUserId', '==', currentUser.uid),
+        where('status', '==', 'estimate'),
+        orderBy('createdAt', 'desc')
+      );
+
+      const projectsSnapshot = await getDocs(projectsQuery);
+      const projectEstimates = projectsSnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          estimateNumber: data.estimateNumber || `EST-${doc.id.slice(-6)}`,
+          title: data.projectName || 'Estimado sin título',
+          clientName: data.clientInformation?.name || 'Cliente sin nombre',
+          clientEmail: data.clientInformation?.email || '',
+          total: data.projectTotalCosts?.total || 0,
+          status: data.status || 'estimate',
+          estimateDate: data.createdAt ? data.createdAt.toDate?.() || new Date(data.createdAt) : new Date(),
+          items: data.projectTotalCosts?.materialCosts?.items || [],
+          projectType: data.projectType || 'fence',
+          projectId: doc.id,
+          pdfUrl: data.pdfUrl || null
+        };
+      });
+
+      // Combine and deduplicate
+      const allEstimates = [...firebaseEstimates, ...projectEstimates];
+      const uniqueEstimates = allEstimates.filter((estimate, index, self) => 
+        index === self.findIndex(e => e.estimateNumber === estimate.estimateNumber)
+      );
+
+      setSavedEstimates(uniqueEstimates);
+      console.log(`✅ Cargados ${uniqueEstimates.length} estimados`);
+
+    } catch (error) {
+      console.error('❌ Error cargando estimados:', error);
+      toast({
+        title: 'Error al cargar estimados',
+        description: 'No se pudieron cargar los estimados guardados',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoadingEstimates(false);
+    }
+  };
+
   // AI Enhancement Function - Simplified for single field
   const enhanceProjectWithAI = async () => {
     if (!estimate.projectDetails.trim()) {
@@ -1442,27 +1528,7 @@ export default function EstimatesWizardFixed() {
     }
   };
 
-  // Load saved estimates
-  const loadSavedEstimates = async () => {
-    setIsLoadingEstimates(true);
-    try {
-      const response = await fetch('/api/estimates');
-      if (response.ok) {
-        const data = await response.json();
-        setSavedEstimates(data);
-      }
-    } catch (error) {
-      console.error('Error loading estimates:', error);
-      toast({
-        title: '❌ Error',
-        description: 'No se pudieron cargar los estimados guardados',
-        variant: 'destructive',
-        duration: 3000
-      });
-    } finally {
-      setIsLoadingEstimates(false);
-    }
-  };
+
 
   // Load estimates when history modal opens
   useEffect(() => {
@@ -2522,7 +2588,10 @@ export default function EstimatesWizardFixed() {
           </div>
           <Button
             variant="outline"
-            onClick={() => setShowEstimatesHistory(true)}
+            onClick={() => {
+              setShowEstimatesHistory(true);
+              loadSavedEstimates();
+            }}
             className="border-blue-300 text-blue-600 hover:bg-blue-50 w-full sm:w-auto shrink-0"
           >
             <FileText className="h-4 w-4 mr-2" />
@@ -2533,46 +2602,50 @@ export default function EstimatesWizardFixed() {
 
       {/* Progress Steps */}
       <div className="mb-6 sm:mb-8">
-        <div className="flex items-center justify-between px-4 max-w-full overflow-hidden">
-          {STEPS.map((step, index) => {
-            const Icon = step.icon;
-            const isActive = index === currentStep;
-            const isCompleted = index < currentStep;
-            
-            return (
-              <div key={step.id} className="flex items-center flex-1 min-w-0">
-                <div
-                  className={`flex flex-col items-center min-w-0 ${
-                    isActive ? 'text-primary' : isCompleted ? 'text-green-600' : 'text-muted-foreground'
-                  }`}
-                >
-                  <div
-                    className={`flex items-center justify-center w-7 h-7 sm:w-10 sm:h-10 rounded-full border-2 mb-1 sm:mb-2 ${
-                      isActive
-                        ? 'border-primary bg-primary text-primary-foreground'
-                        : isCompleted
-                        ? 'border-green-600 bg-green-600 text-white'
-                        : 'border-muted-foreground'
-                    }`}
-                  >
-                    {isCompleted ? (
-                      <Check className="h-3 w-3 sm:h-5 sm:w-5" />
-                    ) : (
-                      <Icon className="h-3 w-3 sm:h-5 sm:w-5" />
-                    )}
+        <div className="flex items-center justify-center max-w-4xl mx-auto px-4">
+          <div className="flex items-center w-full max-w-2xl">
+            {STEPS.map((step, index) => {
+              const Icon = step.icon;
+              const isActive = index === currentStep;
+              const isCompleted = index < currentStep;
+              
+              return (
+                <div key={step.id} className="flex items-center flex-1">
+                  <div className="flex flex-col items-center w-full">
+                    <div
+                      className={`flex items-center justify-center w-8 h-8 sm:w-12 sm:h-12 rounded-full border-2 mb-2 transition-all duration-300 ${
+                        isActive
+                          ? 'border-primary bg-primary text-primary-foreground shadow-lg scale-110'
+                          : isCompleted
+                          ? 'border-green-600 bg-green-600 text-white shadow-md'
+                          : 'border-muted-foreground/40 bg-background'
+                      }`}
+                    >
+                      {isCompleted ? (
+                        <Check className="h-4 w-4 sm:h-6 sm:w-6" />
+                      ) : (
+                        <Icon className="h-4 w-4 sm:h-6 sm:w-6" />
+                      )}
+                    </div>
+                    <span className={`text-xs sm:text-sm font-medium text-center transition-colors duration-300 ${
+                      isActive ? 'text-primary font-semibold' : isCompleted ? 'text-green-600' : 'text-muted-foreground'
+                    }`}>
+                      {step.title}
+                    </span>
                   </div>
-                  <span className="text-[9px] sm:text-xs font-medium text-center leading-tight max-w-12 sm:max-w-16 truncate">{step.title}</span>
+                  {index < STEPS.length - 1 && (
+                    <div className="flex-1 flex items-center px-2 sm:px-4">
+                      <div
+                        className={`w-full h-1 rounded-full transition-all duration-500 ${
+                          isCompleted ? 'bg-green-600' : 'bg-muted-foreground/20'
+                        }`}
+                      />
+                    </div>
+                  )}
                 </div>
-                {index < STEPS.length - 1 && (
-                  <div
-                    className={`flex-1 h-0.5 mx-1 sm:mx-3 min-w-4 sm:min-w-8 ${
-                      isCompleted ? 'bg-green-600' : 'bg-muted-foreground/30'
-                    }`}
-                  />
-                )}
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
 
