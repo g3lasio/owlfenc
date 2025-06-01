@@ -172,7 +172,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                   transition={{ delay: 0.4 + (groupIndex * 0.4), duration: 0.3 }}
                   className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider"
                 >
-                  {t(group.title)}
+                  {t(`navigation.${group.title}`)}
                 </motion.h2>
                 <div className="space-y-1.5 mb-4">
                   {group.items.map((item, itemIndex) => 
