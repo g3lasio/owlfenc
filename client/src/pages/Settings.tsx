@@ -265,7 +265,7 @@ export default function Settings() {
           <div className="relative mb-8 w-full">
             <TabsList className="w-full h-auto bg-slate-900/90 backdrop-blur border border-cyan-400/30 rounded-lg p-4 flex flex-col space-y-0">
               {/* Grid Container dentro de TabsList */}
-              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 w-full">
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 w-full">
                 <TabsTrigger 
                   value="account" 
                   className="flex flex-col items-center justify-center gap-2 p-4 h-20 text-xs font-medium text-slate-300 bg-slate-800/70 border border-slate-600/50 rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-cyan-500/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/70 data-[state=active]:text-cyan-200 data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/20 hover:bg-slate-700/70 hover:border-slate-500/60 hover:text-slate-200 transition-all duration-300 cursor-pointer w-full"
@@ -700,27 +700,6 @@ export default function Settings() {
                           View Sessions
                         </Button>
                       </div>
-                    </div>
-                  </div>
-                </div>
-                      
-                      <div className="space-y-2">
-                        <Label>Default Markup (%)</Label>
-                        <Input 
-                          type="number" 
-                          placeholder="25"
-                          defaultValue="25"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label>Service Area (Miles from base)</Label>
-                      <Input 
-                        type="number" 
-                        placeholder="50"
-                        defaultValue="50"
-                      />
                     </div>
                   </div>
                 </div>
