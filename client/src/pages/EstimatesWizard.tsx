@@ -447,7 +447,6 @@ export default function EstimatesWizardFixed() {
     message: '',
     sendCopy: true
   });
-  const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [editableCompany, setEditableCompany] = useState({
     companyName: '',
     address: '',
@@ -1610,73 +1609,6 @@ export default function EstimatesWizardFixed() {
   const sendEstimateEmail = async () => {
     if (!estimate.client?.email) {
       toast({
-        title: 'Error',
-        description: 'El cliente no tiene un email registrado',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    if (!emailData.toEmail || !emailData.subject || !emailData.message) {
-      toast({
-        title: 'Error', 
-        description: 'Por favor complete todos los campos requeridos',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    setIsSendingEmail(true);
-    
-    try {
-      // Generate the estimate HTML
-      const estimateHtml = generateEstimatePreview();
-      
-      // Send email with estimate
-      const response = await fetch('/api/send-estimate-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: emailData.toEmail,
-          subject: emailData.subject,
-          message: emailData.message,
-          estimateHtml: estimateHtml,
-          clientName: estimate.client.name,
-          companyName: profile?.companyName || 'Your Company',
-          companyEmail: profile?.email || '',
-          sendCopy: emailData.sendCopy
-        })
-      });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        toast({
-          title: '✅ Email Enviado',
-          description: `El estimado fue enviado exitosamente a ${emailData.toEmail}`,
-          duration: 5000
-        });
-        setShowEmailDialog(false);
-      } else {
-        throw new Error(result.error || 'Error al enviar el email');
-      }
-    } catch (error) {
-      console.error('Error sending email:', error);
-      toast({
-        title: '❌ Error al Enviar',
-        description: 'No se pudo enviar el email. Por favor intente nuevamente.',
-        variant: 'destructive',
-        duration: 5000
-      });
-    } finally {
-      setIsSendingEmail(false);
-    }
-  };
-
-  // Download PDF
-  const sendEstimateEmail = async () => {
-    if (!estimate.client?.email) {
-      toast({
         title: "Error",
         description: "El cliente no tiene email registrado",
         variant: "destructive",
@@ -1724,6 +1656,7 @@ export default function EstimatesWizardFixed() {
     }
   };
 
+  // Download PDF
   const downloadPDF = async () => {
     try {
       // Primero guardar el estimado automáticamente
@@ -2757,37 +2690,80 @@ export default function EstimatesWizardFixed() {
                 {/* Card 4: Acciones Principales */}
                 <Card className="border-cyan-500/30 bg-gradient-to-r from-gray-900/50 via-black/50 to-gray-900/50">
                   <CardContent className="pt-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       <Button
                         variant="outline"
                         onClick={() => setCurrentStep(1)}
                         size="sm"
-                        className="border-cyan-500/50 text-cyan-300 hover:bg-cyan-500/10"
+                        className="border-cyan-500/50 text-cyan-300 hover:bg-cyan-500/10 text-xs"
                       >
-                        <Edit className="h-4 w-4 mr-2" />
-                        Editar Detalles
+                        <Edit className="h-3 w-3 mr-1" />
+                        <span className="hidden sm:inline">Editar</span>
+                        <span className="sm:hidden">Edit</span>
+                      </Button>
+                      
+                      <Button
+                        onClick={sendEstimateEmail}
+                        disabled={isSendingEmail || !estimate.client?.email}
+                        size="sm"
+                        className="bg-purple-600 hover:bg-purple-700 text-white text-xs"
+                      >
+                        <Mail className="h-3 w-3 mr-1" />
+                        {isSendingEmail ? (
+                          <span className="hidden sm:inline">Enviando...</span>
+                        ) : (
+                          <>
+                            <span className="hidden sm:inline">Enviar Email</span>
+                            <span className="sm:hidden">Email</span>
+                          </>
+                        )}
                       </Button>
                       
                       <Button
                         onClick={() => handleSaveEstimate()}
                         disabled={isSaving}
                         size="sm"
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs"
                       >
-                        <Save className="h-4 w-4 mr-2" />
-                        {isSaving ? 'Guardando...' : 'Guardar Estimado'}
+                        <Save className="h-3 w-3 mr-1" />
+                        {isSaving ? (
+                          <span className="hidden sm:inline">Guardando...</span>
+                        ) : (
+                          <>
+                            <span className="hidden sm:inline">Guardar</span>
+                            <span className="sm:hidden">Save</span>
+                          </>
+                        )}
                       </Button>
                       
                       <Button
                         onClick={downloadPDF}
                         disabled={!estimate.client || estimate.items.length === 0}
                         size="sm"
-                        className="bg-green-600 hover:bg-green-700 text-white"
+                        className="bg-green-600 hover:bg-green-700 text-white text-xs"
                       >
-                        <Download className="h-4 w-4 mr-2" />
-                        Generar PDF
+                        <Download className="h-3 w-3 mr-1" />
+                        <span className="hidden sm:inline">PDF</span>
+                        <span className="sm:hidden">PDF</span>
                       </Button>
                     </div>
+                    
+                    {/* Info de email del cliente */}
+                    {estimate.client && (
+                      <div className="mt-3 pt-3 border-t border-gray-700">
+                        <div className="text-xs text-gray-400">
+                          {estimate.client.email ? (
+                            <span className="text-green-400">
+                              ✓ Email: {estimate.client.email}
+                            </span>
+                          ) : (
+                            <span className="text-amber-400">
+                              ⚠ Cliente sin email registrado
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
