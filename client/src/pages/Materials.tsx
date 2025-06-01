@@ -683,7 +683,7 @@ export default function Materials() {
               <SelectValue placeholder="Todas las categorías" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas las categorías</SelectItem>
+              <SelectItem value="todas">Todas las categorías</SelectItem>
               {categories.map((category) => (
                 <SelectItem key={category} value={category}>
                   {category}

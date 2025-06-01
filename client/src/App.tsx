@@ -46,16 +46,15 @@ import LegalContractEngineFixed from "@/pages/LegalContractEngineFixed";
 import ContractGeneratorSimplified from "@/pages/ContractGeneratorSimplified";
 import AITestingPage from "@/pages/AITestingPage";
 import DeepSearchDemo from "@/pages/DeepSearchDemo";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import AuthDiagnostic from './pages/AuthDiagnostic';
 import AppleAuthTest from './pages/AppleAuthTest';
 import { lazy } from 'react';
 
-// Componente para páginas protegidas
-import { useAuth } from "@/contexts/AuthContext";
 import { Redirect } from "wouter";
 
+// Componente para páginas protegidas
 type ProtectedRouteProps = {
   component: React.ComponentType<any>;
 };
@@ -82,6 +81,7 @@ function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
 }
 
 function Router() {
+
   return (
     <Switch>
       {/* Rutas públicas */}
