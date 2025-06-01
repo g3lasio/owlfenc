@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, X, Upload, FileText, Facebook, Instagram, Linkedin, Globe, Mail, Phone } from "lucide-react";
+import { Plus, X, Upload, FileText, Facebook, Instagram, Linkedin, Globe, Mail, Phone, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { SubscriptionInfo } from "@/components/ui/subscription-info";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { Link } from "wouter";
@@ -67,6 +67,10 @@ export default function Profile() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  // Email verification state
+  const [emailVerificationStatus, setEmailVerificationStatus] = useState<'unverified' | 'pending' | 'verified' | 'checking'>('unverified');
+  const [isVerifying, setIsVerifying] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -308,6 +312,90 @@ export default function Profile() {
     //Example:  You would typically make an API call here to update the password.
   };
 
+  // Check email verification status when email changes
+  useEffect(() => {
+    if (companyInfo.email) {
+      checkEmailVerificationStatus(companyInfo.email);
+    } else {
+      setEmailVerificationStatus('unverified');
+    }
+  }, [companyInfo.email]);
+
+  const checkEmailVerificationStatus = async (email: string) => {
+    if (!email) return;
+    
+    setEmailVerificationStatus('checking');
+    try {
+      const response = await fetch('/api/contractor-email/check-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      
+      const result = await response.json();
+      
+      if (result.verified) {
+        setEmailVerificationStatus('verified');
+      } else if (result.pending) {
+        setEmailVerificationStatus('pending');
+      } else {
+        setEmailVerificationStatus('unverified');
+      }
+    } catch (error) {
+      console.error('Error checking verification status:', error);
+      setEmailVerificationStatus('unverified');
+    }
+  };
+
+  const handleEmailVerification = async () => {
+    if (!companyInfo.email) {
+      toast({
+        title: "Email Required",
+        description: "Please enter your email address first.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsVerifying(true);
+    try {
+      const response = await fetch('/api/contractor-email/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email: companyInfo.email,
+          name: companyInfo.companyName || companyInfo.ownerName || 'Contractor'
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setEmailVerificationStatus('pending');
+        toast({
+          title: "Verification Email Sent",
+          description: "Please check your email and click the verification link from SendGrid.",
+          duration: 8000
+        });
+      } else {
+        toast({
+          title: "Verification Failed",
+          description: result.message || "Unable to send verification email. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Error sending verification:', error);
+      toast({
+        title: "Connection Error",
+        description: "Unable to send verification email. Please check your connection.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
 
   return (
     <div className="flex-1 p-4 md:p-6 space-y-6">
@@ -541,6 +629,72 @@ export default function Profile() {
                       onChange={handleChange}
                       placeholder="contact@yourcompany.com"
                     />
+                    {/* Email Verification Status */}
+                    {companyInfo.email && (
+                      <div className="mt-2 p-3 rounded-lg border">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {emailVerificationStatus === 'checking' && (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                                <span className="text-sm text-muted-foreground">Checking verification status...</span>
+                              </>
+                            )}
+                            {emailVerificationStatus === 'verified' && (
+                              <>
+                                <CheckCircle className="h-4 w-4 text-green-500" />
+                                <span className="text-sm text-green-600 font-medium">Email verified</span>
+                              </>
+                            )}
+                            {emailVerificationStatus === 'pending' && (
+                              <>
+                                <AlertCircle className="h-4 w-4 text-yellow-500" />
+                                <span className="text-sm text-yellow-600 font-medium">Verification pending</span>
+                              </>
+                            )}
+                            {emailVerificationStatus === 'unverified' && (
+                              <>
+                                <AlertCircle className="h-4 w-4 text-red-500" />
+                                <span className="text-sm text-red-600 font-medium">Email not verified</span>
+                              </>
+                            )}
+                          </div>
+                          
+                          {emailVerificationStatus !== 'verified' && emailVerificationStatus !== 'checking' && (
+                            <Button 
+                              onClick={handleEmailVerification}
+                              disabled={isVerifying || !companyInfo.email}
+                              size="sm"
+                              variant="outline"
+                            >
+                              {isVerifying ? (
+                                <>
+                                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                  Sending...
+                                </>
+                              ) : (
+                                <>
+                                  <Mail className="h-3 w-3 mr-1" />
+                                  Verify Email
+                                </>
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                        
+                        <div className="mt-2 text-xs text-muted-foreground">
+                          {emailVerificationStatus === 'verified' && (
+                            "You can now send professional emails to clients using this address."
+                          )}
+                          {emailVerificationStatus === 'pending' && (
+                            "Check your email for a verification link from SendGrid. Click it to complete verification."
+                          )}
+                          {emailVerificationStatus === 'unverified' && (
+                            "Verify your email to send professional estimates and contracts to clients."
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="phone">Office Phone</Label>
