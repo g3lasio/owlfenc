@@ -91,15 +91,14 @@ export default function Settings() {
         </div>
         
         <Tabs defaultValue="account" className="space-y-6">
-          {/* Tab Navigation - SOLUCIÓN DEFINITIVA: 6 botones SIEMPRE visibles */}
+          {/* Tab Navigation - ESTRUCTURA RADIX CORRECTA */}
           <div className="relative mb-8 w-full">
-            <div className="w-full bg-slate-900/90 backdrop-blur border border-cyan-400/30 rounded-lg p-3">
-              {/* Grid que garantiza visibilidad completa */}
-              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 w-full auto-rows-fr">
-                {/* ROW 1 */}
+            <TabsList className="w-full h-auto bg-slate-900/90 backdrop-blur border border-cyan-400/30 rounded-lg p-4 flex flex-col space-y-0">
+              {/* Grid Container dentro de TabsList */}
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 w-full">
                 <TabsTrigger 
                   value="account" 
-                  className="flex flex-col items-center justify-center gap-2 p-4 h-20 text-xs font-medium text-slate-300 bg-slate-800/70 border border-slate-600/50 rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-cyan-500/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/70 data-[state=active]:text-cyan-200 data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/20 hover:bg-slate-700/70 hover:border-slate-500/60 hover:text-slate-200 transition-all duration-300 cursor-pointer"
+                  className="flex flex-col items-center justify-center gap-2 p-4 h-20 text-xs font-medium text-slate-300 bg-slate-800/70 border border-slate-600/50 rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-cyan-500/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/70 data-[state=active]:text-cyan-200 data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/20 hover:bg-slate-700/70 hover:border-slate-500/60 hover:text-slate-200 transition-all duration-300 cursor-pointer w-full"
                 >
                   <Settings2 className="h-6 w-6 flex-shrink-0" />
                   <span className="text-[11px] font-medium leading-none text-center">Account</span>
@@ -107,7 +106,7 @@ export default function Settings() {
                 
                 <TabsTrigger 
                   value="billing" 
-                  className="flex flex-col items-center justify-center gap-2 p-4 h-20 text-xs font-medium text-slate-300 bg-slate-800/70 border border-slate-600/50 rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-cyan-500/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/70 data-[state=active]:text-cyan-200 data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/20 hover:bg-slate-700/70 hover:border-slate-500/60 hover:text-slate-200 transition-all duration-300 cursor-pointer"
+                  className="flex flex-col items-center justify-center gap-2 p-4 h-20 text-xs font-medium text-slate-300 bg-slate-800/70 border border-slate-600/50 rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-cyan-500/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/70 data-[state=active]:text-cyan-200 data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/20 hover:bg-slate-700/70 hover:border-slate-500/60 hover:text-slate-200 transition-all duration-300 cursor-pointer w-full"
                 >
                   <CreditCard className="h-6 w-6 flex-shrink-0" />
                   <span className="text-[11px] font-medium leading-none text-center">Billing</span>
@@ -115,16 +114,15 @@ export default function Settings() {
 
                 <TabsTrigger 
                   value="notifications" 
-                  className="flex flex-col items-center justify-center gap-2 p-4 h-20 text-xs font-medium text-slate-300 bg-slate-800/70 border border-slate-600/50 rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-cyan-500/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/70 data-[state=active]:text-cyan-200 data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/20 hover:bg-slate-700/70 hover:border-slate-500/60 hover:text-slate-200 transition-all duration-300 cursor-pointer"
+                  className="flex flex-col items-center justify-center gap-2 p-4 h-20 text-xs font-medium text-slate-300 bg-slate-800/70 border border-slate-600/50 rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-cyan-500/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/70 data-[state=active]:text-cyan-200 data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/20 hover:bg-slate-700/70 hover:border-slate-500/60 hover:text-slate-200 transition-all duration-300 cursor-pointer w-full"
                 >
                   <Bell className="h-6 w-6 flex-shrink-0" />
                   <span className="text-[11px] font-medium leading-none text-center">Alerts</span>
                 </TabsTrigger>
 
-                {/* ROW 2 - Visible en móvil */}
                 <TabsTrigger 
                   value="business" 
-                  className="flex flex-col items-center justify-center gap-2 p-4 h-20 text-xs font-medium text-slate-300 bg-slate-800/70 border border-slate-600/50 rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-cyan-500/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/70 data-[state=active]:text-cyan-200 data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/20 hover:bg-slate-700/70 hover:border-slate-500/60 hover:text-slate-200 transition-all duration-300 cursor-pointer"
+                  className="flex flex-col items-center justify-center gap-2 p-4 h-20 text-xs font-medium text-slate-300 bg-slate-800/70 border border-slate-600/50 rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-cyan-500/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/70 data-[state=active]:text-cyan-200 data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/20 hover:bg-slate-700/70 hover:border-slate-500/60 hover:text-slate-200 transition-all duration-300 cursor-pointer w-full"
                 >
                   <Building2 className="h-6 w-6 flex-shrink-0" />
                   <span className="text-[11px] font-medium leading-none text-center">Business</span>
@@ -132,7 +130,7 @@ export default function Settings() {
 
                 <TabsTrigger 
                   value="integrations" 
-                  className="flex flex-col items-center justify-center gap-2 p-4 h-20 text-xs font-medium text-slate-300 bg-slate-800/70 border border-slate-600/50 rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-cyan-500/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/70 data-[state=active]:text-cyan-200 data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/20 hover:bg-slate-700/70 hover:border-slate-500/60 hover:text-slate-200 transition-all duration-300 cursor-pointer"
+                  className="flex flex-col items-center justify-center gap-2 p-4 h-20 text-xs font-medium text-slate-300 bg-slate-800/70 border border-slate-600/50 rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-cyan-500/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/70 data-[state=active]:text-cyan-200 data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/20 hover:bg-slate-700/70 hover:border-slate-500/60 hover:text-slate-200 transition-all duration-300 cursor-pointer w-full"
                 >
                   <Database className="h-6 w-6 flex-shrink-0" />
                   <span className="text-[11px] font-medium leading-none text-center">Connect</span>
@@ -140,13 +138,13 @@ export default function Settings() {
 
                 <TabsTrigger 
                   value="security" 
-                  className="flex flex-col items-center justify-center gap-2 p-4 h-20 text-xs font-medium text-slate-300 bg-slate-800/70 border border-slate-600/50 rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-cyan-500/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/70 data-[state=active]:text-cyan-200 data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/20 hover:bg-slate-700/70 hover:border-slate-500/60 hover:text-slate-200 transition-all duration-300 cursor-pointer"
+                  className="flex flex-col items-center justify-center gap-2 p-4 h-20 text-xs font-medium text-slate-300 bg-slate-800/70 border border-slate-600/50 rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-cyan-500/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/70 data-[state=active]:text-cyan-200 data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/20 hover:bg-slate-700/70 hover:border-slate-500/60 hover:text-slate-200 transition-all duration-300 cursor-pointer w-full"
                 >
                   <Shield className="h-6 w-6 flex-shrink-0" />
                   <span className="text-[11px] font-medium leading-none text-center">Security</span>
                 </TabsTrigger>
               </div>
-            </div>
+            </TabsList>
           </div>
           
           {/* ACCOUNT TAB */}
