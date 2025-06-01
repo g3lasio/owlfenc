@@ -2557,97 +2557,190 @@ export default function EstimatesWizardFixed() {
 
       case 3: // Preview
         return (
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                <div className="flex flex-col space-y-4">
-                  {/* Title Row */}
-                  <div className="flex items-center gap-2">
-                    <Eye className="h-5 w-5" />
-                    Vista Previa del Estimado
+          <div className="space-y-4">
+            {/* Header */}
+            <Card className="border-cyan-500/30 bg-gradient-to-r from-gray-900/90 via-black/90 to-gray-900/90">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-cyan-300">
+                  <Eye className="h-5 w-5" />
+                  Vista Previa del Estimado
+                  <div className="ml-auto flex items-center gap-1">
+                    <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
+                    <span className="text-xs text-cyan-400">ACTIVO</span>
                   </div>
-                  
-                  {/* Action Buttons - Responsive Grid */}
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 w-full">
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowCompanyEditDialog(true)}
-                      size="sm"
-                      className="flex-1 text-xs"
-                    >
-                      <Building2 className="h-3 w-3 mr-1" />
-                      <span className="hidden sm:inline">Editar</span> Empresa
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => generateEstimatePreview()}
-                      disabled={!estimate.client || estimate.items.length === 0}
-                      size="sm"
-                      className="flex-1 text-xs"
-                    >
-                      <RefreshCw className="h-3 w-3 mr-1" />
-                      <span className="hidden sm:inline">Actualizar</span> Vista
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => handleSaveEstimate()}
-                      disabled={!estimate.client || estimate.items.length === 0 || isSaving}
-                      size="sm"
-                      className="flex-1 text-xs"
-                    >
-                      <Save className="h-3 w-3 mr-1" />
-                      <span className="hidden sm:inline">{isSaving ? 'Guardando...' : 'Guardar'}</span><span className="sm:hidden">Est.</span><span className="hidden sm:inline"> Estimado</span>
-                    </Button>
-                    <Button
-                      onClick={() => setShowPreview(true)}
-                      disabled={!estimate.client || estimate.items.length === 0}
-                      className="bg-blue-600 hover:bg-blue-700 text-white flex-1 text-xs"
-                      size="sm"
-                    >
-                      <Eye className="h-3 w-3 mr-1" />
-<span className="hidden sm:inline">Preview & Send</span><span className="sm:hidden">Preview</span>
-                    </Button>
-                    <Button
-                      onClick={downloadPDF}
-                      disabled={!estimate.client || estimate.items.length === 0 || !previewHtml}
-                      size="sm"
-                      className="flex-1 text-xs bg-green-600 hover:bg-green-700"
-                    >
-                      <Download className="h-3 w-3 mr-1" />
-                      <span className="hidden sm:inline">Descargar</span> PDF
-                    </Button>
-                  </div>
-                </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {!estimate.client || estimate.items.length === 0 ? (
-                <div className="text-center py-8">
+                </CardTitle>
+              </CardHeader>
+            </Card>
+
+            {!estimate.client || estimate.items.length === 0 ? (
+              <Card className="border-amber-500/30">
+                <CardContent className="text-center py-8">
                   <AlertCircle className="h-12 w-12 mx-auto mb-4 text-amber-500" />
                   <p className="text-lg font-medium">Estimado Incompleto</p>
                   <p className="text-muted-foreground">
                     Necesitas seleccionar un cliente y agregar materiales para generar la vista previa
                   </p>
-                </div>
-              ) : (
-                <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
-                  <div className="overflow-x-auto">
-                    <div
-                      style={{
-                        color: '#000000',
-                        '--tw-text-opacity': '1',
-                        minWidth: '320px'
-                      }}
-                      className="[&_*]:!text-black [&_td]:!text-black [&_th]:!text-black [&_p]:!text-black [&_span]:!text-black [&_div]:!text-black [&_table]:w-full [&_table]:min-w-full [&_td]:text-xs [&_th]:text-xs [&_td]:px-2 [&_th]:px-2 [&_td]:py-1 [&_th]:py-1"
-                      dangerouslySetInnerHTML={{ 
-                        __html: previewHtml || generateEstimatePreview()
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {/* Card 1: Información del Contratista y Cliente */}
+                <Card className="border-cyan-500/30 bg-gradient-to-r from-gray-900/50 via-black/50 to-gray-900/50">
+                  <CardHeader className="border-b border-cyan-500/20">
+                    <CardTitle className="text-sm text-cyan-300 flex items-center gap-2">
+                      <Building2 className="h-4 w-4" />
+                      Información General
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Contratista */}
+                      <div className="space-y-2">
+                        <h4 className="text-xs font-medium text-cyan-400 mb-2">CONTRATISTA</h4>
+                        <div className="text-sm text-gray-300">
+                          <p className="font-medium">{contractor?.companyName || profile?.company || 'Empresa'}</p>
+                          <p className="text-xs text-gray-400">{contractor?.address || profile?.address || 'Dirección'}</p>
+                          <p className="text-xs text-gray-400">
+                            {contractor?.city || profile?.city || 'Ciudad'}, {contractor?.state || profile?.state || 'Estado'} {contractor?.zip || profile?.zipCode || ''}
+                          </p>
+                          <p className="text-xs text-cyan-400">{contractor?.phone || profile?.phone || 'Teléfono'}</p>
+                          <p className="text-xs text-cyan-400">{contractor?.email || profile?.email || 'Email'}</p>
+                        </div>
+                      </div>
+                      
+                      {/* Cliente */}
+                      <div className="space-y-2">
+                        <h4 className="text-xs font-medium text-cyan-400 mb-2">CLIENTE</h4>
+                        <div className="text-sm text-gray-300">
+                          <p className="font-medium">{estimate.client?.name}</p>
+                          <p className="text-xs text-gray-400">{estimate.client?.address}</p>
+                          <p className="text-xs text-cyan-400">{estimate.client?.phone}</p>
+                          <p className="text-xs text-cyan-400">{estimate.client?.email}</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Número y Fecha */}
+                    <div className="mt-4 pt-4 border-t border-gray-700 flex flex-col sm:flex-row sm:justify-between gap-2">
+                      <div className="text-xs">
+                        <span className="text-gray-400">Estimado #:</span>
+                        <span className="text-cyan-400 ml-1">EST-{new Date().getFullYear()}-{String(Math.floor(Math.random() * 10000)).padStart(4, '0')}</span>
+                      </div>
+                      <div className="text-xs">
+                        <span className="text-gray-400">Fecha:</span>
+                        <span className="text-cyan-400 ml-1">{new Date().toLocaleDateString('es-ES')}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Card 2: Detalles del Proyecto */}
+                <Card className="border-cyan-500/30 bg-gradient-to-r from-gray-900/50 via-black/50 to-gray-900/50">
+                  <CardHeader className="border-b border-cyan-500/20">
+                    <CardTitle className="text-sm text-cyan-300 flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Detalles del Proyecto
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <div className="text-sm text-gray-300">
+                      <p className="mb-2">{estimate.projectDetails || 'Sin descripción del proyecto'}</p>
+                      <div className="text-xs text-gray-400">
+                        <p>Ubicación: {estimate.client?.address || 'No especificada'}</p>
+                        <p>Materiales: {estimate.items.length} items seleccionados</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Card 3: Resumen Financiero */}
+                <Card className="border-cyan-500/30 bg-gradient-to-r from-gray-900/50 via-black/50 to-gray-900/50">
+                  <CardHeader className="border-b border-cyan-500/20">
+                    <CardTitle className="text-sm text-cyan-300 flex items-center gap-2">
+                      <Calculator className="h-4 w-4" />
+                      Resumen Financiero
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <div className="space-y-2">
+                      {/* Resumen de Materiales */}
+                      <div className="text-xs">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-400">Materiales ({estimate.items.length} items):</span>
+                          <span className="text-gray-300">${estimate.subtotal.toFixed(2)}</span>
+                        </div>
+                      </div>
+                      
+                      {/* Descuento */}
+                      {estimate.discountAmount > 0 && (
+                        <div className="text-xs">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-400">
+                              Descuento {estimate.discountName ? `(${estimate.discountName})` : ''}:
+                            </span>
+                            <span className="text-green-400">-${estimate.discountAmount.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Impuesto */}
+                      <div className="text-xs">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-400">Impuesto ({estimate.taxRate}%):</span>
+                          <span className="text-gray-300">${estimate.tax.toFixed(2)}</span>
+                        </div>
+                      </div>
+                      
+                      {/* Total */}
+                      <div className="pt-2 border-t border-gray-700">
+                        <div className="flex justify-between items-center">
+                          <span className="text-cyan-300 font-medium">TOTAL:</span>
+                          <span className="text-cyan-300 font-bold text-lg">${estimate.total.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Card 4: Acciones Principales */}
+                <Card className="border-cyan-500/30 bg-gradient-to-r from-gray-900/50 via-black/50 to-gray-900/50">
+                  <CardContent className="pt-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <Button
+                        variant="outline"
+                        onClick={() => setCurrentStep(1)}
+                        size="sm"
+                        className="border-cyan-500/50 text-cyan-300 hover:bg-cyan-500/10"
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        Editar Detalles
+                      </Button>
+                      
+                      <Button
+                        onClick={() => handleSaveEstimate()}
+                        disabled={isSaving}
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        <Save className="h-4 w-4 mr-2" />
+                        {isSaving ? 'Guardando...' : 'Guardar Estimado'}
+                      </Button>
+                      
+                      <Button
+                        onClick={downloadPDF}
+                        disabled={!estimate.client || estimate.items.length === 0}
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Generar PDF
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </div>
         );
 
       default:
