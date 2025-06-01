@@ -33,11 +33,15 @@ import {
 export default function Settings() {
   const [saveLoading, setSaveLoading] = useState(false);
   const { toast } = useToast();
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [autoSaveEstimates, setAutoSaveEstimates] = useState(true);
+  const [showTooltips, setShowTooltips] = useState(true);
+  const [language, setLanguage] = useState("en");
+  const [timezone, setTimezone] = useState("pst");
   
   const handleSaveSettings = async () => {
     setSaveLoading(true);
     try {
-      // Simular guardado
       await new Promise(resolve => setTimeout(resolve, 1000));
       toast({
         title: "Settings saved",
@@ -52,6 +56,69 @@ export default function Settings() {
     } finally {
       setSaveLoading(false);
     }
+  };
+
+  // Account functions
+  const handleLanguageChange = (value: string) => {
+    setLanguage(value);
+    toast({
+      title: "Language Updated",
+      description: `Language changed to ${value === 'en' ? 'English' : value === 'es' ? 'Español' : 'Français'}`,
+    });
+  };
+
+  const handleTimezoneChange = (value: string) => {
+    setTimezone(value);
+    toast({
+      title: "Timezone Updated", 
+      description: "Your timezone preference has been saved",
+    });
+  };
+
+  const handleDarkModeToggle = (checked: boolean) => {
+    setIsDarkMode(checked);
+    toast({
+      title: checked ? "Dark Mode Enabled" : "Light Mode Enabled",
+      description: "Theme preference updated",
+    });
+  };
+
+  const handleAutoSaveToggle = (checked: boolean) => {
+    setAutoSaveEstimates(checked);
+    toast({
+      title: checked ? "Auto-save Enabled" : "Auto-save Disabled",
+      description: "Estimate auto-save preference updated",
+    });
+  };
+
+  const handleTooltipsToggle = (checked: boolean) => {
+    setShowTooltips(checked);
+    toast({
+      title: checked ? "Tooltips Enabled" : "Tooltips Disabled",
+      description: "Tooltip display preference updated",
+    });
+  };
+
+  // Billing functions
+  const handleViewPlans = () => {
+    toast({
+      title: "Redirecting to Plans",
+      description: "Opening subscription plans page...",
+    });
+  };
+
+  const handleAddPaymentMethod = () => {
+    toast({
+      title: "Add Payment Method",
+      description: "Opening payment method setup...",
+    });
+  };
+
+  const handleDownloadBilling = () => {
+    toast({
+      title: "Download Started",
+      description: "Preparing billing history download...",
+    });
   };
   
   return (
@@ -172,7 +239,7 @@ export default function Settings() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                     <div className="space-y-2">
                       <Label htmlFor="language" className="text-cyan-300 text-sm font-medium">Language</Label>
-                      <Select defaultValue="en">
+                      <Select value={language} onValueChange={handleLanguageChange}>
                         <SelectTrigger className="bg-slate-800/50 border-slate-600/50 text-slate-200 hover:border-cyan-400/50 focus:border-cyan-400">
                           <SelectValue />
                         </SelectTrigger>
@@ -186,7 +253,7 @@ export default function Settings() {
                     
                     <div className="space-y-2">
                       <Label htmlFor="timezone" className="text-cyan-300 text-sm font-medium">Timezone</Label>
-                      <Select defaultValue="pst">
+                      <Select value={timezone} onValueChange={handleTimezoneChange}>
                         <SelectTrigger className="bg-slate-800/50 border-slate-600/50 text-slate-200 hover:border-cyan-400/50 focus:border-cyan-400">
                           <SelectValue />
                         </SelectTrigger>
@@ -208,7 +275,7 @@ export default function Settings() {
                         <Label className="text-base text-cyan-300">Dark Mode</Label>
                         <p className="text-sm text-slate-400">Use dark theme throughout the app</p>
                       </div>
-                      <Switch defaultChecked className="data-[state=checked]:bg-cyan-600" />
+                      <Switch checked={isDarkMode} onCheckedChange={handleDarkModeToggle} className="data-[state=checked]:bg-cyan-600" />
                     </div>
                     
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded bg-slate-800/30 border border-slate-700/50">
@@ -216,7 +283,7 @@ export default function Settings() {
                         <Label className="text-base text-cyan-300">Auto-save Estimates</Label>
                         <p className="text-sm text-slate-400">Automatically save estimates as you work</p>
                       </div>
-                      <Switch defaultChecked className="data-[state=checked]:bg-cyan-600" />
+                      <Switch checked={autoSaveEstimates} onCheckedChange={handleAutoSaveToggle} className="data-[state=checked]:bg-cyan-600" />
                     </div>
                     
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded bg-slate-800/30 border border-slate-700/50">
@@ -224,7 +291,7 @@ export default function Settings() {
                         <Label className="text-base text-cyan-300">Show Tooltips</Label>
                         <p className="text-sm text-slate-400">Display helpful tooltips and hints</p>
                       </div>
-                      <Switch defaultChecked className="data-[state=checked]:bg-cyan-600" />
+                      <Switch checked={showTooltips} onCheckedChange={handleTooltipsToggle} className="data-[state=checked]:bg-cyan-600" />
                     </div>
                   </div>
                 </CardContent>
@@ -279,10 +346,10 @@ export default function Settings() {
                     </div>
                     
                     <div className="flex flex-col sm:flex-row gap-2 md:gap-3">
-                      <Button variant="outline" className="bg-slate-800/50 border-cyan-400/50 text-cyan-300 hover:bg-cyan-400/10 hover:border-cyan-400 text-xs md:text-sm">
+                      <Button onClick={handleViewPlans} variant="outline" className="bg-slate-800/50 border-cyan-400/50 text-cyan-300 hover:bg-cyan-400/10 hover:border-cyan-400 text-xs md:text-sm">
                         View Plans
                       </Button>
-                      <Button variant="outline" className="bg-slate-800/50 border-cyan-400/50 text-cyan-300 hover:bg-cyan-400/10 hover:border-cyan-400 text-xs md:text-sm">
+                      <Button onClick={handleAddPaymentMethod} variant="outline" className="bg-slate-800/50 border-cyan-400/50 text-cyan-300 hover:bg-cyan-400/10 hover:border-cyan-400 text-xs md:text-sm">
                         Add Payment Method
                       </Button>
                     </div>
