@@ -11,6 +11,7 @@ import { navigationGroups, NavigationItem } from "@/config/navigation";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
 import LanguageSwitch from "@/components/ui/language-switch";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Definición de tipos para la suscripción y planes
 interface UserSubscription {
@@ -28,6 +29,8 @@ export default function Sidebar() {
   const { currentUser, logout } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [isToolsExpanded, setIsToolsExpanded] = useState(true);
+  const [isFeaturesExpanded, setIsFeaturesExpanded] = useState(true);
   const [isAccountExpanded, setIsAccountExpanded] = useState(false);
   const { t } = useTranslation();
 
@@ -130,47 +133,53 @@ export default function Sidebar() {
 
         {/* Navegación principal - Generada dinámicamente desde la configuración */}
         <div className="flex-1 px-3 pt-4">
-          {navigationGroups.map((group, index) => (
-            <div key={`group-${index}`}>
-              {group.title === "account" ? (
-                // Accordion para Account
+          {navigationGroups.map((group, index) => {
+            const isExpanded = group.title === "tools" ? isToolsExpanded :
+                             group.title === "features" ? isFeaturesExpanded :
+                             group.title === "account" ? isAccountExpanded : true;
+            
+            const setExpanded = group.title === "tools" ? setIsToolsExpanded :
+                              group.title === "features" ? setIsFeaturesExpanded :
+                              group.title === "account" ? setIsAccountExpanded : () => {};
+
+            return (
+              <div key={`group-${index}`}>
+                {/* Accordion para todas las secciones */}
                 <div className="mb-6">
                   <Button
                     variant="ghost"
                     className="w-full justify-between text-xs font-semibold px-2 py-2 text-muted-foreground uppercase tracking-wider hover:bg-accent"
-                    onClick={() => setIsAccountExpanded(!isAccountExpanded)}
+                    onClick={() => setExpanded(!isExpanded)}
                   >
                     {t(`navigation.${group.title}`)}
-                    {isAccountExpanded ? (
+                    {isExpanded ? (
                       <ChevronDown className="h-3 w-3" />
                     ) : (
                       <ChevronRight className="h-3 w-3" />
                     )}
                   </Button>
                   
-                  {isAccountExpanded && (
-                    <div className="space-y-1 mt-2 ml-2">
-                      {group.items.map(renderNavItem)}
-                    </div>
-                  )}
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div 
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="space-y-1 mt-2 ml-2 overflow-hidden"
+                      >
+                        {/* Filtrar el elemento de Mervin AI si existe */}
+                        {group.items
+                          .filter(item => item.path !== "/mervin" && item.id !== "mervin")
+                          .map(renderNavItem)}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
-              ) : (
-                // Secciones normales (Tools y Features)
-                <div>
-                  <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">
-                    {t(`navigation.${group.title}`)}
-                  </h2>
-                  <div className="space-y-1 mb-6">
-                    {/* Filtrar el elemento de Mervin AI si existe */}
-                    {group.items
-                      .filter(item => item.path !== "/mervin" && item.id !== "mervin")
-                      .map(renderNavItem)}
-                  </div>
-                </div>
-              )}
-              {index < navigationGroups.length - 1 && index === 1 && <Separator className="my-2" />}
-            </div>
-          ))}
+                {index < navigationGroups.length - 1 && index === 1 && <Separator className="my-2" />}
+              </div>
+            );
+          })}
         </div>
 
         {/* Footer con soporte y cerrar sesión */}
