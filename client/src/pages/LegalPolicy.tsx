@@ -27,11 +27,46 @@ export default function LegalPolicy() {
             Company or its suppliers and protected by copyright and other laws.
           </p>
           
+          <h2 className="text-xl font-semibold mb-4 mt-6">User Responsibilities</h2>
+          <p className="mb-4">
+            You are responsible for maintaining the confidentiality of your account credentials and for all activities 
+            that occur under your account. You agree to provide accurate and complete information when using our Services 
+            and to keep this information updated.
+          </p>
+          
+          <h2 className="text-xl font-semibold mb-4 mt-6">Prohibited Uses</h2>
+          <p className="mb-4">
+            You may not use our Services for any unlawful purpose or to solicit others to perform illegal acts. 
+            You agree not to interfere with or disrupt the Services or servers or networks connected to the Services.
+          </p>
+          
+          <h2 className="text-xl font-semibold mb-4 mt-6">Service Availability</h2>
+          <p className="mb-4">
+            We strive to maintain high availability of our Services, but we do not guarantee uninterrupted access. 
+            We reserve the right to modify, suspend, or discontinue any aspect of the Services at any time.
+          </p>
+          
           <h2 className="text-xl font-semibold mb-4 mt-6">Limitation of Liability</h2>
           <p className="mb-4">
             In no event shall Owl Fenc Company be liable for any indirect, incidental, special, consequential or 
             punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible 
             losses, resulting from your access to or use of or inability to access or use the Services.
+          </p>
+          
+          <h2 className="text-xl font-semibold mb-4 mt-6">Governing Law</h2>
+          <p className="mb-4">
+            These Terms shall be governed by and construed in accordance with the laws of the jurisdiction where 
+            Owl Fenc Company is registered, without regard to conflict of law principles.
+          </p>
+          
+          <h2 className="text-xl font-semibold mb-4 mt-6">Changes to Terms</h2>
+          <p className="mb-4">
+            We reserve the right to modify these Terms at any time. We will notify users of any material changes 
+            and continued use of the Services constitutes acceptance of the modified Terms.
+          </p>
+          
+          <p className="text-sm text-muted-foreground mt-6">
+            Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
         </div>
         

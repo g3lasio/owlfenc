@@ -28,15 +28,40 @@ export default function PrivacyPolicy() {
             Services and to help us improve your experience, enhance security, and analyze usage patterns.
           </p>
           
-          <h2 className="text-xl font-semibold mb-4 mt-6">Your Choices</h2>
+          <h2 className="text-xl font-semibold mb-4 mt-6">Information Sharing and Disclosure</h2>
+          <p className="mb-4">
+            We do not sell, trade, or otherwise transfer your personal information to third parties without 
+            your consent, except as described in this Privacy Policy. We may share your information with 
+            trusted service providers who assist us in operating our website and conducting our business.
+          </p>
+          
+          <h2 className="text-xl font-semibold mb-4 mt-6">Data Security</h2>
+          <p className="mb-4">
+            We implement appropriate security measures to protect your personal information against unauthorized 
+            access, alteration, disclosure, or destruction. However, no method of transmission over the internet 
+            or electronic storage is 100% secure.
+          </p>
+          
+          <h2 className="text-xl font-semibold mb-4 mt-6">Your Rights and Choices</h2>
           <p className="mb-4">
             You can choose not to provide certain information, but this may limit your ability to use some 
-            features of our Services. You can also update or correct your account information at any time.
+            features of our Services. You have the right to access, update, or delete your personal information 
+            at any time by contacting us.
+          </p>
+          
+          <h2 className="text-xl font-semibold mb-4 mt-6">Changes to This Policy</h2>
+          <p className="mb-4">
+            We may update this Privacy Policy from time to time. We will notify you of any material changes 
+            by posting the new Privacy Policy on this page and updating the effective date.
           </p>
           
           <h2 className="text-xl font-semibold mb-4 mt-6">Contact Us</h2>
           <p className="mb-4">
             If you have any questions about this Privacy Policy, please contact us at privacy@owlfenc.com.
+          </p>
+          
+          <p className="text-sm text-muted-foreground mt-6">
+            Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
         </div>
         
