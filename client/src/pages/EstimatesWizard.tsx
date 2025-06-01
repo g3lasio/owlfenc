@@ -3475,6 +3475,12 @@ export default function EstimatesWizardFixed() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Mervin Working Effect */}
+      <MervinWorkingEffect 
+        isVisible={showMervinWorking} 
+        onComplete={() => setShowMervinWorking(false)}
+      />
     </div>
   );
 }
