@@ -93,52 +93,50 @@ export default function Settings() {
         <Tabs defaultValue="account" className="space-y-6">
           {/* Tab Navigation - Todos los 6 botones visibles */}
           <div className="relative mb-6 w-full overflow-visible">
-            <div className="w-full min-h-[80px] bg-slate-900/90 backdrop-blur border border-cyan-400/30 rounded-lg p-2">
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 w-full">
-                <TabsTrigger 
-                  value="account" 
-                  className="flex flex-col items-center justify-center gap-1 p-3 min-h-[60px] text-xs font-medium text-slate-400 bg-slate-800/60 border border-slate-600/40 rounded-md data-[state=active]:bg-cyan-600/30 data-[state=active]:border-cyan-400/70 data-[state=active]:text-cyan-200 hover:bg-slate-700/60 hover:text-slate-300 transition-all duration-300 w-full"
-                >
-                  <Settings2 className="h-5 w-5 flex-shrink-0" />
-                  <span className="text-[10px] leading-tight text-center">Account</span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="billing" 
-                  className="flex flex-col items-center justify-center gap-1 p-3 min-h-[60px] text-xs font-medium text-slate-400 bg-slate-800/60 border border-slate-600/40 rounded-md data-[state=active]:bg-cyan-600/30 data-[state=active]:border-cyan-400/70 data-[state=active]:text-cyan-200 hover:bg-slate-700/60 hover:text-slate-300 transition-all duration-300 w-full"
-                >
-                  <CreditCard className="h-5 w-5 flex-shrink-0" />
-                  <span className="text-[10px] leading-tight text-center">Billing</span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="notifications" 
-                  className="flex flex-col items-center justify-center gap-1 p-3 min-h-[60px] text-xs font-medium text-slate-400 bg-slate-800/60 border border-slate-600/40 rounded-md data-[state=active]:bg-cyan-600/30 data-[state=active]:border-cyan-400/70 data-[state=active]:text-cyan-200 hover:bg-slate-700/60 hover:text-slate-300 transition-all duration-300 w-full"
-                >
-                  <Bell className="h-5 w-5 flex-shrink-0" />
-                  <span className="text-[10px] leading-tight text-center">Alerts</span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="business" 
-                  className="flex flex-col items-center justify-center gap-1 p-3 min-h-[60px] text-xs font-medium text-slate-400 bg-slate-800/60 border border-slate-600/40 rounded-md data-[state=active]:bg-cyan-600/30 data-[state=active]:border-cyan-400/70 data-[state=active]:text-cyan-200 hover:bg-slate-700/60 hover:text-slate-300 transition-all duration-300 w-full"
-                >
-                  <Building2 className="h-5 w-5 flex-shrink-0" />
-                  <span className="text-[10px] leading-tight text-center">Business</span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="integrations" 
-                  className="flex flex-col items-center justify-center gap-1 p-3 min-h-[60px] text-xs font-medium text-slate-400 bg-slate-800/60 border border-slate-600/40 rounded-md data-[state=active]:bg-cyan-600/30 data-[state=active]:border-cyan-400/70 data-[state=active]:text-cyan-200 hover:bg-slate-700/60 hover:text-slate-300 transition-all duration-300 w-full"
-                >
-                  <Database className="h-5 w-5 flex-shrink-0" />
-                  <span className="text-[10px] leading-tight text-center">Connect</span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="security" 
-                  className="flex flex-col items-center justify-center gap-1 p-3 min-h-[60px] text-xs font-medium text-slate-400 bg-slate-800/60 border border-slate-600/40 rounded-md data-[state=active]:bg-cyan-600/30 data-[state=active]:border-cyan-400/70 data-[state=active]:text-cyan-200 hover:bg-slate-700/60 hover:text-slate-300 transition-all duration-300 w-full"
-                >
-                  <Shield className="h-5 w-5 flex-shrink-0" />
-                  <span className="text-[10px] leading-tight text-center">Security</span>
-                </TabsTrigger>
-              </div>
-            </div>
+            <TabsList className="w-full min-h-[80px] bg-slate-900/90 backdrop-blur border border-cyan-400/30 rounded-lg p-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+              <TabsTrigger 
+                value="account" 
+                className="flex flex-col items-center justify-center gap-1 p-3 min-h-[60px] text-xs font-medium text-slate-400 bg-slate-800/60 border border-slate-600/40 rounded-md data-[state=active]:bg-cyan-600/30 data-[state=active]:border-cyan-400/70 data-[state=active]:text-cyan-200 hover:bg-slate-700/60 hover:text-slate-300 transition-all duration-300 w-full"
+              >
+                <Settings2 className="h-5 w-5 flex-shrink-0" />
+                <span className="text-[10px] leading-tight text-center">Account</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="billing" 
+                className="flex flex-col items-center justify-center gap-1 p-3 min-h-[60px] text-xs font-medium text-slate-400 bg-slate-800/60 border border-slate-600/40 rounded-md data-[state=active]:bg-cyan-600/30 data-[state=active]:border-cyan-400/70 data-[state=active]:text-cyan-200 hover:bg-slate-700/60 hover:text-slate-300 transition-all duration-300 w-full"
+              >
+                <CreditCard className="h-5 w-5 flex-shrink-0" />
+                <span className="text-[10px] leading-tight text-center">Billing</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="notifications" 
+                className="flex flex-col items-center justify-center gap-1 p-3 min-h-[60px] text-xs font-medium text-slate-400 bg-slate-800/60 border border-slate-600/40 rounded-md data-[state=active]:bg-cyan-600/30 data-[state=active]:border-cyan-400/70 data-[state=active]:text-cyan-200 hover:bg-slate-700/60 hover:text-slate-300 transition-all duration-300 w-full"
+              >
+                <Bell className="h-5 w-5 flex-shrink-0" />
+                <span className="text-[10px] leading-tight text-center">Alerts</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="business" 
+                className="flex flex-col items-center justify-center gap-1 p-3 min-h-[60px] text-xs font-medium text-slate-400 bg-slate-800/60 border border-slate-600/40 rounded-md data-[state=active]:bg-cyan-600/30 data-[state=active]:border-cyan-400/70 data-[state=active]:text-cyan-200 hover:bg-slate-700/60 hover:text-slate-300 transition-all duration-300 w-full"
+              >
+                <Building2 className="h-5 w-5 flex-shrink-0" />
+                <span className="text-[10px] leading-tight text-center">Business</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="integrations" 
+                className="flex flex-col items-center justify-center gap-1 p-3 min-h-[60px] text-xs font-medium text-slate-400 bg-slate-800/60 border border-slate-600/40 rounded-md data-[state=active]:bg-cyan-600/30 data-[state=active]:border-cyan-400/70 data-[state=active]:text-cyan-200 hover:bg-slate-700/60 hover:text-slate-300 transition-all duration-300 w-full"
+              >
+                <Database className="h-5 w-5 flex-shrink-0" />
+                <span className="text-[10px] leading-tight text-center">Connect</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="security" 
+                className="flex flex-col items-center justify-center gap-1 p-3 min-h-[60px] text-xs font-medium text-slate-400 bg-slate-800/60 border border-slate-600/40 rounded-md data-[state=active]:bg-cyan-600/30 data-[state=active]:border-cyan-400/70 data-[state=active]:text-cyan-200 hover:bg-slate-700/60 hover:text-slate-300 transition-all duration-300 w-full"
+              >
+                <Shield className="h-5 w-5 flex-shrink-0" />
+                <span className="text-[10px] leading-tight text-center">Security</span>
+              </TabsTrigger>
+            </TabsList>
           </div>
           
           {/* ACCOUNT TAB */}
