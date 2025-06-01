@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,14 +20,16 @@ import {
   Clock,
   MapPin,
   Calculator,
-  Building2,
   Key,
   Download,
   Upload,
   Mail,
   Phone,
   Users,
-  Settings2
+  Settings2,
+  Lock,
+  Eye,
+  AlertTriangle
 } from "lucide-react";
 
 export default function Settings() {
@@ -38,6 +40,22 @@ export default function Settings() {
   const [showTooltips, setShowTooltips] = useState(true);
   const [language, setLanguage] = useState("en");
   const [timezone, setTimezone] = useState("pst");
+  
+  // Security & Privacy states
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [activeSessions, setActiveSessions] = useState([]);
+  const [passwordLastChanged, setPasswordLastChanged] = useState("2 months ago");
+  
+  // Notification preferences states
+  const [emailNotifications, setEmailNotifications] = useState({
+    newProjects: true,
+    payments: true,
+    permits: true
+  });
+  const [smsNotifications, setSmsNotifications] = useState({
+    emergency: true,
+    clientCommunications: false
+  });
   
   const handleSaveSettings = async () => {
     setSaveLoading(true);
@@ -120,6 +138,91 @@ export default function Settings() {
       description: "Preparing billing history download...",
     });
   };
+
+  // Security & Privacy handlers
+  const handleEnable2FA = async () => {
+    try {
+      const response = await fetch('/api/security/enable-2fa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (response.ok) {
+        setTwoFactorEnabled(true);
+        toast({
+          title: "2FA Habilitado",
+          description: "Autenticación de dos factores activada exitosamente",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo habilitar 2FA. Intenta nuevamente.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleChangePassword = () => {
+    window.location.href = '/change-password';
+  };
+
+  const handleViewSessions = async () => {
+    try {
+      const response = await fetch('/api/security/sessions');
+      const sessions = await response.json();
+      setActiveSessions(sessions);
+      toast({
+        title: "Sesiones Activas",
+        description: `Tienes ${sessions.length} sesiones activas`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar las sesiones activas",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Notification handlers
+  const handleEmailNotificationChange = (type: string, enabled: boolean) => {
+    setEmailNotifications(prev => ({
+      ...prev,
+      [type]: enabled
+    }));
+    
+    // Send to backend
+    fetch('/api/notifications/email-preferences', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, enabled })
+    }).then(() => {
+      toast({
+        title: "Preferencias actualizadas",
+        description: `Notificaciones por email ${enabled ? 'habilitadas' : 'deshabilitadas'} para ${type}`,
+      });
+    });
+  };
+
+  const handleSMSNotificationChange = (type: string, enabled: boolean) => {
+    setSmsNotifications(prev => ({
+      ...prev,
+      [type]: enabled
+    }));
+    
+    // Send to backend
+    fetch('/api/notifications/sms-preferences', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, enabled })
+    }).then(() => {
+      toast({
+        title: "Preferencias SMS actualizadas",
+        description: `Notificaciones SMS ${enabled ? 'habilitadas' : 'deshabilitadas'} para ${type}`,
+      });
+    });
+  };
   
   return (
     <div className="flex-1 p-3 md:p-6 overflow-auto bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 min-h-screen">
@@ -187,13 +290,7 @@ export default function Settings() {
                   <span className="text-[11px] font-medium leading-none text-center">Alerts</span>
                 </TabsTrigger>
 
-                <TabsTrigger 
-                  value="business" 
-                  className="flex flex-col items-center justify-center gap-2 p-4 h-20 text-xs font-medium text-slate-300 bg-slate-800/70 border border-slate-600/50 rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-cyan-500/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/70 data-[state=active]:text-cyan-200 data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/20 hover:bg-slate-700/70 hover:border-slate-500/60 hover:text-slate-200 transition-all duration-300 cursor-pointer w-full"
-                >
-                  <Building2 className="h-6 w-6 flex-shrink-0" />
-                  <span className="text-[11px] font-medium leading-none text-center">Business</span>
-                </TabsTrigger>
+
 
                 <TabsTrigger 
                   value="integrations" 
@@ -422,7 +519,10 @@ export default function Settings() {
                           <Label className="text-base">New Project Updates</Label>
                           <p className="text-sm text-muted-foreground">When projects are created or updated</p>
                         </div>
-                        <Switch defaultChecked />
+                        <Switch 
+                          checked={emailNotifications.newProjects} 
+                          onCheckedChange={(checked) => handleEmailNotificationChange('newProjects', checked)} 
+                        />
                       </div>
                       
                       <div className="flex items-center justify-between">
@@ -430,7 +530,10 @@ export default function Settings() {
                           <Label className="text-base">Payment Notifications</Label>
                           <p className="text-sm text-muted-foreground">Payment confirmations and receipts</p>
                         </div>
-                        <Switch defaultChecked />
+                        <Switch 
+                          checked={emailNotifications.payments} 
+                          onCheckedChange={(checked) => handleEmailNotificationChange('payments', checked)} 
+                        />
                       </div>
                       
                       <div className="flex items-center justify-between">
@@ -438,7 +541,10 @@ export default function Settings() {
                           <Label className="text-base">Permit Status Updates</Label>
                           <p className="text-sm text-muted-foreground">When permit applications change status</p>
                         </div>
-                        <Switch defaultChecked />
+                        <Switch 
+                          checked={emailNotifications.permits} 
+                          onCheckedChange={(checked) => handleEmailNotificationChange('permits', checked)} 
+                        />
                       </div>
                     </div>
                   </div>
@@ -456,7 +562,10 @@ export default function Settings() {
                           <Label className="text-base">Emergency Updates</Label>
                           <p className="text-sm text-muted-foreground">Critical system alerts and urgent updates</p>
                         </div>
-                        <Switch defaultChecked />
+                        <Switch 
+                          checked={smsNotifications.emergency} 
+                          onCheckedChange={(checked) => handleSMSNotificationChange('emergency', checked)} 
+                        />
                       </div>
                       
                       <div className="flex items-center justify-between">
@@ -464,7 +573,10 @@ export default function Settings() {
                           <Label className="text-base">Client Communications</Label>
                           <p className="text-sm text-muted-foreground">When clients send messages or updates</p>
                         </div>
-                        <Switch />
+                        <Switch 
+                          checked={smsNotifications.clientCommunications} 
+                          onCheckedChange={(checked) => handleSMSNotificationChange('clientCommunications', checked)} 
+                        />
                       </div>
                     </div>
                   </div>
@@ -510,82 +622,87 @@ export default function Settings() {
             </Card>
           </TabsContent>
           
-          {/* BUSINESS TAB */}
-          <TabsContent value="business" className="space-y-6">
+          {/* SECURITY & PRIVACY TAB */}
+          <TabsContent value="security" className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5" />
-                  Business Information
+                  <Shield className="h-5 w-5" />
+                  Security & Privacy
                 </CardTitle>
                 <CardDescription>
-                  Manage your business profile and operational settings.
+                  Manage your account security and privacy settings.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="business-name">Business Name</Label>
-                    <Input 
-                      id="business-name" 
-                      placeholder="Your Business Name"
-                      defaultValue="Premium Fence Co."
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="license-number">License Number</Label>
-                    <Input 
-                      id="license-number" 
-                      placeholder="License #"
-                      defaultValue="LIC-12345"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Business Phone</Label>
-                    <Input 
-                      id="phone" 
-                      type="tel"
-                      placeholder="(555) 123-4567"
-                      defaultValue="(555) 123-4567"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Business Email</Label>
-                    <Input 
-                      id="email" 
-                      type="email"
-                      placeholder="contact@business.com"
-                      defaultValue="contact@premiumfence.com"
-                    />
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="address">Business Address</Label>
-                  <Input 
-                    id="address" 
-                    placeholder="Street Address"
-                    defaultValue="123 Main Street, City, State 12345"
-                  />
-                </div>
-                
-                <Separator />
-                
                 <div>
-                  <h3 className="font-semibold mb-3">Operational Settings</h3>
+                  <h3 className="font-semibold mb-4 text-lg">Account Security</h3>
+                  
+                  {/* Two-Factor Authentication */}
                   <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label>Default Tax Rate (%)</Label>
-                        <Input 
-                          type="number" 
-                          placeholder="8.75"
-                          defaultValue="8.75"
-                        />
+                    <div className="p-4 border border-cyan-400/30 rounded-lg bg-slate-800/30">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Lock className="h-4 w-4 text-cyan-400" />
+                            <Label className="text-base font-semibold text-cyan-300">Two-Factor Authentication</Label>
+                          </div>
+                          <p className="text-sm text-slate-400">Add extra security to your account</p>
+                        </div>
+                        <Button 
+                          onClick={handleEnable2FA}
+                          variant={twoFactorEnabled ? "outline" : "default"}
+                          className={twoFactorEnabled 
+                            ? "bg-green-500/20 border-green-400/50 text-green-300" 
+                            : "bg-cyan-600 hover:bg-cyan-700 text-white"
+                          }
+                        >
+                          {twoFactorEnabled ? "Enabled" : "Enable 2FA"}
+                        </Button>
                       </div>
+                    </div>
+
+                    {/* Password Management */}
+                    <div className="p-4 border border-cyan-400/30 rounded-lg bg-slate-800/30">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Key className="h-4 w-4 text-cyan-400" />
+                            <Label className="text-base font-semibold text-cyan-300">Password</Label>
+                          </div>
+                          <p className="text-sm text-slate-400">Last changed {passwordLastChanged}</p>
+                        </div>
+                        <Button 
+                          onClick={handleChangePassword}
+                          variant="outline"
+                          className="bg-slate-800/50 border-cyan-400/50 text-cyan-300 hover:bg-cyan-400/10 hover:border-cyan-400"
+                        >
+                          Change Password
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Active Sessions */}
+                    <div className="p-4 border border-cyan-400/30 rounded-lg bg-slate-800/30">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Eye className="h-4 w-4 text-cyan-400" />
+                            <Label className="text-base font-semibold text-cyan-300">Active Sessions</Label>
+                          </div>
+                          <p className="text-sm text-slate-400">Manage your active login sessions</p>
+                        </div>
+                        <Button 
+                          onClick={handleViewSessions}
+                          variant="outline"
+                          className="bg-slate-800/50 border-cyan-400/50 text-cyan-300 hover:bg-cyan-400/10 hover:border-cyan-400"
+                        >
+                          View Sessions
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
                       
                       <div className="space-y-2">
                         <Label>Default Markup (%)</Label>
