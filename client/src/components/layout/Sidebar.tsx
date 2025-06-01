@@ -126,7 +126,10 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="hidden md:flex md:w-72 flex-col bg-card border-r border-border h-screen overflow-hidden">
+    <aside className="hidden md:flex md:w-72 flex-col bg-card border-r border-border h-screen overflow-hidden relative">
+      {/* Futuristic border enhancement */}
+      <div className="absolute top-0 right-0 w-1 h-full futuristic-divider"></div>
+      
       {/* Todo el contenido en un contenedor con scroll */}
       <div className="flex flex-col h-full overflow-y-auto">
 
@@ -144,19 +147,23 @@ export default function Sidebar() {
 
             return (
               <div key={`group-${index}`}>
-                {/* Accordion para todas las secciones */}
-                <div className="mb-6">
+                {/* Sci-Fi Accordion Frame */}
+                <div className="mb-6 sci-fi-frame sci-fi-corner-brackets arc-reactor-bg p-3">
                   <Button
                     variant="ghost"
-                    className="w-full justify-between text-xs font-semibold px-2 py-2 text-muted-foreground uppercase tracking-wider hover:bg-accent"
+                    className="w-full justify-center text-xs font-semibold py-3 text-muted-foreground uppercase tracking-wider hover:bg-accent scanning-line hover:text-cyan-400 transition-colors"
                     onClick={() => setExpanded(!isExpanded)}
                   >
-                    {t(`navigation.${group.title}`)}
-                    {isExpanded ? (
-                      <ChevronDown className="h-3 w-3" />
-                    ) : (
-                      <ChevronRight className="h-3 w-3" />
-                    )}
+                    <span className="flex items-center justify-center w-full">
+                      {t(`navigation.${group.title}`)}
+                      <span className="ml-2">
+                        {isExpanded ? (
+                          <ChevronDown className="h-3 w-3" />
+                        ) : (
+                          <ChevronRight className="h-3 w-3" />
+                        )}
+                      </span>
+                    </span>
                   </Button>
                   
                   <AnimatePresence>
@@ -166,17 +173,38 @@ export default function Sidebar() {
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
                         transition={{ duration: 0.3 }}
-                        className="space-y-1 mt-2 ml-2 overflow-hidden"
+                        className="space-y-1 mt-3 overflow-hidden"
                       >
                         {/* Filtrar el elemento de Mervin AI si existe */}
                         {group.items
                           .filter(item => item.path !== "/mervin" && item.id !== "mervin")
-                          .map(renderNavItem)}
+                          .map((item) => (
+                            <Link key={item.id} href={item.path}>
+                              <Button variant="ghost" className="w-full justify-center hover:bg-cyan-500/10 hover:text-cyan-400 transition-colors">
+                                <span className="flex items-center justify-center w-full">
+                                  {item.icon.startsWith('lucide-') ? (
+                                    <>
+                                      {item.icon === 'lucide-user' && <User className="h-4 w-4 mr-2" />}
+                                      {item.icon === 'lucide-credit-card' && <CreditCard className="h-4 w-4 mr-2" />}
+                                      {item.icon === 'lucide-building' && <Building className="h-4 w-4 mr-2" />}
+                                      {item.icon === 'lucide-settings' && <Settings className="h-4 w-4 mr-2" />}
+                                      {item.icon === 'lucide-brain' && <BrainIcon className="h-4 w-4 mr-2" />}
+                                    </>
+                                  ) : (
+                                    <i className={`${item.icon} mr-2 text-lg`}></i>
+                                  )}
+                                  {t(item.label)}
+                                </span>
+                              </Button>
+                            </Link>
+                          ))}
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
-                {index < navigationGroups.length - 1 && index === 1 && <Separator className="my-2" />}
+                {index < navigationGroups.length - 1 && index === 1 && (
+                  <div className="futuristic-divider power-pulse my-4"></div>
+                )}
               </div>
             );
           })}

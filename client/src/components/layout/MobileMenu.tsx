@@ -165,24 +165,28 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
 
               return (
                 <div key={`mobile-group-${groupIndex}`}>
-                  {/* Accordion para todas las secciones */}
+                  {/* Sci-Fi Accordion Frame - Mobile */}
                   <motion.div 
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.4 + (groupIndex * 0.4), duration: 0.3 }}
-                    className="mb-4"
+                    className="mb-4 sci-fi-frame sci-fi-corner-brackets arc-reactor-bg p-3"
                   >
                     <Button
                       variant="ghost"
-                      className="w-full justify-between text-xs font-semibold px-2 py-2 text-muted-foreground uppercase tracking-wider hover:bg-accent"
+                      className="w-full justify-center text-xs font-semibold py-3 text-muted-foreground uppercase tracking-wider hover:bg-accent scanning-line hover:text-cyan-400 transition-colors"
                       onClick={() => setExpanded(!isExpanded)}
                     >
-                      {t(`navigation.${group.title}`)}
-                      {isExpanded ? (
-                        <ChevronDown className="h-3 w-3" />
-                      ) : (
-                        <ChevronRight className="h-3 w-3" />
-                      )}
+                      <span className="flex items-center justify-center w-full">
+                        {t(`navigation.${group.title}`)}
+                        <span className="ml-2">
+                          {isExpanded ? (
+                            <ChevronDown className="h-3 w-3" />
+                          ) : (
+                            <ChevronRight className="h-3 w-3" />
+                          )}
+                        </span>
+                      </span>
                     </Button>
                     
                     <AnimatePresence>
@@ -192,7 +196,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                           animate={{ opacity: 1, height: "auto" }}
                           exit={{ opacity: 0, height: 0 }}
                           transition={{ duration: 0.3 }}
-                          className="space-y-1.5 mt-2 ml-2 overflow-hidden"
+                          className="space-y-1.5 mt-3 overflow-hidden"
                         >
                           {group.items.map((item, itemIndex) => 
                             item.id !== "mervin" ? (
@@ -211,7 +215,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                                       scale: 1.02,
                                       x: 5
                                     }}
-                                    className="flex items-center p-2 rounded-md hover:bg-accent"
+                                    className="flex items-center justify-center p-2 rounded-md hover:bg-cyan-500/10 hover:text-cyan-400 transition-colors"
                                   >
                                     {item.icon.startsWith('lucide-') ? (
                                       <>
@@ -235,13 +239,13 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                     </AnimatePresence>
                   </motion.div>
                   
-                  {/* Añadir separador después del segundo grupo (entre Funcionalidades y Mi Perfil) */}
+                  {/* Futuristic divider */}
                   {groupIndex === 1 && (
                     <motion.div 
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: 1.1, duration: 0.3 }}
-                      className="h-px bg-border mx-4 my-2"
+                      className="futuristic-divider power-pulse my-4"
                     />
                   )}
                 </div>

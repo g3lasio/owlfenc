@@ -22,12 +22,147 @@
   .animate-transformer-glow {
     animation: transformerGlow 1.5s ease-in-out infinite alternate;
   }
-  
-  .ease-spring {
-    transition-timing-function: cubic-bezier(0.5, 0, 0.25, 1.25);
+
+  /* Sci-Fi Navigation Accordion Styles */
+  .sci-fi-frame {
+    position: relative;
+    background: linear-gradient(135deg, rgba(0, 255, 255, 0.05) 0%, rgba(0, 100, 255, 0.02) 100%);
+    border: 1px solid rgba(0, 255, 255, 0.3);
+    border-radius: 8px;
+    overflow: hidden;
   }
-  
-  /* Estilos para el efecto de escritura sin temblores */
+
+  .sci-fi-frame::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(0, 255, 255, 0.1) 50%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+
+  .sci-fi-frame:hover::before {
+    opacity: 1;
+  }
+
+  .sci-fi-corner-brackets::before,
+  .sci-fi-corner-brackets::after {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #00ffff;
+    z-index: 10;
+  }
+
+  .sci-fi-corner-brackets::before {
+    top: -1px;
+    left: -1px;
+    border-right: none;
+    border-bottom: none;
+    box-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+  }
+
+  .sci-fi-corner-brackets::after {
+    bottom: -1px;
+    right: -1px;
+    border-left: none;
+    border-top: none;
+    box-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+  }
+
+  .holographic-border {
+    border: 1px solid transparent;
+    background: linear-gradient(45deg, rgba(0, 255, 255, 0.3), rgba(0, 100, 255, 0.2), rgba(0, 255, 255, 0.3));
+    background-size: 200% 200%;
+    animation: holographicShift 3s ease-in-out infinite;
+  }
+
+  .arc-reactor-bg {
+    background: radial-gradient(circle at center, rgba(0, 255, 255, 0.1) 0%, rgba(0, 100, 255, 0.05) 30%, transparent 70%);
+  }
+
+  .scanning-line {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .scanning-line::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #00ffff, transparent);
+    animation: scanLine 2s ease-in-out infinite;
+    opacity: 0;
+  }
+
+  .scanning-line:hover::after {
+    opacity: 1;
+  }
+
+  .futuristic-divider {
+    position: relative;
+    height: 2px;
+    background: linear-gradient(90deg, transparent 0%, #00ffff 20%, #0066ff 50%, #00ffff 80%, transparent 100%);
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+  }
+
+  .futuristic-divider::before,
+  .futuristic-divider::after {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: #00ffff;
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+    top: -3px;
+  }
+
+  .futuristic-divider::before {
+    left: 10px;
+  }
+
+  .futuristic-divider::after {
+    right: 10px;
+  }
+
+  .power-pulse {
+    animation: powerPulse 4s ease-in-out infinite;
+  }
+}
+
+/* Keyframe animations for sci-fi effects */
+@keyframes holographicShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes scanLine {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+@keyframes powerPulse {
+  0%, 100% { 
+    box-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
+    opacity: 0.7;
+  }
+  50% { 
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+    opacity: 1;
+  }
+}
+
+/* Estilos para el efecto de escritura sin temblores */
   .typewriter-text {
     position: relative;
     overflow: visible;
