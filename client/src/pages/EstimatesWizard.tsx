@@ -2401,7 +2401,7 @@ export default function EstimatesWizardFixed() {
                               type="number"
                               value={item.quantity}
                               onChange={(e) => updateItemQuantity(item.id, parseInt(e.target.value) || 1)}
-                              className="w-12 sm:w-16 h-7 text-center text-sm"
+                              className="w-16 sm:w-20 h-7 text-center text-sm"
                               min="1"
                             />
                             <Button
@@ -2470,17 +2470,15 @@ export default function EstimatesWizardFixed() {
                                 placeholder="Tipo"
                               />
                               {/* Discount Type */}
-                              <select
-                                value={estimate.discountType}
-                                onChange={(e) => setEstimate(prev => ({ 
+                              <button
+                                onClick={() => setEstimate(prev => ({ 
                                   ...prev, 
-                                  discountType: e.target.value as 'percentage' | 'fixed' 
+                                  discountType: prev.discountType === 'percentage' ? 'fixed' : 'percentage'
                                 }))}
-                                className="bg-gray-800 text-white text-xs border border-gray-600 rounded px-1 py-1 focus:outline-none focus:border-blue-500 min-w-0"
+                                className="bg-gray-800 text-white text-xs border border-gray-600 rounded px-2 py-1 focus:outline-none focus:border-blue-500 min-w-0 hover:bg-gray-700 transition-colors"
                               >
-                                <option value="percentage">%</option>
-                                <option value="fixed">$</option>
-                              </select>
+                                {estimate.discountType === 'percentage' ? '%' : '$'}
+                              </button>
                               {/* Discount Value */}
                               <div className="bg-gray-800 rounded-lg px-1 sm:px-2 py-1 border border-gray-600">
                                 <input
@@ -2490,7 +2488,7 @@ export default function EstimatesWizardFixed() {
                                     ...prev, 
                                     discountValue: parseFloat(e.target.value) || 0 
                                   }))}
-                                  className="w-10 sm:w-12 bg-transparent text-white text-xs text-center focus:outline-none"
+                                  className="w-14 sm:w-16 bg-transparent text-white text-xs text-center focus:outline-none"
                                   min="0"
                                   step="0.01"
                                   placeholder="0"
