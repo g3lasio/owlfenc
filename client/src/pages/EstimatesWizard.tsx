@@ -3635,18 +3635,31 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
             </div>
           </div>
 
-          <DialogFooter className="border-t border-gray-200 pt-4 flex justify-between">
-            <Button variant="outline" onClick={() => setShowEmailDialog(false)} className="flex items-center gap-2">
+          <DialogFooter className="border-t border-gray-200 pt-4 flex flex-col sm:flex-row justify-between gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowEmailDialog(false)} 
+              className="flex items-center gap-2 order-2 sm:order-1 w-full sm:w-auto"
+            >
               <X className="h-4 w-4" />
               Cancel
             </Button>
             <Button 
-              onClick={showEmailPreviewDialog}
-              disabled={!emailData.toEmail || !emailData.subject || !emailData.message}
-              className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 min-w-[140px]"
+              onClick={sendEstimateEmail}
+              disabled={isSendingEmail || !emailData.toEmail || !emailData.subject || !emailData.message}
+              className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2 min-w-[140px] order-1 sm:order-2 w-full sm:w-auto"
             >
-              <Eye className="h-4 w-4" />
-              Vista Previa
+              {isSendingEmail ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4" />
+                  Send Email Now
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
