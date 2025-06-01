@@ -178,12 +178,40 @@ export default function EstimatesWizardFixed() {
   // Email dialog states
   const [showEmailDialog, setShowEmailDialog] = useState(false);
 
+  // Función para evaluar la calidad de la descripción
+  const evaluateProjectDescription = (description: string) => {
+    const words = description.trim().split(/\s+/).filter(word => word.length > 0);
+    const hasNumbers = /\d/.test(description);
+    const hasSpecificTerms = /(?:feet|ft|metros?|m|linear|square|cubic|install|build|construct|repair|replace|fence|deck|roof|floor|wall|paint|electrical|plumb)/i.test(description);
+    
+    return {
+      wordCount: words.length,
+      hasNumbers,
+      hasSpecificTerms,
+      isDetailed: words.length >= 5 && (hasNumbers || hasSpecificTerms)
+    };
+  };
+
   // Smart Search Handler
   const handleSmartSearch = async () => {
-    if (!estimate.projectDetails.trim() || estimate.projectDetails.trim().length < 10) {
+    const description = estimate.projectDetails.trim();
+    
+    if (!description || description.length < 10) {
       toast({
         title: 'Descripción requerida',
         description: 'Por favor describe tu proyecto con al menos 10 caracteres para usar Smart Search IA',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    const evaluation = evaluateProjectDescription(description);
+    
+    // Si la descripción es muy básica, sugerir mejorarla
+    if (!evaluation.isDetailed) {
+      toast({
+        title: 'Descripción muy básica para DeepSearch',
+        description: 'Para ejecutar DeepSearch necesito más detalles de tu proyecto. Incluye medidas, materiales específicos, o usa "Enhance with Mervin AI" primero.',
         variant: 'destructive'
       });
       return;
@@ -2023,23 +2051,37 @@ export default function EstimatesWizardFixed() {
                     onChange={(e) => setEstimate(prev => ({ ...prev, projectDetails: e.target.value }))}
                     className="min-h-[120px] text-sm"
                   />
-                  {/* Contador de caracteres para Smart Search */}
+                  {/* Indicador inteligente para Smart Search */}
                   <div className={`absolute bottom-2 right-2 text-xs px-2 py-1 rounded ${
-                    estimate.projectDetails.trim().length >= 10 
-                      ? 'bg-green-100 text-green-700 border border-green-300' 
-                      : 'bg-orange-100 text-orange-700 border border-orange-300'
+                    estimate.projectDetails.trim().length < 10 
+                      ? 'bg-orange-100 text-orange-700 border border-orange-300'
+                      : evaluateProjectDescription(estimate.projectDetails).isDetailed
+                        ? 'bg-green-100 text-green-700 border border-green-300'
+                        : 'bg-yellow-100 text-yellow-700 border border-yellow-300'
                   }`}>
-                    {estimate.projectDetails.trim().length >= 10 
-                      ? '✓ Smart Search disponible' 
-                      : `${10 - estimate.projectDetails.trim().length} chars más para Smart Search`}
+                    {estimate.projectDetails.trim().length < 10 
+                      ? `${10 - estimate.projectDetails.trim().length} chars más para Smart Search`
+                      : evaluateProjectDescription(estimate.projectDetails).isDetailed
+                        ? '✓ Smart Search disponible'
+                        : '⚠️ Añade más detalles para Smart Search'}
                   </div>
                 </div>
-                <div className="flex items-start gap-2 mt-2 p-3 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
-                  <Brain className="h-4 w-4 text-purple-600 mt-0.5 flex-shrink-0" />
-                  <p className="text-xs text-purple-700">
-                    <strong>Tip:</strong> Escribe una descripción básica de tu proyecto y usa <strong>"Enhance with Mervin AI"</strong> para generar automáticamente una descripción profesional completa con todos los detalles técnicos necesarios para el estimado.
-                  </p>
-                </div>
+                {/* Mensaje de ayuda dinámico */}
+                {estimate.projectDetails.trim().length >= 10 && !evaluateProjectDescription(estimate.projectDetails).isDetailed ? (
+                  <div className="flex items-start gap-2 mt-2 p-3 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border border-yellow-200">
+                    <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-yellow-700">
+                      <strong>Para DeepSearch necesito más detalles:</strong> Incluye medidas específicas, tipos de materiales, ubicación del trabajo, o usa <strong>"Enhance with Mervin AI"</strong> para generar una descripción completa.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-2 mt-2 p-3 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+                    <Brain className="h-4 w-4 text-purple-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-purple-700">
+                      <strong>Tip:</strong> Escribe una descripción básica de tu proyecto y usa <strong>"Enhance with Mervin AI"</strong> para generar automáticamente una descripción profesional completa con todos los detalles técnicos necesarios para el estimado.
+                    </p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
