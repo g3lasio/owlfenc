@@ -100,19 +100,19 @@ export const navigationGroups: NavigationGroup[] = [
     ]
   },
   {
-    title: "navigation.profile",
+    title: "navigation.account",
     items: [
       {
-        id: "account",
-        label: "navigation.profile",
-        path: "/account",
-        icon: "lucide-user"
+        id: "profile",
+        label: "navigation.companyProfile",
+        path: "/profile",
+        icon: "lucide-building"
       },
       {
-        id: "security",
-        label: "navigation.security",
-        path: "/security",
-        icon: "ri-shield-keyhole-line"
+        id: "settings",
+        label: "navigation.settings",
+        path: "/settings",
+        icon: "lucide-settings"
       },
       {
         id: "billing",
@@ -125,23 +125,6 @@ export const navigationGroups: NavigationGroup[] = [
         label: "navigation.subscription",
         path: "/subscription",
         icon: "ri-vip-crown-line"
-      }
-    ]
-  },
-  {
-    title: "navigation.company",
-    items: [
-      {
-        id: "company-profile",
-        label: "navigation.companyProfile",
-        path: "/profile",
-        icon: "lucide-building"
-      },
-      {
-        id: "settings",
-        label: "navigation.settings",
-        path: "/settings",
-        icon: "lucide-settings"
       },
       {
         id: "about-mervin",
