@@ -93,48 +93,48 @@ export default function Settings() {
         <Tabs defaultValue="account" className="space-y-6">
           {/* Mobile-First Tab Navigation */}
           <div className="relative mb-6">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 p-2 bg-slate-900/80 backdrop-blur border border-cyan-400/30">
+            <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 gap-1 p-1 bg-slate-900/90 backdrop-blur border border-cyan-400/30 rounded-lg">
               <TabsTrigger 
                 value="account" 
-                className="flex items-center justify-center gap-2 p-3 text-sm bg-slate-800/50 border border-slate-700/50 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/50 data-[state=active]:text-cyan-300 hover:bg-slate-700/50 transition-all duration-300"
+                className="flex flex-col items-center justify-center gap-1 p-2 text-xs font-medium text-slate-400 bg-slate-800/60 border border-slate-600/40 rounded-md data-[state=active]:bg-cyan-600/30 data-[state=active]:border-cyan-400/70 data-[state=active]:text-cyan-200 hover:bg-slate-700/60 hover:text-slate-300 transition-all duration-300"
               >
                 <Settings2 className="h-4 w-4" />
-                <span className="hidden sm:inline">Account</span>
+                <span className="text-[10px] leading-none">Account</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="billing" 
-                className="flex items-center justify-center gap-2 p-3 text-sm bg-slate-800/50 border border-slate-700/50 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/50 data-[state=active]:text-cyan-300 hover:bg-slate-700/50 transition-all duration-300"
+                className="flex flex-col items-center justify-center gap-1 p-2 text-xs font-medium text-slate-400 bg-slate-800/60 border border-slate-600/40 rounded-md data-[state=active]:bg-cyan-600/30 data-[state=active]:border-cyan-400/70 data-[state=active]:text-cyan-200 hover:bg-slate-700/60 hover:text-slate-300 transition-all duration-300"
               >
                 <CreditCard className="h-4 w-4" />
-                <span className="hidden sm:inline">Billing</span>
+                <span className="text-[10px] leading-none">Billing</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="notifications" 
-                className="flex items-center justify-center gap-2 p-3 text-sm bg-slate-800/50 border border-slate-700/50 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/50 data-[state=active]:text-cyan-300 hover:bg-slate-700/50 transition-all duration-300"
+                className="flex flex-col items-center justify-center gap-1 p-2 text-xs font-medium text-slate-400 bg-slate-800/60 border border-slate-600/40 rounded-md data-[state=active]:bg-cyan-600/30 data-[state=active]:border-cyan-400/70 data-[state=active]:text-cyan-200 hover:bg-slate-700/60 hover:text-slate-300 transition-all duration-300"
               >
                 <Bell className="h-4 w-4" />
-                <span className="hidden sm:inline">Alerts</span>
+                <span className="text-[10px] leading-none">Alerts</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="business" 
-                className="flex items-center justify-center gap-2 p-3 text-sm bg-slate-800/50 border border-slate-700/50 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/50 data-[state=active]:text-cyan-300 hover:bg-slate-700/50 transition-all duration-300"
+                className="flex flex-col items-center justify-center gap-1 p-2 text-xs font-medium text-slate-400 bg-slate-800/60 border border-slate-600/40 rounded-md data-[state=active]:bg-cyan-600/30 data-[state=active]:border-cyan-400/70 data-[state=active]:text-cyan-200 hover:bg-slate-700/60 hover:text-slate-300 transition-all duration-300"
               >
                 <Building2 className="h-4 w-4" />
-                <span className="hidden sm:inline">Business</span>
+                <span className="text-[10px] leading-none">Business</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="integrations" 
-                className="flex items-center justify-center gap-2 p-3 text-sm bg-slate-800/50 border border-slate-700/50 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/50 data-[state=active]:text-cyan-300 hover:bg-slate-700/50 transition-all duration-300"
+                className="flex flex-col items-center justify-center gap-1 p-2 text-xs font-medium text-slate-400 bg-slate-800/60 border border-slate-600/40 rounded-md data-[state=active]:bg-cyan-600/30 data-[state=active]:border-cyan-400/70 data-[state=active]:text-cyan-200 hover:bg-slate-700/60 hover:text-slate-300 transition-all duration-300"
               >
                 <Database className="h-4 w-4" />
-                <span className="hidden sm:inline">Connect</span>
+                <span className="text-[10px] leading-none">Connect</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="security" 
-                className="flex items-center justify-center gap-2 p-3 text-sm bg-slate-800/50 border border-slate-700/50 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/50 data-[state=active]:text-cyan-300 hover:bg-slate-700/50 transition-all duration-300"
+                className="flex flex-col items-center justify-center gap-1 p-2 text-xs font-medium text-slate-400 bg-slate-800/60 border border-slate-600/40 rounded-md data-[state=active]:bg-cyan-600/30 data-[state=active]:border-cyan-400/70 data-[state=active]:text-cyan-200 hover:bg-slate-700/60 hover:text-slate-300 transition-all duration-300"
               >
                 <Shield className="h-4 w-4" />
-                <span className="hidden sm:inline">Security</span>
+                <span className="text-[10px] leading-none">Security</span>
               </TabsTrigger>
             </TabsList>
           </div>
