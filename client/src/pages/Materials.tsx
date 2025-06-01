@@ -38,8 +38,6 @@ interface Material {
   supplier?: string;
   supplierLink?: string;
   sku?: string;
-  stock?: number;
-  minStock?: number;
   createdAt: any;
   updatedAt: any;
   userId: string;
@@ -94,9 +92,7 @@ export default function Materials() {
     price: 0,
     supplier: '',
     supplierLink: '',
-    sku: '',
-    stock: 0,
-    minStock: 0
+    sku: ''
   });
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
   const [deletingMaterial, setDeletingMaterial] = useState<Material | null>(null);
@@ -193,14 +189,7 @@ export default function Materials() {
       filtered = filtered.filter(m => m.category === selectedCategory);
     }
     
-    // Filtrar por tab activo
-    if (activeTab === 'bajo-stock') {
-      filtered = filtered.filter(m => 
-        typeof m.stock === 'number' && 
-        typeof m.minStock === 'number' && 
-        m.stock <= m.minStock
-      );
-    }
+    // Filtrar por tab activo (stock functionality removed)
     
     setFilteredMaterials(filtered);
   };
@@ -230,8 +219,6 @@ export default function Materials() {
       const materialData = {
         ...newMaterial,
         price,
-        stock: typeof newMaterial.stock === 'number' ? newMaterial.stock : 0,
-        minStock: typeof newMaterial.minStock === 'number' ? newMaterial.minStock : 0,
         userId: currentUser.uid,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
@@ -258,9 +245,7 @@ export default function Materials() {
         price: 0,
         supplier: '',
         supplierLink: '',
-        sku: '',
-        stock: 0,
-        minStock: 0
+        sku: ''
       });
       
       setShowAddDialog(false);
@@ -301,8 +286,6 @@ export default function Materials() {
         ...editingMaterial,
         price: typeof editingMaterial.price === 'number' ? editingMaterial.price : 
                parseFloat(String(editingMaterial.price || '0')) || 0,
-        stock: typeof editingMaterial.stock === 'number' ? editingMaterial.stock : 0,
-        minStock: typeof editingMaterial.minStock === 'number' ? editingMaterial.minStock : 0,
         updatedAt: serverTimestamp()
       };
       
@@ -407,9 +390,7 @@ export default function Materials() {
           price: parseFloat(row.price || row.Price || row.precio || row.Precio || '0') || 0,
           supplier: row.supplier || row.Supplier || row.proveedor || row.Proveedor || '',
           supplierLink: row.supplierLink || row.SupplierLink || row['Supplier Link'] || '',
-          sku: row.sku || row.SKU || row.código || row.Código || '',
-          stock: parseFloat(row.stock || row.Stock || row.inventario || row.Inventario || '0') || 0,
-          minStock: parseFloat(row.minStock || row.MinStock || row['Min Stock'] || '0') || 0
+          sku: row.sku || row.SKU || row.código || row.Código || ''
         })).filter(m => m.name && m.name.trim() !== '');
       }
       
@@ -531,22 +512,6 @@ export default function Materials() {
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 <span>{materials.length} materiales</span>
               </div>
-              {materials.filter(m => 
-                typeof m.stock === 'number' && 
-                typeof m.minStock === 'number' && 
-                m.stock <= m.minStock
-              ).length > 0 && (
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                  <span>
-                    {materials.filter(m => 
-                      typeof m.stock === 'number' && 
-                      typeof m.minStock === 'number' && 
-                      m.stock <= m.minStock
-                    ).length} bajo stock
-                  </span>
-                </div>
-              )}
             </div>
           </div>
           <p className="text-muted-foreground">
