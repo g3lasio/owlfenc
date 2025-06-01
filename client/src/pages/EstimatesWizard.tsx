@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { MervinWorkingEffect } from '@/components/ui/mervin-working-effect';
+import { DeepSearchEffect } from '@/components/ui/deepsearch-effect';
 // Usar el logo correcto de OWL FENCE
 const mervinLogoUrl = "https://ik.imagekit.io/lp5czyx2a/ChatGPT%20Image%20May%2010,%202025,%2005_35_38%20PM.png?updatedAt=1748157114019";
 import { getClients as getFirebaseClients, saveClient } from '@/lib/clientFirebase';
@@ -3422,6 +3423,12 @@ export default function EstimatesWizardFixed() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* DeepSearch Effect - Smart Search con frases futuristas */}
+      <DeepSearchEffect 
+        isVisible={isAIProcessing} 
+        onComplete={() => setIsAIProcessing(false)}
+      />
 
       {/* Mervin Working Effect */}
       <MervinWorkingEffect 
