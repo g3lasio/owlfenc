@@ -172,42 +172,6 @@ export const insertSettingsSchema = createInsertSchema(settings).pick({
   notificationSettings: true,
 });
 
-// User Preferences table
-export const userPreferences = pgTable("user_preferences", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).unique(),
-  language: text("language").default("en"),
-  timezone: text("timezone").default("America/New_York"),
-  theme: text("theme").default("system"), // light, dark, system
-  currency: text("currency").default("USD"),
-  dateFormat: text("date_format").default("MM/DD/YYYY"),
-  timeFormat: text("time_format").default("12"), // 12 or 24
-  autoSaveEstimates: boolean("auto_save_estimates").default(true),
-  emailNotifications: boolean("email_notifications").default(true),
-  smsNotifications: boolean("sms_notifications").default(false),
-  pushNotifications: boolean("push_notifications").default(true),
-  marketingEmails: boolean("marketing_emails").default(false),
-  weekStartsOn: text("week_starts_on").default("sunday"), // sunday or monday
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const insertUserPreferencesSchema = createInsertSchema(userPreferences).pick({
-  userId: true,
-  language: true,
-  timezone: true,
-  theme: true,
-  currency: true,
-  dateFormat: true,
-  timeFormat: true,
-  autoSaveEstimates: true,
-  emailNotifications: true,
-  smsNotifications: true,
-  pushNotifications: true,
-  marketingEmails: true,
-  weekStartsOn: true,
-});
-
 // Chat logs table
 export const chatLogs = pgTable("chat_logs", {
   id: serial("id").primaryKey(),
@@ -304,9 +268,6 @@ export type InsertChatLog = z.infer<typeof insertChatLogSchema>;
 
 export type Client = typeof clients.$inferSelect;
 export type InsertClient = z.infer<typeof insertClientSchema>;
-
-export type UserPreferences = typeof userPreferences.$inferSelect;
-export type InsertUserPreferences = z.infer<typeof insertUserPreferencesSchema>;
 
 // Subscription Plans table
 export const subscriptionPlans = pgTable("subscription_plans", {
