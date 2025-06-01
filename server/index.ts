@@ -29,6 +29,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // Importar rutas de pagos
 import paymentRoutes from './routes/payment-routes';
 import ocrSimpleRoutes from './ocrSimpleRoutes';
+import emailRoutes from './routes/email-routes';
 
 // 🐒 SISTEMA PDFMONKEY - Único procesador profesional de PDFs
 import pdfRoutes from './routes/pdf-routes';
@@ -40,6 +41,7 @@ import contractRoutes from './routes/contractRoutes';
 
 // Registrar rutas de pagos
 app.use('/api', paymentRoutes);
+app.use('/api', emailRoutes);
 
 // 📄 Registrar sistema PDFMonkey único
 app.use('/api/pdf', pdfRoutes);

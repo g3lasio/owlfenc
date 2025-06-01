@@ -18,6 +18,7 @@ import { getClients as getFirebaseClients, saveClient } from '@/lib/clientFireba
 import { collection, query, where, getDocs, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { MaterialInventoryService } from '../services/materialInventoryService';
+import { EmailService } from '../services/emailService';
 import { 
   Search, 
   Plus, 
@@ -145,6 +146,7 @@ export default function EstimatesWizardFixed() {
   const [isLoadingMaterials, setIsLoadingMaterials] = useState(true);
   const [previewHtml, setPreviewHtml] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   
   // Smart Search states
@@ -1672,6 +1674,56 @@ export default function EstimatesWizardFixed() {
   };
 
   // Download PDF
+  const sendEstimateEmail = async () => {
+    if (!estimate.client?.email) {
+      toast({
+        title: "Error",
+        description: "El cliente no tiene email registrado",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSendingEmail(true);
+    try {
+      const estimateNumber = `EST-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`;
+      const estimateHtml = generateEstimatePreview();
+      
+      const success = await EmailService.sendEstimateEmail({
+        clientEmail: estimate.client.email,
+        clientName: estimate.client.name,
+        contractorName: contractor?.companyName || profile?.company || 'Empresa',
+        contractorEmail: contractor?.email || profile?.email || 'contacto@empresa.com',
+        estimateNumber,
+        estimateHtml,
+        totalAmount: estimate.total,
+        projectDescription: estimate.projectDetails || 'Proyecto de construcción'
+      });
+
+      if (success) {
+        toast({
+          title: "Correo enviado",
+          description: `Estimado enviado exitosamente a ${estimate.client.email}`,
+        });
+      } else {
+        toast({
+          title: "Error al enviar",
+          description: "No se pudo enviar el correo electrónico",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error sending email:', error);
+      toast({
+        title: "Error",
+        description: "Error al enviar el correo electrónico",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
   const downloadPDF = async () => {
     try {
       // Primero guardar el estimado automáticamente
