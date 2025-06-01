@@ -1672,52 +1672,83 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
     setShowEmailPreview(true);
   };
 
-  // Send email function
+  // Send estimate email using new contractor email service
   const sendEstimateEmail = async () => {
+    if (!emailData.toEmail || !emailData.subject || !emailData.message || !estimate.client) {
+      toast({
+        title: "Error",
+        description: "Please complete all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!profile?.email) {
+      toast({
+        title: "Email Required",
+        description: "Please add your email address to your profile before sending emails.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSendingEmail(true);
     
     try {
-      // Generate the estimate HTML
-      const estimateHtml = generateEstimatePreview();
-      
-      // Send email with estimate using SendGrid
-      const response = await fetch('/api/send-estimate-email', {
+      // Send email with new contractor email service
+      const response = await fetch('/api/contractor-email/send-estimate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          contractorEmail: profile.email,
+          contractorName: profile.companyName || profile.displayName || 'Contractor',
+          contractorProfile: profile,
           clientEmail: emailData.toEmail,
-          clientName: estimate.client?.name || 'Cliente',
-          contractorName: profile?.company || 'Su Empresa',
-          contractorEmail: profile?.email || 'contacto@empresa.com',
-          estimateNumber: `EST-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`,
-          estimateHtml: estimateHtml,
-          totalAmount: estimate.total,
-          projectDescription: estimate.projectDetails || 'Proyecto de construcción',
-          customSubject: emailData.subject,
+          clientName: estimate.client.name,
+          estimateData: {
+            projectDetails: estimate.projectDetails || estimate.title || 'Construction project',
+            total: estimate.total,
+            items: estimate.items,
+            estimateNumber: `EST-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`
+          },
           customMessage: emailData.message,
-          sendCopy: emailData.sendCopy,
-          contractorProfile: profile
+          customSubject: emailData.subject,
+          sendCopy: emailData.sendCopy
         })
       });
 
       const result = await response.json();
 
-      if (response.ok) {
+      if (result.success) {
         toast({
-          title: '✅ Email Enviado Exitosamente',
-          description: `Su estimado profesional fue enviado a ${emailData.toEmail}`,
+          title: 'Email Sent Successfully',
+          description: `Your professional estimate was sent to ${emailData.toEmail}`,
           duration: 5000
         });
         setShowEmailDialog(false);
         setShowEmailPreview(false);
       } else {
-        throw new Error(result.error || 'Error al enviar el email');
+        if (result.message.includes('verification')) {
+          toast({
+            title: 'Email Verification Required',
+            description: 'Please verify your email address first. Check your email for a verification link from SendGrid.',
+            variant: 'destructive',
+            duration: 7000
+          });
+        } else {
+          toast({
+            title: 'Failed to Send Email',
+            description: result.message || 'Please check your email configuration.',
+            variant: 'destructive',
+            duration: 5000
+          });
+        }
       }
     } catch (error) {
       console.error('Error sending email:', error);
       toast({
-        title: '❌ Error al Enviar',
-        description: 'No se pudo enviar el email. Verifique la configuración de SendGrid.',
+        title: 'Connection Error',
+        description: 'Unable to send email. Please check your connection and try again.',
         variant: 'destructive',
         duration: 5000
       });
