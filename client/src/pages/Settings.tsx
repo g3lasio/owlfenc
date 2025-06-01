@@ -367,7 +367,7 @@ export default function Settings() {
                         </div>
                       </div>
                       
-                      <Button variant="outline" className="w-full bg-slate-800/50 border-cyan-400/50 text-cyan-300 hover:bg-cyan-400/10 hover:border-cyan-400">
+                      <Button onClick={handleAddPaymentMethod} variant="outline" className="w-full bg-slate-800/50 border-cyan-400/50 text-cyan-300 hover:bg-cyan-400/10 hover:border-cyan-400">
                         <CreditCard className="h-4 w-4 mr-2" />
                         Add Payment Method
                       </Button>
@@ -378,7 +378,7 @@ export default function Settings() {
                   <div>
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                       <h3 className="text-lg font-semibold text-cyan-300 uppercase tracking-wide">Billing History</h3>
-                      <Button variant="outline" size="sm" className="bg-slate-800/50 border-cyan-400/50 text-cyan-300 hover:bg-cyan-400/10 hover:border-cyan-400 text-xs md:text-sm">
+                      <Button onClick={handleDownloadBilling} variant="outline" size="sm" className="bg-slate-800/50 border-cyan-400/50 text-cyan-300 hover:bg-cyan-400/10 hover:border-cyan-400 text-xs md:text-sm">
                         <Download className="h-4 w-4 mr-2" />
                         Download All
                       </Button>
