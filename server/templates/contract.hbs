@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>INDEPENDENT CONTRACTOR AGREEMENT</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f7faf8;
+      margin: 0;
+      padding: 0;
+      color: #161e1c;
+    }
+    .contract-container {
+      max-width: 900px;
+      margin: 38px auto;
+      background: #fff;
+      border-radius: 13px;
+      box-shadow: 0 2px 20px 0 #d1e6ee99;
+      padding: 46px 50px 28px 50px;
+      border: 2.5px solid #195535;
+      position: relative;
+      min-height: 96vh;
+    }
+    .contract-header {
+      text-align: center;
+      font-size: 2.1rem;
+      font-weight: bold;
+      letter-spacing: 1.3px;
+      margin-bottom: 18px;
+      color: #195535;
+      text-transform: uppercase;
+    }
+    .info-row-parallel {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 38px;
+      margin-bottom: 32px;
+      justify-content: space-between;
+    }
+    .info-block {
+      flex: 1 1 47%;
+      min-width: 340px;
+      border: 2px solid #195535;
+      border-radius: 9px;
+      padding: 18px 22px 12px 22px;
+      background: #f3fcf6;
+      box-sizing: border-box;
+      margin-bottom: 8px;
+    }
+    .info-block-title {
+      color: #195535;
+      font-size: 1.1rem;
+      font-weight: bold;
+      margin-bottom: 8px;
+      border-bottom: 1.5px solid #b9d3c2;
+      padding-bottom: 3px;
+    }
+    .info-field {
+      margin-bottom: 8px;
+      font-size: 1.06rem;
+    }
+    .section-title {
+      font-size: 1.22rem;
+      font-weight: 700;
+      color: #195535;
+      border-bottom: 2px solid #c3dacd;
+      margin-top: 32px;
+      margin-bottom: 13px;
+      letter-spacing: 1.1px;
+    }
+    .article {
+      margin-bottom: 26px;
+      padding-bottom: 14px;
+      border-bottom: 1.4px dashed #c1d1c3;
+    }
+    .article-title {
+      font-size: 1.08rem;
+      color: #195535;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+    .article-content {
+      font-size: 1.05rem;
+      margin-left: 16px;
+      line-height: 1.66;
+    }
+    .clause-list {
+      margin: 9px 0 0 1.4em;
+      font-size: 1.05rem;
+      line-height: 1.56;
+    }
+    .alert {
+      color: #a52a2a;
+      font-weight: bold;
+      margin-top: 5px;
+      display: block;
+    }
+    .signatures {
+      margin-top: 60px;
+      display: flex;
+      justify-content: space-between;
+      gap: 56px;
+      margin-bottom: 22px;
+    }
+    .sign-block {
+      flex: 1 1 46%;
+      border: 2px solid #195535;
+      border-radius: 8px;
+      min-height: 110px;
+      background: #f3fcf6;
+      text-align: center;
+      padding: 30px 18px 12px 18px;
+      font-size: 1.07rem;
+      color: #195535;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+    .sign-space {
+      border-bottom: 1.7px solid #195535;
+      margin: 14px 18px 8px 18px;
+      height: 32px;
+    }
+    .sign-label {
+      font-size: 1rem;
+      margin-bottom: 6px;
+      color: #195535;
+    }
+    .contract-footer {
+      margin-top: 80px;
+      text-align: center;
+      font-size: 1.08rem;
+      color: #bbbbbb;
+      letter-spacing: 0.13em;
+      padding-top: 22px;
+      border-top: 2px solid #d6eae0;
+      font-weight: bold;
+      background: linear-gradient(90deg, #e8e8e8 0%, #ececec 70%, #e8e8e8 100%);
+      border-radius: 0 0 9px 9px;
+    }
+    /* Page break for print/PDF */
+    .page-break {
+      page-break-before: always;
+      margin-top: 40px;
+    }
+    @media (max-width: 1050px) {
+      .contract-container {
+        padding: 20px 4vw 18px 4vw;
+      }
+      .info-row-parallel {
+        flex-direction: column;
+        gap: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="contract-container">
+    <div class="contract-header">INDEPENDENT CONTRACTOR AGREEMENT</div>
+    <div><b>Date:</b> {{date}}</div>
+
+    <div class="info-row-parallel">
+      <div class="info-block">
+        <div class="info-block-title">Client Information</div>
+        <div class="info-field"><b>Name:</b> {{client.name}}</div>
+        <div class="info-field"><b>Address:</b> {{client.address}}</div>
+        <div class="info-field"><b>Phone:</b> {{client.phone}}</div>
+        <div class="info-field"><b>Email:</b> {{client.email}}</div>
+      </div>
+      <div class="info-block">
+        <div class="info-block-title">Contractor Information</div>
+        <div class="info-field"><b>Company Name:</b> {{contractor.companyName}}</div>
+        <div class="info-field"><b>Contact Name:</b> {{contractor.contactName}}</div>
+        <div class="info-field"><b>Address:</b> {{contractor.address}}</div>
+        <div class="info-field"><b>Phone:</b> {{contractor.phone}}</div>
+        <div class="info-field"><b>Email:</b> {{contractor.email}}</div>  
+      </div>
+    </div>
+
+    <div class="section-title">Background</div>
+    <div class="article-content">
+      {{background.description}}
+    </div>
+
+    <div class="section-title">Term of Agreement</div>
+    <div class="article-content">
+      This Agreement shall commence on {{dates.startDate}} and continue until {{dates.endDate}}, unless earlier terminated as provided herein.
+    </div>
+
+    <div class="section-title">Scope of Work</div>
+    <div class="article-content">
+      {{scope.description}}
+    </div>
+
+    <div class="page-break"></div>
+
+    <div class="section-title">Performance</div>
+    <div class="article-content">
+      Contractor agrees to perform all services with professional skill, care, and diligence, in accordance with industry standards. Contractor is not liable for delays due to circumstances beyond their control.
+    </div>
+
+    <div class="section-title">Currency</div>
+    <div class="article-content">
+      All amounts referenced in this Agreement are in United States Dollars (USD) unless otherwise specified in writing.
+    </div>
+
+    <div class="section-title">Payment Terms</div>
+    <div class="article-content">
+      <b>Total Cost:</b> {{payment.totalAmount}}<br>
+      <b>Initial Payment:</b> {{payment.initialPayment}} due upon contract signing.<br>
+      <b>Final Payment:</b> {{payment.finalPayment}} due upon project completion and approval.<br>
+      <span class="alert">IMPORTANT: No further work, warranty, or release of project documents shall occur until all payments are received in full. Late payments accrue a {{payment.lateFee}}% penalty per week.</span>
+    </div>
+
+    <div class="section-title">Reimbursement of Expenses</div>
+    <div class="article-content">
+      {{expenses.description}}
+    </div>
+
+    <div class="section-title">Return of Property</div>
+    <div class="article-content">
+      Upon termination of this Agreement, Contractor shall return all property, materials, or confidential information belonging to Client, except for documents or data created by Contractor as part of the work product.
+    </div>
+
+    <div class="section-title">Equipment and Materials</div>
+    <div class="article-content">
+      {{equipment.description}}
+    </div>
+
+    <div class="section-title">Autonomy</div>
+    <div class="article-content">
+      Contractor operates as an independent entity, is free from Client's control in carrying out the work, and is responsible for their own licenses, permits, taxes, and insurance. This Agreement does not create an employer-employee relationship.
+    </div>
+
+    <div class="section-title">Notice</div>
+    <div class="article-content">
+      {{legal.noticeTerms}}
+    </div>
+
+    <div class="section-title">Waiver</div>
+    <div class="article-content">
+      Failure by either party to enforce any provision of this Agreement shall not be deemed a waiver of future enforcement of that or any other provision.
+    </div>
+
+    <div class="section-title">Additional Terms</div>
+    <div class="article-content">
+      {{additional.terms}}
+    </div>
+
+    <div class="page-break"></div>
+
+    <div class="section-title">General Legal Clauses</div>
+
+    <div class="article">
+      <div class="article-title">1. Change Orders & Extras</div>
+      <div class="article-content">
+        No upgrades or changes are included unless documented in a signed change order. All extras are billable at standard rates and extend project deadlines.
+      </div>
+    </div>
+
+    <div class="article">
+      <div class="article-title">2. Right to Suspend or Terminate</div>
+      <div class="article-content">
+        Contractor reserves the right to suspend or terminate the contract if the client defaults on any payment or violates safety protocols. All earned fees, costs, and damages to date become immediately due.
+      </div>
+    </div>
+
+    <div class="article">
+      <div class="article-title">3. Limitation of Liability & Indemnity</div>
+      <div class="article-content">
+        Contractor is not liable for indirect, incidental, or consequential damages. Client agrees to indemnify and hold contractor harmless for all claims except those due to contractor's gross negligence or willful misconduct.
+      </div>
+    </div>
+
+    <!-- Signatures -->
+    <div class="signatures">
+      <div class="sign-block">
+        <div class="sign-label">Client Signature</div>
+        <div class="sign-space"></div>
+        {{client.name}}
+      </div>
+      <div class="sign-block">
+        <div class="sign-label">Contractor Signature</div>
+        <div class="sign-space"></div>
+        {{contractor.contactName}}
+      </div>
+    </div>
+
+    <div class="contract-footer">
+      This is a legally binding agreement.
+    </div>
+  </div>
+</body>
+</html>
