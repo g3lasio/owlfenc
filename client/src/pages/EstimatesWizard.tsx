@@ -1598,15 +1598,54 @@ export default function EstimatesWizardFixed() {
     if (showEmailDialog && estimate.client) {
       setEmailData({
         toEmail: estimate.client.email || '',
-        subject: `Professional Estimate from ${profile?.companyName || 'Your Company'}`,
-        message: `Dear ${estimate.client.name},\n\nI hope this message finds you well. Please find attached your professional estimate for the ${estimate.projectDetails || 'construction project'}.\n\nWe have carefully prepared this estimate considering your specific needs and using the highest quality materials. The estimate includes all details of the work to be performed, as well as the associated costs.\n\nIf you have any questions about the estimate or would like to make any adjustments, please don't hesitate to contact us. We are here to ensure that the project meets all your expectations.\n\nWe look forward to the opportunity to work with you on this project.\n\nBest regards,\n${profile?.companyName || 'Your Company'}\n${profile?.phone || ''}\n${profile?.email || ''}\n\nNext Steps:\n• Review the attached estimate\n• Contact us with any questions\n• We'll schedule a follow-up call within 2 business days`,
+        subject: `🏗️ Su Estimado Profesional Está Listo - ${profile?.companyName || 'Su Empresa'}`,
+        message: `Estimado/a ${estimate.client.name},
+
+¡Esperamos que se encuentre muy bien! 
+
+Es un honor para nosotros presentarle su estimado profesional completamente personalizado para su proyecto "${estimate.title || estimate.projectDetails || 'de construcción'}".
+
+✨ **¿Por qué elegir nuestros servicios?**
+• Más de ${profile?.yearsInBusiness || '10'} años de experiencia comprobada
+• Materiales de la más alta calidad garantizados
+• Equipo de profesionales certificados y asegurados
+• Precios competitivos sin comprometer la excelencia
+• Garantía completa en todos nuestros trabajos
+
+💪 **Su proyecto merece lo mejor**, y estamos comprometidos a superar sus expectativas en cada detalle.
+
+📋 **El estimado adjunto incluye:**
+• Análisis detallado de ${estimate.items.length} partidas del proyecto
+• Especificaciones técnicas completas
+• Cronograma de trabajo estimado
+• Inversión total: $${estimate.total.toLocaleString()}
+
+🎯 **¡OFERTA ESPECIAL VÁLIDA HASTA ${estimate.validUntil}!**
+Si aprueba este estimado antes de la fecha límite, le garantizamos el precio sin importar las fluctuaciones del mercado.
+
+Estamos completamente a su disposición para aclarar cualquier duda o realizar ajustes que considere necesarios. Su satisfacción es nuestra prioridad número uno.
+
+¿Listo para transformar su visión en realidad? ¡Contáctenos hoy mismo!
+
+Saludos cordiales,
+${profile?.companyName || 'Su Empresa'}
+📞 ${profile?.phone || 'Teléfono'}
+📧 ${profile?.email || 'Email'}
+${profile?.website ? `🌐 ${profile.website}` : ''}
+
+**Próximos pasos:**
+✅ Revise el estimado adjunto cuidadosamente
+✅ Contáctenos para cualquier consulta
+✅ ¡Agende su cita de inicio lo antes posible!
+
+*"Su proyecto, nuestra pasión. Calidad garantizada."*`,
         sendCopy: true
       });
     }
   }, [showEmailDialog, estimate.client, profile]);
 
-  // Send email function
-  const sendEstimateEmail = async () => {
+  // Open email compose dialog
+  const openEmailCompose = () => {
     if (!estimate.client?.email) {
       toast({
         title: "Error",
@@ -1615,41 +1654,61 @@ export default function EstimatesWizardFixed() {
       });
       return;
     }
+    setShowEmailDialog(true);
+  };
+
+  // Send email function
+  const sendEstimateEmail = async () => {
+    if (!emailData.toEmail || !emailData.subject || !emailData.message) {
+      toast({
+        title: 'Error', 
+        description: 'Por favor complete todos los campos requeridos',
+        variant: 'destructive'
+      });
+      return;
+    }
 
     setIsSendingEmail(true);
+    
     try {
-      const estimateNumber = `EST-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`;
+      // Generate the estimate HTML
       const estimateHtml = generateEstimatePreview();
       
-      const success = await EmailService.sendEstimateEmail({
-        clientEmail: estimate.client.email,
-        clientName: estimate.client.name,
-        contractorName: contractor?.companyName || profile?.company || 'Empresa',
-        contractorEmail: contractor?.email || profile?.email || 'contacto@empresa.com',
-        estimateNumber,
-        estimateHtml,
-        totalAmount: estimate.total,
-        projectDescription: estimate.projectDetails || 'Proyecto de construcción'
+      // Send email with estimate
+      const response = await fetch('/api/send-estimate-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: emailData.toEmail,
+          subject: emailData.subject,
+          message: emailData.message,
+          estimateHtml: estimateHtml,
+          clientName: estimate.client.name,
+          companyName: profile?.company || 'Your Company',
+          companyEmail: profile?.email || '',
+          sendCopy: emailData.sendCopy
+        })
       });
 
-      if (success) {
+      const result = await response.json();
+
+      if (response.ok) {
         toast({
-          title: "Correo enviado",
-          description: `Estimado enviado exitosamente a ${estimate.client.email}`,
+          title: '✅ Email Enviado',
+          description: `El estimado fue enviado exitosamente a ${emailData.toEmail}`,
+          duration: 5000
         });
+        setShowEmailDialog(false);
       } else {
-        toast({
-          title: "Error al enviar",
-          description: "No se pudo enviar el correo electrónico",
-          variant: "destructive",
-        });
+        throw new Error(result.error || 'Error al enviar el email');
       }
     } catch (error) {
       console.error('Error sending email:', error);
       toast({
-        title: "Error",
-        description: "Error al enviar el correo electrónico",
-        variant: "destructive",
+        title: '❌ Error al Enviar',
+        description: 'No se pudo enviar el email. Por favor intente nuevamente.',
+        variant: 'destructive',
+        duration: 5000
       });
     } finally {
       setIsSendingEmail(false);
@@ -2703,20 +2762,14 @@ export default function EstimatesWizardFixed() {
                       </Button>
                       
                       <Button
-                        onClick={sendEstimateEmail}
-                        disabled={isSendingEmail || !estimate.client?.email}
+                        onClick={openEmailCompose}
+                        disabled={!estimate.client?.email}
                         size="sm"
                         className="bg-purple-600 hover:bg-purple-700 text-white text-xs"
                       >
                         <Mail className="h-3 w-3 mr-1" />
-                        {isSendingEmail ? (
-                          <span className="hidden sm:inline">Enviando...</span>
-                        ) : (
-                          <>
-                            <span className="hidden sm:inline">Enviar Email</span>
-                            <span className="sm:hidden">Email</span>
-                          </>
-                        )}
+                        <span className="hidden sm:inline">Enviar Email</span>
+                        <span className="sm:hidden">Email</span>
                       </Button>
                       
                       <Button
