@@ -2716,60 +2716,7 @@ export default function EstimatesWizardFixed() {
       </div>
 
       {/* Overlay futurista de DeepSearch AI */}
-      {isAIProcessing && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="relative flex flex-col items-center justify-center space-y-6">
-            {/* Logo Mervin con efecto futurista */}
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 rounded-full blur-xl opacity-75 animate-pulse"></div>
-              <div className="relative bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 p-1 rounded-full">
-                <div className="bg-gray-900 rounded-full p-4">
-                  <img 
-                    src={mervinLogoUrl} 
-                    alt="Mervin AI" 
-                    className="w-24 h-24 object-contain"
-                  />
-                </div>
-              </div>
-              {/* Anillos giratorios */}
-              <div className="absolute inset-0 border-2 border-cyan-400/30 rounded-full animate-spin"></div>
-              <div className="absolute inset-2 border-2 border-blue-500/30 rounded-full animate-spin animate-reverse"></div>
-              <div className="absolute inset-4 border-2 border-purple-600/30 rounded-full animate-spin"></div>
-            </div>
 
-            {/* Texto futurista */}
-            <div className="text-center space-y-2">
-              <h2 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">
-                DeepSearch IA
-              </h2>
-              <p className="text-xl text-gray-300 animate-pulse">
-                Analizando proyecto con inteligencia artificial...
-              </p>
-              <div className="flex items-center justify-center space-x-2 mt-4">
-                <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                <div className="w-2 h-2 bg-purple-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-              </div>
-            </div>
-
-            {/* Efecto de partículas */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-              {[...Array(20)].map((_, i) => (
-                <div
-                  key={i}
-                  className="absolute w-1 h-1 bg-white rounded-full opacity-20 animate-pulse"
-                  style={{
-                    left: `${Math.random() * 100}%`,
-                    top: `${Math.random() * 100}%`,
-                    animationDelay: `${Math.random() * 2}s`,
-                    animationDuration: `${2 + Math.random() * 2}s`
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Mensaje emergente de Mervin */}
       {showMervinMessage && (
