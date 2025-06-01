@@ -2718,28 +2718,28 @@ export default function EstimatesWizardFixed() {
       {/* Overlay futurista de DeepSearch AI */}
 
 
-      {/* Mensaje emergente de Mervin */}
+      {/* Mensaje emergente de Mervin - Compacto y Responsive */}
       {showMervinMessage && (
-        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 max-w-lg">
-          <div className="bg-gradient-to-r from-cyan-900/95 via-blue-900/95 to-purple-900/95 backdrop-blur-md border border-cyan-500/30 rounded-2xl p-6 shadow-2xl animate-in slide-in-from-top-4 duration-500">
-            <div className="flex items-start space-x-4">
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-11/12 max-w-md mx-auto">
+          <div className="bg-gradient-to-r from-cyan-900/95 via-blue-900/95 to-purple-900/95 backdrop-blur-md border border-cyan-500/30 rounded-xl p-4 shadow-2xl animate-in slide-in-from-top-4 duration-500">
+            <div className="flex items-center space-x-3">
               <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full flex items-center justify-center">
+                <div className="w-10 h-10 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full flex items-center justify-center">
                   <img 
                     src={mervinLogoUrl} 
                     alt="Mervin" 
-                    className="w-8 h-8 object-contain"
+                    className="w-6 h-6 object-contain"
                   />
                 </div>
               </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-white mb-2">¡Hola primo! 👋</h3>
-                <p className="text-gray-200 text-sm leading-relaxed">
-                  Aquí tienes una lista sugerida de materiales para tu proyecto. Aún no soy perfecto (la IA también aprende), así que si ves algo que no va o falta, ajústalo con toda confianza. Tus aportes me ayudan a ser cada vez más preciso. ¡Gracias por tu apoyo!
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base font-semibold text-white mb-1">¡Lista generada! 👋</h3>
+                <p className="text-gray-200 text-xs leading-relaxed">
+                  Revisa y ajusta los materiales según necesites. ¡Tu feedback me ayuda a mejorar!
                 </p>
               </div>
             </div>
-            <div className="mt-4 h-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 rounded-full animate-pulse"></div>
+            <div className="mt-3 h-0.5 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 rounded-full animate-pulse"></div>
           </div>
         </div>
       )}
