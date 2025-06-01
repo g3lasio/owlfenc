@@ -643,19 +643,31 @@
     align-items: center;
     padding: 0 1rem;
     gap: 1rem;
+    pointer-events: auto;
+  }
+
+  .chat-footer .footer-content > div {
+    pointer-events: auto;
   }
 
   .chat-footer a {
     color: hsl(var(--primary));
-    font-size: 0.7rem;
+    font-size: 0.875rem;
     text-decoration: none;
     opacity: 0.8;
     transition: all 0.2s ease;
+    pointer-events: auto;
+    cursor: pointer;
+    position: relative;
+    z-index: 10000;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
   }
 
   .chat-footer a:hover {
     opacity: 1;
     text-shadow: 0 0 8px hsla(var(--primary), 0.3);
+    background-color: hsla(var(--primary), 0.1);
   }
 
   .chat-footer span {
