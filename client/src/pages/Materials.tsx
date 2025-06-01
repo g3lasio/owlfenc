@@ -189,7 +189,6 @@ export default function Materials() {
       filtered = filtered.filter(m => m.category === selectedCategory);
     }
     
-    // Filtrar por tab activo (stock functionality removed)
     
     setFilteredMaterials(filtered);
   };
@@ -579,31 +578,8 @@ export default function Materials() {
           </div>
         </div>
 
-        {/* Tabs para filtrado rápido optimizados */}
-        <Tabs 
-          defaultValue="todos" 
-          className="w-full mb-6"
-          value={activeTab}
-          onValueChange={setActiveTab}
-        >
-          <TabsList className="grid w-full grid-cols-2 mb-4 h-10">
-            <TabsTrigger value="todos" className="text-sm">
-              <span className="hidden sm:inline">Todos los materiales</span>
-              <span className="sm:hidden">Todos</span>
-              <span className="ml-1 text-xs opacity-70">({materials.length})</span>
-            </TabsTrigger>
-            <TabsTrigger value="bajo-stock" className="text-sm">
-              <span className="hidden sm:inline">Bajo stock</span>
-              <span className="sm:hidden">Stock bajo</span>
-              <span className="ml-1 text-xs opacity-70">
-                ({materials.filter(m => 
-                  typeof m.stock === 'number' && 
-                  typeof m.minStock === 'number' && 
-                  m.stock <= m.minStock
-                ).length})
-              </span>
-            </TabsTrigger>
-          </TabsList>
+        {/* Sección principal de materiales */}
+        <div className="w-full mb-6">
           
           <TabsContent value="todos">
             <Card>
@@ -619,10 +595,8 @@ export default function Materials() {
             </Card>
           </TabsContent>
           
-          <TabsContent value="bajo-stock">
             <Card>
               <CardHeader className="py-4">
-                <CardTitle>Materiales con Bajo Stock</CardTitle>
                 <CardDescription>
                   Materiales que requieren reabastecimiento
                 </CardDescription>
@@ -631,9 +605,7 @@ export default function Materials() {
                 {filteredMaterials.length === 0 ? (
                   <Alert>
                     <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Sin materiales bajo stock</AlertTitle>
                     <AlertDescription>
-                      Todos los materiales tienen niveles de stock adecuados.
                     </AlertDescription>
                   </Alert>
                 ) : (
@@ -765,28 +737,20 @@ export default function Materials() {
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="stock">Stock Actual</Label>
                 <Input
-                  id="stock"
                   type="number"
                   min="0"
                   step="1"
                   placeholder="0"
-                  value={newMaterial.stock || ''}
-                  onChange={(e) => setNewMaterial({...newMaterial, stock: parseInt(e.target.value) || 0})}
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="minStock">Stock Mínimo</Label>
                 <Input
-                  id="minStock"
                   type="number"
                   min="0"
                   step="1"
                   placeholder="0"
-                  value={newMaterial.minStock || ''}
-                  onChange={(e) => setNewMaterial({...newMaterial, minStock: parseInt(e.target.value) || 0})}
                 />
               </div>
             </div>
@@ -932,28 +896,20 @@ export default function Materials() {
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit-stock">Stock Actual</Label>
                   <Input
-                    id="edit-stock"
                     type="number"
                     min="0"
                     step="1"
                     placeholder="0"
-                    value={editingMaterial.stock || ''}
-                    onChange={(e) => setEditingMaterial({...editingMaterial, stock: parseInt(e.target.value) || 0})}
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="edit-minStock">Stock Mínimo</Label>
                   <Input
-                    id="edit-minStock"
                     type="number"
                     min="0"
                     step="1"
                     placeholder="0"
-                    value={editingMaterial.minStock || ''}
-                    onChange={(e) => setEditingMaterial({...editingMaterial, minStock: parseInt(e.target.value) || 0})}
                   />
                 </div>
               </div>
@@ -1037,7 +993,6 @@ export default function Materials() {
               <TableHead>Nombre</TableHead>
               <TableHead>Categoría</TableHead>
               <TableHead>Precio</TableHead>
-              <TableHead>Stock</TableHead>
               <TableHead>SKU</TableHead>
               <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
@@ -1051,18 +1006,11 @@ export default function Materials() {
                 <TableCell>
                   <div className="flex items-center">
                     <span className={`mr-2 ${
-                      typeof material.stock === 'number' && 
-                      typeof material.minStock === 'number' && 
-                      material.stock <= material.minStock 
                         ? 'text-destructive' 
                         : ''
                     }`}>
-                      {typeof material.stock === 'number' ? material.stock : 'N/A'}
                     </span>
                     
-                    {typeof material.stock === 'number' && 
-                     typeof material.minStock === 'number' && 
-                     material.stock <= material.minStock && (
                       <AlertCircle className="h-4 w-4 text-destructive" />
                     )}
                   </div>
@@ -1136,26 +1084,16 @@ export default function Materials() {
                   <div className="text-xs text-muted-foreground">por {material.unit}</div>
                 </div>
                 <div>
-                  <span className="text-muted-foreground text-xs uppercase tracking-wide block mb-1">Stock</span>
                   <div className="font-semibold text-base flex items-center">
                     <span className={
-                      typeof material.stock === 'number' && 
-                      typeof material.minStock === 'number' && 
-                      material.stock <= material.minStock 
                         ? 'text-destructive' 
                         : ''
                     }>
-                      {typeof material.stock === 'number' ? material.stock : 'N/A'}
                     </span>
                     
-                    {typeof material.stock === 'number' && 
-                     typeof material.minStock === 'number' && 
-                     material.stock <= material.minStock && (
                       <AlertCircle className="h-4 w-4 ml-2 text-destructive" />
                     )}
                   </div>
-                  {typeof material.minStock === 'number' && material.minStock > 0 && (
-                    <div className="text-xs text-muted-foreground">min: {material.minStock}</div>
                   )}
                 </div>
               </div>
