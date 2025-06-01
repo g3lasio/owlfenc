@@ -31,6 +31,7 @@ import paymentRoutes from './routes/payment-routes';
 import ocrSimpleRoutes from './ocrSimpleRoutes';
 import emailRoutes from './routes/email-routes';
 import contractorEmailRoutes from './routes/contractor-email-routes';
+import settingsRoutes from './routes/settings-routes';
 
 // 🐒 SISTEMA PDFMONKEY - Único procesador profesional de PDFs
 import pdfRoutes from './routes/pdf-routes';
@@ -44,6 +45,7 @@ import contractRoutes from './routes/contractRoutes';
 app.use('/api', paymentRoutes);
 app.use('/api', emailRoutes);
 app.use('/api/contractor-email', contractorEmailRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // 📄 Registrar sistema PDFMonkey único
 app.use('/api/pdf', pdfRoutes);
