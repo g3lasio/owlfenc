@@ -7,6 +7,8 @@ import { navigationGroups, NavigationItem, NavigationGroup } from "@/config/navi
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
 import LanguageSwitch from "@/components/ui/language-switch";
+import { Button } from "@/components/ui/button";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -18,6 +20,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   const { logout } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [isAccountExpanded, setIsAccountExpanded] = useState(false);
   const { t } = useTranslation(); // Añadimos soporte para traducciones
   const { language } = useLanguage(); // Obtenemos el idioma actual del contexto
 
@@ -127,28 +130,13 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           )}
         </AnimatePresence>
 
-        {/* Encabezado del Menú */}
+        {/* Encabezado del Menú - Solo botón de cerrar */}
         <motion.div 
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.1, duration: 0.3 }}
-          className="flex justify-between items-center p-4 border-b border-border"
+          className="flex justify-end items-center p-4 border-b border-border"
         >
-          <motion.img
-            initial={{ filter: "blur(10px)", opacity: 0 }}
-            animate={{ filter: "blur(0px)", opacity: 1 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
-            src="/owl-logo.png"
-            alt="Owl Fence"
-            className="h-10 w-auto max-w-[180px] object-contain"
-          />
-          {/* Texto de respaldo */}
-          <motion.span 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.2 }}
-            className="absolute text-primary/50 font-bold text-lg">
-            Owl Fence
-          </motion.span>
           <motion.button
             whileHover={{ scale: 1.1, rotate: 90 }}
             whileTap={{ scale: 0.9 }}
@@ -166,50 +154,121 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           <div className="p-3">
             {navigationGroups.map((group, groupIndex) => (
               <div key={`mobile-group-${groupIndex}`}>
-                <motion.h2 
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4 + (groupIndex * 0.4), duration: 0.3 }}
-                  className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider"
-                >
-                  {t(`navigation.${group.title}`)}
-                </motion.h2>
-                <div className="space-y-1.5 mb-4">
-                  {group.items.map((item, itemIndex) => 
-                    item.id !== "mervin" ? (
-                      <motion.div
-                        key={item.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.4 + (groupIndex * 0.4) + (itemIndex * 0.1), duration: 0.3 }}
-                      >
-                        <Link 
-                          href={item.path} 
-                          onClick={onClose}
+                {group.title === "account" ? (
+                  // Accordion para Account en mobile
+                  <motion.div 
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.4 + (groupIndex * 0.4), duration: 0.3 }}
+                    className="mb-4"
+                  >
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-between text-xs font-semibold px-2 py-2 text-muted-foreground uppercase tracking-wider hover:bg-accent"
+                      onClick={() => setIsAccountExpanded(!isAccountExpanded)}
+                    >
+                      {t(`navigation.${group.title}`)}
+                      {isAccountExpanded ? (
+                        <ChevronDown className="h-3 w-3" />
+                      ) : (
+                        <ChevronRight className="h-3 w-3" />
+                      )}
+                    </Button>
+                    
+                    <AnimatePresence>
+                      {isAccountExpanded && (
+                        <motion.div 
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="space-y-1.5 mt-2 ml-2 overflow-hidden"
                         >
-                          <motion.div 
-                            whileHover={{ 
-                              scale: 1.02,
-                              x: 5
-                            }}
-                            className="flex items-center p-2 rounded-md hover:bg-accent"
+                          {group.items.map((item, itemIndex) => (
+                            <motion.div
+                              key={item.id}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: itemIndex * 0.1, duration: 0.3 }}
+                            >
+                              <Link 
+                                href={item.path} 
+                                onClick={onClose}
+                              >
+                                <motion.div 
+                                  whileHover={{ 
+                                    scale: 1.02,
+                                    x: 5
+                                  }}
+                                  className="flex items-center p-2 rounded-md hover:bg-accent"
+                                >
+                                  {item.icon.startsWith('lucide-') ? (
+                                    <>
+                                      {item.icon === 'lucide-user' && <i className="ri-user-settings-line text-lg mr-3"></i>}
+                                      {item.icon === 'lucide-credit-card' && <i className="ri-bank-card-line text-lg mr-3"></i>}
+                                      {item.icon === 'lucide-building' && <i className="ri-building-4-line text-lg mr-3"></i>}
+                                      {item.icon === 'lucide-settings' && <i className="ri-settings-4-line text-lg mr-3"></i>}
+                                      {item.icon === 'lucide-brain' && <i className="ri-brain-artificial-line text-lg mr-3"></i>}
+                                    </>
+                                  ) : (
+                                    <i className={`${item.icon} text-lg mr-3`}></i>
+                                  )}
+                                  <span>{t(item.label)}</span>
+                                </motion.div>
+                              </Link>
+                            </motion.div>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                ) : (
+                  // Secciones normales (Tools y Features)
+                  <>
+                    <motion.h2 
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.4 + (groupIndex * 0.4), duration: 0.3 }}
+                      className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider"
+                    >
+                      {t(`navigation.${group.title}`)}
+                    </motion.h2>
+                    <div className="space-y-1.5 mb-4">
+                      {group.items.map((item, itemIndex) => 
+                        item.id !== "mervin" ? (
+                          <motion.div
+                            key={item.id}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.4 + (groupIndex * 0.4) + (itemIndex * 0.1), duration: 0.3 }}
                           >
-                            {item.icon.startsWith('lucide-') ? (
-                              <>
-                                {item.icon === 'lucide-user' && <i className="ri-user-settings-line text-lg mr-3"></i>}
-                                {item.icon === 'lucide-credit-card' && <i className="ri-bank-card-line text-lg mr-3"></i>}
-                                {item.icon === 'lucide-building' && <i className="ri-building-4-line text-lg mr-3"></i>}
-                                {item.icon === 'lucide-settings' && <i className="ri-settings-4-line text-lg mr-3"></i>}
-                                {item.icon === 'lucide-brain' && <i className="ri-brain-artificial-line text-lg mr-3"></i>}
-                              </>
-                            ) : (
-                              <i className={`${item.icon} text-lg mr-3`}></i>
-                            )}
-                            <span>{t(item.label)}</span>
+                            <Link 
+                              href={item.path} 
+                              onClick={onClose}
+                            >
+                              <motion.div 
+                                whileHover={{ 
+                                  scale: 1.02,
+                                  x: 5
+                                }}
+                                className="flex items-center p-2 rounded-md hover:bg-accent"
+                              >
+                                {item.icon.startsWith('lucide-') ? (
+                                  <>
+                                    {item.icon === 'lucide-user' && <i className="ri-user-settings-line text-lg mr-3"></i>}
+                                    {item.icon === 'lucide-credit-card' && <i className="ri-bank-card-line text-lg mr-3"></i>}
+                                    {item.icon === 'lucide-building' && <i className="ri-building-4-line text-lg mr-3"></i>}
+                                    {item.icon === 'lucide-settings' && <i className="ri-settings-4-line text-lg mr-3"></i>}
+                                    {item.icon === 'lucide-brain' && <i className="ri-brain-artificial-line text-lg mr-3"></i>}
+                                  </>
+                                ) : (
+                                  <i className={`${item.icon} text-lg mr-3`}></i>
+                                )}
+                                <span>{t(item.label)}</span>
+                              </motion.div>
+                            </Link>
                           </motion.div>
-                        </Link>
-                      </motion.div>
-                    ) : null
+                        ) : null
                   )}
                 </div>
                 

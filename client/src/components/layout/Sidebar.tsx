@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { LogOut, User, CreditCard, Building, Settings, Brain as BrainIcon } from "lucide-react";
+import { LogOut, User, CreditCard, Building, Settings, Brain as BrainIcon, ChevronDown, ChevronRight } from "lucide-react";
 import { navigationGroups, NavigationItem } from "@/config/navigation";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -28,6 +28,7 @@ export default function Sidebar() {
   const { currentUser, logout } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [isAccountExpanded, setIsAccountExpanded] = useState(false);
   const { t } = useTranslation();
 
   const handleLogout = async () => {
@@ -125,39 +126,48 @@ export default function Sidebar() {
     <aside className="hidden md:flex md:w-72 flex-col bg-card border-r border-border h-screen overflow-hidden">
       {/* Todo el contenido en un contenedor con scroll */}
       <div className="flex flex-col h-full overflow-y-auto">
-        {/* Sidebar Header solo con logo */}
-        <div className="p-4 border-b border-border">
-          <div className="flex items-center justify-center py-4">
-            <img 
-              src="https://i.postimg.cc/yYSwtxhq/White-logo-no-background.png" 
-              alt="Logo"
-              className="h-16 w-auto object-contain px-4"
-              style={{ 
-                maxWidth: '90%', 
-                margin: '0 auto',
-                filter: 'brightness(1.1) contrast(1.1)'
-              }}
-              onError={(e) => {
-                console.log("Error cargando logo en Sidebar, usando fallback");
-                e.currentTarget.src = "/White-logo-no-background-new.png";
-              }}
-            />
-          </div>
-        </div>
+
 
         {/* Navegación principal - Generada dinámicamente desde la configuración */}
-        <div className="flex-1 px-3">
+        <div className="flex-1 px-3 pt-4">
           {navigationGroups.map((group, index) => (
             <div key={`group-${index}`}>
-              <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">
-                {t(`navigation.${group.title}`)}
-              </h2>
-              <div className="space-y-1 mb-6">
-                {/* Filtrar el elemento de Mervin AI si existe */}
-                {group.items
-                  .filter(item => item.path !== "/mervin" && item.id !== "mervin")
-                  .map(renderNavItem)}
-              </div>
+              {group.title === "account" ? (
+                // Accordion para Account
+                <div className="mb-6">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-between text-xs font-semibold px-2 py-2 text-muted-foreground uppercase tracking-wider hover:bg-accent"
+                    onClick={() => setIsAccountExpanded(!isAccountExpanded)}
+                  >
+                    {t(`navigation.${group.title}`)}
+                    {isAccountExpanded ? (
+                      <ChevronDown className="h-3 w-3" />
+                    ) : (
+                      <ChevronRight className="h-3 w-3" />
+                    )}
+                  </Button>
+                  
+                  {isAccountExpanded && (
+                    <div className="space-y-1 mt-2 ml-2">
+                      {group.items.map(renderNavItem)}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                // Secciones normales (Tools y Features)
+                <div>
+                  <h2 className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">
+                    {t(`navigation.${group.title}`)}
+                  </h2>
+                  <div className="space-y-1 mb-6">
+                    {/* Filtrar el elemento de Mervin AI si existe */}
+                    {group.items
+                      .filter(item => item.path !== "/mervin" && item.id !== "mervin")
+                      .map(renderNavItem)}
+                  </div>
+                </div>
+              )}
               {index < navigationGroups.length - 1 && index === 1 && <Separator className="my-2" />}
             </div>
           ))}
