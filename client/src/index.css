@@ -323,7 +323,6 @@
     border-radius: 50%;
     animation: arc-reactor-core 1.5s ease-in-out infinite alternate;
   }
-}
 
 @keyframes scanning-line {
   0%, 100% { opacity: 0.3; }
