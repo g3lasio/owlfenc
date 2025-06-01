@@ -1600,47 +1600,47 @@ export default function EstimatesWizardFixed() {
     if (showEmailDialog && estimate.client) {
       setEmailData({
         toEmail: estimate.client.email || '',
-        subject: `🏗️ Su Estimado Profesional Está Listo - ${profile?.companyName || 'Su Empresa'}`,
-        message: `Estimado/a ${estimate.client.name},
+        subject: `🏗️ Your Professional Estimate is Ready - ${profile?.companyName || profile?.name || 'Your Company'}`,
+        message: `Dear ${estimate.client.name},
 
-¡Esperamos que se encuentre muy bien! 
+I hope this message finds you well!
 
-Es un honor para nosotros presentarle su estimado profesional completamente personalizado para su proyecto "${estimate.title || estimate.projectDetails || 'de construcción'}".
+It is our pleasure to present your completely customized professional estimate for your "${estimate.projectDetails || 'construction project'}".
 
-✨ **¿Por qué elegir nuestros servicios?**
-• Más de ${profile?.yearsInBusiness || '10'} años de experiencia comprobada
-• Materiales de la más alta calidad garantizados
-• Equipo de profesionales certificados y asegurados
-• Precios competitivos sin comprometer la excelencia
-• Garantía completa en todos nuestros trabajos
+✨ **Why choose our services?**
+• Over ${profile?.yearsInBusiness || '10'} years of proven experience
+• Highest quality materials guaranteed
+• Team of certified and insured professionals
+• Competitive pricing without compromising excellence
+• Complete warranty on all our work
 
-💪 **Su proyecto merece lo mejor**, y estamos comprometidos a superar sus expectativas en cada detalle.
+💪 **Your project deserves the best**, and we are committed to exceeding your expectations in every detail.
 
-📋 **El estimado adjunto incluye:**
-• Análisis detallado de ${estimate.items.length} partidas del proyecto
-• Especificaciones técnicas completas
-• Cronograma de trabajo estimado
-• Inversión total: $${estimate.total.toLocaleString()}
+📋 **The attached estimate includes:**
+• Detailed analysis of ${estimate.items.length} project items
+• Complete technical specifications
+• Estimated work timeline
+• Total investment: $${estimate.total.toLocaleString()}
 
-🎯 **¡OFERTA ESPECIAL VÁLIDA HASTA ${estimate.validUntil}!**
-Si aprueba este estimado antes de la fecha límite, le garantizamos el precio sin importar las fluctuaciones del mercado.
+🎯 **SPECIAL OFFER VALID UNTIL ${new Date(Date.now() + 30*24*60*60*1000).toLocaleDateString()}!**
+If you approve this estimate before the deadline, we guarantee the price regardless of market fluctuations.
 
-Estamos completamente a su disposición para aclarar cualquier duda o realizar ajustes que considere necesarios. Su satisfacción es nuestra prioridad número uno.
+We are completely at your disposal to clarify any questions or make adjustments you consider necessary. Your satisfaction is our number one priority.
 
-¿Listo para transformar su visión en realidad? ¡Contáctenos hoy mismo!
+Ready to transform your vision into reality? Contact us today!
 
-Saludos cordiales,
-${profile?.companyName || 'Su Empresa'}
-📞 ${profile?.phone || 'Teléfono'}
-📧 ${profile?.email || 'Email'}
+Best regards,
+${profile?.companyName || profile?.name || 'Your Company'}
+📞 ${profile?.phone || 'Phone Number'}
+📧 ${profile?.email || 'Email Address'}
 ${profile?.website ? `🌐 ${profile.website}` : ''}
 
-**Próximos pasos:**
-✅ Revise el estimado adjunto cuidadosamente
-✅ Contáctenos para cualquier consulta
-✅ ¡Agende su cita de inicio lo antes posible!
+**Next steps:**
+✅ Review the attached estimate carefully
+✅ Contact us for any questions
+✅ Schedule your project start date as soon as possible!
 
-*"Su proyecto, nuestra pasión. Calidad garantizada."*`,
+*"Your project, our passion. Quality guaranteed."*`,
         sendCopy: true
       });
     }
@@ -3654,61 +3654,61 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
 
       {/* Email Preview Dialog */}
       <Dialog open={showEmailPreview} onOpenChange={setShowEmailPreview}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-900 via-black to-gray-900 border border-cyan-500/30">
-          <DialogHeader className="space-y-3">
+        <DialogContent className="w-[95vw] max-w-4xl h-[95vh] flex flex-col bg-gradient-to-br from-gray-900 via-black to-gray-900 border border-cyan-500/30">
+          <DialogHeader className="space-y-3 flex-shrink-0">
             <DialogTitle className="text-xl font-bold text-cyan-300 flex items-center gap-2">
               <Eye className="h-5 w-5" />
-              Vista Previa del Correo Profesional
+              Email Preview - Professional Format
             </DialogTitle>
             <div className="text-sm text-gray-400">
-              Revise cómo se verá su correo antes de enviarlo al cliente
+              Review how your email will look before sending it to the client
             </div>
           </DialogHeader>
           
-          <div className="space-y-6">
+          <div className="flex-1 overflow-y-auto space-y-6 py-4">
             {/* Email Headers Preview */}
             <div className="bg-gray-800/50 rounded-lg p-4 border border-cyan-500/20">
               <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="text-cyan-300 font-medium">Para:</span>
-                  <span className="text-white">{emailData.toEmail}</span>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                  <span className="text-cyan-300 font-medium min-w-12">To:</span>
+                  <span className="text-white break-all">{emailData.toEmail}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-cyan-300 font-medium">De:</span>
-                  <span className="text-white">{profile?.email || 'contacto@empresa.com'}</span>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                  <span className="text-cyan-300 font-medium min-w-12">From:</span>
+                  <span className="text-white break-all">{profile?.email || 'contact@company.com'}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-cyan-300 font-medium">Asunto:</span>
-                  <span className="text-white">{emailData.subject}</span>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                  <span className="text-cyan-300 font-medium min-w-12">Subject:</span>
+                  <span className="text-white break-words">{emailData.subject}</span>
                 </div>
               </div>
             </div>
 
             {/* Email Content Preview */}
-            <div className="bg-white rounded-lg p-6 text-black">
+            <div className="bg-white rounded-lg p-4 sm:p-6 text-black">
               <div className="space-y-4">
                 {/* Message Preview */}
-                <div className="whitespace-pre-wrap text-gray-800">
+                <div className="whitespace-pre-wrap text-gray-800 text-sm sm:text-base">
                   {emailData.message}
                 </div>
                 
                 {/* Estimate Summary */}
                 <div className="border-t pt-4 mt-6">
                   <h3 className="text-lg font-bold text-blue-600 mb-3">
-                    📊 Resumen del Estimado
+                    📊 Estimate Summary
                   </h3>
                   <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                       <div>
-                        <span className="font-medium">Cliente:</span> {estimate.client?.name}
+                        <span className="font-medium">Client:</span> {estimate.client?.name}
                       </div>
                       <div>
-                        <span className="font-medium">Proyecto:</span> {estimate.projectDetails || 'Proyecto de construcción'}
+                        <span className="font-medium">Project:</span> {estimate.projectDetails || 'Construction project'}
                       </div>
                       <div>
-                        <span className="font-medium">Items:</span> {estimate.items.length} partidas
+                        <span className="font-medium">Items:</span> {estimate.items.length} line items
                       </div>
-                      <div className="text-lg font-bold text-blue-600">
+                      <div className="text-base sm:text-lg font-bold text-blue-600">
                         <span className="font-medium">Total:</span> ${estimate.total.toLocaleString()}
                       </div>
                     </div>
@@ -3718,7 +3718,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
                 {/* Company Signature */}
                 <div className="border-t pt-4 mt-6 text-gray-600">
                   <div className="text-sm">
-                    <div className="font-bold text-blue-600">{profile?.companyName || 'Su Empresa'}</div>
+                    <div className="font-bold text-blue-600">{profile?.companyName || profile?.name || 'Your Company'}</div>
                     {profile?.phone && <div>📞 {profile.phone}</div>}
                     {profile?.email && <div>📧 {profile.email}</div>}
                     {profile?.website && <div>🌐 {profile.website}</div>}
@@ -3731,35 +3731,35 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
             {emailData.sendCopy && (
               <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-500/30">
                 <div className="text-sm text-blue-300">
-                  ✅ Se enviará una copia a: {profile?.email || 'su correo'}
+                  ✅ A copy will be sent to: {profile?.email || 'your email'}
                 </div>
               </div>
             )}
           </div>
 
-          <DialogFooter className="flex gap-3 pt-6">
+          <DialogFooter className="flex flex-col sm:flex-row gap-3 pt-4 flex-shrink-0 border-t border-gray-700">
             <Button 
               variant="outline" 
               onClick={() => setShowEmailPreview(false)}
-              className="border-gray-600 text-gray-300 hover:bg-gray-800"
+              className="border-gray-600 text-gray-300 hover:bg-gray-800 w-full sm:w-auto"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Volver a Editar
+              Back to Edit
             </Button>
             <Button 
               onClick={sendEstimateEmail} 
               disabled={isSendingEmail}
-              className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white"
+              className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white w-full sm:w-auto"
             >
               {isSendingEmail ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Enviando...
+                  Sending...
                 </>
               ) : (
                 <>
                   <Send className="h-4 w-4 mr-2" />
-                  Enviar Correo Ahora
+                  Send Email Now
                 </>
               )}
             </Button>
