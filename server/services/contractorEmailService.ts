@@ -34,6 +34,8 @@ interface EmailResult {
  * Each contractor uses their own verified email as sender
  */
 export class ContractorEmailService {
+  private static pendingVerifications = new Map();
+  private static verifiedEmails: string[] = [];
   
   /**
    * Verify contractor email with SendGrid
@@ -56,13 +58,10 @@ export class ContractorEmailService {
 
       // Create verification token
       const verificationToken = require('crypto').randomBytes(32).toString('hex');
-      const verificationUrl = `${process.env.APP_URL || 'https://owlfence.replit.app'}/verify-email?token=${verificationToken}&email=${encodeURIComponent(contractorEmail)}`;
+      const verificationUrl = `${process.env.APP_URL || 'https://owlfence.replit.app'}/api/contractor-email/complete-verification?token=${verificationToken}&email=${encodeURIComponent(contractorEmail)}`;
       
       // Store pending verification (in production, use database)
-      if (!this.pendingVerifications) {
-        this.pendingVerifications = new Map();
-      }
-      this.pendingVerifications.set(verificationToken, {
+      ContractorEmailService.pendingVerifications.set(verificationToken, {
         email: contractorEmail,
         name: contractorName,
         timestamp: Date.now()
@@ -121,18 +120,17 @@ export class ContractorEmailService {
       // 2. Solo marcar como verificado cuando SendGrid confirme via webhook
       // 3. Nunca asumir que un email está verificado solo por existir
       
-      // Por ahora, solo emails específicamente verificados están permitidos
-      const verifiedEmails = [
-        // Lista de emails que han completado el proceso de verificación real
-        // Esta lista se actualizaría via webhook de SendGrid en producción
-      ];
+      // Verificar si el email está en la lista de emails verificados
+      const isVerified = ContractorEmailService.verifiedEmails.includes(email);
       
-      const isVerified = verifiedEmails.includes(email);
+      // Verificar si hay una verificación pendiente
+      const hasPendingVerification = Array.from(ContractorEmailService.pendingVerifications.values())
+        .some((verification: any) => verification.email === email);
       
       return {
-        verified: false, // Nunca verificado automáticamente
-        pending: false,  // No hay verificaciones pendientes sin proceso real
-        confirmedByProvider: false // Requiere confirmación real de SendGrid
+        verified: isVerified,
+        pending: hasPendingVerification && !isVerified,
+        confirmedByProvider: isVerified
       };
     } catch (error) {
       console.error('Error checking verification status:', error);
@@ -140,6 +138,63 @@ export class ContractorEmailService {
         verified: false,
         pending: false,
         confirmedByProvider: false
+      };
+    }
+  }
+
+  /**
+   * Complete email verification when user clicks the link
+   */
+  static async completeEmailVerification(token: string, email: string): Promise<{success: boolean, message?: string}> {
+    try {
+      // Verificar que el token existe y corresponde al email
+      const verification = ContractorEmailService.pendingVerifications.get(token);
+      
+      if (!verification) {
+        return {
+          success: false,
+          message: 'Invalid or expired verification token'
+        };
+      }
+      
+      if (verification.email !== email) {
+        return {
+          success: false,
+          message: 'Email mismatch for verification token'
+        };
+      }
+      
+      // Verificar que el token no ha expirado (24 horas)
+      const tokenAge = Date.now() - verification.timestamp;
+      const twentyFourHours = 24 * 60 * 60 * 1000;
+      
+      if (tokenAge > twentyFourHours) {
+        ContractorEmailService.pendingVerifications.delete(token);
+        return {
+          success: false,
+          message: 'Verification token has expired. Please request a new verification email.'
+        };
+      }
+      
+      // Marcar el email como verificado
+      if (!ContractorEmailService.verifiedEmails.includes(email)) {
+        ContractorEmailService.verifiedEmails.push(email);
+      }
+      
+      // Remover la verificación pendiente
+      ContractorEmailService.pendingVerifications.delete(token);
+      
+      console.log(`Email successfully verified: ${email}`);
+      
+      return {
+        success: true,
+        message: 'Email verified successfully! You can now send professional emails to clients.'
+      };
+    } catch (error) {
+      console.error('Error completing email verification:', error);
+      return {
+        success: false,
+        message: 'Failed to complete email verification'
       };
     }
   }
