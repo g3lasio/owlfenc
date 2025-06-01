@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import AppLayout from '../components/layout/AppLayout';
 import { collection, query, where, getDocs, addDoc, deleteDoc, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -95,6 +96,8 @@ export default function Materials() {
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
   const [deletingMaterial, setDeletingMaterial] = useState<Material | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
+  const [selectedMaterials, setSelectedMaterials] = useState<Set<string>>(new Set());
+  const [showBatchDeleteDialog, setShowBatchDeleteDialog] = useState(false);
 
   const [, navigate] = useLocation();
 
@@ -340,6 +343,70 @@ export default function Materials() {
   };
 
   /**
+   * Manejar selección de material individual
+   */
+  const toggleMaterialSelection = (materialId: string) => {
+    setSelectedMaterials(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(materialId)) {
+        newSet.delete(materialId);
+      } else {
+        newSet.add(materialId);
+      }
+      return newSet;
+    });
+  };
+
+  /**
+   * Seleccionar todos los materiales visibles
+   */
+  const toggleSelectAll = () => {
+    if (selectedMaterials.size === filteredMaterials.length) {
+      // Si todos están seleccionados, deseleccionar todos
+      setSelectedMaterials(new Set());
+    } else {
+      // Seleccionar todos los materiales visibles
+      setSelectedMaterials(new Set(filteredMaterials.map(m => m.id)));
+    }
+  };
+
+  /**
+   * Eliminar materiales seleccionados en lote
+   */
+  const deleteBatchMaterials = async () => {
+    if (!currentUser || selectedMaterials.size === 0) return;
+    
+    try {
+      const materialsToDelete = Array.from(selectedMaterials);
+      const deletePromises = materialsToDelete.map(materialId => {
+        const materialRef = doc(db, 'materials', materialId);
+        return deleteDoc(materialRef);
+      });
+      
+      await Promise.all(deletePromises);
+      
+      // Actualizar la lista de materiales
+      setMaterials(prev => prev.filter(m => !selectedMaterials.has(m.id)));
+      
+      // Limpiar selección
+      setSelectedMaterials(new Set());
+      setShowBatchDeleteDialog(false);
+      
+      toast({
+        title: "Materiales eliminados",
+        description: `Se han eliminado ${materialsToDelete.length} materiales correctamente.`
+      });
+    } catch (error) {
+      console.error('Error al eliminar materiales:', error);
+      toast({
+        title: "Error al eliminar",
+        description: "No se pudieron eliminar algunos materiales. Por favor, inténtalo de nuevo.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  /**
    * Manejar la subida de un archivo CSV
    */
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -492,6 +559,13 @@ export default function Materials() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12">
+                  <Checkbox 
+                    checked={selectedMaterials.size === filteredMaterials.length && filteredMaterials.length > 0}
+                    onCheckedChange={toggleSelectAll}
+                    aria-label="Seleccionar todos"
+                  />
+                </TableHead>
                 <TableHead>Material</TableHead>
                 <TableHead>Categoría</TableHead>
                 <TableHead>Unidad</TableHead>
@@ -503,6 +577,13 @@ export default function Materials() {
             <TableBody>
               {filteredMaterials.map((material) => (
                 <TableRow key={material.id}>
+                  <TableCell>
+                    <Checkbox 
+                      checked={selectedMaterials.has(material.id)}
+                      onCheckedChange={() => toggleMaterialSelection(material.id)}
+                      aria-label={`Seleccionar ${material.name}`}
+                    />
+                  </TableCell>
                   <TableCell>
                     <div>
                       <div className="font-medium">{material.name}</div>
@@ -692,6 +773,16 @@ export default function Materials() {
             </SelectContent>
           </Select>
           <div className="flex gap-2">
+            {selectedMaterials.size > 0 && (
+              <Button 
+                variant="destructive" 
+                onClick={() => setShowBatchDeleteDialog(true)}
+                className="flex-1 sm:flex-none"
+              >
+                <Trash className="mr-2 h-4 w-4" />
+                Eliminar ({selectedMaterials.size})
+              </Button>
+            )}
             <Button onClick={() => setShowAddDialog(true)} className="flex-1 sm:flex-none">
               <Plus className="mr-2 h-4 w-4" />
               <span className="hidden sm:inline">Agregar</span>
