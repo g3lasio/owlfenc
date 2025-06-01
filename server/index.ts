@@ -33,6 +33,7 @@ import emailRoutes from './routes/email-routes';
 import contractorEmailRoutes from './routes/contractor-email-routes';
 import securityRoutes from './routes/security-routes';
 import notificationsRoutes from './routes/notifications-routes';
+import integrationsRoutes from './routes/integrations-routes';
 
 // 🐒 SISTEMA PDFMONKEY - Único procesador profesional de PDFs
 import pdfRoutes from './routes/pdf-routes';
@@ -48,6 +49,7 @@ app.use('/api', emailRoutes);
 app.use('/api/contractor-email', contractorEmailRoutes);
 app.use('/api/security', securityRoutes);
 app.use('/api/notifications', notificationsRoutes);
+app.use('/api', integrationsRoutes);
 
 // 📄 Registrar sistema PDFMonkey único
 app.use('/api/pdf', pdfRoutes);
