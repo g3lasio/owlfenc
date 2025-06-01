@@ -180,10 +180,10 @@ export default function EstimatesWizardFixed() {
 
   // Smart Search Handler
   const handleSmartSearch = async () => {
-    if (!estimate.projectDetails.trim()) {
+    if (!estimate.projectDetails.trim() || estimate.projectDetails.trim().length < 10) {
       toast({
         title: 'Descripción requerida',
-        description: 'Por favor describe tu proyecto primero para usar Smart Search IA',
+        description: 'Por favor describe tu proyecto con al menos 10 caracteres para usar Smart Search IA',
         variant: 'destructive'
       });
       return;
@@ -2015,17 +2015,29 @@ export default function EstimatesWizardFixed() {
                     )}
                   </Button>
                 </div>
-                <Textarea
-                  id="projectDetails"
-                  placeholder="Describe los detalles completos del proyecto:&#10;&#10;• Alcance del trabajo y especificaciones técnicas&#10;• Cronograma y tiempo estimado&#10;• Proceso paso a paso del trabajo&#10;• Qué está incluido en el precio&#10;• Qué NO está incluido&#10;• Notas adicionales, términos especiales, condiciones..."
-                  value={estimate.projectDetails}
-                  onChange={(e) => setEstimate(prev => ({ ...prev, projectDetails: e.target.value }))}
-                  className="min-h-[120px] text-sm"
-                />
+                <div className="relative">
+                  <Textarea
+                    id="projectDetails"
+                    placeholder="Describe los detalles completos del proyecto:&#10;&#10;• Alcance del trabajo y especificaciones técnicas&#10;• Cronograma y tiempo estimado&#10;• Proceso paso a paso del trabajo&#10;• Qué está incluido en el precio&#10;• Qué NO está incluido&#10;• Notas adicionales, términos especiales, condiciones..."
+                    value={estimate.projectDetails}
+                    onChange={(e) => setEstimate(prev => ({ ...prev, projectDetails: e.target.value }))}
+                    className="min-h-[120px] text-sm"
+                  />
+                  {/* Contador de caracteres para Smart Search */}
+                  <div className={`absolute bottom-2 right-2 text-xs px-2 py-1 rounded ${
+                    estimate.projectDetails.trim().length >= 10 
+                      ? 'bg-green-100 text-green-700 border border-green-300' 
+                      : 'bg-orange-100 text-orange-700 border border-orange-300'
+                  }`}>
+                    {estimate.projectDetails.trim().length >= 10 
+                      ? '✓ Smart Search disponible' 
+                      : `${10 - estimate.projectDetails.trim().length} chars más para Smart Search`}
+                  </div>
+                </div>
                 <div className="flex items-start gap-2 mt-2 p-3 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
                   <Brain className="h-4 w-4 text-purple-600 mt-0.5 flex-shrink-0" />
                   <p className="text-xs text-purple-700">
-                    <strong>💡 Tip:</strong> Escribe una descripción básica de tu proyecto y usa <strong>"Enhance with Mervin AI"</strong> para generar automáticamente una descripción profesional completa con todos los detalles técnicos necesarios para el estimado.
+                    <strong>Tip:</strong> Escribe una descripción básica de tu proyecto y usa <strong>"Enhance with Mervin AI"</strong> para generar automáticamente una descripción profesional completa con todos los detalles técnicos necesarios para el estimado.
                   </p>
                 </div>
               </div>
@@ -2046,7 +2058,7 @@ export default function EstimatesWizardFixed() {
                   {/* Smart Search IA - Interfaz Futurista Tony Stark */}
                   <div className="relative">
                     <button 
-                      disabled={!estimate.projectDetails.trim() || isAIProcessing}
+                      disabled={!estimate.projectDetails.trim() || estimate.projectDetails.trim().length < 10 || isAIProcessing}
                       className={`
                         relative overflow-hidden px-3 sm:px-4 py-2 w-full sm:min-w-[160px] text-sm font-medium transition-all duration-300
                         bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900
