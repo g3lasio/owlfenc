@@ -92,49 +92,48 @@ export default function Settings() {
         
         <Tabs defaultValue="account" className="space-y-6">
           {/* Mobile-First Tab Navigation */}
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-blue-500/5 blur-lg"></div>
-            <TabsList className="relative grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-1 md:gap-2 p-1 bg-slate-900/80 backdrop-blur border border-cyan-400/30">
+          <div className="relative mb-6">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 p-2 bg-slate-900/80 backdrop-blur border border-cyan-400/30">
               <TabsTrigger 
                 value="account" 
-                className="flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 md:p-3 text-xs md:text-sm bg-slate-800/50 border border-slate-700/50 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/50 data-[state=active]:text-cyan-300 hover:bg-slate-700/50 transition-all duration-300"
+                className="flex items-center justify-center gap-2 p-3 text-sm bg-slate-800/50 border border-slate-700/50 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/50 data-[state=active]:text-cyan-300 hover:bg-slate-700/50 transition-all duration-300"
               >
-                <Settings2 className="h-3 w-3 md:h-4 md:w-4" />
+                <Settings2 className="h-4 w-4" />
                 <span className="hidden sm:inline">Account</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="billing" 
-                className="flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 md:p-3 text-xs md:text-sm bg-slate-800/50 border border-slate-700/50 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/50 data-[state=active]:text-cyan-300 hover:bg-slate-700/50 transition-all duration-300"
+                className="flex items-center justify-center gap-2 p-3 text-sm bg-slate-800/50 border border-slate-700/50 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/50 data-[state=active]:text-cyan-300 hover:bg-slate-700/50 transition-all duration-300"
               >
-                <CreditCard className="h-3 w-3 md:h-4 md:w-4" />
+                <CreditCard className="h-4 w-4" />
                 <span className="hidden sm:inline">Billing</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="notifications" 
-                className="flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 md:p-3 text-xs md:text-sm bg-slate-800/50 border border-slate-700/50 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/50 data-[state=active]:text-cyan-300 hover:bg-slate-700/50 transition-all duration-300"
+                className="flex items-center justify-center gap-2 p-3 text-sm bg-slate-800/50 border border-slate-700/50 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/50 data-[state=active]:text-cyan-300 hover:bg-slate-700/50 transition-all duration-300"
               >
-                <Bell className="h-3 w-3 md:h-4 md:w-4" />
+                <Bell className="h-4 w-4" />
                 <span className="hidden sm:inline">Alerts</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="business" 
-                className="flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 md:p-3 text-xs md:text-sm bg-slate-800/50 border border-slate-700/50 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/50 data-[state=active]:text-cyan-300 hover:bg-slate-700/50 transition-all duration-300"
+                className="flex items-center justify-center gap-2 p-3 text-sm bg-slate-800/50 border border-slate-700/50 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/50 data-[state=active]:text-cyan-300 hover:bg-slate-700/50 transition-all duration-300"
               >
-                <Building2 className="h-3 w-3 md:h-4 md:w-4" />
+                <Building2 className="h-4 w-4" />
                 <span className="hidden sm:inline">Business</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="integrations" 
-                className="flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 md:p-3 text-xs md:text-sm bg-slate-800/50 border border-slate-700/50 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/50 data-[state=active]:text-cyan-300 hover:bg-slate-700/50 transition-all duration-300"
+                className="flex items-center justify-center gap-2 p-3 text-sm bg-slate-800/50 border border-slate-700/50 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/50 data-[state=active]:text-cyan-300 hover:bg-slate-700/50 transition-all duration-300"
               >
-                <Database className="h-3 w-3 md:h-4 md:w-4" />
+                <Database className="h-4 w-4" />
                 <span className="hidden sm:inline">Connect</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="security" 
-                className="flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 md:p-3 text-xs md:text-sm bg-slate-800/50 border border-slate-700/50 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/50 data-[state=active]:text-cyan-300 hover:bg-slate-700/50 transition-all duration-300"
+                className="flex items-center justify-center gap-2 p-3 text-sm bg-slate-800/50 border border-slate-700/50 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/50 data-[state=active]:text-cyan-300 hover:bg-slate-700/50 transition-all duration-300"
               >
-                <Shield className="h-3 w-3 md:h-4 md:w-4" />
+                <Shield className="h-4 w-4" />
                 <span className="hidden sm:inline">Security</span>
               </TabsTrigger>
             </TabsList>
@@ -249,43 +248,34 @@ export default function Settings() {
                 <CardContent className="space-y-6">
                   {/* Current Plan */}
                   <div className="relative p-4 md:p-6 bg-gradient-to-r from-cyan-500/20 via-blue-500/10 to-purple-500/20 rounded-lg border border-cyan-400/50 backdrop-blur-sm">
-                    {/* Arc Reactor Effect */}
-                    <div className="absolute top-2 right-2 w-3 h-3 bg-cyan-400 rounded-full animate-pulse shadow-cyan-400/50 shadow-lg"></div>
-                    
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-4">
                       <div>
-                        <h3 className="text-xl md:text-2xl font-bold text-cyan-300 mb-1">PREMIUM PLAN</h3>
-                        <p className="text-slate-300 text-sm md:text-base">Full access to all features</p>
+                        <h3 className="text-xl md:text-2xl font-bold text-cyan-300 mb-1">SUBSCRIPTION PLAN</h3>
+                        <p className="text-slate-300 text-sm md:text-base">Manage your subscription details</p>
                       </div>
-                      <Badge className="bg-green-500/20 border-green-400/50 text-green-300 text-xs md:text-sm px-3 py-1">
-                        ACTIVE
-                      </Badge>
                     </div>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                       <div className="text-center sm:text-left">
                         <p className="text-xs md:text-sm text-slate-400 uppercase tracking-wide">Monthly Price</p>
-                        <p className="text-xl md:text-2xl font-bold text-cyan-300">$49.99</p>
+                        <p className="text-xl md:text-2xl font-bold text-slate-400">Not Set</p>
                       </div>
                       <div className="text-center sm:text-left">
                         <p className="text-xs md:text-sm text-slate-400 uppercase tracking-wide">Next Billing</p>
-                        <p className="font-semibold text-slate-200">Dec 15, 2024</p>
+                        <p className="font-semibold text-slate-400">Not Scheduled</p>
                       </div>
                       <div className="text-center sm:text-left">
                         <p className="text-xs md:text-sm text-slate-400 uppercase tracking-wide">Payment Method</p>
-                        <p className="font-semibold text-slate-200">•••• 4242</p>
+                        <p className="font-semibold text-slate-400">Not Added</p>
                       </div>
                     </div>
                     
                     <div className="flex flex-col sm:flex-row gap-2 md:gap-3">
                       <Button variant="outline" className="bg-slate-800/50 border-cyan-400/50 text-cyan-300 hover:bg-cyan-400/10 hover:border-cyan-400 text-xs md:text-sm">
-                        Change Plan
+                        View Plans
                       </Button>
                       <Button variant="outline" className="bg-slate-800/50 border-cyan-400/50 text-cyan-300 hover:bg-cyan-400/10 hover:border-cyan-400 text-xs md:text-sm">
-                        Update Payment
-                      </Button>
-                      <Button variant="outline" className="bg-slate-800/50 border-red-400/50 text-red-300 hover:bg-red-400/10 hover:border-red-400 text-xs md:text-sm">
-                        Cancel
+                        Add Payment Method
                       </Button>
                     </div>
                   </div>
@@ -294,18 +284,12 @@ export default function Settings() {
                   <div>
                     <h3 className="text-lg font-semibold mb-3 text-cyan-300 uppercase tracking-wide">Payment Methods</h3>
                     <div className="space-y-3">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-slate-800/30 border border-slate-700/50 rounded-lg hover:border-cyan-400/30 transition-all duration-300">
-                        <div className="flex items-center gap-3">
-                          <CreditCard className="h-5 w-5 text-cyan-400" />
-                          <div>
-                            <p className="font-medium text-slate-200">Visa ending in 4242</p>
-                            <p className="text-sm text-slate-400">Expires 12/2027</p>
-                          </div>
-                          <Badge className="bg-cyan-500/20 border-cyan-400/50 text-cyan-300 text-xs">Default</Badge>
+                      <div className="flex flex-col items-center justify-center gap-3 p-8 bg-slate-800/30 border border-slate-700/50 rounded-lg">
+                        <CreditCard className="h-12 w-12 text-slate-500" />
+                        <div className="text-center">
+                          <p className="font-medium text-slate-400 mb-1">No payment methods added</p>
+                          <p className="text-sm text-slate-500">Add a payment method to manage your subscription</p>
                         </div>
-                        <Button variant="ghost" size="sm" className="text-cyan-300 hover:bg-cyan-400/10">
-                          Edit
-                        </Button>
                       </div>
                       
                       <Button variant="outline" className="w-full bg-slate-800/50 border-cyan-400/50 text-cyan-300 hover:bg-cyan-400/10 hover:border-cyan-400">
@@ -325,30 +309,12 @@ export default function Settings() {
                       </Button>
                     </div>
                     
-                    <div className="space-y-2">
-                      {[
-                        { date: "Nov 15, 2024", amount: "$49.99", status: "Paid", invoice: "INV-001" },
-                        { date: "Oct 15, 2024", amount: "$49.99", status: "Paid", invoice: "INV-002" },
-                        { date: "Sep 15, 2024", amount: "$49.99", status: "Paid", invoice: "INV-003" },
-                      ].map((bill, i) => (
-                        <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-slate-800/30 border border-slate-700/50 rounded-lg hover:border-cyan-400/30 transition-all duration-300">
-                          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-                            <div>
-                              <p className="font-medium text-slate-200 text-sm md:text-base">{bill.date}</p>
-                              <p className="text-xs md:text-sm text-slate-400">{bill.invoice}</p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <p className="font-semibold text-cyan-300">{bill.amount}</p>
-                              <Badge className="bg-green-500/20 border-green-400/50 text-green-300 text-xs">
-                                {bill.status}
-                              </Badge>
-                            </div>
-                          </div>
-                          <Button variant="ghost" size="sm" className="text-cyan-300 hover:bg-cyan-400/10 self-end sm:self-center">
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
+                    <div className="flex flex-col items-center justify-center gap-3 p-8 bg-slate-800/30 border border-slate-700/50 rounded-lg">
+                      <FileText className="h-12 w-12 text-slate-500" />
+                      <div className="text-center">
+                        <p className="font-medium text-slate-400 mb-1">No billing history</p>
+                        <p className="text-sm text-slate-500">Your billing transactions will appear here</p>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
