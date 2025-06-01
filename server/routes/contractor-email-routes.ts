@@ -4,6 +4,32 @@ import { ContractorEmailService } from '../services/contractorEmailService.js';
 const router = express.Router();
 
 /**
+ * Test SendGrid configuration
+ * GET /api/contractor-email/test-config
+ */
+router.get('/test-config', async (req, res) => {
+  try {
+    const hasApiKey = !!process.env.SENDGRID_API_KEY;
+    const apiKeyLength = process.env.SENDGRID_API_KEY ? process.env.SENDGRID_API_KEY.length : 0;
+    
+    res.json({
+      success: true,
+      config: {
+        hasApiKey,
+        apiKeyLength,
+        apiKeyPrefix: process.env.SENDGRID_API_KEY ? process.env.SENDGRID_API_KEY.substring(0, 10) + '...' : 'Not set'
+      }
+    });
+  } catch (error) {
+    console.error('Error checking SendGrid config:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error checking configuration'
+    });
+  }
+});
+
+/**
  * Verify contractor email with SendGrid
  * POST /api/contractor-email/verify
  */

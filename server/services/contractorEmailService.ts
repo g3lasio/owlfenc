@@ -46,7 +46,11 @@ export class ContractorEmailService {
 
       console.log(`Sending real verification email to: ${contractorEmail}`);
       
-      // Initialize SendGrid
+      // Initialize SendGrid with detailed logging
+      console.log(`Initializing SendGrid for email: ${contractorEmail}`);
+      console.log(`API Key present: ${!!process.env.SENDGRID_API_KEY}`);
+      console.log(`API Key length: ${process.env.SENDGRID_API_KEY?.length || 0}`);
+      
       const sgMail = require('@sendgrid/mail');
       sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
@@ -113,9 +117,30 @@ export class ContractorEmailService {
       };
     } catch (error: any) {
       console.error('Error sending verification email:', error);
+      console.error('SendGrid error details:', {
+        code: error.code,
+        message: error.message,
+        response: error.response?.body
+      });
+      
+      // Provide specific error messages based on SendGrid response
+      if (error.code === 401) {
+        return {
+          success: false,
+          message: 'SendGrid API key is invalid or unauthorized. Please check your API key configuration.'
+        };
+      }
+      
+      if (error.code === 403) {
+        return {
+          success: false,
+          message: 'SendGrid sender email not verified. Please verify mervin@owlfenc.com in SendGrid settings.'
+        };
+      }
+      
       return {
         success: false,
-        message: 'Failed to send verification email. Please ensure SendGrid is properly configured.'
+        message: `Failed to send verification email: ${error.message || 'Unknown error'}`
       };
     }
   }
