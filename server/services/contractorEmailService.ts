@@ -64,7 +64,7 @@ export class ContractorEmailService {
       const verificationEmail = {
         to: contractorEmail,
         from: {
-          email: 'noreply@owlfenc.com',
+          email: 'noreply@owlfence.replit.app',
           name: 'Owl Fence Email Verification'
         },
         subject: 'Verify Your Email Address - Owl Fence',
@@ -221,11 +221,22 @@ export class ContractorEmailService {
         },
         replyTo: contractorEmail,
         subject: template.subject,
-        html: this.addMervinSignature(template.html),
+        html: ContractorEmailService.addMervinSignature(template.html),
         text: template.text + '\n\n---\nPowered by Mervin AI - Professional contractor solutions'
       };
 
-      await mailService.send(clientMessage);
+      // Initialize SendGrid for this method
+      if (!process.env.SENDGRID_API_KEY) {
+        return {
+          success: false,
+          message: 'SendGrid API key not configured'
+        };
+      }
+
+      const sgMail = require('@sendgrid/mail');
+      sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+      await sgMail.send(clientMessage);
 
       // Send copy to contractor if requested
       if (sendCopy) {
@@ -242,12 +253,12 @@ export class ContractorEmailService {
               <p style="margin: 0; color: #1e40af;"><strong>📧 Copy of email sent to your client</strong></p>
               <p style="margin: 5px 0 0 0; color: #64748b;">Sent to: ${clientName} (${clientEmail})</p>
             </div>
-            ${this.addMervinSignature(template.html)}
+            ${ContractorEmailService.addMervinSignature(template.html)}
           `,
           text: `COPY of email sent to ${clientName} (${clientEmail})\n\n${template.text}`
         };
 
-        await mailService.send(copyMessage);
+        await sgMail.send(copyMessage);
       }
 
       return {
