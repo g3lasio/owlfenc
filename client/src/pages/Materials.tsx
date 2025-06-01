@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { AlertCircle, FileUp, Plus, Search, Trash } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -14,13 +13,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogClose
 } from '@/components/ui/dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '../components/layout/AppLayout';
-import { collection, query, where, getDocs, addDoc, deleteDoc, doc, serverTimestamp, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, deleteDoc, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useLocation } from 'wouter';
 import { useAuth } from '../contexts/AuthContext';
@@ -96,7 +94,6 @@ export default function Materials() {
   });
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
   const [deletingMaterial, setDeletingMaterial] = useState<Material | null>(null);
-  const [activeTab, setActiveTab] = useState('todos');
   const [categories, setCategories] = useState<string[]>([]);
 
   const [, navigate] = useLocation();
@@ -114,7 +111,7 @@ export default function Materials() {
   // Filtrar materiales cuando cambia el término de búsqueda o la categoría
   useEffect(() => {
     filterMaterials();
-  }, [materials, searchTerm, selectedCategory, activeTab]);
+  }, [materials, searchTerm, selectedCategory]);
 
   /**
    * Cargar materiales desde Firestore
@@ -188,7 +185,6 @@ export default function Materials() {
     if (selectedCategory && selectedCategory !== 'todas') {
       filtered = filtered.filter(m => m.category === selectedCategory);
     }
-    
     
     setFilteredMaterials(filtered);
   };
@@ -485,6 +481,159 @@ export default function Materials() {
     setShowDeleteDialog(true);
   };
 
+  /**
+   * Renderizar la tabla de materiales
+   */
+  const renderMaterialsTable = () => {
+    return (
+      <div className="space-y-4">
+        {/* Vista de tabla para pantallas grandes */}
+        <div className="hidden md:block">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Material</TableHead>
+                <TableHead>Categoría</TableHead>
+                <TableHead>Unidad</TableHead>
+                <TableHead>Precio</TableHead>
+                <TableHead>Proveedor</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredMaterials.map((material) => (
+                <TableRow key={material.id}>
+                  <TableCell>
+                    <div>
+                      <div className="font-medium">{material.name}</div>
+                      {material.description && (
+                        <div className="text-sm text-muted-foreground">{material.description}</div>
+                      )}
+                      {material.sku && (
+                        <div className="text-xs text-muted-foreground">SKU: {material.sku}</div>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
+                      {material.category}
+                    </span>
+                  </TableCell>
+                  <TableCell>{material.unit}</TableCell>
+                  <TableCell>{formatPrice(material.price)}</TableCell>
+                  <TableCell>
+                    {material.supplier && (
+                      <div className="text-sm">
+                        {material.supplierLink ? (
+                          <a
+                            href={material.supplierLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline"
+                          >
+                            {material.supplier}
+                          </a>
+                        ) : (
+                          material.supplier
+                        )}
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openEditDialog(material)}
+                      >
+                        Editar
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => openDeleteDialog(material)}
+                      >
+                        <Trash className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* Vista de tarjetas para móviles */}
+        <div className="md:hidden space-y-4">
+          {filteredMaterials.map((material) => (
+            <Card key={material.id}>
+              <CardContent className="p-4">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h3 className="font-medium">{material.name}</h3>
+                      {material.description && (
+                        <p className="text-sm text-muted-foreground mt-1">{material.description}</p>
+                      )}
+                      {material.sku && (
+                        <p className="text-xs text-muted-foreground">SKU: {material.sku}</p>
+                      )}
+                    </div>
+                    <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
+                      {material.category}
+                    </span>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-muted-foreground text-xs uppercase tracking-wide block mb-1">Precio</span>
+                      <span className="font-medium">{formatPrice(material.price)}</span>
+                      <span className="text-muted-foreground ml-1">por {material.unit}</span>
+                    </div>
+                    {material.supplier && (
+                      <div>
+                        <span className="text-muted-foreground text-xs uppercase tracking-wide block mb-1">Proveedor</span>
+                        {material.supplierLink ? (
+                          <a
+                            href={material.supplierLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline text-sm"
+                          >
+                            {material.supplier}
+                          </a>
+                        ) : (
+                          <span className="text-sm">{material.supplier}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openEditDialog(material)}
+                    >
+                      Editar
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => openDeleteDialog(material)}
+                    >
+                      <Trash className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <AppLayout>
       <div className="container mx-auto px-4 py-6 max-w-7xl">
@@ -518,106 +667,84 @@ export default function Materials() {
           </p>
         </div>
 
-        {/* Barra de acciones optimizada responsive */}
-        <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4 mb-6">
-          {/* Controles de búsqueda y filtrado */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 max-w-2xl">
-            <div className="relative flex-1 min-w-0">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-              <Input
-                type="search"
-                placeholder="Buscar por nombre, SKU, proveedor..."
-                className="pl-10 h-10"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            
-            <Select
-              value={selectedCategory}
-              onValueChange={setSelectedCategory}
-            >
-              <SelectTrigger className="w-full sm:w-48 h-10">
-                <SelectValue placeholder="Todas las categorías" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas las categorías</SelectItem>
-                {categories.map((category) => (
-                  <SelectItem key={category} value={category || "categoria_sin_nombre"}>
-                    {category || "Categoría sin nombre"}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {/* Controles de búsqueda y filtrado optimizados */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar materiales..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
           </div>
-          
-          {/* Botones de acción */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:w-auto">
-            <Button 
-              variant="outline" 
-              className="relative h-10 flex-1 sm:flex-none" 
-              disabled={isUploading}
-            >
-              <FileUp className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Importar CSV</span>
-              <span className="sm:hidden">Importar</span>
-              <Input
-                type="file"
-                accept=".csv"
-                className="absolute inset-0 opacity-0 cursor-pointer"
-                onChange={handleFileUpload}
-                disabled={isUploading}
-              />
-            </Button>
-            
-            <Button onClick={() => setShowAddDialog(true)} className="h-10 flex-1 sm:flex-none">
+          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <SelectTrigger className="w-full sm:w-48">
+              <SelectValue placeholder="Todas las categorías" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Todas las categorías</SelectItem>
+              {categories.map((category) => (
+                <SelectItem key={category} value={category}>
+                  {category}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex gap-2">
+            <Button onClick={() => setShowAddDialog(true)} className="flex-1 sm:flex-none">
               <Plus className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Agregar Material</span>
-              <span className="sm:hidden">Agregar</span>
+              <span className="hidden sm:inline">Agregar</span>
+              <span className="sm:hidden">Nuevo</span>
+            </Button>
+            <Button variant="outline" asChild className="flex-1 sm:flex-none">
+              <label className="cursor-pointer">
+                <FileUp className="mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Importar</span>
+                <span className="sm:hidden">CSV</span>
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={handleFileUpload}
+                  disabled={isUploading}
+                  className="hidden"
+                />
+              </label>
             </Button>
           </div>
         </div>
 
         {/* Sección principal de materiales */}
         <div className="w-full mb-6">
-          
-          <TabsContent value="todos">
-            <Card>
-              <CardHeader className="py-4">
-                <CardTitle>Inventario Completo</CardTitle>
-                <CardDescription>
-                  {filteredMaterials.length} materiales disponibles
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {renderMaterialsTable()}
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-            <Card>
-              <CardHeader className="py-4">
-                <CardDescription>
-                  Materiales que requieren reabastecimiento
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {filteredMaterials.length === 0 ? (
-                  <Alert>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                    </AlertDescription>
-                  </Alert>
-                ) : (
-                  renderMaterialsTable()
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+          <Card>
+            <CardHeader className="py-4">
+              <CardTitle>Inventario Completo</CardTitle>
+              <CardDescription>
+                {filteredMaterials.length} materiales disponibles
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : filteredMaterials.length === 0 ? (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Sin materiales</AlertTitle>
+                  <AlertDescription>
+                    No hay materiales que coincidan con los filtros actuales.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                renderMaterialsTable()
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
-      {/* Dialog para agregar material optimizado responsive */}
+      {/* Dialog para agregar material */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -650,8 +777,8 @@ export default function Materials() {
                   </SelectTrigger>
                   <SelectContent>
                     {COMMON_CATEGORIES.map((category) => (
-                      <SelectItem key={category} value={category || "categoria_sin_nombre"}>
-                        {category || "Categoría sin nombre"}
+                      <SelectItem key={category} value={category}>
+                        {category}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -669,7 +796,7 @@ export default function Materials() {
               />
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="unit" className="required">Unidad</Label>
                 <Select
@@ -677,12 +804,12 @@ export default function Materials() {
                   onValueChange={(value) => setNewMaterial({...newMaterial, unit: value})}
                 >
                   <SelectTrigger id="unit">
-                    <SelectValue placeholder="Selecciona unidad" />
+                    <SelectValue placeholder="Selecciona una unidad" />
                   </SelectTrigger>
                   <SelectContent>
                     {COMMON_UNITS.map((unit) => (
-                      <SelectItem key={unit} value={unit || "unidad_default"}>
-                        {unit || "Unidad predeterminada"}
+                      <SelectItem key={unit} value={unit}>
+                        {unit}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -690,30 +817,30 @@ export default function Materials() {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="price" className="required">Precio</Label>
+                <Label htmlFor="price">Precio</Label>
                 <Input
                   id="price"
                   type="number"
-                  min="0"
                   step="0.01"
+                  min="0"
                   placeholder="0.00"
                   value={newMaterial.price || ''}
                   onChange={(e) => setNewMaterial({...newMaterial, price: parseFloat(e.target.value) || 0})}
                 />
               </div>
-              
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="sku">SKU / Código</Label>
+                <Label htmlFor="sku">SKU</Label>
                 <Input
                   id="sku"
-                  placeholder="HD-123456"
+                  placeholder="ABC-123"
                   value={newMaterial.sku || ''}
                   onChange={(e) => setNewMaterial({...newMaterial, sku: e.target.value})}
                 />
               </div>
-            </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              
               <div className="space-y-2">
                 <Label htmlFor="supplier">Proveedor</Label>
                 <Input
@@ -723,49 +850,34 @@ export default function Materials() {
                   onChange={(e) => setNewMaterial({...newMaterial, supplier: e.target.value})}
                 />
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="supplierLink">URL Proveedor</Label>
-                <Input
-                  id="supplierLink"
-                  placeholder="https://www.homedepot.com/p/123456"
-                  value={newMaterial.supplierLink || ''}
-                  onChange={(e) => setNewMaterial({...newMaterial, supplierLink: e.target.value})}
-                />
-              </div>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Input
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="0"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Input
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="0"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="supplierLink">Enlace del Proveedor</Label>
+              <Input
+                id="supplierLink"
+                type="url"
+                placeholder="https://www.homedepot.com/..."
+                value={newMaterial.supplierLink || ''}
+                onChange={(e) => setNewMaterial({...newMaterial, supplierLink: e.target.value})}
+              />
             </div>
           </div>
           
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancelar</Button>
-            <Button onClick={saveMaterial}>Guardar Material</Button>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2">
+            <DialogClose asChild>
+              <Button variant="outline" className="w-full sm:w-auto">Cancelar</Button>
+            </DialogClose>
+            <Button onClick={saveMaterial} className="w-full sm:w-auto">
+              Agregar Material
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Dialog para editar material */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Material</DialogTitle>
             <DialogDescription>
@@ -822,7 +934,7 @@ export default function Materials() {
                 />
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="edit-unit" className="required">Unidad</Label>
                   <Select
@@ -830,18 +942,18 @@ export default function Materials() {
                     onValueChange={(value) => setEditingMaterial({...editingMaterial, unit: value})}
                   >
                     <SelectTrigger id="edit-unit">
-                      <SelectValue placeholder="Selecciona unidad" />
+                      <SelectValue placeholder="Selecciona una unidad" />
                     </SelectTrigger>
                     <SelectContent>
                       {COMMON_UNITS.map((unit) => (
-                        <SelectItem key={unit} value={unit || "unidad_default"}>
-                          {unit || "Unidad predeterminada"}
+                        <SelectItem key={unit} value={unit}>
+                          {unit}
                         </SelectItem>
                       ))}
                       {/* Incluir la unidad actual si no está en las comunes */}
                       {!COMMON_UNITS.includes(editingMaterial.unit) && editingMaterial.unit && (
-                        <SelectItem value={editingMaterial.unit || "unidad_default"}>
-                          {editingMaterial.unit || "Unidad predeterminada"}
+                        <SelectItem value={editingMaterial.unit}>
+                          {editingMaterial.unit}
                         </SelectItem>
                       )}
                     </SelectContent>
@@ -849,30 +961,30 @@ export default function Materials() {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="edit-price" className="required">Precio</Label>
+                  <Label htmlFor="edit-price">Precio</Label>
                   <Input
                     id="edit-price"
                     type="number"
-                    min="0"
                     step="0.01"
+                    min="0"
                     placeholder="0.00"
                     value={editingMaterial.price || ''}
                     onChange={(e) => setEditingMaterial({...editingMaterial, price: parseFloat(e.target.value) || 0})}
                   />
                 </div>
-                
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit-sku">SKU / Código</Label>
+                  <Label htmlFor="edit-sku">SKU</Label>
                   <Input
                     id="edit-sku"
-                    placeholder="HD-123456"
+                    placeholder="ABC-123"
                     value={editingMaterial.sku || ''}
                     onChange={(e) => setEditingMaterial({...editingMaterial, sku: e.target.value})}
                   />
                 </div>
-              </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                
                 <div className="space-y-2">
                   <Label htmlFor="edit-supplier">Proveedor</Label>
                   <Input
@@ -882,70 +994,51 @@ export default function Materials() {
                     onChange={(e) => setEditingMaterial({...editingMaterial, supplier: e.target.value})}
                   />
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="edit-supplierLink">URL Proveedor</Label>
-                  <Input
-                    id="edit-supplierLink"
-                    placeholder="https://www.homedepot.com/p/123456"
-                    value={editingMaterial.supplierLink || ''}
-                    onChange={(e) => setEditingMaterial({...editingMaterial, supplierLink: e.target.value})}
-                  />
-                </div>
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Input
-                    type="number"
-                    min="0"
-                    step="1"
-                    placeholder="0"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Input
-                    type="number"
-                    min="0"
-                    step="1"
-                    placeholder="0"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-supplierLink">Enlace del Proveedor</Label>
+                <Input
+                  id="edit-supplierLink"
+                  type="url"
+                  placeholder="https://www.homedepot.com/..."
+                  value={editingMaterial.supplierLink || ''}
+                  onChange={(e) => setEditingMaterial({...editingMaterial, supplierLink: e.target.value})}
+                />
               </div>
             </div>
           )}
           
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditDialog(false)}>Cancelar</Button>
-            <Button onClick={updateMaterial}>Actualizar Material</Button>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2">
+            <DialogClose asChild>
+              <Button variant="outline" className="w-full sm:w-auto">Cancelar</Button>
+            </DialogClose>
+            <Button onClick={updateMaterial} className="w-full sm:w-auto">
+              Actualizar Material
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Dialog para confirmar eliminación */}
+      {/* Dialog de confirmación para eliminar */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirmar Eliminación</DialogTitle>
+            <DialogTitle>¿Eliminar material?</DialogTitle>
             <DialogDescription>
-              ¿Estás seguro de que deseas eliminar este material? Esta acción no se puede deshacer.
+              {deletingMaterial && (
+                <>
+                  ¿Estás seguro de que quieres eliminar el material "<strong>{deletingMaterial.name}</strong>"? Esta acción no se puede deshacer.
+                </>
+              )}
             </DialogDescription>
           </DialogHeader>
           
-          {deletingMaterial && (
-            <div className="py-4">
-              <p className="font-semibold">{deletingMaterial.name}</p>
-              <p className="text-muted-foreground">
-                {deletingMaterial.category} • {formatPrice(deletingMaterial.price)} por {deletingMaterial.unit}
-              </p>
-            </div>
-          )}
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>Cancelar</Button>
-            <Button variant="destructive" onClick={deleteMaterial}>
-              <Trash className="mr-2 h-4 w-4" />
+          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2">
+            <DialogClose asChild>
+              <Button variant="outline" className="w-full sm:w-auto">Cancelar</Button>
+            </DialogClose>
+            <Button variant="destructive" onClick={deleteMaterial} className="w-full sm:w-auto">
               Eliminar
             </Button>
           </DialogFooter>
@@ -953,178 +1046,4 @@ export default function Materials() {
       </Dialog>
     </AppLayout>
   );
-
-  /**
-   * Renderizar tabla de materiales
-   */
-  function renderMaterialsTable() {
-    if (isLoading) {
-      return (
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
-      );
-    }
-    
-    if (filteredMaterials.length === 0) {
-      return (
-        <div className="py-8 text-center">
-          <p className="text-lg text-muted-foreground">No se encontraron materiales</p>
-          {searchTerm || selectedCategory ? (
-            <p className="text-sm text-muted-foreground mt-2">
-              Prueba a cambiar los filtros o añade nuevos materiales
-            </p>
-          ) : (
-            <Button className="mt-4" onClick={() => setShowAddDialog(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Agregar Material
-            </Button>
-          )}
-        </div>
-      );
-    }
-    
-    // Vista de escritorio: tabla completa
-    const desktopView = (
-      <div className="hidden md:block overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nombre</TableHead>
-              <TableHead>Categoría</TableHead>
-              <TableHead>Precio</TableHead>
-              <TableHead>SKU</TableHead>
-              <TableHead className="text-right">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredMaterials.map((material) => (
-              <TableRow key={material.id}>
-                <TableCell className="font-medium">{material.name}</TableCell>
-                <TableCell>{material.category}</TableCell>
-                <TableCell>{formatPrice(material.price)} / {material.unit}</TableCell>
-                <TableCell>
-                  <div className="flex items-center">
-                    <span className={`mr-2 ${
-                        ? 'text-destructive' 
-                        : ''
-                    }`}>
-                    </span>
-                    
-                      <AlertCircle className="h-4 w-4 text-destructive" />
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>{material.sku || 'N/A'}</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" onClick={() => openEditDialog(material)}>
-                    <span className="sr-only">Editar</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-                      <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
-                    </svg>
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => openDeleteDialog(material)}>
-                    <span className="sr-only">Eliminar</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-                      <path d="M3 6h18"></path>
-                      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                    </svg>
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    );
-
-    // Vista móvil: tarjetas optimizadas
-    const mobileView = (
-      <div className="grid grid-cols-1 gap-3 md:hidden">
-        {filteredMaterials.map((material) => (
-          <div key={material.id} className="bg-card border rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-            <div className="p-4">
-              {/* Header de la tarjeta */}
-              <div className="flex justify-between items-start mb-3">
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-base truncate">{material.name}</h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-full">
-                      {material.category}
-                    </span>
-                    {material.sku && (
-                      <span className="text-xs text-muted-foreground">
-                        {material.sku}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="flex space-x-1 ml-2">
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => openEditDialog(material)}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
-                    </svg>
-                  </Button>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive" onClick={() => openDeleteDialog(material)}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M3 6h18"></path>
-                      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                    </svg>
-                  </Button>
-                </div>
-              </div>
-              
-              {/* Información principal */}
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-muted-foreground text-xs uppercase tracking-wide block mb-1">Precio</span>
-                  <div className="font-semibold text-base">{formatPrice(material.price)}</div>
-                  <div className="text-xs text-muted-foreground">por {material.unit}</div>
-                </div>
-                <div>
-                  <div className="font-semibold text-base flex items-center">
-                    <span className={
-                        ? 'text-destructive' 
-                        : ''
-                    }>
-                    </span>
-                    
-                      <AlertCircle className="h-4 w-4 ml-2 text-destructive" />
-                    )}
-                  </div>
-                  )}
-                </div>
-              </div>
-              
-              {/* Información adicional */}
-              {(material.description || material.supplier) && (
-                <div className="mt-3 pt-3 border-t border-border/50">
-                  {material.description && (
-                    <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-                      {material.description}
-                    </p>
-                  )}
-                  {material.supplier && (
-                    <div className="text-xs">
-                      <span className="text-muted-foreground">Proveedor: </span>
-                      <span className="font-medium">{material.supplier}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-
-    return (
-      <>
-        {desktopView}
-        {mobileView}
-      </>
-    );
-  }
 }
