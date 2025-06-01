@@ -46,7 +46,10 @@ import {
   Mail,
   X,
   Wrench,
-  Combine
+  Combine,
+  ArrowLeft,
+  Eye,
+  Send
 } from 'lucide-react';
 
 // Types
@@ -179,6 +182,7 @@ export default function EstimatesWizardFixed() {
   
   // Email dialog states
   const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [showEmailPreview, setShowEmailPreview] = useState(false);
 
   // Función para evaluar la calidad de la descripción
   const evaluateProjectDescription = (description: string) => {
@@ -1657,36 +1661,44 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
     setShowEmailDialog(true);
   };
 
-  // Send email function
-  const sendEstimateEmail = async () => {
+  // Show email preview before sending
+  const showEmailPreviewDialog = () => {
     if (!emailData.toEmail || !emailData.subject || !emailData.message) {
       toast({
         title: 'Error', 
-        description: 'Por favor complete todos los campos requeridos',
+        description: 'Por favor complete todos los campos antes de previsualizar',
         variant: 'destructive'
       });
       return;
     }
+    setShowEmailPreview(true);
+  };
 
+  // Send email function
+  const sendEstimateEmail = async () => {
     setIsSendingEmail(true);
     
     try {
       // Generate the estimate HTML
       const estimateHtml = generateEstimatePreview();
       
-      // Send email with estimate
+      // Send email with estimate using SendGrid
       const response = await fetch('/api/send-estimate-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          to: emailData.toEmail,
-          subject: emailData.subject,
-          message: emailData.message,
+          clientEmail: emailData.toEmail,
+          clientName: estimate.client?.name || 'Cliente',
+          contractorName: profile?.company || 'Su Empresa',
+          contractorEmail: profile?.email || 'contacto@empresa.com',
+          estimateNumber: `EST-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`,
           estimateHtml: estimateHtml,
-          clientName: estimate.client.name,
-          companyName: profile?.company || 'Your Company',
-          companyEmail: profile?.email || '',
-          sendCopy: emailData.sendCopy
+          totalAmount: estimate.total,
+          projectDescription: estimate.projectDetails || 'Proyecto de construcción',
+          customSubject: emailData.subject,
+          customMessage: emailData.message,
+          sendCopy: emailData.sendCopy,
+          contractorProfile: profile
         })
       });
 
@@ -1694,11 +1706,12 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
 
       if (response.ok) {
         toast({
-          title: '✅ Email Enviado',
-          description: `El estimado fue enviado exitosamente a ${emailData.toEmail}`,
+          title: '✅ Email Enviado Exitosamente',
+          description: `Su estimado profesional fue enviado a ${emailData.toEmail}`,
           duration: 5000
         });
         setShowEmailDialog(false);
+        setShowEmailPreview(false);
       } else {
         throw new Error(result.error || 'Error al enviar el email');
       }
@@ -1706,7 +1719,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
       console.error('Error sending email:', error);
       toast({
         title: '❌ Error al Enviar',
-        description: 'No se pudo enviar el email. Por favor intente nuevamente.',
+        description: 'No se pudo enviar el email. Verifique la configuración de SendGrid.',
         variant: 'destructive',
         duration: 5000
       });
@@ -3630,19 +3643,125 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
               Cancel
             </Button>
             <Button 
-              onClick={sendEstimateEmail}
-              disabled={isSendingEmail || !emailData.toEmail || !emailData.subject || !emailData.message}
+              onClick={showEmailPreviewDialog}
+              disabled={!emailData.toEmail || !emailData.subject || !emailData.message}
               className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 min-w-[140px]"
+            >
+              <Eye className="h-4 w-4" />
+              Vista Previa
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Email Preview Dialog */}
+      <Dialog open={showEmailPreview} onOpenChange={setShowEmailPreview}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-900 via-black to-gray-900 border border-cyan-500/30">
+          <DialogHeader className="space-y-3">
+            <DialogTitle className="text-xl font-bold text-cyan-300 flex items-center gap-2">
+              <Eye className="h-5 w-5" />
+              Vista Previa del Correo Profesional
+            </DialogTitle>
+            <div className="text-sm text-gray-400">
+              Revise cómo se verá su correo antes de enviarlo al cliente
+            </div>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {/* Email Headers Preview */}
+            <div className="bg-gray-800/50 rounded-lg p-4 border border-cyan-500/20">
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-cyan-300 font-medium">Para:</span>
+                  <span className="text-white">{emailData.toEmail}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-cyan-300 font-medium">De:</span>
+                  <span className="text-white">{profile?.email || 'contacto@empresa.com'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-cyan-300 font-medium">Asunto:</span>
+                  <span className="text-white">{emailData.subject}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Email Content Preview */}
+            <div className="bg-white rounded-lg p-6 text-black">
+              <div className="space-y-4">
+                {/* Message Preview */}
+                <div className="whitespace-pre-wrap text-gray-800">
+                  {emailData.message}
+                </div>
+                
+                {/* Estimate Summary */}
+                <div className="border-t pt-4 mt-6">
+                  <h3 className="text-lg font-bold text-blue-600 mb-3">
+                    📊 Resumen del Estimado
+                  </h3>
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="font-medium">Cliente:</span> {estimate.client?.name}
+                      </div>
+                      <div>
+                        <span className="font-medium">Proyecto:</span> {estimate.projectDetails || 'Proyecto de construcción'}
+                      </div>
+                      <div>
+                        <span className="font-medium">Items:</span> {estimate.items.length} partidas
+                      </div>
+                      <div className="text-lg font-bold text-blue-600">
+                        <span className="font-medium">Total:</span> ${estimate.total.toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Company Signature */}
+                <div className="border-t pt-4 mt-6 text-gray-600">
+                  <div className="text-sm">
+                    <div className="font-bold text-blue-600">{profile?.company || 'Su Empresa'}</div>
+                    {profile?.phone && <div>📞 {profile.phone}</div>}
+                    {profile?.email && <div>📧 {profile.email}</div>}
+                    {profile?.website && <div>🌐 {profile.website}</div>}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Send Options */}
+            {emailData.sendCopy && (
+              <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-500/30">
+                <div className="text-sm text-blue-300">
+                  ✅ Se enviará una copia a: {profile?.email || 'su correo'}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="flex gap-3 pt-6">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowEmailPreview(false)}
+              className="border-gray-600 text-gray-300 hover:bg-gray-800"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Volver a Editar
+            </Button>
+            <Button 
+              onClick={sendEstimateEmail} 
+              disabled={isSendingEmail}
+              className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white"
             >
               {isSendingEmail ? (
                 <>
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                  Sending...
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Enviando...
                 </>
               ) : (
                 <>
-                  <Send className="h-4 w-4" />
-                  Send Estimate
+                  <Send className="h-4 w-4 mr-2" />
+                  Enviar Correo Ahora
                 </>
               )}
             </Button>

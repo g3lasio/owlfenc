@@ -20,7 +20,11 @@ router.post('/send-estimate-email', async (req, res) => {
       estimateNumber,
       estimateHtml,
       totalAmount,
-      projectDescription
+      projectDescription,
+      customSubject,
+      customMessage,
+      sendCopy,
+      contractorProfile
     } = req.body;
 
     if (!process.env.SENDGRID_API_KEY) {
