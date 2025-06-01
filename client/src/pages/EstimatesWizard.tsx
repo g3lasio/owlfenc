@@ -556,76 +556,103 @@ export default function EstimatesWizardFixed() {
       console.log('📥 Cargando estimados desde Firebase...');
 
       // Import Firebase functions
-      const { collection, query, where, orderBy, getDocs } = await import('firebase/firestore');
+      const { collection, query, where, getDocs } = await import('firebase/firestore');
       const { db } = await import('../lib/firebase');
 
-      // Load from Firebase estimates collection
-      const estimatesQuery = query(
-        collection(db, 'estimates'),
-        where('firebaseUserId', '==', currentUser.uid),
-        orderBy('createdAt', 'desc')
-      );
+      let allEstimates = [];
 
-      const estimatesSnapshot = await getDocs(estimatesQuery);
-      const firebaseEstimates = estimatesSnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          estimateNumber: data.estimateNumber || `EST-${doc.id.slice(-6)}`,
-          title: data.title || data.projectName || 'Estimado sin título',
-          clientName: data.clientName || 'Cliente sin nombre',
-          clientEmail: data.clientEmail || '',
-          total: data.total || data.estimateAmount || 0,
-          status: data.status || 'draft',
-          estimateDate: data.createdAt ? data.createdAt.toDate?.() || new Date(data.createdAt) : new Date(),
-          items: data.items || [],
-          projectType: data.projectType || data.fenceType || 'fence',
-          projectId: data.projectId || doc.id,
-          pdfUrl: data.pdfUrl || null
-        };
-      });
+      // Try loading from projects collection first (simpler query)
+      try {
+        const projectsQuery = query(
+          collection(db, 'projects'),
+          where('firebaseUserId', '==', currentUser.uid)
+        );
 
-      // Also check projects collection for estimates saved there
-      const projectsQuery = query(
-        collection(db, 'projects'),
-        where('firebaseUserId', '==', currentUser.uid),
-        where('status', '==', 'estimate'),
-        orderBy('createdAt', 'desc')
-      );
+        const projectsSnapshot = await getDocs(projectsQuery);
+        const projectEstimates = projectsSnapshot.docs
+          .filter(doc => {
+            const data = doc.data();
+            return data.status === 'estimate' || data.estimateNumber;
+          })
+          .map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              estimateNumber: data.estimateNumber || `EST-${doc.id.slice(-6)}`,
+              title: data.projectName || 'Estimado sin título',
+              clientName: data.clientInformation?.name || 'Cliente sin nombre',
+              clientEmail: data.clientInformation?.email || '',
+              total: data.projectTotalCosts?.total || 0,
+              status: data.status || 'estimate',
+              estimateDate: data.createdAt ? data.createdAt.toDate?.() || new Date(data.createdAt) : new Date(),
+              items: data.projectTotalCosts?.materialCosts?.items || [],
+              projectType: data.projectType || 'fence',
+              projectId: doc.id,
+              pdfUrl: data.pdfUrl || null
+            };
+          });
 
-      const projectsSnapshot = await getDocs(projectsQuery);
-      const projectEstimates = projectsSnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          estimateNumber: data.estimateNumber || `EST-${doc.id.slice(-6)}`,
-          title: data.projectName || 'Estimado sin título',
-          clientName: data.clientInformation?.name || 'Cliente sin nombre',
-          clientEmail: data.clientInformation?.email || '',
-          total: data.projectTotalCosts?.total || 0,
-          status: data.status || 'estimate',
-          estimateDate: data.createdAt ? data.createdAt.toDate?.() || new Date(data.createdAt) : new Date(),
-          items: data.projectTotalCosts?.materialCosts?.items || [],
-          projectType: data.projectType || 'fence',
-          projectId: doc.id,
-          pdfUrl: data.pdfUrl || null
-        };
-      });
+        allEstimates = [...allEstimates, ...projectEstimates];
+        console.log(`📊 Cargados ${projectEstimates.length} estimados desde proyectos`);
+      } catch (projectError) {
+        console.warn('No se pudieron cargar estimados desde proyectos:', projectError);
+      }
 
-      // Combine and deduplicate
-      const allEstimates = [...firebaseEstimates, ...projectEstimates];
-      const uniqueEstimates = allEstimates.filter((estimate, index, self) => 
-        index === self.findIndex(e => e.estimateNumber === estimate.estimateNumber)
-      );
+      // Try loading from estimates collection (if it exists)
+      try {
+        const estimatesQuery = query(
+          collection(db, 'estimates'),
+          where('firebaseUserId', '==', currentUser.uid)
+        );
+
+        const estimatesSnapshot = await getDocs(estimatesQuery);
+        const firebaseEstimates = estimatesSnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            estimateNumber: data.estimateNumber || `EST-${doc.id.slice(-6)}`,
+            title: data.title || data.projectName || 'Estimado sin título',
+            clientName: data.clientName || 'Cliente sin nombre',
+            clientEmail: data.clientEmail || '',
+            total: data.total || data.estimateAmount || 0,
+            status: data.status || 'draft',
+            estimateDate: data.createdAt ? data.createdAt.toDate?.() || new Date(data.createdAt) : new Date(),
+            items: data.items || [],
+            projectType: data.projectType || data.fenceType || 'fence',
+            projectId: data.projectId || doc.id,
+            pdfUrl: data.pdfUrl || null
+          };
+        });
+
+        allEstimates = [...allEstimates, ...firebaseEstimates];
+        console.log(`📋 Cargados ${firebaseEstimates.length} estimados adicionales`);
+      } catch (estimatesError) {
+        console.warn('No se pudieron cargar estimados desde colección estimates:', estimatesError);
+      }
+
+      // Deduplicate and sort
+      const uniqueEstimates = allEstimates
+        .filter((estimate, index, self) => 
+          index === self.findIndex(e => e.estimateNumber === estimate.estimateNumber)
+        )
+        .sort((a, b) => new Date(b.estimateDate).getTime() - new Date(a.estimateDate).getTime());
 
       setSavedEstimates(uniqueEstimates);
-      console.log(`✅ Cargados ${uniqueEstimates.length} estimados`);
+      console.log(`✅ Total: ${uniqueEstimates.length} estimados únicos cargados`);
+
+      if (uniqueEstimates.length === 0) {
+        toast({
+          title: 'Sin estimados',
+          description: 'No se encontraron estimados guardados. Crea tu primer estimado para verlo aquí.',
+          duration: 4000
+        });
+      }
 
     } catch (error) {
       console.error('❌ Error cargando estimados:', error);
       toast({
         title: 'Error al cargar estimados',
-        description: 'No se pudieron cargar los estimados guardados',
+        description: 'No se pudieron cargar los estimados guardados. Verifica tu conexión.',
         variant: 'destructive'
       });
     } finally {
