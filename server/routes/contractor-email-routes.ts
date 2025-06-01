@@ -278,16 +278,86 @@ router.post('/send-notification', async (req, res) => {
  * Check contractor email verification status
  * GET /api/contractor-email/status/:email
  */
+/**
+ * Verify contractor email with SendGrid
+ * POST /api/contractor-email/verify
+ */
+router.post('/verify', async (req, res) => {
+  try {
+    const { email, name } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+
+    const result = await ContractorEmailService.verifyContractorEmail(email, name || 'Contractor');
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'Verification email sent successfully'
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.message
+      });
+    }
+  } catch (error) {
+    console.error('Error in email verification:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+});
+
+/**
+ * Check email verification status
+ * POST /api/contractor-email/check-verification
+ */
+router.post('/check-verification', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+
+    const status = await ContractorEmailService.checkVerificationStatus(email);
+    
+    res.json({
+      success: true,
+      verified: status.verified,
+      pending: status.pending
+    });
+  } catch (error) {
+    console.error('Error checking verification status:', error);
+    res.status(500).json({
+      success: false,
+      verified: false,
+      pending: false
+    });
+  }
+});
+
 router.get('/status/:email', async (req, res) => {
   try {
     const { email } = req.params;
     
-    // In production, this would check SendGrid's API for verification status
-    // For now, we'll return a default response
+    const status = await ContractorEmailService.checkVerificationStatus(email);
+    
     res.json({
       success: true,
       email,
-      verified: false, // This would be checked against SendGrid's API
+      verified: status.verified,
+      pending: status.pending,
       message: 'Email verification status retrieved'
     });
 
