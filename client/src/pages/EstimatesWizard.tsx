@@ -925,9 +925,19 @@ export default function EstimatesWizardFixed() {
       return;
     }
 
+    if (!currentUser?.uid) {
+      toast({
+        title: 'Error de Autenticación',
+        description: 'Usuario no autenticado. Por favor, inicia sesión.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     try {
       const clientData = {
         clientId: `client_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+        userId: currentUser.uid, // Esta es la clave que faltaba
         name: newClient.name,
         email: newClient.email,
         phone: newClient.phone || '',
@@ -942,18 +952,24 @@ export default function EstimatesWizardFixed() {
         tags: []
       };
 
+      console.log('💾 Guardando nuevo cliente:', clientData);
       const savedClient = await saveClient(clientData);
+      console.log('✅ Cliente guardado exitosamente:', savedClient);
       
       const clientWithId = { 
         id: savedClient.id, 
         ...clientData,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        createdAt: savedClient.createdAt || new Date(),
+        updatedAt: savedClient.updatedAt || new Date()
       };
       
+      // Actualizar la lista local de clientes
       setClients(prev => [clientWithId, ...prev]);
+      
+      // Seleccionar el cliente recién creado
       setEstimate(prev => ({ ...prev, client: clientWithId }));
       
+      // Limpiar el formulario
       setNewClient({
         name: '',
         email: '',
@@ -964,18 +980,28 @@ export default function EstimatesWizardFixed() {
         zipCode: '',
         notes: ''
       });
+      
+      // Cerrar el diálogo
       setShowAddClientDialog(false);
       
       toast({
-        title: 'Cliente Creado',
-        description: `${clientData.name} ha sido creado y seleccionado`
+        title: '✅ Cliente Creado Exitosamente',
+        description: `${clientData.name} ha sido guardado y seleccionado para este estimado`,
+        duration: 4000
       });
+
+      // Forzar recarga de clientes para sincronizar
+      setTimeout(() => {
+        loadClients();
+      }, 1000);
+
     } catch (error) {
-      console.error('Error creating client:', error);
+      console.error('❌ Error creating client:', error);
       toast({
-        title: 'Error',
-        description: 'No se pudo crear el cliente',
-        variant: 'destructive'
+        title: 'Error al Crear Cliente',
+        description: error instanceof Error ? error.message : 'No se pudo crear el cliente. Verifica tu conexión e intenta nuevamente.',
+        variant: 'destructive',
+        duration: 6000
       });
     }
   };
@@ -1649,57 +1675,148 @@ export default function EstimatesWizardFixed() {
                       Nuevo Cliente
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Crear Nuevo Cliente</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="name">Nombre *</Label>
-                          <Input
-                            id="name"
-                            value={newClient.name}
-                            onChange={(e) => setNewClient(prev => ({ ...prev, name: e.target.value }))}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="email">Email *</Label>
-                          <Input
-                            id="email"
-                            type="email"
-                            value={newClient.email}
-                            onChange={(e) => setNewClient(prev => ({ ...prev, email: e.target.value }))}
-                          />
-                        </div>
+                  <DialogContent className="max-w-md sm:max-w-lg border-0 bg-transparent p-0 shadow-none">
+                    {/* Futuristic Sci-Fi Container */}
+                    <div className="relative bg-gradient-to-b from-slate-900/95 via-slate-800/98 to-slate-900/95 backdrop-blur-xl overflow-hidden">
+                      {/* Corner Brackets */}
+                      <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-cyan-400/60"></div>
+                      <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-cyan-400/60"></div>
+                      <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-cyan-400/60"></div>
+                      <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-cyan-400/60"></div>
+                      
+                      {/* Scanning Lines */}
+                      <div className="absolute inset-0 opacity-20">
+                        <div className="absolute top-4 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-pulse"></div>
+                        <div className="absolute bottom-4 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-400 to-transparent animate-pulse delay-500"></div>
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="phone">Teléfono</Label>
-                          <Input
-                            id="phone"
-                            value={newClient.phone}
-                            onChange={(e) => setNewClient(prev => ({ ...prev, phone: e.target.value }))}
-                          />
+                      
+                      {/* Arc Reactor Effect */}
+                      <div className="absolute top-4 right-4 w-4 h-4 rounded-full border-2 border-cyan-400 opacity-60">
+                        <div className="absolute inset-1 rounded-full bg-cyan-400/30 animate-pulse"></div>
+                        <div className="absolute inset-2 rounded-full bg-cyan-400 animate-ping"></div>
+                      </div>
+                      
+                      {/* Main Content */}
+                      <div className="relative p-6 space-y-6">
+                        {/* Header with Holographic Effect */}
+                        <div className="text-center pb-4 border-b border-cyan-400/20">
+                          <div className="text-xs font-mono text-cyan-400 mb-1 tracking-wider">CLIENT MATRIX</div>
+                          <div className="text-lg font-bold text-white">CREAR NUEVO CLIENTE</div>
+                          <div className="h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent mt-2"></div>
                         </div>
-                        <div>
-                          <Label htmlFor="address">Dirección</Label>
-                          <Input
-                            id="address"
-                            value={newClient.address}
-                            onChange={(e) => setNewClient(prev => ({ ...prev, address: e.target.value }))}
-                          />
+                        
+                        {/* Form Fields with Cyberpunk Styling */}
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="name" className="text-cyan-400 text-xs font-mono tracking-wide">
+                                NOMBRE [REQUIRED]
+                              </Label>
+                              <div className="relative group">
+                                <Input
+                                  id="name"
+                                  value={newClient.name}
+                                  onChange={(e) => setNewClient(prev => ({ ...prev, name: e.target.value }))}
+                                  className="
+                                    bg-slate-800/50 border-cyan-400/30 text-white placeholder:text-slate-400
+                                    focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50
+                                    transition-all duration-300
+                                  "
+                                  placeholder="John Doe"
+                                />
+                                <div className="absolute inset-0 rounded-md bg-gradient-to-r from-cyan-400/5 to-blue-400/5 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="email" className="text-cyan-400 text-xs font-mono tracking-wide">
+                                EMAIL [REQUIRED]
+                              </Label>
+                              <div className="relative group">
+                                <Input
+                                  id="email"
+                                  type="email"
+                                  value={newClient.email}
+                                  onChange={(e) => setNewClient(prev => ({ ...prev, email: e.target.value }))}
+                                  className="
+                                    bg-slate-800/50 border-cyan-400/30 text-white placeholder:text-slate-400
+                                    focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50
+                                    transition-all duration-300
+                                  "
+                                  placeholder="john@example.com"
+                                />
+                                <div className="absolute inset-0 rounded-md bg-gradient-to-r from-cyan-400/5 to-blue-400/5 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="phone" className="text-cyan-400 text-xs font-mono tracking-wide">
+                                TELÉFONO [OPTIONAL]
+                              </Label>
+                              <div className="relative group">
+                                <Input
+                                  id="phone"
+                                  value={newClient.phone}
+                                  onChange={(e) => setNewClient(prev => ({ ...prev, phone: e.target.value }))}
+                                  className="
+                                    bg-slate-800/50 border-cyan-400/30 text-white placeholder:text-slate-400
+                                    focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50
+                                    transition-all duration-300
+                                  "
+                                  placeholder="(555) 123-4567"
+                                />
+                                <div className="absolute inset-0 rounded-md bg-gradient-to-r from-cyan-400/5 to-blue-400/5 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="address" className="text-cyan-400 text-xs font-mono tracking-wide">
+                                DIRECCIÓN [OPTIONAL]
+                              </Label>
+                              <div className="relative group">
+                                <Input
+                                  id="address"
+                                  value={newClient.address}
+                                  onChange={(e) => setNewClient(prev => ({ ...prev, address: e.target.value }))}
+                                  className="
+                                    bg-slate-800/50 border-cyan-400/30 text-white placeholder:text-slate-400
+                                    focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50
+                                    transition-all duration-300
+                                  "
+                                  placeholder="123 Main St"
+                                />
+                                <div className="absolute inset-0 rounded-md bg-gradient-to-r from-cyan-400/5 to-blue-400/5 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Action Buttons with Cyberpunk Styling */}
+                        <div className="flex gap-3 pt-4 border-t border-cyan-400/20">
+                          <button
+                            onClick={() => setShowAddClientDialog(false)}
+                            className="
+                              flex-1 px-4 py-2 border border-red-400/40 bg-gradient-to-r from-red-500/10 to-red-600/10
+                              text-red-400 hover:text-red-300 hover:border-red-400/60 hover:bg-gradient-to-r hover:from-red-500/20 hover:to-red-600/20
+                              transition-all duration-300 rounded font-mono text-sm tracking-wide
+                            "
+                          >
+                            CANCELAR
+                          </button>
+                          <button
+                            onClick={createNewClient}
+                            className="
+                              flex-1 px-4 py-2 border border-green-400/40 bg-gradient-to-r from-green-500/10 to-green-600/10
+                              text-green-400 hover:text-green-300 hover:border-green-400/60 hover:bg-gradient-to-r hover:from-green-500/20 hover:to-green-600/20
+                              transition-all duration-300 rounded font-mono text-sm tracking-wide
+                              disabled:opacity-50 disabled:cursor-not-allowed
+                            "
+                            disabled={!newClient.name || !newClient.email}
+                          >
+                            CREAR CLIENTE
+                          </button>
                         </div>
                       </div>
                     </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setShowAddClientDialog(false)}>
-                        Cancelar
-                      </Button>
-                      <Button onClick={createNewClient}>
-                        Crear Cliente
-                      </Button>
-                    </DialogFooter>
                   </DialogContent>
                 </Dialog>
               </CardTitle>
