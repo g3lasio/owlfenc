@@ -1,13 +1,9 @@
 import { Router } from 'express';
-import { MailService } from '@sendgrid/mail';
+import { resendService } from '../services/resendService';
 
 const router = Router();
 
-// Initialize SendGrid
-const mailService = new MailService();
-if (process.env.SENDGRID_API_KEY) {
-  mailService.setApiKey(process.env.SENDGRID_API_KEY);
-}
+// Using Resend service
 
 // Send estimate email
 router.post('/send-estimate-email', async (req, res) => {
@@ -27,10 +23,10 @@ router.post('/send-estimate-email', async (req, res) => {
       contractorProfile
     } = req.body;
 
-    if (!process.env.SENDGRID_API_KEY) {
+    if (!process.env.RESEND_API_KEY) {
       return res.status(500).json({ 
         success: false, 
-        error: 'SendGrid API key not configured' 
+        error: 'Resend API key not configured' 
       });
     }
 
@@ -127,40 +123,36 @@ router.post('/send-estimate-email', async (req, res) => {
       });
     }
 
-    const msg = {
-      to: clientEmail,
-      from: {
-        email: contractorEmail,
-        name: contractorName || 'Contractor'
-      },
-      replyTo: contractorEmail,
-      subject: customSubject || `Your Professional Estimate is Ready - ${contractorName}`,
-      html: emailHtml,
-      text: customMessage || `Dear ${clientName},\n\nPlease find your detailed project estimate attached.\n\nTotal: $${totalAmount.toLocaleString()}\n\nFor any questions, please contact us directly at ${contractorEmail}\n\nBest regards,\n${contractorName}`
-    };
-
     // Send copy to contractor if requested
     if (sendCopy && contractorEmail) {
-      const copyMsg = {
+      const copySuccess = await resendService.sendEmail({
         to: contractorEmail,
-        from: {
-          email: contractorEmail,
-          name: contractorName || 'Contractor'
-        },
-        replyTo: contractorEmail,
+        from: contractorEmail,
         subject: `[COPY] ${customSubject || `Your Professional Estimate is Ready - ${contractorName}`}`,
         html: `<div style="background: #f0f9ff; padding: 20px; border-left: 4px solid #3b82f6; margin-bottom: 20px;">
           <p style="margin: 0; color: #1e40af;"><strong>📧 Copy of email sent to your client</strong></p>
           <p style="margin: 5px 0 0 0; color: #64748b;">Sent to: ${clientName} (${clientEmail})</p>
         </div>
         ${emailHtml}`,
-        text: `COPY of email sent to ${clientName} (${clientEmail})\n\n${customMessage || 'Estimate sent successfully.'}`
-      };
+        replyTo: contractorEmail
+      });
       
-      await mailService.send(copyMsg);
+      if (!copySuccess) {
+        console.warn('Failed to send copy email to contractor');
+      }
     }
 
-    await mailService.send(msg);
+    const success = await resendService.sendEmail({
+      to: clientEmail,
+      from: contractorEmail,
+      subject: customSubject || `Your Professional Estimate is Ready - ${contractorName}`,
+      html: emailHtml,
+      replyTo: contractorEmail
+    });
+
+    if (!success) {
+      throw new Error('Failed to send estimate email');
+    }
 
     res.json({ 
       success: true, 

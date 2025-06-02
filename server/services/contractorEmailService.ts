@@ -1,6 +1,6 @@
-import { MailService } from '@sendgrid/mail';
+import { resendService } from './resendService';
 
-// Don't throw error immediately, let individual methods handle missing API key
+// Using Resend service instead of SendGrid
 
 interface EmailTemplate {
   subject: string;
