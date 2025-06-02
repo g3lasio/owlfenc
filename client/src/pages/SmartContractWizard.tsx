@@ -1,0 +1,544 @@
+import React, { useState, useCallback, useRef } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useToast } from '@/hooks/use-toast';
+import { Upload, Shield, CheckCircle, AlertTriangle, FileText, Brain, Zap } from 'lucide-react';
+
+interface ExtractedData {
+  clientName?: string;
+  clientEmail?: string;
+  clientPhone?: string;
+  clientAddress?: string;
+  projectType?: string;
+  projectDescription?: string;
+  totalAmount?: string;
+  startDate?: string;
+  completionDate?: string;
+}
+
+interface ContractData extends ExtractedData {
+  contractorName: string;
+  contractorEmail: string;
+  contractorPhone: string;
+  contractorAddress: string;
+  contractorLicense: string;
+  projectLocation: string;
+  materialSpecs: string;
+  insuranceInfo: string;
+  downPayment: string;
+  paymentSchedule: any[];
+  warrantyPeriod: string;
+  permitRequirements: string;
+  disputeResolution: string;
+  municipalRequirements: string;
+  environmentalCompliance: string;
+  isComplete: boolean;
+  missingFields: string[];
+}
+
+interface RiskAnalysis {
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+  risks: string[];
+  protections: string[];
+  recommendations: string[];
+}
+
+type WizardStep = 'upload' | 'analysis' | 'completion' | 'preview' | 'generation' | 'final';
+
+const SmartContractWizard: React.FC = () => {
+  const [currentStep, setCurrentStep] = useState<WizardStep>('upload');
+  const [extractedData, setExtractedData] = useState<ExtractedData>({});
+  const [contractData, setContractData] = useState<ContractData | null>(null);
+  const [riskAnalysis, setRiskAnalysis] = useState<RiskAnalysis | null>(null);
+  const [generatedContract, setGeneratedContract] = useState<string>('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [assistantMessage, setAssistantMessage] = useState('¡Hola! Soy Legal Guard, tu asistente para crear contratos blindados. Sube tu PDF de estimado para comenzar.');
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+
+  const handleFileUpload = useCallback(async (file: File) => {
+    if (!file || file.type !== 'application/pdf') {
+      toast({
+        title: "Archivo inválido",
+        description: "Por favor sube un archivo PDF",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+    setCurrentStep('analysis');
+    setProgress(20);
+    setAssistantMessage('Analizando tu PDF y extrayendo información crítica...');
+
+    try {
+      const formData = new FormData();
+      formData.append('estimatePdf', file);
+
+      const response = await fetch('/api/pdf-contract-processor/pdf-to-contract', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Error procesando el PDF');
+      }
+
+      const result = await response.json();
+      
+      setExtractedData(result.data.extractedData);
+      setRiskAnalysis(result.data.riskAnalysis);
+      setProgress(60);
+      
+      // Detectar campos faltantes
+      const missingFields = detectMissingFields(result.data.extractedData);
+      
+      if (missingFields.length > 0) {
+        setCurrentStep('completion');
+        setAssistantMessage(`He extraído ${Object.keys(result.data.extractedData).length} campos, pero necesito ${missingFields.length} datos adicionales para crear un contrato completamente blindado.`);
+      } else {
+        setCurrentStep('preview');
+        setAssistantMessage('¡Perfecto! Tengo toda la información necesaria. Revisemos el contrato generado.');
+      }
+      
+      setProgress(100);
+      
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error de procesamiento",
+        description: "No pude analizar el PDF. Verifica que sea un estimado válido.",
+        variant: "destructive"
+      });
+      setCurrentStep('upload');
+      setAssistantMessage('Hubo un problema procesando tu archivo. ¿Puedes intentar con otro PDF?');
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [toast]);
+
+  const detectMissingFields = (data: ExtractedData): string[] => {
+    const requiredFields = [
+      'clientName', 'clientEmail', 'clientPhone', 'clientAddress',
+      'projectType', 'projectDescription', 'totalAmount',
+      'startDate', 'completionDate'
+    ];
+    
+    return requiredFields.filter(field => !data[field as keyof ExtractedData]);
+  };
+
+  const handleDataCompletion = (completedData: ContractData) => {
+    setContractData(completedData);
+    setCurrentStep('generation');
+    setAssistantMessage('Generando tu contrato blindado con cláusulas de protección avanzadas...');
+    generateContract(completedData);
+  };
+
+  const generateContract = async (data: ContractData) => {
+    setIsProcessing(true);
+    setProgress(0);
+
+    try {
+      const response = await fetch('/api/anthropic/generate-contract', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ contractData: data })
+      });
+
+      if (!response.ok) {
+        throw new Error('Error generando contrato');
+      }
+
+      const result = await response.json();
+      setGeneratedContract(result.html);
+      setCurrentStep('final');
+      setProgress(100);
+      setAssistantMessage('¡Contrato completado! He aplicado protecciones legales avanzadas basadas en el análisis de riesgo.');
+
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error de generación",
+        description: "No pude generar el contrato. Verifica la configuración del sistema.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const getStepProgress = (): number => {
+    const stepMap: Record<WizardStep, number> = {
+      'upload': 0,
+      'analysis': 20,
+      'completion': 40,
+      'preview': 60,
+      'generation': 80,
+      'final': 100
+    };
+    return stepMap[currentStep];
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
+      <div className="max-w-4xl mx-auto space-y-6">
+        
+        {/* Header con Assistant */}
+        <Card className="border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-purple-50">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 rounded-full">
+                <Shield className="h-6 w-6 text-blue-600" />
+              </div>
+              <div>
+                <CardTitle className="text-xl text-blue-800">Legal Guard Assistant</CardTitle>
+                <p className="text-sm text-blue-600">Generador de Contratos Blindados</p>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="bg-white p-4 rounded-lg border border-blue-100">
+              <p className="text-gray-700">{assistantMessage}</p>
+            </div>
+            <div className="mt-4">
+              <Progress value={getStepProgress()} className="h-2" />
+              <p className="text-xs text-gray-500 mt-1">Progreso: {getStepProgress()}%</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Análisis de Riesgo */}
+        {riskAnalysis && (
+          <Card className="border-l-4 border-l-orange-400">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-orange-500" />
+                Análisis de Riesgo Legal
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Badge variant={riskAnalysis.riskLevel === 'HIGH' ? 'destructive' : 
+                                riskAnalysis.riskLevel === 'MEDIUM' ? 'default' : 'secondary'}>
+                    Riesgo: {riskAnalysis.riskLevel}
+                  </Badge>
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Protecciones Aplicadas:</p>
+                  <p className="text-sm text-gray-600">{riskAnalysis.protections.length} cláusulas</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Recomendaciones:</p>
+                  <p className="text-sm text-gray-600">{riskAnalysis.recommendations.length} sugerencias</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step Content */}
+        {currentStep === 'upload' && (
+          <UploadStep onFileUpload={handleFileUpload} fileInputRef={fileInputRef} />
+        )}
+        
+        {currentStep === 'analysis' && (
+          <AnalysisStep isProcessing={isProcessing} progress={progress} />
+        )}
+        
+        {currentStep === 'completion' && extractedData && (
+          <CompletionStep 
+            extractedData={extractedData} 
+            onComplete={handleDataCompletion}
+            missingFields={detectMissingFields(extractedData)}
+          />
+        )}
+        
+        {currentStep === 'generation' && (
+          <GenerationStep isProcessing={isProcessing} />
+        )}
+        
+        {currentStep === 'final' && generatedContract && riskAnalysis && (
+          <FinalStep 
+            contract={generatedContract} 
+            riskAnalysis={riskAnalysis}
+            contractData={contractData}
+          />
+        )}
+
+      </div>
+    </div>
+  );
+};
+
+// Step Components
+const UploadStep: React.FC<{
+  onFileUpload: (file: File) => void;
+  fileInputRef: React.RefObject<HTMLInputElement>;
+}> = ({ onFileUpload, fileInputRef }) => {
+  return (
+    <Card className="border-2 border-dashed border-blue-300">
+      <CardContent className="p-8">
+        <div className="text-center space-y-4">
+          <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+            <Upload className="h-8 w-8 text-blue-600" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold">Sube tu PDF de Estimado</h3>
+            <p className="text-gray-600">El análisis inteligente comenzará automáticamente</p>
+          </div>
+          <Button 
+            onClick={() => fileInputRef.current?.click()}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Seleccionar PDF
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) onFileUpload(file);
+            }}
+          />
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+const AnalysisStep: React.FC<{
+  isProcessing: boolean;
+  progress: number;
+}> = ({ isProcessing, progress }) => {
+  return (
+    <Card>
+      <CardContent className="p-8">
+        <div className="text-center space-y-6">
+          <div className="mx-auto w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center">
+            <Brain className="h-8 w-8 text-purple-600 animate-pulse" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold">Análisis en Progreso</h3>
+            <p className="text-gray-600">Extrayendo datos y evaluando riesgos legales...</p>
+          </div>
+          <Progress value={progress} className="w-full max-w-md mx-auto" />
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+const CompletionStep: React.FC<{
+  extractedData: ExtractedData;
+  onComplete: (data: ContractData) => void;
+  missingFields: string[];
+}> = ({ extractedData, onComplete, missingFields }) => {
+  const [formData, setFormData] = useState<Partial<ContractData>>({
+    ...extractedData,
+    contractorName: 'OWL FENCE LLC',
+    contractorEmail: 'contracts@owlfence.com',
+    contractorPhone: '(512) 555-0123',
+    contractorAddress: '456 Business Ave, Austin, TX 78702',
+    contractorLicense: 'TX-CONT-123456',
+    projectLocation: extractedData.clientAddress || '',
+    materialSpecs: '',
+    insuranceInfo: 'Seguro de responsabilidad general hasta $1M',
+    downPayment: '',
+    paymentSchedule: [],
+    warrantyPeriod: '12 months',
+    permitRequirements: '',
+    disputeResolution: 'arbitration',
+    municipalRequirements: '',
+    environmentalCompliance: '',
+    isComplete: false,
+    missingFields: missingFields
+  });
+
+  const handleSubmit = () => {
+    const completeData: ContractData = {
+      clientName: formData.clientName || '',
+      clientEmail: formData.clientEmail || '',
+      clientPhone: formData.clientPhone || '',
+      clientAddress: formData.clientAddress || '',
+      projectType: formData.projectType || '',
+      projectDescription: formData.projectDescription || '',
+      totalAmount: formData.totalAmount || '',
+      startDate: formData.startDate || '',
+      completionDate: formData.completionDate || '',
+      contractorName: formData.contractorName || '',
+      contractorEmail: formData.contractorEmail || '',
+      contractorPhone: formData.contractorPhone || '',
+      contractorAddress: formData.contractorAddress || '',
+      contractorLicense: formData.contractorLicense || '',
+      projectLocation: formData.projectLocation || '',
+      materialSpecs: formData.materialSpecs || '',
+      insuranceInfo: formData.insuranceInfo || '',
+      downPayment: formData.downPayment || '',
+      paymentSchedule: formData.paymentSchedule || [],
+      warrantyPeriod: formData.warrantyPeriod || '',
+      permitRequirements: formData.permitRequirements || '',
+      disputeResolution: formData.disputeResolution || '',
+      municipalRequirements: formData.municipalRequirements || '',
+      environmentalCompliance: formData.environmentalCompliance || '',
+      isComplete: true,
+      missingFields: []
+    };
+    
+    onComplete(completeData);
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <CheckCircle className="h-5 w-5 text-green-500" />
+          Completar Información
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        
+        {/* Datos Extraídos */}
+        <div>
+          <h4 className="font-medium text-green-700 mb-3">✓ Datos Extraídos del PDF</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {Object.entries(extractedData).map(([key, value]) => (
+              <div key={key} className="bg-green-50 p-3 rounded border border-green-200">
+                <Label className="text-xs text-green-600 uppercase">{key}</Label>
+                <p className="font-medium">{value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Campos Faltantes */}
+        {missingFields.length > 0 && (
+          <div>
+            <h4 className="font-medium text-orange-700 mb-3">⚠ Información Adicional Requerida</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {missingFields.includes('permitRequirements') && (
+                <div>
+                  <Label htmlFor="permitRequirements">Requisitos de Permisos</Label>
+                  <Textarea
+                    id="permitRequirements"
+                    value={formData.permitRequirements || ''}
+                    onChange={(e) => setFormData({...formData, permitRequirements: e.target.value})}
+                    placeholder="Ej: Permiso municipal de construcción requerido"
+                  />
+                </div>
+              )}
+              {missingFields.includes('materialSpecs') && (
+                <div>
+                  <Label htmlFor="materialSpecs">Especificaciones de Materiales</Label>
+                  <Textarea
+                    id="materialSpecs"
+                    value={formData.materialSpecs || ''}
+                    onChange={(e) => setFormData({...formData, materialSpecs: e.target.value})}
+                    placeholder="Ej: Madera tratada a presión, postes de cedro"
+                  />
+                </div>
+              )}
+              {missingFields.includes('downPayment') && (
+                <div>
+                  <Label htmlFor="downPayment">Pago Inicial</Label>
+                  <Input
+                    id="downPayment"
+                    value={formData.downPayment || ''}
+                    onChange={(e) => setFormData({...formData, downPayment: e.target.value})}
+                    placeholder="Ej: 1650"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        <Button onClick={handleSubmit} className="w-full bg-blue-600 hover:bg-blue-700">
+          <Zap className="h-4 w-4 mr-2" />
+          Generar Contrato Blindado
+        </Button>
+
+      </CardContent>
+    </Card>
+  );
+};
+
+const GenerationStep: React.FC<{
+  isProcessing: boolean;
+}> = ({ isProcessing }) => {
+  return (
+    <Card>
+      <CardContent className="p-8">
+        <div className="text-center space-y-6">
+          <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+            <Shield className="h-8 w-8 text-green-600 animate-pulse" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold">Generando Contrato Blindado</h3>
+            <p className="text-gray-600">Aplicando cláusulas de protección legal avanzadas...</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+const FinalStep: React.FC<{
+  contract: string;
+  riskAnalysis: RiskAnalysis;
+  contractData: ContractData | null;
+}> = ({ contract, riskAnalysis, contractData }) => {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <CheckCircle className="h-5 w-5 text-green-500" />
+          Contrato Completado
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        
+        {/* Resumen de Protecciones */}
+        <Alert>
+          <Shield className="h-4 w-4" />
+          <AlertDescription>
+            Contrato generado con {riskAnalysis.protections.length} cláusulas de protección legal.
+            Nivel de riesgo evaluado: <Badge variant="secondary">{riskAnalysis.riskLevel}</Badge>
+          </AlertDescription>
+        </Alert>
+
+        {/* Preview del Contrato */}
+        <div className="border rounded-lg p-4 max-h-96 overflow-y-auto bg-gray-50">
+          <div dangerouslySetInnerHTML={{ __html: contract }} />
+        </div>
+
+        {/* Acciones */}
+        <div className="flex gap-4">
+          <Button className="flex-1">
+            <FileText className="h-4 w-4 mr-2" />
+            Descargar PDF
+          </Button>
+          <Button variant="outline" className="flex-1">
+            Enviar por Email
+          </Button>
+        </div>
+
+      </CardContent>
+    </Card>
+  );
+};
+
+export default SmartContractWizard;

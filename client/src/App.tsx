@@ -44,6 +44,7 @@ import CyberpunkContractGenerator from "@/pages/CyberpunkContractGenerator";
 import LegalContractEngineFixed from "@/pages/LegalContractEngineFixed";
 import ContractGeneratorSimplified from "@/pages/ContractGeneratorSimplified";
 import UnifiedContractManager from "@/pages/UnifiedContractManager";
+import SmartContractWizard from "@/pages/SmartContractWizard";
 import AITestingPage from "@/pages/AITestingPage";
 import DeepSearchDemo from "@/pages/DeepSearchDemo";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
@@ -158,7 +159,7 @@ function Router() {
         {() => <ProtectedRoute component={SecuritySettings} />}
       </Route>
       <Route path="/contracts">
-        {() => <ProtectedRoute component={LegalContractEngineFixed} />}
+        {() => <ProtectedRoute component={SmartContractWizard} />}
       </Route>
       <Route path="/contract-generator">
         {() => <ProtectedRoute component={LegalContractEngineFixed} />}
