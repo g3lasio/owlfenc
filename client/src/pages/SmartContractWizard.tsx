@@ -345,6 +345,7 @@ const SmartContractWizard: React.FC = () => {
             riskAnalysis={riskAnalysis}
             onProceedToCompletion={handleProceedToCompletion}
             onProceedToGeneration={handleProceedToGeneration}
+            onDataCompletion={handleDataCompletion}
           />
         )}
         
@@ -606,7 +607,8 @@ const LegalReviewStep: React.FC<{
   riskAnalysis: RiskAnalysis | null;
   onProceedToCompletion: () => void;
   onProceedToGeneration: () => void;
-}> = ({ extractedData, riskAnalysis, onProceedToCompletion, onProceedToGeneration }) => {
+  onDataCompletion: (data: ContractData) => void;
+}> = ({ extractedData, riskAnalysis, onProceedToCompletion, onProceedToGeneration, onDataCompletion }) => {
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [recommendedClauses, setRecommendedClauses] = useState<string[]>([]);
   const [showRecommendations, setShowRecommendations] = useState(false);
@@ -829,7 +831,7 @@ const LegalReviewStep: React.FC<{
                   missingFields: [],
                   isComplete: true
                 };
-                handleDataCompletion(autoEnrichedData);
+                onDataCompletion(autoEnrichedData);
               }}
               className="flex-1"
             >
