@@ -964,7 +964,7 @@ Output in English regardless of input language. Make it suitable for contracts a
   app.use('/api/legal-defense', legalDefenseRoutes);
   
   // Registrar rutas del sistema unificado de contratos
-  app.use('/api/anthropic', unifiedContractRoutes);
+  app.use('/api/unified-contracts', unifiedContractRoutes);
   
   // Registrar rutas del sistema de pagos para contratistas
   app.use('/api/contractor-payments', contractorPaymentRoutes);
