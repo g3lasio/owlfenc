@@ -208,7 +208,7 @@ async function extractProjectDataWithAI(extractedText: string): Promise<any> {
     console.log('🧠 Using AI to structure extracted data...');
     
     const response = await anthropic.messages.create({
-      model: "claude-3-sonnet-20241022",
+      model: "claude-3-5-sonnet-20241022",
       max_tokens: 2000,
       messages: [{
         role: "user",

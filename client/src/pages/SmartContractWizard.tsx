@@ -101,20 +101,36 @@ const SmartContractWizard: React.FC = () => {
 
       setExtractedData(result.data.extractedData || {});
       setRiskAnalysis(result.data.riskAnalysis || null);
-      setProgress(60);
+      setProgress(80);
       
       // Detect missing fields
       const missingFields = detectMissingFields(result.data.extractedData || {});
       
-      if (missingFields.length > 0) {
-        setCurrentStep('completion');
-        setStatusMessage(`Extracted ${Object.keys(result.data.extractedData || {}).length} fields. Need ${missingFields.length} additional data points for complete contract protection.`);
-      } else {
-        setCurrentStep('preview');
-        setStatusMessage('All information extracted successfully. Ready to generate contract.');
-      }
+      // Wait a moment to show the analysis results, then proceed
+      setTimeout(() => {
+        if (missingFields.length > 0) {
+          setCurrentStep('completion');
+          setStatusMessage(`Extracted ${Object.keys(result.data.extractedData || {}).length} fields. Need ${missingFields.length} additional data points for complete contract protection.`);
+        } else {
+          setCurrentStep('generation');
+          setStatusMessage('All information extracted successfully. Generating protected contract...');
+          // Auto-generate contract if all data is complete
+          const contractData: ContractData = {
+            clientName: result.data.extractedData.clientName || '',
+            clientAddress: result.data.extractedData.clientAddress || '',
+            projectType: result.data.extractedData.projectType || '',
+            projectDescription: result.data.extractedData.projectDescription || '',
+            projectLocation: result.data.extractedData.projectLocation || '',
+            contractorName: result.data.extractedData.contractorName || '',
+            totalAmount: result.data.extractedData.totalAmount || '',
+            isComplete: true,
+            missingFields: []
+          };
+          generateContract(contractData);
+        }
+        setProgress(100);
+      }, 2000);
       
-      setProgress(100);
       
     } catch (error) {
       console.error('PDF Processing Error:', error);
