@@ -49,6 +49,95 @@
     opacity: 1;
   }
 
+  /* Cyberpunk Corner Frame Styles */
+  .cyberpunk-corner-frame {
+    position: relative;
+    background: rgba(17, 24, 39, 0.95);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  .cyberpunk-corner-frame::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, 
+      #00ffff 0%, 
+      #0080ff 25%, 
+      #8000ff 50%, 
+      #ff0080 75%, 
+      #00ffff 100%);
+    border-radius: inherit;
+    z-index: -1;
+    animation: holographicPulse 3s ease-in-out infinite;
+  }
+
+  .cyberpunk-corner-frame::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+      linear-gradient(90deg, transparent 0%, rgba(0, 255, 255, 0.1) 50%, transparent 100%),
+      linear-gradient(0deg, transparent 0%, rgba(0, 255, 255, 0.05) 50%, transparent 100%);
+    opacity: 0.3;
+    animation: scanningLines 2s linear infinite;
+    pointer-events: none;
+  }
+
+  /* Corner brackets */
+  .cyberpunk-corner-frame .corner-bracket {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #00ffff;
+  }
+
+  .cyberpunk-corner-frame .corner-bracket.top-left {
+    top: 5px;
+    left: 5px;
+    border-right: none;
+    border-bottom: none;
+  }
+
+  .cyberpunk-corner-frame .corner-bracket.top-right {
+    top: 5px;
+    right: 5px;
+    border-left: none;
+    border-bottom: none;
+  }
+
+  .cyberpunk-corner-frame .corner-bracket.bottom-left {
+    bottom: 5px;
+    left: 5px;
+    border-right: none;
+    border-top: none;
+  }
+
+  .cyberpunk-corner-frame .corner-bracket.bottom-right {
+    bottom: 5px;
+    right: 5px;
+    border-left: none;
+    border-top: none;
+  }
+
+  /* Cyberpunk animations */
+  @keyframes holographicPulse {
+    0% { opacity: 0.7; }
+    50% { opacity: 1; }
+    100% { opacity: 0.7; }
+  }
+
+  @keyframes scanningLines {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100%); }
+  }
+
   .sci-fi-corner-brackets::before,
   .sci-fi-corner-brackets::after {
     content: '';

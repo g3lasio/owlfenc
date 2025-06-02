@@ -1187,22 +1187,7 @@ const ContractPreviewStep: React.FC<{
               </div>
             </div>
 
-            <div className="text-center text-xs text-gray-500 bg-gradient-to-r from-cyan-50 to-blue-50 p-4 rounded border border-cyan-200">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <img 
-                  src="https://ik.imagekit.io/lp5czyx2a/logo%20mervin.png?updatedAt=1748883786155" 
-                  alt="Mervin AI" 
-                  className="h-6 w-6 object-contain"
-                />
-                <span className="font-semibold text-cyan-700">Powered by Mervin AI Legal Expert</span>
-              </div>
-              <p className="text-gray-600">
-                This agreement is governed by applicable state and local laws. Generated with $500/hour attorney-level expertise and comprehensive legal protections.
-              </p>
-              <p className="text-cyan-600 text-xs mt-1">
-                Trust Mervin AI for all your legal contract needs • Available in chat (coming soon)
-              </p>
-            </div>
+
           </CardContent>
         </Card>
       </div>

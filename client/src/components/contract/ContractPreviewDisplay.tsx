@@ -110,20 +110,20 @@ const ContractPreviewDisplay: React.FC<ContractPreviewDisplayProps> = ({
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <Shield className="h-8 w-8 mx-auto mb-2 text-green-600" />
-              <div className="font-semibold text-green-800">Protección Legal</div>
-              <div className="text-sm text-green-600">Cláusulas defensivas incluidas</div>
+            <div className="text-center p-4 bg-gray-800 rounded-lg cyberpunk-corner-frame">
+              <Shield className="h-8 w-8 mx-auto mb-2 text-cyan-400" />
+              <div className="font-semibold text-cyan-300">Protección Legal</div>
+              <div className="text-sm text-gray-300">Cláusulas defensivas incluidas</div>
             </div>
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <FileText className="h-8 w-8 mx-auto mb-2 text-blue-600" />
-              <div className="font-semibold text-blue-800">Cumplimiento</div>
-              <div className="text-sm text-blue-600">Códigos locales aplicados</div>
+            <div className="text-center p-4 bg-gray-800 rounded-lg cyberpunk-corner-frame">
+              <FileText className="h-8 w-8 mx-auto mb-2 text-blue-400" />
+              <div className="font-semibold text-blue-300">Cumplimiento</div>
+              <div className="text-sm text-gray-300">Códigos locales aplicados</div>
             </div>
-            <div className="text-center p-4 bg-purple-50 rounded-lg">
-              <CheckCircle className="h-8 w-8 mx-auto mb-2 text-purple-600" />
-              <div className="font-semibold text-purple-800">Validado</div>
-              <div className="text-sm text-purple-600">IA + Revisión legal</div>
+            <div className="text-center p-4 bg-gray-800 rounded-lg cyberpunk-corner-frame">
+              <CheckCircle className="h-8 w-8 mx-auto mb-2 text-purple-400" />
+              <div className="font-semibold text-purple-300">Validado</div>
+              <div className="text-sm text-gray-300">IA + Revisión legal</div>
             </div>
           </div>
         </CardContent>
@@ -143,9 +143,9 @@ const ContractPreviewDisplay: React.FC<ContractPreviewDisplayProps> = ({
             </TabsList>
 
             <TabsContent value="content" className="mt-6">
-              <div className="bg-gray-50 p-6 rounded-lg border max-h-96 overflow-y-auto">
+              <div className="bg-gray-900 border border-cyan-500 p-6 rounded-lg cyberpunk-corner-frame max-h-96 overflow-y-auto">
                 <div 
-                  className="prose prose-sm max-w-none"
+                  className="prose prose-sm max-w-none text-gray-100 prose-headings:text-cyan-300 prose-strong:text-white prose-p:text-gray-200"
                   dangerouslySetInnerHTML={{ __html: contract.html }}
                 />
               </div>
@@ -153,14 +153,14 @@ const ContractPreviewDisplay: React.FC<ContractPreviewDisplayProps> = ({
 
             <TabsContent value="clauses" className="mt-6">
               <div className="space-y-4">
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <div className="bg-gray-800 border border-amber-400 rounded-lg p-4 cyberpunk-corner-frame">
                   <div className="flex items-center gap-2 mb-2">
-                    <AlertTriangle className="h-5 w-5 text-amber-600" />
-                    <span className="font-semibold text-amber-800">
+                    <AlertTriangle className="h-5 w-5 text-amber-400" />
+                    <span className="font-semibold text-amber-300">
                       Cláusulas de Protección Legal
                     </span>
                   </div>
-                  <p className="text-amber-700 text-sm">
+                  <p className="text-gray-300 text-sm">
                     Estas cláusulas han sido incluidas para proteger al contratista contra 
                     riesgos legales comunes en proyectos de construcción.
                   </p>
@@ -188,28 +188,28 @@ const ContractPreviewDisplay: React.FC<ContractPreviewDisplayProps> = ({
             <TabsContent value="summary" className="mt-6">
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-3">
-                    <h4 className="font-semibold text-gray-900">Información del Cliente</h4>
+                  <div className="space-y-3 bg-gray-800 p-4 rounded-lg cyberpunk-corner-frame">
+                    <h4 className="font-semibold text-cyan-300">Información del Cliente</h4>
                     <div className="text-sm space-y-1">
-                      <p><span className="font-medium">Nombre:</span> {contract.clientName}</p>
-                      <p><span className="font-medium">Proyecto:</span> {contract.projectType}</p>
-                      <p><span className="font-medium">Ubicación:</span> {contract.projectLocation}</p>
+                      <p><span className="font-medium text-gray-300">Nombre:</span> <span className="text-white">{contract.contractData.clientName}</span></p>
+                      <p><span className="font-medium text-gray-300">Proyecto:</span> <span className="text-white">{contract.contractData.projectType}</span></p>
+                      <p><span className="font-medium text-gray-300">Ubicación:</span> <span className="text-white">{contract.contractData.projectLocation}</span></p>
                     </div>
                   </div>
                   
-                  <div className="space-y-3">
-                    <h4 className="font-semibold text-gray-900">Términos Financieros</h4>
+                  <div className="space-y-3 bg-gray-800 p-4 rounded-lg cyberpunk-corner-frame">
+                    <h4 className="font-semibold text-cyan-300">Términos Financieros</h4>
                     <div className="text-sm space-y-1">
-                      <p><span className="font-medium">Valor Total:</span> ${contract.totalAmount}</p>
-                      <p><span className="font-medium">Fecha de Inicio:</span> {contract.startDate}</p>
-                      <p><span className="font-medium">Garantía:</span> 12 meses</p>
+                      <p><span className="font-medium text-gray-300">Valor Total:</span> <span className="text-white">{contract.contractData.totalAmount}</span></p>
+                      <p><span className="font-medium text-gray-300">Fecha de Inicio:</span> <span className="text-white">{contract.contractData.startDate}</span></p>
+                      <p><span className="font-medium text-gray-300">Garantía:</span> <span className="text-white">12 meses</span></p>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-green-800 mb-2">Protecciones Incluidas</h4>
-                  <ul className="text-sm text-green-700 space-y-1">
+                <div className="bg-gray-800 border border-green-400 rounded-lg p-4 cyberpunk-corner-frame">
+                  <h4 className="font-semibold text-green-300 mb-2">Protecciones Incluidas</h4>
+                  <ul className="text-sm text-gray-300 space-y-1">
                     <li>• Limitación de responsabilidad por daños consecuenciales</li>
                     <li>• Protección contra retrasos por fuerza mayor</li>
                     <li>• Arbitraje obligatorio para resolución de disputas</li>
