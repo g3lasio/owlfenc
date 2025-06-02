@@ -1,4 +1,3 @@
-
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -51,6 +50,7 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import AuthDiagnostic from './pages/AuthDiagnostic';
 import AppleAuthTest from './pages/AppleAuthTest';
 import { lazy } from 'react';
+import OptimizedLegalDefenseWorkflow from './pages/OptimizedLegalDefenseWorkflow';
 
 import { Redirect } from "wouter";
 
