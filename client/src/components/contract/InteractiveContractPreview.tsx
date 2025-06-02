@@ -432,108 +432,19 @@ interface InteractiveContractPreviewProps {
   onGoBack: () => void;
 }
 
-// Sistema inteligente de generación de cláusulas legales de Mervin AI
-const generateIntelligentLegalProtections = (contractData: ContractData): Array<{
-  title: string;
-  description: string;
-  risk: 'HIGH' | 'MEDIUM' | 'LOW';
-  icon: any;
-  category: 'payment' | 'liability' | 'scope' | 'timeline' | 'quality' | 'safety';
-}> => {
-  const protections = [];
-  const projectAmount = parseFloat(contractData.totalAmount.replace(/[^0-9.]/g, '')) || 0;
-  const projectType = contractData.projectType.toLowerCase();
-  const location = contractData.projectLocation.toLowerCase();
-  
-  // Análisis de riesgo de pago basado en monto del proyecto
-  if (projectAmount > 5000) {
-    protections.push({
-      title: "Protección de Pago Progresivo",
-      description: `Depósito del 30% requerido antes del inicio ($${(projectAmount * 0.3).toFixed(2)}). Pagos vinculados a hitos específicos de completación. Pago final dentro de 10 días posteriores a la finalización y aprobación del cliente.`,
-      risk: 'HIGH' as const,
-      icon: DollarSign,
-      category: 'payment' as const
-    });
+import { selectIntelligentClauses, ProtectionClause } from '@/data/contractorProtectionClauses';
+
+// Mapeo de categorías a iconos
+const getCategoryIcon = (category: string) => {
+  switch (category) {
+    case 'Payment Protection': return DollarSign;
+    case 'Work Performance': return Briefcase;
+    case 'Liability & Indemnification': return Shield;
+    case 'Health & Safety': return AlertTriangle;
+    case 'Legal & Contract Enforcement': return Scale;
+    case 'Material & Supply': return Target;
+    default: return CheckCircle;
   }
-
-  // Protección específica para proyectos de cercas
-  if (projectType.includes('fencing') || projectType.includes('fence')) {
-    protections.push({
-      title: "Protección de Límites de Propiedad",
-      description: "El cliente es responsable de verificar los límites exactos de la propiedad y obtener aprobaciones de vecinos cuando sea necesario. El contratista no es responsable por disputas de límites o violaciones a restricciones de la comunidad.",
-      risk: 'HIGH' as const,
-      icon: AlertTriangle,
-      category: 'liability' as const
-    });
-    
-    protections.push({
-      title: "Protección contra Condiciones del Suelo",
-      description: "El contratista no es responsable por condiciones imprevistas del suelo, rocas, servicios públicos enterrados o raíces que requieran trabajo adicional. Estos elementos serán facturados por separado según tarifas acordadas.",
-      risk: 'MEDIUM' as const,
-      icon: Target,
-      category: 'scope' as const
-    });
-  }
-
-  // Protección para proyectos en California (regulaciones estrictas)
-  if (location.includes('ca') || location.includes('california')) {
-    protections.push({
-      title: "Cumplimiento Regulatorio de California",
-      description: "Cumplimiento total con las regulaciones de California incluyendo Right to Cancel, Mechanics Lien Rights, y Home Improvement Contract Act. El cliente tiene 3 días para cancelar contratos superiores a $25.",
-      risk: 'HIGH' as const,
-      icon: Scale,
-      category: 'quality' as const
-    });
-  }
-
-  // Protección de cambios de alcance (universal)
-  protections.push({
-    title: "Protección contra Cambios de Alcance",
-    description: "Todos los cambios al trabajo original deben ser aprobados por escrito con desglose detallado de costos antes de la implementación. Cualquier trabajo adicional solicitado será facturado por separado a las tarifas acordadas.",
-    risk: 'HIGH' as const,
-    icon: Briefcase,
-    category: 'scope' as const
-  });
-
-  // Protección de responsabilidad limitada
-  protections.push({
-    title: "Limitación de Responsabilidad",
-    description: `La responsabilidad del contratista está limitada al valor total del contrato ($${contractData.totalAmount}). Indemnización mutua y requisitos de cobertura de seguro integral. El cliente es responsable de la verificación de servicios públicos.`,
-    risk: 'MEDIUM' as const,
-    icon: Shield,
-    category: 'liability' as const
-  });
-
-  // Protección de cronograma
-  protections.push({
-    title: "Protección de Cronograma",
-    description: "Los retrasos por clima, permisos y condiciones imprevistas están excluidos del cronograma de finalización. La cláusula de fuerza mayor protege contra circunstancias fuera del control del contratista.",
-    risk: 'MEDIUM' as const,
-    icon: Clock,
-    category: 'timeline' as const
-  });
-
-  // Protección de garantía
-  protections.push({
-    title: "Garantía Integral de Mano de Obra",
-    description: "Garantía de 2 años en mano de obra contra defectos bajo uso normal. Garantías del fabricante en materiales según especificaciones. No cubre daños por mal uso, negligencia o desgaste normal.",
-    risk: 'LOW' as const,
-    icon: CheckCircle,
-    category: 'quality' as const
-  });
-
-  // Si es proyecto peligroso (escaleras, altura, etc.)
-  if (projectType.includes('roof') || projectType.includes('deck') || projectAmount > 10000) {
-    protections.push({
-      title: "Protección de Seguridad y Responsabilidad",
-      description: "Cobertura de seguro de responsabilidad civil de $1M mínimo. Cumplimiento total con OSHA y regulaciones de seguridad locales. El cliente debe mantener el área libre de mascotas y niños durante el trabajo.",
-      risk: 'HIGH' as const,
-      icon: AlertTriangle,
-      category: 'safety' as const
-    });
-  }
-
-  return protections;
 };
 
 export const InteractiveContractPreview: React.FC<InteractiveContractPreviewProps> = ({
@@ -543,17 +454,17 @@ export const InteractiveContractPreview: React.FC<InteractiveContractPreviewProp
   onProceedToGeneration,
   onGoBack
 }) => {
-  const [intelligentProtections, setIntelligentProtections] = useState<Array<{
-    title: string;
-    description: string;
-    risk: 'HIGH' | 'MEDIUM' | 'LOW';
-    icon: any;
-    category: string;
-  }>>([]);
+  const [intelligentProtections, setIntelligentProtections] = useState<ProtectionClause[]>([]);
 
   // Generar protecciones legales inteligentes al cargar el componente
   useEffect(() => {
-    const protections = generateIntelligentLegalProtections(contractData);
+    const projectAmount = parseFloat(contractData.totalAmount.replace(/[^0-9.]/g, '')) || 0;
+    const protections = selectIntelligentClauses(
+      contractData.projectType,
+      projectAmount,
+      contractData.projectLocation,
+      5 // Máximo 5 cláusulas
+    );
     setIntelligentProtections(protections);
   }, [contractData]);
 
@@ -838,13 +749,13 @@ export const InteractiveContractPreview: React.FC<InteractiveContractPreviewProp
 
               <div className="space-y-3">
                 {intelligentProtections.map((protection, index) => {
-                  const IconComponent = protection.icon;
-                  const riskColor = protection.risk === 'HIGH' ? 'text-red-400 border-red-500' : 
-                                   protection.risk === 'MEDIUM' ? 'text-yellow-400 border-yellow-500' : 
+                  const IconComponent = getCategoryIcon(protection.category);
+                  const riskColor = protection.applicability.riskLevel === 'HIGH' ? 'text-red-400 border-red-500' : 
+                                   protection.applicability.riskLevel === 'MEDIUM' ? 'text-yellow-400 border-yellow-500' : 
                                    'text-green-400 border-green-500';
                   
                   return (
-                    <div key={index} className={`p-3 rounded border ${riskColor.includes('red') ? 'bg-red-950 border-red-500' : 
+                    <div key={protection.id} className={`p-3 rounded border ${riskColor.includes('red') ? 'bg-red-950 border-red-500' : 
                                                                     riskColor.includes('yellow') ? 'bg-yellow-950 border-yellow-500' : 
                                                                     'bg-green-950 border-green-500'}`}>
                       <div className="flex items-start gap-3">
@@ -853,13 +764,16 @@ export const InteractiveContractPreview: React.FC<InteractiveContractPreviewProp
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            <h6 className="font-medium text-white text-sm">{protection.title}</h6>
+                            <h6 className="font-medium text-white text-sm">{protection.category}</h6>
                             <Badge variant="outline" className={`text-xs ${riskColor}`}>
-                              {protection.risk} RISK
+                              {protection.applicability.riskLevel} RISK
+                            </Badge>
+                            <Badge variant="outline" className="text-xs text-cyan-400 border-cyan-400">
+                              Priority {protection.applicability.priority}
                             </Badge>
                           </div>
                           <p className="text-xs text-gray-300 leading-relaxed">
-                            {protection.description}
+                            {protection.clause}
                           </p>
                         </div>
                       </div>
@@ -875,14 +789,30 @@ export const InteractiveContractPreview: React.FC<InteractiveContractPreviewProp
                 </div>
                 <div className="flex gap-4 text-xs">
                   <span className="text-red-400">
-                    Alto Riesgo: {intelligentProtections.filter(p => p.risk === 'HIGH').length}
+                    Alto Riesgo: {intelligentProtections.filter(p => p.applicability.riskLevel === 'HIGH').length}
                   </span>
                   <span className="text-yellow-400">
-                    Medio Riesgo: {intelligentProtections.filter(p => p.risk === 'MEDIUM').length}
+                    Medio Riesgo: {intelligentProtections.filter(p => p.applicability.riskLevel === 'MEDIUM').length}
                   </span>
                   <span className="text-green-400">
-                    Bajo Riesgo: {intelligentProtections.filter(p => p.risk === 'LOW').length}
+                    Bajo Riesgo: {intelligentProtections.filter(p => p.applicability.riskLevel === 'LOW').length}
                   </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs mt-3">
+                  <div>
+                    <span className="text-gray-400">Categorías cubiertas:</span>
+                    <div className="text-cyan-300">
+                      {Array.from(new Set(intelligentProtections.map(p => p.category))).length} de 6 posibles
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-gray-400">Prioridad promedio:</span>
+                    <div className="text-cyan-300">
+                      {intelligentProtections.length > 0 ? 
+                        (intelligentProtections.reduce((sum, p) => sum + p.applicability.priority, 0) / intelligentProtections.length).toFixed(1) 
+                        : 'N/A'}/10
+                    </div>
+                  </div>
                 </div>
                 <p className="text-xs text-gray-400 mt-2">
                   ⚖️ Equivalente a asesoría legal profesional de $500/hora. Tu negocio está completamente protegido.

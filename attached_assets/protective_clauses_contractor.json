@@ -1,0 +1,122 @@
+{
+    "Payment Protection Clauses": [
+        "Payment terms must include clear milestone definitions and specific due dates. Late payments incur penalties of 5% weekly.",
+        "Contractor reserves lien rights explicitly acknowledged by the client, enforceable immediately upon payment default.",
+        "No arbitrary holdbacks are permitted; any withholding of payment must be substantiated in writing within five days.",
+        "Final payment shall not exceed 20% of total contract price, ensuring majority payment during project progress.",
+        "Disputed funds must be deposited into escrow within ten days, released only upon arbitration or judicial decision.",
+        "Automatic escalation clauses for material cost increases exceeding 10% during contract execution.",
+        "Immediate suspension of work authorized if payment overdue exceeds 15 days without valid reason.",
+        "Contractor entitled to collect attorney fees in full if litigation is initiated due to non-payment.",
+        "Interest accrual on overdue payments set at maximum legal rate permitted by jurisdiction.",
+        "Predefined termination rights for chronic payment delays exceeding three separate occurrences."
+    ],
+    "Work Performance Clauses": [
+        "Contractor maintains complete autonomy over methods, scheduling, and personnel decisions.",
+        "All client-requested changes require formal, signed change orders before implementation.",
+        "Explicit protection against client-imposed unreasonable deadlines or work acceleration without fair compensation.",
+        "Automatic extension of deadlines due to weather-related delays or third-party supply interruptions.",
+        "Client must perform timely inspections and accept or document deficiencies within 72 hours post-completion.",
+        "Unconditional right to suspend services if unsafe conditions or regulatory violations exist.",
+        "Pre-project documented acceptance of existing site conditions, removing liability for undisclosed defects.",
+        "Clearly defined stages of project deliverables linked explicitly to payment releases.",
+        "Allowance for unanticipated circumstances including environmental issues or regulatory changes.",
+        "Explicit exclusion of Contractor responsibility for client-supplied materials or workmanship directions."
+    ],
+    "Liability & Indemnification Clauses": [
+        "Liability explicitly limited to total value of the signed contract, excluding consequential damages.",
+        "Client indemnifies Contractor from all claims stemming from client's failure in providing accurate information or permits.",
+        "Detailed force majeure protection including natural disasters, pandemics, and civil disturbances.",
+        "Waiver of liability for subcontractor negligence if subcontractor selection procedures followed professionally.",
+        "Limitations on Contractor\u2019s warranty strictly to explicitly stated project deliverables.",
+        "Requirement that client indemnifies Contractor from third-party suits resulting from client's actions or property.",
+        "Explicit clause absolving Contractor from liability for pre-existing conditions undisclosed by client.",
+        "Clear limits on damage liability claims, excluding indirect or speculative losses.",
+        "Contractor's liability protection for incidents arising from client's negligence or interference in operational processes.",
+        "Strict indemnity for Contractor in case of faulty or misleading specifications provided by client."
+    ],
+    "Legal & Contract Enforcement Clauses": [
+        "Mandatory mediation clause before any litigation or arbitration proceedings commence.",
+        "Binding arbitration to be held locally in Contractor\u2019s jurisdiction for all contractual disputes.",
+        "Recovery of full legal fees and associated costs for prevailing party in dispute resolutions.",
+        "Exclusive jurisdiction clause specifying Contractor's county as sole litigation venue.",
+        "Immediate injunction rights granted against defamatory statements by the client.",
+        "Explicitly defined penalties for breach of confidentiality or misuse of intellectual property.",
+        "Contractual limitations on client's capacity to litigate frivolous claims, including punitive liquidated damages.",
+        "Mandatory documentation and records retention clause for three years post-project completion.",
+        "Clearly stipulated requirement for formal, written amendments to contract only.",
+        "Provision for expedited judicial relief in cases involving substantial financial or reputational harm."
+    ],
+    "Ethical Treatment Clauses": [
+        "Immediate termination rights reserved in cases of harassment, abuse, or discriminatory behavior from client.",
+        "Mutual non-disparagement agreement enforceable via immediate injunctive relief.",
+        "Contractor retains right to withdraw without penalty upon unethical or unsafe client requests.",
+        "Explicit recognition of Contractor\u2019s professional autonomy and respect clause.",
+        "Contractor entitled to equitable treatment including clear justification of client\u2019s negative assessments.",
+        "Legal action explicitly authorized to defend Contractor\u2019s professional reputation.",
+        "Explicit penalty provisions for verbal or psychological abuse encountered on project site.",
+        "Immediate release from contractual obligations in the event of client dishonesty or illegal conduct.",
+        "Mutual respect clause requiring all communication to remain professional and constructive.",
+        "Client obligation to prevent and mitigate workplace hostility affecting Contractor."
+    ],
+    "Health & Safety Clauses": [
+        "Explicit client responsibility to ensure OSHA compliance before and during construction.",
+        "Immediate Contractor withdrawal rights if hazardous conditions arise and are unaddressed by client.",
+        "Requirement for client to disclose all known site hazards before work initiation.",
+        "Mandatory reporting and rectification period for safety violations identified by Contractor.",
+        "Contractor\u2019s right to recover additional costs incurred due to safety-related delays.",
+        "Contractual right to terminate if client demands unsafe or illegal practices.",
+        "Client responsibility for safety training and compliance of their representatives on site.",
+        "Indemnification against all third-party injury claims due to client negligence or misinformation.",
+        "Detailed safety incident documentation requirements to protect Contractor legally.",
+        "Safety compliance certifications required from client prior to project commencement."
+    ],
+    "Project Delay Clauses": [
+        "Automatic schedule extensions granted for delays caused by client or third-party suppliers.",
+        "Financial reimbursement rights for delays resulting directly from client's failure to provide approvals or materials.",
+        "Contractor entitled to stop-work rights if delay exceeds thirty consecutive days.",
+        "Clear definitions of delay and responsibilities for associated costs and extensions.",
+        "Prohibition against client penalizing Contractor for delays beyond Contractor\u2019s control.",
+        "Mandatory client notification requirements within 24 hours of anticipated delays.",
+        "Client requirement to secure replacement materials promptly in case of their supplier\u2019s default.",
+        "Contractor\u2019s protection against claims resulting from unforeseen regulatory changes or governmental delays.",
+        "Stipulated penalties payable by client to Contractor for project delays directly attributable to client.",
+        "Clear and immediate documentation requirements for all delay-related communications."
+    ],
+    "Intellectual Property Clauses": [
+        "Contractor retains rights to proprietary methods, techniques, and operational practices used.",
+        "Explicit transfer clause for project-specific intellectual property developed under contract to client only after full payment.",
+        "Legal penalties for unauthorized usage or disclosure of Contractor\u2019s proprietary information.",
+        "Mandatory confidentiality agreement binding during and post project completion.",
+        "Client explicitly acknowledges non-transferability of Contractor's proprietary tools or methodologies.",
+        "Right to immediate injunction for unauthorized intellectual property use.",
+        "Client\u2019s acknowledgment of penalties for reverse-engineering proprietary methods or products.",
+        "Contractual requirement for written permission before public disclosure of Contractor\u2019s intellectual contributions.",
+        "Strict limitations and documentation requirements for client use of project-related intellectual property.",
+        "Prohibition of client claiming ownership of proprietary processes developed independently by Contractor."
+    ],
+    "Material & Supply Clauses": [
+        "Client responsible for additional material costs resulting from market shortages or unexpected price spikes.",
+        "Explicit authorization required for Contractor's purchase of substitute materials.",
+        "Protection clause for Contractor against delays caused by late or incomplete deliveries by third-party vendors chosen by Client.",
+        "Contractor's right to refuse inferior or defective materials supplied by Client.",
+        "Immediate reimbursement required for expenses incurred due to replacement or return of defective client-provided materials.",
+        "Contractual obligation for Client to secure suitable storage for materials provided, mitigating risk of damage or theft.",
+        "Automatic extension granted to Contractor for delays directly caused by client's failure to timely supply materials.",
+        "Provisions allowing immediate substitution of materials to meet regulatory or safety standards without prior client approval in urgent situations.",
+        "Liability limitations for Contractor related to inherent defects in client-supplied materials.",
+        "Requirement for timely and documented inspections of supplied materials by Client prior to installation."
+    ],
+    "Communication & Documentation Clauses": [
+        "Mandatory written documentation of all instructions or significant communications regarding project changes.",
+        "Explicit requirement that client must acknowledge receipt of key communications within 48 hours.",
+        "Contractual stipulation that only authorized personnel can issue binding communications affecting scope, schedule, or cost.",
+        "Legal recognition that email communications constitute binding written notices for contract purposes.",
+        "Detailed requirement for Client to keep comprehensive communication logs and provide copies upon Contractor request.",
+        "Immediate remedy rights for Contractor if Client fails to respond timely to critical communication affecting project progress.",
+        "Client required to specify in writing any communication or documentation discrepancies within three business days.",
+        "Contractual right to request clarification of ambiguous or potentially conflicting instructions received from Client.",
+        "Protective clause allowing Contractor to pause work pending official confirmation of ambiguous instructions or documentation.",
+        "Obligatory regular status updates by Client regarding any changes that could materially affect contract terms or project timeline."
+    ]
+}
