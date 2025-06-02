@@ -274,7 +274,7 @@ const SmartContractWizard: React.FC = () => {
             <div className="flex items-center gap-3">
               <div className="relative p-2 bg-black rounded-full">
                 <img 
-                  src="/attached_assets/Add a heading (1).png" 
+                  src="https://ik.imagekit.io/lp5czyx2a/logo%20mervin.png?updatedAt=1748883786155" 
                   alt="Mervin AI" 
                   className="h-8 w-8 object-contain"
                 />
