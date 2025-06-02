@@ -32,27 +32,19 @@ export class ContractorEmailService {
   private static verifiedEmails: string[] = [];
   
   /**
-   * Verify contractor email with SendGrid
+   * Verify contractor email with Resend
    * Creates a single sender verification automatically
    */
   static async verifyContractorEmail(contractorEmail: string, contractorName: string): Promise<{success: boolean, message?: string}> {
     try {
-      if (!process.env.SENDGRID_API_KEY) {
+      if (!process.env.RESEND_API_KEY) {
         return {
           success: false,
-          message: 'Email verification requires SendGrid API key. Please provide SENDGRID_API_KEY in environment variables.'
+          message: 'Email verification requires Resend API key. Please provide RESEND_API_KEY in environment variables.'
         };
       }
 
       console.log(`Sending real verification email to: ${contractorEmail}`);
-      
-      // Initialize SendGrid with detailed logging
-      console.log(`Initializing SendGrid for email: ${contractorEmail}`);
-      console.log(`API Key present: ${!!process.env.SENDGRID_API_KEY}`);
-      console.log(`API Key length: ${process.env.SENDGRID_API_KEY?.length || 0}`);
-      
-      const sgMail = require('@sendgrid/mail');
-      sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
       // Create verification token
       const verificationToken = require('crypto').randomBytes(32).toString('hex');
@@ -109,7 +101,16 @@ export class ContractorEmailService {
         text: `Hello ${contractorName}, please verify your email: ${verificationUrl}`
       };
 
-      await sgMail.send(verificationEmail);
+      const success = await resendService.sendEmail({
+        to: contractorEmail,
+        from: 'mervin@owlfenc.com',
+        subject: 'Verify Your Email Address - Owl Fence',
+        html: verificationEmail.html
+      });
+
+      if (!success) {
+        throw new Error('Failed to send verification email');
+      }
       
       return {
         success: true,
@@ -117,17 +118,12 @@ export class ContractorEmailService {
       };
     } catch (error: any) {
       console.error('Error sending verification email:', error);
-      console.error('SendGrid error details:', {
-        code: error.code,
-        message: error.message,
-        response: error.response?.body
-      });
       
-      // Provide specific error messages based on SendGrid response
-      if (error.code === 401) {
+      // Provide specific error messages based on response
+      if (error.message?.includes('unauthorized') || error.message?.includes('invalid')) {
         return {
           success: false,
-          message: 'SendGrid API key is invalid or unauthorized. Please check your API key configuration.'
+          message: 'Email service authorization failed. Please check your API key configuration.'
         };
       }
       

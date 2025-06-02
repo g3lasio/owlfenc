@@ -1,13 +1,8 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
-import sgMail from '@sendgrid/mail';
+import { resendService } from '../services/resendService';
 
 const router = Router();
-
-// Configure SendGrid
-if (process.env.SENDGRID_API_KEY) {
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-}
 
 // Update email notification preferences
 router.post('/email-preferences', async (req: Request, res: Response) => {
@@ -39,8 +34,16 @@ router.post('/email-preferences', async (req: Request, res: Response) => {
           html: `<p>Your <strong>${type}</strong> email notifications have been <strong>${enabled ? 'enabled' : 'disabled'}</strong>.</p>`
         };
         
-        await sgMail.send(msg);
-        console.log('Test email sent successfully');
+        const success = await resendService.sendEmail({
+          to: req.user?.email || 'test@example.com',
+          from: process.env.EMAIL_FROM || 'noreply@owlfenc.com',
+          subject: 'Notification Preferences Updated',
+          html: `<p>Your <strong>${type}</strong> email notifications have been <strong>${enabled ? 'enabled' : 'disabled'}</strong>.</p>`
+        });
+        
+        if (success) {
+          console.log('Test email sent successfully');
+        }
       } catch (emailError) {
         console.warn('Email sending failed:', emailError);
         // Don't fail the preference update if email fails
@@ -134,17 +137,19 @@ router.post('/test', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
     
-    if (type === 'email' && process.env.SENDGRID_API_KEY) {
-      const msg = {
+    if (type === 'email' && process.env.RESEND_API_KEY) {
+      const success = await resendService.sendEmail({
         to: req.user?.email || 'test@example.com',
-        from: process.env.EMAIL_FROM || 'noreply@owlfence.com',
+        from: process.env.EMAIL_FROM || 'noreply@owlfenc.com',
         subject: 'Test Notification - Owl Fence',
-        text: 'This is a test notification from your Owl Fence dashboard.',
         html: '<p>This is a <strong>test notification</strong> from your Owl Fence dashboard.</p>'
-      };
+      });
       
-      await sgMail.send(msg);
-      res.json({ success: true, message: 'Test email sent successfully' });
+      if (success) {
+        res.json({ success: true, message: 'Test email sent successfully' });
+      } else {
+        res.status(500).json({ success: false, message: 'Failed to send test email' });
+      }
     } else if (type === 'sms') {
       // SMS test would go here with Twilio integration
       res.json({ success: true, message: 'SMS testing not yet implemented' });
