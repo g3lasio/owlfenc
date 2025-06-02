@@ -53,6 +53,7 @@ import { aiEnhancementRoutes } from './routes/aiEnhancementRoutes'; // Import ne
 import { registerDeepSearchRoutes } from './routes/deepSearchRoutes'; // Import DeepSearch AI routes
 import { registerLaborDeepSearchRoutes } from './routes/laborDeepSearchRoutes'; // Import Labor DeepSearch AI routes
 import legalDefenseRoutes from './routes/legal-defense-routes'; // Import Legal Defense Engine routes
+import unifiedContractRoutes from './routes/unifiedContractRoutes'; // Import Unified Contract Management routes
 import express from 'express'; // Import express to use express.raw
 
 // Initialize OpenAI API
