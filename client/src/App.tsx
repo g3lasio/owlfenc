@@ -161,6 +161,9 @@ function Router() {
       <Route path="/contracts">
         {() => <ProtectedRoute component={SmartContractWizard} />}
       </Route>
+      <Route path="/smart-contract-wizard">
+        {() => <ProtectedRoute component={SmartContractWizard} />}
+      </Route>
       <Route path="/contract-generator">
         {() => <ProtectedRoute component={LegalContractEngineFixed} />}
       </Route>
