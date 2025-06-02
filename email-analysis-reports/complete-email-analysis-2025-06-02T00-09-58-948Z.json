@@ -1,0 +1,171 @@
+{
+  "executionSummary": {
+    "timestamp": "2025-06-02T00:09:59.045Z",
+    "totalDuration": 1748822999045,
+    "systemStatus": "CRITICAL_ISSUES",
+    "criticalIssuesCount": 2,
+    "recommendationsCount": 4
+  },
+  "systemHealth": {
+    "configuration": {
+      "variables": {
+        "SENDGRID_API_KEY": true,
+        "EMAIL_FROM": false,
+        "APP_URL": false,
+        "SENDGRID_WEBHOOK_URL": false,
+        "EMAIL_REPLY_TO": false
+      },
+      "allConfigured": false,
+      "requiredCount": 3,
+      "configuredCount": 1
+    },
+    "connectivity": {
+      "accessible": false,
+      "error": "fetch failed",
+      "status": "CONNECTION_ERROR"
+    },
+    "endpoints": {
+      "/api/contractor-email/verify": {
+        "accessible": false,
+        "status": "CONNECTION_ERROR",
+        "error": "fetch failed"
+      },
+      "/api/contractor-email/send-estimate": {
+        "accessible": false,
+        "status": "CONNECTION_ERROR",
+        "error": "fetch failed"
+      },
+      "/api/contractor-email/send-contract": {
+        "accessible": false,
+        "status": "CONNECTION_ERROR",
+        "error": "fetch failed"
+      },
+      "/api/contractor-email/send-payment": {
+        "accessible": false,
+        "status": "CONNECTION_ERROR",
+        "error": "fetch failed"
+      },
+      "/api/contractor-email/check-verification": {
+        "accessible": false,
+        "status": "CONNECTION_ERROR",
+        "error": "fetch failed"
+      }
+    },
+    "emailVerification": {
+      "working": false,
+      "error": "fetch failed",
+      "status": "CONNECTION_ERROR"
+    },
+    "templates": {
+      "estimate": true,
+      "contract": true,
+      "payment": true,
+      "notification": true,
+      "responsive": true,
+      "professional": true,
+      "personalized": true,
+      "brandingSupport": true
+    },
+    "security": {
+      "inputValidation": {
+        "secure": true,
+        "status": "Validación implementada",
+        "details": "Esquemas de validación presentes en endpoints"
+      },
+      "emailValidation": {
+        "secure": true,
+        "status": "Validación de email implementada",
+        "details": "Validación de formato de email presente"
+      },
+      "rateLimiting": {
+        "secure": false,
+        "status": "Rate limiting no detectado",
+        "risk": "Posible abuso del servicio de email",
+        "recommendation": "Implementar límites de velocidad"
+      },
+      "errorHandling": {
+        "secure": true,
+        "status": "Manejo de errores implementado",
+        "details": "Try-catch blocks y mensajes de error apropiados"
+      },
+      "dataProtection": {
+        "secure": true,
+        "status": "Protección de datos básica",
+        "details": "No se exponen datos sensibles en logs"
+      }
+    }
+  },
+  "criticalIssues": [
+    {
+      "severity": "CRITICAL",
+      "component": "Configuration",
+      "issue": "Variables de entorno faltantes",
+      "impact": "El sistema de email no puede funcionar",
+      "solution": "Configurar las variables de entorno requeridas"
+    },
+    {
+      "severity": "MEDIUM",
+      "component": "Security",
+      "issue": "Problema de seguridad en rateLimiting",
+      "impact": "Posible abuso del servicio de email"
+    }
+  ],
+  "recommendations": [
+    {
+      "priority": "CRITICAL",
+      "category": "Configuración",
+      "title": "Configurar SendGrid API Key",
+      "description": "El sistema requiere una API key válida de SendGrid para funcionar",
+      "steps": [
+        "Obtener API key de SendGrid",
+        "Configurar SENDGRID_API_KEY en variables de entorno",
+        "Verificar dominio de envío en SendGrid",
+        "Probar envío de email de prueba"
+      ],
+      "impact": "Sin esto, el sistema no puede enviar emails"
+    },
+    {
+      "priority": "HIGH",
+      "category": "Seguridad",
+      "title": "Implementar Rate Limiting",
+      "description": "Agregar límites de velocidad para prevenir abuso del servicio",
+      "steps": [
+        "Implementar middleware de rate limiting",
+        "Configurar límites por IP y por usuario",
+        "Agregar monitoreo de uso excesivo"
+      ],
+      "impact": "Mejorará la seguridad y evitará costos excesivos"
+    },
+    {
+      "priority": "MEDIUM",
+      "category": "Funcionalidad",
+      "title": "Mejorar Sistema de Plantillas",
+      "description": "Expandir opciones de personalización para diferentes tipos de proyecto",
+      "steps": [
+        "Crear plantillas específicas por industria",
+        "Agregar más campos personalizables",
+        "Implementar vista previa en tiempo real"
+      ],
+      "impact": "Mejorará la experiencia del usuario y profesionalismo"
+    },
+    {
+      "priority": "MEDIUM",
+      "category": "Monitoreo",
+      "title": "Implementar Analytics de Email",
+      "description": "Agregar tracking de apertura, clics y respuestas",
+      "steps": [
+        "Configurar webhooks de SendGrid",
+        "Implementar base de datos para métricas",
+        "Crear dashboard de estadísticas"
+      ],
+      "impact": "Proporcionará insights valiosos sobre efectividad"
+    }
+  ],
+  "nextSteps": [
+    {
+      "immediate": "URGENTE: Resolver problemas críticos de configuración",
+      "shortTerm": "Probar funcionalidad con datos reales",
+      "longTerm": "Implementar mejoras de seguridad y monitoreo"
+    }
+  ]
+}
