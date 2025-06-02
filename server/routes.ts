@@ -20,18 +20,16 @@ import Stripe from "stripe";
 import multer from 'multer';
 import axios from 'axios';
 import { chatService } from './services/chatService';
-import { sendContactFormEmail } from './services/emailService';
 import { propertyService } from './services/propertyService';
 import { documentService } from './services/documentService';
 import aiProcessorRoutes from './routes/aiProcessor';
 import emailRoutes from './routes/email-routes';
 import aiImportRoutes from './routes/ai-import-routes';
-import pdfRoutes from './routes/pdf-routes';
 import { memoryService } from './services/memoryService';
 import { stripeService } from './services/stripeService';
 import { permitService } from './services/permitService';
 import { searchService } from './services/searchService';
-import { sendEmail, sendContactFormEmail } from './services/emailService';
+import { sendEmail } from './services/emailService';
 import { estimatorService, validateProjectInput } from './services/estimatorService';
 import { promptGeneratorService } from './services/promptGeneratorService';
 import { projectPaymentService } from './services/projectPaymentService';
@@ -54,6 +52,7 @@ import { registerDeepSearchRoutes } from './routes/deepSearchRoutes'; // Import 
 import { registerLaborDeepSearchRoutes } from './routes/laborDeepSearchRoutes'; // Import Labor DeepSearch AI routes
 import legalDefenseRoutes from './routes/legal-defense-routes'; // Import Legal Defense Engine routes
 import unifiedContractRoutes from './routes/unifiedContractRoutes'; // Import Unified Contract Management routes
+import pdfContractProcessorRoutes from './routes/pdf-contract-processor'; // Import PDF Contract Processor routes
 import express from 'express'; // Import express to use express.raw
 
 // Initialize OpenAI API
