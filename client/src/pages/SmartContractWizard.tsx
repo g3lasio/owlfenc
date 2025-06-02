@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { Upload, Shield, CheckCircle, AlertTriangle, FileText, Brain, Zap, Scale, UserPlus, FileCheck } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface ExtractedData {
   clientName?: string;
@@ -568,6 +569,17 @@ const LegalReviewStep: React.FC<{
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [recommendedClauses, setRecommendedClauses] = useState<string[]>([]);
   const [showRecommendations, setShowRecommendations] = useState(false);
+  const [selectedClauses, setSelectedClauses] = useState<Set<number>>(new Set());
+
+  const handleClauseToggle = (index: number) => {
+    const newSelected = new Set(selectedClauses);
+    if (newSelected.has(index)) {
+      newSelected.delete(index);
+    } else {
+      newSelected.add(index);
+    }
+    setSelectedClauses(newSelected);
+  };
 
   useEffect(() => {
     // Analyze extracted data and identify missing critical information
@@ -587,6 +599,10 @@ const LegalReviewStep: React.FC<{
       'Permit responsibility and compliance terms'
     ];
     setRecommendedClauses(clauses);
+    
+    // Pre-select high priority clauses
+    const highPriorityClauses = new Set([0, 1, 3, 6, 7]); // Payment, Change Orders, Warranty, Timeline, Permits
+    setSelectedClauses(highPriorityClauses);
   }, [extractedData]);
 
   const extractedFieldsCount = Object.keys(extractedData).filter(key => extractedData[key as keyof ExtractedData]).length;
@@ -610,24 +626,24 @@ const LegalReviewStep: React.FC<{
             <FileText className="h-4 w-4 text-blue-600" />
             Information Extracted from Document
           </h3>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div className="text-gray-700">
-              <span className="font-medium text-gray-900">Client:</span> {extractedData.clientName || 'Not specified'}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div className="text-gray-700 break-words">
+              <span className="font-medium text-gray-900">Client:</span> <span className="break-all">{extractedData.clientName || 'Not specified'}</span>
             </div>
-            <div className="text-gray-700">
-              <span className="font-medium text-gray-900">Project:</span> {extractedData.projectType || 'Not specified'}
+            <div className="text-gray-700 break-words">
+              <span className="font-medium text-gray-900">Project:</span> <span className="break-all">{extractedData.projectType || 'Not specified'}</span>
             </div>
-            <div className="text-gray-700">
-              <span className="font-medium text-gray-900">Amount:</span> {extractedData.totalAmount || 'Not specified'}
+            <div className="text-gray-700 break-words">
+              <span className="font-medium text-gray-900">Amount:</span> <span className="break-all">{extractedData.totalAmount || 'Not specified'}</span>
             </div>
-            <div className="text-gray-700">
-              <span className="font-medium text-gray-900">Location:</span> {extractedData.projectLocation || 'Not specified'}
+            <div className="text-gray-700 break-words">
+              <span className="font-medium text-gray-900">Location:</span> <span className="break-all">{extractedData.projectLocation || 'Not specified'}</span>
             </div>
-            <div className="text-gray-700">
-              <span className="font-medium text-gray-900">Contractor:</span> {extractedData.contractorName || 'Not specified'}
+            <div className="text-gray-700 break-words">
+              <span className="font-medium text-gray-900">Contractor:</span> <span className="break-all">{extractedData.contractorName || 'Not specified'}</span>
             </div>
-            <div className="text-gray-700">
-              <span className="font-medium text-gray-900">Contact:</span> {extractedData.clientEmail || extractedData.clientPhone || 'Not specified'}
+            <div className="text-gray-700 break-words col-span-1 md:col-span-2">
+              <span className="font-medium text-gray-900">Contact:</span> <span className="break-all">{extractedData.clientEmail || extractedData.clientPhone || 'Not specified'}</span>
             </div>
           </div>
           <div className="mt-3 text-xs text-gray-500">
@@ -678,16 +694,47 @@ const LegalReviewStep: React.FC<{
               onClick={() => setShowRecommendations(true)}
               className="border-green-600 text-green-700 hover:bg-green-50"
             >
-              View Detailed Recommendations
+              Customize Legal Protections
             </Button>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
+              <p className="text-xs text-gray-600 mb-3">
+                Select the protective clauses you want to include in your contract. {selectedClauses.size} of {recommendedClauses.length} clauses selected.
+              </p>
               {recommendedClauses.map((clause, index) => (
-                <div key={index} className="flex items-start gap-2 text-sm text-gray-700">
-                  <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span>{clause}</span>
+                <div key={index} className="flex items-start gap-3 p-2 rounded border hover:bg-gray-50 transition-colors">
+                  <Checkbox
+                    id={`clause-${index}`}
+                    checked={selectedClauses.has(index)}
+                    onCheckedChange={() => handleClauseToggle(index)}
+                    className="mt-0.5"
+                  />
+                  <label 
+                    htmlFor={`clause-${index}`}
+                    className="text-sm text-gray-700 cursor-pointer flex-1 leading-relaxed"
+                  >
+                    {clause}
+                  </label>
                 </div>
               ))}
+              <div className="flex gap-2 mt-4">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setSelectedClauses(new Set(Array.from({length: recommendedClauses.length}, (_, i) => i)))}
+                  className="text-xs"
+                >
+                  Select All
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setSelectedClauses(new Set())}
+                  className="text-xs"
+                >
+                  Clear All
+                </Button>
+              </div>
             </div>
           )}
         </div>
