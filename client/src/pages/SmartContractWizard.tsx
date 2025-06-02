@@ -357,9 +357,10 @@ const SmartContractWizard: React.FC = () => {
         )}
 
         {currentStep === 'contract-preview' && contractData && (
-          <ContractPreviewStep
+          <InteractiveContractPreview
             contractData={contractData}
             selectedClauses={[]}
+            onDataUpdate={(updatedData) => setContractData(updatedData)}
             onProceedToGeneration={() => {
               setCurrentStep('generation');
               setStatusMessage('Generating final PDF contract with professional legal protections...');
