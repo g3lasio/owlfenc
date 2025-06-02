@@ -605,32 +605,32 @@ const LegalReviewStep: React.FC<{
       <CardContent className="space-y-6">
         
         {/* Extracted Data Summary */}
-        <div className="bg-blue-50 p-4 rounded-lg">
-          <h3 className="font-semibold mb-3 flex items-center gap-2">
-            <FileText className="h-4 w-4" />
+        <div className="bg-white border border-blue-200 p-4 rounded-lg shadow-sm">
+          <h3 className="font-semibold mb-3 flex items-center gap-2 text-gray-800">
+            <FileText className="h-4 w-4 text-blue-600" />
             Information Extracted from Document
           </h3>
           <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="font-medium">Client:</span> {extractedData.clientName || 'Not specified'}
+            <div className="text-gray-700">
+              <span className="font-medium text-gray-900">Client:</span> {extractedData.clientName || 'Not specified'}
             </div>
-            <div>
-              <span className="font-medium">Project:</span> {extractedData.projectType || 'Not specified'}
+            <div className="text-gray-700">
+              <span className="font-medium text-gray-900">Project:</span> {extractedData.projectType || 'Not specified'}
             </div>
-            <div>
-              <span className="font-medium">Amount:</span> {extractedData.totalAmount || 'Not specified'}
+            <div className="text-gray-700">
+              <span className="font-medium text-gray-900">Amount:</span> {extractedData.totalAmount || 'Not specified'}
             </div>
-            <div>
-              <span className="font-medium">Location:</span> {extractedData.projectLocation || 'Not specified'}
+            <div className="text-gray-700">
+              <span className="font-medium text-gray-900">Location:</span> {extractedData.projectLocation || 'Not specified'}
             </div>
-            <div>
-              <span className="font-medium">Contractor:</span> {extractedData.contractorName || 'Not specified'}
+            <div className="text-gray-700">
+              <span className="font-medium text-gray-900">Contractor:</span> {extractedData.contractorName || 'Not specified'}
             </div>
-            <div>
-              <span className="font-medium">Contact:</span> {extractedData.clientEmail || extractedData.clientPhone || 'Not specified'}
+            <div className="text-gray-700">
+              <span className="font-medium text-gray-900">Contact:</span> {extractedData.clientEmail || extractedData.clientPhone || 'Not specified'}
             </div>
           </div>
-          <div className="mt-3 text-xs text-gray-600">
+          <div className="mt-3 text-xs text-gray-500">
             Successfully extracted {extractedFieldsCount} data points from uploaded document
           </div>
         </div>
@@ -665,9 +665,9 @@ const LegalReviewStep: React.FC<{
         )}
 
         {/* Legal Recommendations */}
-        <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+        <div className="bg-white border border-green-200 p-4 rounded-lg shadow-sm">
           <h3 className="font-semibold mb-2 text-green-800">Legal Expert Recommendations</h3>
-          <p className="text-sm text-green-700 mb-3">
+          <p className="text-sm text-gray-700 mb-3">
             Based on the project type and risk analysis, I recommend including these protective clauses:
           </p>
           
@@ -676,14 +676,14 @@ const LegalReviewStep: React.FC<{
               variant="outline" 
               size="sm"
               onClick={() => setShowRecommendations(true)}
-              className="border-green-300 text-green-700 hover:bg-green-100"
+              className="border-green-600 text-green-700 hover:bg-green-50"
             >
               View Detailed Recommendations
             </Button>
           ) : (
             <div className="space-y-2">
               {recommendedClauses.map((clause, index) => (
-                <div key={index} className="flex items-start gap-2 text-sm">
+                <div key={index} className="flex items-start gap-2 text-sm text-gray-700">
                   <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
                   <span>{clause}</span>
                 </div>
