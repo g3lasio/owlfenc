@@ -161,7 +161,7 @@ const PaymentScheduleEditor: React.FC<PaymentScheduleEditorProps> = ({ schedule,
     setEditSchedule(editSchedule.filter((_, i) => i !== index));
   };
 
-  const updatePayment = (index: number, field: string, value: string) => {
+  const updatePayment = (index: number, field: 'description' | 'amount' | 'dueDate' | 'percentage', value: string) => {
     const updated = [...editSchedule];
     const payment = { ...updated[index] };
     
@@ -180,8 +180,10 @@ const PaymentScheduleEditor: React.FC<PaymentScheduleEditorProps> = ({ schedule,
       const totalValue = getTotalValue();
       const calculatedPercentage = totalValue > 0 ? ((amountValue / totalValue) * 100).toFixed(1) : '0';
       payment.percentage = calculatedPercentage;
-    } else {
-      payment[field] = value;
+    } else if (field === 'description') {
+      payment.description = value;
+    } else if (field === 'dueDate') {
+      payment.dueDate = value;
     }
     
     updated[index] = payment;
@@ -285,61 +287,70 @@ const PaymentScheduleEditor: React.FC<PaymentScheduleEditorProps> = ({ schedule,
           </div>
         </div>
         
-        <div className="space-y-3">
-          <div className="grid grid-cols-12 gap-2 text-xs text-gray-400 mb-2">
-            <div className="col-span-4">Description</div>
-            <div className="col-span-2">Percentage</div>
-            <div className="col-span-3">Amount</div>
-            <div className="col-span-2">Due Date</div>
-            <div className="col-span-1">Actions</div>
-          </div>
-          
+        <div className="space-y-4">
           {editSchedule.map((payment, index) => (
-            <div key={index} className="grid grid-cols-12 gap-2 items-center">
-              <div className="col-span-4">
-                <Input
-                  placeholder="Payment description"
-                  value={payment.description}
-                  onChange={(e) => updatePayment(index, 'description', e.target.value)}
-                  className="bg-gray-800 border-gray-600 text-white text-sm"
-                />
-              </div>
-              <div className="col-span-2">
-                <div className="relative">
-                  <Input
-                    placeholder="25"
-                    value={payment.percentage || ''}
-                    onChange={(e) => updatePayment(index, 'percentage', e.target.value)}
-                    className="bg-gray-800 border-gray-600 text-white text-sm pr-6"
-                  />
-                  <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs">%</span>
-                </div>
-              </div>
-              <div className="col-span-3">
-                <Input
-                  placeholder="$1,000.00"
-                  value={payment.amount}
-                  onChange={(e) => updatePayment(index, 'amount', e.target.value)}
-                  className="bg-gray-800 border-gray-600 text-white text-sm"
-                />
-              </div>
-              <div className="col-span-2">
-                <Input
-                  type="date"
-                  value={payment.dueDate || ''}
-                  onChange={(e) => updatePayment(index, 'dueDate', e.target.value)}
-                  className="bg-gray-800 border-gray-600 text-white text-sm"
-                />
-              </div>
-              <div className="col-span-1">
+            <div key={index} className="bg-gray-800 p-4 rounded-lg border border-gray-600 space-y-3">
+              {/* Mobile-first layout */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-300">Payment #{index + 1}</span>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => removePayment(index)}
-                  className="text-red-400 hover:text-red-300 p-1 h-8 w-8"
+                  className="text-red-400 hover:text-red-300 p-1 h-7 w-7"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-3 w-3" />
                 </Button>
+              </div>
+              
+              {/* Description - Full width */}
+              <div>
+                <label className="text-xs text-gray-400 mb-1 block">Description</label>
+                <Input
+                  placeholder="Payment description"
+                  value={payment.description}
+                  onChange={(e) => updatePayment(index, 'description', e.target.value)}
+                  className="bg-gray-700 border-gray-600 text-white text-sm w-full"
+                />
+              </div>
+              
+              {/* Percentage and Amount - Side by side */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-gray-400 mb-1 block">Percentage</label>
+                  <div className="relative">
+                    <Input
+                      placeholder="25"
+                      value={payment.percentage || ''}
+                      onChange={(e) => updatePayment(index, 'percentage', e.target.value)}
+                      className="bg-gray-700 border-gray-600 text-white text-sm pr-6"
+                    />
+                    <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs">%</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 mb-1 block">Amount</label>
+                  <Input
+                    placeholder="$1,000.00"
+                    value={payment.amount}
+                    onChange={(e) => updatePayment(index, 'amount', e.target.value)}
+                    className="bg-gray-700 border-gray-600 text-white text-sm"
+                  />
+                </div>
+              </div>
+              
+              {/* Due Date with Calendar Icon */}
+              <div>
+                <label className="text-xs text-gray-400 mb-1 block">Due Date</label>
+                <div className="relative">
+                  <Input
+                    type="date"
+                    value={payment.dueDate || ''}
+                    onChange={(e) => updatePayment(index, 'dueDate', e.target.value)}
+                    className="bg-gray-700 border-gray-600 text-white text-sm pl-10"
+                  />
+                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                </div>
               </div>
             </div>
           ))}
