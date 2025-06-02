@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, Shield, CheckCircle, AlertTriangle, FileText, Brain, Zap } from 'lucide-react';
+import { Upload, Shield, CheckCircle, AlertTriangle, FileText, Brain, Zap, Scale, UserPlus, FileCheck } from 'lucide-react';
 
 interface ExtractedData {
   clientName?: string;
@@ -49,7 +49,7 @@ interface RiskAnalysis {
   recommendations: string[];
 }
 
-type WizardStep = 'upload' | 'analysis' | 'completion' | 'preview' | 'generation' | 'final';
+type WizardStep = 'upload' | 'analysis' | 'legal-review' | 'completion' | 'preview' | 'generation' | 'final';
 
 const SmartContractWizard: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<WizardStep>('upload');
@@ -106,42 +106,11 @@ const SmartContractWizard: React.FC = () => {
       // Detect missing fields
       const missingFields = detectMissingFields(result.data.extractedData || {});
       
-      // Wait a moment to show the analysis results, then proceed
+      // Wait a moment to show the analysis results, then proceed to legal consultation
       setTimeout(() => {
-        if (missingFields.length > 0) {
-          setCurrentStep('completion');
-          setStatusMessage(`Extracted ${Object.keys(result.data.extractedData || {}).length} fields. Need ${missingFields.length} additional data points for complete contract protection.`);
-        } else {
-          setCurrentStep('generation');
-          setStatusMessage('All information extracted successfully. Generating protected contract...');
-          // Auto-generate contract if all data is complete
-          const contractData: ContractData = {
-            clientName: result.data.extractedData.clientName || '',
-            clientAddress: result.data.extractedData.clientAddress || result.data.extractedData.projectLocation || '',
-            clientEmail: result.data.extractedData.clientEmail || '',
-            clientPhone: result.data.extractedData.clientPhone || '',
-            projectType: result.data.extractedData.projectType || '',
-            projectDescription: result.data.extractedData.projectDescription || '',
-            projectLocation: result.data.extractedData.projectLocation || '',
-            contractorName: result.data.extractedData.contractorName || '',
-            contractorEmail: result.data.extractedData.contractorEmail || '',
-            contractorPhone: result.data.extractedData.contractorPhone || '',
-            contractorAddress: '',
-            contractorLicense: '',
-            totalAmount: result.data.extractedData.totalAmount || '',
-            startDate: result.data.extractedData.startDate || '',
-            completionDate: result.data.extractedData.completionDate || '',
-            paymentTerms: '',
-            paymentSchedule: '',
-            warrantyTerms: '',
-            changeOrderPolicy: '',
-            liabilityClause: '',
-            isComplete: true,
-            missingFields: []
-          };
-          generateContract(contractData);
-        }
-        setProgress(100);
+        setCurrentStep('legal-review');
+        setStatusMessage('Legal analysis complete. Reviewing extracted information and identifying additional requirements...');
+        setProgress(90);
       }, 2000);
       
       
@@ -531,6 +500,159 @@ const GenerationStep: React.FC<{
             <p className="text-gray-600">Aplicando cláusulas de protección legal avanzadas...</p>
           </div>
         </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+const LegalReviewStep: React.FC<{
+  extractedData: ExtractedData;
+  riskAnalysis: RiskAnalysis | null;
+  onProceedToCompletion: () => void;
+  onProceedToGeneration: () => void;
+}> = ({ extractedData, riskAnalysis, onProceedToCompletion, onProceedToGeneration }) => {
+  const [missingFields, setMissingFields] = useState<string[]>([]);
+  const [recommendedClauses, setRecommendedClauses] = useState<string[]>([]);
+  const [showRecommendations, setShowRecommendations] = useState(false);
+
+  useEffect(() => {
+    // Analyze extracted data and identify missing critical information
+    const critical = ['clientName', 'clientEmail', 'clientPhone', 'projectDescription', 'totalAmount', 'contractorName'];
+    const missing = critical.filter(field => !extractedData[field as keyof ExtractedData]);
+    setMissingFields(missing);
+
+    // Generate legal recommendations based on project type and risk analysis
+    const clauses = [
+      'Payment milestone structure with mechanic\'s lien rights',
+      'Change order authorization requirements',
+      'Weather delay and force majeure provisions',
+      'Material warranty and workmanship guarantee',
+      'Insurance and bonding requirements',
+      'Dispute resolution and arbitration clauses',
+      'Project completion timeline with penalties',
+      'Permit responsibility and compliance terms'
+    ];
+    setRecommendedClauses(clauses);
+  }, [extractedData]);
+
+  const extractedFieldsCount = Object.keys(extractedData).filter(key => extractedData[key as keyof ExtractedData]).length;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Scale className="h-5 w-5 text-blue-500" />
+          Legal Expert Review
+        </CardTitle>
+        <CardDescription>
+          Contract analysis complete. Review extracted information and legal recommendations.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        
+        {/* Extracted Data Summary */}
+        <div className="bg-blue-50 p-4 rounded-lg">
+          <h3 className="font-semibold mb-3 flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Information Extracted from Document
+          </h3>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span className="font-medium">Client:</span> {extractedData.clientName || 'Not specified'}
+            </div>
+            <div>
+              <span className="font-medium">Project:</span> {extractedData.projectType || 'Not specified'}
+            </div>
+            <div>
+              <span className="font-medium">Amount:</span> {extractedData.totalAmount || 'Not specified'}
+            </div>
+            <div>
+              <span className="font-medium">Location:</span> {extractedData.projectLocation || 'Not specified'}
+            </div>
+            <div>
+              <span className="font-medium">Contractor:</span> {extractedData.contractorName || 'Not specified'}
+            </div>
+            <div>
+              <span className="font-medium">Contact:</span> {extractedData.clientEmail || extractedData.clientPhone || 'Not specified'}
+            </div>
+          </div>
+          <div className="mt-3 text-xs text-gray-600">
+            Successfully extracted {extractedFieldsCount} data points from uploaded document
+          </div>
+        </div>
+
+        {/* Risk Analysis Display */}
+        {riskAnalysis && (
+          <Alert>
+            <Shield className="h-4 w-4" />
+            <AlertDescription>
+              Legal Risk Assessment: <Badge variant={riskAnalysis.riskLevel === 'LOW' ? 'default' : 'destructive'}>
+                {riskAnalysis.riskLevel}
+              </Badge>
+              <br />
+              {riskAnalysis.protections.length} protective clauses identified for inclusion
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Missing Information Analysis */}
+        {missingFields.length > 0 && (
+          <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+            <h3 className="font-semibold mb-2 text-yellow-800">Additional Information Required</h3>
+            <p className="text-sm text-yellow-700 mb-2">
+              To create a comprehensive protective contract, we need {missingFields.length} additional details:
+            </p>
+            <ul className="list-disc list-inside text-sm text-yellow-700 space-y-1">
+              {missingFields.map((field, index) => (
+                <li key={index}>{field.replace(/([A-Z])/g, ' $1').toLowerCase()}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Legal Recommendations */}
+        <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+          <h3 className="font-semibold mb-2 text-green-800">Legal Expert Recommendations</h3>
+          <p className="text-sm text-green-700 mb-3">
+            Based on the project type and risk analysis, I recommend including these protective clauses:
+          </p>
+          
+          {!showRecommendations ? (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowRecommendations(true)}
+              className="border-green-300 text-green-700 hover:bg-green-100"
+            >
+              View Detailed Recommendations
+            </Button>
+          ) : (
+            <div className="space-y-2">
+              {recommendedClauses.map((clause, index) => (
+                <div key={index} className="flex items-start gap-2 text-sm">
+                  <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                  <span>{clause}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-4 pt-4">
+          {missingFields.length > 0 ? (
+            <Button onClick={onProceedToCompletion} className="flex-1">
+              <UserPlus className="h-4 w-4 mr-2" />
+              Provide Additional Information
+            </Button>
+          ) : (
+            <Button onClick={onProceedToGeneration} className="flex-1">
+              <FileCheck className="h-4 w-4 mr-2" />
+              Generate Protected Contract
+            </Button>
+          )}
+        </div>
+
       </CardContent>
     </Card>
   );
