@@ -59,7 +59,7 @@ const SmartContractWizard: React.FC = () => {
   const [generatedContract, setGeneratedContract] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [assistantMessage, setAssistantMessage] = useState('¡Hola! Soy Legal Guard, tu asistente para crear contratos blindados. Sube tu PDF de estimado para comenzar.');
+  const [statusMessage, setStatusMessage] = useState('Upload your estimate PDF to begin contract analysis');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -77,7 +77,7 @@ const SmartContractWizard: React.FC = () => {
     setIsProcessing(true);
     setCurrentStep('analysis');
     setProgress(20);
-    setAssistantMessage('Analizando tu PDF y extrayendo información crítica...');
+    setStatusMessage('Analyzing PDF and extracting critical information...');
 
     try {
       const formData = new FormData();
@@ -89,37 +89,42 @@ const SmartContractWizard: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Error procesando el PDF');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'PDF processing failed');
       }
 
       const result = await response.json();
       
-      setExtractedData(result.data.extractedData);
-      setRiskAnalysis(result.data.riskAnalysis);
+      if (!result.success || !result.data) {
+        throw new Error('Invalid response format from server');
+      }
+
+      setExtractedData(result.data.extractedData || {});
+      setRiskAnalysis(result.data.riskAnalysis || null);
       setProgress(60);
       
-      // Detectar campos faltantes
-      const missingFields = detectMissingFields(result.data.extractedData);
+      // Detect missing fields
+      const missingFields = detectMissingFields(result.data.extractedData || {});
       
       if (missingFields.length > 0) {
         setCurrentStep('completion');
-        setAssistantMessage(`He extraído ${Object.keys(result.data.extractedData).length} campos, pero necesito ${missingFields.length} datos adicionales para crear un contrato completamente blindado.`);
+        setStatusMessage(`Extracted ${Object.keys(result.data.extractedData || {}).length} fields. Need ${missingFields.length} additional data points for complete contract protection.`);
       } else {
         setCurrentStep('preview');
-        setAssistantMessage('¡Perfecto! Tengo toda la información necesaria. Revisemos el contrato generado.');
+        setStatusMessage('All information extracted successfully. Ready to generate contract.');
       }
       
       setProgress(100);
       
     } catch (error) {
-      console.error('Error:', error);
+      console.error('PDF Processing Error:', error);
       toast({
-        title: "Error de procesamiento",
-        description: "No pude analizar el PDF. Verifica que sea un estimado válido.",
+        title: "Processing Error",
+        description: error instanceof Error ? error.message : "Could not analyze PDF. Please verify it's a valid estimate.",
         variant: "destructive"
       });
       setCurrentStep('upload');
-      setAssistantMessage('Hubo un problema procesando tu archivo. ¿Puedes intentar con otro PDF?');
+      setStatusMessage('Processing failed. Please try with another PDF or check if API services are configured.');
     } finally {
       setIsProcessing(false);
     }
@@ -138,7 +143,7 @@ const SmartContractWizard: React.FC = () => {
   const handleDataCompletion = (completedData: ContractData) => {
     setContractData(completedData);
     setCurrentStep('generation');
-    setAssistantMessage('Generando tu contrato blindado con cláusulas de protección avanzadas...');
+    setStatusMessage('Generating protected contract with advanced defensive clauses...');
     generateContract(completedData);
   };
 
@@ -156,20 +161,26 @@ const SmartContractWizard: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Error generando contrato');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Contract generation failed');
       }
 
       const result = await response.json();
+      
+      if (!result.html) {
+        throw new Error('No contract HTML received from server');
+      }
+
       setGeneratedContract(result.html);
       setCurrentStep('final');
       setProgress(100);
-      setAssistantMessage('¡Contrato completado! He aplicado protecciones legales avanzadas basadas en el análisis de riesgo.');
+      setStatusMessage('Contract completed! Advanced legal protections applied based on risk analysis.');
 
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Contract Generation Error:', error);
       toast({
-        title: "Error de generación",
-        description: "No pude generar el contrato. Verifica la configuración del sistema.",
+        title: "Generation Error",
+        description: error instanceof Error ? error.message : "Could not generate contract. Please check system configuration.",
         variant: "destructive"
       });
     } finally {
@@ -193,7 +204,7 @@ const SmartContractWizard: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
       <div className="max-w-4xl mx-auto space-y-6">
         
-        {/* Header con Assistant */}
+        {/* Header with Status */}
         <Card className="border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-purple-50">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-3">
@@ -201,29 +212,29 @@ const SmartContractWizard: React.FC = () => {
                 <Shield className="h-6 w-6 text-blue-600" />
               </div>
               <div>
-                <CardTitle className="text-xl text-blue-800">Legal Guard Assistant</CardTitle>
-                <p className="text-sm text-blue-600">Generador de Contratos Blindados</p>
+                <CardTitle className="text-xl text-blue-800">Legal Defense Engine</CardTitle>
+                <p className="text-sm text-blue-600">Protected Contract Generator</p>
               </div>
             </div>
           </CardHeader>
           <CardContent>
             <div className="bg-white p-4 rounded-lg border border-blue-100">
-              <p className="text-gray-700">{assistantMessage}</p>
+              <p className="text-gray-700">{statusMessage}</p>
             </div>
             <div className="mt-4">
               <Progress value={getStepProgress()} className="h-2" />
-              <p className="text-xs text-gray-500 mt-1">Progreso: {getStepProgress()}%</p>
+              <p className="text-xs text-gray-500 mt-1">Progress: {getStepProgress()}%</p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Análisis de Riesgo */}
+        {/* Risk Analysis */}
         {riskAnalysis && (
           <Card className="border-l-4 border-l-orange-400">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-orange-500" />
-                Análisis de Riesgo Legal
+                Legal Risk Analysis
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -231,16 +242,16 @@ const SmartContractWizard: React.FC = () => {
                 <div>
                   <Badge variant={riskAnalysis.riskLevel === 'HIGH' ? 'destructive' : 
                                 riskAnalysis.riskLevel === 'MEDIUM' ? 'default' : 'secondary'}>
-                    Riesgo: {riskAnalysis.riskLevel}
+                    Risk: {riskAnalysis.riskLevel}
                   </Badge>
                 </div>
                 <div>
-                  <p className="text-sm font-medium">Protecciones Aplicadas:</p>
-                  <p className="text-sm text-gray-600">{riskAnalysis.protections.length} cláusulas</p>
+                  <p className="text-sm font-medium">Applied Protections:</p>
+                  <p className="text-sm text-gray-600">{riskAnalysis.protections.length} clauses</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium">Recomendaciones:</p>
-                  <p className="text-sm text-gray-600">{riskAnalysis.recommendations.length} sugerencias</p>
+                  <p className="text-sm font-medium">Recommendations:</p>
+                  <p className="text-sm text-gray-600">{riskAnalysis.recommendations.length} suggestions</p>
                 </div>
               </div>
             </CardContent>
@@ -294,15 +305,15 @@ const UploadStep: React.FC<{
             <Upload className="h-8 w-8 text-blue-600" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold">Sube tu PDF de Estimado</h3>
-            <p className="text-gray-600">El análisis inteligente comenzará automáticamente</p>
+            <h3 className="text-lg font-semibold">Upload Your Estimate PDF</h3>
+            <p className="text-gray-600">Intelligent analysis will begin automatically</p>
           </div>
           <Button 
             onClick={() => fileInputRef.current?.click()}
             className="bg-blue-600 hover:bg-blue-700"
           >
             <FileText className="h-4 w-4 mr-2" />
-            Seleccionar PDF
+            Select PDF
           </Button>
           <input
             ref={fileInputRef}
@@ -332,8 +343,8 @@ const AnalysisStep: React.FC<{
             <Brain className="h-8 w-8 text-purple-600 animate-pulse" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold">Análisis en Progreso</h3>
-            <p className="text-gray-600">Extrayendo datos y evaluando riesgos legales...</p>
+            <h3 className="text-lg font-semibold">Analysis in Progress</h3>
+            <p className="text-gray-600">Extracting data and evaluating legal risks...</p>
           </div>
           <Progress value={progress} className="w-full max-w-md mx-auto" />
         </div>
