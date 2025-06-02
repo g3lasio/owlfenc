@@ -3,12 +3,17 @@ import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
 import pdf from 'pdf-parse';
 import sharp from 'sharp';
 import Anthropic from '@anthropic-ai/sdk';
 import LegalDefenseEngine from '../../client/src/services/legalDefenseEngine';
 
 const router = Router();
+
+// Get __dirname equivalent for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Configurar multer para subida de archivos
 const storage = multer.diskStorage({
