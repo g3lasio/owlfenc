@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, Shield, CheckCircle, AlertTriangle, FileText, Brain, Zap, Scale, UserPlus, FileCheck } from 'lucide-react';
+import { Upload, Shield, CheckCircle, AlertTriangle, FileText, Brain, Zap, Scale, UserPlus, FileCheck, Eye, Calendar, DollarSign, MapPin, Phone, Mail, Building, Clock, PenTool } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 
 interface ExtractedData {
@@ -58,7 +58,7 @@ interface RiskAnalysis {
   recommendations: string[];
 }
 
-type WizardStep = 'upload' | 'analysis' | 'legal-review' | 'completion' | 'preview' | 'generation' | 'final';
+type WizardStep = 'upload' | 'analysis' | 'legal-review' | 'completion' | 'preview' | 'contract-preview' | 'generation' | 'final';
 
 const SmartContractWizard: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<WizardStep>('upload');
@@ -149,9 +149,8 @@ const SmartContractWizard: React.FC = () => {
 
   const handleDataCompletion = (completedData: ContractData) => {
     setContractData(completedData);
-    setCurrentStep('generation');
-    setStatusMessage('Generating protected contract with advanced defensive clauses...');
-    generateContract(completedData);
+    setCurrentStep('contract-preview');
+    setStatusMessage('Preparing comprehensive contract preview...');
   };
 
   const generateContract = async (data: ContractData) => {
@@ -200,8 +199,9 @@ const SmartContractWizard: React.FC = () => {
       'upload': 0,
       'analysis': 20,
       'legal-review': 40,
-      'completion': 60,
-      'preview': 70,
+      'completion': 50,
+      'preview': 60,
+      'contract-preview': 75,
       'generation': 85,
       'final': 100
     };
@@ -749,7 +749,7 @@ const LegalReviewStep: React.FC<{
           ) : (
             <Button onClick={onProceedToGeneration} className="flex-1">
               <FileCheck className="h-4 w-4 mr-2" />
-              Generate Protected Contract
+              Preview Complete Contract
             </Button>
           )}
         </div>
