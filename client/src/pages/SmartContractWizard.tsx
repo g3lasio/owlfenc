@@ -1050,9 +1050,9 @@ const ContractPreviewStep: React.FC<{
                   <h5 className="font-medium mb-2">Milestone Payment Schedule:</h5>
                   <div className="space-y-2">
                     {contractData.paymentSchedule.map((payment: any, index: number) => (
-                      <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded text-sm">
-                        <span className="break-words">{payment.description}</span>
-                        <span className="font-medium break-words">{payment.amount}</span>
+                      <div key={index} className="flex justify-between items-center p-2 bg-gray-800 rounded text-sm border border-cyan-500">
+                        <span className="break-words text-gray-200">{payment.description}</span>
+                        <span className="font-medium break-words text-white">{payment.amount}</span>
                       </div>
                     ))}
                   </div>
@@ -1071,24 +1071,24 @@ const ContractPreviewStep: React.FC<{
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="bg-purple-50 p-4 rounded-lg">
-              <h5 className="font-semibold text-purple-800 mb-2">Insurance Requirements:</h5>
-              <p className="text-sm break-words">{contractData.insuranceInfo}</p>
+            <div className="bg-black p-4 rounded-lg cyberpunk-corner-frame border border-purple-500">
+              <h5 className="font-semibold text-purple-300 mb-2">Insurance Requirements:</h5>
+              <p className="text-sm break-words text-gray-200">{contractData.insuranceInfo}</p>
             </div>
 
             <div className="grid md:grid-cols-2 gap-4">
-              <div className="bg-green-50 p-4 rounded-lg">
-                <h5 className="font-semibold text-green-800 mb-2">Warranty Period:</h5>
-                <p className="text-sm break-words">{contractData.warrantyPeriod}</p>
+              <div className="bg-black p-4 rounded-lg cyberpunk-corner-frame border border-green-500">
+                <h5 className="font-semibold text-green-300 mb-2">Warranty Period:</h5>
+                <p className="text-sm break-words text-gray-200">{contractData.warrantyPeriod}</p>
               </div>
-              <div className="bg-green-50 p-4 rounded-lg">
-                <h5 className="font-semibold text-green-800 mb-2">Warranty Terms:</h5>
-                <p className="text-sm break-words">{contractData.warrantyTerms}</p>
+              <div className="bg-black p-4 rounded-lg cyberpunk-corner-frame border border-green-500">
+                <h5 className="font-semibold text-green-300 mb-2">Warranty Terms:</h5>
+                <p className="text-sm break-words text-gray-200">{contractData.warrantyTerms}</p>
               </div>
             </div>
 
-            <div className="bg-indigo-50 p-4 rounded-lg">
-              <h5 className="font-semibold text-indigo-800 mb-3">Selected Legal Protections ({selectedClauses.length} clauses):</h5>
+            <div className="bg-black p-4 rounded-lg cyberpunk-corner-frame border border-indigo-500">
+              <h5 className="font-semibold text-indigo-300 mb-3">Selected Legal Protections ({selectedClauses.length} clauses):</h5>
               <div className="space-y-2">
                 {selectedClauses.map((clause, index) => (
                   <div key={index} className="flex items-start gap-2 text-sm">
@@ -1111,34 +1111,34 @@ const ContractPreviewStep: React.FC<{
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4">
-              <div className="bg-yellow-50 p-4 rounded-lg">
-                <h5 className="font-semibold text-yellow-800 mb-2">Permit Requirements:</h5>
-                <p className="text-sm break-words">{contractData.permitRequirements}</p>
+              <div className="bg-black p-4 rounded-lg cyberpunk-corner-frame border border-yellow-500">
+                <h5 className="font-semibold text-yellow-300 mb-2">Permit Requirements:</h5>
+                <p className="text-sm break-words text-gray-200">{contractData.permitRequirements}</p>
               </div>
 
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h5 className="font-semibold text-blue-800 mb-2">Municipal Compliance:</h5>
-                <p className="text-sm break-words">{contractData.municipalRequirements}</p>
+              <div className="bg-black p-4 rounded-lg cyberpunk-corner-frame border border-blue-500">
+                <h5 className="font-semibold text-blue-300 mb-2">Municipal Compliance:</h5>
+                <p className="text-sm break-words text-gray-200">{contractData.municipalRequirements}</p>
               </div>
 
-              <div className="bg-green-50 p-4 rounded-lg">
-                <h5 className="font-semibold text-green-800 mb-2">Environmental Compliance:</h5>
-                <p className="text-sm break-words">{contractData.environmentalCompliance}</p>
+              <div className="bg-black p-4 rounded-lg cyberpunk-corner-frame border border-green-500">
+                <h5 className="font-semibold text-green-300 mb-2">Environmental Compliance:</h5>
+                <p className="text-sm break-words text-gray-200">{contractData.environmentalCompliance}</p>
               </div>
 
-              <div className="bg-red-50 p-4 rounded-lg">
-                <h5 className="font-semibold text-red-800 mb-2">Dispute Resolution:</h5>
-                <p className="text-sm break-words">{contractData.disputeResolution}</p>
+              <div className="bg-black p-4 rounded-lg cyberpunk-corner-frame border border-red-500">
+                <h5 className="font-semibold text-red-300 mb-2">Dispute Resolution:</h5>
+                <p className="text-sm break-words text-gray-200">{contractData.disputeResolution}</p>
               </div>
 
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h5 className="font-semibold text-gray-800 mb-2">Change Order Policy:</h5>
-                <p className="text-sm break-words">{contractData.changeOrderPolicy}</p>
+              <div className="bg-black p-4 rounded-lg cyberpunk-corner-frame border border-gray-500">
+                <h5 className="font-semibold text-gray-300 mb-2">Change Order Policy:</h5>
+                <p className="text-sm break-words text-gray-200">{contractData.changeOrderPolicy}</p>
               </div>
 
-              <div className="bg-indigo-50 p-4 rounded-lg">
-                <h5 className="font-semibold text-indigo-800 mb-2">Liability & Indemnification:</h5>
-                <p className="text-sm break-words">{contractData.liabilityClause}</p>
+              <div className="bg-black p-4 rounded-lg cyberpunk-corner-frame border border-indigo-500">
+                <h5 className="font-semibold text-indigo-300 mb-2">Liability & Indemnification:</h5>
+                <p className="text-sm break-words text-gray-200">{contractData.liabilityClause}</p>
               </div>
             </div>
           </CardContent>
@@ -1158,30 +1158,30 @@ const ContractPreviewStep: React.FC<{
             </div>
 
             <div className="grid md:grid-cols-2 gap-6">
-              <div className="border-2 border-dashed border-gray-300 p-6 rounded-lg text-center">
-                <h5 className="font-semibold mb-4">CLIENT SIGNATURE</h5>
+              <div className="bg-black border-2 border-dashed border-cyan-400 p-6 rounded-lg text-center cyberpunk-corner-frame">
+                <h5 className="font-semibold mb-4 text-white">CLIENT SIGNATURE</h5>
                 <div className="space-y-3">
-                  <div className="border-b border-gray-300 pb-2 mb-4">
-                    <p className="text-sm text-gray-600">Signature</p>
+                  <div className="border-b border-gray-400 pb-2 mb-4">
+                    <p className="text-sm text-gray-400">Signature</p>
                   </div>
-                  <p className="font-medium break-words">{contractData.clientName}</p>
-                  <p className="text-sm text-gray-600">Client/Property Owner</p>
-                  <div className="border-b border-gray-300 pb-2 mt-4">
-                    <p className="text-sm text-gray-600">Date</p>
+                  <p className="font-medium break-words text-white">{contractData.clientName}</p>
+                  <p className="text-sm text-gray-400">Client/Property Owner</p>
+                  <div className="border-b border-gray-400 pb-2 mt-4">
+                    <p className="text-sm text-gray-400">Date</p>
                   </div>
                 </div>
               </div>
 
-              <div className="border-2 border-dashed border-gray-300 p-6 rounded-lg text-center">
-                <h5 className="font-semibold mb-4">CONTRACTOR SIGNATURE</h5>
+              <div className="bg-black border-2 border-dashed border-cyan-400 p-6 rounded-lg text-center cyberpunk-corner-frame">
+                <h5 className="font-semibold mb-4 text-white">CONTRACTOR SIGNATURE</h5>
                 <div className="space-y-3">
-                  <div className="border-b border-gray-300 pb-2 mb-4">
-                    <p className="text-sm text-gray-600">Signature</p>
+                  <div className="border-b border-gray-400 pb-2 mb-4">
+                    <p className="text-sm text-gray-400">Signature</p>
                   </div>
-                  <p className="font-medium break-words">{contractData.contractorName}</p>
-                  <p className="text-sm text-gray-600">Licensed Contractor</p>
-                  <div className="border-b border-gray-300 pb-2 mt-4">
-                    <p className="text-sm text-gray-600">Date</p>
+                  <p className="font-medium break-words text-white">{contractData.contractorName}</p>
+                  <p className="text-sm text-gray-400">Licensed Contractor</p>
+                  <div className="border-b border-gray-400 pb-2 mt-4">
+                    <p className="text-sm text-gray-400">Date</p>
                   </div>
                 </div>
               </div>
