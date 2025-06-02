@@ -862,7 +862,11 @@ const ContractPreviewStep: React.FC<{
       <Card>
         <CardHeader className="text-center border-b">
           <CardTitle className="flex items-center justify-center gap-2 text-xl">
-            <Eye className="h-6 w-6 text-blue-600" />
+            <img 
+              src="https://ik.imagekit.io/lp5czyx2a/logo%20mervin.png?updatedAt=1748883786155" 
+              alt="Mervin AI" 
+              className="h-8 w-8 object-contain"
+            />
             PROFESSIONAL CONTRACTOR AGREEMENT
           </CardTitle>
           <div className="text-center mt-2">
@@ -1184,9 +1188,9 @@ const ContractPreviewStep: React.FC<{
             <div className="text-center text-xs text-gray-500 bg-gradient-to-r from-cyan-50 to-blue-50 p-4 rounded border border-cyan-200">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <img 
-                  src="/attached_assets/Add a heading (1).png" 
+                  src="https://ik.imagekit.io/lp5czyx2a/logo%20mervin.png?updatedAt=1748883786155" 
                   alt="Mervin AI" 
-                  className="h-4 w-4 object-contain"
+                  className="h-6 w-6 object-contain"
                 />
                 <span className="font-semibold text-cyan-700">Powered by Mervin AI Legal Expert</span>
               </div>
