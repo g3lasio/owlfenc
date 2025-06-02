@@ -148,9 +148,29 @@ const SmartContractWizard: React.FC = () => {
   };
 
   const handleDataCompletion = (completedData: ContractData) => {
-    setContractData(completedData);
+    // El motor Legal Defense enriquece automáticamente el contrato con términos profesionales
+    const enrichedContractData: ContractData = {
+      ...completedData,
+      // Términos legales automáticos generados por Mervin AI Legal Defense
+      contractorLicense: completedData.contractorLicense || 'Professional License Required - To be verified',
+      contractorAddress: completedData.contractorAddress || extractedData.contractorAddress || 'Professional Address Required',
+      contractorEmail: completedData.contractorEmail || extractedData.contractorEmail || 'Professional Email Required',
+      contractorPhone: completedData.contractorPhone || extractedData.contractorPhone || 'Professional Phone Required',
+      insuranceInfo: 'General Liability Insurance (minimum $1,000,000), Workers Compensation Insurance, and Professional Liability Insurance as required by state law',
+      warrantyPeriod: '12-month workmanship warranty and material warranties as specified by manufacturers',
+      permitRequirements: 'Contractor responsible for obtaining all required permits, inspections, and regulatory approvals',
+      disputeResolution: 'Binding arbitration through American Arbitration Association for disputes exceeding $5,000',
+      municipalRequirements: 'Compliance with all local building codes, zoning requirements, and municipal regulations',
+      environmentalCompliance: 'Adherence to EPA regulations, proper disposal of materials, and environmental protection standards',
+      paymentTerms: 'Net 30 payment terms with 1.5% monthly interest on overdue amounts exceeding 30 days',
+      warrantyTerms: 'Comprehensive warranty covering workmanship defects and material failures under normal use',
+      changeOrderPolicy: 'All changes require written approval with detailed cost breakdown and timeline adjustments',
+      liabilityClause: 'Limited liability with mutual indemnification and comprehensive insurance coverage requirements'
+    };
+    
+    setContractData(enrichedContractData);
     setCurrentStep('contract-preview');
-    setStatusMessage('Preparing comprehensive contract preview...');
+    setStatusMessage('Legal Defense Engine preparing comprehensive contract with professional-grade protections...');
   };
 
   const generateContract = async (data: ContractData) => {
@@ -325,6 +345,19 @@ const SmartContractWizard: React.FC = () => {
             extractedData={extractedData} 
             onComplete={handleDataCompletion}
             missingFields={detectMissingFields(extractedData)}
+          />
+        )}
+
+        {currentStep === 'contract-preview' && contractData && (
+          <ContractPreviewStep
+            contractData={contractData}
+            selectedClauses={[]}
+            onProceedToGeneration={() => {
+              setCurrentStep('generation');
+              setStatusMessage('Generating final PDF contract with professional legal protections...');
+              generateContract(contractData);
+            }}
+            onGoBack={() => setCurrentStep('completion')}
           />
         )}
         
@@ -747,15 +780,413 @@ const LegalReviewStep: React.FC<{
               Provide Additional Information
             </Button>
           ) : (
-            <Button onClick={onProceedToGeneration} className="flex-1">
+            <Button 
+              onClick={() => {
+                // Activar el motor Legal Defense para enriquecer automáticamente
+                const autoEnrichedData: ContractData = {
+                  clientName: extractedData.clientName || '',
+                  clientEmail: extractedData.clientEmail || '',
+                  clientPhone: extractedData.clientPhone || '',
+                  clientAddress: extractedData.clientAddress || '',
+                  projectType: extractedData.projectType || '',
+                  projectDescription: extractedData.projectDescription || '',
+                  projectLocation: extractedData.projectLocation || '',
+                  contractorName: extractedData.contractorName || '',
+                  contractorEmail: extractedData.contractorEmail || '',
+                  contractorPhone: extractedData.contractorPhone || '',
+                  contractorAddress: extractedData.contractorAddress || 'Professional Business Address Required',
+                  contractorLicense: 'State Licensed Contractor - License verification required per state regulations',
+                  totalAmount: extractedData.totalAmount || '',
+                  startDate: extractedData.startDate || 'To be mutually agreed upon',
+                  completionDate: extractedData.completionDate || 'As specified in project timeline',
+                  // Términos legales profesionales generados automáticamente por Mervin AI Legal Defense
+                  materialSpecs: 'All materials shall meet or exceed industry standards and manufacturer specifications. Contractor warrants all materials against defects.',
+                  insuranceInfo: 'General Liability Insurance minimum $2,000,000, Workers Compensation as required by state law, Professional Liability $1,000,000, and Automobile Liability $1,000,000',
+                  downPayment: '25% down payment required to commence work, with progress payments tied to completion milestones',
+                  paymentSchedule: [
+                    { description: 'Contract Execution', amount: '25% of total' },
+                    { description: 'Project Commencement', amount: '25% of total' },
+                    { description: 'Midpoint Completion', amount: '25% of total' },
+                    { description: 'Final Completion', amount: '25% of total' }
+                  ],
+                  warrantyPeriod: '24-month comprehensive warranty on workmanship, plus full manufacturer warranties on all materials and equipment',
+                  permitRequirements: 'Contractor assumes full responsibility for obtaining all required permits, licenses, inspections, and regulatory approvals at contractor expense',
+                  disputeResolution: 'Mandatory binding arbitration through American Arbitration Association using Construction Industry Rules for disputes exceeding $5,000',
+                  municipalRequirements: 'Full compliance with all local building codes, zoning ordinances, HOA requirements, and municipal regulations',
+                  environmentalCompliance: 'Strict adherence to EPA regulations, OSHA safety standards, proper hazardous material disposal, and environmental protection protocols',
+                  paymentTerms: 'Net 30 days payment terms. Late payments subject to 1.5% monthly service charge (18% APR). Lien rights reserved.',
+                  warrantyTerms: 'Comprehensive warranty covering all workmanship defects, material failures, and system malfunctions under normal use and conditions',
+                  changeOrderPolicy: 'All project changes require written authorization with detailed scope, cost analysis, and timeline impact before implementation',
+                  liabilityClause: 'Contractor liability limited to contract value. Mutual indemnification for third-party claims. Force majeure protections included.',
+                  missingFields: [],
+                  isComplete: true
+                };
+                handleDataCompletion(autoEnrichedData);
+              }}
+              className="flex-1"
+            >
               <FileCheck className="h-4 w-4 mr-2" />
-              Preview Complete Contract
+              Generate Professional Contract Preview
             </Button>
           )}
         </div>
 
       </CardContent>
     </Card>
+  );
+};
+
+const ContractPreviewStep: React.FC<{
+  contractData: ContractData;
+  selectedClauses: string[];
+  onProceedToGeneration: () => void;
+  onGoBack: () => void;
+}> = ({ contractData, selectedClauses, onProceedToGeneration, onGoBack }) => {
+  const today = new Date().toLocaleDateString('en-US', { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <Card>
+        <CardHeader className="text-center border-b">
+          <CardTitle className="flex items-center justify-center gap-2 text-xl">
+            <Eye className="h-6 w-6 text-blue-600" />
+            PROFESSIONAL CONTRACTOR AGREEMENT
+          </CardTitle>
+          <p className="text-sm text-gray-600 mt-2">
+            Generated by Mervin AI Legal Defense Engine - Professional Grade Contract
+          </p>
+        </CardHeader>
+      </Card>
+
+      {/* Contract Sections */}
+      <div className="space-y-4">
+        
+        {/* Página 1: Información Básica */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <FileText className="h-5 w-5 text-blue-600" />
+              Contract Information & Parties
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-gray-500" />
+                <span className="font-medium">Effective Date:</span>
+                <span>{today}</span>
+              </div>
+              
+              <div className="border-t pt-4">
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                  <Building className="h-4 w-4 text-blue-600" />
+                  Contracting Parties
+                </h4>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <h5 className="font-semibold text-blue-800 mb-2">CLIENT (Property Owner)</h5>
+                    <div className="space-y-1 text-sm">
+                      <p className="font-medium break-words">{contractData.clientName}</p>
+                      <div className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3 text-gray-500" />
+                        <span className="break-all">{contractData.clientAddress}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Mail className="h-3 w-3 text-gray-500" />
+                        <span className="break-all">{contractData.clientEmail}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Phone className="h-3 w-3 text-gray-500" />
+                        <span className="break-all">{contractData.clientPhone}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-green-50 p-4 rounded-lg">
+                    <h5 className="font-semibold text-green-800 mb-2">CONTRACTOR (Service Provider)</h5>
+                    <div className="space-y-1 text-sm">
+                      <p className="font-medium break-words">{contractData.contractorName}</p>
+                      <div className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3 text-gray-500" />
+                        <span className="break-all">{contractData.contractorAddress}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Mail className="h-3 w-3 text-gray-500" />
+                        <span className="break-all">{contractData.contractorEmail}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Phone className="h-3 w-3 text-gray-500" />
+                        <span className="break-all">{contractData.contractorPhone}</span>
+                      </div>
+                      {contractData.contractorLicense && (
+                        <p className="text-xs bg-green-100 px-2 py-1 rounded">
+                          {contractData.contractorLicense}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Página 2: Alcance de Servicios */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Zap className="h-5 w-5 text-green-600" />
+              Scope of Services & Specifications
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h4 className="font-semibold mb-2">Project Description:</h4>
+              <p className="break-words">{contractData.projectDescription}</p>
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <h5 className="font-medium mb-2">Project Type:</h5>
+                <p className="text-sm bg-blue-50 p-2 rounded break-words">{contractData.projectType}</p>
+              </div>
+              <div>
+                <h5 className="font-medium mb-2">Project Location:</h5>
+                <p className="text-sm bg-blue-50 p-2 rounded break-words">{contractData.projectLocation}</p>
+              </div>
+            </div>
+
+            <div className="bg-yellow-50 p-4 rounded-lg">
+              <h5 className="font-semibold text-yellow-800 mb-2">Material Specifications:</h5>
+              <p className="text-sm break-words">{contractData.materialSpecs}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Página 3: Cronograma y Fechas */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Clock className="h-5 w-5 text-orange-600" />
+              Project Timeline & Deadlines
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="bg-orange-50 p-4 rounded-lg">
+                <h5 className="font-semibold text-orange-800 mb-2">Commencement Date</h5>
+                <p className="break-words">{contractData.startDate}</p>
+              </div>
+              <div className="bg-orange-50 p-4 rounded-lg">
+                <h5 className="font-semibold text-orange-800 mb-2">Completion Date</h5>
+                <p className="break-words">{contractData.completionDate}</p>
+              </div>
+            </div>
+
+            <div className="bg-red-50 p-4 rounded-lg">
+              <h5 className="font-semibold text-red-800 mb-2">Time is of the Essence</h5>
+              <p className="text-sm">Performance within specified timeframes is material to this agreement. Extensions require written consent with cause.</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Página 4: Compensación y Pagos */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <DollarSign className="h-5 w-5 text-green-600" />
+              Compensation & Payment Structure
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-green-50 p-4 rounded-lg text-center">
+              <h4 className="font-bold text-2xl text-green-800 break-words">{contractData.totalAmount}</h4>
+              <p className="text-sm text-green-600">Total Contract Value</p>
+            </div>
+
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h5 className="font-semibold text-blue-800 mb-2">Payment Terms:</h5>
+              <p className="text-sm break-words">{contractData.paymentTerms}</p>
+            </div>
+
+            <div className="grid gap-4">
+              <div className="flex justify-between items-center p-3 bg-purple-50 rounded">
+                <span className="font-medium">Down Payment:</span>
+                <span className="break-words">{contractData.downPayment}</span>
+              </div>
+              
+              {contractData.paymentSchedule && contractData.paymentSchedule.length > 0 && (
+                <div>
+                  <h5 className="font-medium mb-2">Milestone Payment Schedule:</h5>
+                  <div className="space-y-2">
+                    {contractData.paymentSchedule.map((payment: any, index: number) => (
+                      <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded text-sm">
+                        <span className="break-words">{payment.description}</span>
+                        <span className="font-medium break-words">{payment.amount}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Página 5: Seguros y Garantías */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Shield className="h-5 w-5 text-purple-600" />
+              Insurance, Warranties & Legal Protections
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-purple-50 p-4 rounded-lg">
+              <h5 className="font-semibold text-purple-800 mb-2">Insurance Requirements:</h5>
+              <p className="text-sm break-words">{contractData.insuranceInfo}</p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="bg-green-50 p-4 rounded-lg">
+                <h5 className="font-semibold text-green-800 mb-2">Warranty Period:</h5>
+                <p className="text-sm break-words">{contractData.warrantyPeriod}</p>
+              </div>
+              <div className="bg-green-50 p-4 rounded-lg">
+                <h5 className="font-semibold text-green-800 mb-2">Warranty Terms:</h5>
+                <p className="text-sm break-words">{contractData.warrantyTerms}</p>
+              </div>
+            </div>
+
+            <div className="bg-indigo-50 p-4 rounded-lg">
+              <h5 className="font-semibold text-indigo-800 mb-3">Selected Legal Protections ({selectedClauses.length} clauses):</h5>
+              <div className="space-y-2">
+                {selectedClauses.map((clause, index) => (
+                  <div key={index} className="flex items-start gap-2 text-sm">
+                    <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                    <span className="break-words">{clause}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Página 6: Requisitos Legales y Disputas */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Scale className="h-5 w-5 text-red-600" />
+              Legal Requirements & Dispute Resolution
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4">
+              <div className="bg-yellow-50 p-4 rounded-lg">
+                <h5 className="font-semibold text-yellow-800 mb-2">Permit Requirements:</h5>
+                <p className="text-sm break-words">{contractData.permitRequirements}</p>
+              </div>
+
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h5 className="font-semibold text-blue-800 mb-2">Municipal Compliance:</h5>
+                <p className="text-sm break-words">{contractData.municipalRequirements}</p>
+              </div>
+
+              <div className="bg-green-50 p-4 rounded-lg">
+                <h5 className="font-semibold text-green-800 mb-2">Environmental Compliance:</h5>
+                <p className="text-sm break-words">{contractData.environmentalCompliance}</p>
+              </div>
+
+              <div className="bg-red-50 p-4 rounded-lg">
+                <h5 className="font-semibold text-red-800 mb-2">Dispute Resolution:</h5>
+                <p className="text-sm break-words">{contractData.disputeResolution}</p>
+              </div>
+
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h5 className="font-semibold text-gray-800 mb-2">Change Order Policy:</h5>
+                <p className="text-sm break-words">{contractData.changeOrderPolicy}</p>
+              </div>
+
+              <div className="bg-indigo-50 p-4 rounded-lg">
+                <h5 className="font-semibold text-indigo-800 mb-2">Liability & Indemnification:</h5>
+                <p className="text-sm break-words">{contractData.liabilityClause}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Página 7: Firmas */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <PenTool className="h-5 w-5 text-gray-600" />
+              Contract Execution & Signatures
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="text-center text-sm text-gray-600 mb-6">
+              By executing this agreement, both parties acknowledge understanding and acceptance of all terms, conditions, and legal obligations contained herein.
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="border-2 border-dashed border-gray-300 p-6 rounded-lg text-center">
+                <h5 className="font-semibold mb-4">CLIENT SIGNATURE</h5>
+                <div className="space-y-3">
+                  <div className="border-b border-gray-300 pb-2 mb-4">
+                    <p className="text-sm text-gray-600">Signature</p>
+                  </div>
+                  <p className="font-medium break-words">{contractData.clientName}</p>
+                  <p className="text-sm text-gray-600">Client/Property Owner</p>
+                  <div className="border-b border-gray-300 pb-2 mt-4">
+                    <p className="text-sm text-gray-600">Date</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-2 border-dashed border-gray-300 p-6 rounded-lg text-center">
+                <h5 className="font-semibold mb-4">CONTRACTOR SIGNATURE</h5>
+                <div className="space-y-3">
+                  <div className="border-b border-gray-300 pb-2 mb-4">
+                    <p className="text-sm text-gray-600">Signature</p>
+                  </div>
+                  <p className="font-medium break-words">{contractData.contractorName}</p>
+                  <p className="text-sm text-gray-600">Licensed Contractor</p>
+                  <div className="border-b border-gray-300 pb-2 mt-4">
+                    <p className="text-sm text-gray-600">Date</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-center text-xs text-gray-500 bg-gray-50 p-3 rounded">
+              This agreement is governed by applicable state and local laws. Generated by Mervin AI Legal Defense Engine with professional-grade legal protections.
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex gap-4 pt-6 border-t">
+        <Button 
+          variant="outline" 
+          onClick={onGoBack}
+          className="flex-1"
+        >
+          Back to Legal Review
+        </Button>
+        <Button 
+          onClick={onProceedToGeneration}
+          className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+        >
+          <FileCheck className="h-4 w-4 mr-2" />
+          Generate Final PDF Contract
+        </Button>
+      </div>
+    </div>
   );
 };
 
