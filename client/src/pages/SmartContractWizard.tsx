@@ -913,43 +913,43 @@ const ContractPreviewStep: React.FC<{
                   Contracting Parties
                 </h4>
                 <div className="grid md:grid-cols-2 gap-4">
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <h5 className="font-semibold text-blue-800 mb-2">CLIENT (Property Owner)</h5>
+                  <div className="bg-black p-4 rounded-lg cyberpunk-corner-frame border border-blue-500">
+                    <h5 className="font-semibold text-blue-300 mb-2">CLIENT (Property Owner)</h5>
                     <div className="space-y-1 text-sm">
-                      <p className="font-medium break-words">{contractData.clientName}</p>
+                      <p className="font-medium break-words text-gray-200">{contractData.clientName}</p>
                       <div className="flex items-center gap-1">
-                        <MapPin className="h-3 w-3 text-gray-500" />
-                        <span className="break-all">{contractData.clientAddress}</span>
+                        <MapPin className="h-3 w-3 text-gray-400" />
+                        <span className="break-all text-gray-200">{contractData.clientAddress}</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Mail className="h-3 w-3 text-gray-500" />
-                        <span className="break-all">{contractData.clientEmail}</span>
+                        <Mail className="h-3 w-3 text-gray-400" />
+                        <span className="break-all text-gray-200">{contractData.clientEmail}</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Phone className="h-3 w-3 text-gray-500" />
-                        <span className="break-all">{contractData.clientPhone}</span>
+                        <Phone className="h-3 w-3 text-gray-400" />
+                        <span className="break-all text-gray-200">{contractData.clientPhone}</span>
                       </div>
                     </div>
                   </div>
                   
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <h5 className="font-semibold text-green-800 mb-2">CONTRACTOR (Service Provider)</h5>
+                  <div className="bg-black p-4 rounded-lg cyberpunk-corner-frame border border-green-500">
+                    <h5 className="font-semibold text-green-300 mb-2">CONTRACTOR (Service Provider)</h5>
                     <div className="space-y-1 text-sm">
-                      <p className="font-medium break-words">{contractData.contractorName}</p>
+                      <p className="font-medium break-words text-gray-200">{contractData.contractorName}</p>
                       <div className="flex items-center gap-1">
-                        <MapPin className="h-3 w-3 text-gray-500" />
-                        <span className="break-all">{contractData.contractorAddress}</span>
+                        <MapPin className="h-3 w-3 text-gray-400" />
+                        <span className="break-all text-gray-200">{contractData.contractorAddress}</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Mail className="h-3 w-3 text-gray-500" />
-                        <span className="break-all">{contractData.contractorEmail}</span>
+                        <Mail className="h-3 w-3 text-gray-400" />
+                        <span className="break-all text-gray-200">{contractData.contractorEmail}</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Phone className="h-3 w-3 text-gray-500" />
-                        <span className="break-all">{contractData.contractorPhone}</span>
+                        <Phone className="h-3 w-3 text-gray-400" />
+                        <span className="break-all text-gray-200">{contractData.contractorPhone}</span>
                       </div>
                       {contractData.contractorLicense && (
-                        <p className="text-xs bg-green-100 px-2 py-1 rounded">
+                        <p className="text-xs bg-black border border-green-500 px-2 py-1 rounded text-green-300">
                           {contractData.contractorLicense}
                         </p>
                       )}
@@ -970,25 +970,25 @@ const ContractPreviewStep: React.FC<{
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h4 className="font-semibold mb-2">Project Description:</h4>
-              <p className="break-words">{contractData.projectDescription}</p>
+            <div className="bg-black p-4 rounded-lg cyberpunk-corner-frame border border-gray-500">
+              <h4 className="font-semibold mb-2 text-gray-300">Project Description:</h4>
+              <p className="break-words text-gray-200">{contractData.projectDescription}</p>
             </div>
             
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <h5 className="font-medium mb-2">Project Type:</h5>
-                <p className="text-sm bg-blue-50 p-2 rounded break-words">{contractData.projectType}</p>
+                <h5 className="font-medium mb-2 text-gray-300">Project Type:</h5>
+                <p className="text-sm bg-black p-2 rounded break-words text-gray-200 cyberpunk-corner-frame border border-blue-500">{contractData.projectType}</p>
               </div>
               <div>
-                <h5 className="font-medium mb-2">Project Location:</h5>
-                <p className="text-sm bg-blue-50 p-2 rounded break-words">{contractData.projectLocation}</p>
+                <h5 className="font-medium mb-2 text-gray-300">Project Location:</h5>
+                <p className="text-sm bg-black p-2 rounded break-words text-gray-200 cyberpunk-corner-frame border border-blue-500">{contractData.projectLocation}</p>
               </div>
             </div>
 
-            <div className="bg-yellow-50 p-4 rounded-lg">
-              <h5 className="font-semibold text-yellow-800 mb-2">Material Specifications:</h5>
-              <p className="text-sm break-words">{contractData.materialSpecs}</p>
+            <div className="bg-black p-4 rounded-lg cyberpunk-corner-frame border border-yellow-500">
+              <h5 className="font-semibold text-yellow-300 mb-2">Material Specifications:</h5>
+              <p className="text-sm break-words text-gray-200">{contractData.materialSpecs}</p>
             </div>
           </CardContent>
         </Card>
@@ -1003,19 +1003,19 @@ const ContractPreviewStep: React.FC<{
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
-              <div className="bg-orange-50 p-4 rounded-lg">
-                <h5 className="font-semibold text-orange-800 mb-2">Commencement Date</h5>
-                <p className="break-words">{contractData.startDate}</p>
+              <div className="bg-black p-4 rounded-lg cyberpunk-corner-frame border border-orange-500">
+                <h5 className="font-semibold text-orange-300 mb-2">Commencement Date</h5>
+                <p className="break-words text-gray-200">{contractData.startDate}</p>
               </div>
-              <div className="bg-orange-50 p-4 rounded-lg">
-                <h5 className="font-semibold text-orange-800 mb-2">Completion Date</h5>
-                <p className="break-words">{contractData.completionDate}</p>
+              <div className="bg-black p-4 rounded-lg cyberpunk-corner-frame border border-orange-500">
+                <h5 className="font-semibold text-orange-300 mb-2">Completion Date</h5>
+                <p className="break-words text-gray-200">{contractData.completionDate}</p>
               </div>
             </div>
 
-            <div className="bg-red-50 p-4 rounded-lg">
-              <h5 className="font-semibold text-red-800 mb-2">Time is of the Essence</h5>
-              <p className="text-sm">Performance within specified timeframes is material to this agreement. Extensions require written consent with cause.</p>
+            <div className="bg-black p-4 rounded-lg cyberpunk-corner-frame border border-red-500">
+              <h5 className="font-semibold text-red-300 mb-2">Time is of the Essence</h5>
+              <p className="text-sm text-gray-200">Performance within specified timeframes is material to this agreement. Extensions require written consent with cause.</p>
             </div>
           </CardContent>
         </Card>
@@ -1029,20 +1029,20 @@ const ContractPreviewStep: React.FC<{
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="bg-green-50 p-4 rounded-lg text-center">
-              <h4 className="font-bold text-2xl text-green-800 break-words">{contractData.totalAmount}</h4>
-              <p className="text-sm text-green-600">Total Contract Value</p>
+            <div className="bg-black p-4 rounded-lg text-center cyberpunk-corner-frame border border-green-500">
+              <h4 className="font-bold text-2xl text-green-300 break-words">{contractData.totalAmount}</h4>
+              <p className="text-sm text-green-400">Total Contract Value</p>
             </div>
 
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <h5 className="font-semibold text-blue-800 mb-2">Payment Terms:</h5>
-              <p className="text-sm break-words">{contractData.paymentTerms}</p>
+            <div className="bg-black p-4 rounded-lg cyberpunk-corner-frame border border-blue-500">
+              <h5 className="font-semibold text-blue-300 mb-2">Payment Terms:</h5>
+              <p className="text-sm break-words text-gray-200">{contractData.paymentTerms}</p>
             </div>
 
             <div className="grid gap-4">
-              <div className="flex justify-between items-center p-3 bg-purple-50 rounded">
-                <span className="font-medium">Down Payment:</span>
-                <span className="break-words">{contractData.downPayment}</span>
+              <div className="flex justify-between items-center p-3 bg-black rounded cyberpunk-corner-frame border border-purple-500">
+                <span className="font-medium text-purple-300">Down Payment:</span>
+                <span className="break-words text-gray-200">{contractData.downPayment}</span>
               </div>
               
               {contractData.paymentSchedule && contractData.paymentSchedule.length > 0 && (
