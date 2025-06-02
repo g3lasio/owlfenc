@@ -17,6 +17,10 @@ interface ExtractedData {
   clientAddress?: string;
   projectType?: string;
   projectDescription?: string;
+  projectLocation?: string;
+  contractorName?: string;
+  contractorEmail?: string;
+  contractorPhone?: string;
   totalAmount?: string;
   startDate?: string;
   completionDate?: string;
@@ -29,15 +33,19 @@ interface ContractData extends ExtractedData {
   contractorAddress: string;
   contractorLicense: string;
   projectLocation: string;
-  materialSpecs: string;
-  insuranceInfo: string;
-  downPayment: string;
+  materialSpecs?: string;
+  insuranceInfo?: string;
+  downPayment?: string;
   paymentSchedule: any[];
-  warrantyPeriod: string;
-  permitRequirements: string;
-  disputeResolution: string;
-  municipalRequirements: string;
-  environmentalCompliance: string;
+  warrantyPeriod?: string;
+  permitRequirements?: string;
+  disputeResolution?: string;
+  municipalRequirements?: string;
+  environmentalCompliance?: string;
+  paymentTerms?: string;
+  warrantyTerms?: string;
+  changeOrderPolicy?: string;
+  liabilityClause?: string;
   isComplete: boolean;
   missingFields: string[];
 }
@@ -190,12 +198,49 @@ const SmartContractWizard: React.FC = () => {
     const stepMap: Record<WizardStep, number> = {
       'upload': 0,
       'analysis': 20,
-      'completion': 40,
-      'preview': 60,
-      'generation': 80,
+      'legal-review': 40,
+      'completion': 60,
+      'preview': 70,
+      'generation': 85,
       'final': 100
     };
     return stepMap[currentStep];
+  };
+
+  const handleProceedToCompletion = () => {
+    setCurrentStep('completion');
+    setStatusMessage('Please provide additional information to complete the contract protection analysis.');
+  };
+
+  const handleProceedToGeneration = () => {
+    setCurrentStep('generation');
+    setStatusMessage('Generating protected contract with approved legal clauses...');
+    // Auto-generate contract with extracted data
+    const contractData: ContractData = {
+      clientName: extractedData.clientName || '',
+      clientAddress: extractedData.clientAddress || extractedData.projectLocation || '',
+      clientEmail: extractedData.clientEmail || '',
+      clientPhone: extractedData.clientPhone || '',
+      projectType: extractedData.projectType || '',
+      projectDescription: extractedData.projectDescription || '',
+      projectLocation: extractedData.projectLocation || '',
+      contractorName: extractedData.contractorName || '',
+      contractorEmail: extractedData.contractorEmail || '',
+      contractorPhone: extractedData.contractorPhone || '',
+      contractorAddress: '',
+      contractorLicense: '',
+      totalAmount: extractedData.totalAmount || '',
+      startDate: extractedData.startDate || '',
+      completionDate: extractedData.completionDate || '',
+      paymentTerms: '',
+      paymentSchedule: [],
+      warrantyTerms: '',
+      changeOrderPolicy: '',
+      liabilityClause: '',
+      isComplete: true,
+      missingFields: []
+    };
+    generateContract(contractData);
   };
 
   return (
@@ -263,6 +308,15 @@ const SmartContractWizard: React.FC = () => {
         
         {currentStep === 'analysis' && (
           <AnalysisStep isProcessing={isProcessing} progress={progress} />
+        )}
+        
+        {currentStep === 'legal-review' && extractedData && (
+          <LegalReviewStep 
+            extractedData={extractedData}
+            riskAnalysis={riskAnalysis}
+            onProceedToCompletion={handleProceedToCompletion}
+            onProceedToGeneration={handleProceedToGeneration}
+          />
         )}
         
         {currentStep === 'completion' && extractedData && (
