@@ -133,16 +133,28 @@ const EditableField: React.FC<EditableFieldProps> = ({
 };
 
 interface PaymentScheduleEditorProps {
-  schedule: Array<{description: string; amount: string; dueDate?: string}>;
-  onUpdate: (newSchedule: Array<{description: string; amount: string; dueDate?: string}>) => void;
+  schedule: Array<{description: string; amount: string; dueDate?: string; percentage?: string}>;
+  onUpdate: (newSchedule: Array<{description: string; amount: string; dueDate?: string; percentage?: string}>) => void;
+  totalAmount: string;
 }
 
-const PaymentScheduleEditor: React.FC<PaymentScheduleEditorProps> = ({ schedule, onUpdate }) => {
+const PaymentScheduleEditor: React.FC<PaymentScheduleEditorProps> = ({ schedule, onUpdate, totalAmount }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editSchedule, setEditSchedule] = useState(schedule);
 
+  // Calcular el monto total limpio para cálculos de porcentajes
+  const getTotalValue = () => {
+    const cleanAmount = totalAmount.replace(/[^0-9.]/g, '');
+    return parseFloat(cleanAmount) || 0;
+  };
+
   const addPayment = () => {
-    setEditSchedule([...editSchedule, { description: '', amount: '', dueDate: '' }]);
+    setEditSchedule([...editSchedule, { 
+      description: '', 
+      amount: '', 
+      dueDate: '',
+      percentage: ''
+    }]);
   };
 
   const removePayment = (index: number) => {
@@ -151,18 +163,78 @@ const PaymentScheduleEditor: React.FC<PaymentScheduleEditorProps> = ({ schedule,
 
   const updatePayment = (index: number, field: string, value: string) => {
     const updated = [...editSchedule];
-    updated[index] = { ...updated[index], [field]: value };
+    const payment = { ...updated[index] };
+    
+    if (field === 'percentage') {
+      payment.percentage = value;
+      // Calcular automáticamente el monto basado en el porcentaje
+      const percentage = parseFloat(value) || 0;
+      const totalValue = getTotalValue();
+      const calculatedAmount = (totalValue * percentage / 100).toFixed(2);
+      payment.amount = `$${calculatedAmount}`;
+    } else if (field === 'amount') {
+      payment.amount = value;
+      // Calcular automáticamente el porcentaje basado en el monto
+      const cleanAmount = value.replace(/[^0-9.]/g, '');
+      const amountValue = parseFloat(cleanAmount) || 0;
+      const totalValue = getTotalValue();
+      const calculatedPercentage = totalValue > 0 ? ((amountValue / totalValue) * 100).toFixed(1) : '0';
+      payment.percentage = calculatedPercentage;
+    } else {
+      payment[field] = value;
+    }
+    
+    updated[index] = payment;
     setEditSchedule(updated);
   };
 
   const handleSave = () => {
-    onUpdate(editSchedule.filter(p => p.description && p.amount));
+    const validPayments = editSchedule.filter(p => p.description && (p.amount || p.percentage));
+    onUpdate(validPayments);
     setIsEditing(false);
   };
 
   const handleCancel = () => {
     setEditSchedule(schedule);
     setIsEditing(false);
+  };
+
+  // Crear plantillas rápidas de payment schedule
+  const createQuickSchedule = (type: 'upfront-balance' | 'thirds' | 'milestone') => {
+    let newSchedule = [];
+    
+    switch (type) {
+      case 'upfront-balance':
+        newSchedule = [
+          { description: 'Down Payment (50%)', percentage: '50', amount: '', dueDate: '' },
+          { description: 'Final Payment (50%)', percentage: '50', amount: '', dueDate: '' }
+        ];
+        break;
+      case 'thirds':
+        newSchedule = [
+          { description: 'Initial Payment (33%)', percentage: '33.33', amount: '', dueDate: '' },
+          { description: 'Progress Payment (33%)', percentage: '33.33', amount: '', dueDate: '' },
+          { description: 'Final Payment (34%)', percentage: '33.34', amount: '', dueDate: '' }
+        ];
+        break;
+      case 'milestone':
+        newSchedule = [
+          { description: 'Contract Signing (25%)', percentage: '25', amount: '', dueDate: '' },
+          { description: 'Material Delivery (25%)', percentage: '25', amount: '', dueDate: '' },
+          { description: 'Project 50% Complete (25%)', percentage: '25', amount: '', dueDate: '' },
+          { description: 'Project Completion (25%)', percentage: '25', amount: '', dueDate: '' }
+        ];
+        break;
+    }
+    
+    // Calcular los montos automáticamente
+    const totalValue = getTotalValue();
+    newSchedule = newSchedule.map(payment => ({
+      ...payment,
+      amount: `$${(totalValue * parseFloat(payment.percentage) / 100).toFixed(2)}`
+    }));
+    
+    setEditSchedule(newSchedule);
   };
 
   if (isEditing) {
@@ -181,43 +253,94 @@ const PaymentScheduleEditor: React.FC<PaymentScheduleEditorProps> = ({ schedule,
             </Button>
           </div>
         </div>
+
+        {/* Quick Schedule Templates */}
+        <div className="bg-gray-800 p-3 rounded border border-yellow-500">
+          <h6 className="text-sm font-medium text-yellow-300 mb-2">Quick Templates:</h6>
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => createQuickSchedule('upfront-balance')}
+              className="text-xs"
+            >
+              50/50 Split
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => createQuickSchedule('thirds')}
+              className="text-xs"
+            >
+              Three Payments
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => createQuickSchedule('milestone')}
+              className="text-xs"
+            >
+              Milestone Schedule
+            </Button>
+          </div>
+        </div>
         
         <div className="space-y-3">
+          <div className="grid grid-cols-12 gap-2 text-xs text-gray-400 mb-2">
+            <div className="col-span-4">Description</div>
+            <div className="col-span-2">Percentage</div>
+            <div className="col-span-3">Amount</div>
+            <div className="col-span-2">Due Date</div>
+            <div className="col-span-1">Actions</div>
+          </div>
+          
           {editSchedule.map((payment, index) => (
-            <div key={index} className="flex gap-2 items-end">
-              <div className="flex-1">
+            <div key={index} className="grid grid-cols-12 gap-2 items-center">
+              <div className="col-span-4">
                 <Input
-                  placeholder="Description"
+                  placeholder="Payment description"
                   value={payment.description}
                   onChange={(e) => updatePayment(index, 'description', e.target.value)}
-                  className="bg-gray-800 border-gray-600 text-white"
+                  className="bg-gray-800 border-gray-600 text-white text-sm"
                 />
               </div>
-              <div className="w-32">
+              <div className="col-span-2">
+                <div className="relative">
+                  <Input
+                    placeholder="25"
+                    value={payment.percentage || ''}
+                    onChange={(e) => updatePayment(index, 'percentage', e.target.value)}
+                    className="bg-gray-800 border-gray-600 text-white text-sm pr-6"
+                  />
+                  <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs">%</span>
+                </div>
+              </div>
+              <div className="col-span-3">
                 <Input
-                  placeholder="Amount"
+                  placeholder="$1,000.00"
                   value={payment.amount}
                   onChange={(e) => updatePayment(index, 'amount', e.target.value)}
-                  className="bg-gray-800 border-gray-600 text-white"
+                  className="bg-gray-800 border-gray-600 text-white text-sm"
                 />
               </div>
-              <div className="w-32">
+              <div className="col-span-2">
                 <Input
                   type="date"
-                  placeholder="Due Date"
                   value={payment.dueDate || ''}
                   onChange={(e) => updatePayment(index, 'dueDate', e.target.value)}
-                  className="bg-gray-800 border-gray-600 text-white"
+                  className="bg-gray-800 border-gray-600 text-white text-sm"
                 />
               </div>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => removePayment(index)}
-                className="text-red-400 hover:text-red-300"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              <div className="col-span-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => removePayment(index)}
+                  className="text-red-400 hover:text-red-300 p-1 h-8 w-8"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           ))}
         </div>
@@ -226,6 +349,21 @@ const PaymentScheduleEditor: React.FC<PaymentScheduleEditorProps> = ({ schedule,
           <Plus className="h-4 w-4 mr-2" />
           Add Payment
         </Button>
+
+        {/* Total Verification */}
+        <div className="bg-gray-800 p-3 rounded border border-cyan-500">
+          <div className="text-sm">
+            <span className="text-gray-400">Total Scheduled: </span>
+            <span className="text-white font-medium">
+              ${editSchedule.reduce((sum, payment) => {
+                const amount = parseFloat(payment.amount?.replace(/[^0-9.]/g, '') || '0');
+                return sum + amount;
+              }, 0).toFixed(2)}
+            </span>
+            <span className="text-gray-400 ml-4">Contract Total: </span>
+            <span className="text-yellow-300 font-medium">{totalAmount}</span>
+          </div>
+        </div>
       </div>
     );
   }
@@ -245,16 +383,26 @@ const PaymentScheduleEditor: React.FC<PaymentScheduleEditorProps> = ({ schedule,
       </div>
       <div className="space-y-2">
         {schedule.map((payment, index) => (
-          <div key={index} className="flex justify-between items-center p-2 bg-gray-800 rounded text-sm border border-cyan-500">
-            <span className="break-words text-gray-200">{payment.description}</span>
-            <div className="text-right">
+          <div key={index} className="flex justify-between items-center p-3 bg-gray-800 rounded text-sm border border-cyan-500">
+            <div className="flex-1">
+              <span className="break-words text-gray-200 font-medium">{payment.description}</span>
+              {payment.percentage && (
+                <span className="text-xs text-cyan-400 ml-2">({payment.percentage}%)</span>
+              )}
+            </div>
+            <div className="text-right ml-4">
               <span className="font-medium text-white block">{payment.amount}</span>
               {payment.dueDate && (
-                <span className="text-xs text-gray-400">{payment.dueDate}</span>
+                <span className="text-xs text-gray-400">{new Date(payment.dueDate).toLocaleDateString()}</span>
               )}
             </div>
           </div>
         ))}
+        {schedule.length === 0 && (
+          <div className="text-center p-4 text-gray-400 text-sm">
+            No payment schedule configured. Click edit to add payment milestones.
+          </div>
+        )}
       </div>
     </div>
   );
@@ -483,14 +631,13 @@ export const InteractiveContractPreview: React.FC<InteractiveContractPreviewProp
               />
             </div>
 
-            {contractData.paymentSchedule && contractData.paymentSchedule.length > 0 && (
-              <div className="bg-black p-4 rounded-lg cyberpunk-corner-frame border border-yellow-500">
-                <PaymentScheduleEditor
-                  schedule={contractData.paymentSchedule}
-                  onUpdate={(newSchedule) => updateField('paymentSchedule', newSchedule)}
-                />
-              </div>
-            )}
+            <div className="bg-black p-4 rounded-lg cyberpunk-corner-frame border border-yellow-500">
+              <PaymentScheduleEditor
+                schedule={contractData.paymentSchedule || []}
+                totalAmount={contractData.totalAmount}
+                onUpdate={(newSchedule) => updateField('paymentSchedule', newSchedule)}
+              />
+            </div>
           </CardContent>
         </Card>
 
