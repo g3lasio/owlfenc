@@ -284,8 +284,6 @@ const SmartContractWizard: React.FC = () => {
                 <CardTitle className="text-xl bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
                   Mervin AI - Legal Expert
                 </CardTitle>
-                <p className="text-sm text-cyan-700 font-medium">Your Trusted AI Attorney - Generating Professional Contracts</p>
-                <p className="text-xs text-gray-600">Equivalent to $500/hour legal expertise</p>
               </div>
             </div>
           </CardHeader>
