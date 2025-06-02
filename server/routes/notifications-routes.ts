@@ -22,18 +22,10 @@ router.post('/email-preferences', async (req: Request, res: Response) => {
     // For now, we'll store in memory or session
     console.log(`Email notification preference updated for user ${userId}: ${type} = ${enabled}`);
     
-    // If enabling email notifications, verify SendGrid is configured
-    if (enabled && process.env.SENDGRID_API_KEY) {
+    // If enabling email notifications, verify Resend is configured
+    if (enabled && process.env.RESEND_API_KEY) {
       try {
         // Send a test notification to verify setup
-        const msg = {
-          to: req.user?.email || 'test@example.com',
-          from: process.env.EMAIL_FROM || 'noreply@owlfence.com',
-          subject: 'Notification Preferences Updated',
-          text: `Your ${type} email notifications have been ${enabled ? 'enabled' : 'disabled'}.`,
-          html: `<p>Your <strong>${type}</strong> email notifications have been <strong>${enabled ? 'enabled' : 'disabled'}</strong>.</p>`
-        };
-        
         const success = await resendService.sendEmail({
           to: req.user?.email || 'test@example.com',
           from: process.env.EMAIL_FROM || 'noreply@owlfenc.com',

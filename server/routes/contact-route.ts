@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { MailService } from '@sendgrid/mail';
+import { resendService } from '../services/resendService';
 
 const router = Router();
 
@@ -28,16 +28,12 @@ router.post('/', async (req: Request, res: Response) => {
     
     console.log(`Procesando formulario de contacto de ${name} <${email}>`);
     
-    if (!process.env.SENDGRID_API_KEY) {
+    if (!process.env.RESEND_API_KEY) {
       return res.status(500).json({ 
         success: false, 
         message: 'Error en la configuración del servidor de email' 
       });
     }
-    
-    // Configurar SendGrid
-    const mailService = new MailService();
-    mailService.setApiKey(process.env.SENDGRID_API_KEY);
     
     // Crear contenido del email
     const htmlContent = `
@@ -89,18 +85,19 @@ ${message}
 Este mensaje fue enviado desde el formulario de contacto del sitio web de Owl Funding.
     `;
     
-    // Configurar el mensaje de email
-    const msg = {
-      to: 'info@0wlfunding.com',
-      from: 'no-reply@0wlfunding.com', // Debe ser un dominio verificado en SendGrid
+    // Enviar el email usando Resend
+    const success = await resendService.sendEmail({
+      to: 'info@owlfenc.com',
+      from: 'noreply@owlfenc.com',
       subject: `Nuevo contacto de ${name} - Formulario Web`,
-      text: textContent,
       html: htmlContent,
       replyTo: email
-    };
+    });
     
-    // Enviar el email
-    await mailService.send(msg);
+    if (!success) {
+      throw new Error('Failed to send contact email');
+    }
+    
     console.log('Email de contacto enviado correctamente');
     
     res.status(200).json({ 
