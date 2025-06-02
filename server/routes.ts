@@ -3614,4 +3614,3 @@ async function generateContractHtml(projectDetails: any): Promise<string> {
 async function generatePDF(data: any, type: 'estimate' | 'contract'): Promise<Buffer> {
   return await documentService.generateDocument(data, type);
 }
-

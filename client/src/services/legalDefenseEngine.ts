@@ -15,6 +15,8 @@ export interface LegalRiskAnalysis {
   paymentSafeguards: string[];
   liabilityShields: string[];
   scopeProtections: string[];
+  veteranClauses: string[];
+  industrySpecificProtections: string[];
 }
 
 export interface ContractorProtectionConfig {
@@ -30,10 +32,10 @@ export interface ContractorProtectionConfig {
 export class LegalDefenseEngine {
   
   /**
-   * Analiza los riesgos legales específicos para el contratista
+   * Analiza los riesgos legales específicos para el contratista con IA avanzada
    */
   static async analyzeLegalRisks(project: Project): Promise<LegalRiskAnalysis> {
-    console.log('🔍 Analizando riesgos legales para protección del contratista...');
+    console.log('🛡️ Iniciando análisis legal veterano para protección máxima del contratista...');
     
     let riskScore = 0;
     const protectiveRecommendations: string[] = [];
@@ -41,28 +43,73 @@ export class LegalDefenseEngine {
     const paymentSafeguards: string[] = [];
     const liabilityShields: string[] = [];
     const scopeProtections: string[] = [];
+    const veteranClauses: string[] = [];
+    const industrySpecificProtections: string[] = [];
 
-    // Análisis de riesgo financiero
-    if (project.totalPrice && project.totalPrice > 500000) {
+    // Análisis de riesgo financiero escalado
+    if (project.totalPrice && project.totalPrice > 1000000) {
+      riskScore += 4;
+      protectiveRecommendations.push('Proyecto de muy alto valor - requiere protección máxima');
+      paymentSafeguards.push('Depósito inicial del 40% antes de comenzar');
+      paymentSafeguards.push('Pagos semanales por etapas completadas');
+      paymentSafeguards.push('Bono de cumplimiento del 10% del valor total');
+      paymentSafeguards.push('Seguro de responsabilidad mínimo $2,000,000');
+      veteranClauses.push('Cláusula de Financiamiento: Cliente debe demostrar fondos antes del inicio');
+    } else if (project.totalPrice && project.totalPrice > 500000) {
       riskScore += 2;
       protectiveRecommendations.push('Proyecto de alto valor - requiere pagos progresivos estrictos');
       paymentSafeguards.push('Depósito inicial del 30% antes de comenzar');
       paymentSafeguards.push('Pagos por etapas con aprobación del cliente');
       paymentSafeguards.push('Retención máxima del 5% al completar');
+      veteranClauses.push('Cláusula de Verificación Financiera: Cliente puede requerir verificación de fondos');
+    } else if (project.totalPrice && project.totalPrice > 100000) {
+      riskScore += 1;
+      paymentSafeguards.push('Depósito inicial del 25% antes de comenzar');
+      paymentSafeguards.push('Pagos por hitos principales del proyecto');
+      veteranClauses.push('Cláusula de Progreso: Pagos vinculados a entregables específicos');
     }
 
-    // Análisis de tipo de proyecto
+    // Análisis geográfico por estado
+    const projectState = this.detectProjectState(project.address);
+    if (projectState) {
+      const stateProtections = this.getStateSpecificProtections(projectState);
+      contractorProtections.push(...stateProtections.required);
+      veteranClauses.push(...stateProtections.veteran);
+      riskScore += stateProtections.riskModifier;
+    }
+
+    // Análisis avanzado por industria con protecciones veteranas
     if (project.projectType === 'roofing') {
       riskScore += 2;
       liabilityShields.push('Limitación de responsabilidad por filtraciones después de 1 año');
       liabilityShields.push('Exclusión de daños por condiciones climáticas extremas');
       contractorProtections.push('Inspección previa de estructura existente documentada');
+      veteranClauses.push('Cláusula de Protección Climática: Trabajo suspendido automáticamente con vientos >25mph');
+      veteranClauses.push('Cláusula de Estructura Preexistente: Cliente certifica que techo actual cumple códigos');
+      industrySpecificProtections.push('Garantía limitada exclusivamente a mano de obra, no a materiales del cliente');
     }
 
     if (project.projectType === 'plumbing') {
       riskScore += 1;
       liabilityShields.push('Responsabilidad limitada a trabajos realizados únicamente');
       liabilityShields.push('Exclusión de problemas en tuberías preexistentes');
+      veteranClauses.push('Cláusula de Prueba de Presión: Cliente acepta pruebas de presión como estándar final');
+      industrySpecificProtections.push('Exclusión total de responsabilidad por tuberías no accesibles para inspección');
+    }
+
+    if (project.projectType === 'fencing' || project.projectType === 'cerca') {
+      riskScore += 1;
+      veteranClauses.push('Cláusula de Límites de Propiedad: Cliente garantiza ubicación exacta de linderos');
+      veteranClauses.push('Cláusula de Servicios Subterráneos: Cliente responsable de localizar utilidades enterradas');
+      industrySpecificProtections.push('No responsabilidad por daños a servicios no marcados por empresa de servicios');
+      liabilityShields.push('Limitación de garantía a defectos de instalación únicamente');
+    }
+
+    if (project.projectType === 'electrical') {
+      riskScore += 2;
+      veteranClauses.push('Cláusula de Código Eléctrico: Trabajo sujeto a aprobación de inspector municipal');
+      veteranClauses.push('Cláusula de Corte de Energía: Cliente acepta interrupciones necesarias para seguridad');
+      industrySpecificProtections.push('Responsabilidad limitada a trabajo nuevo, no a sistema eléctrico existente');
     }
 
     // Análisis de permisos
@@ -88,10 +135,25 @@ export class LegalDefenseEngine {
     contractorProtections.push('Derecho a suspender trabajo por falta de pago');
     contractorProtections.push('Retención de materiales hasta pago completo');
     contractorProtections.push('Protección contra demoras causadas por el cliente');
+    
+    // Cláusulas veteranas de protección máxima
+    veteranClauses.push('Cláusula de Descubrimiento Oculto: Condiciones no detectables en inspección inicial son trabajo adicional');
+    veteranClauses.push('Cláusula de Escalación de Materiales: Incrementos >5% en materiales se transfieren al cliente');
+    veteranClauses.push('Cláusula de Acceso Garantizado: Cliente proporciona acceso libre 24/7 durante días laborales');
+    veteranClauses.push('Cláusula de Modificación: Cambios verbales no tienen validez legal alguna');
+    veteranClauses.push('Cláusula de Indemnización: Cliente protege a contratista de reclamaciones de terceros');
+    
+    // Protecciones de responsabilidad avanzadas
+    liabilityShields.push('Limitación de responsabilidad total al valor del contrato');
+    liabilityShields.push('Exclusión de daños consecuenciales, indirectos o punitivos');
+    liabilityShields.push('Período de notificación: Reclamaciones deben presentarse dentro de 30 días');
+    liabilityShields.push('Arbitraje obligatorio: Disputas se resuelven en arbitraje privado');
 
     // Salvaguardas de pago adicionales
     paymentSafeguards.push('Intereses por pagos atrasados después de 15 días');
     paymentSafeguards.push('Costos legales de cobro a cargo del cliente');
+    paymentSafeguards.push('Derecho de gravamen: Aplicación automática de mechanics lien por falta de pago');
+    paymentSafeguards.push('Suspensión inmediata: Trabajo para automáticamente al día 16 de atraso');
 
     // Determinar nivel de riesgo
     let riskLevel: 'bajo' | 'medio' | 'alto' | 'crítico';
@@ -107,7 +169,97 @@ export class LegalDefenseEngine {
       contractorProtections,
       paymentSafeguards,
       liabilityShields,
-      scopeProtections
+      scopeProtections,
+      veteranClauses,
+      industrySpecificProtections
+    };
+  }
+
+  /**
+   * Detecta el estado basado en la dirección del proyecto
+   */
+  private static detectProjectState(address: string): string | null {
+    const stateMapping: Record<string, string[]> = {
+      'California': ['ca', 'california', 'los angeles', 'san francisco', 'sacramento', 'san diego'],
+      'Texas': ['tx', 'texas', 'houston', 'dallas', 'austin', 'san antonio'],
+      'Florida': ['fl', 'florida', 'miami', 'orlando', 'tampa', 'jacksonville'],
+      'New York': ['ny', 'new york', 'nyc', 'brooklyn', 'queens', 'manhattan'],
+      'Nevada': ['nv', 'nevada', 'las vegas', 'reno', 'henderson'],
+      'Arizona': ['az', 'arizona', 'phoenix', 'tucson', 'mesa', 'scottsdale']
+    };
+
+    const addressLower = address.toLowerCase();
+    
+    for (const [state, keywords] of Object.entries(stateMapping)) {
+      if (keywords.some(keyword => addressLower.includes(keyword))) {
+        return state;
+      }
+    }
+    
+    return null;
+  }
+
+  /**
+   * Obtiene protecciones específicas por estado
+   */
+  private static getStateSpecificProtections(state: string): {
+    required: string[];
+    veteran: string[];
+    riskModifier: number;
+  } {
+    const stateProtections: Record<string, any> = {
+      'California': {
+        required: [
+          'Licencia de contratista requerida y debe mostrarse en contrato',
+          'Derecho de cancelación de 3 días para proyectos residenciales',
+          'Aviso de derecho de gravamen mecánico obligatorio'
+        ],
+        veteran: [
+          'Cláusula de Salario Prevaleciente: Proyectos públicos sujetos a salarios estatales',
+          'Cláusula de Código Sísmico: Trabajo debe cumplir estándares sísmicos de California',
+          'Cláusula de Responsabilidad Ambiental: Cliente responsable de materiales peligrosos preexistentes'
+        ],
+        riskModifier: 1
+      },
+      'Texas': {
+        required: [
+          'Bono de pago para proyectos comerciales >$25,000',
+          'Aviso de prácticas comerciales engañosas'
+        ],
+        veteran: [
+          'Cláusula de Clima Extremo: Protección contra huracanes y clima severo',
+          'Cláusula de Propiedad de Petróleo: Exclusión de responsabilidad por derechos minerales'
+        ],
+        riskModifier: 0
+      },
+      'Florida': {
+        required: [
+          'Garantía contra intrusión de humedad obligatoria',
+          'Cláusula de protección contra huracanes para techos'
+        ],
+        veteran: [
+          'Cláusula de Temporada de Huracanes: Trabajo suspendido durante alertas',
+          'Cláusula de Arena y Suelo: Exclusión por condiciones de suelo no detectables'
+        ],
+        riskModifier: 2
+      },
+      'Nevada': {
+        required: [
+          'Licencia de contratista estatal obligatoria',
+          'Bono de licencia para protección del consumidor'
+        ],
+        veteran: [
+          'Cláusula de Clima Desértico: Protección contra condiciones extremas de calor',
+          'Cláusula de Escasez de Agua: Adaptaciones por restricciones hídricas'
+        ],
+        riskModifier: 1
+      }
+    };
+
+    return stateProtections[state] || {
+      required: ['Cumplimiento con códigos locales de construcción'],
+      veteran: ['Cláusula de Jurisdicción Local: Disputas resueltas en cortes locales'],
+      riskModifier: 0
     };
   }
 

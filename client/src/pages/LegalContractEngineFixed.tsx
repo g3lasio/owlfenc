@@ -1,195 +1,147 @@
-import { useState } from 'react';
+
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { FileUp, Shield, Zap, CheckCircle, FileText, Upload } from 'lucide-react';
-import EditableContractForm from '@/components/contract/EditableContractForm';
+import { 
+  FileUp, 
+  Shield, 
+  Zap, 
+  CheckCircle, 
+  FileText, 
+  Upload, 
+  Brain,
+  Scale,
+  Download,
+  Eye,
+  AlertTriangle,
+  Award,
+  Sparkles
+} from 'lucide-react';
+
+interface ProcessingStep {
+  id: string;
+  title: string;
+  description: string;
+  completed: boolean;
+  progress: number;
+}
 
 export default function LegalContractEngineFixed() {
-  const [activeTab, setActiveTab] = useState<'projects' | 'upload'>('projects');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [processingStep, setProcessingStep] = useState(0);
   const [extractedData, setExtractedData] = useState<any>(null);
-  const [generatedContract, setGeneratedContract] = useState<string>('');
   const [riskAnalysis, setRiskAnalysis] = useState<any>(null);
-  const [projects, setProjects] = useState<any[]>([]);
-  const [selectedProject, setSelectedProject] = useState<any>(null);
-  const [loadingProjects, setLoadingProjects] = useState(false);
-  const [showContractEditor, setShowContractEditor] = useState(false);
+  const [generatedContract, setGeneratedContract] = useState<string>('');
+  const [contractStrength, setContractStrength] = useState<number>(0);
+  const [legalAdvice, setLegalAdvice] = useState<string[]>([]);
+  const [protectionsApplied, setProtectionsApplied] = useState<string[]>([]);
   const { toast } = useToast();
 
-  // Cargar proyectos existentes desde Firebase directamente
-  const loadProjects = async () => {
-    setLoadingProjects(true);
-    try {
-      console.log('🔍 Intentando cargar proyectos desde Firebase...');
-      
-      // Importar Firebase dinámicamente
-      const { getProjects } = await import('@/lib/firebase');
-      
-      // Obtener proyectos de Firebase
-      const firebaseProjects = await getProjects();
-      console.log(`📋 Proyectos encontrados en Firebase: ${firebaseProjects.length}`);
-      
-      // Filtrar proyectos que pueden convertirse en contratos
-      const contractEligibleProjects = firebaseProjects.filter(project => {
-        console.log('🔍 Evaluando proyecto:', {
-          clientName: project.clientName,
-          address: project.address,
-          status: project.status,
-          projectProgress: project.projectProgress,
-          hasBasicInfo: !!(project.clientName && project.address)
-        });
-        
-        const hasBasicInfo = project.clientName && project.address;
-        
-        // Aceptar proyectos con status estimate, approved, o cualquier estado válido
-        const isEligible = project.status === 'estimate' || 
-                          project.status === 'approved' || 
-                          project.status === 'client_approved' ||
-                          project.status === 'completed' ||
-                          project.projectProgress === 'approved' ||
-                          project.projectProgress === 'client_approved' ||
-                          // Si tiene información básica, es elegible
-                          hasBasicInfo;
-        
-        const eligible = hasBasicInfo; // Si tiene info básica, es elegible
-        console.log(`${eligible ? '✅' : '❌'} Proyecto ${project.clientName}: elegible=${eligible}`);
-        
-        return eligible;
-      });
-      
-      console.log(`✅ Proyectos elegibles para contrato: ${contractEligibleProjects.length}`);
-      
-      // Formatear para el Contract Generator
-      const formattedProjects = contractEligibleProjects.map(project => ({
-        id: project.id,
-        clientName: project.clientName,
-        clientPhone: project.clientPhone || project.phone || '',
-        clientEmail: project.clientEmail || project.email || '',
-        address: project.address,
-        projectType: project.projectType || project.fenceType || 'Fence Installation',
-        projectDescription: project.projectDescription || project.description || `${project.fenceType || 'Fence'} project for ${project.clientName}`,
-        totalAmount: project.totalPrice || project.estimateAmount || project.totalCost || 0,
-        status: project.status || 'approved',
-        createdAt: project.createdAt,
-        projectId: project.id?.toString() || Math.random().toString(),
-        // Campos adicionales para el contrato
-        fenceType: project.fenceType,
-        length: project.length,
-        height: project.height,
-        gates: project.gates,
-        materials: project.materials
-      }));
-      
-      setProjects(formattedProjects);
-      
-      if (formattedProjects.length === 0) {
-        toast({
-          title: "Sin proyectos elegibles",
-          description: "No se encontraron proyectos aprobados que puedan convertirse en contratos",
-          variant: "default"
-        });
-      } else {
-        toast({
-          title: "Proyectos cargados exitosamente",
-          description: `Se encontraron ${formattedProjects.length} proyectos elegibles para contratos`,
-          variant: "default"
-        });
-      }
-      
-    } catch (error) {
-      console.error('❌ Error loading projects from Firebase:', error);
-      
-      // Fallback a la API original
-      try {
-        console.log('🔄 Intentando fallback con API...');
-        const response = await fetch('/api/projects');
-        if (response.ok) {
-          const projectsData = await response.json();
-          setProjects(projectsData);
-        }
-      } catch (apiError) {
-        console.error('❌ Error with API fallback:', apiError);
-        toast({
-          title: "Error cargando proyectos",
-          description: "No se pudieron cargar los proyectos desde Firebase ni la API",
-          variant: "destructive"
-        });
-      }
-    } finally {
-      setLoadingProjects(false);
+  const processingSteps: ProcessingStep[] = [
+    {
+      id: 'upload',
+      title: 'Analizando PDF del Estimado',
+      description: 'Extrayendo información del proyecto, cliente y costos',
+      completed: false,
+      progress: 20
+    },
+    {
+      id: 'risk',
+      title: 'Análisis Legal de Riesgos',
+      description: 'Evaluando riesgos específicos y protecciones necesarias',
+      completed: false,
+      progress: 40
+    },
+    {
+      id: 'clauses',
+      title: 'Generando Cláusulas Veteranas',
+      description: 'Creando protecciones específicas para tu industria y estado',
+      completed: false,
+      progress: 70
+    },
+    {
+      id: 'contract',
+      title: 'Compilando Contrato Blindado',
+      description: 'Ensamblando contrato final con máxima protección legal',
+      completed: false,
+      progress: 100
     }
-  };
+  ];
 
-  // Cargar proyectos al cambiar a la pestaña de proyectos
-  const handleTabChange = (tab: 'projects' | 'upload') => {
-    setActiveTab(tab);
-    if (tab === 'projects' && projects.length === 0) {
-      loadProjects();
-    }
-  };
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && file.type === 'application/pdf') {
       setSelectedFile(file);
-      setExtractedData(null);
-      setGeneratedContract('');
+      toast({
+        title: "📄 PDF Seleccionado",
+        description: `Archivo: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`,
+      });
     } else {
       toast({
-        title: "Invalid file type",
-        description: "Please select a PDF file.",
-        variant: "destructive",
+        title: "❌ Archivo inválido",
+        description: "Por favor selecciona un archivo PDF válido",
+        variant: "destructive"
       });
     }
   };
 
-  const processEstimate = async () => {
+  const generateDefensiveContract = async () => {
     if (!selectedFile) return;
 
     setIsProcessing(true);
-    
-    try {
-      console.log('🚀 Iniciando procesamiento optimizado...');
-      
-      const formData = new FormData();
-      formData.append('estimate', selectedFile);
+    setProcessingStep(0);
 
-      // Usar el endpoint optimizado que resuelve los 3 problemas
-      const response = await fetch('/api/process-estimate-pdf', {
+    try {
+      const formData = new FormData();
+      formData.append('estimatePdf', selectedFile);
+
+      // Simular progreso
+      const steps = processingSteps.length;
+      for (let i = 0; i < steps; i++) {
+        setProcessingStep(i);
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+
+      console.log('🛡️ Enviando PDF para procesamiento defensivo...');
+      
+      const response = await fetch('/api/pdf-contract-processor/pdf-to-contract', {
         method: 'POST',
         body: formData,
       });
 
       if (!response.ok) {
-        throw new Error('Error processing PDF');
+        throw new Error(`Error HTTP: ${response.status}`);
       }
 
       const result = await response.json();
       
       if (result.success) {
-        console.log('✅ Datos extraídos:', result.extractedData);
+        console.log('✅ Contrato defensivo generado:', result.data);
         
-        setExtractedData(result.extractedData);
-        setRiskAnalysis(result.riskAnalysis);
-        setGeneratedContract(result.generatedContract);
-        
-        console.log('✅ Contrato defensivo generado exitosamente');
+        setExtractedData(result.data.extractedData);
+        setRiskAnalysis(result.data.riskAnalysis);
+        setGeneratedContract(result.data.contractHtml);
+        setContractStrength(result.data.contractStrength);
+        setLegalAdvice(result.data.legalAdvice);
+        setProtectionsApplied(result.data.protectionsApplied);
         
         toast({
-          title: "Contract generated successfully!",
-          description: "Professional defensive contract ready for review.",
+          title: "🎉 ¡Contrato Blindado Generado!",
+          description: `Fortaleza legal: ${result.data.contractStrength}/100 - ${result.data.protectionsApplied.length} protecciones aplicadas`,
         });
       } else {
-        throw new Error(result.error);
+        throw new Error(result.error || 'Error generando contrato');
       }
     } catch (error) {
-      console.error('Error generating contract:', error);
+      console.error('Error:', error);
       toast({
-        title: "Generation failed",
-        description: "Error generating the contract.",
+        title: "❌ Error en generación",
+        description: "No se pudo procesar el PDF. Intenta nuevamente.",
         variant: "destructive",
       });
     } finally {
@@ -197,268 +149,276 @@ export default function LegalContractEngineFixed() {
     }
   };
 
+  const downloadContract = () => {
+    if (!generatedContract) return;
+
+    const blob = new Blob([generatedContract], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `contrato-blindado-${extractedData?.clientName?.replace(/\s+/g, '-') || 'cliente'}-${Date.now()}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "📥 Contrato Descargado",
+      description: "Contrato blindado guardado exitosamente",
+    });
+  };
+
+  const getRiskBadgeColor = (riskLevel: string) => {
+    switch (riskLevel) {
+      case 'bajo': return 'bg-green-500';
+      case 'medio': return 'bg-yellow-500';
+      case 'alto': return 'bg-orange-500';
+      case 'crítico': return 'bg-red-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  const getStrengthColor = (strength: number) => {
+    if (strength >= 90) return 'text-green-600';
+    if (strength >= 75) return 'text-blue-600';
+    if (strength >= 60) return 'text-yellow-600';
+    return 'text-red-600';
+  };
+
   return (
     <div className="container mx-auto p-6 max-w-7xl">
+      {/* Header Mejorado */}
       <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-blue-600 mb-4">
-          🛡️ Legal Defense Contract Generator
+        <div className="flex items-center justify-center gap-3 mb-4">
+          <Shield className="h-12 w-12 text-blue-600" />
+          <Scale className="h-10 w-10 text-green-600" />
+          <Brain className="h-11 w-11 text-purple-600" />
+        </div>
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-green-600 to-purple-600 bg-clip-text text-transparent mb-4">
+          🛡️ Legal Defense Engine 2.0
         </h1>
-        <p className="text-xl text-gray-600">
-          Protecting contractors with AI-powered legal analysis in seconds, not minutes
+        <p className="text-xl text-gray-600 mb-2">
+          Tu Abogado Digital Veterano - De PDF a Contrato Blindado en Minutos
         </p>
+        <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+          <Sparkles className="h-4 w-4" />
+          <span>Protección Legal Nivel Corte Federal</span>
+          <Sparkles className="h-4 w-4" />
+        </div>
       </div>
 
-      {/* Improvements Banner */}
-
-
-      {/* Tabs for Projects and Upload */}
-      <Tabs value={activeTab} onValueChange={(value: string) => handleTabChange(value as 'projects' | 'upload')} className="space-y-6">
+      <Tabs defaultValue="generator" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="projects" className="flex items-center gap-2">
-            <FileText className="w-4 h-4" />
-            Proyectos Existentes
+          <TabsTrigger value="generator" className="flex items-center gap-2">
+            <Zap className="h-4 w-4" />
+            Generador PDF → Contrato
           </TabsTrigger>
-          <TabsTrigger value="upload" className="flex items-center gap-2">
-            <Upload className="w-4 h-4" />
-            Subir PDF Estimate
+          <TabsTrigger value="results" className="flex items-center gap-2" disabled={!generatedContract}>
+            <Award className="h-4 w-4" />
+            Contrato Blindado
           </TabsTrigger>
         </TabsList>
 
-        {/* Tab: Proyectos Existentes */}
-        <TabsContent value="projects" className="space-y-6">
-          <Card>
+        {/* Tab 1: Generador */}
+        <TabsContent value="generator" className="space-y-6">
+          <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-green-50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Seleccionar Proyecto Existente
+                <FileUp className="h-6 w-6 text-blue-600" />
+                Sube tu PDF de Estimado
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              {loadingProjects ? (
-                <div className="text-center py-4">
-                  <p>Cargando proyectos...</p>
-                </div>
-              ) : projects.length === 0 ? (
-                <div className="text-center py-4">
-                  <p className="text-gray-500">No hay proyectos disponibles</p>
-                  <Button onClick={loadProjects} className="mt-2">
-                    Recargar Proyectos
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {projects.map((project) => (
-                    <div
-                      key={project.id}
-                      className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                        selectedProject?.id === project.id
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                      onClick={() => setSelectedProject(project)}
-                    >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-semibold">{project.clientName}</h3>
-                          <p className="text-sm text-gray-600">{project.address}</p>
-                          <p className="text-sm text-gray-500">{project.projectType}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-green-600">
-                            ${project.totalPrice?.toLocaleString() || 'N/A'}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {project.status || 'Pending'}
-                          </p>
-                        </div>
+            <CardContent className="space-y-4">
+              <div className="border-2 border-dashed border-blue-300 rounded-lg p-8 text-center">
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  id="pdf-upload"
+                />
+                <label htmlFor="pdf-upload" className="cursor-pointer">
+                  <Upload className="h-16 w-16 text-blue-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                    Arrastra tu PDF aquí o haz clic para seleccionar
+                  </h3>
+                  <p className="text-gray-500">
+                    Soporta PDFs hasta 10MB. El sistema extraerá automáticamente toda la información necesaria.
+                  </p>
+                </label>
+              </div>
+
+              {selectedFile && (
+                <div className="bg-white p-4 rounded-lg border border-green-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <FileText className="h-8 w-8 text-red-500" />
+                      <div>
+                        <p className="font-semibold">{selectedFile.name}</p>
+                        <p className="text-sm text-gray-500">
+                          {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-              
-              {selectedProject && (
-                <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <h4 className="font-semibold text-green-800 mb-2">Proyecto Seleccionado:</h4>
-                  <p><strong>Cliente:</strong> {selectedProject.clientName}</p>
-                  <p><strong>Dirección:</strong> {selectedProject.address}</p>
-                  <p><strong>Tipo:</strong> {selectedProject.projectType}</p>
-                  <p><strong>Total:</strong> ${selectedProject.totalPrice?.toLocaleString()}</p>
-                  
-                  <Button 
-                    onClick={() => {
-                      // Convertir proyecto a datos de contrato
-                      setExtractedData({
-                        contractorName: "OWL FENC LLC",
-                        clientName: selectedProject.clientName,
-                        clientAddress: selectedProject.address,
-                        projectDescription: selectedProject.description || selectedProject.projectType,
-                        totalAmount: selectedProject.totalPrice?.toString() || "0",
-                        projectType: selectedProject.projectType
-                      });
-                      setActiveTab('upload'); // Cambiar a la vista de procesamiento
-                    }}
-                    className="mt-4 w-full"
-                  >
-                    Generar Contrato con este Proyecto
-                  </Button>
+                    <Button
+                      onClick={generateDefensiveContract}
+                      disabled={isProcessing}
+                      className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700"
+                    >
+                      {isProcessing ? (
+                        <>
+                          <Brain className="h-4 w-4 mr-2 animate-spin" />
+                          Generando Protección Legal...
+                        </>
+                      ) : (
+                        <>
+                          <Shield className="h-4 w-4 mr-2" />
+                          Generar Contrato Blindado
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>
           </Card>
+
+          {/* Progreso de Procesamiento */}
+          {isProcessing && (
+            <Card className="border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Brain className="h-6 w-6 text-purple-600 animate-pulse" />
+                  Abogado Digital Trabajando...
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {processingSteps.map((step, index) => (
+                  <div key={step.id} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {index < processingStep ? (
+                          <CheckCircle className="h-5 w-5 text-green-500" />
+                        ) : index === processingStep ? (
+                          <Brain className="h-5 w-5 text-purple-500 animate-spin" />
+                        ) : (
+                          <div className="h-5 w-5 rounded-full border-2 border-gray-300" />
+                        )}
+                        <span className={`font-medium ${index <= processingStep ? 'text-gray-900' : 'text-gray-400'}`}>
+                          {step.title}
+                        </span>
+                      </div>
+                      <span className="text-sm text-gray-500">{step.progress}%</span>
+                    </div>
+                    <p className="text-sm text-gray-600 ml-7">{step.description}</p>
+                    {index === processingStep && (
+                      <Progress value={step.progress} className="ml-7 mr-12" />
+                    )}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
-        {/* Tab: Subir PDF Estimate */}
-        <TabsContent value="upload" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Left Panel - Upload & Process */}
-            <div className="space-y-6">
-              <Card>
+        {/* Tab 2: Resultados */}
+        <TabsContent value="results" className="space-y-6">
+          {generatedContract && (
+            <>
+              {/* Resumen de Protección */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="border-2 border-green-200 bg-green-50">
+                  <CardContent className="p-4 text-center">
+                    <Award className="h-8 w-8 text-green-600 mx-auto mb-2" />
+                    <div className={`text-2xl font-bold ${getStrengthColor(contractStrength)}`}>
+                      {contractStrength}/100
+                    </div>
+                    <p className="text-sm text-gray-600">Fortaleza Legal</p>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-2 border-blue-200 bg-blue-50">
+                  <CardContent className="p-4 text-center">
+                    <Shield className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+                    <div className="text-2xl font-bold text-blue-600">
+                      {protectionsApplied.length}
+                    </div>
+                    <p className="text-sm text-gray-600">Protecciones Aplicadas</p>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-2 border-purple-200 bg-purple-50">
+                  <CardContent className="p-4 text-center">
+                    <AlertTriangle className="h-8 w-8 text-purple-600 mx-auto mb-2" />
+                    <Badge className={`${getRiskBadgeColor(riskAnalysis?.riskLevel || 'medio')} text-white`}>
+                      {riskAnalysis?.riskLevel?.toUpperCase() || 'MEDIO'}
+                    </Badge>
+                    <p className="text-sm text-gray-600 mt-1">Nivel de Riesgo</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Consejos Legales */}
+              <Card className="border-2 border-yellow-200 bg-yellow-50">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <FileUp className="h-5 w-5" />
-                    Upload PDF Estimate
+                    <Scale className="h-6 w-6 text-yellow-600" />
+                    Consejos de tu Abogado Digital
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                    <input
-                      type="file"
-                      accept=".pdf"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                      id="file-upload"
-                    />
-                    <label
-                      htmlFor="file-upload"
-                      className="cursor-pointer flex flex-col items-center"
-                    >
-                      <FileUp className="h-8 w-8 text-gray-400 mb-2" />
-                      <span className="text-sm text-gray-600">
-                        {selectedFile ? selectedFile.name : 'Choose PDF file or drag here'}
-                      </span>
-                    </label>
+                <CardContent>
+                  <div className="space-y-2">
+                    {legalAdvice.map((advice, index) => (
+                      <div key={index} className="flex items-start gap-2">
+                        <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                        <p className="text-sm">{advice}</p>
+                      </div>
+                    ))}
                   </div>
-
-                  <Button
-                    onClick={processEstimate}
-                    disabled={!selectedFile || isProcessing}
-                    className="w-full"
-                    size="lg"
-                  >
-                    {isProcessing ? (
-                      <>
-                        <Zap className="h-4 w-4 mr-2 animate-spin" />
-                        Processing PDF...
-                      </>
-                    ) : (
-                      <>
-                        <Shield className="h-4 w-4 mr-2" />
-                        Generate Legal Defense Contract
-                      </>
-                    )}
-                  </Button>
                 </CardContent>
               </Card>
 
-              {/* Data Editing Panel */}
-              {extractedData && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>📝 Editor de Contrato - Completamente Editable</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <EditableContractForm 
-                      initialData={extractedData} 
-                      onSave={(contractData) => {
-                        console.log('💾 Datos del contrato guardados:', contractData);
-                        setExtractedData(contractData);
-                        toast({
-                          title: "✅ Contrato actualizado",
-                          description: "Todos los cambios han sido guardados correctamente",
-                          variant: "default"
-                        });
-                      }}
-                    />
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+              {/* Botones de Acción */}
+              <div className="flex gap-4 justify-center">
+                <Button
+                  onClick={() => document.getElementById('contract-preview')?.scrollIntoView({ behavior: 'smooth' })}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <Eye className="h-4 w-4" />
+                  Ver Contrato
+                </Button>
+                <Button
+                  onClick={downloadContract}
+                  className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Descargar Contrato Blindado
+                </Button>
+              </div>
 
-            {/* Right Panel - Results */}
-            <div className="space-y-6">
-              {/* Risk Analysis */}
-              {riskAnalysis && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Shield className="h-5 w-5 text-blue-600" />
-                      Risk Analysis & Protection Status
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                      <div className="text-center p-3 bg-green-50 rounded-lg">
-                        <div className="font-semibold text-green-800">Coverage</div>
-                        <div className="text-2xl font-bold text-green-600">98%</div>
-                      </div>
-                      <div className="text-center p-3 bg-blue-50 rounded-lg">
-                        <div className="font-semibold text-blue-800">Risk Level</div>
-                        <div className="text-2xl font-bold text-blue-600">Low</div>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                        <span className="text-sm">Payment terms protected</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                        <span className="text-sm">Liability limitations included</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                        <span className="text-sm">Change order procedures defined</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Generated Contract Preview */}
-              {generatedContract && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-green-600" />
-                      Generated Contract Preview
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div 
-                      className="prose prose-sm max-w-none bg-gray-50 p-4 rounded-lg max-h-96 overflow-y-auto"
-                      dangerouslySetInnerHTML={{ __html: generatedContract }}
-                    />
-                    <div className="flex gap-2 mt-4">
-                      <Button className="flex-1" size="sm">
-                        Download PDF
-                      </Button>
-                      <Button variant="outline" className="flex-1" size="sm">
-                        Edit Contract
-                      </Button>
-                    </div>
-                    <div className="text-center mt-4 p-3 bg-green-50 rounded-lg">
-                      <CheckCircle className="h-6 w-6 text-green-600 mx-auto mb-2" />
-                      <p className="font-semibold text-green-800">Contract Ready!</p>
-                      <p className="text-sm mt-2">
-                        Complete with protective clauses and professional formatting
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          </div>
+              {/* Vista Previa del Contrato */}
+              <Card id="contract-preview" className="border-2 border-gray-200">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <FileText className="h-6 w-6" />
+                      Vista Previa - Contrato Blindado
+                    </span>
+                    <Badge variant="outline" className="bg-green-100 text-green-800">
+                      Listo para Firmar
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div 
+                    className="border rounded-lg p-6 bg-white max-h-96 overflow-y-auto"
+                    dangerouslySetInnerHTML={{ __html: generatedContract }}
+                  />
+                </CardContent>
+              </Card>
+            </>
+          )}
         </TabsContent>
       </Tabs>
     </div>
