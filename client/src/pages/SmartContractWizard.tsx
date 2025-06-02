@@ -117,12 +117,25 @@ const SmartContractWizard: React.FC = () => {
           // Auto-generate contract if all data is complete
           const contractData: ContractData = {
             clientName: result.data.extractedData.clientName || '',
-            clientAddress: result.data.extractedData.clientAddress || '',
+            clientAddress: result.data.extractedData.clientAddress || result.data.extractedData.projectLocation || '',
+            clientEmail: result.data.extractedData.clientEmail || '',
+            clientPhone: result.data.extractedData.clientPhone || '',
             projectType: result.data.extractedData.projectType || '',
             projectDescription: result.data.extractedData.projectDescription || '',
             projectLocation: result.data.extractedData.projectLocation || '',
             contractorName: result.data.extractedData.contractorName || '',
+            contractorEmail: result.data.extractedData.contractorEmail || '',
+            contractorPhone: result.data.extractedData.contractorPhone || '',
+            contractorAddress: '',
+            contractorLicense: '',
             totalAmount: result.data.extractedData.totalAmount || '',
+            startDate: result.data.extractedData.startDate || '',
+            completionDate: result.data.extractedData.completionDate || '',
+            paymentTerms: '',
+            paymentSchedule: '',
+            warrantyTerms: '',
+            changeOrderPolicy: '',
+            liabilityClause: '',
             isComplete: true,
             missingFields: []
           };

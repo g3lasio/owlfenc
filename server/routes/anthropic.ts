@@ -341,4 +341,92 @@ IMPORTANTE: Cualquier valor numérico debe ser un número, no un string.
   }
 });
 
+/**
+ * Contract Generation Endpoint
+ */
+router.post('/generate-contract', async (req, res) => {
+  try {
+    const { contractData } = req.body;
+
+    if (!contractData) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Contract data is required' 
+      });
+    }
+
+    console.log('🛡️ Generating defensive contract with Anthropic...');
+
+    // Create a comprehensive prompt for contract generation
+    const prompt = `You are an expert construction contract attorney specializing in contractor protection. Generate a complete, professional HTML contract based on the following project data:
+
+Client: ${contractData.clientName}
+Client Email: ${contractData.clientEmail}
+Client Phone: ${contractData.clientPhone}
+Project Address: ${contractData.clientAddress || contractData.projectLocation}
+Project Type: ${contractData.projectType}
+Project Description: ${contractData.projectDescription}
+Total Amount: ${contractData.totalAmount}
+Contractor: ${contractData.contractorName}
+Start Date: ${contractData.startDate}
+
+Create a comprehensive construction contract that includes:
+1. Complete project scope and specifications
+2. Payment terms with deposit and milestone structure
+3. Change order procedures with written authorization requirements
+4. Lien rights and mechanics' lien provisions
+5. Liability limitations and insurance requirements
+6. Force majeure and weather delay clauses
+7. Dispute resolution procedures
+8. Completion timeline and delay penalties
+9. Material and labor warranties
+10. Termination and cancellation clauses
+
+The contract must prioritize contractor protection while maintaining legal enforceability. Use professional formatting with proper HTML structure and inline CSS styling for a clean, professional appearance.
+
+Return only the complete HTML document, starting with <!DOCTYPE html>.`;
+
+    const response = await anthropic.messages.create({
+      model: "claude-3-5-sonnet-20241022",
+      max_tokens: 4000,
+      temperature: 0.3,
+      messages: [{
+        role: "user",
+        content: prompt
+      }]
+    });
+
+    const content = response.content[0];
+    if (content.type === 'text') {
+      let html = content.text;
+      
+      // Extract HTML if wrapped in markdown
+      const htmlMatch = html.match(/<!DOCTYPE html>[\s\S]*<\/html>/i);
+      if (htmlMatch) {
+        html = htmlMatch[0];
+      }
+
+      console.log('✅ Contract generated successfully');
+      
+      res.json({
+        success: true,
+        html: html,
+        metadata: {
+          generatedAt: new Date().toISOString(),
+          model: 'claude-3-5-sonnet-20241022'
+        }
+      });
+    } else {
+      throw new Error('Unexpected response format from Anthropic');
+    }
+
+  } catch (error) {
+    console.error('❌ Contract generation error:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
+    });
+  }
+});
+
 export default router;
