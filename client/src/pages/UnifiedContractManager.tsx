@@ -354,7 +354,7 @@ const UnifiedContractManager: React.FC = () => {
             {(currentStep === 'data-review' || currentStep === 'generation' || currentStep === 'preview' || currentStep === 'approval') && (
               <UnifiedContractPreview
                 contractData={contractData}
-                generatedContract={generatedContract}
+                generatedContract={generatedContract || undefined}
                 onDataUpdate={handleDataUpdate}
                 onApprove={handleContractApproval}
                 onRegenerate={handleRegenerate}

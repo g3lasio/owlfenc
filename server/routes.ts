@@ -961,6 +961,9 @@ Output in English regardless of input language. Make it suitable for contracts a
   // Registrar rutas del Motor de Abogado Defensor Digital
   app.use('/api/legal-defense', legalDefenseRoutes);
   
+  // Registrar rutas del sistema unificado de contratos
+  app.use('/api/anthropic', unifiedContractRoutes);
+  
   // Registrar rutas del sistema de pagos para contratistas
   app.use('/api/contractor-payments', contractorPaymentRoutes);
 
