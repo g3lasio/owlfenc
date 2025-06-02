@@ -929,6 +929,9 @@ Output in English regardless of input language. Make it suitable for contracts a
   // Registrar rutas de PDF
   app.use('/api/pdf', pdfRoutes);
   
+  // Registrar rutas del procesador de contratos PDF
+  app.use('/api/pdf-contract-processor', pdfContractProcessorRoutes);
+  
   // Registrar rutas de contratos
   app.use('/api', contractRoutes);
   
