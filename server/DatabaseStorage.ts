@@ -5,7 +5,7 @@ import {
   InsertProject, 
   Template, 
   InsertTemplate, 
-  Settings, 
+  Settings,
   InsertSettings, 
   ChatLog, 
   InsertChatLog,

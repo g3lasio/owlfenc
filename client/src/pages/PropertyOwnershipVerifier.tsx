@@ -110,7 +110,7 @@ export default function PropertyOwnershipVerifier() {
     setError(null);
 
     try {
-      // console.log("Verificando propiedad con dirección:", address.trim());
+      console.log("Verificando propiedad con dirección:", address.trim());
 
       // Usar el servicio actualizado que se conecta al wrapper de ATTOM externo
       const propertyData =
@@ -119,20 +119,20 @@ export default function PropertyOwnershipVerifier() {
       console.log("Datos de propiedad obtenidos:", propertyData);
       setPropertyDetails(propertyData);
 
-      // // Después de una búsqueda exitosa, invalidamos la caché del historial
-      // // para que se actualice automáticamente
-      // queryClient.invalidateQueries({
-      //   queryKey: ["/api/property/history"],
-      // });
+      // Después de una búsqueda exitosa, invalidamos la caché del historial
+      // para que se actualice automáticamente
+      queryClient.invalidateQueries({
+        queryKey: ["/api/property/history"],
+      });
     } catch (err: any) {
-      // console.info("property verifier error section");
-      // console.error("Error verificando propiedad:", err);
-      // // Mostrar mensaje de error específico al usuario
-      // setError(
-      //   err.message ||
-      //     "Error al verificar la propiedad. Por favor, intenta nuevamente.",
-      // );
-      // setPropertyDetails(null);
+      console.error("Error verificando propiedad:", err);
+
+      // Mostrar mensaje de error específico al usuario
+      setError(
+        err.message ||
+          "Error al verificar la propiedad. Por favor, intenta nuevamente.",
+      );
+      setPropertyDetails(null);
     } finally {
       setLoading(false);
     }

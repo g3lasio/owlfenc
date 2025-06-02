@@ -25,6 +25,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ContractData, GeneratedContract, OCRResult, ProcessingStatus } from '@shared/contractSchema';
 import { unifiedContractManager } from '@/services/unifiedContractManager';
 import UnifiedContractPreview from '@/components/contract/UnifiedContractPreview';
+import MissingDataCollector from '@/components/contract/MissingDataCollector';
+import ContractPreviewDisplay from '@/components/contract/ContractPreviewDisplay';
 
 type WorkflowStep = 'upload' | 'processing' | 'data-validation' | 'missing-data' | 'contract-generation' | 'preview' | 'legal-review' | 'approval' | 'pdf-generation' | 'email-sending';
 
@@ -200,10 +202,10 @@ const UnifiedContractManager: React.FC = () => {
   // Handle contract approval
   const handleContractApproval = (approvedContract: GeneratedContract) => {
     setGeneratedContract(approvedContract);
-    setCurrentStep('legal-review');
+    setCurrentStep('preview');
     
     toast({
-      title: "Contrato generado - Revisión legal requerida",
+      title: "Contrato generado exitosamente",
       description: "Revise las cláusulas de protección antes de aprobar"
     });
   };
@@ -395,7 +397,18 @@ const UnifiedContractManager: React.FC = () => {
               </Card>
             )}
 
-            {(currentStep === 'data-validation' || currentStep === 'missing-data' || currentStep === 'contract-generation' || currentStep === 'preview' || currentStep === 'legal-review' || currentStep === 'approval') && (
+            {/* Missing Data Collection Step */}
+            {currentStep === 'missing-data' && contractData && ocrResult && (
+              <MissingDataCollector
+                contractData={contractData}
+                missingFields={unifiedContractManager.detectMissingFields(contractData)}
+                onDataComplete={handleDataUpdate}
+                ocrConfidence={ocrResult.confidence}
+              />
+            )}
+
+            {/* Data Validation and Preview Step */}
+            {(currentStep === 'data-validation' || currentStep === 'contract-generation') && (
               <UnifiedContractPreview
                 contractData={contractData}
                 generatedContract={generatedContract || undefined}
@@ -403,6 +416,16 @@ const UnifiedContractManager: React.FC = () => {
                 onApprove={handleContractApproval}
                 onRegenerate={handleRegenerate}
                 isGenerating={generateContractMutation.isPending}
+              />
+            )}
+
+            {/* Contract Preview with Defensive Clauses */}
+            {(currentStep === 'preview' || currentStep === 'legal-review') && generatedContract && (
+              <ContractPreviewDisplay
+                contract={generatedContract}
+                onApprove={() => setCurrentStep('approval')}
+                onEdit={() => setCurrentStep('data-validation')}
+                onRegenerate={() => handleRegenerate(contractData)}
               />
             )}
 
