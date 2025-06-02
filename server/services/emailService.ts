@@ -1,11 +1,8 @@
-import { MailService } from '@sendgrid/mail';
+import { resendService } from './resendService';
 
-if (!process.env.SENDGRID_API_KEY) {
-  console.error("ADVERTENCIA: No se ha configurado SENDGRID_API_KEY en las variables de entorno");
+if (!process.env.RESEND_API_KEY) {
+  console.error("ADVERTENCIA: No se ha configurado RESEND_API_KEY en las variables de entorno");
 }
-
-const mailService = new MailService();
-mailService.setApiKey(process.env.SENDGRID_API_KEY || '');
 
 interface EmailParams {
   to: string;
@@ -37,29 +34,21 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
       return false;
     }
     
-    // Configurar el mensaje
-    const message = {
+    // Enviar el email usando Resend
+    const success = await resendService.sendEmail({
       to: params.to,
       from: params.from,
       subject: params.subject,
-      text: params.text,
-      html: params.html,
-      replyTo: params.replyTo
-    };
-    
-    // Enviar el email
-    await mailService.send({
-      to: params.to,
-      from: params.from,
-      subject: params.subject,
-      text: params.text || '',
-      html: params.html || '',
+      html: params.html || params.text || '',
       replyTo: params.replyTo
     });
-    console.log('Email enviado exitosamente a:', params.to);
-    return true;
+    
+    if (success) {
+      console.log('Email enviado exitosamente a:', params.to);
+    }
+    return success;
   } catch (error) {
-    console.error('Error al enviar email a través de SendGrid:', error);
+    console.error('Error al enviar email:', error);
     return false;
   }
 }
