@@ -1,0 +1,91 @@
+uter (/home/runner/workspace/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+===== INICIO DE SOLICITUD DE DETALLES DE PROPIEDAD =====
+Solicitando datos de propiedad para dirección: 2907 Owens Ct Fairfield CA
+Intentando conexión directa con el servicio ATTOM en: https://attom-wrapper.replit.app
+Error verificando estado del servicio ATTOM: Request failed with status code 404
+Intentos para obtener datos de propiedad:
+Intento 1 - Dirección completa
+Intento 1 falló: Request failed with status code 502
+Código de estado: 502
+Intento 2 - Formato de componentes de dirección
+Componentes de dirección: {
+  streetAddress: '2907 Owens Ct Fairfield CA',
+  city: '',
+  state: '',
+  zip: ''
+}
+Intento 2 falló: Request failed with status code 400
+Intento 3 - Servicio interno propertyService
+Iniciando búsqueda con diagnósticos para: 2907 Owens Ct Fairfield CA
+Parseando dirección: 2907 Owens Ct Fairfield CA
+ALERTA: Solo se proporcionó la calle sin ciudad ni estado
+Dirección parseada: {
+  address1: '2907 Owens Ct Fairfield CA',
+  address2: '',
+  city: '',
+  state: '',
+  zip: '',
+  fullAddress: '2907 Owens Ct Fairfield CA'
+}
+Consultando dirección en ATTOM wrapper: 2907 Owens Ct Fairfield CA
+Parseando dirección: 2907 Owens Ct Fairfield CA
+ALERTA: Solo se proporcionó la calle sin ciudad ni estado
+Dirección parseada: {
+  address1: '2907 Owens Ct Fairfield CA',
+  address2: '',
+  city: '',
+  state: '',
+  zip: '',
+  fullAddress: '2907 Owens Ct Fairfield CA'
+}
+Intento Parámetros ATTOM (address1, address2, city, state, zip): {"address1":"2907 Owens Ct Fairfield CA","address2":"","city":"","state":"","zip":""}
+❌ Parámetros ATTOM (address1, address2, city, state, zip) falló: Request failed with status code 400
+Detalles del error: {"message":"address is required","errorCode":"MISSING_ADDRESS","details":"Please provide a valid address as a query parameter"}
+Intento Dirección completa (address): {"address":"2907 Owens Ct Fairfield CA"}
+❌ Dirección completa (address) falló: Request failed with status code 502
+Detalles del error: {"message":"ATTOM API connection failed: Cannot read property 'trim' of undefined","errorCode":"EXTERNAL_SERVICE_ERROR","details":"There was an issue connecting to the property data provider"}
+Intento Usando addressLine1/2 y postal: {"addressLine1":"2907 Owens Ct Fairfield CA","addressLine2":"","city":"","state":"","postal":""}
+❌ Usando addressLine1/2 y postal falló: Request failed with status code 400
+Detalles del error: {"message":"address is required","errorCode":"MISSING_ADDRESS","details":"Please provide a valid address as a query parameter"}
+Intento Usando street en lugar de address1: {"street":"2907 Owens Ct Fairfield CA","city":"","state":"","zip":""}
+❌ Usando street en lugar de address1 falló: Request failed with status code 400
+Detalles del error: {"message":"address is required","errorCode":"MISSING_ADDRESS","details":"Please provide a valid address as a query parameter"}
+Intento Usando address + address2 + citystatezip: {"address":"2907 Owens Ct Fairfield CA","address2":"","citystatezip":","}
+❌ Usando address + address2 + citystatezip falló: Request failed with status code 502
+Detalles del error: {"message":"ATTOM API connection failed: Cannot read property 'trim' of undefined","errorCode":"EXTERNAL_SERVICE_ERROR","details":"There was an issue connecting to the property data provider"}
+Intento Endpoint alternativo /api/property con address1/2: {"address1":"2907 Owens Ct Fairfield CA","address2":"","city":"","state":"","zip":""}
+❌ Endpoint alternativo /api/property con address1/2 falló: Request failed with status code 404
+Detalles del error: "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/property</pre>\n</body>\n</html>\n"
+Intento Endpoint alternativo /api/property con dirección completa: {"address":"2907 Owens Ct Fairfield CA"}
+❌ Endpoint alternativo /api/property con dirección completa falló: Request failed with status code 404
+Detalles del error: "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/property</pre>\n</body>\n</html>\n"
+Todos los intentos de conexión fallaron
+Error al consultar ATTOM wrapper: Request failed with status code 404
+Detalles de error: {
+  status: 404,
+  data: '<!DOCTYPE html>\n' +
+    '<html lang="en">\n' +
+    '<head>\n' +
+    '<meta charset="utf-8">\n' +
+    '<title>Error</title>\n' +
+    '</head>\n' +
+    '<body>\n' +
+    '<pre>Cannot GET /api/property</pre>\n' +
+    '</body>\n' +
+    '</html>\n'
+}
+Solicitud interna completada en 451ms con estado: NOT_FOUND
+Diagnóstico de la solicitud: {
+  status: 'NOT_FOUND',
+  parsedAddress: 'disponible',
+  errorType: 404,
+  processingTime: 451
+}
+No se encontró información para la dirección proporcionada
+===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====
+

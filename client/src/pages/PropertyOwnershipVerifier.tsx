@@ -35,9 +35,13 @@ import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import MapboxPlacesAutocomplete from "@/components/ui/mapbox-places-autocomplete";
-import { propertyVerifierService, PropertyDetails, OwnerHistoryEntry } from "@/services/propertyVerifierService";
+import {
+  propertyVerifierService,
+  PropertyDetails,
+  OwnerHistoryEntry,
+} from "@/services/propertyVerifierService";
 import PropertySearchHistory from "@/components/property/PropertySearchHistory";
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function PropertyOwnershipVerifier() {
   // Obtener la suscripción del usuario
@@ -56,11 +60,11 @@ export default function PropertyOwnershipVerifier() {
   // Manejar la selección de lugar desde el autocompletado
   const handlePlaceSelect = (placeData: any) => {
     console.log("📍 [PropertyVerifier] Lugar seleccionado:", placeData);
-    
+
     if (placeData && placeData.address) {
       // Limpiar cualquier error previo
       setError(null);
-      
+
       // Iniciar automáticamente la búsqueda después de seleccionar una dirección
       setTimeout(() => {
         handleSearch();
@@ -73,13 +77,13 @@ export default function PropertyOwnershipVerifier() {
     if (historyItem && historyItem.results) {
       // Actualizar la dirección visible
       setAddress(historyItem.address);
-      
+
       // Establecer los detalles de la propiedad desde el historial
       setPropertyDetails(historyItem.results);
-      
+
       // Limpiar cualquier error previo
       setError(null);
-      
+
       // Mostrar notificación de éxito
       toast({
         title: "Historial cargado",
@@ -106,26 +110,29 @@ export default function PropertyOwnershipVerifier() {
     setError(null);
 
     try {
-      console.log("Verificando propiedad con dirección:", address.trim());
-      
+      // console.log("Verificando propiedad con dirección:", address.trim());
+
       // Usar el servicio actualizado que se conecta al wrapper de ATTOM externo
-      const propertyData = await propertyVerifierService.verifyProperty(address);
-      
+      const propertyData =
+        await propertyVerifierService.verifyProperty(address);
+
       console.log("Datos de propiedad obtenidos:", propertyData);
       setPropertyDetails(propertyData);
-      
-      // Después de una búsqueda exitosa, invalidamos la caché del historial
-      // para que se actualice automáticamente
-      queryClient.invalidateQueries({
-        queryKey: ['/api/property/history'],
-      });
-      
+
+      // // Después de una búsqueda exitosa, invalidamos la caché del historial
+      // // para que se actualice automáticamente
+      // queryClient.invalidateQueries({
+      //   queryKey: ["/api/property/history"],
+      // });
     } catch (err: any) {
-      console.error("Error verificando propiedad:", err);
-      
-      // Mostrar mensaje de error específico al usuario
-      setError(err.message || "Error al verificar la propiedad. Por favor, intenta nuevamente.");
-      setPropertyDetails(null);
+      // console.info("property verifier error section");
+      // console.error("Error verificando propiedad:", err);
+      // // Mostrar mensaje de error específico al usuario
+      // setError(
+      //   err.message ||
+      //     "Error al verificar la propiedad. Por favor, intenta nuevamente.",
+      // );
+      // setPropertyDetails(null);
     } finally {
       setLoading(false);
     }
@@ -133,7 +140,9 @@ export default function PropertyOwnershipVerifier() {
 
   return (
     <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-2 text-center">Verificador de Propiedad</h1>
+      <h1 className="text-3xl font-bold mb-2 text-center">
+        Verificador de Propiedad
+      </h1>
       <p className="text-muted-foreground mb-6 text-center">
         Verifica la propiedad para evitar estafas y asegurarte de que estás
         tratando con el propietario legítimo.
@@ -150,7 +159,7 @@ export default function PropertyOwnershipVerifier() {
               <div className="absolute top-1.5 left-1.5 w-3 h-0.5 bg-cyan-400/60"></div>
               <div className="absolute top-1.5 left-1.5 w-0.5 h-3 bg-cyan-400/60"></div>
             </div>
-            
+
             {/* Corner arrows - top right */}
             <div className="absolute top-0 right-0 w-8 h-8">
               <div className="absolute top-0 right-0 w-6 h-0.5 bg-gradient-to-l from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
@@ -158,7 +167,7 @@ export default function PropertyOwnershipVerifier() {
               <div className="absolute top-1.5 right-1.5 w-3 h-0.5 bg-cyan-400/60"></div>
               <div className="absolute top-1.5 right-1.5 w-0.5 h-3 bg-cyan-400/60"></div>
             </div>
-            
+
             {/* Corner arrows - bottom left */}
             <div className="absolute bottom-0 left-0 w-8 h-8">
               <div className="absolute bottom-0 left-0 w-6 h-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
@@ -166,7 +175,7 @@ export default function PropertyOwnershipVerifier() {
               <div className="absolute bottom-1.5 left-1.5 w-3 h-0.5 bg-cyan-400/60"></div>
               <div className="absolute bottom-1.5 left-1.5 w-0.5 h-3 bg-cyan-400/60"></div>
             </div>
-            
+
             {/* Corner arrows - bottom right */}
             <div className="absolute bottom-0 right-0 w-8 h-8">
               <div className="absolute bottom-0 right-0 w-6 h-0.5 bg-gradient-to-l from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
@@ -174,17 +183,16 @@ export default function PropertyOwnershipVerifier() {
               <div className="absolute bottom-1.5 right-1.5 w-3 h-0.5 bg-cyan-400/60"></div>
               <div className="absolute bottom-1.5 right-1.5 w-0.5 h-3 bg-cyan-400/60"></div>
             </div>
-            
+
             {/* Side scanning lines */}
             <div className="absolute top-4 left-0 w-0.5 h-1/3 bg-gradient-to-b from-transparent via-cyan-400/80 to-transparent opacity-60 animate-pulse"></div>
             <div className="absolute top-4 right-0 w-0.5 h-1/3 bg-gradient-to-b from-transparent via-cyan-400/80 to-transparent opacity-60 animate-pulse delay-300"></div>
             <div className="absolute bottom-4 left-4 w-1/3 h-0.5 bg-gradient-to-r from-transparent via-blue-500/80 to-transparent opacity-60 animate-pulse delay-500"></div>
             <div className="absolute bottom-4 right-4 w-1/3 h-0.5 bg-gradient-to-l from-transparent via-blue-500/80 to-transparent opacity-60 animate-pulse delay-700"></div>
           </div>
-          
-          <CardHeader className="relative z-10 pb-4">
-          </CardHeader>
-          
+
+          <CardHeader className="relative z-10 pb-4"></CardHeader>
+
           <CardContent className="relative z-10 pt-0">
             <div className="space-y-4">
               <div className="w-full">
@@ -225,10 +233,15 @@ export default function PropertyOwnershipVerifier() {
               </div>
 
               {error && (
-                <Alert variant="destructive" className="border-red-400/50 bg-red-900/20 backdrop-blur-sm">
+                <Alert
+                  variant="destructive"
+                  className="border-red-400/50 bg-red-900/20 backdrop-blur-sm"
+                >
                   <AlertTriangle className="h-4 w-4 text-red-400" />
                   <AlertTitle className="text-red-300">Error</AlertTitle>
-                  <AlertDescription className="text-red-200">{error}</AlertDescription>
+                  <AlertDescription className="text-red-200">
+                    {error}
+                  </AlertDescription>
                 </Alert>
               )}
             </div>
@@ -260,7 +273,9 @@ export default function PropertyOwnershipVerifier() {
           <CardHeader>
             <div className="flex flex-col items-center text-center">
               <div className="mb-2">
-                <CardTitle className="text-center">{propertyDetails.address}</CardTitle>
+                <CardTitle className="text-center">
+                  {propertyDetails.address}
+                </CardTitle>
                 <CardDescription className="text-center">
                   {propertyDetails.propertyType}
                 </CardDescription>
@@ -289,13 +304,19 @@ export default function PropertyOwnershipVerifier() {
                       </p>
                       <div className="flex gap-2 mt-1">
                         {propertyDetails.verified && (
-                          <Badge variant="secondary" className="bg-green-100 text-green-800">
+                          <Badge
+                            variant="secondary"
+                            className="bg-green-100 text-green-800"
+                          >
                             <Check className="mr-1" size={12} />
                             Verificado
                           </Badge>
                         )}
                         {propertyDetails.ownerOccupied && (
-                          <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                          <Badge
+                            variant="secondary"
+                            className="bg-blue-100 text-blue-800"
+                          >
                             <Home className="mr-1" size={12} />
                             Residente
                           </Badge>
@@ -312,37 +333,36 @@ export default function PropertyOwnershipVerifier() {
                   <div className="flex items-center">
                     <Home className="text-cyan-400 mr-2" size={16} />
                     <span className="text-xs">
-                      {propertyDetails.propertyType.split('/')[0]}
+                      {propertyDetails.propertyType.split("/")[0]}
                     </span>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <Calendar className="text-cyan-400 mr-2" size={16} />
                     <span className="text-xs">
                       {propertyDetails.yearBuilt || "N/A"}
                     </span>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <BedDouble className="text-cyan-400 mr-2" size={16} />
                     <span className="text-xs">
-                      {propertyDetails.bedrooms || "N/A"}/{propertyDetails.bathrooms || "N/A"}
+                      {propertyDetails.bedrooms || "N/A"}/
+                      {propertyDetails.bathrooms || "N/A"}
                     </span>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <Ruler className="text-cyan-400 mr-2" size={16} />
                     <span className="text-xs">
                       {propertyDetails.sqft?.toLocaleString() || "N/A"} pie²
                     </span>
                   </div>
-                  
+
                   {propertyDetails.lotSize && (
                     <div className="flex items-center col-span-2">
                       <Trees className="text-cyan-400 mr-2" size={16} />
-                      <span className="text-xs">
-                        {propertyDetails.lotSize}
-                      </span>
+                      <span className="text-xs">{propertyDetails.lotSize}</span>
                     </div>
                   )}
                 </div>
@@ -521,8 +541,8 @@ export default function PropertyOwnershipVerifier() {
                   <div>
                     <span className="font-medium text-blue-800">Recuerda:</span>
                     <p className="text-blue-700">
-                      ¡No te dejes chingar, primo! Si eres chingón, cobra como chingón. 
-                      ¡No te dejes chamaquear!
+                      ¡No te dejes chingar, primo! Si eres chingón, cobra como
+                      chingón. ¡No te dejes chamaquear!
                     </p>
                   </div>
                 </li>

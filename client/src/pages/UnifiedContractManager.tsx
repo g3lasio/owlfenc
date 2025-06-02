@@ -26,7 +26,7 @@ import { ContractData, GeneratedContract, OCRResult, ProcessingStatus } from '@s
 import { unifiedContractManager } from '@/services/unifiedContractManager';
 import UnifiedContractPreview from '@/components/contract/UnifiedContractPreview';
 
-type WorkflowStep = 'upload' | 'processing' | 'data-review' | 'generation' | 'preview' | 'approval';
+type WorkflowStep = 'upload' | 'processing' | 'data-validation' | 'missing-data' | 'contract-generation' | 'preview' | 'legal-review' | 'approval' | 'pdf-generation' | 'email-sending';
 
 const UnifiedContractManager: React.FC = () => {
   const { toast } = useToast();
@@ -113,12 +113,27 @@ const UnifiedContractManager: React.FC = () => {
       if (result.success) {
         setOcrResult(result);
         setContractData(result.extractedData);
-        setCurrentStep('data-review');
         
-        toast({
-          title: "Documento procesado",
-          description: `Datos extraídos con ${result.confidence}% de confianza`
-        });
+        // PASO CRÍTICO: Validar datos inmediatamente después del OCR
+        setCurrentStep('data-validation');
+        
+        // Verificar si faltan datos críticos
+        const missingFields = unifiedContractManager.detectMissingFields(result.extractedData);
+        
+        if (missingFields.length > 0) {
+          setCurrentStep('missing-data');
+          toast({
+            title: "Datos incompletos detectados",
+            description: `Se requieren ${missingFields.length} campos adicionales para generar un contrato robusto`,
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Documento procesado completamente",
+            description: `Datos extraídos con ${result.confidence}% de confianza - Listos para generar contrato`
+          });
+          setCurrentStep('data-validation');
+        }
       } else {
         throw new Error('OCR processing failed');
       }
@@ -136,35 +151,60 @@ const UnifiedContractManager: React.FC = () => {
   const handleProjectSelection = (project: any) => {
     const projectData = unifiedContractManager.convertProjectToContract(project);
     setContractData(projectData);
-    setCurrentStep('data-review');
     
-    toast({
-      title: "Proyecto seleccionado",
-      description: `Datos del proyecto "${project.clientName}" cargados`
-    });
+    // Validar datos del proyecto inmediatamente
+    const missingFields = unifiedContractManager.detectMissingFields(projectData);
+    
+    if (missingFields.length > 0) {
+      setCurrentStep('missing-data');
+      toast({
+        title: "Datos del proyecto incompletos",
+        description: `Se requieren ${missingFields.length} campos adicionales para generar un contrato robusto`,
+        variant: "destructive"
+      });
+    } else {
+      setCurrentStep('data-validation');
+      toast({
+        title: "Proyecto seleccionado",
+        description: `Datos del proyecto "${project.clientName}" validados - Listos para generar contrato`
+      });
+    }
   };
 
-  // Handle contract data updates
+  // Handle contract data updates - Solo permitir generación cuando datos estén completos
   const handleDataUpdate = (updatedData: ContractData) => {
     setContractData(updatedData);
-    setCurrentStep('generation');
+    
+    // Validar nuevamente antes de generar
+    const validation = unifiedContractManager.validateContractData(updatedData);
+    
+    if (!validation.isValid) {
+      toast({
+        title: "Datos aún incompletos",
+        description: "Complete todos los campos requeridos antes de generar el contrato",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setCurrentStep('contract-generation');
     generateContractMutation.mutate(updatedData);
   };
 
   // Handle contract regeneration
   const handleRegenerate = (updatedData: ContractData) => {
-    setCurrentStep('generation');
+    setCurrentStep('contract-generation');
     generateContractMutation.mutate(updatedData);
   };
 
   // Handle contract approval
   const handleContractApproval = (approvedContract: GeneratedContract) => {
     setGeneratedContract(approvedContract);
-    setCurrentStep('approval');
+    setCurrentStep('legal-review');
     
     toast({
-      title: "Contrato aprobado",
-      description: "El contrato está listo para envío y firma"
+      title: "Contrato generado - Revisión legal requerida",
+      description: "Revise las cláusulas de protección antes de aprobar"
     });
   };
 
@@ -172,11 +212,15 @@ const UnifiedContractManager: React.FC = () => {
   const getStepProgress = (): number => {
     const stepMap: Record<WorkflowStep, number> = {
       'upload': 0,
-      'processing': 20,
-      'data-review': 40,
-      'generation': 60,
-      'preview': 80,
-      'approval': 100
+      'processing': 10,
+      'data-validation': 20,
+      'missing-data': 30,
+      'contract-generation': 50,
+      'preview': 65,
+      'legal-review': 80,
+      'approval': 90,
+      'pdf-generation': 95,
+      'email-sending': 100
     };
     return stepMap[currentStep] || 0;
   };
@@ -351,7 +395,7 @@ const UnifiedContractManager: React.FC = () => {
               </Card>
             )}
 
-            {(currentStep === 'data-review' || currentStep === 'generation' || currentStep === 'preview' || currentStep === 'approval') && (
+            {(currentStep === 'data-validation' || currentStep === 'missing-data' || currentStep === 'contract-generation' || currentStep === 'preview' || currentStep === 'legal-review' || currentStep === 'approval') && (
               <UnifiedContractPreview
                 contractData={contractData}
                 generatedContract={generatedContract || undefined}
