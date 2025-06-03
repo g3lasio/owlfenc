@@ -47,16 +47,16 @@ interface DatosExtraidos {
 }
 
 // Generate contract pdf
-router.post("/generate-contract", async (req, res) => {
+router.post("/generate-contract-pdf", async (req, res) => {
   try {
     const contract = req.body;
     const result = await generateContract(contract);
-    res.status(200).json(result);
+    res.status(200).json({
+      msg: "nx",
+    });
   } catch (err) {
     res.status(500).json({
-      message: "Error generating contract",
-      // @ts-expect-error
-      error: err.message,
+      err: "Something went wrong",
     });
   }
 });

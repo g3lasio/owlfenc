@@ -1672,21 +1672,21 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
     setShowEmailPreview(true);
   };
 
-  // Send estimate email using new contractor email service
+  // Send estimate email using new HTML email service
   const sendEstimateEmail = async () => {
-    if (!emailData.toEmail || !emailData.subject || !emailData.message || !estimate.client) {
+    if (!emailData.toEmail || !estimate.client || !estimate.items?.length) {
       toast({
         title: "Error",
-        description: "Please complete all required fields.",
+        description: "Please complete client information and add items to the estimate.",
         variant: "destructive",
       });
       return;
     }
 
-    if (!profile?.email) {
+    if (!profile?.email || !profile?.companyName) {
       toast({
-        title: "Email Required",
-        description: "Please add your email address to your profile before sending emails.",
+        title: "Profile Required",
+        description: "Please complete your company profile before sending estimates.",
         variant: "destructive",
       });
       return;
@@ -1695,60 +1695,115 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
     setIsSendingEmail(true);
     
     try {
-      // Send email with new contractor email service
-      const response = await fetch('/api/contractor-email/send-estimate', {
+      // Generate estimate number
+      const estimateNumber = `EST-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`;
+      
+      // Calculate tax
+      const taxRate = 10; // Default 10% tax rate
+      const tax = estimate.subtotal * (taxRate / 100);
+      const total = estimate.subtotal + tax;
+      
+      // Prepare estimate data for new HTML email service
+      const estimateData = {
+        estimateNumber,
+        date: new Date().toLocaleDateString('es-ES'),
+        client: {
+          name: estimate.client.name,
+          email: emailData.toEmail,
+          address: estimate.client.address,
+          phone: estimate.client.phone
+        },
+        contractor: {
+          companyName: profile.companyName,
+          name: profile.displayName || profile.companyName,
+          email: profile.email,
+          phone: profile.phone || 'No especificado',
+          address: profile.address || 'No especificada',
+          city: profile.city || 'No especificada',
+          state: profile.state || 'CA',
+          zipCode: profile.zipCode || '00000',
+          license: profile.license,
+          insurancePolicy: profile.insurancePolicy,
+          logo: profile.logoUrl,
+          website: profile.website
+        },
+        project: {
+          type: estimate.projectType || 'Construcción',
+          description: estimate.title || 'Proyecto de construcción',
+          location: estimate.client.address,
+          scopeOfWork: estimate.projectDetails || emailData.message
+        },
+        items: estimate.items.map(item => ({
+          id: item.id || String(Math.random()),
+          name: item.name || item.material,
+          description: item.description || item.details,
+          quantity: item.quantity || 1,
+          unit: item.unit || 'unidad',
+          unitPrice: item.unitPrice || item.price || 0,
+          total: item.total || (item.quantity * (item.unitPrice || item.price || 0))
+        })),
+        subtotal: estimate.subtotal || estimate.total || 0,
+        tax: tax,
+        taxRate: taxRate,
+        total: total,
+        notes: emailData.message,
+        validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('es-ES') // 30 days from now
+      };
+
+      console.log('📧 Enviando estimado HTML profesional:', estimateData);
+
+      // Send HTML estimate email
+      const response = await fetch('/api/estimate-email/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contractorEmail: profile.email,
-          contractorName: profile.companyName || profile.displayName || 'Contractor',
-          contractorProfile: profile,
-          clientEmail: emailData.toEmail,
-          clientName: estimate.client.name,
-          estimateData: {
-            projectDetails: estimate.projectDetails || estimate.title || 'Construction project',
-            total: estimate.total,
-            items: estimate.items,
-            estimateNumber: `EST-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`
-          },
-          customMessage: emailData.message,
-          customSubject: emailData.subject,
-          sendCopy: emailData.sendCopy
-        })
+        body: JSON.stringify(estimateData)
       });
 
       const result = await response.json();
 
       if (result.success) {
         toast({
-          title: 'Email Sent Successfully',
-          description: `Your professional estimate was sent to ${emailData.toEmail}`,
+          title: 'Estimado Enviado con Éxito',
+          description: `Su estimado profesional fue enviado a ${emailData.toEmail} con botones de aprobación y ajustes`,
           duration: 5000
         });
+        
+        // Save estimate to Firebase for tracking
+        if (currentUser) {
+          try {
+            const estimateRef = doc(collection(db, 'estimates'));
+            await setDoc(estimateRef, {
+              ...estimateData,
+              firebaseUserId: currentUser.uid,
+              status: 'sent',
+              sentAt: new Date(),
+              createdAt: new Date()
+            });
+            console.log('✅ Estimado guardado en Firebase para seguimiento');
+          } catch (saveError) {
+            console.warn('Error guardando estimado en Firebase:', saveError);
+          }
+        }
+        
         setShowEmailDialog(false);
         setShowEmailPreview(false);
+        
+        // Refresh estimates list
+        loadSavedEstimates();
+        
       } else {
-        if (result.message.includes('verification')) {
-          toast({
-            title: 'Email Verification Required',
-            description: 'Please verify your email address first. Check your email for a verification link from SendGrid.',
-            variant: 'destructive',
-            duration: 7000
-          });
-        } else {
-          toast({
-            title: 'Failed to Send Email',
-            description: result.message || 'Please check your email configuration.',
-            variant: 'destructive',
-            duration: 5000
-          });
-        }
+        toast({
+          title: 'Error Enviando Estimado',
+          description: result.message || 'Error enviando el estimado por email.',
+          variant: 'destructive',
+          duration: 5000
+        });
       }
     } catch (error) {
-      console.error('Error sending email:', error);
+      console.error('Error sending HTML estimate email:', error);
       toast({
-        title: 'Connection Error',
-        description: 'Unable to send email. Please check your connection and try again.',
+        title: 'Error de Conexión',
+        description: 'No se pudo enviar el estimado. Verifique su conexión e intente nuevamente.',
         variant: 'destructive',
         duration: 5000
       });

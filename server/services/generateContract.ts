@@ -71,7 +71,9 @@ async function generateContract(contract: ContractDTO) {
   try {
     const API_KEY = process.env.PDFMONKEY_API_KEY;
     const TEMPLATE_ID = "DF24FD81-01C5-4054-BDCF-19ED1DFCD763";
-
+    if (!API_KEY) {
+      throw new Error("PDFMONKEY_API_KEY is not defined");
+    }
     const payload = {
       document: {
         document_template_id: TEMPLATE_ID,
@@ -83,19 +85,17 @@ async function generateContract(contract: ContractDTO) {
       Authorization: `Bearer ${API_KEY}`,
       "Content-Type": "application/json",
     };
-    const res = axios.post(
+    const res = await axios.post(
       "https://api.pdfmonkey.io/api/v1/documents",
       payload,
       { headers },
     );
-
+    console.log(res.data);
     return {
-      data: res.data,
       message: "Contract generated successfully",
     };
   } catch (error) {
-    //@ts-expect-error
-    throw new Error(`Failed to generate estimate: ${error.message}`);
+    throw new Error(`Failed to generate estimate`);
   }
 }
 
