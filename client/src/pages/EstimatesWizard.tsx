@@ -2746,13 +2746,14 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
                         <h4 className="text-xs font-medium text-cyan-400 mb-2">CONTRATISTA</h4>
                         <div className="text-sm text-gray-300">
                           {/* Company Logo */}
-                          {profile?.logoUrl && (
+                          {(profile?.logoUrl || profile?.logo) && (
                             <div className="mb-3">
                               <img 
-                                src={profile.logoUrl} 
+                                src={profile.logoUrl || profile.logo} 
                                 alt={`${profile.companyName || 'Company'} Logo`}
                                 className="h-12 w-auto object-contain bg-white rounded p-1"
                                 onError={(e) => {
+                                  console.warn('Logo failed to load:', profile.logoUrl || profile.logo);
                                   e.currentTarget.style.display = 'none';
                                 }}
                               />
