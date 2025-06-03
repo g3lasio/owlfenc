@@ -51,9 +51,12 @@ export class ResendEmailService {
         return false;
       }
 
+      // Force use of verified Resend domain
+      const verifiedFrom = this.defaultFromEmail;
+      
       // Preparar datos del email
       const emailPayload = {
-        from: emailData.from || this.defaultFromEmail,
+        from: verifiedFrom,
         to: [emailData.to],
         subject: emailData.subject,
         html: emailData.html,
@@ -70,7 +73,16 @@ export class ResendEmailService {
       console.log('📤 [RESEND] Enviando email con payload preparado...');
       console.log('📤 [RESEND] Attachments:', emailData.attachments?.length || 0);
 
+      console.log('📧 [RESEND] Enviando con payload:', JSON.stringify({
+        from: emailPayload.from,
+        to: emailPayload.to,
+        subject: emailPayload.subject,
+        htmlLength: emailPayload.html.length
+      }, null, 2));
+
       const result = await resend.emails.send(emailPayload);
+
+      console.log('📧 [RESEND] Respuesta completa:', JSON.stringify(result, null, 2));
 
       if (result.data?.id) {
         console.log('✅ [RESEND] Email enviado exitosamente');
@@ -79,6 +91,9 @@ export class ResendEmailService {
         return true;
       } else {
         console.error('❌ [RESEND] Respuesta sin ID:', result);
+        if (result.error) {
+          console.error('❌ [RESEND] Error detallado:', result.error);
+        }
         return false;
       }
 
