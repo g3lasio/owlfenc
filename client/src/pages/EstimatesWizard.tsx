@@ -778,64 +778,160 @@ export default function EstimatesWizardFixed() {
       });
 
       // Import Firebase functions
-      const { getProjectById } = await import('@/lib/firebase');
-      const projectData = await getProjectById(projectId);
+      const { collection, query, where, getDocs, doc, getDoc } = await import('firebase/firestore');
+      const { db } = await import('../lib/firebase');
+
+      console.log('🔍 Buscando proyecto con ID:', projectId);
+
+      // First try to get from projects collection
+      let projectData = null;
+      try {
+        const projectDocRef = doc(db, 'projects', projectId);
+        const projectSnap = await getDoc(projectDocRef);
+        
+        if (projectSnap.exists()) {
+          projectData = { id: projectSnap.id, ...projectSnap.data() };
+          console.log('📄 Proyecto encontrado en colección projects:', projectData);
+        }
+      } catch (error) {
+        console.warn('No se pudo cargar desde projects collection:', error);
+      }
+
+      // If not found, try estimates collection
+      if (!projectData) {
+        try {
+          const estimateDocRef = doc(db, 'estimates', projectId);
+          const estimateSnap = await getDoc(estimateDocRef);
+          
+          if (estimateSnap.exists()) {
+            projectData = { id: estimateSnap.id, ...estimateSnap.data() };
+            console.log('📋 Proyecto encontrado en colección estimates:', projectData);
+          }
+        } catch (error) {
+          console.warn('No se pudo cargar desde estimates collection:', error);
+        }
+      }
 
       if (projectData) {
         // Find matching client
         let clientData = null;
-        if (projectData.clientName && clients.length > 0) {
-          clientData = clients.find(c => c.name === projectData.clientName);
+        const clientName = projectData.clientName || projectData.clientInformation?.name;
+        
+        if (clientName && clients.length > 0) {
+          clientData = clients.find(c => c.name === clientName);
         }
 
         // Create client object if not found in database
-        if (!clientData && projectData.clientName) {
+        if (!clientData && clientName) {
           clientData = {
             id: 'temp-' + Date.now(),
             clientId: 'temp-' + Date.now(),
-            name: projectData.clientName,
-            email: projectData.clientEmail || null,
-            phone: projectData.clientPhone || null,
-            address: projectData.address || null,
-            city: projectData.clientCity || null,
-            state: projectData.clientState || null,
-            zipCode: null,
+            name: clientName,
+            email: projectData.clientEmail || projectData.clientInformation?.email || null,
+            phone: projectData.clientPhone || projectData.clientInformation?.phone || null,
+            address: projectData.address || projectData.clientInformation?.address || null,
+            city: projectData.clientCity || projectData.clientInformation?.city || null,
+            state: projectData.clientState || projectData.clientInformation?.state || null,
+            zipCode: projectData.clientZipCode || projectData.clientInformation?.zipCode || null,
             notes: null
           };
         }
 
-        // Parse estimate items from project data
+        // Parse estimate items from project data with better price handling
         let estimateItems: EstimateItem[] = [];
         
-        // Try to extract items from different sources
-        if (projectData.estimateHtml) {
-          estimateItems = parseEstimateItemsFromHtml(projectData.estimateHtml);
-        } else if (projectData.items) {
-          estimateItems = projectData.items.map((item: any, index: number) => ({
+        console.log('💰 Analizando datos de precios del proyecto:', {
+          items: projectData.items,
+          materialCosts: projectData.projectTotalCosts?.materialCosts,
+          estimateHtml: !!projectData.estimateHtml
+        });
+
+        // Priority 1: Try materialCosts.items (most structured)
+        if (projectData.projectTotalCosts?.materialCosts?.items) {
+          estimateItems = projectData.projectTotalCosts.materialCosts.items.map((item: any, index: number) => ({
             id: item.id || `item-${index}`,
             materialId: item.materialId || '',
-            name: item.name || 'Material',
-            description: item.description || '',
-            quantity: item.quantity || 1,
-            price: item.price || item.unitPrice || 0,
-            unit: item.unit || 'unidad',
-            total: item.total || (item.quantity * item.price) || 0
+            name: item.name || item.description || 'Material',
+            description: item.description || item.name || '',
+            quantity: parseFloat(item.quantity || item.qty || 1),
+            price: parseFloat(item.unitPrice || item.price || item.pricePerUnit || 0),
+            unit: item.unit || item.unitType || 'unidad',
+            total: parseFloat(item.total || item.totalPrice || (item.quantity * item.price) || 0)
           }));
+          console.log('✅ Items cargados desde materialCosts.items:', estimateItems);
         }
+        // Priority 2: Try direct items array
+        else if (projectData.items && Array.isArray(projectData.items)) {
+          estimateItems = projectData.items.map((item: any, index: number) => {
+            const quantity = parseFloat(item.quantity || 1);
+            const price = parseFloat(item.unitPrice || item.price || 0);
+            return {
+              id: item.id || `item-${index}`,
+              materialId: item.materialId || '',
+              name: item.name || item.description || 'Material',
+              description: item.description || '',
+              quantity,
+              price,
+              unit: item.unit || 'unidad',
+              total: parseFloat(item.totalPrice || item.total || (quantity * price))
+            };
+          });
+          console.log('✅ Items cargados desde items array:', estimateItems);
+        }
+        // Priority 3: Try to parse from HTML
+        else if (projectData.estimateHtml) {
+          estimateItems = parseEstimateItemsFromHtml(projectData.estimateHtml);
+          console.log('✅ Items parseados desde HTML:', estimateItems);
+        }
+
+        // Ensure we have valid items with prices
+        if (estimateItems.length === 0) {
+          // Create a basic item so user can edit
+          estimateItems = [{
+            id: 'item-1',
+            materialId: '',
+            name: 'Material a definir',
+            description: 'Material del proyecto original',
+            quantity: 1,
+            price: 0,
+            unit: 'unidad',
+            total: 0
+          }];
+          console.log('⚠️ No se encontraron items, creando item básico para edición');
+        }
+
+        // Get project total and details
+        const projectTotal = projectData.total || 
+                           projectData.projectTotalCosts?.total || 
+                           projectData.estimateAmount || 
+                           estimateItems.reduce((sum, item) => sum + item.total, 0);
+
+        const projectDetails = projectData.projectDescription || 
+                             projectData.projectScope || 
+                             projectData.scope ||
+                             projectData.notes ||
+                             `Proyecto de ${projectData.projectType || 'cerca'} para ${clientName}`;
 
         // Set estimate data
         setEstimate({
           client: clientData,
           items: estimateItems,
-          projectDetails: projectData.projectScope || projectData.projectDescription || '',
-          subtotal: 0,
-          tax: 0,
-          total: projectData.totalPrice ? (projectData.totalPrice / 100) : 0,
-          taxRate: 10,
+          projectDetails,
+          subtotal: 0, // Will be recalculated by useEffect
+          tax: 0, // Will be recalculated by useEffect
+          total: 0, // Will be recalculated by useEffect
+          taxRate: projectData.taxRate || 10,
           discountType: 'percentage',
           discountValue: 0,
           discountAmount: 0,
           discountName: ''
+        });
+
+        console.log('🎯 Estimate configurado:', {
+          client: clientData?.name,
+          itemsCount: estimateItems.length,
+          projectDetails,
+          originalTotal: projectTotal
         });
 
         // Jump to materials step (step 2) since client and details are loaded
@@ -843,8 +939,10 @@ export default function EstimatesWizardFixed() {
 
         toast({
           title: 'Proyecto cargado exitosamente',
-          description: 'Ahora puedes editar materiales y precios'
+          description: `${estimateItems.length} materiales listos para editar`
         });
+      } else {
+        throw new Error('Proyecto no encontrado');
       }
     } catch (error) {
       console.error('Error loading project for edit:', error);
