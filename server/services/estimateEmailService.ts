@@ -494,7 +494,7 @@ export class EstimateEmailService {
       
       const success = await resendService.sendEmail({
         to: data.client.email,
-        from: 'onboarding@resend.dev',
+        from: 'gelasio@chyrris.com',
         subject: `Estimado ${data.estimateNumber} - ${data.project.type} | ${data.contractor.companyName}`,
         html: htmlContent,
         replyTo: data.contractor.email
