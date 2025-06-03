@@ -1417,16 +1417,22 @@ export default function EstimatesWizardFixed() {
       }
 
       // 🚀 DATOS COMPLETOS PARA TRANSFERENCIA AL DASHBOARD
-      // Obtener información completa del contratista
-      let contractorInfo = {};
-      try {
-        const profileData = localStorage.getItem('contractorProfile');
-        if (profileData) {
-          contractorInfo = JSON.parse(profileData);
-        }
-      } catch (error) {
-        console.warn('Usando datos por defecto del contratista');
-      }
+      // Obtener información completa del contratista desde el perfil del usuario
+      const contractorInfo = {
+        companyName: profile?.companyName || 'Sin nombre de empresa',
+        name: profile?.ownerName || profile?.displayName || 'Sin nombre',
+        email: profile?.email || currentUser?.email || 'Sin email',
+        phone: profile?.phone || 'Sin teléfono',
+        address: profile?.address || 'Sin dirección',
+        city: profile?.city || 'Sin ciudad',
+        state: profile?.state || 'CA',
+        zip: profile?.zipCode || '00000',
+        license: profile?.licenseNumber || '',
+        insurancePolicy: profile?.insurancePolicy || '',
+        logoUrl: profile?.logoUrl || '',
+        website: profile?.website || '',
+        yearsInBusiness: profile?.yearsInBusiness || 'N/A'
+      };
 
       const estimateData = {
         // ===== IDENTIFICACIÓN Y METADATOS =====
@@ -2739,13 +2745,13 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
                       <div className="space-y-2">
                         <h4 className="text-xs font-medium text-cyan-400 mb-2">CONTRATISTA</h4>
                         <div className="text-sm text-gray-300">
-                          <p className="font-medium">{contractor?.companyName || profile?.company || 'Empresa'}</p>
-                          <p className="text-xs text-gray-400">{contractor?.address || profile?.address || 'Dirección'}</p>
+                          <p className="font-medium">{profile?.companyName || 'Sin nombre de empresa'}</p>
+                          <p className="text-xs text-gray-400">{profile?.address || 'Sin dirección'}</p>
                           <p className="text-xs text-gray-400">
-                            {contractor?.city || profile?.city || 'Ciudad'}, {contractor?.state || profile?.state || 'Estado'} {contractor?.zip || profile?.zipCode || ''}
+                            {profile?.city || 'Sin ciudad'}, {profile?.state || 'CA'} {profile?.zipCode || ''}
                           </p>
-                          <p className="text-xs text-cyan-400">{contractor?.phone || profile?.phone || 'Teléfono'}</p>
-                          <p className="text-xs text-cyan-400">{contractor?.email || profile?.email || 'Email'}</p>
+                          <p className="text-xs text-cyan-400">{profile?.phone || 'Sin teléfono'}</p>
+                          <p className="text-xs text-cyan-400">{profile?.email || 'Sin email'}</p>
                         </div>
                       </div>
                       

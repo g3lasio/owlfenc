@@ -47,12 +47,12 @@ interface DatosExtraidos {
 }
 
 // Generate contract pdf
-router.post("/generate-contract-pdf", async (req, res) => {
+router.post("/generate-contract", async (req, res) => {
   try {
     const contract = req.body;
     const result = await generateContract(contract);
     res.status(200).json({
-      msg: "nx",
+      msg: "ns",
     });
   } catch (err) {
     res.status(500).json({
