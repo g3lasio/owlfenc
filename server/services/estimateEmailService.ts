@@ -488,35 +488,35 @@ export class EstimateEmailService {
         <div class="header">
           ${data.contractor.logo ? `<img src="${data.contractor.logo}" alt="${data.contractor.companyName}" class="logo">` : ''}
           <div class="company-name">${data.contractor.companyName}</div>
-          <div class="estimate-title">Estimado Profesional</div>
+          <div class="estimate-title">Professional Estimate</div>
         </div>
         
         <!-- Content -->
         <div class="content">
           <!-- Estimate Meta -->
           <div class="estimate-meta">
-            <div class="estimate-number">Estimado #${data.estimateNumber}</div>
-            <div class="estimate-date">Fecha: ${data.date}</div>
-            ${data.validUntil ? `<div class="estimate-date">Válido hasta: ${data.validUntil}</div>` : ''}
+            <div class="estimate-number">Estimate #${data.estimateNumber}</div>
+            <div class="estimate-date">Date: ${data.date}</div>
+            ${data.validUntil ? `<div class="estimate-date">Valid until: ${data.validUntil}</div>` : ''}
           </div>
           
           <!-- Contact Information -->
           <div class="section">
-            <div class="section-header">Información de Contacto</div>
+            <div class="section-header">Contact Information</div>
             <div class="section-content">
               <div class="info-grid">
                 <div class="info-block">
-                  <h4>Contratista</h4>
+                  <h4>Contractor</h4>
                   <p><strong>${data.contractor.companyName}</strong></p>
                   <p>${data.contractor.address}</p>
                   <p>${data.contractor.city}, ${data.contractor.state} ${data.contractor.zipCode}</p>
                   <p>📞 ${data.contractor.phone}</p>
                   <p>✉️ ${data.contractor.email}</p>
                   ${data.contractor.website ? `<p>🌐 ${data.contractor.website}</p>` : ''}
-                  ${data.contractor.license ? `<p>🏗️ Licencia: ${data.contractor.license}</p>` : ''}
+                  ${data.contractor.license ? `<p>🏗️ License: ${data.contractor.license}</p>` : ''}
                 </div>
                 <div class="info-block">
-                  <h4>Cliente</h4>
+                  <h4>Client</h4>
                   <p><strong>${data.client.name}</strong></p>
                   ${data.client.address ? `<p>${data.client.address}</p>` : ''}
                   <p>✉️ ${data.client.email}</p>
@@ -528,15 +528,15 @@ export class EstimateEmailService {
           
           <!-- Project Details -->
           <div class="section">
-            <div class="section-header">Detalles del Proyecto</div>
+            <div class="section-header">Project Details</div>
             <div class="section-content">
               <div class="project-details">
-                <h4>Tipo de Proyecto: ${data.project.type}</h4>
-                <p><strong>Descripción:</strong> ${data.project.description}</p>
-                ${data.project.location ? `<p><strong>Ubicación:</strong> ${data.project.location}</p>` : ''}
+                <h4>Project Type: ${data.project.type}</h4>
+                <p><strong>Description:</strong> ${data.project.description}</p>
+                ${data.project.location ? `<p><strong>Location:</strong> ${data.project.location}</p>` : ''}
                 ${data.project.scopeOfWork ? `
                   <div style="margin-top: 15px;">
-                    <h4>Alcance del Trabajo:</h4>
+                    <h4>Scope of Work:</h4>
                     <p>${data.project.scopeOfWork}</p>
                   </div>
                 ` : ''}
@@ -546,16 +546,16 @@ export class EstimateEmailService {
           
           <!-- Items and Pricing -->
           <div class="section">
-            <div class="section-header">Materiales y Servicios</div>
+            <div class="section-header">Materials and Services</div>
             <div class="section-content">
               <!-- Tabla para desktop -->
               <div class="items-table-wrapper">
                 <table class="items-table">
                   <thead>
                     <tr>
-                      <th style="width: 40%">Descripción</th>
-                      <th style="width: 15%">Cantidad</th>
-                      <th style="width: 20%">Precio Unitario</th>
+                      <th style="width: 40%">Description</th>
+                      <th style="width: 15%">Quantity</th>
+                      <th style="width: 20%">Unit Price</th>
                       <th style="width: 25%" class="amount">Total</th>
                     </tr>
                   </thead>
@@ -608,95 +608,95 @@ export class EstimateEmailService {
           
           ${data.notes ? `
             <div class="notes">
-              <h4>Notas Adicionales:</h4>
+              <h4>Additional Notes:</h4>
               <p>${data.notes}</p>
             </div>
           ` : ''}
           
           <!-- Action Buttons -->
           <div class="action-buttons">
-            <button onclick="showApprovalForm()" class="btn btn-approve">
-              ✅ Aprobar Estimado
+            <button type="button" onclick="showApprovalForm()" class="btn btn-approve">
+              ✅ Approve Estimate
             </button>
-            <button onclick="showAdjustmentForm()" class="btn btn-adjust">
-              📝 Solicitar Ajustes
+            <button type="button" onclick="showAdjustmentForm()" class="btn btn-adjust">
+              📝 Request Changes
             </button>
           </div>
 
-          <!-- Formulario de Aprobación -->
+          <!-- Approval Form -->
           <div id="approvalForm" class="inline-form">
-            <h3 style="color: #059669; margin-bottom: 20px;">📋 Confirmación de Aprobación</h3>
+            <h3 style="color: #059669; margin-bottom: 20px;">📋 Approval Confirmation</h3>
             <form action="${appUrl}/api/estimate-email/approve" method="POST">
               <input type="hidden" name="estimateId" value="${data.estimateNumber}">
               <input type="hidden" name="contractorEmail" value="${data.contractor.email}">
               
               <div class="form-group">
-                <label class="form-label">Nombre completo del cliente:</label>
+                <label class="form-label">Your full name:</label>
                 <input type="text" name="clientName" class="form-input" value="${data.client.name}" required>
               </div>
               
               <div class="form-group">
-                <label class="form-label">Email de contacto:</label>
+                <label class="form-label">Contact email:</label>
                 <input type="email" name="clientEmail" class="form-input" value="${data.client.email}" required>
               </div>
               
               <div class="form-group">
-                <label class="form-label">Fecha de aprobación:</label>
+                <label class="form-label">Approval date:</label>
                 <input type="date" name="approvalDate" class="form-input" value="${new Date().toISOString().split('T')[0]}" required>
               </div>
               
               <div class="form-group">
                 <label class="form-label">
                   <input type="checkbox" required style="margin-right: 8px;">
-                  Confirmo que apruebo este estimado y autorizo proceder con el proyecto según los términos descritos.
+                  I confirm that I approve this estimate and authorize proceeding with the project according to the terms described.
                 </label>
               </div>
               
               <div class="form-buttons">
-                <button type="button" onclick="hideApprovalForm()" class="btn-cancel">Cancelar</button>
-                <button type="submit" class="btn-submit">✅ Confirmar Aprobación</button>
+                <button type="button" onclick="hideApprovalForm()" class="btn-cancel">Cancel</button>
+                <button type="submit" class="btn-submit">✅ Authorize Project</button>
               </div>
             </form>
           </div>
 
-          <!-- Formulario de Ajustes -->
+          <!-- Adjustment Form -->
           <div id="adjustmentForm" class="inline-form">
-            <h3 style="color: #d97706; margin-bottom: 20px;">📝 Solicitar Modificaciones</h3>
+            <h3 style="color: #d97706; margin-bottom: 20px;">📝 Request Modifications</h3>
             <form action="${appUrl}/api/estimate-email/adjust" method="POST">
               <input type="hidden" name="estimateId" value="${data.estimateNumber}">
               <input type="hidden" name="contractorEmail" value="${data.contractor.email}">
               <input type="hidden" name="clientEmail" value="${data.client.email}">
               
               <div class="form-group">
-                <label class="form-label">Su nombre:</label>
+                <label class="form-label">Your name:</label>
                 <input type="text" name="clientName" class="form-input" value="${data.client.name}" required>
               </div>
               
               <div class="form-group">
-                <label class="form-label">Notas sobre los cambios requeridos:</label>
+                <label class="form-label">Notes about required changes:</label>
                 <textarea name="clientNotes" class="form-textarea" 
-                          placeholder="Por favor describa específicamente qué cambios le gustaría hacer al estimado..." 
+                          placeholder="Please describe specifically what changes you would like to make to the estimate..." 
                           required></textarea>
               </div>
               
               <div class="form-group">
-                <label class="form-label">Cambios solicitados (detalle específico):</label>
+                <label class="form-label">Requested changes (specific details):</label>
                 <textarea name="requestedChanges" class="form-textarea" 
-                          placeholder="Ej: Cambiar material de madera a vinilo, ajustar cantidad de postes, modificar cronograma, etc..." 
+                          placeholder="Ex: Change wood material to vinyl, adjust number of posts, modify timeline, etc..." 
                           required></textarea>
               </div>
               
               <div class="form-buttons">
-                <button type="button" onclick="hideAdjustmentForm()" class="btn-cancel">Cancelar</button>
-                <button type="submit" class="btn-submit">📝 Enviar Solicitud</button>
+                <button type="button" onclick="hideAdjustmentForm()" class="btn-cancel">Cancel</button>
+                <button type="submit" class="btn-submit">📝 Send Request</button>
               </div>
             </form>
           </div>
           
           <div style="margin-top: 20px; padding: 15px; background-color: #f8fafc; border-radius: 8px; font-size: 14px; color: #6b7280;">
-            <p style="margin: 0 0 10px 0;"><strong>💡 Instrucciones:</strong></p>
-            <p style="margin: 0 0 5px 0;">• <strong>Aprobar:</strong> Complete el formulario de aprobación con sus datos y confirme</p>
-            <p style="margin: 0;">• <strong>Ajustar:</strong> Describa específicamente los cambios que necesita en el proyecto</p>
+            <p style="margin: 0 0 10px 0;"><strong>💡 Instructions:</strong></p>
+            <p style="margin: 0 0 5px 0;">• <strong>Approve:</strong> Complete the approval form with your information and confirm</p>
+            <p style="margin: 0;">• <strong>Request Changes:</strong> Describe specifically what changes you need for the project</p>
           </div>
         </div>
         
@@ -713,51 +713,83 @@ export class EstimateEmailService {
       </div>
 
       <script>
-        function showApprovalForm() {
-          hideAdjustmentForm();
-          document.getElementById('approvalForm').classList.add('active');
-          document.getElementById('approvalForm').scrollIntoView({ behavior: 'smooth' });
-        }
-
-        function hideApprovalForm() {
-          document.getElementById('approvalForm').classList.remove('active');
-        }
-
-        function showAdjustmentForm() {
-          hideApprovalForm();
-          document.getElementById('adjustmentForm').classList.add('active');
-          document.getElementById('adjustmentForm').scrollIntoView({ behavior: 'smooth' });
-        }
-
-        function hideAdjustmentForm() {
-          document.getElementById('adjustmentForm').classList.remove('active');
-        }
-
-        // Auto-hide forms when clicking outside
-        document.addEventListener('click', function(e) {
-          const approvalForm = document.getElementById('approvalForm');
-          const adjustmentForm = document.getElementById('adjustmentForm');
+        // Wait for DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
+          console.log('Email estimate script loaded');
           
-          if (!approvalForm.contains(e.target) && !adjustmentForm.contains(e.target)) {
-            const buttons = document.querySelector('.action-buttons');
-            if (!buttons.contains(e.target)) {
-              hideApprovalForm();
-              hideAdjustmentForm();
+          // Make functions globally available
+          window.showApprovalForm = function() {
+            console.log('Showing approval form');
+            hideAdjustmentForm();
+            const form = document.getElementById('approvalForm');
+            if (form) {
+              form.classList.add('active');
+              form.scrollIntoView({ behavior: 'smooth' });
             }
+          };
+
+          window.hideApprovalForm = function() {
+            console.log('Hiding approval form');
+            const form = document.getElementById('approvalForm');
+            if (form) {
+              form.classList.remove('active');
+            }
+          };
+
+          window.showAdjustmentForm = function() {
+            console.log('Showing adjustment form');
+            hideApprovalForm();
+            const form = document.getElementById('adjustmentForm');
+            if (form) {
+              form.classList.add('active');
+              form.scrollIntoView({ behavior: 'smooth' });
+            }
+          };
+
+          window.hideAdjustmentForm = function() {
+            console.log('Hiding adjustment form');
+            const form = document.getElementById('adjustmentForm');
+            if (form) {
+              form.classList.remove('active');
+            }
+          };
+
+          // Auto-hide forms when clicking outside
+          document.addEventListener('click', function(e) {
+            const approvalForm = document.getElementById('approvalForm');
+            const adjustmentForm = document.getElementById('adjustmentForm');
+            const buttons = document.querySelector('.action-buttons');
+            
+            if (approvalForm && adjustmentForm && buttons) {
+              if (!approvalForm.contains(e.target) && !adjustmentForm.contains(e.target) && !buttons.contains(e.target)) {
+                hideApprovalForm();
+                hideAdjustmentForm();
+              }
+            }
+          });
+
+          // Form submission with success feedback
+          const approvalForm = document.querySelector('#approvalForm form');
+          if (approvalForm) {
+            approvalForm.addEventListener('submit', function(e) {
+              const submitBtn = this.querySelector('.btn-submit');
+              if (submitBtn) {
+                submitBtn.textContent = 'Sending...';
+                submitBtn.disabled = true;
+              }
+            });
           }
-        });
 
-        // Form submission with success feedback
-        document.querySelector('#approvalForm form').addEventListener('submit', function(e) {
-          const submitBtn = this.querySelector('.btn-submit');
-          submitBtn.textContent = 'Enviando...';
-          submitBtn.disabled = true;
-        });
-
-        document.querySelector('#adjustmentForm form').addEventListener('submit', function(e) {
-          const submitBtn = this.querySelector('.btn-submit');
-          submitBtn.textContent = 'Enviando...';
-          submitBtn.disabled = true;
+          const adjustmentForm = document.querySelector('#adjustmentForm form');
+          if (adjustmentForm) {
+            adjustmentForm.addEventListener('submit', function(e) {
+              const submitBtn = this.querySelector('.btn-submit');
+              if (submitBtn) {
+                submitBtn.textContent = 'Sending...';
+                submitBtn.disabled = true;
+              }
+            });
+          }
         });
       </script>
     </body>
