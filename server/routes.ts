@@ -1083,12 +1083,15 @@ Output in English regardless of input language. Make it suitable for contracts a
 
   app.post("/api/contract-test-pdf", async (req: Request, res: Response) => {
     try {
-      const contract = req.body();
+      const contract = req.body; // ✅ FIXED
+
       const API_KEY = process.env.PDFMONKEY_API_KEY;
       const TEMPLATE_ID = "DF24FD81-01C5-4054-BDCF-19ED1DFCD763";
+
       if (!API_KEY) {
         throw new Error("PDFMONKEY_API_KEY is not defined");
       }
+
       const payload = {
         document: {
           document_template_id: TEMPLATE_ID,
@@ -1100,19 +1103,22 @@ Output in English regardless of input language. Make it suitable for contracts a
         Authorization: `Bearer ${API_KEY}`,
         "Content-Type": "application/json",
       };
+
       const response = await axios.post(
         "https://api.pdfmonkey.io/api/v1/documents",
         payload,
         { headers },
       );
+      console.log("📄 PDFMonkey response:" + response.data);
       res.status(200).json({
-        msg: "test pdf",
-        data: response.data,
+        msg: "PDF generated successfully",
+        data: response.data, // Return only relevant PDFMonkey data
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Error generating contract PDF:", error.message);
       res.status(500).json({
-        msg: "error",
-        data: error,
+        msg: "Failed to generate PDF",
+        error: error.message,
       });
     }
   });

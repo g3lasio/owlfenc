@@ -2745,6 +2745,19 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
                       <div className="space-y-2">
                         <h4 className="text-xs font-medium text-cyan-400 mb-2">CONTRATISTA</h4>
                         <div className="text-sm text-gray-300">
+                          {/* Company Logo */}
+                          {profile?.logoUrl && (
+                            <div className="mb-3">
+                              <img 
+                                src={profile.logoUrl} 
+                                alt={`${profile.companyName || 'Company'} Logo`}
+                                className="h-12 w-auto object-contain bg-white rounded p-1"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
+                            </div>
+                          )}
                           <p className="font-medium">{profile?.companyName || 'Sin nombre de empresa'}</p>
                           <p className="text-xs text-gray-400">{profile?.address || 'Sin dirección'}</p>
                           <p className="text-xs text-gray-400">
@@ -2752,6 +2765,12 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
                           </p>
                           <p className="text-xs text-cyan-400">{profile?.phone || 'Sin teléfono'}</p>
                           <p className="text-xs text-cyan-400">{profile?.email || 'Sin email'}</p>
+                          {profile?.website && (
+                            <p className="text-xs text-cyan-400">{profile.website}</p>
+                          )}
+                          {profile?.licenseNumber && (
+                            <p className="text-xs text-gray-400">Licencia: {profile.licenseNumber}</p>
+                          )}
                         </div>
                       </div>
                       
