@@ -212,6 +212,61 @@ export class EstimateEmailService {
         .items-table tr:hover {
           background-color: #f9fafb;
         }
+
+        /* Responsividad móvil para tabla */
+        @media (max-width: 640px) {
+          .items-table-wrapper {
+            display: none;
+          }
+          
+          .mobile-items {
+            display: block;
+          }
+          
+          .mobile-item {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+          }
+          
+          .mobile-item-name {
+            font-weight: bold;
+            font-size: 16px;
+            color: #1f2937;
+            margin-bottom: 8px;
+          }
+          
+          .mobile-item-description {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 10px;
+          }
+          
+          .mobile-item-details {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+          }
+          
+          .mobile-item-quantity {
+            color: #4b5563;
+          }
+          
+          .mobile-item-price {
+            font-weight: bold;
+            color: #059669;
+            font-size: 16px;
+          }
+        }
+        
+        @media (min-width: 641px) {
+          .mobile-items {
+            display: none;
+          }
+        }
         
         .amount {
           text-align: right;
@@ -292,6 +347,102 @@ export class EstimateEmailService {
         .btn-adjust:hover {
           background: linear-gradient(135deg, #d97706, #b45309);
           transform: translateY(-2px);
+        }
+
+        /* Formularios inline */
+        .inline-form {
+          display: none;
+          background: #f8fafc;
+          border: 2px solid #e5e7eb;
+          border-radius: 12px;
+          padding: 25px;
+          margin: 20px 0;
+          animation: slideDown 0.3s ease;
+        }
+
+        .inline-form.active {
+          display: block;
+        }
+
+        .form-group {
+          margin-bottom: 20px;
+        }
+
+        .form-label {
+          display: block;
+          font-weight: 600;
+          color: #374151;
+          margin-bottom: 8px;
+          font-size: 14px;
+        }
+
+        .form-input, .form-textarea {
+          width: 100%;
+          padding: 12px;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          font-size: 14px;
+          font-family: inherit;
+          box-sizing: border-box;
+        }
+
+        .form-textarea {
+          min-height: 100px;
+          resize: vertical;
+        }
+
+        .form-buttons {
+          display: flex;
+          gap: 10px;
+          justify-content: flex-end;
+          margin-top: 20px;
+        }
+
+        .btn-submit {
+          background: #10b981;
+          color: white;
+          padding: 10px 20px;
+          border: none;
+          border-radius: 6px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+
+        .btn-cancel {
+          background: #6b7280;
+          color: white;
+          padding: 10px 20px;
+          border: none;
+          border-radius: 6px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Responsividad móvil para formularios */
+        @media (max-width: 640px) {
+          .action-buttons {
+            flex-direction: column;
+            align-items: stretch;
+          }
+          
+          .btn {
+            min-width: auto;
+            width: 100%;
+          }
+          
+          .form-buttons {
+            flex-direction: column;
+          }
+          
+          .btn-submit, .btn-cancel {
+            width: 100%;
+            margin: 5px 0;
+          }
         }
         
         .footer {
@@ -397,29 +548,46 @@ export class EstimateEmailService {
           <div class="section">
             <div class="section-header">Materiales y Servicios</div>
             <div class="section-content">
-              <table class="items-table">
-                <thead>
-                  <tr>
-                    <th style="width: 40%">Descripción</th>
-                    <th style="width: 15%">Cantidad</th>
-                    <th style="width: 20%">Precio Unitario</th>
-                    <th style="width: 25%" class="amount">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${data.items.map(item => `
+              <!-- Tabla para desktop -->
+              <div class="items-table-wrapper">
+                <table class="items-table">
+                  <thead>
                     <tr>
-                      <td>
-                        <strong>${item.name}</strong>
-                        ${item.description ? `<br><small style="color: #6b7280;">${item.description}</small>` : ''}
-                      </td>
-                      <td>${item.quantity} ${item.unit}</td>
-                      <td>$${item.unitPrice.toFixed(2)}</td>
-                      <td class="amount">$${item.total.toFixed(2)}</td>
+                      <th style="width: 40%">Descripción</th>
+                      <th style="width: 15%">Cantidad</th>
+                      <th style="width: 20%">Precio Unitario</th>
+                      <th style="width: 25%" class="amount">Total</th>
                     </tr>
-                  `).join('')}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    ${data.items.map(item => `
+                      <tr>
+                        <td>
+                          <strong>${item.name}</strong>
+                          ${item.description ? `<br><small style="color: #6b7280;">${item.description}</small>` : ''}
+                        </td>
+                        <td>${item.quantity} ${item.unit}</td>
+                        <td>$${item.unitPrice.toFixed(2)}</td>
+                        <td class="amount">$${item.total.toFixed(2)}</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Cards para móvil -->
+              <div class="mobile-items">
+                ${data.items.map(item => `
+                  <div class="mobile-item">
+                    <div class="mobile-item-name">${item.name}</div>
+                    ${item.description ? `<div class="mobile-item-description">${item.description}</div>` : ''}
+                    <div class="mobile-item-details">
+                      <div class="mobile-item-quantity">${item.quantity} ${item.unit} × $${item.unitPrice.toFixed(2)}</div>
+                      <div class="mobile-item-price">$${item.total.toFixed(2)}</div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
               
               <div class="totals">
                 <div class="total-line">
@@ -447,19 +615,88 @@ export class EstimateEmailService {
           
           <!-- Action Buttons -->
           <div class="action-buttons">
-            <a href="${appUrl}/api/estimate-email/approve?id=${data.estimateNumber}&email=${encodeURIComponent(data.client.email)}" 
-               class="btn btn-approve">
+            <button onclick="showApprovalForm()" class="btn btn-approve">
               ✅ Aprobar Estimado
-            </a>
-            <a href="${appUrl}/api/estimate-email/adjust?id=${data.estimateNumber}&email=${encodeURIComponent(data.client.email)}" 
-               class="btn btn-adjust">
+            </button>
+            <button onclick="showAdjustmentForm()" class="btn btn-adjust">
               📝 Solicitar Ajustes
-            </a>
+            </button>
+          </div>
+
+          <!-- Formulario de Aprobación -->
+          <div id="approvalForm" class="inline-form">
+            <h3 style="color: #059669; margin-bottom: 20px;">📋 Confirmación de Aprobación</h3>
+            <form action="${appUrl}/api/estimate-email/approve" method="POST">
+              <input type="hidden" name="estimateId" value="${data.estimateNumber}">
+              <input type="hidden" name="contractorEmail" value="${data.contractor.email}">
+              
+              <div class="form-group">
+                <label class="form-label">Nombre completo del cliente:</label>
+                <input type="text" name="clientName" class="form-input" value="${data.client.name}" required>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">Email de contacto:</label>
+                <input type="email" name="clientEmail" class="form-input" value="${data.client.email}" required>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">Fecha de aprobación:</label>
+                <input type="date" name="approvalDate" class="form-input" value="${new Date().toISOString().split('T')[0]}" required>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">
+                  <input type="checkbox" required style="margin-right: 8px;">
+                  Confirmo que apruebo este estimado y autorizo proceder con el proyecto según los términos descritos.
+                </label>
+              </div>
+              
+              <div class="form-buttons">
+                <button type="button" onclick="hideApprovalForm()" class="btn-cancel">Cancelar</button>
+                <button type="submit" class="btn-submit">✅ Confirmar Aprobación</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Formulario de Ajustes -->
+          <div id="adjustmentForm" class="inline-form">
+            <h3 style="color: #d97706; margin-bottom: 20px;">📝 Solicitar Modificaciones</h3>
+            <form action="${appUrl}/api/estimate-email/adjust" method="POST">
+              <input type="hidden" name="estimateId" value="${data.estimateNumber}">
+              <input type="hidden" name="contractorEmail" value="${data.contractor.email}">
+              <input type="hidden" name="clientEmail" value="${data.client.email}">
+              
+              <div class="form-group">
+                <label class="form-label">Su nombre:</label>
+                <input type="text" name="clientName" class="form-input" value="${data.client.name}" required>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">Notas sobre los cambios requeridos:</label>
+                <textarea name="clientNotes" class="form-textarea" 
+                          placeholder="Por favor describa específicamente qué cambios le gustaría hacer al estimado..." 
+                          required></textarea>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">Cambios solicitados (detalle específico):</label>
+                <textarea name="requestedChanges" class="form-textarea" 
+                          placeholder="Ej: Cambiar material de madera a vinilo, ajustar cantidad de postes, modificar cronograma, etc..." 
+                          required></textarea>
+              </div>
+              
+              <div class="form-buttons">
+                <button type="button" onclick="hideAdjustmentForm()" class="btn-cancel">Cancelar</button>
+                <button type="submit" class="btn-submit">📝 Enviar Solicitud</button>
+              </div>
+            </form>
           </div>
           
           <div style="margin-top: 20px; padding: 15px; background-color: #f8fafc; border-radius: 8px; font-size: 14px; color: #6b7280;">
-            <p style="margin: 0 0 10px 0;"><strong>Al hacer clic en "Aprobar Estimado":</strong> Acepta proceder con este proyecto según los términos descritos.</p>
-            <p style="margin: 0;"><strong>Si necesita modificaciones:</strong> Use "Solicitar Ajustes" y describa los cambios requeridos.</p>
+            <p style="margin: 0 0 10px 0;"><strong>💡 Instrucciones:</strong></p>
+            <p style="margin: 0 0 5px 0;">• <strong>Aprobar:</strong> Complete el formulario de aprobación con sus datos y confirme</p>
+            <p style="margin: 0;">• <strong>Ajustar:</strong> Describa específicamente los cambios que necesita en el proyecto</p>
           </div>
         </div>
         
@@ -474,6 +711,55 @@ export class EstimateEmailService {
           </div>
         </div>
       </div>
+
+      <script>
+        function showApprovalForm() {
+          hideAdjustmentForm();
+          document.getElementById('approvalForm').classList.add('active');
+          document.getElementById('approvalForm').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function hideApprovalForm() {
+          document.getElementById('approvalForm').classList.remove('active');
+        }
+
+        function showAdjustmentForm() {
+          hideApprovalForm();
+          document.getElementById('adjustmentForm').classList.add('active');
+          document.getElementById('adjustmentForm').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function hideAdjustmentForm() {
+          document.getElementById('adjustmentForm').classList.remove('active');
+        }
+
+        // Auto-hide forms when clicking outside
+        document.addEventListener('click', function(e) {
+          const approvalForm = document.getElementById('approvalForm');
+          const adjustmentForm = document.getElementById('adjustmentForm');
+          
+          if (!approvalForm.contains(e.target) && !adjustmentForm.contains(e.target)) {
+            const buttons = document.querySelector('.action-buttons');
+            if (!buttons.contains(e.target)) {
+              hideApprovalForm();
+              hideAdjustmentForm();
+            }
+          }
+        });
+
+        // Form submission with success feedback
+        document.querySelector('#approvalForm form').addEventListener('submit', function(e) {
+          const submitBtn = this.querySelector('.btn-submit');
+          submitBtn.textContent = 'Enviando...';
+          submitBtn.disabled = true;
+        });
+
+        document.querySelector('#adjustmentForm form').addEventListener('submit', function(e) {
+          const submitBtn = this.querySelector('.btn-submit');
+          submitBtn.textContent = 'Enviando...';
+          submitBtn.disabled = true;
+        });
+      </script>
     </body>
     </html>
     `;

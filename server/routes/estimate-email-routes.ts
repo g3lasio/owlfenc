@@ -81,10 +81,10 @@ router.post('/send', async (req: Request, res: Response) => {
 });
 
 /**
- * Página de aprobación de estimado
- * GET /api/estimates/approve
+ * Procesamiento de aprobación de estimado (POST desde formulario inline)
+ * POST /api/estimate-email/approve
  */
-router.get('/approve', async (req: Request, res: Response) => {
+router.post('/approve', async (req: Request, res: Response) => {
   try {
     const { id: estimateId, email: clientEmail } = req.query;
     
