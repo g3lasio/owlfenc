@@ -468,6 +468,12 @@ function Projects() {
     }
   };
 
+  // Handle editing estimate
+  const handleEditEstimate = (projectId: string) => {
+    // Navigate to estimates page with edit parameter
+    window.location.href = `/estimates?edit=${projectId}`;
+  };
+
   // Handle viewing project details
   const handleViewProject = async (id: string) => {
     try {
@@ -732,6 +738,14 @@ function Projects() {
                   <Button 
                     size="sm" 
                     variant="outline"
+                    onClick={() => handleEditEstimate(project.id)}
+                    className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                  >
+                    <i className="ri-edit-line mr-1"></i> Editar
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
                     onClick={() => handleViewProject(project.id)}
                   >
                     <i className="ri-dashboard-line mr-1"></i> Dashboard
@@ -796,14 +810,24 @@ function Projects() {
                     </Badge>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-right">
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => handleViewProject(project.id)}
-                      className="text-xs px-2 py-1 h-auto"
-                    >
-                      <i className="ri-dashboard-line mr-1"></i> Dashboard
-                    </Button>
+                    <div className="flex justify-end space-x-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleEditEstimate(project.id)}
+                        className="text-xs px-2 py-1 h-auto text-blue-600 border-blue-600 hover:bg-blue-50"
+                      >
+                        <i className="ri-edit-line mr-1"></i> Editar
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleViewProject(project.id)}
+                        className="text-xs px-2 py-1 h-auto"
+                      >
+                        <i className="ri-dashboard-line mr-1"></i> Dashboard
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
