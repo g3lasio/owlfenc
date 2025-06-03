@@ -714,4 +714,346 @@ router.post('/adjust', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * Aprobar estimado - Cliente hace clic en el botón "Aprobar"
+ * GET /api/estimate-email/approve
+ */
+router.get('/approve', async (req: Request, res: Response) => {
+  try {
+    const { id: estimateId, email: clientEmail } = req.query;
+    
+    if (!estimateId || !clientEmail) {
+      return res.status(400).send(`
+        <html>
+          <head><title>Error - Parámetros Inválidos</title></head>
+          <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px;">
+            <h2 style="color: #dc2626;">Error: Parámetros Inválidos</h2>
+            <p>No se pudieron encontrar los datos del estimado. Por favor, use el enlace original del email.</p>
+          </body>
+        </html>
+      `);
+    }
+
+    // Aquí se guardará la aprobación en la base de datos
+    console.log(`📋 [ESTIMATE-APPROVAL] Cliente ${clientEmail} aprobó estimado ${estimateId}`);
+    
+    // Mostrar página de confirmación de aprobación
+    res.send(`
+      <html>
+        <head>
+          <title>Estimado Aprobado</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body { 
+              font-family: Arial, sans-serif; 
+              max-width: 600px; 
+              margin: 50px auto; 
+              padding: 20px;
+              background-color: #f9fafb;
+            }
+            .container {
+              background: white;
+              padding: 40px;
+              border-radius: 12px;
+              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+              text-align: center;
+            }
+            .success-icon {
+              font-size: 64px;
+              color: #10b981;
+              margin-bottom: 20px;
+            }
+            h1 { color: #059669; margin-bottom: 20px; }
+            p { color: #6b7280; line-height: 1.6; margin-bottom: 15px; }
+            .estimate-id {
+              background: #ecfdf5;
+              padding: 10px;
+              border-radius: 6px;
+              font-weight: bold;
+              color: #047857;
+              margin: 20px 0;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="success-icon">✅</div>
+            <h1>¡Estimado Aprobado!</h1>
+            <p>Gracias por aprobar nuestro estimado. Hemos recibido su confirmación y nos pondremos en contacto con usted pronto para coordinar los próximos pasos.</p>
+            <div class="estimate-id">Estimado #${estimateId}</div>
+            <p>Cliente: ${clientEmail}</p>
+            <p>Fecha de aprobación: ${new Date().toLocaleDateString('es-ES')}</p>
+            <p><strong>Su contratista será notificado automáticamente y se comunicará con usted dentro de las próximas 24 horas.</strong></p>
+          </div>
+        </body>
+      </html>
+    `);
+    
+  } catch (error) {
+    console.error('❌ [ESTIMATE-APPROVAL] Error procesando aprobación:', error);
+    res.status(500).send(`
+      <html>
+        <head><title>Error del Servidor</title></head>
+        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px;">
+          <h2 style="color: #dc2626;">Error del Servidor</h2>
+          <p>Ocurrió un error procesando su aprobación. Por favor, contacte directamente al contratista.</p>
+        </body>
+      </html>
+    `);
+  }
+});
+
+/**
+ * Solicitar ajustes - Cliente hace clic en el botón "Solicitar Ajustes"
+ * GET /api/estimate-email/adjust
+ */
+router.get('/adjust', async (req: Request, res: Response) => {
+  try {
+    const { id: estimateId, email: clientEmail } = req.query;
+    
+    if (!estimateId || !clientEmail) {
+      return res.status(400).send(`
+        <html>
+          <head><title>Error - Parámetros Inválidos</title></head>
+          <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px;">
+            <h2 style="color: #dc2626;">Error: Parámetros Inválidos</h2>
+            <p>No se pudieron encontrar los datos del estimado. Por favor, use el enlace original del email.</p>
+          </body>
+        </html>
+      `);
+    }
+
+    // Mostrar formulario para solicitar ajustes
+    res.send(`
+      <html>
+        <head>
+          <title>Solicitar Ajustes al Estimado</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body { 
+              font-family: Arial, sans-serif; 
+              max-width: 600px; 
+              margin: 50px auto; 
+              padding: 20px;
+              background-color: #f9fafb;
+            }
+            .container {
+              background: white;
+              padding: 40px;
+              border-radius: 12px;
+              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            }
+            .icon {
+              font-size: 48px;
+              color: #f59e0b;
+              text-align: center;
+              margin-bottom: 20px;
+            }
+            h1 { color: #d97706; margin-bottom: 20px; text-align: center; }
+            .form-group { margin-bottom: 20px; }
+            label { 
+              display: block; 
+              margin-bottom: 5px; 
+              font-weight: bold; 
+              color: #374151; 
+            }
+            textarea { 
+              width: 100%; 
+              padding: 12px; 
+              border: 1px solid #d1d5db; 
+              border-radius: 6px; 
+              font-size: 14px;
+              resize: vertical;
+              min-height: 120px;
+            }
+            .btn {
+              background: linear-gradient(135deg, #f59e0b, #d97706);
+              color: white;
+              padding: 12px 30px;
+              border: none;
+              border-radius: 6px;
+              font-size: 16px;
+              font-weight: bold;
+              cursor: pointer;
+              width: 100%;
+              transition: background 0.3s ease;
+            }
+            .btn:hover {
+              background: linear-gradient(135deg, #d97706, #b45309);
+            }
+            .estimate-info {
+              background: #fef3c7;
+              padding: 15px;
+              border-radius: 6px;
+              margin-bottom: 20px;
+              border-left: 4px solid #f59e0b;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="icon">📝</div>
+            <h1>Solicitar Ajustes al Estimado</h1>
+            
+            <div class="estimate-info">
+              <strong>Estimado #${estimateId}</strong><br>
+              Cliente: ${clientEmail}
+            </div>
+            
+            <form action="/api/estimate-email/submit-adjustment" method="POST">
+              <input type="hidden" name="estimateId" value="${estimateId}">
+              <input type="hidden" name="clientEmail" value="${clientEmail}">
+              
+              <div class="form-group">
+                <label for="adjustments">Describa los cambios o ajustes que necesita:</label>
+                <textarea 
+                  name="adjustments" 
+                  id="adjustments" 
+                  placeholder="Por favor, describa específicamente qué cambios necesita en el estimado. Por ejemplo: cambiar el tipo de material, ajustar cantidades, modificar el alcance del trabajo, etc."
+                  required
+                ></textarea>
+              </div>
+              
+              <div class="form-group">
+                <label for="contactInfo">Información de contacto (opcional):</label>
+                <textarea 
+                  name="contactInfo" 
+                  id="contactInfo" 
+                  placeholder="Si prefiere que lo contactemos por teléfono o tiene horarios específicos, indíquelo aquí."
+                  style="min-height: 80px;"
+                ></textarea>
+              </div>
+              
+              <button type="submit" class="btn">
+                📤 Enviar Solicitud de Ajustes
+              </button>
+            </form>
+            
+            <p style="margin-top: 20px; font-size: 14px; color: #6b7280; text-align: center;">
+              Su contratista recibirá esta solicitud y se pondrá en contacto con usted para discutir los ajustes.
+            </p>
+          </div>
+        </body>
+      </html>
+    `);
+    
+  } catch (error) {
+    console.error('❌ [ESTIMATE-ADJUSTMENT] Error mostrando formulario de ajustes:', error);
+    res.status(500).send(`
+      <html>
+        <head><title>Error del Servidor</title></head>
+        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px;">
+          <h2 style="color: #dc2626;">Error del Servidor</h2>
+          <p>Ocurrió un error mostrando el formulario. Por favor, contacte directamente al contratista.</p>
+        </body>
+      </html>
+    `);
+  }
+});
+
+/**
+ * Procesar solicitud de ajustes
+ * POST /api/estimate-email/submit-adjustment
+ */
+router.post('/submit-adjustment', async (req: Request, res: Response) => {
+  try {
+    const { estimateId, clientEmail, adjustments, contactInfo } = req.body;
+    
+    if (!estimateId || !clientEmail || !adjustments) {
+      return res.status(400).send(`
+        <html>
+          <head><title>Error - Datos Incompletos</title></head>
+          <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px;">
+            <h2 style="color: #dc2626;">Error: Datos Incompletos</h2>
+            <p>Por favor, complete todos los campos requeridos.</p>
+          </body>
+        </html>
+      `);
+    }
+
+    // Aquí se guardará la solicitud de ajuste en la base de datos
+    console.log(`📝 [ESTIMATE-ADJUSTMENT] Cliente ${clientEmail} solicita ajustes para estimado ${estimateId}`);
+    console.log(`📝 [ESTIMATE-ADJUSTMENT] Ajustes solicitados:`, adjustments);
+    if (contactInfo) {
+      console.log(`📝 [ESTIMATE-ADJUSTMENT] Info de contacto:`, contactInfo);
+    }
+    
+    // Mostrar página de confirmación
+    res.send(`
+      <html>
+        <head>
+          <title>Solicitud de Ajustes Enviada</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body { 
+              font-family: Arial, sans-serif; 
+              max-width: 600px; 
+              margin: 50px auto; 
+              padding: 20px;
+              background-color: #f9fafb;
+            }
+            .container {
+              background: white;
+              padding: 40px;
+              border-radius: 12px;
+              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+              text-align: center;
+            }
+            .success-icon {
+              font-size: 64px;
+              color: #f59e0b;
+              margin-bottom: 20px;
+            }
+            h1 { color: #d97706; margin-bottom: 20px; }
+            p { color: #6b7280; line-height: 1.6; margin-bottom: 15px; }
+            .estimate-id {
+              background: #fef3c7;
+              padding: 10px;
+              border-radius: 6px;
+              font-weight: bold;
+              color: #92400e;
+              margin: 20px 0;
+            }
+            .adjustments-preview {
+              background: #f3f4f6;
+              padding: 15px;
+              border-radius: 6px;
+              text-align: left;
+              margin: 20px 0;
+              border-left: 4px solid #f59e0b;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="success-icon">📝</div>
+            <h1>¡Solicitud de Ajustes Enviada!</h1>
+            <p>Hemos recibido su solicitud de ajustes para el estimado. Su contratista revisará los cambios solicitados y se pondrá en contacto con usted.</p>
+            <div class="estimate-id">Estimado #${estimateId}</div>
+            <div class="adjustments-preview">
+              <strong>Ajustes solicitados:</strong><br>
+              ${adjustments.replace(/\n/g, '<br>')}
+            </div>
+            <p>Cliente: ${clientEmail}</p>
+            <p>Fecha de solicitud: ${new Date().toLocaleDateString('es-ES')}</p>
+            <p><strong>Su contratista recibirá esta solicitud inmediatamente y le enviará un estimado actualizado dentro de las próximas 24-48 horas.</strong></p>
+          </div>
+        </body>
+      </html>
+    `);
+    
+  } catch (error) {
+    console.error('❌ [ESTIMATE-ADJUSTMENT] Error procesando solicitud de ajustes:', error);
+    res.status(500).send(`
+      <html>
+        <head><title>Error del Servidor</title></head>
+        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px;">
+          <h2 style="color: #dc2626;">Error del Servidor</h2>
+          <p>Ocurrió un error procesando su solicitud. Por favor, contacte directamente al contratista.</p>
+        </body>
+      </html>
+    `);
+  }
+});
+
 export default router;

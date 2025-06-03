@@ -1079,23 +1079,142 @@ Output in English regardless of input language. Make it suitable for contracts a
   // Registrar rutas del sistema de pagos para contratistas
   app.use("/api/contractor-payments", contractorPaymentRoutes);
 
-  // generate contract pdf test
+  // generate estimate pdf basic template
 
-  app.post("/api/contract-test-pdf", async (req: Request, res: Response) => {
+  // app.post("/api/estimate-basic-pdf", async (req: Request, res: Response) => {
+  //   try {
+  //     const contract = req.body; // ✅ FIXED
+
+  //     const API_KEY = process.env.PDFMONKEY_API_KEY;
+  //     const TEMPLATE_ID = "DF24FD81-01C5-4054-BDCF-19ED1DFCD763";
+
+  //     if (!API_KEY) {
+  //       throw new Error("PDFMONKEY_API_KEY is not defined");
+  //     }
+
+  //     const payload = {
+  //       document: {
+  //         document_template_id: TEMPLATE_ID,
+  //         payload: contract,
+  //       },
+  //     };
+
+  //     const headers = {
+  //       Authorization: `Bearer ${API_KEY}`,
+  //       "Content-Type": "application/json",
+  //     };
+
+  //     const response = await axios.post(
+  //       "https://api.pdfmonkey.io/api/v1/documents",
+  //       payload,
+  //       { headers },
+  //     );
+  //     console.log("📄 PDFMonkey response:" + response.data);
+  //     res.status(200).json({
+  //       msg: "PDF generated successfully",
+  //       data: response.data.document,
+  //     });
+  //   } catch (error: any) {
+  //     console.error("Error generating contract PDF:", error.message);
+  //     res.status(500).json({
+  //       msg: "Failed to generate PDF",
+  //       error: error.message,
+  //     });
+  //   }
+  // });
+
+  // // generate estimate pdf premium template
+
+  // app.post("/api/estimate-premium-pdf", async (req: Request, res: Response) => {
+  //   try {
+  //     const contract = req.body; // ✅ FIXED
+
+  //     const API_KEY = process.env.PDFMONKEY_API_KEY;
+  //     const TEMPLATE_ID = "2E4DC55E-044E-4FD3-B511-FEBF950071FA";
+
+  //     if (!API_KEY) {
+  //       throw new Error("PDFMONKEY_API_KEY is not defined");
+  //     }
+
+  //     const payload = {
+  //       document: {
+  //         document_template_id: TEMPLATE_ID,
+  //         payload: contract,
+  //         status: "success",
+  //       },
+  //     };
+
+  //     const headers = {
+  //       Authorization: `Bearer ${API_KEY}`,
+  //       "Content-Type": "application/json",
+  //     };
+
+  //     const response = await axios.post(
+  //       "https://api.pdfmonkey.io/api/v1/documents",
+  //       payload,
+  //       { headers },
+  //     );
+  //     console.log("📄 PDFMonkey response:" + response.data);
+  //     res.status(200).json({
+  //       msg: "PDF generated successfully",
+  //       data: response.data.document,
+  //     });
+  //   } catch (error: any) {
+  //     console.error("Error generating contract PDF:", error.message);
+  //     res.status(500).json({
+  //       msg: "Failed to generate PDF",
+  //       error: error.message,
+  //     });
+  //   }
+  // });
+
+  const waitForDocumentReady = async (
+    documentId: string,
+    apiKey: string,
+    maxRetries = 10,
+    interval = 3000,
+  ) => {
+    const headers = {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    };
+
+    for (let i = 0; i < maxRetries; i++) {
+      const res = await axios.get(
+        `https://api.pdfmonkey.io/api/v1/document_cards/${documentId}`,
+        { headers },
+      );
+      const doc = res.data;
+      console.log(doc);
+
+      if (doc.document_card.download_url) {
+        return doc.document_card;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, interval));
+    }
+
+    throw new Error("Timed out waiting for PDF to be ready.");
+  };
+
+  // 🧾 Estimate - BASIC
+  app.post("/api/estimate-basic-pdf", async (req: Request, res: Response) => {
     try {
-      const contract = req.body; // ✅ FIXED
-
+      const contract = req.body;
       const API_KEY = process.env.PDFMONKEY_API_KEY;
       const TEMPLATE_ID = "DF24FD81-01C5-4054-BDCF-19ED1DFCD763";
 
-      if (!API_KEY) {
-        throw new Error("PDFMONKEY_API_KEY is not defined");
-      }
+      if (!API_KEY) throw new Error("PDFMONKEY_API_KEY is not defined");
 
       const payload = {
         document: {
           document_template_id: TEMPLATE_ID,
           payload: contract,
+          status: "pending",
+        },
+        meta: {
+          clientId: contract.estimate_number,
+          _filename: contract.estimate_number + ".pdf",
         },
       };
 
@@ -1109,17 +1228,68 @@ Output in English regardless of input language. Make it suitable for contracts a
         payload,
         { headers },
       );
-      console.log("📄 PDFMonkey response:" + response.data);
+      const documentId = response.data.document.id;
+
+      // Wait for PDF to be fully generated
+      const finalDoc = await waitForDocumentReady(documentId, API_KEY);
+
       res.status(200).json({
         msg: "PDF generated successfully",
-        data: response.data, // Return only relevant PDFMonkey data
+        data: finalDoc,
       });
     } catch (error: any) {
       console.error("Error generating contract PDF:", error.message);
-      res.status(500).json({
-        msg: "Failed to generate PDF",
-        error: error.message,
+      res
+        .status(500)
+        .json({ msg: "Failed to generate PDF", error: error.message });
+    }
+  });
+
+  // 🧾 Estimate - PREMIUM
+  app.post("/api/estimate-premium-pdf", async (req: Request, res: Response) => {
+    try {
+      const contract = req.body;
+      const API_KEY = process.env.PDFMONKEY_API_KEY;
+      const TEMPLATE_ID = "2E4DC55E-044E-4FD3-B511-FEBF950071FA";
+
+      if (!API_KEY) throw new Error("PDFMONKEY_API_KEY is not defined");
+
+      const payload = {
+        document: {
+          document_template_id: TEMPLATE_ID,
+          payload: contract,
+          status: "pending",
+        },
+        meta: {
+          clientId: contract.estimate_number,
+          _filename: contract.estimate_number + ".pdf",
+        },
+      };
+
+      const headers = {
+        Authorization: `Bearer ${API_KEY}`,
+        "Content-Type": "application/json",
+      };
+
+      const response = await axios.post(
+        "https://api.pdfmonkey.io/api/v1/documents",
+        payload,
+        { headers },
+      );
+      const documentId = response.data.document.id;
+
+      // Wait for PDF to be fully generated
+      const finalDoc = await waitForDocumentReady(documentId, API_KEY);
+
+      res.status(200).json({
+        msg: "PDF generated successfully",
+        data: finalDoc,
       });
+    } catch (error: any) {
+      console.error("Error generating contract PDF:", error.message);
+      res
+        .status(500)
+        .json({ msg: "Failed to generate PDF", error: error.message });
     }
   });
 

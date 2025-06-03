@@ -447,14 +447,19 @@ export class EstimateEmailService {
           
           <!-- Action Buttons -->
           <div class="action-buttons">
-            <a href="${appUrl}/api/estimates/approve?id=${data.estimateNumber}&email=${encodeURIComponent(data.client.email)}" 
+            <a href="${appUrl}/api/estimate-email/approve?id=${data.estimateNumber}&email=${encodeURIComponent(data.client.email)}" 
                class="btn btn-approve">
               ✅ Aprobar Estimado
             </a>
-            <a href="${appUrl}/api/estimates/adjust?id=${data.estimateNumber}&email=${encodeURIComponent(data.client.email)}" 
+            <a href="${appUrl}/api/estimate-email/adjust?id=${data.estimateNumber}&email=${encodeURIComponent(data.client.email)}" 
                class="btn btn-adjust">
               📝 Solicitar Ajustes
             </a>
+          </div>
+          
+          <div style="margin-top: 20px; padding: 15px; background-color: #f8fafc; border-radius: 8px; font-size: 14px; color: #6b7280;">
+            <p style="margin: 0 0 10px 0;"><strong>Al hacer clic en "Aprobar Estimado":</strong> Acepta proceder con este proyecto según los términos descritos.</p>
+            <p style="margin: 0;"><strong>Si necesita modificaciones:</strong> Use "Solicitar Ajustes" y describa los cambios requeridos.</p>
           </div>
         </div>
         
@@ -489,7 +494,7 @@ export class EstimateEmailService {
       
       const success = await resendService.sendEmail({
         to: data.client.email,
-        from: 'mervin@owlfenc.com',
+        from: 'onboarding@resend.dev',
         subject: `Estimado ${data.estimateNumber} - ${data.project.type} | ${data.contractor.companyName}`,
         html: htmlContent,
         replyTo: data.contractor.email

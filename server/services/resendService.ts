@@ -21,8 +21,8 @@ export interface EmailData {
 }
 
 export class ResendEmailService {
-  private defaultFromEmail = 'noreply@owlfenc.com';
-  private supportEmail = 'support@owlfenc.com';
+  private defaultFromEmail = 'onboarding@resend.dev';
+  private supportEmail = 'onboarding@resend.dev';
 
   /**
    * Enviar email usando Resend

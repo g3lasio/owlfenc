@@ -1,14 +1,32 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { Search, Plus, User, Package, FileText, Eye, Send, Save, Trash2, Users, X } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Search,
+  Plus,
+  User,
+  Package,
+  FileText,
+  Eye,
+  Send,
+  Save,
+  Trash2,
+  Users,
+  X,
+} from "lucide-react";
 
 // Types
 interface Client {
@@ -49,7 +67,7 @@ interface EstimateData {
   subtotal: number;
   tax: number;
   total: number;
-  status: 'draft' | 'sent' | 'approved';
+  status: "draft" | "sent" | "approved";
 }
 
 export default function Estimates() {
@@ -58,42 +76,42 @@ export default function Estimates() {
 
   // Core state
   const [estimate, setEstimate] = useState<EstimateData>({
-    title: 'Nuevo Estimado',
-    clientId: '',
+    title: "Nuevo Estimado",
+    clientId: "",
     client: null,
     items: [],
-    notes: '',
+    notes: "",
     subtotal: 0,
     tax: 0,
     total: 0,
-    status: 'draft'
+    status: "draft",
   });
 
   // Client management
   const [clients, setClients] = useState<Client[]>([]);
-  const [clientSearch, setClientSearch] = useState('');
+  const [clientSearch, setClientSearch] = useState("");
   const [showClientDialog, setShowClientDialog] = useState(false);
   const [isLoadingClients, setIsLoadingClients] = useState(true);
 
   // Material management
   const [materials, setMaterials] = useState<Material[]>([]);
-  const [materialSearch, setMaterialSearch] = useState('');
+  const [materialSearch, setMaterialSearch] = useState("");
   const [showMaterialDialog, setShowMaterialDialog] = useState(false);
   const [showAddMaterialDialog, setShowAddMaterialDialog] = useState(false);
   const [isLoadingMaterials, setIsLoadingMaterials] = useState(true);
 
   // New material form
   const [newMaterial, setNewMaterial] = useState({
-    name: '',
-    description: '',
+    name: "",
+    description: "",
     price: 0,
-    unit: 'unidad',
-    category: ''
+    unit: "unidad",
+    category: "",
   });
 
   // UI state
   const [showPreview, setShowPreview] = useState(false);
-  const [previewHtml, setPreviewHtml] = useState('');
+  const [previewHtml, setPreviewHtml] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isSending, setIsSending] = useState(false);
 
@@ -113,11 +131,11 @@ export default function Estimates() {
     const tax = subtotal * 0.16; // 16% tax
     const total = subtotal + tax;
 
-    setEstimate(prev => ({
+    setEstimate((prev) => ({
       ...prev,
       subtotal,
       tax,
-      total
+      total,
     }));
   }, [estimate.items]);
 
@@ -133,11 +151,11 @@ export default function Estimates() {
         setClients(data);
       }
     } catch (error) {
-      console.error('Error loading clients:', error);
+      console.error("Error loading clients:", error);
       toast({
-        title: 'Error',
-        description: 'No se pudieron cargar los clientes',
-        variant: 'destructive'
+        title: "Error",
+        description: "No se pudieron cargar los clientes",
+        variant: "destructive",
       });
     } finally {
       setIsLoadingClients(false);
@@ -148,17 +166,17 @@ export default function Estimates() {
   const loadMaterials = async () => {
     try {
       setIsLoadingMaterials(true);
-      const response = await fetch('/api/materials');
+      const response = await fetch("/api/materials");
       if (response.ok) {
         const data = await response.json();
         setMaterials(data);
       }
     } catch (error) {
-      console.error('Error loading materials:', error);
+      console.error("Error loading materials:", error);
       toast({
-        title: 'Error',
-        description: 'No se pudieron cargar los materiales',
-        variant: 'destructive'
+        title: "Error",
+        description: "No se pudieron cargar los materiales",
+        variant: "destructive",
       });
     } finally {
       setIsLoadingMaterials(false);
@@ -166,31 +184,35 @@ export default function Estimates() {
   };
 
   // Filter clients based on search
-  const filteredClients = clients.filter(client =>
-    client.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
-    client.email.toLowerCase().includes(clientSearch.toLowerCase()) ||
-    client.phone.includes(clientSearch)
+  const filteredClients = clients.filter(
+    (client) =>
+      client.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
+      client.email.toLowerCase().includes(clientSearch.toLowerCase()) ||
+      client.phone.includes(clientSearch),
   );
 
   // Filter materials based on search
-  const filteredMaterials = materials.filter(material =>
-    material.name.toLowerCase().includes(materialSearch.toLowerCase()) ||
-    material.description.toLowerCase().includes(materialSearch.toLowerCase()) ||
-    material.category.toLowerCase().includes(materialSearch.toLowerCase())
+  const filteredMaterials = materials.filter(
+    (material) =>
+      material.name.toLowerCase().includes(materialSearch.toLowerCase()) ||
+      material.description
+        .toLowerCase()
+        .includes(materialSearch.toLowerCase()) ||
+      material.category.toLowerCase().includes(materialSearch.toLowerCase()),
   );
 
   // Select client
   const selectClient = (client: Client) => {
-    setEstimate(prev => ({
+    setEstimate((prev) => ({
       ...prev,
       clientId: client.id,
-      client
+      client,
     }));
     setShowClientDialog(false);
-    setClientSearch('');
+    setClientSearch("");
     toast({
-      title: 'Cliente seleccionado',
-      description: `${client.name} ha sido agregado al estimado`
+      title: "Cliente seleccionado",
+      description: `${client.name} ha sido agregado al estimado`,
     });
   };
 
@@ -204,51 +226,51 @@ export default function Estimates() {
       quantity,
       price: material.price,
       unit: material.unit,
-      total: material.price * quantity
+      total: material.price * quantity,
     };
 
-    setEstimate(prev => ({
+    setEstimate((prev) => ({
       ...prev,
-      items: [...prev.items, newItem]
+      items: [...prev.items, newItem],
     }));
 
     setShowMaterialDialog(false);
-    setMaterialSearch('');
+    setMaterialSearch("");
     toast({
-      title: 'Material agregado',
-      description: `${material.name} ha sido agregado al estimado`
+      title: "Material agregado",
+      description: `${material.name} ha sido agregado al estimado`,
     });
   };
 
   // Update item quantity
   const updateItemQuantity = (itemId: string, quantity: number) => {
-    setEstimate(prev => ({
+    setEstimate((prev) => ({
       ...prev,
-      items: prev.items.map(item =>
+      items: prev.items.map((item) =>
         item.id === itemId
           ? { ...item, quantity, total: item.price * quantity }
-          : item
-      )
+          : item,
+      ),
     }));
   };
 
   // Update item price
   const updateItemPrice = (itemId: string, price: number) => {
-    setEstimate(prev => ({
+    setEstimate((prev) => ({
       ...prev,
-      items: prev.items.map(item =>
+      items: prev.items.map((item) =>
         item.id === itemId
           ? { ...item, price, total: price * item.quantity }
-          : item
-      )
+          : item,
+      ),
     }));
   };
 
   // Remove item
   const removeItem = (itemId: string) => {
-    setEstimate(prev => ({
+    setEstimate((prev) => ({
       ...prev,
-      items: prev.items.filter(item => item.id !== itemId)
+      items: prev.items.filter((item) => item.id !== itemId),
     }));
   };
 
@@ -256,34 +278,38 @@ export default function Estimates() {
   const addCustomItem = () => {
     const newItem: EstimateItem = {
       id: `item_${Date.now()}`,
-      name: 'Nuevo artículo',
-      description: '',
+      name: "Nuevo artículo",
+      description: "",
       quantity: 1,
       price: 0,
-      unit: 'unidad',
-      total: 0
+      unit: "unidad",
+      total: 0,
     };
 
-    setEstimate(prev => ({
+    setEstimate((prev) => ({
       ...prev,
-      items: [...prev.items, newItem]
+      items: [...prev.items, newItem],
     }));
   };
 
   // Update custom item
-  const updateCustomItem = (itemId: string, field: string, value: string | number) => {
-    setEstimate(prev => ({
+  const updateCustomItem = (
+    itemId: string,
+    field: string,
+    value: string | number,
+  ) => {
+    setEstimate((prev) => ({
       ...prev,
-      items: prev.items.map(item => {
+      items: prev.items.map((item) => {
         if (item.id === itemId) {
           const updatedItem = { ...item, [field]: value };
-          if (field === 'quantity' || field === 'price') {
+          if (field === "quantity" || field === "price") {
             updatedItem.total = updatedItem.price * updatedItem.quantity;
           }
           return updatedItem;
         }
         return item;
-      })
+      }),
     }));
   };
 
@@ -291,17 +317,17 @@ export default function Estimates() {
   const generatePreview = async () => {
     if (!estimate.client || estimate.items.length === 0) {
       toast({
-        title: 'Datos incompletos',
-        description: 'Selecciona un cliente y agrega al menos un material',
-        variant: 'destructive'
+        title: "Datos incompletos",
+        description: "Selecciona un cliente y agrega al menos un material",
+        variant: "destructive",
       });
       return;
     }
 
     try {
-      const response = await fetch('/api/estimates/html', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/estimates/html", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           estimateData: {
             client: estimate.client,
@@ -313,13 +339,13 @@ export default function Estimates() {
             estimateDate: new Date().toISOString(),
             estimateNumber: `EST-${Date.now()}`,
             contractor: {
-              name: 'Tu Empresa',
-              email: 'contacto@tuempresa.com',
-              phone: '(555) 123-4567',
-              address: 'Dirección de tu empresa'
-            }
-          }
-        })
+              name: "Tu Empresa",
+              email: "contacto@tuempresa.com",
+              phone: "(555) 123-4567",
+              address: "Dirección de tu empresa",
+            },
+          },
+        }),
       });
 
       if (response.ok) {
@@ -327,14 +353,14 @@ export default function Estimates() {
         setPreviewHtml(html);
         setShowPreview(true);
       } else {
-        throw new Error('Error generating preview');
+        throw new Error("Error generating preview");
       }
     } catch (error) {
-      console.error('Error generating preview:', error);
+      console.error("Error generating preview:", error);
       toast({
-        title: 'Error',
-        description: 'No se pudo generar la vista previa',
-        variant: 'destructive'
+        title: "Error",
+        description: "No se pudo generar la vista previa",
+        variant: "destructive",
       });
     }
   };
@@ -343,39 +369,39 @@ export default function Estimates() {
   const saveEstimate = async () => {
     if (!estimate.client || estimate.items.length === 0) {
       toast({
-        title: 'Datos incompletos',
-        description: 'Selecciona un cliente y agrega al menos un material',
-        variant: 'destructive'
+        title: "Datos incompletos",
+        description: "Selecciona un cliente y agrega al menos un material",
+        variant: "destructive",
       });
       return;
     }
 
     setIsSaving(true);
     try {
-      const response = await fetch('/api/estimates', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/estimates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...estimate,
           userId: currentUser?.uid,
-          createdAt: new Date().toISOString()
-        })
+          createdAt: new Date().toISOString(),
+        }),
       });
 
       if (response.ok) {
         toast({
-          title: 'Estimado guardado',
-          description: 'El estimado ha sido guardado exitosamente'
+          title: "Estimado guardado",
+          description: "El estimado ha sido guardado exitosamente",
         });
       } else {
-        throw new Error('Error saving estimate');
+        throw new Error("Error saving estimate");
       }
     } catch (error) {
-      console.error('Error saving estimate:', error);
+      console.error("Error saving estimate:", error);
       toast({
-        title: 'Error',
-        description: 'No se pudo guardar el estimado',
-        variant: 'destructive'
+        title: "Error",
+        description: "No se pudo guardar el estimado",
+        variant: "destructive",
       });
     } finally {
       setIsSaving(false);
@@ -384,11 +410,12 @@ export default function Estimates() {
 
   // Send estimate by email
   const sendEstimate = async () => {
+    console.log(estimate);
     if (!estimate.client?.email) {
       toast({
-        title: 'Email requerido',
-        description: 'El cliente debe tener un email válido',
-        variant: 'destructive'
+        title: "Email requerido",
+        description: "El cliente debe tener un email válido",
+        variant: "destructive",
       });
       return;
     }
@@ -396,32 +423,32 @@ export default function Estimates() {
     setIsSending(true);
     try {
       await generatePreview(); // Generate HTML first
-      
-      const response = await fetch('/api/estimates/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+
+      const response = await fetch("/api/estimates/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           to: estimate.client.email,
           estimateData: estimate,
-          html: previewHtml
-        })
+          html: previewHtml,
+        }),
       });
 
       if (response.ok) {
         toast({
-          title: 'Estimado enviado',
-          description: `El estimado ha sido enviado a ${estimate.client.email}`
+          title: "Estimado enviado",
+          description: `El estimado ha sido enviado a ${estimate.client.email}`,
         });
-        setEstimate(prev => ({ ...prev, status: 'sent' }));
+        setEstimate((prev) => ({ ...prev, status: "sent" }));
       } else {
-        throw new Error('Error sending estimate');
+        throw new Error("Error sending estimate");
       }
     } catch (error) {
-      console.error('Error sending estimate:', error);
+      console.error("Error sending estimate:", error);
       toast({
-        title: 'Error',
-        description: 'No se pudo enviar el estimado',
-        variant: 'destructive'
+        title: "Error",
+        description: "No se pudo enviar el estimado",
+        variant: "destructive",
       });
     } finally {
       setIsSending(false);
@@ -432,44 +459,44 @@ export default function Estimates() {
   const saveNewMaterial = async () => {
     if (!newMaterial.name || !newMaterial.price) {
       toast({
-        title: 'Datos incompletos',
-        description: 'El nombre y precio son requeridos',
-        variant: 'destructive'
+        title: "Datos incompletos",
+        description: "El nombre y precio son requeridos",
+        variant: "destructive",
       });
       return;
     }
 
     try {
-      const response = await fetch('/api/materials', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newMaterial)
+      const response = await fetch("/api/materials", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newMaterial),
       });
 
       if (response.ok) {
         const savedMaterial = await response.json();
-        setMaterials(prev => [...prev, savedMaterial]);
+        setMaterials((prev) => [...prev, savedMaterial]);
         setNewMaterial({
-          name: '',
-          description: '',
+          name: "",
+          description: "",
           price: 0,
-          unit: 'unidad',
-          category: ''
+          unit: "unidad",
+          category: "",
         });
         setShowAddMaterialDialog(false);
         toast({
-          title: 'Material guardado',
-          description: 'El material ha sido agregado a la base de datos'
+          title: "Material guardado",
+          description: "El material ha sido agregado a la base de datos",
         });
       } else {
-        throw new Error('Error saving material');
+        throw new Error("Error saving material");
       }
     } catch (error) {
-      console.error('Error saving material:', error);
+      console.error("Error saving material:", error);
       toast({
-        title: 'Error',
-        description: 'No se pudo guardar el material',
-        variant: 'destructive'
+        title: "Error",
+        description: "No se pudo guardar el material",
+        variant: "destructive",
       });
     }
   };
@@ -480,20 +507,39 @@ export default function Estimates() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Crear Estimado</h1>
-          <p className="text-muted-foreground">Crea estimados profesionales de forma rápida y sencilla</p>
+          <p className="text-muted-foreground">
+            Crea estimados profesionales de forma rápida y sencilla
+          </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={generatePreview} disabled={!estimate.client || estimate.items.length === 0}>
+          <Button
+            variant="outline"
+            onClick={generatePreview}
+            disabled={!estimate.client || estimate.items.length === 0}
+          >
             <Eye className="h-4 w-4 mr-2" />
             Vista Previa
           </Button>
-          <Button variant="outline" onClick={saveEstimate} disabled={isSaving || !estimate.client || estimate.items.length === 0}>
+          <Button
+            variant="outline"
+            onClick={saveEstimate}
+            disabled={
+              isSaving || !estimate.client || estimate.items.length === 0
+            }
+          >
             <Save className="h-4 w-4 mr-2" />
-            {isSaving ? 'Guardando...' : 'Guardar'}
+            {isSaving ? "Guardando..." : "Guardar"}
           </Button>
-          <Button onClick={sendEstimate} disabled={isSending || !estimate.client?.email || estimate.items.length === 0}>
+          <Button
+            onClick={sendEstimate}
+            disabled={
+              isSending ||
+              !estimate.client?.email ||
+              estimate.items.length === 0
+            }
+          >
             <Send className="h-4 w-4 mr-2" />
-            {isSending ? 'Enviando...' : 'Enviar'}
+            {isSending ? "Enviando..." : "Enviar"}
           </Button>
         </div>
       </div>
@@ -514,21 +560,36 @@ export default function Estimates() {
                 <div className="space-y-2">
                   <div className="p-3 bg-muted rounded-lg">
                     <h4 className="font-medium">{estimate.client.name}</h4>
-                    <p className="text-sm text-muted-foreground">{estimate.client.email}</p>
-                    <p className="text-sm text-muted-foreground">{estimate.client.phone}</p>
-                    <p className="text-sm text-muted-foreground">{estimate.client.address}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {estimate.client.email}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {estimate.client.phone}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {estimate.client.address}
+                    </p>
                   </div>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setEstimate(prev => ({ ...prev, client: null, clientId: '' }))}
+                    onClick={() =>
+                      setEstimate((prev) => ({
+                        ...prev,
+                        client: null,
+                        clientId: "",
+                      }))
+                    }
                   >
                     <X className="h-4 w-4 mr-2" />
                     Cambiar Cliente
                   </Button>
                 </div>
               ) : (
-                <Dialog open={showClientDialog} onOpenChange={setShowClientDialog}>
+                <Dialog
+                  open={showClientDialog}
+                  onOpenChange={setShowClientDialog}
+                >
                   <DialogTrigger asChild>
                     <Button className="w-full">
                       <Users className="h-4 w-4 mr-2" />
@@ -551,10 +612,14 @@ export default function Estimates() {
                       </div>
                       <div className="max-h-96 overflow-y-auto space-y-2">
                         {isLoadingClients ? (
-                          <p className="text-center py-4 text-muted-foreground">Cargando clientes...</p>
+                          <p className="text-center py-4 text-muted-foreground">
+                            Cargando clientes...
+                          </p>
                         ) : filteredClients.length === 0 ? (
                           <p className="text-center py-4 text-muted-foreground">
-                            {clientSearch ? 'No se encontraron clientes' : 'No hay clientes disponibles'}
+                            {clientSearch
+                              ? "No se encontraron clientes"
+                              : "No hay clientes disponibles"}
                           </p>
                         ) : (
                           filteredClients.map((client) => (
@@ -564,8 +629,12 @@ export default function Estimates() {
                               onClick={() => selectClient(client)}
                             >
                               <h4 className="font-medium">{client.name}</h4>
-                              <p className="text-sm text-muted-foreground">{client.email}</p>
-                              <p className="text-sm text-muted-foreground">{client.phone}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {client.email}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {client.phone}
+                              </p>
                             </div>
                           ))
                         )}
@@ -589,7 +658,9 @@ export default function Estimates() {
               <Textarea
                 placeholder="Descripción detallada del proyecto, notas especiales, condiciones, etc."
                 value={estimate.notes}
-                onChange={(e) => setEstimate(prev => ({ ...prev, notes: e.target.value }))}
+                onChange={(e) =>
+                  setEstimate((prev) => ({ ...prev, notes: e.target.value }))
+                }
                 rows={6}
                 className="resize-none"
               />
@@ -608,7 +679,10 @@ export default function Estimates() {
                   Materiales ({estimate.items.length})
                 </div>
                 <div className="flex gap-2">
-                  <Dialog open={showMaterialDialog} onOpenChange={setShowMaterialDialog}>
+                  <Dialog
+                    open={showMaterialDialog}
+                    onOpenChange={setShowMaterialDialog}
+                  >
                     <DialogTrigger asChild>
                       <Button size="sm">
                         <Plus className="h-4 w-4 mr-2" />
@@ -626,11 +700,16 @@ export default function Estimates() {
                             <Input
                               placeholder="Buscar materiales..."
                               value={materialSearch}
-                              onChange={(e) => setMaterialSearch(e.target.value)}
+                              onChange={(e) =>
+                                setMaterialSearch(e.target.value)
+                              }
                               className="pl-10"
                             />
                           </div>
-                          <Dialog open={showAddMaterialDialog} onOpenChange={setShowAddMaterialDialog}>
+                          <Dialog
+                            open={showAddMaterialDialog}
+                            onOpenChange={setShowAddMaterialDialog}
+                          >
                             <DialogTrigger asChild>
                               <Button variant="outline">
                                 <Plus className="h-4 w-4 mr-2" />
@@ -647,16 +726,28 @@ export default function Estimates() {
                                   <Input
                                     id="name"
                                     value={newMaterial.name}
-                                    onChange={(e) => setNewMaterial(prev => ({ ...prev, name: e.target.value }))}
+                                    onChange={(e) =>
+                                      setNewMaterial((prev) => ({
+                                        ...prev,
+                                        name: e.target.value,
+                                      }))
+                                    }
                                     placeholder="Nombre del material"
                                   />
                                 </div>
                                 <div>
-                                  <Label htmlFor="description">Descripción</Label>
+                                  <Label htmlFor="description">
+                                    Descripción
+                                  </Label>
                                   <Input
                                     id="description"
                                     value={newMaterial.description}
-                                    onChange={(e) => setNewMaterial(prev => ({ ...prev, description: e.target.value }))}
+                                    onChange={(e) =>
+                                      setNewMaterial((prev) => ({
+                                        ...prev,
+                                        description: e.target.value,
+                                      }))
+                                    }
                                     placeholder="Descripción del material"
                                   />
                                 </div>
@@ -669,7 +760,13 @@ export default function Estimates() {
                                       min="0"
                                       step="0.01"
                                       value={newMaterial.price}
-                                      onChange={(e) => setNewMaterial(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
+                                      onChange={(e) =>
+                                        setNewMaterial((prev) => ({
+                                          ...prev,
+                                          price:
+                                            parseFloat(e.target.value) || 0,
+                                        }))
+                                      }
                                       placeholder="0.00"
                                     />
                                   </div>
@@ -678,7 +775,12 @@ export default function Estimates() {
                                     <Input
                                       id="unit"
                                       value={newMaterial.unit}
-                                      onChange={(e) => setNewMaterial(prev => ({ ...prev, unit: e.target.value }))}
+                                      onChange={(e) =>
+                                        setNewMaterial((prev) => ({
+                                          ...prev,
+                                          unit: e.target.value,
+                                        }))
+                                      }
                                       placeholder="unidad, m², kg, etc."
                                     />
                                   </div>
@@ -688,12 +790,22 @@ export default function Estimates() {
                                   <Input
                                     id="category"
                                     value={newMaterial.category}
-                                    onChange={(e) => setNewMaterial(prev => ({ ...prev, category: e.target.value }))}
+                                    onChange={(e) =>
+                                      setNewMaterial((prev) => ({
+                                        ...prev,
+                                        category: e.target.value,
+                                      }))
+                                    }
                                     placeholder="Categoría del material"
                                   />
                                 </div>
                                 <div className="flex justify-end gap-2">
-                                  <Button variant="outline" onClick={() => setShowAddMaterialDialog(false)}>
+                                  <Button
+                                    variant="outline"
+                                    onClick={() =>
+                                      setShowAddMaterialDialog(false)
+                                    }
+                                  >
                                     Cancelar
                                   </Button>
                                   <Button onClick={saveNewMaterial}>
@@ -706,10 +818,14 @@ export default function Estimates() {
                         </div>
                         <div className="max-h-96 overflow-y-auto">
                           {isLoadingMaterials ? (
-                            <p className="text-center py-4 text-muted-foreground">Cargando materiales...</p>
+                            <p className="text-center py-4 text-muted-foreground">
+                              Cargando materiales...
+                            </p>
                           ) : filteredMaterials.length === 0 ? (
                             <p className="text-center py-4 text-muted-foreground">
-                              {materialSearch ? 'No se encontraron materiales' : 'No hay materiales disponibles'}
+                              {materialSearch
+                                ? "No se encontraron materiales"
+                                : "No hay materiales disponibles"}
                             </p>
                           ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -717,19 +833,32 @@ export default function Estimates() {
                                 <div
                                   key={material.id}
                                   className="p-3 border rounded-lg cursor-pointer hover:bg-muted"
-                                  onClick={() => addMaterialToEstimate(material)}
+                                  onClick={() =>
+                                    addMaterialToEstimate(material)
+                                  }
                                 >
                                   <div className="flex justify-between items-start">
                                     <div>
-                                      <h4 className="font-medium">{material.name}</h4>
-                                      <p className="text-sm text-muted-foreground">{material.description}</p>
-                                      <Badge variant="secondary" className="text-xs mt-1">
+                                      <h4 className="font-medium">
+                                        {material.name}
+                                      </h4>
+                                      <p className="text-sm text-muted-foreground">
+                                        {material.description}
+                                      </p>
+                                      <Badge
+                                        variant="secondary"
+                                        className="text-xs mt-1"
+                                      >
                                         {material.category}
                                       </Badge>
                                     </div>
                                     <div className="text-right">
-                                      <p className="font-medium">${material.price.toFixed(2)}</p>
-                                      <p className="text-xs text-muted-foreground">por {material.unit}</p>
+                                      <p className="font-medium">
+                                        ${material.price.toFixed(2)}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground">
+                                        por {material.unit}
+                                      </p>
                                     </div>
                                   </div>
                                 </div>
@@ -752,7 +881,9 @@ export default function Estimates() {
                 <div className="text-center py-8 text-muted-foreground">
                   <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>No hay materiales agregados aún.</p>
-                  <p className="text-sm">Haz clic en "Agregar Material" para comenzar.</p>
+                  <p className="text-sm">
+                    Haz clic en "Agregar Material" para comenzar.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -775,52 +906,84 @@ export default function Estimates() {
                           <Input
                             id={`name-${item.id}`}
                             value={item.name}
-                            onChange={(e) => updateCustomItem(item.id, 'name', e.target.value)}
+                            onChange={(e) =>
+                              updateCustomItem(item.id, "name", e.target.value)
+                            }
                             placeholder="Nombre del artículo"
                           />
                           <div className="mt-2">
-                            <Label htmlFor={`description-${item.id}`}>Descripción</Label>
+                            <Label htmlFor={`description-${item.id}`}>
+                              Descripción
+                            </Label>
                             <Input
                               id={`description-${item.id}`}
                               value={item.description}
-                              onChange={(e) => updateCustomItem(item.id, 'description', e.target.value)}
+                              onChange={(e) =>
+                                updateCustomItem(
+                                  item.id,
+                                  "description",
+                                  e.target.value,
+                                )
+                              }
                               placeholder="Descripción del artículo"
                             />
                           </div>
                         </div>
                         <div>
-                          <Label htmlFor={`quantity-${item.id}`}>Cantidad</Label>
+                          <Label htmlFor={`quantity-${item.id}`}>
+                            Cantidad
+                          </Label>
                           <Input
                             id={`quantity-${item.id}`}
                             type="number"
                             min="0.01"
                             step="0.01"
                             value={item.quantity}
-                            onChange={(e) => updateItemQuantity(item.id, parseFloat(e.target.value) || 0)}
+                            onChange={(e) =>
+                              updateItemQuantity(
+                                item.id,
+                                parseFloat(e.target.value) || 0,
+                              )
+                            }
                           />
                           <div className="mt-2">
                             <Label htmlFor={`unit-${item.id}`}>Unidad</Label>
                             <Input
                               id={`unit-${item.id}`}
                               value={item.unit}
-                              onChange={(e) => updateCustomItem(item.id, 'unit', e.target.value)}
+                              onChange={(e) =>
+                                updateCustomItem(
+                                  item.id,
+                                  "unit",
+                                  e.target.value,
+                                )
+                              }
                               placeholder="unidad"
                             />
                           </div>
                         </div>
                         <div>
-                          <Label htmlFor={`price-${item.id}`}>Precio Unitario</Label>
+                          <Label htmlFor={`price-${item.id}`}>
+                            Precio Unitario
+                          </Label>
                           <Input
                             id={`price-${item.id}`}
                             type="number"
                             min="0"
                             step="0.01"
                             value={item.price}
-                            onChange={(e) => updateItemPrice(item.id, parseFloat(e.target.value) || 0)}
+                            onChange={(e) =>
+                              updateItemPrice(
+                                item.id,
+                                parseFloat(e.target.value) || 0,
+                              )
+                            }
                           />
                           <div className="mt-2 p-2 bg-muted rounded text-center">
                             <p className="text-sm font-medium">Total</p>
-                            <p className="text-lg font-bold">${item.total.toFixed(2)}</p>
+                            <p className="text-lg font-bold">
+                              ${item.total.toFixed(2)}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -855,7 +1018,7 @@ export default function Estimates() {
           <DialogHeader>
             <DialogTitle>Vista Previa del Estimado</DialogTitle>
           </DialogHeader>
-          <div 
+          <div
             className="border rounded-lg p-4 bg-white"
             dangerouslySetInnerHTML={{ __html: previewHtml }}
           />
