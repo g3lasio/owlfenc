@@ -251,47 +251,34 @@ export class ContractorEmailService {
         };
       }
 
-      // Main email to client using verified domain but contractor's reply-to
-      const clientMessage = {
+      console.log('📧 [CONTRACTOR-EMAIL] Enviando email al cliente...');
+      console.log('📧 [CONTRACTOR-EMAIL] De:', contractorName, 'Para:', clientName, clientEmail);
+
+      // Main email to client using Resend
+      const success = await resendService.sendEmail({
         to: clientEmail,
-        from: {
-          email: 'mervin@owlfenc.com',
-          name: `${contractorName || 'Contractor'} via Owl Fence`
-        },
-        replyTo: {
-          email: contractorEmail,
-          name: contractorName || 'Contractor'
-        },
+        from: 'mervin@owlfenc.com',
         subject: template.subject,
         html: ContractorEmailService.addMervinSignature(template.html),
-        text: template.text + '\n\n---\nPowered by Mervin AI - Professional contractor solutions'
-      };
+        replyTo: contractorEmail
+      });
 
-      // Initialize SendGrid for this method
-      if (!process.env.SENDGRID_API_KEY) {
+      if (!success) {
         return {
           success: false,
-          message: 'SendGrid API key not configured'
+          message: 'Failed to send email to client'
         };
       }
 
-      const sgMail = require('@sendgrid/mail');
-      sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-
-      await sgMail.send(clientMessage);
+      console.log('✅ [CONTRACTOR-EMAIL] Email enviado al cliente exitosamente');
 
       // Send copy to contractor if requested
       if (sendCopy) {
-        const copyMessage = {
+        console.log('📧 [CONTRACTOR-EMAIL] Enviando copia al contratista...');
+        
+        const copySuccess = await resendService.sendEmail({
           to: contractorEmail,
-          from: {
-            email: 'mervin@owlfenc.com',
-            name: 'Owl Fence - Email Copy'
-          },
-          replyTo: {
-            email: 'mervin@owlfenc.com',
-            name: 'Owl Fence Support'
-          },
+          from: 'mervin@owlfenc.com',
           subject: `[COPY] ${template.subject}`,
           html: `
             <div style="background: #f0f9ff; padding: 20px; border-left: 4px solid #3b82f6; margin-bottom: 20px;">
@@ -300,10 +287,14 @@ export class ContractorEmailService {
             </div>
             ${ContractorEmailService.addMervinSignature(template.html)}
           `,
-          text: `COPY of email sent to ${clientName} (${clientEmail})\n\n${template.text}`
-        };
+          replyTo: 'mervin@owlfenc.com'
+        });
 
-        await sgMail.send(copyMessage);
+        if (copySuccess) {
+          console.log('✅ [CONTRACTOR-EMAIL] Copia enviada al contratista exitosamente');
+        } else {
+          console.warn('⚠️ [CONTRACTOR-EMAIL] Error enviando copia al contratista');
+        }
       }
 
       return {
@@ -312,13 +303,18 @@ export class ContractorEmailService {
       };
 
     } catch (error: any) {
-      console.error('Error sending contractor email:', error);
+      console.error('❌ [CONTRACTOR-EMAIL] Error sending email:', error);
       
-      // Handle specific SendGrid errors
-      if (error.code === 403) {
+      // Handle specific Resend errors
+      if (error.status === 403) {
         return {
           success: false,
           message: 'Email verification required. Please verify your email address in your profile settings.'
+        };
+      } else if (error.status === 422) {
+        return {
+          success: false,
+          message: 'Invalid email data or domain not verified.'
         };
       }
 

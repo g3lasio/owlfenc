@@ -29,23 +29,79 @@ export class ResendEmailService {
    */
   async sendEmail(emailData: EmailData): Promise<boolean> {
     try {
-      const result = await resend.emails.send({
+      // Validaciones previas con logs detallados
+      console.log('🔍 [RESEND] Iniciando envío de email...');
+      console.log('🔍 [RESEND] API Key configurada:', !!process.env.RESEND_API_KEY);
+      console.log('🔍 [RESEND] Destinatario:', emailData.to);
+      console.log('🔍 [RESEND] Remitente:', emailData.from || this.defaultFromEmail);
+      console.log('🔍 [RESEND] Asunto:', emailData.subject);
+      console.log('🔍 [RESEND] Tamaño HTML:', emailData.html?.length || 0, 'caracteres');
+
+      if (!process.env.RESEND_API_KEY) {
+        console.error('❌ [RESEND] API Key no configurada');
+        return false;
+      }
+
+      if (!emailData.to || !emailData.subject || !emailData.html) {
+        console.error('❌ [RESEND] Datos de email incompletos:', {
+          to: !!emailData.to,
+          subject: !!emailData.subject,
+          html: !!emailData.html
+        });
+        return false;
+      }
+
+      // Preparar datos del email
+      const emailPayload = {
         from: emailData.from || this.defaultFromEmail,
         to: [emailData.to],
         subject: emailData.subject,
         html: emailData.html,
         replyTo: emailData.replyTo || this.supportEmail,
-        attachments: emailData.attachments?.map(att => ({
-          filename: att.filename,
-          content: att.content,
-          contentType: att.contentType
-        }))
+        ...(emailData.attachments && emailData.attachments.length > 0 && {
+          attachments: emailData.attachments.map(att => ({
+            filename: att.filename,
+            content: att.content,
+            contentType: att.contentType || 'application/octet-stream'
+          }))
+        })
+      };
+
+      console.log('📤 [RESEND] Enviando email con payload preparado...');
+      console.log('📤 [RESEND] Attachments:', emailData.attachments?.length || 0);
+
+      const result = await resend.emails.send(emailPayload);
+
+      if (result.data?.id) {
+        console.log('✅ [RESEND] Email enviado exitosamente');
+        console.log('✅ [RESEND] ID del email:', result.data.id);
+        console.log('✅ [RESEND] Destinatario confirmado:', emailData.to);
+        return true;
+      } else {
+        console.error('❌ [RESEND] Respuesta sin ID:', result);
+        return false;
+      }
+
+    } catch (error: any) {
+      console.error('❌ [RESEND] Error enviando email:', {
+        message: error.message,
+        status: error.status,
+        statusText: error.statusText,
+        name: error.name,
+        stack: error.stack?.split('\n').slice(0, 3)
       });
 
-      console.log('📧 Email enviado exitosamente:', result.data?.id);
-      return true;
-    } catch (error) {
-      console.error('❌ Error enviando email:', error);
+      // Errores específicos de Resend
+      if (error.status === 422) {
+        console.error('❌ [RESEND] Error 422 - Datos inválidos o dominio no verificado');
+      } else if (error.status === 401) {
+        console.error('❌ [RESEND] Error 401 - API Key inválida o no autorizada');
+      } else if (error.status === 403) {
+        console.error('❌ [RESEND] Error 403 - Acceso denegado o límite excedido');
+      } else if (error.status === 429) {
+        console.error('❌ [RESEND] Error 429 - Límite de rate exceeded');
+      }
+
       return false;
     }
   }
@@ -59,6 +115,11 @@ export class ResendEmailService {
     estimateData: any,
     pdfBuffer?: Buffer
   ): Promise<boolean> {
+    console.log('📧 [RESEND] Iniciando envío de estimado...');
+    console.log('📧 [RESEND] Cliente:', clientName, clientEmail);
+    console.log('📧 [RESEND] Proyecto:', estimateData.projectType);
+    console.log('📧 [RESEND] PDF adjunto:', !!pdfBuffer, pdfBuffer?.length || 0, 'bytes');
+
     const subject = `Estimado para ${estimateData.projectType} - Owl Fence LLC`;
     
     const html = `

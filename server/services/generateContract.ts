@@ -1,7 +1,4 @@
-import puppeteer from "puppeteer";
-import Handlebars from "handlebars";
-import path from "path";
-import fs from "fs";
+import axios from "axios";
 
 // types/contract.ts
 
@@ -72,26 +69,30 @@ export interface ContractDTO {
 
 async function generateContract(contract: ContractDTO) {
   try {
-    const browser = await puppeteer.launch({ headless: true });
+    const API_KEY = process.env.PDFMONKEY_API_KEY;
+    const TEMPLATE_ID = "DF24FD81-01C5-4054-BDCF-19ED1DFCD763";
 
-    const page = await browser.newPage();
-    const templatePath = path.join(__dirname, "../templates/contract.hbs");
-    const templateSource = fs.readFileSync(templatePath, "utf-8");
+    const payload = {
+      document: {
+        document_template_id: TEMPLATE_ID,
+        payload: contract,
+      },
+    };
 
-    // Compile the Handlebars template
-    const compileTemplate = Handlebars.compile(templateSource);
+    const headers = {
+      Authorization: `Bearer ${API_KEY}`,
+      "Content-Type": "application/json",
+    };
+    const res = axios.post(
+      "https://api.pdfmonkey.io/api/v1/documents",
+      payload,
+      { headers },
+    );
 
-    const html = compileTemplate(contract);
-    await page.setContent(html);
-
-    // Generate PDF
-    const pdfBuffer = await page.pdf({ format: "A4" });
-
-    await browser.close();
-
-    const outputPath = path.join(__dirname, "../output/contract.pdf");
-    fs.writeFileSync(outputPath, pdfBuffer);
-    return { success: true, filePath: outputPath };
+    return {
+      data: res.data,
+      message: "Contract generated successfully",
+    };
   } catch (error) {
     //@ts-expect-error
     throw new Error(`Failed to generate estimate: ${error.message}`);
