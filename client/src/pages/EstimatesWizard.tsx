@@ -470,6 +470,19 @@ export default function EstimatesWizardFixed() {
     loadContractorProfile();
   }, [currentUser]);
 
+  // Check for edit parameter and load project data
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const editProjectId = urlParams.get('edit');
+    
+    if (editProjectId && currentUser) {
+      // Add small delay to ensure clients are loaded
+      setTimeout(() => {
+        loadProjectForEdit(editProjectId);
+      }, 1000);
+    }
+  }, [currentUser]);
+
   // Calculate totals when items, tax rate, or discount change
   useEffect(() => {
     const subtotal = estimate.items.reduce((sum, item) => sum + item.total, 0);
@@ -752,6 +765,133 @@ export default function EstimatesWizardFixed() {
       setIsAIProcessing(false);
       setShowMervinWorking(false);
     }
+  };
+
+  // Load project for editing
+  const loadProjectForEdit = async (projectId: string) => {
+    if (!currentUser) return;
+
+    try {
+      toast({
+        title: 'Cargando datos del proyecto...',
+        description: 'Preparando estimado para edición'
+      });
+
+      // Import Firebase functions
+      const { getProjectById } = await import('@/lib/firebase');
+      const projectData = await getProjectById(projectId);
+
+      if (projectData) {
+        // Find matching client
+        let clientData = null;
+        if (projectData.clientName && clients.length > 0) {
+          clientData = clients.find(c => c.name === projectData.clientName);
+        }
+
+        // Create client object if not found in database
+        if (!clientData && projectData.clientName) {
+          clientData = {
+            id: 'temp-' + Date.now(),
+            clientId: 'temp-' + Date.now(),
+            name: projectData.clientName,
+            email: projectData.clientEmail || null,
+            phone: projectData.clientPhone || null,
+            address: projectData.address || null,
+            city: projectData.clientCity || null,
+            state: projectData.clientState || null,
+            zipCode: null,
+            notes: null
+          };
+        }
+
+        // Parse estimate items from project data
+        let estimateItems: EstimateItem[] = [];
+        
+        // Try to extract items from different sources
+        if (projectData.estimateHtml) {
+          estimateItems = parseEstimateItemsFromHtml(projectData.estimateHtml);
+        } else if (projectData.items) {
+          estimateItems = projectData.items.map((item: any, index: number) => ({
+            id: item.id || `item-${index}`,
+            materialId: item.materialId || '',
+            name: item.name || 'Material',
+            description: item.description || '',
+            quantity: item.quantity || 1,
+            price: item.price || item.unitPrice || 0,
+            unit: item.unit || 'unidad',
+            total: item.total || (item.quantity * item.price) || 0
+          }));
+        }
+
+        // Set estimate data
+        setEstimate({
+          client: clientData,
+          items: estimateItems,
+          projectDetails: projectData.projectScope || projectData.projectDescription || '',
+          subtotal: 0,
+          tax: 0,
+          total: projectData.totalPrice ? (projectData.totalPrice / 100) : 0,
+          taxRate: 10,
+          discountType: 'percentage',
+          discountValue: 0,
+          discountAmount: 0,
+          discountName: ''
+        });
+
+        // Jump to materials step (step 2) since client and details are loaded
+        setCurrentStep(2);
+
+        toast({
+          title: 'Proyecto cargado exitosamente',
+          description: 'Ahora puedes editar materiales y precios'
+        });
+      }
+    } catch (error) {
+      console.error('Error loading project for edit:', error);
+      toast({
+        title: 'Error al cargar proyecto',
+        description: 'No se pudieron cargar los datos del proyecto',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  // Helper function to parse estimate items from HTML
+  const parseEstimateItemsFromHtml = (html: string): EstimateItem[] => {
+    const items: EstimateItem[] = [];
+    
+    try {
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      const rows = tempDiv.querySelectorAll('tr');
+      
+      rows.forEach((row, index) => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length >= 4) {
+          const name = cells[0]?.textContent?.trim() || '';
+          const quantity = parseFloat(cells[1]?.textContent?.trim() || '0');
+          const price = parseFloat(cells[2]?.textContent?.replace(/[^0-9.]/g, '') || '0');
+          const total = parseFloat(cells[3]?.textContent?.replace(/[^0-9.]/g, '') || '0');
+          
+          if (name && quantity > 0 && price > 0) {
+            items.push({
+              id: `item-${index}`,
+              materialId: '',
+              name,
+              description: '',
+              quantity,
+              price,
+              unit: 'unidad',
+              total
+            });
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error parsing estimate items from HTML:', error);
+    }
+    
+    return items;
   };
 
   // Navigation
