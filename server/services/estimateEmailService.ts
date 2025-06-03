@@ -492,9 +492,10 @@ export class EstimateEmailService {
       
       const htmlContent = EstimateEmailService.generateEstimateHTML(data);
       
-      // Use verified Resend domain for sending - do not specify 'from' to force default
+      // Use verified owlfenc.com domain for sending
       const success = await resendService.sendEmail({
         to: data.client.email,
+        from: 'mervin@owlfenc.com',
         subject: `Estimado ${data.estimateNumber} - ${data.project.type} | ${data.contractor.companyName}`,
         html: htmlContent,
         replyTo: data.contractor.email

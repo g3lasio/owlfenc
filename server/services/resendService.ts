@@ -21,8 +21,8 @@ export interface EmailData {
 }
 
 export class ResendEmailService {
-  private defaultFromEmail = 'onboarding@resend.dev';
-  private supportEmail = 'onboarding@resend.dev';
+  private defaultFromEmail = 'noreply@owlfenc.com';
+  private supportEmail = 'support@owlfenc.com';
 
   /**
    * Enviar email usando Resend
@@ -33,7 +33,9 @@ export class ResendEmailService {
       console.log('🔍 [RESEND] Iniciando envío de email...');
       console.log('🔍 [RESEND] API Key configurada:', !!process.env.RESEND_API_KEY);
       console.log('🔍 [RESEND] Destinatario:', emailData.to);
-      console.log('🔍 [RESEND] Remitente:', emailData.from || this.defaultFromEmail);
+      console.log('🔍 [RESEND] Remitente solicitado:', emailData.from);
+      console.log('🔍 [RESEND] Remitente por defecto:', this.defaultFromEmail);
+      console.log('🔍 [RESEND] Remitente final:', emailData.from || this.defaultFromEmail);
       console.log('🔍 [RESEND] Asunto:', emailData.subject);
       console.log('🔍 [RESEND] Tamaño HTML:', emailData.html?.length || 0, 'caracteres');
 
@@ -51,12 +53,12 @@ export class ResendEmailService {
         return false;
       }
 
-      // Force use of verified Resend domain
-      const verifiedFrom = this.defaultFromEmail;
+      // Use the provided from email or default to verified domain
+      const fromEmail = emailData.from || this.defaultFromEmail;
       
       // Preparar datos del email
       const emailPayload = {
-        from: verifiedFrom,
+        from: fromEmail,
         to: [emailData.to],
         subject: emailData.subject,
         html: emailData.html,
