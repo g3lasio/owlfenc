@@ -77,11 +77,11 @@ export class EstimateEmailService {
     
     return `
     <!DOCTYPE html>
-    <html lang="es">
+    <html lang="en">
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Estimado ${data.estimateNumber}</title>
+      <title>Professional Estimate ${data.estimateNumber}</title>
       <style>
         * {
           margin: 0;
@@ -349,6 +349,43 @@ export class EstimateEmailService {
           transform: translateY(-2px);
         }
 
+        /* Universal Email Client Compatible Button Styles */
+        .email-button-table {
+          border-collapse: separate;
+          border-spacing: 0;
+          border-radius: 8px;
+          overflow: hidden;
+          display: inline-block;
+          margin: 0 8px;
+        }
+
+        .email-button-cell {
+          padding: 0;
+          border: none;
+        }
+
+        .email-button-link {
+          display: block;
+          padding: 15px 30px;
+          text-decoration: none;
+          font-weight: 600;
+          font-size: 16px;
+          text-align: center;
+          border-radius: 8px;
+          min-width: 160px;
+          box-sizing: border-box;
+        }
+
+        .approve-button {
+          background-color: #10b981;
+          color: #ffffff;
+        }
+
+        .adjust-button {
+          background-color: #f59e0b;
+          color: #ffffff;
+        }
+
         /* Formularios inline */
         .inline-form {
           display: none;
@@ -396,6 +433,17 @@ export class EstimateEmailService {
           gap: 10px;
           justify-content: flex-end;
           margin-top: 20px;
+        }
+
+        /* Logo display styles */
+        .contractor-logo {
+          max-width: 120px;
+          max-height: 80px;
+          width: auto;
+          height: auto;
+          margin-bottom: 15px;
+          border-radius: 6px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .btn-submit {
@@ -486,7 +534,15 @@ export class EstimateEmailService {
       <div class="container">
         <!-- Header -->
         <div class="header">
-          ${data.contractor.logo ? `<img src="${data.contractor.logo}" alt="${data.contractor.companyName}" class="logo">` : ''}
+          ${data.contractor.logo ? `
+            <div style="margin-bottom: 20px;">
+              <img src="${data.contractor.logo}" 
+                   alt="${data.contractor.companyName} Logo" 
+                   class="contractor-logo"
+                   style="max-width: 120px; max-height: 80px; width: auto; height: auto; margin-bottom: 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: block; margin-left: auto; margin-right: auto;"
+                   onerror="this.style.display='none';">
+            </div>
+          ` : ''}
           <div class="company-name">${data.contractor.companyName}</div>
           <div class="estimate-title">Professional Estimate</div>
         </div>
@@ -613,14 +669,33 @@ export class EstimateEmailService {
             </div>
           ` : ''}
           
-          <!-- Action Buttons -->
-          <div class="action-buttons">
-            <button type="button" onclick="showApprovalForm()" class="btn btn-approve">
-              ✅ Approve Estimate
-            </button>
-            <button type="button" onclick="showAdjustmentForm()" class="btn btn-adjust">
-              📝 Request Changes
-            </button>
+          <!-- Universal Email Client Compatible Action Buttons -->
+          <div class="action-buttons" style="text-align: center; margin: 30px 0;">
+            <!-- Approve Button using table structure for email compatibility -->
+            <table class="email-button-table" cellpadding="0" cellspacing="0" border="0" style="display: inline-block; margin: 0 8px;">
+              <tr>
+                <td class="email-button-cell" style="background-color: #10b981; border-radius: 8px;">
+                  <a href="javascript:void(0)" onclick="showApprovalForm(); return false;" 
+                     class="email-button-link approve-button" 
+                     style="display: block; padding: 15px 30px; text-decoration: none; color: #ffffff; font-weight: 600; font-size: 16px; text-align: center; border-radius: 8px; min-width: 160px;">
+                    ✅ Approve Estimate
+                  </a>
+                </td>
+              </tr>
+            </table>
+            
+            <!-- Request Changes Button using table structure for email compatibility -->
+            <table class="email-button-table" cellpadding="0" cellspacing="0" border="0" style="display: inline-block; margin: 0 8px;">
+              <tr>
+                <td class="email-button-cell" style="background-color: #f59e0b; border-radius: 8px;">
+                  <a href="javascript:void(0)" onclick="showAdjustmentForm(); return false;" 
+                     class="email-button-link adjust-button" 
+                     style="display: block; padding: 15px 30px; text-decoration: none; color: #ffffff; font-weight: 600; font-size: 16px; text-align: center; border-radius: 8px; min-width: 160px;">
+                    📝 Request Changes
+                  </a>
+                </td>
+              </tr>
+            </table>
           </div>
 
           <!-- Approval Form -->
