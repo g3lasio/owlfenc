@@ -2122,8 +2122,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
   // Download PDF
   const downloadPDF = async () => {
     try {
-      // Primero guardar el estimado automáticamente
-      const savedEstimate = await saveEstimate();
+      // Generar PDF directamente sin guardar primero
       
       // Usar EXACTAMENTE el mismo HTML del preview para eliminar discrepancias
       const html = generateEstimatePreview();

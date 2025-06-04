@@ -199,57 +199,43 @@ export async function generateSimpleEstimatePDF(req: Request, res: Response) {
   console.log('📄 [API] Generando PDF simple de estimado...');
   
   try {
-    const {
-      estimateNumber,
-      clientName,
-      clientEmail,
-      clientAddress,
-      clientPhone,
-      companyName,
-      companyEmail,
-      companyPhone,
-      companyAddress,
-      items,
-      subtotal,
-      tax,
-      total,
-      notes,
-      templateId
-    } = req.body;
+    // Aceptar datos directamente del frontend sin destructuring
+    const estimateDataFromFrontend = req.body;
+    const templateId = req.body.templateId;
 
-    // Construir datos en formato EstimateData
+    // Usar datos directamente del frontend con validaciones mínimas
     const estimateData: EstimateData = {
-      estimateNumber: estimateNumber || `EST-${Date.now()}`,
-      date: new Date().toLocaleDateString(),
-      validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+      estimateNumber: estimateDataFromFrontend.estimateNumber || `EST-${Date.now()}`,
+      date: estimateDataFromFrontend.date || new Date().toLocaleDateString(),
+      validUntil: estimateDataFromFrontend.validUntil || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
       client: {
-        name: clientName || 'Cliente Sin Nombre',
-        email: clientEmail || '',
-        address: clientAddress || '',
-        phone: clientPhone || ''
+        name: estimateDataFromFrontend.client?.name || 'Cliente Sin Nombre',
+        email: estimateDataFromFrontend.client?.email || 'cliente@ejemplo.com',
+        address: estimateDataFromFrontend.client?.address || 'Dirección no especificada',
+        phone: estimateDataFromFrontend.client?.phone || '555-0000'
       },
       contractor: {
-        companyName: companyName || 'Owl Fence',
-        name: companyName || 'Owl Fence',
-        email: companyEmail || 'info@owlfenc.com',
-        phone: companyPhone || '',
-        address: companyAddress || '',
-        city: '',
-        state: '',
-        zipCode: ''
+        companyName: estimateDataFromFrontend.contractor?.companyName || 'Owl Fence',
+        name: estimateDataFromFrontend.contractor?.name || 'Owl Fence',
+        email: estimateDataFromFrontend.contractor?.email || 'info@owlfenc.com',
+        phone: estimateDataFromFrontend.contractor?.phone || '202-549-3519',
+        address: estimateDataFromFrontend.contractor?.address || '2901 Owens Court',
+        city: estimateDataFromFrontend.contractor?.city || 'Fairfield',
+        state: estimateDataFromFrontend.contractor?.state || 'California',
+        zipCode: estimateDataFromFrontend.contractor?.zipCode || '94534'
       },
       project: {
-        type: 'Construcción de Cerca',
-        description: 'Proyecto de construcción',
-        location: clientAddress || '',
-        scopeOfWork: notes || 'Construcción de cerca según especificaciones'
+        type: estimateDataFromFrontend.project?.type || 'Fence Installation',
+        description: estimateDataFromFrontend.project?.description || 'Proyecto de construcción de cerca',
+        location: estimateDataFromFrontend.project?.location || 'Ubicación del proyecto',
+        scopeOfWork: estimateDataFromFrontend.project?.scopeOfWork || 'Construcción de cerca según especificaciones'
       },
-      items: items || [],
-      subtotal: subtotal || 0,
-      tax: tax || 0,
-      taxRate: tax && subtotal ? (tax / subtotal) * 100 : 10,
-      total: total || 0,
-      notes: notes || ''
+      items: estimateDataFromFrontend.items || [],
+      subtotal: estimateDataFromFrontend.subtotal || 0,
+      tax: estimateDataFromFrontend.tax || 0,
+      taxRate: Math.min(estimateDataFromFrontend.taxRate || 10, 100),
+      total: estimateDataFromFrontend.total || 0,
+      notes: estimateDataFromFrontend.notes || 'Estimado generado por Owl Fence'
     };
 
     console.log('📄 [API] Datos simples convertidos:', {
