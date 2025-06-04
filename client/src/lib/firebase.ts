@@ -41,7 +41,9 @@ import {
   deleteUser,
   multiFactor,
   PhoneAuthProvider,
-  PhoneMultiFactorGenerator
+  PhoneMultiFactorGenerator,
+  sendEmailVerification,
+  reload
 } from "firebase/auth";
 
 // Verificamos si estamos en modo de desarrollo en Replit
@@ -124,6 +126,49 @@ export const storage = getStorage(app);
 
 // Proveedores de autenticación
 const googleProvider = new GoogleAuthProvider();
+
+// Email verification functions
+export const sendVerificationEmail = async () => {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error('No hay usuario autenticado');
+    }
+    
+    if (user.emailVerified) {
+      console.log('Email ya está verificado');
+      return { success: true, message: 'Email ya está verificado' };
+    }
+    
+    await sendEmailVerification(user);
+    console.log('Email de verificación enviado');
+    return { success: true, message: 'Email de verificación enviado' };
+  } catch (error: any) {
+    console.error('Error enviando email de verificación:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+export const checkEmailVerification = async () => {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      return { verified: false, message: 'No hay usuario autenticado' };
+    }
+    
+    // Recargar el usuario para obtener el estado más reciente
+    await reload(user);
+    
+    return { 
+      verified: user.emailVerified, 
+      email: user.email,
+      message: user.emailVerified ? 'Email verificado' : 'Email no verificado'
+    };
+  } catch (error: any) {
+    console.error('Error verificando email:', error);
+    return { verified: false, message: error.message };
+  }
+};
 
 // Configuración correcta del proveedor de Apple - versión simplificada
 const createAppleProvider = () => {
