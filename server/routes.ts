@@ -45,6 +45,7 @@ import quickbooksRoutes from "./routes/quickbooks-routes";
 import contactRoutes from "./routes/contact-route";
 import anthropicRoutes from "./routes/anthropic";
 import pdfRoutes from "./routes/pdf-routes";
+import * as pdfMonkeyRoutes from "./routes/pdfMonkeyRoutes";
 import paymentRoutes from "./routes/payment-routes"; // Import payment routes
 import contractorPaymentRoutes from "./routes/contractor-payment-routes"; // Import contractor payment routes
 import estimatesRoutes from "./routes/estimates"; // Import new estimates routes
@@ -1039,6 +1040,13 @@ Output in English regardless of input language. Make it suitable for contracts a
 
   // Registrar rutas de PDF
   app.use("/api/pdf", pdfRoutes);
+
+  // Registrar rutas de PDF Monkey
+  app.post("/api/pdf-monkey/estimate", pdfMonkeyRoutes.generateEstimatePDF);
+  app.post("/api/pdf-monkey/contract", pdfMonkeyRoutes.generateContractPDF);
+  app.post("/api/pdf-monkey/estimate-simple", pdfMonkeyRoutes.generateSimpleEstimatePDF);
+  app.get("/api/pdf-monkey/health", pdfMonkeyRoutes.checkPDFMonkeyHealth);
+  app.get("/api/pdf-monkey/templates", pdfMonkeyRoutes.listPDFTemplates);
 
   // Registrar rutas del procesador de contratos PDF
   app.use("/api/pdf-contract-processor", pdfContractProcessorRoutes);
