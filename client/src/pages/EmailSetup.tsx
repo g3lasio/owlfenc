@@ -40,7 +40,7 @@ export default function EmailSetup() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate('/settings')}
+              onClick={() => setLocation('/settings')}
               className="text-slate-300 hover:text-white"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -51,7 +51,6 @@ export default function EmailSetup() {
           {!isComplete ? (
             <UnifiedEmailSetup 
               onComplete={handleEmailSetupComplete}
-              isOnboarding={false}
             />
           ) : (
             <Card className="text-center">
