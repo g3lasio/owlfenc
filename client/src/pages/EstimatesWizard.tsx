@@ -2187,13 +2187,45 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
       const templateData = convertEstimateDataToTemplate(estimate, companyData);
       const unifiedHtml = generateUnifiedEstimateHTML(templateData);
       
-      const response = await fetch('/api/pdf/generate', {
+      // Preparar datos para PDF Monkey
+      const estimateData = {
+        estimateNumber: estimate.estimateNumber || `EST-${Date.now()}`,
+        date: new Date().toLocaleDateString(),
+        validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+        client: {
+          name: estimate.client?.name || 'Cliente Sin Nombre',
+          email: estimate.client?.email || '',
+          address: estimate.client?.address || '',
+          phone: estimate.client?.phone || ''
+        },
+        contractor: {
+          companyName: userProfile?.company || 'Owl Fence',
+          name: userProfile?.name || userProfile?.company || 'Owl Fence',
+          email: userProfile?.email || 'info@owlfenc.com',
+          phone: userProfile?.phone || '',
+          address: userProfile?.address || '',
+          city: userProfile?.city || '',
+          state: userProfile?.state || '',
+          zipCode: userProfile?.zipCode || ''
+        },
+        project: {
+          type: 'Construcción de Cerca',
+          description: estimate.projectDescription || 'Proyecto de construcción',
+          location: estimate.client?.address || '',
+          scopeOfWork: estimate.notes || 'Construcción de cerca según especificaciones'
+        },
+        items: estimate.items || [],
+        subtotal: estimate.subtotal || 0,
+        tax: estimate.taxAmount || 0,
+        taxRate: estimate.taxRate || 10,
+        total: estimate.total || 0,
+        notes: estimate.notes || ''
+      };
+
+      const response = await fetch('/api/pdf-monkey/estimate-simple', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          html: unifiedHtml, 
-          filename: `estimate-${estimate.client?.name || 'client'}.pdf` 
-        }),
+        body: JSON.stringify(estimateData),
       });
 
       if (!response.ok) {
