@@ -2036,13 +2036,22 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
         validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('es-ES') // 30 days from now
       };
 
-      console.log('📧 Enviando estimado HTML profesional:', estimateData);
+      console.log('📧 Enviando estimado con sistema centralizado:', estimateData);
 
-      // Send HTML estimate email
-      const response = await fetch('/api/estimate-email/send', {
+      // Send estimate using centralized email system
+      const response = await fetch('/api/centralized-email/send-estimate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(estimateData)
+        body: JSON.stringify({
+          clientEmail: emailData.toEmail,
+          clientName: estimate.client.name,
+          contractorEmail: profile.email,
+          contractorName: profile.displayName || profile.companyName,
+          contractorCompany: profile.companyName,
+          estimateData: estimateData,
+          customMessage: emailData.message,
+          sendCopy: true
+        })
       });
 
       const result = await response.json();
@@ -2050,7 +2059,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
       if (result.success) {
         toast({
           title: 'Estimado Enviado con Éxito',
-          description: `Su estimado profesional fue enviado a ${emailData.toEmail} con botones de aprobación y ajustes`,
+          description: `Su estimado fue enviado desde noreply@owlfenc.com a ${emailData.toEmail}. El cliente puede responder directamente a su email.`,
           duration: 5000
         });
         

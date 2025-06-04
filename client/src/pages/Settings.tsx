@@ -92,18 +92,10 @@ export default function Settings() {
         setStripeStatus({ connected: false, loading: false });
       }
 
-      // Check Email Provider status
+      // Check Centralized Email status
       try {
-        const emailProviderResponse = await axios.get('/api/contractor-email/status');
-        setEmailProviderStatus({ connected: emailProviderResponse.data.connected, loading: false });
-      } catch (error) {
-        setEmailProviderStatus({ connected: false, loading: false });
-      }
-
-      // Check Resend status
-      try {
-        const resendResponse = await axios.get('/api/resend/status');
-        setResendStatus({ connected: resendResponse.data.connected, loading: false });
+        const centralizedEmailResponse = await axios.get('/api/centralized-email/status');
+        setResendStatus({ connected: centralizedEmailResponse.data.connected, loading: false });
       } catch (error) {
         setResendStatus({ connected: false, loading: false });
       }
