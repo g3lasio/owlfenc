@@ -26,6 +26,90 @@ export class ResendEmailService {
   private supportEmail = 'support@owlfenc.com';
 
   /**
+   * Enviar email centralizado desde la plataforma con Reply-To del contratista
+   */
+  async sendCentralizedEmail(params: {
+    toEmail: string;
+    toName: string;
+    contractorEmail: string;
+    contractorName: string;
+    contractorCompany: string;
+    subject: string;
+    htmlContent: string;
+    attachments?: Array<{
+      filename: string;
+      content: Buffer;
+      contentType: string;
+    }>;
+    sendCopyToContractor?: boolean;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    emailId?: string;
+  }> {
+    try {
+      console.log('📧 [RESEND-CENTRALIZED] Iniciando envío centralizado...');
+      console.log('📧 [RESEND-CENTRALIZED] Cliente:', params.toName, params.toEmail);
+      console.log('📧 [RESEND-CENTRALIZED] Contratista:', params.contractorName, params.contractorEmail);
+      console.log('📧 [RESEND-CENTRALIZED] Empresa:', params.contractorCompany);
+
+      // Enviar email principal al cliente
+      const clientEmailResult = await this.sendEmail({
+        to: params.toEmail,
+        from: this.defaultFromEmail,
+        subject: params.subject,
+        html: params.htmlContent,
+        replyTo: params.contractorEmail,
+        attachments: params.attachments
+      });
+
+      if (!clientEmailResult) {
+        return {
+          success: false,
+          message: 'Error enviando email al cliente'
+        };
+      }
+
+      // Enviar copia al contratista si se solicita
+      if (params.sendCopyToContractor) {
+        const copyHtml = `
+          <div style="background: #f0f9ff; padding: 20px; border-left: 4px solid #3b82f6; margin-bottom: 20px; border-radius: 8px;">
+            <h3 style="margin: 0 0 10px 0; color: #1e40af;">📧 Copia del email enviado a su cliente</h3>
+            <p style="margin: 0; color: #64748b;">
+              <strong>Enviado a:</strong> ${params.toName} (${params.toEmail})<br>
+              <strong>Desde:</strong> ${this.defaultFromEmail}<br>
+              <strong>Reply-To:</strong> ${params.contractorEmail}<br>
+              <strong>Fecha:</strong> ${new Date().toLocaleString('es-ES')}
+            </p>
+          </div>
+          ${params.htmlContent}
+        `;
+
+        await this.sendEmail({
+          to: params.contractorEmail,
+          from: this.defaultFromEmail,
+          subject: `[COPIA] ${params.subject}`,
+          html: copyHtml,
+          replyTo: this.supportEmail
+        });
+      }
+
+      return {
+        success: true,
+        message: 'Email enviado exitosamente',
+        emailId: 'centralized-email'
+      };
+
+    } catch (error) {
+      console.error('❌ [RESEND-CENTRALIZED] Error enviando email:', error);
+      return {
+        success: false,
+        message: 'Error interno enviando email'
+      };
+    }
+  }
+
+  /**
    * Enviar email usando Resend
    */
   async sendEmail(emailData: EmailData): Promise<boolean> {
