@@ -3961,48 +3961,48 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
 
       {/* Enhanced Email Dialog */}
       <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader className="border-b border-gray-200 pb-4">
-            <DialogTitle className="flex items-center gap-3 text-xl">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Mail className="h-6 w-6 text-blue-600" />
+        <DialogContent className="w-[98vw] sm:w-[95vw] max-w-4xl h-[98vh] sm:h-[90vh] flex flex-col p-3 sm:p-6">
+          <DialogHeader className="border-b border-gray-200 pb-3 sm:pb-4 flex-shrink-0">
+            <DialogTitle className="flex items-center gap-2 sm:gap-3 text-lg sm:text-xl">
+              <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg">
+                <Mail className="h-4 w-4 sm:h-6 sm:w-6 text-blue-600" />
               </div>
               Send Professional Estimate
             </DialogTitle>
-            <DialogDescription className="text-gray-600 mt-2">
+            <DialogDescription className="text-gray-600 mt-1 sm:mt-2 text-xs sm:text-sm">
               Send your professional estimate directly to the client with a personalized message
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-6 py-4">
+          <div className="flex-1 overflow-y-auto space-y-4 sm:space-y-6 py-3 sm:py-4 min-h-0">
             {/* Client Information Card */}
             {estimate.client && (
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <User className="h-5 w-5 text-blue-600" />
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-3 sm:p-4">
+                <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+                  <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg">
+                    <User className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                   </div>
-                  <h4 className="font-semibold text-blue-900">Client Information</h4>
+                  <h4 className="font-semibold text-blue-900 text-sm sm:text-base">Client Information</h4>
                 </div>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
+                  <div className="space-y-1">
                     <span className="font-medium text-gray-700">Name:</span>
-                    <p className="text-gray-900">{estimate.client.name}</p>
+                    <p className="text-gray-900 break-words">{estimate.client.name}</p>
                   </div>
-                  <div>
+                  <div className="space-y-1">
                     <span className="font-medium text-gray-700">Email:</span>
-                    <p className="text-gray-900">{estimate.client.email || 'Not provided'}</p>
+                    <p className="text-gray-900 break-all">{estimate.client.email || 'Not provided'}</p>
                   </div>
-                  <div className="col-span-2">
+                  <div className="col-span-1 sm:col-span-2 space-y-1">
                     <span className="font-medium text-gray-700">Project:</span>
-                    <p className="text-gray-900">{estimate.projectDetails || 'No description'}</p>
+                    <p className="text-gray-900 break-words">{estimate.projectDetails || 'No description'}</p>
                   </div>
                 </div>
               </div>
             )}
 
             {/* Email Form */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
               {/* Left Column - Email Details */}
               <div className="space-y-4">
                 <div>
@@ -4016,7 +4016,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
                     value={emailData.toEmail}
                     onChange={(e) => setEmailData(prev => ({ ...prev, toEmail: e.target.value }))}
                     placeholder="client@email.com"
-                    className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
                   />
                 </div>
                 
@@ -4030,27 +4030,32 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
                     value={emailData.subject}
                     onChange={(e) => setEmailData(prev => ({ ...prev, subject: e.target.value }))}
                     placeholder="Professional Estimate - Your Project"
-                    className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="sendCopy" className="text-sm font-medium text-gray-700">
-                      Email Options
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                    <input
-                      type="checkbox"
-                      id="sendCopy"
-                      checked={emailData.sendCopy}
-                      onChange={(e) => setEmailData(prev => ({ ...prev, sendCopy: e.target.checked }))}
-                      className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <Label htmlFor="sendCopy" className="text-sm text-gray-700 cursor-pointer">
-                      Send a copy to my email ({profile?.email || 'your email'})
-                    </Label>
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium text-gray-700">
+                    Email Options
+                  </Label>
+                  <div className="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200">
+                    <div className="flex items-start space-x-3">
+                      <input
+                        type="checkbox"
+                        id="sendCopy"
+                        checked={emailData.sendCopy}
+                        onChange={(e) => setEmailData(prev => ({ ...prev, sendCopy: e.target.checked }))}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5 flex-shrink-0"
+                      />
+                      <div className="flex flex-col space-y-1">
+                        <Label htmlFor="sendCopy" className="text-sm font-medium text-gray-700 cursor-pointer">
+                          Send me a copy
+                        </Label>
+                        <p className="text-xs text-gray-500 break-words">
+                          Copy will be sent to: {profile?.email || 'your email'}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -4067,8 +4072,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
                     value={emailData.message}
                     onChange={(e) => setEmailData(prev => ({ ...prev, message: e.target.value }))}
                     placeholder="Your personalized message to the client..."
-                    rows={12}
-                    className="resize-none border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    rows={window.innerWidth < 640 ? 8 : 12}
+                    className="resize-none border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base leading-relaxed"
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     This message will be included in the email along with your estimate
@@ -4078,23 +4083,39 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
             </div>
 
             {/* Preview Section */}
-            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 sm:p-4">
               <div className="flex items-center gap-2 mb-3">
-                <Eye className="h-5 w-5 text-gray-600" />
-                <h4 className="font-medium text-gray-800">Email Preview</h4>
+                <Eye className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
+                <h4 className="font-medium text-gray-800 text-sm sm:text-base">Email Preview</h4>
               </div>
-              <div className="bg-white border rounded-lg p-4 text-sm">
-                <div className="border-b pb-2 mb-3">
-                  <p><strong>To:</strong> {emailData.toEmail || 'client@email.com'}</p>
-                  <p><strong>From:</strong> {profile?.email || 'your@email.com'}</p>
-                  <p><strong>Subject:</strong> {emailData.subject || 'Professional Estimate'}</p>
+              <div className="bg-white border rounded-lg p-3 sm:p-4 text-xs sm:text-sm">
+                <div className="border-b pb-2 mb-3 space-y-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1">
+                    <span className="font-semibold min-w-0">To:</span>
+                    <span className="text-gray-700 break-all">{emailData.toEmail || 'client@email.com'}</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1">
+                    <span className="font-semibold min-w-0">From:</span>
+                    <span className="text-gray-700 break-all">{profile?.email || 'your@email.com'}</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1">
+                    <span className="font-semibold min-w-0">Subject:</span>
+                    <span className="text-gray-700 break-words">{emailData.subject || 'Professional Estimate'}</span>
+                  </div>
                 </div>
-                <div className="text-gray-700 whitespace-pre-line">
+                <div className="text-gray-700 whitespace-pre-line text-xs sm:text-sm leading-relaxed min-h-[60px] max-h-[120px] overflow-y-auto">
                   {emailData.message || 'Your personalized message will appear here...'}
                 </div>
-                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
-                  📎 Professional estimate will be attached as HTML content
+                <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700 flex items-center gap-2">
+                  <span className="flex-shrink-0">📎</span>
+                  <span>Professional estimate will be attached as HTML content</span>
                 </div>
+                {emailData.sendCopy && (
+                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs text-green-700 flex items-center gap-2">
+                    <span className="flex-shrink-0">✅</span>
+                    <span className="break-words">Copy will be sent to: {profile?.email || 'your email'}</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -4131,74 +4152,95 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
 
       {/* Email Preview Dialog */}
       <Dialog open={showEmailPreview} onOpenChange={setShowEmailPreview}>
-        <DialogContent className="w-[95vw] max-w-4xl h-[95vh] flex flex-col bg-gradient-to-br from-gray-900 via-black to-gray-900 border border-cyan-500/30">
-          <DialogHeader className="space-y-3 flex-shrink-0">
-            <DialogTitle className="text-xl font-bold text-cyan-300 flex items-center gap-2">
-              <Eye className="h-5 w-5" />
+        <DialogContent className="w-[98vw] sm:w-[95vw] max-w-4xl h-[98vh] sm:h-[95vh] flex flex-col bg-gradient-to-br from-gray-900 via-black to-gray-900 border border-cyan-500/30 p-3 sm:p-6">
+          <DialogHeader className="space-y-2 sm:space-y-3 flex-shrink-0 pb-2 sm:pb-4">
+            <DialogTitle className="text-lg sm:text-xl font-bold text-cyan-300 flex items-center gap-2">
+              <Eye className="h-4 w-4 sm:h-5 sm:w-5" />
               Email Preview - Professional Format
             </DialogTitle>
-            <div className="text-sm text-gray-400">
+            <div className="text-xs sm:text-sm text-gray-400">
               Review how your email will look before sending it to the client
             </div>
           </DialogHeader>
           
-          <div className="flex-1 overflow-y-auto space-y-6 py-4">
+          <div className="flex-1 overflow-y-auto space-y-4 sm:space-y-6 py-2 sm:py-4 min-h-0">
             {/* Email Headers Preview */}
-            <div className="bg-gray-800/50 rounded-lg p-4 border border-cyan-500/20">
-              <div className="space-y-2 text-sm">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                  <span className="text-cyan-300 font-medium min-w-12">To:</span>
-                  <span className="text-white break-all">{emailData.toEmail}</span>
+            <div className="bg-gray-800/50 rounded-lg p-3 sm:p-4 border border-cyan-500/20">
+              <div className="space-y-2 text-xs sm:text-sm">
+                <div className="flex flex-col gap-1">
+                  <span className="text-cyan-300 font-medium">To:</span>
+                  <span className="text-white break-all text-xs sm:text-sm ml-2">{emailData.toEmail}</span>
                 </div>
-                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                  <span className="text-cyan-300 font-medium min-w-12">From:</span>
-                  <span className="text-white break-all">{profile?.email || 'contact@company.com'}</span>
+                <div className="flex flex-col gap-1">
+                  <span className="text-cyan-300 font-medium">From:</span>
+                  <span className="text-white break-all text-xs sm:text-sm ml-2">{profile?.email || 'contact@company.com'}</span>
                 </div>
-                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                  <span className="text-cyan-300 font-medium min-w-12">Subject:</span>
-                  <span className="text-white break-words">{emailData.subject}</span>
+                <div className="flex flex-col gap-1">
+                  <span className="text-cyan-300 font-medium">Subject:</span>
+                  <span className="text-white break-words text-xs sm:text-sm ml-2">{emailData.subject}</span>
                 </div>
               </div>
             </div>
 
             {/* Email Content Preview */}
-            <div className="bg-white rounded-lg p-4 sm:p-6 text-black">
-              <div className="space-y-4">
+            <div className="bg-white rounded-lg p-3 sm:p-6 text-black">
+              <div className="space-y-3 sm:space-y-4">
                 {/* Message Preview */}
-                <div className="whitespace-pre-wrap text-gray-800 text-sm sm:text-base">
+                <div className="whitespace-pre-wrap text-gray-800 text-xs sm:text-sm leading-relaxed">
                   {emailData.message}
                 </div>
                 
                 {/* Estimate Summary */}
-                <div className="border-t pt-4 mt-6">
-                  <h3 className="text-lg font-bold text-blue-600 mb-3">
-                    📊 Estimate Summary
+                <div className="border-t pt-3 sm:pt-4 mt-4 sm:mt-6">
+                  <h3 className="text-sm sm:text-lg font-bold text-blue-600 mb-2 sm:mb-3">
+                    Estimate Summary
                   </h3>
-                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                      <div>
-                        <span className="font-medium">Client:</span> {estimate.client?.name}
+                  <div className="bg-blue-50 p-3 sm:p-4 rounded-lg border border-blue-200">
+                    <div className="space-y-2 sm:grid sm:grid-cols-2 sm:gap-3 sm:space-y-0 text-xs sm:text-sm">
+                      <div className="flex flex-col sm:block">
+                        <span className="font-medium">Client:</span> 
+                        <span className="text-gray-700">{estimate.client?.name}</span>
                       </div>
-                      <div>
-                        <span className="font-medium">Project:</span> {estimate.projectDetails || 'Construction project'}
+                      <div className="flex flex-col sm:block">
+                        <span className="font-medium">Project:</span> 
+                        <span className="text-gray-700">{estimate.projectDetails || 'Construction project'}</span>
                       </div>
-                      <div>
-                        <span className="font-medium">Items:</span> {estimate.items.length} line items
+                      <div className="flex flex-col sm:block">
+                        <span className="font-medium">Items:</span> 
+                        <span className="text-gray-700">{estimate.items.length} line items</span>
                       </div>
-                      <div className="text-base sm:text-lg font-bold text-blue-600">
-                        <span className="font-medium">Total:</span> ${estimate.total.toLocaleString()}
+                      <div className="flex flex-col sm:block text-sm sm:text-lg font-bold text-blue-600 bg-blue-100 p-2 rounded">
+                        <span className="font-medium">Total:</span> 
+                        <span className="text-lg sm:text-xl">${estimate.total.toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Company Signature */}
-                <div className="border-t pt-4 mt-6 text-gray-600">
-                  <div className="text-sm">
-                    <div className="font-bold text-blue-600">{profile?.companyName || profile?.name || 'Your Company'}</div>
-                    {profile?.phone && <div>📞 {profile.phone}</div>}
-                    {profile?.email && <div>📧 {profile.email}</div>}
-                    {profile?.website && <div>🌐 {profile.website}</div>}
+                <div className="border-t pt-3 sm:pt-4 mt-4 sm:mt-6 text-gray-600">
+                  <div className="text-xs sm:text-sm space-y-1">
+                    <div className="font-bold text-blue-600 text-sm sm:text-base">
+                      {profile?.companyName || profile?.name || 'Your Company'}
+                    </div>
+                    {profile?.phone && (
+                      <div className="flex items-center gap-1">
+                        <span>📞</span>
+                        <span className="break-all">{profile.phone}</span>
+                      </div>
+                    )}
+                    {profile?.email && (
+                      <div className="flex items-center gap-1">
+                        <span>📧</span>
+                        <span className="break-all">{profile.email}</span>
+                      </div>
+                    )}
+                    {profile?.website && (
+                      <div className="flex items-center gap-1">
+                        <span>🌐</span>
+                        <span className="break-all">{profile.website}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -4207,35 +4249,39 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
             {/* Send Options */}
             {emailData.sendCopy && (
               <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-500/30">
-                <div className="text-sm text-blue-300">
-                  ✅ A copy will be sent to: {profile?.email || 'your email'}
+                <div className="text-xs sm:text-sm text-blue-300 flex items-start gap-2">
+                  <span className="text-green-400 flex-shrink-0">✅</span>
+                  <div className="flex flex-col gap-1">
+                    <span className="font-medium">Copy to be sent to:</span>
+                    <span className="text-blue-200 break-all">{profile?.email || 'your email'}</span>
+                  </div>
                 </div>
               </div>
             )}
           </div>
 
-          <DialogFooter className="flex flex-col sm:flex-row gap-3 pt-4 flex-shrink-0 border-t border-gray-700">
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-3 sm:pt-4 flex-shrink-0 border-t border-gray-700">
             <Button 
               variant="outline" 
               onClick={() => setShowEmailPreview(false)}
-              className="border-gray-600 text-gray-300 hover:bg-gray-800 w-full sm:w-auto"
+              className="border-gray-600 text-gray-300 hover:bg-gray-800 w-full sm:w-auto text-sm"
             >
-              <ArrowLeft className="h-4 w-4 mr-2" />
+              <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
               Back to Edit
             </Button>
             <Button 
               onClick={sendEstimateEmail} 
               disabled={isSendingEmail}
-              className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white w-full sm:w-auto"
+              className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white w-full sm:w-auto text-sm"
             >
               {isSendingEmail ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
                   Sending...
                 </>
               ) : (
                 <>
-                  <Send className="h-4 w-4 mr-2" />
+                  <Send className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                   Send Email Now
                 </>
               )}
