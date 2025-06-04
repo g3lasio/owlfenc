@@ -1,5 +1,5 @@
 import express from 'express';
-import { ContractorEmailService } from '../services/contractorEmailService.js';
+import { ContractorEmailService, contractorEmailService } from '../services/contractorEmailService';
 
 const router = express.Router();
 
@@ -86,6 +86,33 @@ router.get('/complete-verification', async (req, res) => {
 });
 
 /**
+ * Validate contractor email capability
+ * POST /api/contractor-email/validate
+ */
+router.post('/validate', async (req, res) => {
+  try {
+    const { contractorEmail } = req.body;
+
+    if (!contractorEmail) {
+      return res.status(400).json({
+        success: false,
+        message: 'Contractor email is required'
+      });
+    }
+
+    const result = await contractorEmailService.validateContractorEmailCapability(contractorEmail);
+    res.json(result);
+
+  } catch (error) {
+    console.error('Error validating contractor email:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error validating email capability'
+    });
+  }
+});
+
+/**
  * Send estimate email from contractor to client
  * POST /api/contractor-email/send-estimate
  */
@@ -111,11 +138,11 @@ router.post('/send-estimate', async (req, res) => {
       });
     }
 
-    // Create estimate email template
+    // Create estimate email template using new service
     const template = ContractorEmailService.createEstimateTemplate(
       clientName,
       contractorName,
-      contractorProfile,
+      contractorProfile || { email: contractorEmail, companyName: contractorName },
       estimateData,
       customMessage
     );
@@ -125,8 +152,8 @@ router.post('/send-estimate', async (req, res) => {
       template.subject = customSubject;
     }
 
-    // Send email using contractor email service
-    const result = await ContractorEmailService.sendContractorEmail({
+    // Send email using new contractor email service
+    const result = await contractorEmailService.sendContractorEmail({
       contractorEmail,
       contractorName,
       clientEmail,
