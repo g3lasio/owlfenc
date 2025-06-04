@@ -1489,6 +1489,18 @@ export default function EstimatesWizardFixed() {
     }));
   };
 
+  // Update item description
+  const updateItemDescription = (itemId: string, newDescription: string) => {
+    setEstimate(prev => ({
+      ...prev,
+      items: prev.items.map(item =>
+        item.id === itemId
+          ? { ...item, description: newDescription }
+          : item
+      )
+    }));
+  };
+
   // Remove item from estimate
   const removeItemFromEstimate = (itemId: string) => {
     setEstimate(prev => ({
@@ -2808,7 +2820,13 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div className="flex-1 min-w-0">
                           <h4 className="font-medium truncate">{item.name}</h4>
-                          <p className="text-sm text-muted-foreground line-clamp-2">{item.description}</p>
+                          <textarea
+                            value={item.description}
+                            onChange={(e) => updateItemDescription(item.id, e.target.value)}
+                            className="w-full text-sm text-muted-foreground bg-transparent border border-gray-300 rounded px-2 py-1 mt-1 resize-none"
+                            rows={2}
+                            placeholder="Descripción del material..."
+                          />
                           <div className="flex items-center gap-2 mt-2">
                             <span className="text-sm">$</span>
                             <Input
