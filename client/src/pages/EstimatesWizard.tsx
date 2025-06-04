@@ -2237,8 +2237,12 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
         body: JSON.stringify(estimateData),
       });
 
+      console.log('📄 Respuesta del servidor:', response.status, response.statusText);
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error('❌ Error del servidor PDF:', errorText);
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
 
       const blob = await response.blob();
