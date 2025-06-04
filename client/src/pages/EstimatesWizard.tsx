@@ -2187,42 +2187,52 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
       const templateData = convertEstimateDataToTemplate(estimate, companyData);
       const unifiedHtml = generateUnifiedEstimateHTML(templateData);
       
-      // Preparar datos para PDF Monkey
+      // Preparar datos para PDF Monkey con validación completa
       const estimateData = {
         estimateNumber: estimate.estimateNumber || `EST-${Date.now()}`,
         date: new Date().toLocaleDateString(),
         validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
         client: {
           name: estimate.client?.name || 'Cliente Sin Nombre',
-          email: estimate.client?.email || '',
-          address: estimate.client?.address || '',
-          phone: estimate.client?.phone || ''
+          email: estimate.client?.email || 'cliente@ejemplo.com',
+          address: estimate.client?.address || estimate.client?.fullAddress || 'Dirección no especificada',
+          phone: estimate.client?.phone || '555-0000'
         },
         contractor: {
           companyName: userProfile?.company || 'Owl Fence',
           name: userProfile?.name || userProfile?.company || 'Owl Fence',
           email: userProfile?.email || 'info@owlfenc.com',
-          phone: userProfile?.phone || '',
-          address: userProfile?.address || '',
-          city: userProfile?.city || '',
-          state: userProfile?.state || '',
-          zipCode: userProfile?.zipCode || ''
+          phone: userProfile?.phone || '202-549-3519',
+          address: userProfile?.address || '2901 Owens Court',
+          city: userProfile?.city || 'Fairfield',
+          state: userProfile?.state || 'California',
+          zipCode: userProfile?.zipCode || '94534'
         },
         project: {
-          type: 'Construcción de Cerca',
-          description: estimate.projectDescription || 'Proyecto de construcción',
-          location: estimate.client?.address || '',
-          scopeOfWork: estimate.notes || 'Construcción de cerca según especificaciones'
+          type: estimate.projectType || 'Fence Installation',
+          description: estimate.projectDescription || estimate.title || 'Proyecto de construcción de cerca',
+          location: estimate.client?.address || estimate.client?.fullAddress || 'Ubicación del proyecto',
+          scopeOfWork: estimate.notes || estimate.projectDescription || 'Construcción de cerca según especificaciones'
         },
-        items: estimate.items || [],
-        subtotal: estimate.subtotal || 0,
-        tax: estimate.taxAmount || 0,
-        taxRate: estimate.taxRate || 10,
-        total: estimate.total || 0,
-        notes: estimate.notes || ''
+        items: (estimate.items || []).map(item => ({
+          id: item.id || Date.now().toString(),
+          name: item.name || item.material || 'Material',
+          description: item.description || item.details || 'Sin descripción',
+          quantity: item.quantity || 1,
+          unit: item.unit || 'unidad',
+          unitPrice: item.unitPrice || item.price || 0,
+          total: item.total || (item.price * item.quantity) || 0
+        })),
+        subtotal: estimate.subtotal || estimate.projectTotalCosts?.subtotal || 0,
+        tax: estimate.taxAmount || estimate.projectTotalCosts?.tax || 0,
+        taxRate: Math.min(estimate.taxRate || 10, 100), // Máximo 100%
+        total: estimate.total || estimate.projectTotalCosts?.total || 0,
+        notes: estimate.notes || 'Estimado generado por Owl Fence'
       };
 
-      const response = await fetch('/api/pdf-monkey/estimate-simple', {
+      console.log('📤 Enviando datos a PDF Monkey:', estimateData);
+      
+      const response = await fetch('/api/pdf-monkey/estimate-basic', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(estimateData),

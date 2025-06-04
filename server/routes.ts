@@ -1047,6 +1047,17 @@ Output in English regardless of input language. Make it suitable for contracts a
   app.post("/api/pdf-monkey/estimate-simple", pdfMonkeyRoutes.generateSimpleEstimatePDF);
   app.get("/api/pdf-monkey/health", pdfMonkeyRoutes.checkPDFMonkeyHealth);
   app.get("/api/pdf-monkey/templates", pdfMonkeyRoutes.listPDFTemplates);
+  
+  // Rutas específicas para templates básico y premium
+  app.post("/api/pdf-monkey/estimate-basic", async (req: Request, res: Response) => {
+    req.body.templateId = 'DF24FD81-01C5-4054-BDCF-19ED1DFCD763';
+    return pdfMonkeyRoutes.generateSimpleEstimatePDF(req, res);
+  });
+  
+  app.post("/api/pdf-monkey/estimate-premium", async (req: Request, res: Response) => {
+    req.body.templateId = '2E4DC55E-044E-4FD3-B511-FEBF950071FA';
+    return pdfMonkeyRoutes.generateSimpleEstimatePDF(req, res);
+  });
 
   // Registrar rutas del procesador de contratos PDF
   app.use("/api/pdf-contract-processor", pdfContractProcessorRoutes);

@@ -105,7 +105,7 @@ class PDFMonkeyService {
    */
   async generateEstimatePDF(data: EstimateData, templateId?: string): Promise<Buffer> {
     console.log('📄 [PDF-Monkey] Iniciando generación de estimado PDF...');
-    console.log('📄 [PDF-Monkey] Template ID:', templateId || 'sin especificar');
+    console.log('📄 [PDF-Monkey] Template ID:', templateId || 'usando básico por defecto');
     console.log('📄 [PDF-Monkey] Datos del estimado:', {
       estimateNumber: data.estimateNumber,
       clientName: data.client.name,
@@ -118,8 +118,8 @@ class PDFMonkeyService {
     }
 
     try {
-      // Usar template por defecto si no se proporciona
-      const finalTemplateId = templateId || 'estimate_default';
+      // Usar template básico de Owl Fence por defecto
+      const finalTemplateId = templateId || 'DF24FD81-01C5-4054-BDCF-19ED1DFCD763';
       
       // Preparar datos para PDF Monkey
       const pdfData = {
