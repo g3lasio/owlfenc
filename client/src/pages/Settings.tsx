@@ -132,17 +132,9 @@ export default function Settings() {
         case 'stripe':
           window.open('/api/stripe/auth', '_blank');
           break;
-        case 'email-provider':
-          window.open('/api/contractor-email/setup', '_blank');
-          break;
-        case 'resend':
-          window.open('/api/resend/setup', '_blank');
-          break;
-        case 'sendgrid':
-          toast({
-            title: "SendGrid ya está configurado",
-            description: "El servicio de correo SendGrid está activo y funcionando.",
-          });
+        case 'email-setup':
+          // Abrir modal o página de configuración de email unificada
+          window.open('/settings/email-setup', '_blank');
           break;
         default:
           toast({
@@ -913,25 +905,11 @@ export default function Settings() {
                       service: 'stripe'
                     },
                     { 
-                      name: "Email Provider", 
-                      description: "Configurar tu proveedor de correo personal (Gmail, Outlook, etc.)", 
+                      name: "Configuración de Email", 
+                      description: "Configurar tu proveedor de email para estimados y contratos", 
                       connected: emailProviderStatus.connected,
                       icon: Mail,
-                      service: 'email-provider'
-                    },
-                    { 
-                      name: "Resend API", 
-                      description: "Servicio de email profesional con API", 
-                      connected: resendStatus.connected,
-                      icon: Send,
-                      service: 'resend'
-                    },
-                    { 
-                      name: "SendGrid", 
-                      description: "Sistema oficial de envío de correos", 
-                      connected: sendgridStatus.connected,
-                      icon: Mail,
-                      service: 'sendgrid'
+                      service: 'email-setup'
                     },
                   ].map((integration, i) => (
                     <div key={i} className="flex items-center justify-between p-4 border rounded-lg">
