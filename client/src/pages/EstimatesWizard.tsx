@@ -20,6 +20,7 @@ import { collection, query, where, getDocs, addDoc, Timestamp } from 'firebase/f
 import { db } from '@/lib/firebase';
 import { MaterialInventoryService } from '../services/materialInventoryService';
 import { EmailService } from '../services/emailService';
+import { checkEmailVerification } from '@/lib/firebase';
 import { 
   Search, 
   Plus, 
@@ -150,6 +151,7 @@ export default function EstimatesWizardFixed() {
   const [isSaving, setIsSaving] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
   
   // Smart Search states
   const [showSmartSearchDialog, setShowSmartSearchDialog] = useState(false);
@@ -532,6 +534,21 @@ export default function EstimatesWizardFixed() {
       });
     }
   }, [contractor]);
+
+  // Check email verification status on component load
+  useEffect(() => {
+    const checkEmailStatus = async () => {
+      try {
+        const result = await checkEmailVerification();
+        setEmailVerified(result.verified);
+      } catch (error) {
+        console.error('Error checking email verification:', error);
+        setEmailVerified(false);
+      }
+    };
+
+    checkEmailStatus();
+  }, []);
 
   const loadClients = async () => {
     try {
@@ -1991,6 +2008,16 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
       return;
     }
 
+    // Check email verification status before sending
+    if (!emailVerified) {
+      toast({
+        title: "Email Verification Required",
+        description: "Please verify your email address before sending estimates.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSendingEmail(true);
     
     try {
@@ -3282,9 +3309,18 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
                       <div className="mt-3 pt-3 border-t border-gray-700">
                         <div className="text-xs text-gray-400">
                           {estimate.client.email ? (
-                            <span className="text-green-400">
-                              ✓ Email: {estimate.client.email}
-                            </span>
+                            emailVerified ? (
+                              <span className="text-green-400">
+                                ✓ Email: {estimate.client.email}
+                              </span>
+                            ) : (
+                              <div className="mt-2">
+                                <EmailVerification 
+                                  showAsDialog={false}
+                                  onVerificationComplete={() => setEmailVerified(true)}
+                                />
+                              </div>
+                            )
                           ) : (
                             <span className="text-amber-400">
                               ⚠ Cliente sin email registrado
