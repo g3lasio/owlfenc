@@ -56,7 +56,6 @@ import { registerLaborDeepSearchRoutes } from "./routes/laborDeepSearchRoutes"; 
 import legalDefenseRoutes from "./routes/legal-defense-routes"; // Import Legal Defense Engine routes
 import unifiedContractRoutes from "./routes/unifiedContractRoutes"; // Import Unified Contract Management routes
 import pdfContractProcessorRoutes from "./routes/pdf-contract-processor"; // Import PDF Contract Processor routes
-import unifiedEmailRoutes from "./routes/unified-email-routes"; // Import Unified Email routes
 import express from "express"; // Import express to use express.raw
 
 // Initialize OpenAI API
@@ -4158,13 +4157,6 @@ Output in English regardless of input language. Make it suitable for contracts a
 
   // Registrar rutas del módulo Labor DeepSearch IA
   registerLaborDeepSearchRoutes(app);
-
-  // Registrar rutas unificadas de email
-  app.use("/api/unified-email", unifiedEmailRoutes);
-
-  // Registrar rutas de automatización con IA
-  const aiAutomationRoutes = (await import("./routes/ai-automation-routes")).default;
-  app.use("/api/ai-automation", aiAutomationRoutes);
 
   // Crear y retornar el servidor HTTP
   const server = createServer(app);

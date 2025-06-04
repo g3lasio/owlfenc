@@ -47,8 +47,6 @@ import UnifiedContractManager from "@/pages/UnifiedContractManager";
 import SmartContractWizard from "@/pages/SmartContractWizard";
 import AITestingPage from "@/pages/AITestingPage";
 import DeepSearchDemo from "@/pages/DeepSearchDemo";
-import EmailSetup from "@/pages/EmailSetup";
-import AIAutomation from "@/pages/AIAutomation";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import AuthDiagnostic from './pages/AuthDiagnostic';
@@ -186,12 +184,6 @@ function Router() {
       </Route>
       <Route path="/deepsearch-demo">
         {() => <ProtectedRoute component={DeepSearchDemo} />}
-      </Route>
-      <Route path="/email-setup">
-        {() => <ProtectedRoute component={EmailSetup} />}
-      </Route>
-      <Route path="/ai-automation">
-        {() => <ProtectedRoute component={AIAutomation} />}
       </Route>
       <Route path="/estimates">
         {() => <ProtectedRoute component={EstimatesWizard} />}

@@ -55,12 +55,6 @@ export const navigationGroups: NavigationGroup[] = [
     title: "features",
     items: [
       {
-        id: "ai-automation",
-        label: "Automatización con IA",
-        path: "/ai-automation",
-        icon: "ri-robot-2-line"
-      },
-      {
         id: "estimates",
         label: "navigation.estimateGenerator",
         path: "/estimates",
