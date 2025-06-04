@@ -77,7 +77,7 @@ export default function EmailSetup() {
                   </p>
                   
                   <Button 
-                    onClick={() => navigate('/settings')}
+                    onClick={() => setLocation('/settings')}
                     className="mt-4"
                   >
                     Ir a Configuraciones Ahora
