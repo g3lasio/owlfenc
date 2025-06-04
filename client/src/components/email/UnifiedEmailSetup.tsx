@@ -110,10 +110,11 @@ export default function UnifiedEmailSetup({
           description: "Tu email está listo para ser configurado.",
         });
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error validating email:', error);
       toast({
         title: "Error de validación",
-        description: "No se pudo validar el email.",
+        description: error.response?.data?.message || "No se pudo validar el email.",
         variant: "destructive",
       });
     }
