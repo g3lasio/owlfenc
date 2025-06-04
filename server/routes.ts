@@ -4162,6 +4162,10 @@ Output in English regardless of input language. Make it suitable for contracts a
   // Registrar rutas unificadas de email
   app.use("/api/unified-email", unifiedEmailRoutes);
 
+  // Registrar rutas de automatización con IA
+  const aiAutomationRoutes = (await import("./routes/ai-automation-routes")).default;
+  app.use("/api/ai-automation", aiAutomationRoutes);
+
   // Crear y retornar el servidor HTTP
   const server = createServer(app);
   return server;
