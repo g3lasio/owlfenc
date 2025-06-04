@@ -840,11 +840,27 @@ export default function EstimatesWizardFixed() {
         // Parse estimate items from project data with better price handling
         let estimateItems: EstimateItem[] = [];
         
+        console.log('💰 DATOS COMPLETOS DEL PROYECTO:', projectData);
         console.log('💰 Analizando datos de precios del proyecto:', {
           items: projectData.items,
           materialCosts: projectData.projectTotalCosts?.materialCosts,
           estimateHtml: !!projectData.estimateHtml
         });
+        
+        // Log raw price data for debugging
+        if (projectData.items) {
+          console.log('📊 PRECIOS RAW en items array:');
+          projectData.items.forEach((item: any, i: number) => {
+            console.log(`  Item ${i}:`, {
+              name: item.name,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              price: item.price,
+              total: item.total || item.totalPrice,
+              rawData: item
+            });
+          });
+        }
 
         // Priority 1: Try materialCosts.items (most structured)
         if (projectData.projectTotalCosts?.materialCosts?.items) {
