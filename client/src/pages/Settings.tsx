@@ -132,11 +132,11 @@ export default function Settings() {
         case 'stripe':
           window.open('/api/stripe/auth', '_blank');
           break;
-        case 'email-provider':
-          window.open('/api/contractor-email/setup', '_blank');
-          break;
-        case 'resend':
-          window.open('/api/resend/setup', '_blank');
+        case 'centralized-email':
+          toast({
+            title: "Sistema de Correos Configurado",
+            description: "El sistema centralizado está listo para enviar estimados y contratos.",
+          });
           break;
         case 'sendgrid':
           toast({
@@ -175,11 +175,11 @@ export default function Settings() {
         case 'stripe':
           window.open('/api/stripe/config', '_blank');
           break;
-        case 'email-provider':
-          window.open('/api/contractor-email/config', '_blank');
-          break;
-        case 'resend':
-          window.open('/api/resend/config', '_blank');
+        case 'centralized-email':
+          toast({
+            title: "Configuración del Sistema de Correos",
+            description: "El sistema centralizado funciona automáticamente. No requiere configuración adicional.",
+          });
           break;
         case 'sendgrid':
           toast({
@@ -913,18 +913,11 @@ export default function Settings() {
                       service: 'stripe'
                     },
                     { 
-                      name: "Email Provider", 
-                      description: "Configurar tu proveedor de correo personal (Gmail, Outlook, etc.)", 
-                      connected: emailProviderStatus.connected,
-                      icon: Mail,
-                      service: 'email-provider'
-                    },
-                    { 
-                      name: "Resend API", 
-                      description: "Servicio de email profesional con API", 
+                      name: "Sistema de Correos", 
+                      description: "Configuración para envío de estimados y contratos por email", 
                       connected: resendStatus.connected,
-                      icon: Send,
-                      service: 'resend'
+                      icon: Mail,
+                      service: 'centralized-email'
                     },
                     { 
                       name: "SendGrid", 

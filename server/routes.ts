@@ -56,6 +56,7 @@ import { registerLaborDeepSearchRoutes } from "./routes/laborDeepSearchRoutes"; 
 import legalDefenseRoutes from "./routes/legal-defense-routes"; // Import Legal Defense Engine routes
 import unifiedContractRoutes from "./routes/unifiedContractRoutes"; // Import Unified Contract Management routes
 import pdfContractProcessorRoutes from "./routes/pdf-contract-processor"; // Import PDF Contract Processor routes
+import centralizedEmailRoutes from "./routes/centralized-email-routes"; // Import Centralized Email routes
 import express from "express"; // Import express to use express.raw
 
 // Initialize OpenAI API
@@ -1078,6 +1079,9 @@ Output in English regardless of input language. Make it suitable for contracts a
 
   // Registrar rutas del sistema de pagos para contratistas
   app.use("/api/contractor-payments", contractorPaymentRoutes);
+
+  // Registrar rutas del sistema de correos centralizado
+  app.use("/api/centralized-email", centralizedEmailRoutes);
 
   // generate estimate pdf basic template
 
