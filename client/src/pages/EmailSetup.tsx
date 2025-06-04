@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'wouter';
+import { useLocation } from 'wouter';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, CheckCircle } from "lucide-react";
@@ -11,7 +11,7 @@ import UnifiedEmailSetup from "@/components/email/UnifiedEmailSetup";
 import { useToast } from "@/hooks/use-toast";
 
 export default function EmailSetup() {
-  const [navigate] = useNavigate();
+  const [location, setLocation] = useLocation();
   const [isComplete, setIsComplete] = useState(false);
   const [emailConfig, setEmailConfig] = useState<any>(null);
   const { toast } = useToast();
@@ -27,7 +27,7 @@ export default function EmailSetup() {
 
     // Redirigir de vuelta a settings después de un momento
     setTimeout(() => {
-      navigate('/settings');
+      setLocation('/settings');
     }, 2000);
   };
 
