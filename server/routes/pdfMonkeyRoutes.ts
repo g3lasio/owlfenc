@@ -267,11 +267,28 @@ export async function generateSimpleEstimatePDF(req: Request, res: Response) {
 
   } catch (error: any) {
     console.error('❌ [API] Error generando PDF simple:', error);
+    console.error('❌ [API] Error type:', typeof error);
+    console.error('❌ [API] Error name:', error?.name);
+    console.error('❌ [API] Error message:', error?.message);
+    console.error('❌ [API] Error stack:', error?.stack);
+    
+    // Información adicional del error de axios si existe
+    if (error?.response) {
+      console.error('❌ [API] Axios response status:', error.response.status);
+      console.error('❌ [API] Axios response data:', error.response.data);
+      console.error('❌ [API] Axios response headers:', error.response.headers);
+    }
+    
+    if (error?.request) {
+      console.error('❌ [API] Axios request config:', error.config);
+    }
     
     res.status(500).json({
       success: false,
       error: 'Error generando PDF simple',
-      details: error.message
+      details: error?.message || 'Unknown error',
+      errorType: error?.name || 'Unknown',
+      timestamp: new Date().toISOString()
     });
   }
 }
