@@ -24,6 +24,7 @@ import {
   Download,
   Upload,
   Mail,
+  Send,
   Phone,
   Users,
   Settings2,
@@ -45,6 +46,8 @@ export default function Settings() {
   const [hubspotStatus, setHubspotStatus] = useState({ connected: false, loading: true });
   const [squareStatus, setSquareStatus] = useState({ connected: false, loading: true });
   const [stripeStatus, setStripeStatus] = useState({ connected: false, loading: true });
+  const [emailProviderStatus, setEmailProviderStatus] = useState({ connected: false, loading: true });
+  const [resendStatus, setResendStatus] = useState({ connected: false, loading: true });
   const [sendgridStatus, setSendgridStatus] = useState({ connected: false, loading: true });
   const [showTooltips, setShowTooltips] = useState(true);
   const [language, setLanguage] = useState("en");
@@ -89,6 +92,22 @@ export default function Settings() {
         setStripeStatus({ connected: false, loading: false });
       }
 
+      // Check Email Provider status
+      try {
+        const emailProviderResponse = await axios.get('/api/contractor-email/status');
+        setEmailProviderStatus({ connected: emailProviderResponse.data.connected, loading: false });
+      } catch (error) {
+        setEmailProviderStatus({ connected: false, loading: false });
+      }
+
+      // Check Resend status
+      try {
+        const resendResponse = await axios.get('/api/resend/status');
+        setResendStatus({ connected: resendResponse.data.connected, loading: false });
+      } catch (error) {
+        setResendStatus({ connected: false, loading: false });
+      }
+
       // Check SendGrid status (already connected since we have the API key)
       setSendgridStatus({ connected: true, loading: false });
 
@@ -112,6 +131,12 @@ export default function Settings() {
           break;
         case 'stripe':
           window.open('/api/stripe/auth', '_blank');
+          break;
+        case 'email-provider':
+          window.open('/api/contractor-email/setup', '_blank');
+          break;
+        case 'resend':
+          window.open('/api/resend/setup', '_blank');
           break;
         case 'sendgrid':
           toast({
@@ -149,6 +174,12 @@ export default function Settings() {
           break;
         case 'stripe':
           window.open('/api/stripe/config', '_blank');
+          break;
+        case 'email-provider':
+          window.open('/api/contractor-email/config', '_blank');
+          break;
+        case 'resend':
+          window.open('/api/resend/config', '_blank');
           break;
         case 'sendgrid':
           toast({
@@ -880,6 +911,20 @@ export default function Settings() {
                       connected: stripeStatus.connected,
                       icon: DollarSign,
                       service: 'stripe'
+                    },
+                    { 
+                      name: "Email Provider", 
+                      description: "Configurar tu proveedor de correo personal (Gmail, Outlook, etc.)", 
+                      connected: emailProviderStatus.connected,
+                      icon: Mail,
+                      service: 'email-provider'
+                    },
+                    { 
+                      name: "Resend API", 
+                      description: "Servicio de email profesional con API", 
+                      connected: resendStatus.connected,
+                      icon: Send,
+                      service: 'resend'
                     },
                     { 
                       name: "SendGrid", 
