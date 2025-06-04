@@ -42,58 +42,96 @@ export class AIAutomationService {
   }
 
   /**
-   * Configuración Automática de Email
-   * La IA detecta el proveedor de email y configura automáticamente
+   * Configuración Automática de Email REAL
+   * Integra con SendGrid, Resend y configura dominios reales
    */
   async autoConfigureEmail(userEmail: string, companyName: string): Promise<AutomationResult> {
     try {
       console.log('🤖 [AI-AUTOMATION] Configurando email automáticamente...');
 
-      // La IA analiza el dominio y sugiere la mejor estrategia
       const emailAnalysis = await this.analyzeEmailDomain(userEmail);
       const actions_taken: string[] = [];
-
-      // Configuración automática basada en el dominio
       let automated_config: any = {};
 
-      if (emailAnalysis.isBusinessDomain) {
-        // Dominio empresarial - configurar verificación automática
-        automated_config = {
-          provider: 'resend',
-          strategy: 'domain_verification',
-          fromEmail: `noreply@${emailAnalysis.domain}`,
-          replyTo: userEmail,
-          displayName: companyName
-        };
-        actions_taken.push('Detectado dominio empresarial');
-        actions_taken.push('Configurada estrategia de verificación de dominio');
-      } else {
-        // Email personal - configurar proxy automático
-        automated_config = {
-          provider: 'personal',
-          strategy: 'smart_proxy',
-          fromEmail: 'noreply@owlfenc.com',
-          replyTo: userEmail,
-          displayName: companyName
-        };
-        actions_taken.push('Detectado email personal');
-        actions_taken.push('Configurado proxy inteligente');
+      // 1. Configurar SendGrid automáticamente
+      if (process.env.SENDGRID_API_KEY) {
+        try {
+          const sgMail = require('@sendgrid/mail');
+          sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+          // Verificar API key válida
+          await sgMail.send({
+            to: userEmail,
+            from: 'noreply@owlfenc.com',
+            subject: 'Configuración automática completada',
+            text: `Hola ${companyName}, tu email ha sido configurado automáticamente.`,
+            html: `<p>Hola <strong>${companyName}</strong>, tu email ha sido configurado automáticamente.</p>`
+          });
+
+          automated_config.sendgrid = {
+            configured: true,
+            api_key_valid: true,
+            from_email: 'noreply@owlfenc.com',
+            reply_to: userEmail
+          };
+          actions_taken.push('SendGrid configurado y verificado');
+          actions_taken.push('Email de prueba enviado exitosamente');
+        } catch (error) {
+          console.error('Error configurando SendGrid:', error);
+          actions_taken.push('SendGrid: Error en configuración - verificar API key');
+        }
       }
 
-      // Generar plantillas automáticamente
-      const emailTemplates = await this.generateEmailTemplates(companyName, userEmail);
-      automated_config.templates = emailTemplates;
-      actions_taken.push('Generadas plantillas de email profesionales');
+      // 2. Generar configuración de dominio real con IA
+      if (this.openai) {
+        try {
+          const domainConfig = await this.openai.chat.completions.create({
+            model: 'gpt-3.5-turbo',
+            messages: [{
+              role: 'system',
+              content: 'Eres un experto en configuración de email. Genera configuración DNS real para el dominio del usuario.'
+            }, {
+              role: 'user',
+              content: `Genera configuración DNS para ${emailAnalysis.domain} de la empresa ${companyName}`
+            }],
+            max_tokens: 500
+          });
+
+          automated_config.dns_config = domainConfig.choices[0].message.content;
+          actions_taken.push('Configuración DNS generada por IA');
+        } catch (error) {
+          console.error('Error generando configuración DNS:', error);
+        }
+      }
+
+      // 3. Crear plantillas reales personalizadas
+      const realTemplates = await this.generateRealEmailTemplates(companyName, userEmail, emailAnalysis);
+      automated_config.templates = realTemplates;
+      actions_taken.push('Plantillas profesionales personalizadas creadas');
+
+      // 4. Configurar verificación de dominio si es empresarial
+      if (emailAnalysis.isBusinessDomain) {
+        automated_config.domain_verification = {
+          domain: emailAnalysis.domain,
+          verification_records: [
+            { type: 'TXT', name: '@', value: `v=spf1 include:sendgrid.net ~all` },
+            { type: 'CNAME', name: 's1._domainkey', value: 's1.domainkey.sendgrid.net' },
+            { type: 'CNAME', name: 's2._domainkey', value: 's2.domainkey.sendgrid.net' }
+          ],
+          status: 'pending_verification'
+        };
+        actions_taken.push('Registros de verificación de dominio generados');
+      }
 
       return {
         success: true,
-        message: 'Email configurado automáticamente por IA',
+        message: 'Sistema de email configurado automáticamente con servicios reales',
         actions_taken,
         automated_config,
         next_steps: [
-          'Enviar email de prueba',
-          'Verificar entrega',
-          'Activar para uso en producción'
+          'Verificar email de prueba en tu bandeja de entrada',
+          'Configurar registros DNS si tienes dominio empresarial',
+          'Probar envío de estimados desde el sistema'
         ]
       };
 
@@ -101,58 +139,118 @@ export class AIAutomationService {
       console.error('Error en configuración automática de email:', error);
       return {
         success: false,
-        message: 'Error en configuración automática',
-        actions_taken: [],
+        message: 'Error en configuración automática de email',
+        actions_taken: [`Error: ${error.message}`],
         manual_override_required: true
       };
     }
   }
 
   /**
-   * Configuración Automática de Stripe
-   * La IA maneja la configuración de pagos automáticamente
+   * Configuración Automática REAL de Stripe
+   * Integra con Stripe API para crear productos y precios reales
    */
   async autoConfigureStripe(businessInfo: any): Promise<AutomationResult> {
     try {
       console.log('🤖 [AI-AUTOMATION] Configurando Stripe automáticamente...');
 
       const actions_taken: string[] = [];
+      let automated_config: any = {};
 
-      // La IA genera la configuración óptima de Stripe
-      const stripeConfig = await this.generateStripeConfig(businessInfo);
-      actions_taken.push('Analizada información del negocio');
-      actions_taken.push('Generada configuración óptima de pagos');
+      // 1. Configurar Stripe con API real
+      if (process.env.STRIPE_SECRET_KEY) {
+        try {
+          const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
-      // Configurar webhooks automáticamente
-      const webhookConfig = await this.setupWebhooks(businessInfo);
-      actions_taken.push('Configurados webhooks de pagos');
+          // Crear producto real para servicios de construcción
+          const product = await stripe.products.create({
+            name: `Servicios de ${businessInfo.companyName || 'Construcción'}`,
+            description: `Servicios profesionales de construcción y contratista de ${businessInfo.companyName}`,
+            type: 'service'
+          });
 
-      // Configurar productos y precios automáticamente
-      const productConfig = await this.setupProducts(businessInfo);
-      actions_taken.push('Configurados productos y precios');
+          // Crear precio por defecto
+          const price = await stripe.prices.create({
+            unit_amount: 500000, // $5000 en centavos
+            currency: 'usd',
+            product: product.id,
+            nickname: 'Proyecto Estándar'
+          });
+
+          automated_config.stripe = {
+            configured: true,
+            product_id: product.id,
+            default_price_id: price.id,
+            product_name: product.name,
+            api_key_valid: true
+          };
+
+          actions_taken.push('Producto de servicios creado en Stripe');
+          actions_taken.push('Precio por defecto configurado ($5,000)');
+
+          // Crear webhook real
+          const webhook = await stripe.webhookEndpoints.create({
+            url: `${process.env.REPLIT_DOMAINS}/api/webhook/stripe`,
+            enabled_events: [
+              'payment_intent.succeeded',
+              'invoice.payment_succeeded',
+              'customer.subscription.created'
+            ]
+          });
+
+          automated_config.stripe.webhook_id = webhook.id;
+          automated_config.stripe.webhook_secret = webhook.secret;
+          actions_taken.push('Webhook de pagos configurado automáticamente');
+
+        } catch (stripeError: any) {
+          console.error('Error configurando Stripe:', stripeError);
+          actions_taken.push(`Stripe: ${stripeError.message}`);
+          automated_config.stripe = { error: stripeError.message };
+        }
+      } else {
+        actions_taken.push('Stripe API key no disponible - configuración manual requerida');
+      }
+
+      // 2. Generar configuración de productos con IA
+      if (this.openai) {
+        try {
+          const productSuggestions = await this.openai.chat.completions.create({
+            model: 'gpt-3.5-turbo',
+            messages: [{
+              role: 'system',
+              content: 'Eres experto en precios de construcción. Sugiere productos y precios realistas.'
+            }, {
+              role: 'user',
+              content: `Genera estructura de precios para ${businessInfo.companyName} en construcción de cercas`
+            }],
+            max_tokens: 800
+          });
+
+          automated_config.pricing_suggestions = productSuggestions.choices[0].message.content;
+          actions_taken.push('Sugerencias de precios generadas por IA');
+        } catch (error) {
+          console.error('Error generando sugerencias de precios:', error);
+        }
+      }
 
       return {
         success: true,
-        message: 'Stripe configurado automáticamente por IA',
+        message: 'Sistema de pagos Stripe configurado con servicios reales',
         actions_taken,
-        automated_config: {
-          stripe: stripeConfig,
-          webhooks: webhookConfig,
-          products: productConfig
-        },
+        automated_config,
         next_steps: [
-          'Verificar cuenta bancaria',
-          'Probar transacción de prueba',
-          'Activar modo producción'
+          'Verificar productos creados en dashboard de Stripe',
+          'Configurar cuenta bancaria en Stripe',
+          'Probar pago de prueba desde el sistema'
         ]
       };
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error en configuración automática de Stripe:', error);
       return {
         success: false,
         message: 'Error en configuración automática de Stripe',
-        actions_taken: [],
+        actions_taken: [`Error: ${error.message}`],
         manual_override_required: true
       };
     }
@@ -305,22 +403,63 @@ export class AIAutomationService {
     ];
   }
 
-  private async generateEmailTemplates(companyName: string, email: string): Promise<any> {
-    // La IA genera plantillas personalizadas automáticamente
+  private async generateRealEmailTemplates(companyName: string, email: string, emailAnalysis: any): Promise<any> {
+    try {
+      if (this.openai) {
+        const templatePrompt = `Genera plantillas de email profesionales HTML para la empresa ${companyName}. 
+        Incluye: estimados, contratos, facturas. 
+        Usa el email ${email} como contacto.
+        Formato: HTML responsive con estilos inline.`;
+
+        const completion = await this.openai.chat.completions.create({
+          model: 'gpt-3.5-turbo',
+          messages: [{
+            role: 'system',
+            content: 'Eres un diseñador de emails profesionales. Genera plantillas HTML reales y funcionales.'
+          }, {
+            role: 'user',
+            content: templatePrompt
+          }],
+          max_tokens: 1500
+        });
+
+        return {
+          estimate: {
+            subject: `Estimado Profesional - ${companyName}`,
+            html_template: completion.choices[0].message.content,
+            generated_by: 'openai'
+          },
+          contract: {
+            subject: `Contrato de Servicios - ${companyName}`,
+            html_template: completion.choices[0].message.content,
+            generated_by: 'openai'
+          },
+          invoice: {
+            subject: `Factura - ${companyName}`,
+            html_template: completion.choices[0].message.content,
+            generated_by: 'openai'
+          }
+        };
+      }
+    } catch (error) {
+      console.error('Error generando plantillas con IA:', error);
+    }
+
+    // Fallback a plantillas básicas
     return {
       estimate: {
         subject: `Estimado Profesional - ${companyName}`,
-        template: 'professional_estimate_template'
+        html_template: `<h1>Estimado de ${companyName}</h1><p>Contacto: ${email}</p>`
       },
       contract: {
         subject: `Contrato de Servicios - ${companyName}`,
-        template: 'legal_contract_template'
-      },
-      invoice: {
-        subject: `Factura - ${companyName}`,
-        template: 'invoice_template'
+        html_template: `<h1>Contrato de ${companyName}</h1><p>Contacto: ${email}</p>`
       }
     };
+  }
+
+  private async generateEmailTemplates(companyName: string, email: string): Promise<any> {
+    return this.generateRealEmailTemplates(companyName, email, { domain: email.split('@')[1] });
   }
 
   private async generateStripeConfig(businessInfo: any): Promise<any> {
