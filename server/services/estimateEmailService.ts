@@ -377,13 +377,37 @@ export class EstimateEmailService {
         }
 
         .approve-button {
-          background-color: #10b981;
-          color: #ffffff;
+          background-color: #10b981 !important;
+          color: #ffffff !important;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .approve-button:hover {
+          background-color: #059669 !important;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
         }
 
         .adjust-button {
-          background-color: #f59e0b;
-          color: #ffffff;
+          background-color: #f59e0b !important;
+          color: #ffffff !important;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .adjust-button:hover {
+          background-color: #d97706 !important;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 8px rgba(245, 158, 11, 0.3);
+        }
+
+        .email-button-cell {
+          transition: all 0.2s ease;
+        }
+
+        .email-button-cell:hover {
+          transform: translateY(-1px);
         }
 
         /* Formularios inline */
@@ -675,9 +699,10 @@ export class EstimateEmailService {
             <table class="email-button-table" cellpadding="0" cellspacing="0" border="0" style="display: inline-block; margin: 0 8px;">
               <tr>
                 <td class="email-button-cell" style="background-color: #10b981; border-radius: 8px;">
-                  <a href="javascript:void(0)" onclick="showApprovalForm(); return false;" 
+                  <a href="#approvalForm" 
                      class="email-button-link approve-button" 
-                     style="display: block; padding: 15px 30px; text-decoration: none; color: #ffffff; font-weight: 600; font-size: 16px; text-align: center; border-radius: 8px; min-width: 160px;">
+                     style="display: block; padding: 15px 30px; text-decoration: none; color: #ffffff; font-weight: 600; font-size: 16px; text-align: center; border-radius: 8px; min-width: 160px;"
+                     onclick="showApprovalForm(); return true;">
                     ✅ Approve Estimate
                   </a>
                 </td>
@@ -688,9 +713,10 @@ export class EstimateEmailService {
             <table class="email-button-table" cellpadding="0" cellspacing="0" border="0" style="display: inline-block; margin: 0 8px;">
               <tr>
                 <td class="email-button-cell" style="background-color: #f59e0b; border-radius: 8px;">
-                  <a href="javascript:void(0)" onclick="showAdjustmentForm(); return false;" 
+                  <a href="#adjustmentForm" 
                      class="email-button-link adjust-button" 
-                     style="display: block; padding: 15px 30px; text-decoration: none; color: #ffffff; font-weight: 600; font-size: 16px; text-align: center; border-radius: 8px; min-width: 160px;">
+                     style="display: block; padding: 15px 30px; text-decoration: none; color: #ffffff; font-weight: 600; font-size: 16px; text-align: center; border-radius: 8px; min-width: 160px;"
+                     onclick="showAdjustmentForm(); return true;">
                     📝 Request Changes
                   </a>
                 </td>
