@@ -186,6 +186,9 @@ function Router() {
       <Route path="/deepsearch-demo">
         {() => <ProtectedRoute component={DeepSearchDemo} />}
       </Route>
+      <Route path="/email-setup">
+        {() => <ProtectedRoute component={EmailSetup} />}
+      </Route>
       <Route path="/estimates">
         {() => <ProtectedRoute component={EstimatesWizard} />}
       </Route>
