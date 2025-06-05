@@ -873,13 +873,13 @@ export class EstimateEmailService {
                   });
                   
                   if (response.ok) {
-                    showStatus('📝 Change request sent successfully! The contractor will review and respond.', 'success');
+                    showStatus('📝 ¡Solicitud de cambios enviada exitosamente! El contratista revisará y responderá.', 'success');
                     hideAdjustmentForm();
                   } else {
-                    showStatus('❌ There was an error sending your request. Please try again.', 'error');
+                    showStatus('❌ Hubo un error enviando su solicitud. Por favor intente de nuevo.', 'error');
                   }
                 } catch (error) {
-                  showStatus('❌ Connection error. Please check your internet and try again.', 'error');
+                  showStatus('❌ Error de conexión. Por favor verifique su internet e intente de nuevo.', 'error');
                 }
               });
             }

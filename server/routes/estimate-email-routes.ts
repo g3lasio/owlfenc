@@ -1,9 +1,8 @@
 import express from 'express';
-import { SimpleEstimateTracker } from '../services/SimpleEstimateTracker.js';
+import { simpleTracker } from '../services/SimpleEstimateTracker.js';
 import { resendService } from '../services/resendService.js';
 
 const router = express.Router();
-const tracker = new SimpleEstimateTracker();
 
 // Endpoint para aprobación de estimados directamente desde email
 router.post('/approve', async (req, res) => {
@@ -18,7 +17,7 @@ router.post('/approve', async (req, res) => {
     });
 
     // Actualizar estado en el tracker
-    await tracker.updateEstimateStatus(estimateId, 'approved', {
+    await simpleTracker.updateEstimateStatus(estimateId, 'approved', {
       clientName,
       clientEmail,
       approvalDate,
@@ -134,7 +133,7 @@ router.post('/adjust', async (req, res) => {
     });
 
     // Actualizar estado en el tracker
-    await tracker.updateEstimateStatus(estimateId, 'adjustment_requested', {
+    await simpleTracker.updateEstimateStatus(estimateId, 'adjustment_requested', {
       clientName,
       clientEmail,
       clientNotes,
@@ -185,7 +184,7 @@ router.post('/adjust', async (req, res) => {
       </div>
     `;
 
-    await resendEmailService.sendEmail({
+    await resendService.sendEmail({
       to: contractorEmail,
       subject: `📝 Changes Requested for Estimate ${estimateId}`,
       html: contractorNotificationHtml
