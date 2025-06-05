@@ -39,10 +39,8 @@ import ResetPassword from "@/pages/ResetPassword";
 import EmailLinkCallback from "@/pages/EmailLinkCallback";
 import AppleCallback from "@/pages/AppleCallback";
 import SecuritySettings from "@/pages/SecuritySettings";
-import ContractGenerator from "@/pages/ContractGenerator";
 import CyberpunkContractGenerator from "@/pages/CyberpunkContractGenerator";
 import LegalContractEngineFixed from "@/pages/LegalContractEngineFixed";
-import ContractGeneratorSimplified from "@/pages/ContractGeneratorSimplified";
 import UnifiedContractManager from "@/pages/UnifiedContractManager";
 import SmartContractWizard from "@/pages/SmartContractWizard";
 import AITestingPage from "@/pages/AITestingPage";
@@ -170,9 +168,7 @@ function Router() {
       <Route path="/legal-contract-engine">
         {() => <ProtectedRoute component={LegalContractEngineFixed} />}
       </Route>
-      <Route path="/contract-generator-simplified">
-        {() => <ProtectedRoute component={ContractGeneratorSimplified} />}
-      </Route>
+
       <Route path="/unified-contracts">
         {() => <ProtectedRoute component={UnifiedContractManager} />}
       </Route>
