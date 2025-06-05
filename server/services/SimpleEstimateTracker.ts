@@ -100,6 +100,29 @@ class SimpleEstimateTracker {
   }
 
   /**
+   * Update estimate status with additional data
+   */
+  updateEstimateStatus(estimateNumber: string, status: string, additionalData?: any): boolean {
+    const estimate = this.estimates.get(estimateNumber);
+    if (!estimate) {
+      console.log(`❌ [SIMPLE-TRACKER] Estimate ${estimateNumber} not found`);
+      return false;
+    }
+
+    estimate.status = status as any;
+    
+    if (additionalData) {
+      if (status === 'approved') {
+        estimate.approvedAt = new Date(additionalData.approvedAt || Date.now());
+        estimate.approverName = additionalData.clientName;
+      }
+    }
+
+    console.log(`✅ [SIMPLE-TRACKER] Estimate ${estimateNumber} status updated to ${status}`);
+    return true;
+  }
+
+  /**
    * Add adjustment request
    */
   addAdjustmentRequest(estimateNumber: string, adjustmentData: any): boolean {
