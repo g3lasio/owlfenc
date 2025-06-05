@@ -884,8 +884,13 @@ export default function EstimatesWizardFixed() {
         if (projectData.projectTotalCosts?.materialCosts?.items) {
           estimateItems = projectData.projectTotalCosts.materialCosts.items.map((item: any, index: number) => {
             const quantity = parseFloat(item.quantity || item.qty || 1);
-            const price = parseFloat(item.unitPrice || item.price || item.pricePerUnit || 0);
-            const total = parseFloat(item.total || item.totalPrice || 0);
+            const rawPrice = parseFloat(item.unitPrice || item.price || item.pricePerUnit || 0);
+            const rawTotal = parseFloat(item.total || item.totalPrice || 0);
+            
+            // Detectar si los valores están en centavos (valores muy altos para precios normales)
+            // Si el precio unitario es > 1000 y el total/cantidad coincide, probablemente está en centavos
+            const price = rawPrice > 1000 && (rawTotal / quantity / 100) < 500 ? rawPrice / 100 : rawPrice;
+            const total = rawPrice > 1000 && (rawTotal / quantity / 100) < 500 ? rawTotal / 100 : rawTotal;
             
             return {
               id: item.id || `item-${index}`,
@@ -904,8 +909,13 @@ export default function EstimatesWizardFixed() {
         else if (projectData.items && Array.isArray(projectData.items)) {
           estimateItems = projectData.items.map((item: any, index: number) => {
             const quantity = parseFloat(item.quantity || 1);
-            const price = parseFloat(item.unitPrice || item.price || 0);
-            const total = parseFloat(item.totalPrice || item.total || 0);
+            const rawPrice = parseFloat(item.unitPrice || item.price || 0);
+            const rawTotal = parseFloat(item.totalPrice || item.total || 0);
+            
+            // Detectar si los valores están en centavos (valores muy altos para precios normales)
+            // Si el precio unitario es > 1000 y el total/cantidad coincide, probablemente está en centavos
+            const price = rawPrice > 1000 && (rawTotal / quantity / 100) < 500 ? rawPrice / 100 : rawPrice;
+            const total = rawPrice > 1000 && (rawTotal / quantity / 100) < 500 ? rawTotal / 100 : rawTotal;
             
             return {
               id: item.id || `item-${index}`,
