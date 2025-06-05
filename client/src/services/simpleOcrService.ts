@@ -159,13 +159,13 @@ class SimpleOcrService {
   convertProjectToContractData(project: any): Partial<ContractData> {
     return {
       clientName: project.clientName || '',
-      clientAddress: project.address || '',
+      clientAddress: project.clientAddress || '',
       clientPhone: project.clientPhone || '',
       clientEmail: project.clientEmail || '',
-      projectType: project.projectType || project.fenceType || 'Proyecto de construcción',
-      projectDescription: project.description || '',
-      projectLocation: project.address || '',
-      totalAmount: project.totalPrice ? `$${project.totalPrice.toFixed(2)}` : project.estimateAmount || '',
+      projectType: project.projectType || 'Proyecto de construcción',
+      projectDescription: project.projectDescription || `Proyecto basado en estimado ${project.estimateNumber}`,
+      projectLocation: project.clientAddress || '',
+      totalAmount: project.total ? `$${project.total.toFixed(2)}` : '',
       contractorName: 'OWL FENCE LLC',
       contractorAddress: '[Dirección del contratista]',
       contractorPhone: '[Teléfono del contratista]',

@@ -17,14 +17,17 @@ import { contractTemplateService, ContractData, ContractTemplate } from '@/servi
 import { simpleOcrService, OcrResult } from '@/services/simpleOcrService';
 
 interface Project {
-  id: number;
+  id: string;
+  estimateNumber: string;
   clientName: string;
-  address: string;
-  projectType: string;
-  totalPrice: number;
-  description: string;
-  clientPhone?: string;
   clientEmail?: string;
+  clientPhone?: string;
+  clientAddress: string;
+  projectType: string;
+  projectDescription?: string;
+  total: number;
+  status: string;
+  createdAt: string;
 }
 
 export default function ContractGeneratorSimplified() {
@@ -55,11 +58,26 @@ export default function ContractGeneratorSimplified() {
     try {
       const response = await fetch('/api/estimates');
       if (response.ok) {
-        const data = await response.json();
-        setProjects(data || []);
+        const result = await response.json();
+        if (result.success && result.data) {
+          setProjects(result.data);
+          toast({
+            title: "Proyectos cargados",
+            description: `Se encontraron ${result.data.length} proyectos`
+          });
+        } else {
+          setProjects([]);
+          toast({
+            title: "Sin proyectos",
+            description: "No se encontraron proyectos existentes"
+          });
+        }
+      } else {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
     } catch (error) {
       console.error('Error loading projects:', error);
+      setProjects([]);
       toast({
         title: "Error",
         description: "No se pudieron cargar los proyectos",
@@ -226,13 +244,15 @@ export default function ContractGeneratorSimplified() {
                           <div className="flex justify-between items-start">
                             <div>
                               <h3 className="font-semibold">{project.clientName}</h3>
-                              <p className="text-sm text-gray-600">{project.address}</p>
+                              <p className="text-sm text-gray-600">{project.clientAddress}</p>
                               <p className="text-sm text-gray-500">{project.projectType}</p>
+                              <p className="text-xs text-gray-400">#{project.estimateNumber}</p>
                             </div>
                             <div className="text-right">
                               <p className="font-bold text-green-600">
-                                ${project.totalPrice?.toFixed(2) || 'N/A'}
+                                ${project.total?.toFixed(2) || 'N/A'}
                               </p>
+                              <p className="text-xs text-gray-500 capitalize">{project.status}</p>
                               {selectedProject?.id === project.id && (
                                 <CheckCircle className="w-5 h-5 text-green-500 mt-1" />
                               )}
