@@ -1,6 +1,139 @@
-import { pgTable, text, varchar, decimal, integer, timestamp, boolean, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, text, varchar, decimal, integer, timestamp, boolean, jsonb, serial } from 'drizzle-orm/pg-core';
 import { createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
+
+// Users table
+export const users = pgTable('users', {
+  id: serial('id').primaryKey(),
+  username: varchar('username', { length: 255 }).notNull().unique(),
+  email: varchar('email', { length: 255 }).notNull().unique(),
+  passwordHash: varchar('password_hash', { length: 255 }).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Projects table
+export const projects = pgTable('projects', {
+  id: text('id').primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
+  description: text('description'),
+  userId: integer('user_id').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Templates table
+export const templates = pgTable('templates', {
+  id: text('id').primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
+  content: text('content').notNull(),
+  userId: integer('user_id').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Settings table
+export const settings = pgTable('settings', {
+  id: text('id').primaryKey(),
+  key: varchar('key', { length: 255 }).notNull().unique(),
+  value: text('value').notNull(),
+  userId: integer('user_id').notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Chat logs table
+export const chatLogs = pgTable('chat_logs', {
+  id: text('id').primaryKey(),
+  message: text('message').notNull(),
+  role: varchar('role', { length: 50 }).notNull(),
+  userId: integer('user_id').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Clients table
+export const clients = pgTable('clients', {
+  id: text('id').primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
+  email: varchar('email', { length: 255 }).notNull(),
+  phone: varchar('phone', { length: 50 }),
+  address: text('address'),
+  userId: integer('user_id').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Subscription plans table
+export const subscriptionPlans = pgTable('subscription_plans', {
+  id: text('id').primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
+  price: decimal('price', { precision: 10, scale: 2 }).notNull(),
+  features: jsonb('features').notNull(),
+  isActive: boolean('is_active').notNull().default(true),
+});
+
+// User subscriptions table
+export const userSubscriptions = pgTable('user_subscriptions', {
+  id: text('id').primaryKey(),
+  userId: integer('user_id').notNull(),
+  planId: text('plan_id').notNull(),
+  status: varchar('status', { length: 50 }).notNull(),
+  startDate: timestamp('start_date').notNull(),
+  endDate: timestamp('end_date'),
+});
+
+// Payment history table
+export const paymentHistory = pgTable('payment_history', {
+  id: text('id').primaryKey(),
+  userId: integer('user_id').notNull(),
+  amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
+  status: varchar('status', { length: 50 }).notNull(),
+  paymentDate: timestamp('payment_date').defaultNow().notNull(),
+});
+
+// Project payments table
+export const projectPayments = pgTable('project_payments', {
+  id: text('id').primaryKey(),
+  projectId: text('project_id').notNull(),
+  amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
+  status: varchar('status', { length: 50 }).notNull(),
+  dueDate: timestamp('due_date'),
+  paidDate: timestamp('paid_date'),
+});
+
+// Materials table
+export const materials = pgTable('materials', {
+  id: text('id').primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
+  description: text('description'),
+  price: decimal('price', { precision: 10, scale: 2 }),
+  unit: varchar('unit', { length: 50 }),
+  category: varchar('category', { length: 255 }),
+});
+
+// Prompt templates table
+export const promptTemplates = pgTable('prompt_templates', {
+  id: text('id').primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
+  content: text('content').notNull(),
+  category: varchar('category', { length: 255 }),
+  isActive: boolean('is_active').notNull().default(true),
+});
+
+// Permit search history table
+export const permitSearchHistory = pgTable('permit_search_history', {
+  id: text('id').primaryKey(),
+  query: text('query').notNull(),
+  results: jsonb('results'),
+  userId: integer('user_id').notNull(),
+  searchDate: timestamp('search_date').defaultNow().notNull(),
+});
+
+// Property search history table
+export const propertySearchHistory = pgTable('property_search_history', {
+  id: text('id').primaryKey(),
+  address: text('address').notNull(),
+  results: jsonb('results'),
+  userId: integer('user_id').notNull(),
+  searchDate: timestamp('search_date').defaultNow().notNull(),
+});
 
 export const estimates = pgTable('estimates', {
   id: text('id').primaryKey(),
@@ -59,7 +192,73 @@ export const notifications = pgTable('notifications', {
   readAt: timestamp('read_at'),
 });
 
-// Insert schemas
+// Insert schemas for all tables
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertProjectSchema = createInsertSchema(projects).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertTemplateSchema = createInsertSchema(templates).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertSettingsSchema = createInsertSchema(settings).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export const insertChatLogSchema = createInsertSchema(chatLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertClientSchema = createInsertSchema(clients).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlans).omit({
+  id: true,
+});
+
+export const insertUserSubscriptionSchema = createInsertSchema(userSubscriptions).omit({
+  id: true,
+});
+
+export const insertPaymentHistorySchema = createInsertSchema(paymentHistory).omit({
+  id: true,
+});
+
+export const insertProjectPaymentSchema = createInsertSchema(projectPayments).omit({
+  id: true,
+});
+
+export const insertMaterialSchema = createInsertSchema(materials).omit({
+  id: true,
+});
+
+export const insertPromptTemplateSchema = createInsertSchema(promptTemplates).omit({
+  id: true,
+});
+
+export const insertPermitSearchHistorySchema = createInsertSchema(permitSearchHistory).omit({
+  id: true,
+  searchDate: true,
+});
+
+export const insertPropertySearchHistorySchema = createInsertSchema(propertySearchHistory).omit({
+  id: true,
+  searchDate: true,
+});
+
 export const insertEstimateSchema = createInsertSchema(estimates).omit({
   id: true,
   createdAt: true,
@@ -76,10 +275,44 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
   sentAt: true,
 });
 
-// Types
+// Types for all tables
+export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type Project = typeof projects.$inferSelect;
+export type InsertProject = z.infer<typeof insertProjectSchema>;
+export type Template = typeof templates.$inferSelect;
+export type InsertTemplate = z.infer<typeof insertTemplateSchema>;
+export type Settings = typeof settings.$inferSelect;
+export type InsertSettings = z.infer<typeof insertSettingsSchema>;
+export type ChatLog = typeof chatLogs.$inferSelect;
+export type InsertChatLog = z.infer<typeof insertChatLogSchema>;
+export type Client = typeof clients.$inferSelect;
+export type InsertClient = z.infer<typeof insertClientSchema>;
+export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
+export type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlanSchema>;
+export type UserSubscription = typeof userSubscriptions.$inferSelect;
+export type InsertUserSubscription = z.infer<typeof insertUserSubscriptionSchema>;
+export type PaymentHistory = typeof paymentHistory.$inferSelect;
+export type InsertPaymentHistory = z.infer<typeof insertPaymentHistorySchema>;
+export type ProjectPayment = typeof projectPayments.$inferSelect;
+export type InsertProjectPayment = z.infer<typeof insertProjectPaymentSchema>;
+export type Material = typeof materials.$inferSelect;
+export type InsertMaterial = z.infer<typeof insertMaterialSchema>;
+export type PromptTemplate = typeof promptTemplates.$inferSelect;
+export type InsertPromptTemplate = z.infer<typeof insertPromptTemplateSchema>;
+export type PermitSearchHistory = typeof permitSearchHistory.$inferSelect;
+export type InsertPermitSearchHistory = z.infer<typeof insertPermitSearchHistorySchema>;
+export type PropertySearchHistory = typeof propertySearchHistory.$inferSelect;
+export type InsertPropertySearchHistory = z.infer<typeof insertPropertySearchHistorySchema>;
 export type Estimate = typeof estimates.$inferSelect;
 export type InsertEstimate = z.infer<typeof insertEstimateSchema>;
 export type EstimateAdjustment = typeof estimateAdjustments.$inferSelect;
 export type InsertEstimateAdjustment = z.infer<typeof insertEstimateAdjustmentSchema>;
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+
+// Legacy aliases for backward compatibility
+export type EstimateItem = Estimate;
+export type InsertEstimateItem = InsertEstimate;
+export type EstimateTemplate = Template;
+export type InsertEstimateTemplate = InsertTemplate;
