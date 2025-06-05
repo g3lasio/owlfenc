@@ -3,7 +3,7 @@
  * Arquitectura clara con 2 flujos principales: Proyectos Existentes + PDF Upload
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -17,17 +17,14 @@ import { contractTemplateService, ContractData, ContractTemplate } from '@/servi
 import { simpleOcrService, OcrResult } from '@/services/simpleOcrService';
 
 interface Project {
-  id: string;
-  estimateNumber: string;
+  id: number;
   clientName: string;
-  clientEmail?: string;
-  clientPhone?: string;
-  clientAddress: string;
+  address: string;
   projectType: string;
-  projectDescription?: string;
-  total: number;
-  status: string;
-  createdAt: string;
+  totalPrice: number;
+  description: string;
+  clientPhone?: string;
+  clientEmail?: string;
 }
 
 export default function ContractGeneratorSimplified() {
@@ -52,59 +49,26 @@ export default function ContractGeneratorSimplified() {
   // Templates disponibles
   const [templates] = useState<ContractTemplate[]>(contractTemplateService.getAvailableTemplates());
 
-
-
-  // Cargar proyectos del usuario desde Firebase
+  // Cargar proyectos del usuario
   const loadUserProjects = async () => {
     setLoadingProjects(true);
     try {
-      const { getProjects } = await import('@/lib/firebase');
-      const firebaseProjects = await getProjects();
-      
-      // Filtrar proyectos que tienen datos suficientes para generar contratos
-      const contractReadyProjects = firebaseProjects.filter((project: any) => 
-        project.clientName && 
-        project.address && 
-        (project.totalPrice || project.estimateAmount)
-      );
-
-      // Convertir a formato compatible con el generador de contratos
-      const formattedProjects = contractReadyProjects.map((project: any) => ({
-        id: project.id,
-        estimateNumber: project.projectId || project.id,
-        clientName: project.clientName,
-        clientEmail: project.clientEmail || '',
-        clientPhone: project.clientPhone || '',
-        clientAddress: project.address,
-        projectType: project.projectType || project.fenceType || 'Proyecto de construcción',
-        projectDescription: project.projectDescription || project.description || '',
-        total: project.totalPrice || project.estimateAmount || 0,
-        status: project.status || 'draft',
-        createdAt: project.createdAt?.toDate ? project.createdAt.toDate().toISOString() : new Date().toISOString()
-      }));
-
-      setProjects(formattedProjects);
-      toast({
-        title: "Proyectos cargados",
-        description: `Se encontraron ${formattedProjects.length} proyectos disponibles`
-      });
+      const response = await fetch('/api/estimates');
+      if (response.ok) {
+        const data = await response.json();
+        setProjects(data || []);
+      }
     } catch (error) {
       console.error('Error loading projects:', error);
-      setProjects([]);
       toast({
         title: "Error",
-        description: "No se pudieron cargar los proyectos desde Firebase",
+        description: "No se pudieron cargar los proyectos",
         variant: "destructive"
       });
     } finally {
       setLoadingProjects(false);
     }
   };
-
-  // Cargar proyectos automáticamente al inicializar
-  useEffect(() => {
-    loadUserProjects();
-  }, []);
 
   // Manejo de selección de proyecto
   const handleProjectSelection = (project: Project) => {
@@ -242,57 +206,41 @@ export default function ContractGeneratorSimplified() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {loadingProjects ? (
-                    <div className="text-center py-4">
-                      <p className="text-gray-500">Cargando proyectos...</p>
-                    </div>
-                  ) : projects.length === 0 ? (
-                    <div className="text-center py-4">
-                      <p className="text-gray-500">No se encontraron proyectos disponibles</p>
-                    </div>
-                  ) : (
-                    <>
-                      <p className="text-sm text-gray-600 mb-3">Selecciona un proyecto para generar contrato:</p>
-                      <div className="space-y-2 max-h-64 overflow-y-auto">
-                        {projects.map(project => (
-                          <div 
-                            key={project.id}
-                            className={`p-3 border rounded-lg cursor-pointer transition-all ${
-                              selectedProject?.id === project.id 
-                                ? 'border-green-500 bg-green-50' 
-                                : 'border-gray-200 hover:border-green-300'
-                            }`}
-                            onClick={() => handleProjectSelection(project)}
-                          >
-                            <div className="flex justify-between items-center">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <h3 className="font-semibold text-sm truncate">{project.clientName}</h3>
-                                  <span className={`px-2 py-1 text-xs rounded-full ${
-                                    project.status === 'approved' ? 'bg-green-100 text-green-700' :
-                                    project.status === 'sent' ? 'bg-blue-100 text-blue-700' :
-                                    'bg-gray-100 text-gray-700'
-                                  }`}>
-                                    {project.status}
-                                  </span>
-                                </div>
-                                <p className="text-xs text-gray-500 truncate">{project.projectType}</p>
-                                <p className="text-xs text-gray-400">#{project.estimateNumber}</p>
-                              </div>
-                              <div className="text-right ml-2">
-                                <p className="font-bold text-green-600 text-sm">
-                                  ${project.total.toFixed(2)}
-                                </p>
-                                {selectedProject?.id === project.id && (
-                                  <CheckCircle className="w-4 h-4 text-green-500 mt-1 mx-auto" />
-                                )}
-                              </div>
+                <div className="space-y-4">
+                  <Button onClick={loadUserProjects} disabled={loadingProjects}>
+                    {loadingProjects ? 'Cargando...' : 'Cargar Mis Proyectos'}
+                  </Button>
+                  
+                  {projects.length > 0 && (
+                    <div className="grid gap-4 max-h-60 overflow-y-auto">
+                      {projects.map(project => (
+                        <div 
+                          key={project.id}
+                          className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                            selectedProject?.id === project.id 
+                              ? 'border-green-500 bg-green-50' 
+                              : 'border-gray-200 hover:border-green-300'
+                          }`}
+                          onClick={() => handleProjectSelection(project)}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h3 className="font-semibold">{project.clientName}</h3>
+                              <p className="text-sm text-gray-600">{project.address}</p>
+                              <p className="text-sm text-gray-500">{project.projectType}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold text-green-600">
+                                ${project.totalPrice?.toFixed(2) || 'N/A'}
+                              </p>
+                              {selectedProject?.id === project.id && (
+                                <CheckCircle className="w-5 h-5 text-green-500 mt-1" />
+                              )}
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    </>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
               </CardContent>
