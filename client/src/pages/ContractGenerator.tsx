@@ -7,7 +7,14 @@ import {
   Send,
   FileSignature,
   Eye, 
-  PlusCircle 
+  PlusCircle,
+  ChevronLeft,
+  ChevronRight,
+  Check,
+  Upload,
+  Shield,
+  FileText,
+  FileCheck
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ContractDashboard from "@/components/contract/ContractDashboard";
@@ -27,17 +34,34 @@ interface Contract {
   html?: string;
 }
 
+// Definir los pasos del Contract Generator siguiendo el patrón de EstimatesWizard
+const STEPS = [
+  { id: 'extract', title: 'Extract Data', icon: Upload },
+  { id: 'analyze', title: 'Legal Risk Analysis', icon: Shield },
+  { id: 'generate', title: 'Generate Contract', icon: FileText },
+  { id: 'preview', title: 'Preview', icon: FileCheck }
+];
+
 const ContractGenerator = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  // Estados
-  const [view, setView] = useState<'dashboard' | 'survey' | 'preview'>('dashboard');
+  // Estados para navegación por pasos
+  const [currentStep, setCurrentStep] = useState(0);
+  const [isCreateMode, setIsCreateMode] = useState(false);
+  
+  // Estados existentes adaptados
   const [contractData, setContractData] = useState<Record<string, any>>({});
   const [contractHtml, setContractHtml] = useState<string>("");
   const [isGeneratingContract, setIsGeneratingContract] = useState(false);
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  
+  // Nuevos estados para el flujo por pasos
+  const [extractedData, setExtractedData] = useState<any>(null);
+  const [riskAnalysis, setRiskAnalysis] = useState<any>(null);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   
   // Load the contract template
   const contractTemplateQuery = useQuery({
@@ -229,8 +253,8 @@ const ContractGenerator = () => {
         setContractHtml(templateHtml);
       }
       
-      // Cambiar a la vista de previsualización
-      setView("preview");
+      // Avanzar al paso de previsualización
+      setCurrentStep(3);
 
       toast({
         title: "¡Contrato generado!",
@@ -397,12 +421,53 @@ const ContractGenerator = () => {
     generateContract(data);
   };
 
-  // Iniciar nuevo contrato
+  // Funciones de navegación por pasos
+  const nextStep = () => {
+    if (currentStep < STEPS.length - 1) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const canProceedToNext = () => {
+    switch (currentStep) {
+      case 0: // Extract Data
+        return extractedData !== null;
+      case 1: // Legal Risk Analysis
+        return riskAnalysis !== null;
+      case 2: // Generate Contract
+        return contractHtml !== "";
+      case 3: // Preview
+        return true;
+      default:
+        return false;
+    }
+  };
+
+  // Iniciar nuevo contrato (modo de creación por pasos)
   const handleCreateNew = () => {
     setContractData({});
     setContractHtml("");
     setSelectedContract(null);
-    setView("survey");
+    setExtractedData(null);
+    setRiskAnalysis(null);
+    setCurrentStep(0);
+    setIsCreateMode(true);
+  };
+
+  // Volver al dashboard
+  const handleBackToDashboard = () => {
+    setIsCreateMode(false);
+    setCurrentStep(0);
+    setContractData({});
+    setContractHtml("");
+    setExtractedData(null);
+    setRiskAnalysis(null);
   };
 
   // Datos de ejemplo para desarrollo
@@ -441,6 +506,144 @@ const ContractGenerator = () => {
     },
   ];
 
+  // Renderizar contenido según el paso actual
+  const renderCurrentStep = () => {
+    switch (currentStep) {
+      case 0: // Extract Data
+        return (
+          <NewContractSurveyFlow 
+            onComplete={(data) => {
+              setExtractedData(data);
+              setContractData(data);
+              nextStep();
+            }}
+            onPreview={(data) => {
+              setExtractedData(data);
+              setContractData(data);
+            }}
+          />
+        );
+      
+      case 1: // Legal Risk Analysis
+        return (
+          <div className="space-y-6">
+            <div className="text-center">
+              <Shield className="h-16 w-16 mx-auto text-yellow-500 mb-4" />
+              <h3 className="text-xl font-semibold mb-2">Legal Risk Analysis</h3>
+              <p className="text-muted-foreground">
+                Analyzing contract data for potential legal risks and compliance issues
+              </p>
+            </div>
+            
+            {isAnalyzing ? (
+              <div className="text-center py-8">
+                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+                <p>Analyzing legal risks...</p>
+              </div>
+            ) : riskAnalysis ? (
+              <div className="bg-card p-6 rounded-lg border">
+                <h4 className="font-semibold mb-4">Risk Analysis Complete</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600">LOW</div>
+                    <div className="text-sm text-muted-foreground">Overall Risk</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600">95%</div>
+                    <div className="text-sm text-muted-foreground">Compliance Score</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-purple-600">3</div>
+                    <div className="text-sm text-muted-foreground">Recommendations</div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center">
+                <Button 
+                  onClick={() => {
+                    setIsAnalyzing(true);
+                    setTimeout(() => {
+                      setRiskAnalysis({ risk: 'low', score: 95, recommendations: 3 });
+                      setIsAnalyzing(false);
+                    }, 2000);
+                  }}
+                  className="bg-yellow-600 hover:bg-yellow-700"
+                >
+                  <Shield className="h-4 w-4 mr-2" />
+                  Start Risk Analysis
+                </Button>
+              </div>
+            )}
+          </div>
+        );
+      
+      case 2: // Generate Contract
+        return (
+          <div className="space-y-6">
+            <div className="text-center">
+              <FileText className="h-16 w-16 mx-auto text-blue-500 mb-4" />
+              <h3 className="text-xl font-semibold mb-2">Generate Contract</h3>
+              <p className="text-muted-foreground">
+                Creating professional contract based on extracted data and risk analysis
+              </p>
+            </div>
+            
+            {isGeneratingContract ? (
+              <div className="text-center py-8">
+                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+                <p>Generating contract...</p>
+              </div>
+            ) : contractHtml ? (
+              <div className="bg-card p-6 rounded-lg border">
+                <h4 className="font-semibold mb-4">Contract Generated Successfully</h4>
+                <p className="text-muted-foreground mb-4">
+                  Your professional contract has been generated and is ready for preview.
+                </p>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => setCurrentStep(3)}>
+                    <Eye className="h-4 w-4 mr-2" />
+                    Preview Contract
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center">
+                <Button 
+                  onClick={() => generateContract(contractData)}
+                  disabled={!extractedData}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Generate Contract
+                </Button>
+              </div>
+            )}
+          </div>
+        );
+      
+      case 3: // Preview
+        return contractHtml ? (
+          <ContractPreviewEditable 
+            html={contractHtml}
+            contractData={contractData}
+            onApprove={handleApproveContract}
+            onEdit={handleEditField}
+            onDownload={handleDownloadPDF}
+            onSendEmail={handleSendEmail}
+            onSign={handleSign}
+          />
+        ) : (
+          <div className="text-center py-8">
+            <p>No contract available for preview</p>
+          </div>
+        );
+      
+      default:
+        return <div>Unknown step</div>;
+    }
+  };
+
   return (
     <div className="flex-1 p-6">
       <div className="max-w-6xl mx-auto">
@@ -451,15 +654,15 @@ const ContractGenerator = () => {
               Crea, gestiona y envía contratos profesionales a tus clientes
             </p>
           </div>
-          {view !== "dashboard" && (
-            <Button variant="outline" onClick={() => setView("dashboard")}>
+          {isCreateMode && (
+            <Button variant="outline" onClick={handleBackToDashboard}>
               Volver al Dashboard
             </Button>
           )}
         </div>
 
-        {/* Vistas condicionales */}
-        {view === "dashboard" && (
+        {/* Mostrar Dashboard o flujo de creación por pasos */}
+        {!isCreateMode ? (
           <ContractDashboard 
             contracts={contractsQuery.data || []}
             isLoading={contractsQuery.isLoading}
@@ -469,25 +672,108 @@ const ContractGenerator = () => {
             onSendEmail={(id) => sendEmailMutation.mutate(id)}
             onSign={(id) => signContractMutation.mutate(id)}
           />
-        )}
+        ) : (
+          <div className="space-y-8">
+            {/* Step Navigation - Horizontal */}
+            <div className="bg-card p-6 rounded-lg border">
+              <div className="flex items-center justify-center">
+                <div className="flex items-center space-x-4 overflow-x-auto">
+                  {STEPS.map((step, index) => {
+                    const Icon = step.icon;
+                    const isActive = index === currentStep;
+                    const isCompleted = index < currentStep;
+                    const isClickable = index <= currentStep;
 
-        {view === "survey" && (
-          <NewContractSurveyFlow 
-            onComplete={handleSurveyComplete}
-            onPreview={handleSurveyPreview}
-          />
-        )}
+                    return (
+                      <div key={step.id} className="flex items-center">
+                        <button
+                          onClick={() => isClickable && setCurrentStep(index)}
+                          disabled={!isClickable}
+                          className={`flex items-center space-x-3 p-3 rounded-lg transition-all ${
+                            isActive 
+                              ? 'bg-primary text-primary-foreground shadow-md' 
+                              : isCompleted 
+                                ? 'bg-green-100 text-green-700 hover:bg-green-200 cursor-pointer' 
+                                : isClickable
+                                  ? 'bg-muted hover:bg-muted/80 cursor-pointer'
+                                  : 'bg-muted/50 text-muted-foreground cursor-not-allowed'
+                          }`}
+                        >
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                            isActive 
+                              ? 'bg-primary-foreground/20' 
+                              : isCompleted 
+                                ? 'bg-green-500 text-white' 
+                                : 'bg-background'
+                          }`}>
+                            {isCompleted ? (
+                              <Check className="h-4 w-4" />
+                            ) : (
+                              <Icon className="h-4 w-4" />
+                            )}
+                          </div>
+                          <div className="text-left">
+                            <div className="font-medium text-sm">{step.title}</div>
+                            <div className="text-xs opacity-70">Paso {index + 1}</div>
+                          </div>
+                        </button>
+                        
+                        {index < STEPS.length - 1 && (
+                          <div className="flex items-center mx-2">
+                            <div
+                              className={`w-8 h-1 rounded-full transition-all duration-500 ${
+                                isCompleted ? 'bg-green-600' : 'bg-muted-foreground/20'
+                              }`}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
 
-        {view === "preview" && (
-          <ContractPreviewEditable 
-            html={contractHtml}
-            contractData={contractData}
-            onApprove={handleApproveContract}
-            onEdit={handleEditField}
-            onDownload={handleDownloadPDF}
-            onSendEmail={handleSendEmail}
-            onSign={handleSign}
-          />
+            {/* Current Step Content */}
+            <div className="mb-8">
+              {renderCurrentStep()}
+            </div>
+
+            {/* Navigation Buttons */}
+            <div className="flex flex-col sm:flex-row gap-2 sm:justify-between">
+              <Button
+                variant="outline"
+                onClick={prevStep}
+                disabled={currentStep === 0}
+                className="w-full sm:w-auto order-2 sm:order-1"
+              >
+                <ChevronLeft className="h-4 w-4 mr-2" />
+                Anterior
+              </Button>
+              
+              <div className="flex flex-col sm:flex-row gap-2 order-1 sm:order-2">
+                {currentStep === STEPS.length - 1 ? (
+                  <Button
+                    onClick={handleDownloadPDF}
+                    disabled={!contractHtml}
+                    className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    <span className="hidden sm:inline">Finalizar y </span>Descargar
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={nextStep}
+                    disabled={!canProceedToNext()}
+                    className="w-full sm:w-auto"
+                  >
+                    Siguiente
+                    <ChevronRight className="h-4 w-4 ml-2" />
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
         )}
       </div>
       
