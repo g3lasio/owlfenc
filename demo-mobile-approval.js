@@ -405,6 +405,34 @@ async function sendDemoEstimate() {
   console.log('📱 Enviando estimado de demostración...');
   
   try {
+    // Primero guardar el estimado en el sistema
+    const estimateForSystem = {
+      estimateNumber: demoEstimate.estimateNumber,
+      clientName: demoEstimate.client.name,
+      clientEmail: demoEstimate.client.email,
+      contractorEmail: demoEstimate.contractor.email,
+      total: demoEstimate.total.toFixed(2),
+      projectType: demoEstimate.project.type,
+      status: 'sent',
+      date: new Date().toISOString(),
+      items: demoEstimate.items
+    };
+
+    // Enviar POST al endpoint para guardar el estimado
+    const saveResponse = await fetch('http://localhost:5000/api/simple-estimate/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(estimateForSystem)
+    });
+
+    if (!saveResponse.ok) {
+      console.log('⚠️ No se pudo guardar en el sistema, continuando con email...');
+    } else {
+      console.log('✅ Estimado guardado en el sistema');
+    }
+
     const html = generateEstimateHTML(demoEstimate);
     
     const emailData = {
