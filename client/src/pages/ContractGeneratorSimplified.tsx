@@ -52,6 +52,49 @@ export default function ContractGeneratorSimplified() {
   // Templates disponibles
   const [templates] = useState<ContractTemplate[]>(contractTemplateService.getAvailableTemplates());
 
+  // Proyectos de ejemplo disponibles inmediatamente
+  const sampleProjects: Project[] = [
+    {
+      id: "est-001",
+      estimateNumber: "EST-2024-001",
+      clientName: "Turner Group Construction",
+      clientEmail: "contact@turnergroup.com",
+      clientPhone: "(555) 123-4567",
+      clientAddress: "123 Main Street, Springfield, IL 62701",
+      projectType: "Wood Fence Installation",
+      projectDescription: "Installation of 150 ft wood privacy fence, 6ft height with concrete posts",
+      total: 4500,
+      status: "approved",
+      createdAt: "2024-01-15"
+    },
+    {
+      id: "est-002", 
+      estimateNumber: "EST-2024-002",
+      clientName: "Kevin & Derek Terry",
+      clientEmail: "kevin.terry@email.com",
+      clientPhone: "(555) 987-6543",
+      clientAddress: "456 Oak Avenue, Springfield, IL 62702",
+      projectType: "Vinyl Fence Installation",
+      projectDescription: "Installation of 200 ft vinyl fence, 6ft height around backyard perimeter",
+      total: 6200,
+      status: "sent",
+      createdAt: "2024-01-20"
+    },
+    {
+      id: "est-003",
+      estimateNumber: "EST-2024-003", 
+      clientName: "Springfield Property Management",
+      clientEmail: "projects@springfieldpm.com",
+      clientPhone: "(555) 456-7890",
+      clientAddress: "789 Business Park Dr, Springfield, IL 62703",
+      projectType: "Chain Link Fence Installation",
+      projectDescription: "Commercial chain link fencing, 300 ft perimeter with gate access",
+      total: 3800,
+      status: "draft",
+      createdAt: "2024-01-25"
+    }
+  ];
+
   // Cargar proyectos del usuario
   const loadUserProjects = async () => {
     setLoadingProjects(true);
