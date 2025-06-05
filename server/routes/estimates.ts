@@ -75,7 +75,7 @@ router.post('/', async (req, res) => {
       timeline: validatedData.timeline || null,
       items: validatedData.items,
       subtotal,
-      taxRate: Math.round(taxRate * 100), // Almacenar en basis points
+      taxRate: taxRate, // Almacenar como porcentaje normal (ej: 12 para 12%)
       taxAmount,
       total,
       status: 'draft' as const,

@@ -980,7 +980,7 @@ export default function EstimatesWizardFixed() {
           subtotal: 0, // Will be recalculated by useEffect
           tax: 0, // Will be recalculated by useEffect
           total: 0, // Will be recalculated by useEffect
-          taxRate: projectData.taxRate || 10,
+          taxRate: projectData.taxRate > 100 ? projectData.taxRate / 100 : (projectData.taxRate || 10),
           discountType: 'percentage',
           discountValue: 0,
           discountAmount: 0,
