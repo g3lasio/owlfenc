@@ -47,8 +47,8 @@ export class PDFMonkeyService {
         throw new Error('API Key de PDFMonkey no configurada');
       }
 
-      // Usar directamente el template ID 2 que funciona mejor
-      const templateId = options.templateId || '2E4DC55E-044E-4FD3-B511-FEBF950071FA';
+      // Usar el template verificado que funciona
+      const templateId = options.templateId || '2e4dc55e-044e-4fd3-b511-febf950071fa';
       
       // Simplificar HTML para compatibilidad total con PDFMonkey
       const simpleHtml = html
