@@ -187,6 +187,18 @@ export default function ContractGeneratorSimplified() {
     try {
       const contract = await contractTemplateService.generateContract(selectedTemplate, contractData as ContractData);
       setGeneratedContract(contract);
+      
+      // Scroll automático al preview después de generar
+      setTimeout(() => {
+        const previewElement = document.getElementById('contract-preview');
+        if (previewElement) {
+          previewElement.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start' 
+          });
+        }
+      }, 100);
+      
       toast({
         title: "Contrato generado exitosamente",
         description: "Tu contrato está listo para revisión"
@@ -474,18 +486,52 @@ export default function ContractGeneratorSimplified() {
 
         {/* Preview del Contrato */}
         {generatedContract && (
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Preview del Contrato Generado</CardTitle>
+          <Card id="contract-preview" className="mt-6 bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+            <CardHeader className="bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-t-lg">
+              <CardTitle className="text-xl font-bold flex items-center gap-2">
+                <FileText className="w-6 h-6" />
+                Preview del Contrato Generado
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="max-h-96 overflow-y-auto border rounded-lg p-4">
-                <div dangerouslySetInnerHTML={{ __html: generatedContract }} />
+            <CardContent className="p-6">
+              {/* Preview del contrato con mejor diseño */}
+              <div className="bg-white rounded-lg shadow-inner border-2 border-gray-200 p-6 max-h-96 overflow-y-auto">
+                <div 
+                  className="prose prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{ __html: generatedContract }} 
+                />
               </div>
-              <div className="mt-4 flex gap-2">
-                <Button variant="outline">Editar Contrato</Button>
-                <Button>Descargar PDF</Button>
-                <Button variant="outline">Enviar al Cliente</Button>
+              
+              {/* Botones de acción mejorados */}
+              <div className="mt-6 flex flex-wrap gap-3 justify-center">
+                <Button 
+                  variant="outline" 
+                  className="border-green-300 text-green-700 hover:bg-green-50"
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  Editar Contrato
+                </Button>
+                <Button 
+                  className="bg-cyan-500 hover:bg-cyan-600 text-white"
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Descargar PDF
+                </Button>
+                <Button 
+                  variant="outline"
+                  className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Enviar al Cliente
+                </Button>
+              </div>
+              
+              {/* Información adicional */}
+              <div className="mt-4 p-4 bg-green-100 rounded-lg">
+                <p className="text-sm text-green-800">
+                  <CheckCircle className="w-4 h-4 inline mr-2" />
+                  Contrato generado exitosamente con protección legal completa
+                </p>
               </div>
             </CardContent>
           </Card>
