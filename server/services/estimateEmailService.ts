@@ -693,30 +693,30 @@ export class EstimateEmailService {
             </div>
           ` : ''}
           
-          <!-- Universal Email Client Compatible Action Buttons -->
+          <!-- Embedded Action Buttons - No External Links -->
           <div class="action-buttons" style="text-align: center; margin: 30px 0;">
-            <!-- Approve Button using table structure for email compatibility -->
+            <!-- Approve Button -->
             <table class="email-button-table" cellpadding="0" cellspacing="0" border="0" style="display: inline-block; margin: 0 8px;">
               <tr>
                 <td class="email-button-cell" style="background-color: #10b981; border-radius: 8px;">
-                  <a href="${appUrl}/api/simple-estimate/approve?estimateId=${encodeURIComponent(data.estimateNumber)}&clientEmail=${encodeURIComponent(data.client.email)}" 
+                  <button onclick="showApprovalForm()" 
                      class="email-button-link approve-button" 
-                     style="display: block; padding: 15px 30px; text-decoration: none; color: #ffffff; font-weight: 600; font-size: 16px; text-align: center; border-radius: 8px; min-width: 160px;">
+                     style="display: block; padding: 15px 30px; border: none; background: transparent; color: #ffffff; font-weight: 600; font-size: 16px; text-align: center; border-radius: 8px; min-width: 160px; cursor: pointer;">
                     ✅ Approve Estimate
-                  </a>
+                  </button>
                 </td>
               </tr>
             </table>
             
-            <!-- Request Changes Button using table structure for email compatibility -->
+            <!-- Request Changes Button -->
             <table class="email-button-table" cellpadding="0" cellspacing="0" border="0" style="display: inline-block; margin: 0 8px;">
               <tr>
                 <td class="email-button-cell" style="background-color: #f59e0b; border-radius: 8px;">
-                  <a href="${appUrl}/api/simple-estimate/adjust?estimateId=${encodeURIComponent(data.estimateNumber)}&clientEmail=${encodeURIComponent(data.client.email)}" 
+                  <button onclick="showAdjustmentForm()" 
                      class="email-button-link adjust-button" 
-                     style="display: block; padding: 15px 30px; text-decoration: none; color: #ffffff; font-weight: 600; font-size: 16px; text-align: center; border-radius: 8px; min-width: 160px;">
+                     style="display: block; padding: 15px 30px; border: none; background: transparent; color: #ffffff; font-weight: 600; font-size: 16px; text-align: center; border-radius: 8px; min-width: 160px; cursor: pointer;">
                     📝 Request Changes
-                  </a>
+                  </button>
                 </td>
               </tr>
             </table>
@@ -724,80 +724,167 @@ export class EstimateEmailService {
 
           <!-- Approval Form -->
           <div id="approvalForm" class="inline-form">
-            <h3 style="color: #059669; margin-bottom: 20px;">📋 Approval Confirmation</h3>
+            <h3 style="color: #059669; margin-bottom: 20px;">📋 Confirmación de Aprobación</h3>
             <form action="${appUrl}/api/estimate-email/approve" method="POST">
               <input type="hidden" name="estimateId" value="${data.estimateNumber}">
               <input type="hidden" name="contractorEmail" value="${data.contractor.email}">
               
               <div class="form-group">
-                <label class="form-label">Your full name:</label>
+                <label class="form-label">Su nombre completo:</label>
                 <input type="text" name="clientName" class="form-input" value="${data.client.name}" required>
               </div>
               
               <div class="form-group">
-                <label class="form-label">Contact email:</label>
+                <label class="form-label">Email de contacto:</label>
                 <input type="email" name="clientEmail" class="form-input" value="${data.client.email}" required>
               </div>
               
               <div class="form-group">
-                <label class="form-label">Approval date:</label>
+                <label class="form-label">Fecha de aprobación:</label>
                 <input type="date" name="approvalDate" class="form-input" value="${new Date().toISOString().split('T')[0]}" required>
               </div>
               
               <div class="form-group">
                 <label class="form-label">
                   <input type="checkbox" required style="margin-right: 8px;">
-                  I confirm that I approve this estimate and authorize proceeding with the project according to the terms described.
+                  Confirmo que apruebo este estimado y autorizo proceder con el proyecto según los términos descritos.
                 </label>
               </div>
               
               <div class="form-buttons">
-                <button type="button" onclick="hideApprovalForm()" class="btn-cancel">Cancel</button>
-                <button type="submit" class="btn-submit">✅ Authorize Project</button>
+                <button type="button" onclick="hideApprovalForm()" class="btn-cancel">Cancelar</button>
+                <button type="submit" class="btn-submit">✅ Autorizar Proyecto</button>
               </div>
             </form>
           </div>
 
           <!-- Adjustment Form -->
           <div id="adjustmentForm" class="inline-form">
-            <h3 style="color: #d97706; margin-bottom: 20px;">📝 Request Modifications</h3>
+            <h3 style="color: #d97706; margin-bottom: 20px;">📝 Solicitar Modificaciones</h3>
             <form action="${appUrl}/api/estimate-email/adjust" method="POST">
               <input type="hidden" name="estimateId" value="${data.estimateNumber}">
               <input type="hidden" name="contractorEmail" value="${data.contractor.email}">
               <input type="hidden" name="clientEmail" value="${data.client.email}">
               
               <div class="form-group">
-                <label class="form-label">Your name:</label>
+                <label class="form-label">Su nombre:</label>
                 <input type="text" name="clientName" class="form-input" value="${data.client.name}" required>
               </div>
               
               <div class="form-group">
-                <label class="form-label">Notes about required changes:</label>
+                <label class="form-label">Notas sobre los cambios requeridos:</label>
                 <textarea name="clientNotes" class="form-textarea" 
-                          placeholder="Please describe specifically what changes you would like to make to the estimate..." 
+                          placeholder="Por favor describa específicamente qué cambios le gustaría hacer al estimado..." 
                           required></textarea>
               </div>
               
               <div class="form-group">
-                <label class="form-label">Requested changes (specific details):</label>
+                <label class="form-label">Cambios solicitados (detalles específicos):</label>
                 <textarea name="requestedChanges" class="form-textarea" 
-                          placeholder="Ex: Change wood material to vinyl, adjust number of posts, modify timeline, etc..." 
+                          placeholder="Ej: Cambiar material de madera a vinilo, ajustar número de postes, modificar cronograma, etc..." 
                           required></textarea>
               </div>
               
               <div class="form-buttons">
-                <button type="button" onclick="hideAdjustmentForm()" class="btn-cancel">Cancel</button>
-                <button type="submit" class="btn-submit">📝 Send Request</button>
+                <button type="button" onclick="hideAdjustmentForm()" class="btn-cancel">Cancelar</button>
+                <button type="submit" class="btn-submit">📝 Enviar Solicitud</button>
               </div>
             </form>
           </div>
           
           <div style="margin-top: 20px; padding: 15px; background-color: #f8fafc; border-radius: 8px; font-size: 14px; color: #6b7280;">
-            <p style="margin: 0 0 10px 0;"><strong>💡 Instructions:</strong></p>
-            <p style="margin: 0 0 5px 0;">• <strong>Approve:</strong> Complete the approval form with your information and confirm</p>
-            <p style="margin: 0;">• <strong>Request Changes:</strong> Describe specifically what changes you need for the project</p>
+            <p style="margin: 0 0 10px 0;"><strong>💡 Instrucciones:</strong></p>
+            <p style="margin: 0 0 5px 0;">• <strong>Aprobar:</strong> Haga clic en el botón verde y complete el formulario de aprobación</p>
+            <p style="margin: 0;">• <strong>Solicitar Cambios:</strong> Haga clic en el botón naranja y describa qué cambios necesita</p>
           </div>
+          
+          <!-- Status Messages -->
+          <div id="statusMessage" style="display: none; margin: 20px 0; padding: 15px; border-radius: 8px; text-align: center; font-weight: 600;"></div>
         </div>
+        
+        <script>
+          function showApprovalForm() {
+            document.getElementById('approvalForm').classList.add('active');
+            document.getElementById('adjustmentForm').classList.remove('active');
+            document.getElementById('approvalForm').scrollIntoView({ behavior: 'smooth' });
+          }
+          
+          function hideApprovalForm() {
+            document.getElementById('approvalForm').classList.remove('active');
+          }
+          
+          function showAdjustmentForm() {
+            document.getElementById('adjustmentForm').classList.add('active');
+            document.getElementById('approvalForm').classList.remove('active');
+            document.getElementById('adjustmentForm').scrollIntoView({ behavior: 'smooth' });
+          }
+          
+          function hideAdjustmentForm() {
+            document.getElementById('adjustmentForm').classList.remove('active');
+          }
+          
+          function showStatus(message, type) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.style.display = 'block';
+            statusEl.style.backgroundColor = type === 'success' ? '#d1fae5' : '#fef2f2';
+            statusEl.style.color = type === 'success' ? '#065f46' : '#991b1b';
+            statusEl.style.borderColor = type === 'success' ? '#a7f3d0' : '#fecaca';
+            statusEl.scrollIntoView({ behavior: 'smooth' });
+          }
+          
+          // Form submission handlers
+          document.addEventListener('DOMContentLoaded', function() {
+            const approvalForm = document.querySelector('#approvalForm form');
+            const adjustmentForm = document.querySelector('#adjustmentForm form');
+            
+            if (approvalForm) {
+              approvalForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                
+                try {
+                  const response = await fetch(this.action, {
+                    method: 'POST',
+                    body: formData
+                  });
+                  
+                  if (response.ok) {
+                    showStatus('✅ ¡Estimado aprobado exitosamente! El contratista ha sido notificado.', 'success');
+                    hideApprovalForm();
+                  } else {
+                    showStatus('❌ Hubo un error procesando su aprobación. Por favor intente de nuevo.', 'error');
+                  }
+                } catch (error) {
+                  showStatus('❌ Error de conexión. Por favor verifique su internet e intente de nuevo.', 'error');
+                }
+              });
+            }
+            
+            if (adjustmentForm) {
+              adjustmentForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                
+                try {
+                  const response = await fetch(this.action, {
+                    method: 'POST',
+                    body: formData
+                  });
+                  
+                  if (response.ok) {
+                    showStatus('📝 Change request sent successfully! The contractor will review and respond.', 'success');
+                    hideAdjustmentForm();
+                  } else {
+                    showStatus('❌ There was an error sending your request. Please try again.', 'error');
+                  }
+                } catch (error) {
+                  showStatus('❌ Connection error. Please check your internet and try again.', 'error');
+                }
+              });
+            }
+          });
+        </script>
         
         <!-- Footer -->
         <div class="footer">
