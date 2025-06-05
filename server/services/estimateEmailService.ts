@@ -693,30 +693,30 @@ export class EstimateEmailService {
             </div>
           ` : ''}
           
-          <!-- Embedded Action Buttons - No External Links -->
+          <!-- Direct Action Buttons - Email Client Compatible -->
           <div class="action-buttons" style="text-align: center; margin: 30px 0;">
-            <!-- Approve Button -->
+            <!-- Approve Button - Direct Link -->
             <table class="email-button-table" cellpadding="0" cellspacing="0" border="0" style="display: inline-block; margin: 0 8px;">
               <tr>
                 <td class="email-button-cell" style="background-color: #10b981; border-radius: 8px;">
-                  <button onclick="showApprovalForm()" 
+                  <a href="https://4d52eb7d-89c5-4768-b289-5b2d76991682-00-1ovgjat7mg0re.riker.replit.dev/api/estimate-email/approve?estimateId=${data.estimateNumber}&clientName=${encodeURIComponent(data.client.name)}&clientEmail=${encodeURIComponent(data.client.email)}&contractorEmail=${encodeURIComponent(data.contractor.email)}&action=quick-approve" 
                      class="email-button-link approve-button" 
-                     style="display: block; padding: 15px 30px; border: none; background: transparent; color: #ffffff; font-weight: 600; font-size: 16px; text-align: center; border-radius: 8px; min-width: 160px; cursor: pointer;">
-                    ✅ Approve Estimate
-                  </button>
+                     style="display: block; padding: 15px 30px; color: #ffffff; font-weight: 600; font-size: 16px; text-decoration: none; text-align: center; border-radius: 8px; min-width: 160px;">
+                    ✅ Aprobar Estimado
+                  </a>
                 </td>
               </tr>
             </table>
             
-            <!-- Request Changes Button -->
+            <!-- Request Changes Button - Direct Link -->
             <table class="email-button-table" cellpadding="0" cellspacing="0" border="0" style="display: inline-block; margin: 0 8px;">
               <tr>
                 <td class="email-button-cell" style="background-color: #f59e0b; border-radius: 8px;">
-                  <button onclick="showAdjustmentForm()" 
+                  <a href="https://4d52eb7d-89c5-4768-b289-5b2d76991682-00-1ovgjat7mg0re.riker.replit.dev/api/estimate-email/request-changes?estimateId=${data.estimateNumber}&clientName=${encodeURIComponent(data.client.name)}&clientEmail=${encodeURIComponent(data.client.email)}&contractorEmail=${encodeURIComponent(data.contractor.email)}" 
                      class="email-button-link adjust-button" 
-                     style="display: block; padding: 15px 30px; border: none; background: transparent; color: #ffffff; font-weight: 600; font-size: 16px; text-align: center; border-radius: 8px; min-width: 160px; cursor: pointer;">
-                    📝 Request Changes
-                  </button>
+                     style="display: block; padding: 15px 30px; color: #ffffff; font-weight: 600; font-size: 16px; text-decoration: none; text-align: center; border-radius: 8px; min-width: 160px;">
+                    📝 Solicitar Cambios
+                  </a>
                 </td>
               </tr>
             </table>

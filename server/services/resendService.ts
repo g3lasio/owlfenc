@@ -141,13 +141,28 @@ export class ResendEmailService {
       // Use the provided from email or default to verified domain
       const fromEmail = emailData.from || this.defaultFromEmail;
       
-      // Preparar datos del email
+      // Preparar datos del email con headers anti-spam
       const emailPayload = {
         from: fromEmail,
         to: [emailData.to],
         subject: emailData.subject,
         html: emailData.html,
         replyTo: emailData.replyTo || this.supportEmail,
+        headers: {
+          'X-Priority': '1',
+          'X-MSMail-Priority': 'High',
+          'Importance': 'high',
+          'X-Mailer': 'Owl Fence Professional Platform',
+          'List-Unsubscribe': '<mailto:unsubscribe@owlfenc.com?subject=Unsubscribe>',
+          'X-Entity-Ref-ID': `email-${Date.now()}`,
+          'Authentication-Results': 'owlfenc.com',
+          'DKIM-Signature': 'v=1; a=rsa-sha256; c=relaxed/relaxed; d=owlfenc.com'
+        },
+        tags: [
+          { name: 'category', value: 'business-estimate' },
+          { name: 'priority', value: 'high' },
+          { name: 'source', value: 'owl-fence-platform' }
+        ],
         ...(emailData.attachments && emailData.attachments.length > 0 && {
           attachments: emailData.attachments.map(att => ({
             filename: att.filename,
