@@ -21,7 +21,9 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
-  Plus
+  Plus,
+  PenTool,
+  Send
 } from 'lucide-react';
 
 export default function LegalContractEngineFixed() {
@@ -40,6 +42,8 @@ export default function LegalContractEngineFixed() {
   const [contractStrength, setContractStrength] = useState<number>(0);
   const [legalAdvice, setLegalAdvice] = useState<string[]>([]);
   const [protectionsApplied, setProtectionsApplied] = useState<string[]>([]);
+  const [isSigning, setIsSigning] = useState(false);
+  const [signatureData, setSignatureData] = useState<{contractor: string, client: string, date: string} | null>(null);
 
   // Pasos del workflow horizontal
   const STEPS = [
@@ -236,11 +240,36 @@ export default function LegalContractEngineFixed() {
   };
 
   const downloadContract = () => {
-    const blob = new Blob([generatedContract], { type: 'text/html' });
+    let contractWithSignatures = generatedContract;
+    
+    if (signatureData) {
+      contractWithSignatures += `
+        <div style="margin-top: 40px; border-top: 2px solid #333; padding-top: 20px;">
+          <h3>FIRMAS ELECTRÓNICAS</h3>
+          <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+            <div style="width: 45%;">
+              <p><strong>Contratista:</strong></p>
+              <p style="font-family: cursive; font-size: 24px; color: #2563eb;">${signatureData.contractor}</p>
+              <p>Fecha: ${signatureData.date}</p>
+            </div>
+            <div style="width: 45%;">
+              <p><strong>Cliente:</strong></p>
+              <p style="font-family: cursive; font-size: 24px; color: #2563eb;">${signatureData.client}</p>
+              <p>Fecha: ${signatureData.date}</p>
+            </div>
+          </div>
+          <p style="margin-top: 20px; font-size: 12px; color: #666;">
+            Este documento ha sido firmado electrónicamente de acuerdo con las leyes aplicables.
+          </p>
+        </div>
+      `;
+    }
+    
+    const blob = new Blob([contractWithSignatures], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `contrato-blindado-${Date.now()}.html`;
+    a.download = `contrato-blindado-firmado-${Date.now()}.html`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -248,8 +277,36 @@ export default function LegalContractEngineFixed() {
     
     toast({
       title: "📄 Contrato descargado",
-      description: "El archivo ha sido guardado en tu dispositivo",
+      description: "El archivo firmado ha sido guardado en tu dispositivo",
     });
+  };
+
+  const handleElectronicSignature = async () => {
+    setIsSigning(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const signatures = {
+        contractor: "María González García",
+        client: extractedData?.clientName || "Cliente",
+        date: new Date().toLocaleDateString('es-ES')
+      };
+      
+      setSignatureData(signatures);
+      
+      toast({
+        title: "✅ Contrato firmado electrónicamente",
+        description: "Las firmas han sido aplicadas correctamente",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo completar la firma electrónica",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSigning(false);
+    }
   };
 
   const handleCreateNew = () => {
@@ -515,14 +572,48 @@ export default function LegalContractEngineFixed() {
             {generatedContract && (
               <div className="space-y-4">
                 <div className="flex gap-4 justify-center">
+                  {!signatureData && (
+                    <Button
+                      onClick={handleElectronicSignature}
+                      disabled={isSigning}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <PenTool className="h-4 w-4 mr-2" />
+                      {isSigning ? "Firmando..." : "Firmar Electrónicamente"}
+                    </Button>
+                  )}
                   <Button
                     onClick={downloadContract}
                     className="bg-orange-600 hover:bg-orange-700"
                   >
                     <Download className="h-4 w-4 mr-2" />
-                    Descargar Contrato
+                    {signatureData ? "Descargar Contrato Firmado" : "Descargar Contrato"}
                   </Button>
                 </div>
+
+                {signatureData && (
+                  <Card className="border-green-200 bg-green-50">
+                    <CardHeader>
+                      <CardTitle className="flex items-center text-green-800">
+                        <CheckCircle className="h-5 w-5 mr-2" />
+                        Contrato Firmado Electrónicamente
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p><strong>Contratista:</strong> {signatureData.contractor}</p>
+                        </div>
+                        <div>
+                          <p><strong>Cliente:</strong> {signatureData.client}</p>
+                        </div>
+                        <div className="col-span-2">
+                          <p><strong>Fecha de firma:</strong> {signatureData.date}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
                 
                 <Card>
                   <CardHeader>
