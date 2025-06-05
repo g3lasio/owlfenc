@@ -44,6 +44,63 @@ export default function LegalContractEngineFixed() {
   const [protectionsApplied, setProtectionsApplied] = useState<string[]>([]);
   const [isSigning, setIsSigning] = useState(false);
   const [signatureData, setSignatureData] = useState<{contractor: string, client: string, date: string} | null>(null);
+  const [selectedContractType, setSelectedContractType] = useState<string>('');
+
+  // Tipos de contratos especializados
+  const CONTRACT_TYPES = [
+    {
+      id: 'general',
+      name: '🏢 Contratista General',
+      title: 'Contrato General de Construcción',
+      description: 'Alcance global y gestión de subcontratistas',
+      characteristics: [
+        'Cronograma y pagos estructurados',
+        'Cláusulas detalladas (seguros, fianzas, arbitraje)',
+        'Gestión completa del proyecto',
+        'Responsabilidad total ante el propietario'
+      ],
+      regulations: 'Más complejo, aplica en obras comerciales/residenciales grandes'
+    },
+    {
+      id: 'pool',
+      name: '🏊 Contratista de Piscinas',
+      title: 'Contrato de Construcción de Piscina',
+      description: 'Especializado en construcción de piscinas',
+      characteristics: [
+        'Plano/dibujo a escala obligatorio',
+        'Detalles técnicos específicos (equipos, fases)',
+        'Garantías especiales de estructura y equipos',
+        'Límites legales de anticipo por estado'
+      ],
+      regulations: 'Considerado Contrato de Mejora del Hogar en residencial'
+    },
+    {
+      id: 'homeimprovement',
+      name: '🏡 Mejoras del Hogar',
+      title: 'Contrato de Mejora del Hogar',
+      description: 'Altamente regulado con protección al consumidor',
+      characteristics: [
+        'Descripción detallada del alcance',
+        'Derecho a cancelar (3 días)',
+        'Avisos legales sobre gravámenes y seguros',
+        'Límites legales a anticipos iniciales'
+      ],
+      regulations: 'Más simple y estandarizado, alta protección consumidor'
+    },
+    {
+      id: 'subcontractor',
+      name: '🔧 Subcontratista',
+      title: 'Acuerdo de Subcontratista',
+      description: 'Contratistas especializados bajo General Contractors',
+      characteristics: [
+        'Alcance específico alineado al contrato principal',
+        'Pago condicionado (Pay-When-Paid, Pay-If-Paid)',
+        'Cláusulas flow-down del contrato principal',
+        'Seguro obligatorio, cláusulas de indemnización'
+      ],
+      regulations: 'Contrato comercial, no directo con propietario final'
+    }
+  ];
 
   // Pasos del workflow horizontal
   const STEPS = [
@@ -92,7 +149,7 @@ export default function LegalContractEngineFixed() {
 
   const canProceedToNext = () => {
     switch (currentStep) {
-      case 0: return extractedData !== null;
+      case 0: return extractedData !== null && selectedContractType !== '';
       case 1: return riskAnalysis !== null;
       case 2: return generatedContract !== "";
       case 3: return true;
@@ -190,41 +247,197 @@ export default function LegalContractEngineFixed() {
     }
   };
 
+  const generateContractByType = (contractType: string, data: any) => {
+    const selectedType = CONTRACT_TYPES.find(t => t.id === contractType);
+    
+    const baseContract = `
+      <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6;">
+        <h1 style="text-align: center; color: #2563eb; margin-bottom: 30px;">${selectedType?.title.toUpperCase()}</h1>
+    `;
+
+    let specificClauses = '';
+    let protections: string[] = [];
+
+    switch (contractType) {
+      case 'general':
+        specificClauses = `
+          <h2>GESTIÓN INTEGRAL DEL PROYECTO</h2>
+          <p><strong>Contratista General:</strong> [Nombre de la empresa]</p>
+          <p><strong>Responsabilidad Total:</strong> El contratista asume responsabilidad completa ante el propietario por todos los aspectos del proyecto.</p>
+          
+          <h2>GESTIÓN DE SUBCONTRATISTAS</h2>
+          <p>El contratista general será responsable de:</p>
+          <ul>
+            <li>Selección y supervisión de subcontratistas especializados</li>
+            <li>Coordinación de cronogramas y entregas</li>
+            <li>Verificación de seguros y licencias de subcontratistas</li>
+          </ul>
+
+          <h2>CRONOGRAMA Y PAGOS ESTRUCTURADOS</h2>
+          <p><strong>Calendario de Pagos:</strong></p>
+          <ul>
+            <li>Anticipo: 10% al firmar el contrato</li>
+            <li>Progreso: Pagos por hitos completados</li>
+            <li>Final: 10% a la entrega final y aceptación</li>
+          </ul>
+
+          <h2>SEGUROS Y FIANZAS</h2>
+          <p>El contratista mantendrá:</p>
+          <ul>
+            <li>Seguro de responsabilidad general: $1,000,000 mínimo</li>
+            <li>Seguro de compensación laboral según ley estatal</li>
+            <li>Fianza de cumplimiento cuando sea requerida</li>
+          </ul>
+        `;
+        protections = [
+          "Responsabilidad integral del contratista",
+          "Gestión profesional de subcontratistas",
+          "Cronograma estructurado de pagos",
+          "Seguros obligatorios completos",
+          "Fianzas de cumplimiento"
+        ];
+        break;
+
+      case 'pool':
+        specificClauses = `
+          <h2>ESPECIFICACIONES TÉCNICAS DE PISCINA</h2>
+          <p><strong>Planos a Escala:</strong> Se adjuntan planos técnicos detallados como parte integral del contrato.</p>
+          
+          <h2>FASES DE CONSTRUCCIÓN</h2>
+          <ul>
+            <li><strong>Fase 1:</strong> Excavación y preparación del terreno</li>
+            <li><strong>Fase 2:</strong> Instalación de estructura y plomería</li>
+            <li><strong>Fase 3:</strong> Instalación de equipos especializados</li>
+            <li><strong>Fase 4:</strong> Acabados y pruebas finales</li>
+          </ul>
+
+          <h2>EQUIPOS Y GARANTÍAS ESPECIALES</h2>
+          <p><strong>Garantía de Estructura:</strong> 10 años en estructura principal</p>
+          <p><strong>Garantía de Equipos:</strong> 2 años en bombas, filtros y sistemas</p>
+          
+          <h2>LÍMITES DE ANTICIPO</h2>
+          <p><strong>Anticipo Máximo Permitido:</strong> Según regulaciones estatales (máximo 10% o $1,000, lo que sea menor)</p>
+        `;
+        protections = [
+          "Planos técnicos obligatorios",
+          "Garantías especiales de estructura (10 años)",
+          "Garantías de equipos especializados",
+          "Límites legales de anticipos",
+          "Fases de construcción detalladas"
+        ];
+        break;
+
+      case 'homeimprovement':
+        specificClauses = `
+          <h2>PROTECCIONES AL CONSUMIDOR</h2>
+          <p><strong>DERECHO A CANCELAR:</strong> El cliente tiene derecho a cancelar este contrato dentro de 3 días hábiles después de firmarlo.</p>
+          
+          <h2>AVISO SOBRE GRAVÁMENES</h2>
+          <p><strong>IMPORTANTE:</strong> El contratista puede tener derecho a presentar un gravamen sobre la propiedad si no se realiza el pago completo.</p>
+          
+          <h2>DESCRIPCIÓN DETALLADA DEL ALCANCE</h2>
+          <p><strong>Trabajos Incluidos:</strong></p>
+          <ul>
+            <li>Descripción específica de materiales y mano de obra</li>
+            <li>Fechas de inicio y finalización</li>
+            <li>Especificaciones de limpieza post-trabajo</li>
+          </ul>
+
+          <h2>LÍMITES DE ANTICIPO INICIAL</h2>
+          <p><strong>Anticipo Permitido:</strong> Máximo permitido por ley estatal (típicamente 10% o $500)</p>
+          
+          <h2>SEGUROS REQUERIDOS</h2>
+          <p>El contratista debe proporcionar comprobante de seguro de responsabilidad civil.</p>
+        `;
+        protections = [
+          "Derecho de cancelación (3 días)",
+          "Aviso legal sobre gravámenes",
+          "Límites estrictos de anticipos",
+          "Descripción detallada obligatoria",
+          "Seguros de responsabilidad requeridos"
+        ];
+        break;
+
+      case 'subcontractor':
+        specificClauses = `
+          <h2>RELACIÓN CON CONTRATO PRINCIPAL</h2>
+          <p><strong>Contrato Principal:</strong> Este acuerdo está subordinado al contrato principal entre el Contratista General y el Propietario.</p>
+          
+          <h2>ALCANCE ESPECÍFICO</h2>
+          <p><strong>Trabajos Asignados:</strong> [Descripción específica del trabajo especializado]</p>
+          <p><strong>Alineación:</strong> Todo trabajo debe cumplir con especificaciones del contrato principal.</p>
+
+          <h2>TÉRMINOS DE PAGO CONDICIONADO</h2>
+          <p><strong>Pay-When-Paid:</strong> El pago está condicionado al pago del contrato principal.</p>
+          <p><strong>Cronograma:</strong> Pagos dentro de 7 días después de recibir pago del propietario.</p>
+
+          <h2>CLÁUSULAS FLOW-DOWN</h2>
+          <p>Las siguientes obligaciones del contrato principal se aplican a este subcontrato:</p>
+          <ul>
+            <li>Estándares de calidad y especificaciones técnicas</li>
+            <li>Cronogramas y fechas de entrega</li>
+            <li>Requisitos de seguridad e inspecciones</li>
+          </ul>
+
+          <h2>SEGUROS E INDEMNIZACIÓN</h2>
+          <p><strong>Seguro Obligatorio:</strong> Responsabilidad general mínima de $500,000</p>
+          <p><strong>Indemnización:</strong> El subcontratista indemniza al contratista general por trabajos realizados.</p>
+        `;
+        protections = [
+          "Alineación con contrato principal",
+          "Pago condicionado estructurado",
+          "Cláusulas flow-down aplicadas",
+          "Seguros especializados obligatorios",
+          "Indemnización mutua"
+        ];
+        break;
+
+      default:
+        specificClauses = '';
+        protections = [];
+    }
+
+    const fullContract = baseContract + `
+      <h2>DATOS DEL PROYECTO</h2>
+      <p><strong>Cliente:</strong> ${data?.clientName}</p>
+      <p><strong>Dirección:</strong> ${data?.address}</p>
+      <p><strong>Tipo de Proyecto:</strong> ${data?.projectType}</p>
+      <p><strong>Monto Total:</strong> ${data?.totalAmount}</p>
+      
+      ${specificClauses}
+      
+      <h2>TÉRMINOS GENERALES</h2>
+      <ul>
+        ${legalAdvice.map(advice => `<li>${advice}</li>`).join('')}
+      </ul>
+      
+      <h2>DISPOSICIONES FINALES</h2>
+      <p>Este contrato ha sido generado conforme a las regulaciones específicas para ${selectedType?.name}.</p>
+      <p><strong>Regulación Aplicable:</strong> ${selectedType?.regulations}</p>
+      
+      <p style="margin-top: 30px; text-align: center; font-size: 12px; color: #666;">
+        Contrato generado por Legal Defense Engine - ${new Date().toLocaleDateString('es-ES')}
+      </p>
+    </div>
+    `;
+
+    return { contract: fullContract, protections };
+  };
+
   const generateContract = async () => {
     setIsProcessing(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 3000));
       
-      const mockContract = `
-        <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
-          <h1 style="text-align: center; color: #2563eb;">CONTRATO DE SERVICIOS DE CERCADO</h1>
-          <h2>DATOS DEL CLIENTE</h2>
-          <p><strong>Nombre:</strong> ${extractedData?.clientName}</p>
-          <p><strong>Dirección:</strong> ${extractedData?.address}</p>
-          <h2>DESCRIPCIÓN DEL PROYECTO</h2>
-          <p><strong>Tipo:</strong> ${extractedData?.projectType}</p>
-          <p><strong>Monto Total:</strong> ${extractedData?.totalAmount}</p>
-          <h2>TÉRMINOS Y CONDICIONES</h2>
-          <ul>
-            ${legalAdvice.map(advice => `<li>${advice}</li>`).join('')}
-          </ul>
-          <h2>PROTECCIONES LEGALES</h2>
-          <p>Este contrato incluye cláusulas de protección específicas para proyectos de cercado residencial.</p>
-        </div>
-      `;
+      const { contract, protections } = generateContractByType(selectedContractType, extractedData);
       
-      setGeneratedContract(mockContract);
-      setContractStrength(85);
-      setProtectionsApplied([
-        "Cláusula de fuerza mayor",
-        "Términos de pago protegidos",
-        "Garantía de materiales",
-        "Resolución de disputas"
-      ]);
+      setGeneratedContract(contract);
+      setContractStrength(88);
+      setProtectionsApplied(protections);
       
       toast({
-        title: "✅ Contrato generado exitosamente",
-        description: "Tu contrato blindado está listo",
+        title: "✅ Contrato especializado generado",
+        description: `Contrato ${CONTRACT_TYPES.find(t => t.id === selectedContractType)?.name} listo`,
       });
       
       nextStep();
@@ -343,11 +556,72 @@ export default function LegalContractEngineFixed() {
           <div className="space-y-6">
             <div className="text-center">
               <Upload className="h-16 w-16 mx-auto text-blue-500 mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Extraer Datos del PDF</h3>
+              <h3 className="text-xl font-semibold mb-2">Seleccionar Tipo de Contrato y Extraer Datos</h3>
               <p className="text-muted-foreground">
-                Sube el PDF de tu estimado para extraer automáticamente la información del proyecto
+                Selecciona el tipo de contrato y sube el PDF de tu estimado
               </p>
             </div>
+
+            {/* Selector de Tipo de Contrato */}
+            {!selectedContractType && (
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-center">Selecciona el Tipo de Contrato</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {CONTRACT_TYPES.map((type) => (
+                    <Card 
+                      key={type.id}
+                      className={`cursor-pointer transition-all hover:shadow-lg ${
+                        selectedContractType === type.id ? 'ring-2 ring-blue-500 bg-blue-50' : ''
+                      }`}
+                      onClick={() => setSelectedContractType(type.id)}
+                    >
+                      <CardHeader>
+                        <CardTitle className="text-sm flex items-center">
+                          {type.name}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground mb-2">{type.description}</p>
+                        <div className="text-xs space-y-1">
+                          {type.characteristics.slice(0, 2).map((char, idx) => (
+                            <p key={idx} className="text-gray-600">• {char}</p>
+                          ))}
+                        </div>
+                        <Badge variant="outline" className="mt-2 text-xs">
+                          {type.regulations}
+                        </Badge>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedContractType && (
+              <div className="space-y-4">
+                <Card className="border-green-200 bg-green-50">
+                  <CardContent className="pt-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold text-green-800">
+                          {CONTRACT_TYPES.find(t => t.id === selectedContractType)?.name}
+                        </p>
+                        <p className="text-sm text-green-700">
+                          {CONTRACT_TYPES.find(t => t.id === selectedContractType)?.title}
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedContractType('')}
+                      >
+                        Cambiar
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
             
             {!selectedFile ? (
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
