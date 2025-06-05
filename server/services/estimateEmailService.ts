@@ -699,10 +699,9 @@ export class EstimateEmailService {
             <table class="email-button-table" cellpadding="0" cellspacing="0" border="0" style="display: inline-block; margin: 0 8px;">
               <tr>
                 <td class="email-button-cell" style="background-color: #10b981; border-radius: 8px;">
-                  <a href="#approvalForm" 
+                  <a href="${appUrl}/api/simple-estimate/approve?estimateId=${encodeURIComponent(data.estimateNumber)}&clientEmail=${encodeURIComponent(data.client.email)}" 
                      class="email-button-link approve-button" 
-                     style="display: block; padding: 15px 30px; text-decoration: none; color: #ffffff; font-weight: 600; font-size: 16px; text-align: center; border-radius: 8px; min-width: 160px;"
-                     onclick="showApprovalForm(); return true;">
+                     style="display: block; padding: 15px 30px; text-decoration: none; color: #ffffff; font-weight: 600; font-size: 16px; text-align: center; border-radius: 8px; min-width: 160px;">
                     ✅ Approve Estimate
                   </a>
                 </td>
@@ -713,10 +712,9 @@ export class EstimateEmailService {
             <table class="email-button-table" cellpadding="0" cellspacing="0" border="0" style="display: inline-block; margin: 0 8px;">
               <tr>
                 <td class="email-button-cell" style="background-color: #f59e0b; border-radius: 8px;">
-                  <a href="#adjustmentForm" 
+                  <a href="${appUrl}/api/simple-estimate/adjust?estimateId=${encodeURIComponent(data.estimateNumber)}&clientEmail=${encodeURIComponent(data.client.email)}" 
                      class="email-button-link adjust-button" 
-                     style="display: block; padding: 15px 30px; text-decoration: none; color: #ffffff; font-weight: 600; font-size: 16px; text-align: center; border-radius: 8px; min-width: 160px;"
-                     onclick="showAdjustmentForm(); return true;">
+                     style="display: block; padding: 15px 30px; text-decoration: none; color: #ffffff; font-weight: 600; font-size: 16px; text-align: center; border-radius: 8px; min-width: 160px;">
                     📝 Request Changes
                   </a>
                 </td>

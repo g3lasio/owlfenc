@@ -6,6 +6,7 @@
 import express from 'express';
 import { resendService } from '../services/resendService';
 import { EstimateEmailService } from '../services/estimateEmailService';
+import { simpleTracker } from '../services/SimpleEstimateTracker';
 
 const router = express.Router();
 
@@ -37,6 +38,25 @@ router.post('/send-estimate', async (req, res) => {
     // Usar el servicio completo de email de estimados con todos los datos
     const estimateHtml = EstimateEmailService.generateEstimateHTML(estimateData);
 
+    // Registrar estimado en el sistema de seguimiento para que funcionen los botones de aprobación
+    try {
+      const estimateForTracking = {
+        estimateNumber: estimateData.estimateNumber,
+        client: {
+          name: clientName,
+          email: clientEmail
+        },
+        contractor: {
+          email: contractorEmail
+        },
+        total: estimateData.total
+      };
+      simpleTracker.saveEstimate(estimateForTracking);
+      console.log('✅ [CENTRALIZED-EMAIL] Estimado registrado para seguimiento:', estimateData.estimateNumber);
+    } catch (trackingError) {
+      console.log('⚠️ [CENTRALIZED-EMAIL] Error registrando estimado para seguimiento, continuando...', trackingError);
+    }
+
     // Enviar email usando sistema centralizado
     const result = await resendService.sendCentralizedEmail({
       toEmail: clientEmail,
@@ -44,7 +64,7 @@ router.post('/send-estimate', async (req, res) => {
       contractorEmail,
       contractorName,
       contractorCompany: contractorCompany || contractorName,
-      subject: `Estimado Profesional - ${estimateData.projectType} - ${contractorCompany || contractorName}`,
+      subject: `Estimado Profesional - ${estimateData.estimateNumber} - ${contractorCompany || contractorName}`,
       htmlContent: estimateHtml,
       sendCopyToContractor: sendCopy
     });
