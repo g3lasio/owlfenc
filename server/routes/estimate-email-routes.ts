@@ -5,6 +5,7 @@
 
 import { Router, Request, Response } from 'express';
 import { EstimateEmailService, EstimateData, EstimateApproval, EstimateAdjustment } from '../services/estimateEmailService';
+import { estimateStorage } from '../services/DatabaseEstimateStorage';
 
 const router = Router();
 
@@ -56,13 +57,18 @@ router.post('/send', async (req: Request, res: Response) => {
     console.log('📧 [ESTIMATE-EMAIL-ROUTES] Contratista:', estimateData.contractor.companyName);
     console.log('📧 [ESTIMATE-EMAIL-ROUTES] Total:', estimateData.total);
     
+    // Guardar estimado en la base de datos
+    const savedEstimate = await estimateStorage.saveEstimate(estimateData);
+    console.log('📧 [ESTIMATE-EMAIL-ROUTES] Estimado guardado en DB:', savedEstimate.id);
+    
     const result = await EstimateEmailService.sendEstimateToClient(estimateData);
     
     if (result.success) {
       res.json({
         success: true,
         message: result.message,
-        estimateId: estimateData.estimateNumber
+        estimateId: estimateData.estimateNumber,
+        databaseId: savedEstimate.id
       });
     } else {
       res.status(500).json({
@@ -88,171 +94,224 @@ router.post('/approve', async (req: Request, res: Response) => {
   try {
     const { estimateId, clientName, clientEmail, approvalDate, contractorEmail } = req.body;
     
-    if (!estimateId || !clientEmail || !clientName) {
-      return res.status(400).send(`
-        <html>
-          <head>
-            <title>Error - Datos Incompletos</title>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <style>
-              body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background: #f8fafc; }
-              .error { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 500px; margin: 0 auto; }
-              @media (max-width: 640px) { body { padding: 10px; } .error { padding: 20px; } }
-            </style>
-          </head>
-          <body>
-            <div class="error">
-              <h2>❌ Error</h2>
-              <p>Datos incompletos en el formulario de aprobación.</p>
-              <p>Por favor, complete todos los campos requeridos.</p>
-            </div>
-          </body>
-        </html>
-      `);
-    }
-
     console.log('📋 [ESTIMATE-APPROVAL] Procesando aprobación de estimado:', estimateId);
     console.log('📋 [ESTIMATE-APPROVAL] Cliente:', clientName, clientEmail);
 
-    const approval: EstimateApproval = {
-      estimateId,
-      clientName,
-      approvalDate: approvalDate || new Date().toISOString().split('T')[0],
-      contractorEmail: contractorEmail || '',
-      clientSignature: `${clientName} - ${new Date().toLocaleDateString()}`
-    };
-
-    const result = await EstimateEmailService.processEstimateApproval(approval);
-
-    if (result.success) {
-      console.log('✅ [ESTIMATE-APPROVAL] Aprobación procesada exitosamente');
-      return res.send(`
+    if (!estimateId || !clientEmail || !clientName) {
+      return res.status(400).send(`
         <!DOCTYPE html>
         <html lang="es">
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Estimado Aprobado</title>
+          <title>Error - Datos Incompletos</title>
           <style>
-            body { 
-              font-family: Arial, sans-serif; 
-              background: linear-gradient(135deg, #10b981, #059669); 
-              margin: 0; 
-              padding: 20px; 
-              min-height: 100vh; 
-              display: flex; 
-              align-items: center; 
-              justify-content: center; 
-            }
-            .success-card { 
-              background: white; 
-              padding: 40px; 
-              border-radius: 16px; 
-              box-shadow: 0 20px 40px rgba(0,0,0,0.1); 
-              text-align: center; 
-              max-width: 500px; 
-              width: 100%; 
-            }
-            .success-icon { 
-              font-size: 64px; 
-              margin-bottom: 20px; 
-            }
-            .success-title { 
-              color: #059669; 
-              font-size: 24px; 
-              font-weight: bold; 
-              margin-bottom: 15px; 
-            }
-            .success-message { 
-              color: #6b7280; 
-              font-size: 16px; 
-              line-height: 1.6; 
-              margin-bottom: 20px; 
-            }
-            .estimate-details { 
-              background: #f0fdf4; 
-              padding: 20px; 
-              border-radius: 8px; 
-              margin: 20px 0; 
-            }
-            .detail-row { 
-              display: flex; 
-              justify-content: space-between; 
-              margin: 8px 0; 
-              font-size: 14px; 
-            }
-            .label { 
-              font-weight: 600; 
-              color: #374151; 
-            }
-            .value { 
-              color: #059669; 
-            }
-            @media (max-width: 640px) { 
-              body { padding: 10px; } 
-              .success-card { padding: 25px; } 
-              .success-title { font-size: 20px; } 
-              .detail-row { flex-direction: column; text-align: left; } 
-              .value { margin-top: 4px; } 
-            }
+            body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background: #f8fafc; }
+            .error { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 500px; margin: 0 auto; }
+            @media (max-width: 640px) { body { padding: 10px; } .error { padding: 20px; } }
           </style>
         </head>
         <body>
-          <div class="success-card">
-            <div class="success-icon">✅</div>
-            <h1 class="success-title">¡Estimado Aprobado!</h1>
-            <p class="success-message">
-              Su aprobación ha sido registrada exitosamente. El contratista será notificado y se pondrá en contacto con usted para coordinar el inicio del proyecto.
-            </p>
-            
-            <div class="estimate-details">
-              <div class="detail-row">
-                <span class="label">Estimado:</span>
-                <span class="value">${estimateId}</span>
-              </div>
-              <div class="detail-row">
-                <span class="label">Cliente:</span>
-                <span class="value">${clientName}</span>
-              </div>
-              <div class="detail-row">
-                <span class="label">Fecha de aprobación:</span>
-                <span class="value">${new Date().toLocaleDateString('es-ES')}</span>
-              </div>
-            </div>
-            
-            <p class="success-message">
-              <strong>Próximos pasos:</strong><br>
-              • El contratista recibirá una notificación inmediata<br>
-              • Se le contactará en las próximas 24 horas<br>
-              • Recibirá un contrato formal para firma
-            </p>
+          <div class="error">
+            <h2>❌ Error</h2>
+            <p>Datos incompletos en el formulario de aprobación.</p>
+            <p>Por favor, complete todos los campos requeridos.</p>
           </div>
         </body>
         </html>
       `);
-    } else {
-      return res.status(500).send(`
-        <html>
-          <head>
-            <title>Error - Procesamiento Fallido</title>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <style>
-              body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background: #fef2f2; }
-              .error { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 500px; margin: 0 auto; border-left: 4px solid #dc2626; }
-            </style>
-          </head>
-          <body>
-            <div class="error">
-              <h2>❌ Error</h2>
-              <p>No se pudo procesar la aprobación. ${result.message || 'Error interno del servidor'}</p>
-              <p>Por favor, contacte directamente al contratista.</p>
-            </div>
-          </body>
+    }
+
+    // Buscar estimado en la base de datos
+    const estimate = await estimateStorage.getEstimateByNumber(estimateId);
+    if (!estimate) {
+      return res.status(404).send(`
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Error - Estimado No Encontrado</title>
+          <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background: #f8fafc; }
+            .error { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 500px; margin: 0 auto; }
+            @media (max-width: 640px) { body { padding: 10px; } .error { padding: 20px; } }
+          </style>
+        </head>
+        <body>
+          <div class="error">
+            <h2>❌ Error</h2>
+            <p>El estimado ${estimateId} no fue encontrado en nuestros registros.</p>
+            <p>Por favor, verifique el número de estimado.</p>
+          </div>
+        </body>
         </html>
       `);
     }
+
+    // Actualizar estado del estimado a aprobado
+    const approverInfo = {
+      clientName,
+      signature: `${clientName} - ${new Date().toLocaleDateString('es-ES')}`
+    };
+    
+    const updateSuccess = await estimateStorage.updateEstimateStatus(estimate.id, 'approved', approverInfo);
+    
+    if (!updateSuccess) {
+      return res.status(500).send(`
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Error - No se pudo actualizar</title>
+          <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background: #f8fafc; }
+            .error { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 500px; margin: 0 auto; }
+            @media (max-width: 640px) { body { padding: 10px; } .error { padding: 20px; } }
+          </style>
+        </head>
+        <body>
+          <div class="error">
+            <h2>❌ Error</h2>
+            <p>No se pudo actualizar el estado del estimado.</p>
+            <p>Por favor, intente nuevamente o contacte al contratista.</p>
+          </div>
+        </body>
+        </html>
+      `);
+    }
+
+    // Crear notificación para el contratista
+    await estimateStorage.createNotification({
+      type: 'estimate_approved',
+      recipientEmail: estimate.contractorEmail,
+      title: `Estimado ${estimateId} Aprobado`,
+      message: `El cliente ${clientName} ha aprobado el estimado ${estimateId} por $${estimate.total}. Puede proceder con el proyecto.`,
+      relatedId: estimate.id
+    });
+
+    // Enviar email de notificación al contratista
+    const approval: EstimateApproval = {
+      estimateId,
+      clientName,
+      approvalDate: approvalDate || new Date().toISOString().split('T')[0],
+      contractorEmail: estimate.contractorEmail,
+      clientSignature: approverInfo.signature
+    };
+
+    const result = await EstimateEmailService.processEstimateApproval(approval);
+
+    console.log('✅ [ESTIMATE-APPROVAL] Aprobación procesada exitosamente');
+    return res.send(`
+      <!DOCTYPE html>
+      <html lang="es">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Estimado Aprobado</title>
+        <style>
+          body { 
+            font-family: Arial, sans-serif; 
+            background: linear-gradient(135deg, #10b981, #059669); 
+            margin: 0; 
+            padding: 20px; 
+            min-height: 100vh; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+          }
+          .success-card { 
+            background: white; 
+            padding: 40px; 
+            border-radius: 16px; 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1); 
+            text-align: center; 
+            max-width: 500px; 
+            width: 100%; 
+          }
+          .success-icon { 
+            font-size: 64px; 
+            margin-bottom: 20px; 
+          }
+          .success-title { 
+            color: #059669; 
+            font-size: 24px; 
+            font-weight: bold; 
+            margin-bottom: 15px; 
+          }
+          .success-message { 
+            color: #6b7280; 
+            font-size: 16px; 
+            line-height: 1.6; 
+            margin-bottom: 20px; 
+          }
+          .estimate-details { 
+            background: #f0fdf4; 
+            padding: 20px; 
+            border-radius: 8px; 
+            margin: 20px 0; 
+          }
+          .detail-row { 
+            display: flex; 
+            justify-content: space-between; 
+            margin: 8px 0; 
+            font-size: 14px; 
+          }
+          .label { 
+            font-weight: 600; 
+            color: #374151; 
+          }
+          .value { 
+            color: #059669; 
+          }
+          @media (max-width: 640px) { 
+            body { padding: 10px; } 
+            .success-card { padding: 25px; } 
+            .success-title { font-size: 20px; } 
+            .detail-row { flex-direction: column; text-align: left; } 
+            .value { margin-top: 4px; } 
+          }
+        </style>
+      </head>
+      <body>
+        <div class="success-card">
+          <div class="success-icon">✅</div>
+          <h1 class="success-title">¡Estimado Aprobado!</h1>
+          <p class="success-message">
+            Su aprobación ha sido registrada exitosamente. El contratista será notificado inmediatamente y se pondrá en contacto con usted para coordinar el inicio del proyecto.
+          </p>
+          
+          <div class="estimate-details">
+            <div class="detail-row">
+              <span class="label">Estimado:</span>
+              <span class="value">${estimateId}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Cliente:</span>
+              <span class="value">${clientName}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Total aprobado:</span>
+              <span class="value">$${estimate.total}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Fecha de aprobación:</span>
+              <span class="value">${new Date().toLocaleDateString('es-ES')}</span>
+            </div>
+          </div>
+          
+          <p class="success-message">
+            <strong>Próximos pasos:</strong><br>
+            • El contratista ha recibido una notificación inmediata<br>
+            • Se le contactará en las próximas 24 horas<br>
+            • Recibirá un contrato formal para firma<br>
+            • El proyecto puede comenzar según lo acordado
+          </p>
+        </div>
+      </body>
+      </html>
+    `);
     
     // Renderizar formulario de aprobación
     res.send(`

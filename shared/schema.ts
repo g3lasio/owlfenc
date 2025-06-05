@@ -1,709 +1,85 @@
-import { pgTable, text, serial, integer, timestamp, jsonb, boolean, primaryKey } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod";
+import { pgTable, text, varchar, decimal, integer, timestamp, boolean, jsonb } from 'drizzle-orm/pg-core';
+import { createInsertSchema } from 'drizzle-zod';
+import { z } from 'zod';
 
-// Users table
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-  company: text("company"),
-  ownerName: text("owner_name"),
-  role: text("role"),
-  email: text("email"),
-  phone: text("phone"),
-  mobilePhone: text("mobile_phone"),
-  address: text("address"),
-  city: text("city"),
-  state: text("state"),
-  zipCode: text("zip_code"),
-  license: text("license"),
-  insurancePolicy: text("insurance_policy"),
-  ein: text("ein"),
-  businessType: text("business_type"),
-  yearEstablished: text("year_established"),
-  website: text("website"),
-  description: text("description"),
-  specialties: jsonb("specialties"),
-  socialMedia: jsonb("social_media"),
-  documents: jsonb("documents"),
-  logo: text("logo"),
-  // Stripe Connect fields
-  stripeConnectAccountId: text("stripe_connect_account_id"),
-  createdAt: timestamp("created_at").defaultNow(),
+export const estimates = pgTable('estimates', {
+  id: text('id').primaryKey(),
+  estimateNumber: varchar('estimate_number', { length: 50 }).notNull(),
+  clientName: varchar('client_name', { length: 255 }).notNull(),
+  clientEmail: varchar('client_email', { length: 255 }).notNull(),
+  clientPhone: varchar('client_phone', { length: 50 }),
+  clientAddress: text('client_address'),
+  contractorName: varchar('contractor_name', { length: 255 }).notNull(),
+  contractorEmail: varchar('contractor_email', { length: 255 }).notNull(),
+  contractorCompany: varchar('contractor_company', { length: 255 }).notNull(),
+  contractorPhone: varchar('contractor_phone', { length: 50 }),
+  contractorAddress: text('contractor_address'),
+  projectType: varchar('project_type', { length: 255 }).notNull(),
+  projectDescription: text('project_description'),
+  projectLocation: text('project_location'),
+  scopeOfWork: text('scope_of_work'),
+  items: jsonb('items').notNull(), // Array of estimate items
+  subtotal: decimal('subtotal', { precision: 10, scale: 2 }).notNull(),
+  tax: decimal('tax', { precision: 10, scale: 2 }).notNull(),
+  taxRate: decimal('tax_rate', { precision: 5, scale: 2 }).notNull(),
+  total: decimal('total', { precision: 10, scale: 2 }).notNull(),
+  status: varchar('status', { length: 50 }).notNull().default('sent'), // sent, approved, adjustments_requested, completed
+  notes: text('notes'),
+  validUntil: timestamp('valid_until'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  approvedAt: timestamp('approved_at'),
+  approverName: varchar('approver_name', { length: 255 }),
+  approverSignature: text('approver_signature'),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-  company: true,
-  email: true,
-  phone: true,
-  address: true,
-  license: true,
+export const estimateAdjustments = pgTable('estimate_adjustments', {
+  id: text('id').primaryKey(),
+  estimateId: text('estimate_id').notNull().references(() => estimates.id),
+  clientName: varchar('client_name', { length: 255 }).notNull(),
+  clientEmail: varchar('client_email', { length: 255 }).notNull(),
+  clientNotes: text('client_notes').notNull(),
+  requestedChanges: text('requested_changes').notNull(),
+  contractorEmail: varchar('contractor_email', { length: 255 }).notNull(),
+  status: varchar('status', { length: 50 }).notNull().default('pending'), // pending, reviewed, implemented
+  contractorResponse: text('contractor_response'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  respondedAt: timestamp('responded_at'),
 });
 
-// Projects table
-export const projects = pgTable("projects", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
-  projectId: text("project_id").notNull(),
-  clientName: text("client_name").notNull(),
-  clientEmail: text("client_email"),
-  clientPhone: text("client_phone"),
-  address: text("address").notNull(),
-
-  // Campos de tipo de proyecto actualizados
-  projectType: text("project_type").default("general"), // fencing, roofing, plumbing, etc.
-  projectSubtype: text("project_subtype"), // Wood Fence, Metal Roofing, etc.
-  projectCategory: text("project_category").default("general"), // Alias para projectType
-  projectDescription: text("project_description"),
-  projectScope: text("project_scope"),
-
-  // Campos legacy para compatibilidad con proyectos existentes
-  fenceType: text("fence_type"),
-  length: integer("length"),
-  height: integer("height"),
-  gates: jsonb("gates"),
-  additionalDetails: text("additional_details"),
-  description: text("description"),
-
-  // Campos de documentos y estado
-  estimateHtml: text("estimate_html"),
-  contractHtml: text("contract_html"),
-  totalPrice: integer("total_price"),
-  status: text("status").default("draft"),
-  // Project tracking fields
-  projectProgress: text("project_progress").default("estimate_created"), // estimate_created, estimate_sent, client_approved, contract_sent, contract_signed, scheduled, in_progress, completed, cancelled
-  scheduledDate: timestamp("scheduled_date"), // Scheduled installation date
-  completedDate: timestamp("completed_date"), // Actual completion date
-  assignedTo: jsonb("assigned_to"), // Team members assigned to this project
-  attachments: jsonb("attachments"), // Documents and files related to the project
-  permitStatus: text("permit_status"), // not_required, pending, approved, rejected
-  permitDetails: jsonb("permit_details"), // Details about permits if required
-  clientNotes: text("client_notes"), // Notes about client requirements
-  internalNotes: text("internal_notes"), // Internal notes for the team
-  paymentStatus: text("payment_status"), // pending, partial, paid
-  paymentDetails: jsonb("payment_details"), // Payment history and details
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-
-  // Campos adicionales para organización
-  materialsList: jsonb("materials_list"), // Lista de materiales
-  laborHours: integer("labor_hours"),
-  difficulty: text("difficulty").default("medium"), // easy, medium, hard
-  priority: text("priority").default("normal"), // low, normal, high, urgent
+export const notifications = pgTable('notifications', {
+  id: text('id').primaryKey(),
+  type: varchar('type', { length: 50 }).notNull(), // estimate_approved, adjustment_requested, etc.
+  recipientEmail: varchar('recipient_email', { length: 255 }).notNull(),
+  title: varchar('title', { length: 255 }).notNull(),
+  message: text('message').notNull(),
+  relatedId: text('related_id'), // estimate or adjustment ID
+  isRead: boolean('is_read').notNull().default(false),
+  sentAt: timestamp('sent_at').defaultNow().notNull(),
+  readAt: timestamp('read_at'),
 });
 
-export const insertProjectSchema = createInsertSchema(projects).pick({
-  userId: true,
-  projectId: true,
-  clientName: true,
-  clientEmail: true,
-  clientPhone: true,
-  address: true,
-  projectType: true,
-  projectSubtype: true,
-  projectCategory: true,
-  projectDescription: true,
-  projectScope: true,
-  fenceType: true,
-  length: true,
-  height: true,
-  gates: true,
-  additionalDetails: true,
-  description: true,
-  estimateHtml: true,
-  contractHtml: true,
-  totalPrice: true,
-  status: true,
-  projectProgress: true,
-  scheduledDate: true,
-  completedDate: true,
-  assignedTo: true,
-  attachments: true,
-  permitStatus: true,
-  permitDetails: true,
-  clientNotes: true,
-  internalNotes: true,
-  paymentStatus: true,
-  paymentDetails: true,
-  materialsList: true,
-  laborHours: true,
-  difficulty: true,
-  priority: true,
+// Insert schemas
+export const insertEstimateSchema = createInsertSchema(estimates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
 });
 
-// Templates table
-export const templates = pgTable("templates", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
-  name: text("name").notNull(),
-  description: text("description"),
-  type: text("type").notNull(), // "estimate" or "contract"
-  html: text("html").notNull(),
-  isDefault: boolean("is_default").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
+export const insertEstimateAdjustmentSchema = createInsertSchema(estimateAdjustments).omit({
+  id: true,
+  createdAt: true,
 });
 
-export const insertTemplateSchema = createInsertSchema(templates).pick({
-  userId: true,
-  name: true,
-  description: true,
-  type: true,
-  html: true,
-  isDefault: true,
+export const insertNotificationSchema = createInsertSchema(notifications).omit({
+  id: true,
+  sentAt: true,
 });
 
-// Settings table
-export const settings = pgTable("settings", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).unique(),
-  pricingSettings: jsonb("pricing_settings"),
-  emailTemplates: jsonb("email_templates"),
-  notificationSettings: jsonb("notification_settings"),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const insertSettingsSchema = createInsertSchema(settings).pick({
-  userId: true,
-  pricingSettings: true,
-  emailTemplates: true,
-  notificationSettings: true,
-});
-
-// Chat logs table
-export const chatLogs = pgTable("chat_logs", {
-  id: serial("id").primaryKey(),
-  projectId: integer("project_id").references(() => projects.id),
-  messages: jsonb("messages").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const insertChatLogSchema = createInsertSchema(chatLogs).pick({
-  projectId: true,
-  messages: true,
-});
-
-// Materials table
-export const materials = pgTable("materials", {
-  id: serial("id").primaryKey(),
-  category: text("category").notNull(), // Postes, Paneles, Hardware, etc.
-  name: text("name").notNull(),
-  description: text("description"),
-  unit: text("unit").notNull(), // pieza, pie, paquete, etc.
-  price: integer("price").notNull(), // precio en centavos
-  supplier: text("supplier").default("Home Depot"),
-  sku: text("sku"),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const insertMaterialSchema = createInsertSchema(materials).pick({
-  category: true,
-  name: true,
-  description: true,
-  unit: true,
-  price: true,
-  supplier: true,
-  sku: true,
-});
-
-// Clients table
-export const clients = pgTable("clients", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
-  clientId: text("client_id").notNull(),
-  name: text("name").notNull(),
-  email: text("email"),
-  phone: text("phone"),
-  mobilePhone: text("mobile_phone"),
-  address: text("address"),
-  city: text("city"),
-  state: text("state"),
-  zipCode: text("zip_code"),
-  notes: text("notes"),
-  source: text("source"),  // Where the client came from (referral, advertisement, etc.)
-  tags: jsonb("tags"),     // Array of tags for categorizing clients
-  lastContact: timestamp("last_contact"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const insertClientSchema = createInsertSchema(clients).pick({
-  userId: true,
-  clientId: true,
-  name: true,
-  email: true,
-  phone: true,
-  mobilePhone: true,
-  address: true,
-  city: true,
-  state: true,
-  zipCode: true,
-  notes: true,
-  source: true,
-  tags: true,
-  lastContact: true,
-});
-
-// Export types
-export type Material = typeof materials.$inferSelect;
-export type InsertMaterial = z.infer<typeof insertMaterialSchema>;
-
-export type User = typeof users.$inferSelect;
-export type InsertUser = z.infer<typeof insertUserSchema>;
-
-export type Project = typeof projects.$inferSelect;
-export type InsertProject = z.infer<typeof insertProjectSchema>;
-
-export type Template = typeof templates.$inferSelect;
-export type InsertTemplate = z.infer<typeof insertTemplateSchema>;
-
-export type Settings = typeof settings.$inferSelect;
-export type InsertSettings = z.infer<typeof insertSettingsSchema>;
-
-export type ChatLog = typeof chatLogs.$inferSelect;
-export type InsertChatLog = z.infer<typeof insertChatLogSchema>;
-
-export type Client = typeof clients.$inferSelect;
-export type InsertClient = z.infer<typeof insertClientSchema>;
-
-// Subscription Plans table
-export const subscriptionPlans = pgTable("subscription_plans", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  code: text("code").notNull().unique(), // primo_chambeador, mero_patron, chingon_mayor
-  price: integer("price").notNull(), // Monthly price in cents
-  yearlyPrice: integer("yearly_price").notNull(), // Yearly price in cents
-  description: text("description"),
-  features: jsonb("features"), // Array of features included in this plan
-  motto: text("motto"), // Lema del plan
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlans).pick({
-  name: true,
-  code: true,
-  price: true,
-  yearlyPrice: true,
-  description: true,
-  features: true,
-  motto: true,
-  isActive: true,
-});
-
-// User Subscriptions table
-export const userSubscriptions = pgTable("user_subscriptions", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
-  planId: integer("plan_id").references(() => subscriptionPlans.id),
-  stripeCustomerId: text("stripe_customer_id"),
-  stripeSubscriptionId: text("stripe_subscription_id"),
-  status: text("status").default("active"), // active, canceled, past_due, etc.
-  currentPeriodStart: timestamp("current_period_start"),
-  currentPeriodEnd: timestamp("current_period_end"),
-  cancelAtPeriodEnd: boolean("cancel_at_period_end").default(false),
-  billingCycle: text("billing_cycle").default("monthly"), // monthly or yearly
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const insertUserSubscriptionSchema = createInsertSchema(userSubscriptions).pick({
-  userId: true,
-  planId: true,
-  stripeCustomerId: true,
-  stripeSubscriptionId: true,
-  status: true,
-  currentPeriodStart: true,
-  currentPeriodEnd: true,
-  cancelAtPeriodEnd: true,
-  billingCycle: true,
-});
-
-// Payment history table
-export const paymentHistory = pgTable("payment_history", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
-  subscriptionId: integer("subscription_id").references(() => userSubscriptions.id),
-  stripePaymentIntentId: text("stripe_payment_intent_id"),
-  stripeInvoiceId: text("stripe_invoice_id"),
-  amount: integer("amount").notNull(), // Amount in cents
-  status: text("status").notNull(), // succeeded, failed, pending
-  paymentMethod: text("payment_method"), // card, bank transfer, etc.
-  receiptUrl: text("receipt_url"),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const insertPaymentHistorySchema = createInsertSchema(paymentHistory).pick({
-  userId: true,
-  subscriptionId: true,
-  stripePaymentIntentId: true,
-  stripeInvoiceId: true,
-  amount: true,
-  status: true,
-  paymentMethod: true,
-  receiptUrl: true,
-});
-
-// Project payments table - Enhanced for contractor workflow
-export const projectPayments = pgTable("project_payments", {
-  id: serial("id").primaryKey(),
-  projectId: integer("project_id").references(() => projects.id),
-  userId: integer("user_id").references(() => users.id),
-  
-  // Stripe integration
-  stripePaymentIntentId: text("stripe_payment_intent_id"),
-  stripeCheckoutSessionId: text("stripe_checkout_session_id"),
-  stripePaymentLinkId: text("stripe_payment_link_id"),
-  
-  // Payment details
-  amount: integer("amount").notNull(), // Amount in cents
-  type: text("type").notNull(), // deposit, final, milestone, additional
-  status: text("status").notNull(), // pending, succeeded, failed, canceled, expired
-  paymentMethod: text("payment_method"), // card, bank_transfer, etc.
-  
-  // URLs and receipts
-  receiptUrl: text("receipt_url"),
-  invoiceUrl: text("invoice_url"),
-  checkoutUrl: text("checkout_url"), // URL for Stripe Checkout Session
-  paymentLinkUrl: text("payment_link_url"), // URL for Stripe Payment Link
-  
-  // Client information
-  clientEmail: text("client_email"),
-  clientName: text("client_name"),
-  
-  // Invoice details
-  invoiceNumber: text("invoice_number"),
-  description: text("description"),
-  dueDate: timestamp("due_date"),
-  paidDate: timestamp("paid_date"),
-  
-  // Metadata
-  notes: text("notes"),
-  paymentDate: timestamp("payment_date"),
-  sentDate: timestamp("sent_date"), // When payment link was sent
-  reminderSent: boolean("reminder_sent").default(false),
-  
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const insertProjectPaymentSchema = createInsertSchema(projectPayments).pick({
-  projectId: true,
-  userId: true,
-  stripePaymentIntentId: true,
-  stripeCheckoutSessionId: true,
-  stripePaymentLinkId: true,
-  amount: true,
-  type: true,
-  status: true,
-  paymentMethod: true,
-  receiptUrl: true,
-  invoiceUrl: true,
-  checkoutUrl: true,
-  paymentLinkUrl: true,
-  clientEmail: true,
-  clientName: true,
-  invoiceNumber: true,
-  description: true,
-  dueDate: true,
-  paidDate: true,
-  notes: true,
-  paymentDate: true,
-  sentDate: true,
-  reminderSent: true,
-});
-
-export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
-export type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlanSchema>;
-
-export type UserSubscription = typeof userSubscriptions.$inferSelect;
-export type InsertUserSubscription = z.infer<typeof insertUserSubscriptionSchema>;
-
-export type PaymentHistory = typeof paymentHistory.$inferSelect;
-export type InsertPaymentHistory = z.infer<typeof insertPaymentHistorySchema>;
-
-export type ProjectPayment = typeof projectPayments.$inferSelect;
-export type InsertProjectPayment = z.infer<typeof insertProjectPaymentSchema>;
-
-// Prompt Templates table
-export const promptTemplates = pgTable("prompt_templates", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
-  name: text("name").notNull(),
-  description: text("description"),
-  category: text("category").notNull(), // "estimate", "contract", "email", etc.
-  promptText: text("prompt_text").notNull(),
-  variables: jsonb("variables"), // Array of variable placeholders used in the template
-  isDefault: boolean("is_default").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const insertPromptTemplateSchema = createInsertSchema(promptTemplates).pick({
-  userId: true,
-  name: true,
-  description: true,
-  category: true,
-  promptText: true,
-  variables: true,
-  isDefault: true,
-});
-
-export type PromptTemplate = typeof promptTemplates.$inferSelect;
-export type InsertPromptTemplate = z.infer<typeof insertPromptTemplateSchema>;
-
-// Historial de búsquedas de permisos
-export const permitSearchHistory = pgTable("permit_search_history", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
-  address: text("address").notNull(),
-  projectType: text("project_type").notNull(),
-  projectDescription: text("project_description"),
-  results: jsonb("results").notNull(), // Almacenar todos los resultados como JSON
-  title: text("title"), // Título opcional para la búsqueda
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const insertPermitSearchHistorySchema = createInsertSchema(permitSearchHistory).pick({
-  userId: true,
-  address: true,
-  projectType: true,
-  projectDescription: true,
-  results: true,
-  title: true,
-});
-
-export type PermitSearchHistory = typeof permitSearchHistory.$inferSelect;
-export type InsertPermitSearchHistory = z.infer<typeof insertPermitSearchHistorySchema>;
-
-// Historial de búsquedas de propiedad
-export const propertySearchHistory = pgTable("property_search_history", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
-  address: text("address").notNull(),
-  ownerName: text("owner_name"), // Nombre del propietario encontrado
-  parcelNumber: text("parcel_number"), // Número de parcela
-  results: jsonb("results").notNull(), // Almacenar todos los resultados como JSON
-  title: text("title"), // Título opcional para la búsqueda (podría ser generado automáticamente)
-  notes: text("notes"), // Notas adicionales que el usuario pueda agregar
-  tags: jsonb("tags"), // Etiquetas para clasificar búsquedas (opcional)
-  isFavorite: boolean("is_favorite").default(false), // Para marcar búsquedas importantes
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const insertPropertySearchHistorySchema = createInsertSchema(propertySearchHistory).pick({
-  userId: true,
-  address: true,
-  ownerName: true,
-  parcelNumber: true,
-  results: true,
-  title: true,
-  notes: true,
-  tags: true,
-  isFavorite: true,
-});
-
-export type PropertySearchHistory = typeof propertySearchHistory.$inferSelect;
-export type InsertPropertySearchHistory = z.infer<typeof insertPropertySearchHistorySchema>;
-
-// ===== SISTEMA DE ESTIMADOS RENOVADO =====
-
-// Estimates table - Sistema centralizado de estimados
-export const estimates = pgTable("estimates", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
-  firebaseUserId: text("firebase_user_id").notNull(), // ID de Firebase para separación completa de datos
-  estimateNumber: text("estimate_number").notNull().unique(),
-
-  // Client Information
-  clientId: integer("client_id").references(() => clients.id),
-  clientName: text("client_name").notNull(),
-  clientEmail: text("client_email"),
-  clientPhone: text("client_phone"),
-  clientAddress: text("client_address").notNull(),
-
-  // Project Details
-  projectType: text("project_type").notNull(), // fence, roof, deck, patio, etc.
-  projectSubtype: text("project_subtype"), // wood fence, metal roof, etc.
-  projectDescription: text("project_description"),
-  scope: text("scope"), // Scope of work
-  timeline: text("timeline"), // Estimated completion timeframe
-
-  // Estimate Items (JSON array)
-  items: jsonb("items").notNull(), // Array of estimate items
-
-  // Financial Information
-  subtotal: integer("subtotal").notNull(), // Amount in cents
-  taxRate: integer("tax_rate").default(875), // Tax rate in basis points (8.75% = 875)
-  taxAmount: integer("tax_amount").notNull(), // Tax amount in cents
-  total: integer("total").notNull(), // Total amount in cents
-
-  // Metadata
-  status: text("status").default("draft"), // draft, sent, approved, expired
-  validUntil: timestamp("valid_until"),
-  estimateDate: timestamp("estimate_date").defaultNow(),
-  sentDate: timestamp("sent_date"),
-  approvedDate: timestamp("approved_date"),
-
-  // Generated Content
-  htmlContent: text("html_content"), // Generated HTML for PDF/preview
-  pdfUrl: text("pdf_url"), // URL to generated PDF
-
-  // Notes and Additional Info
-  notes: text("notes"),
-  internalNotes: text("internal_notes"),
-  terms: text("terms"), // Terms and conditions
-
-  // Tracking
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const insertEstimateSchema = createInsertSchema(estimates).pick({
-  userId: true,
-  estimateNumber: true,
-  clientId: true,
-  clientName: true,
-  clientEmail: true,
-  clientPhone: true,
-  clientAddress: true,
-  projectType: true,
-  projectSubtype: true,
-  projectDescription: true,
-  scope: true,
-  timeline: true,
-  items: true,
-  subtotal: true,
-  taxRate: true,
-  taxAmount: true,
-  total: true,
-  status: true,
-  validUntil: true,
-  estimateDate: true,
-  htmlContent: true,
-  notes: true,
-  internalNotes: true,
-  terms: true,
-});
-
-// Estimate Items table - Ítems individuales de estimados
-export const estimateItems = pgTable("estimate_items", {
-  id: serial("id").primaryKey(),
-  estimateId: integer("estimate_id").references(() => estimates.id),
-
-  // Item Information
-  name: text("name").notNull(),
-  description: text("description"),
-  category: text("category"), // material, labor, additional
-
-  // Quantity and Pricing
-  quantity: integer("quantity").notNull(), // Quantity in units (can be decimal * 100)
-  unit: text("unit").notNull(), // piece, sq ft, linear ft, hour, etc.
-  unitPrice: integer("unit_price").notNull(), // Price per unit in cents
-  totalPrice: integer("total_price").notNull(), // Total price in cents
-
-  // Metadata
-  sortOrder: integer("sort_order").default(0),
-  isOptional: boolean("is_optional").default(false),
-
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const insertEstimateItemSchema = createInsertSchema(estimateItems).pick({
-  estimateId: true,
-  name: true,
-  description: true,
-  category: true,
-  quantity: true,
-  unit: true,
-  unitPrice: true,
-  totalPrice: true,
-  sortOrder: true,
-  isOptional: true,
-});
-
-// Estimate Templates table - Plantillas de estimados
-export const estimateTemplates = pgTable("estimate_templates", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
-
-  name: text("name").notNull(),
-  description: text("description"),
-  projectType: text("project_type").notNull(),
-
-  // Template Items (JSON array)
-  defaultItems: jsonb("default_items").notNull(), // Default items for this template
-
-  // Settings
-  isActive: boolean("is_active").default(true),
-  isDefault: boolean("is_default").default(false),
-
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const insertEstimateTemplateSchema = createInsertSchema(estimateTemplates).pick({
-  userId: true,
-  name: true,
-  description: true,
-  projectType: true,
-  defaultItems: true,
-  isActive: true,
-  isDefault: true,
-});
-
+// Types
 export type Estimate = typeof estimates.$inferSelect;
 export type InsertEstimate = z.infer<typeof insertEstimateSchema>;
-
-export type EstimateItem = typeof estimateItems.$inferSelect;
-export type InsertEstimateItem = z.infer<typeof insertEstimateItemSchema>;
-
-export type EstimateTemplate = typeof estimateTemplates.$inferSelect;
-export type InsertEstimateTemplate = z.infer<typeof insertEstimateTemplateSchema>;
-
-// User Materials table - for user-specific materials inventory
-export const userMaterials = pgTable("user_materials", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
-  name: text("name").notNull(),
-  category: text("category").notNull(), // categoría del material (pintura, madera, metal, etc.)
-  description: text("description"),
-  unit: text("unit").notNull(), // unidad de medida (pieza, pie, galón, etc.)
-  price: integer("price").notNull(), // precio en centavos
-  supplier: text("supplier"), // proveedor del material
-  supplierLink: text("supplier_link"), // enlace para comprar
-  sku: text("sku"), // código de producto del proveedor
-  stock: integer("stock"), // cantidad en inventario
-  minStock: integer("min_stock"), // nivel mínimo de inventario
-  projectId: text("project_id"), // referencia a proyecto (opcional)
-  imageUrl: text("image_url"), // URL de la imagen del material
-  fileUrls: jsonb("file_urls"), // URLs de archivos adjuntos (facturas, manuales, etc.)
-  tags: jsonb("tags"), // etiquetas para clasificar/filtrar
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const insertUserMaterialSchema = createInsertSchema(userMaterials).pick({
-  userId: true,
-  name: true,
-  category: true,
-  description: true,
-  unit: true,
-  price: true,
-  supplier: true,
-  supplierLink: true,
-  sku: true,
-  stock: true,
-  minStock: true,
-  projectId: true,
-  imageUrl: true,
-  fileUrls: true,
-  tags: true,
-});
-
-export type UserMaterial = typeof userMaterials.$inferSelect;
-export type InsertUserMaterial = z.infer<typeof insertUserMaterialSchema>;
+export type EstimateAdjustment = typeof estimateAdjustments.$inferSelect;
+export type InsertEstimateAdjustment = z.infer<typeof insertEstimateAdjustmentSchema>;
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
