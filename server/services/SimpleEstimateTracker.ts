@@ -30,6 +30,27 @@ interface AdjustmentRequest {
 class SimpleEstimateTracker {
   private estimates = new Map<string, EstimateRecord>();
 
+  constructor() {
+    // Add demo estimate for testing
+    this.addDemoEstimate();
+  }
+
+  private addDemoEstimate() {
+    const demoRecord: EstimateRecord = {
+      id: 'DEMO-001',
+      estimateNumber: 'EST-DEMO-2025',
+      clientName: 'Gelasio Chyrris',
+      clientEmail: 'gelasio@chyrris.com',
+      contractorEmail: 'info@chyrris.com',
+      status: 'sent',
+      total: '7679.30',
+      createdAt: new Date(),
+      adjustments: []
+    };
+    this.estimates.set(demoRecord.estimateNumber, demoRecord);
+    console.log(`🧪 [DEMO] Estimate ${demoRecord.estimateNumber} added for testing`);
+  }
+
   generateId(): string {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
   }
