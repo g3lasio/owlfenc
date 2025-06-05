@@ -5,7 +5,7 @@
 
 import { Router, Request, Response } from 'express';
 import { EstimateEmailService, EstimateData, EstimateApproval, EstimateAdjustment } from '../services/estimateEmailService';
-import { estimateStorage } from '../services/DatabaseEstimateStorage';
+import { simpleTracker } from '../services/SimpleEstimateTracker';
 
 const router = Router();
 
@@ -57,9 +57,9 @@ router.post('/send', async (req: Request, res: Response) => {
     console.log('📧 [ESTIMATE-EMAIL-ROUTES] Contratista:', estimateData.contractor.companyName);
     console.log('📧 [ESTIMATE-EMAIL-ROUTES] Total:', estimateData.total);
     
-    // Guardar estimado en la base de datos
-    const savedEstimate = await estimateStorage.saveEstimate(estimateData);
-    console.log('📧 [ESTIMATE-EMAIL-ROUTES] Estimado guardado en DB:', savedEstimate.id);
+    // Guardar estimado para seguimiento
+    const savedEstimate = simpleTracker.saveEstimate(estimateData);
+    console.log('📧 [ESTIMATE-EMAIL-ROUTES] Estimado guardado para seguimiento:', savedEstimate.estimateNumber);
     
     const result = await EstimateEmailService.sendEstimateToClient(estimateData);
     
@@ -68,7 +68,7 @@ router.post('/send', async (req: Request, res: Response) => {
         success: true,
         message: result.message,
         estimateId: estimateData.estimateNumber,
-        databaseId: savedEstimate.id
+        trackingId: savedEstimate.id
       });
     } else {
       res.status(500).json({
@@ -122,8 +122,8 @@ router.post('/approve', async (req: Request, res: Response) => {
       `);
     }
 
-    // Buscar estimado en la base de datos
-    const estimate = await estimateStorage.getEstimateByNumber(estimateId);
+    // Buscar estimado en el tracker
+    const estimate = simpleTracker.getEstimateByNumber(estimateId);
     if (!estimate) {
       return res.status(404).send(`
         <!DOCTYPE html>
@@ -155,7 +155,7 @@ router.post('/approve', async (req: Request, res: Response) => {
       signature: `${clientName} - ${new Date().toLocaleDateString('es-ES')}`
     };
     
-    const updateSuccess = await estimateStorage.updateEstimateStatus(estimate.id, 'approved', approverInfo);
+    const updateSuccess = simpleTracker.approveEstimate(estimateId, clientName);
     
     if (!updateSuccess) {
       return res.status(500).send(`
@@ -182,14 +182,8 @@ router.post('/approve', async (req: Request, res: Response) => {
       `);
     }
 
-    // Crear notificación para el contratista
-    await estimateStorage.createNotification({
-      type: 'estimate_approved',
-      recipientEmail: estimate.contractorEmail,
-      title: `Estimado ${estimateId} Aprobado`,
-      message: `El cliente ${clientName} ha aprobado el estimado ${estimateId} por $${estimate.total}. Puede proceder con el proyecto.`,
-      relatedId: estimate.id
-    });
+    // Notificación simple - en una implementación completa aquí se enviaría email al contratista
+    console.log(`✅ [SIMPLE-TRACKER] Notificación: Cliente ${clientName} aprobó estimado ${estimateId} por $${estimate.total}`);
 
     // Enviar email de notificación al contratista
     const approval: EstimateApproval = {

@@ -133,16 +133,24 @@ export class DatabaseEstimateStorage {
   /**
    * Create notification
    */
-  async createNotification(notificationData: InsertNotification): Promise<Notification> {
-    const notificationId = uuidv4();
+  async createNotification(notificationData: any): Promise<Notification> {
+    const notificationId = generateId();
     
-    const insertData: InsertNotification = {
-      ...notificationData,
-      id: notificationId,
-    };
-
-    const [result] = await db.insert(notifications).values(insertData).returning();
-    return result;
+    try {
+      const [result] = await db.insert(notifications).values({
+        id: notificationId,
+        type: notificationData.type,
+        recipientEmail: notificationData.recipientEmail,
+        title: notificationData.title,
+        message: notificationData.message,
+        relatedId: notificationData.relatedId || null,
+        isRead: false
+      }).returning();
+      return result;
+    } catch (error) {
+      console.error('Error creating notification:', error);
+      throw error;
+    }
   }
 
   /**
