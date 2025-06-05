@@ -884,18 +884,8 @@ export default function EstimatesWizardFixed() {
         if (projectData.projectTotalCosts?.materialCosts?.items) {
           estimateItems = projectData.projectTotalCosts.materialCosts.items.map((item: any, index: number) => {
             const quantity = parseFloat(item.quantity || item.qty || 1);
-            const rawPrice = parseFloat(item.unitPrice || item.price || item.pricePerUnit || 0);
-            const rawTotal = parseFloat(item.total || item.totalPrice || 0);
-            
-            // Detect if prices are stored in cents (backend typically stores in cents for precision)
-            // Check if the total makes sense with quantity * price relationship
-            const priceInDollars = rawPrice / 100;
-            const totalInDollars = rawTotal / 100;
-            const calculatedTotal = quantity * priceInDollars;
-            
-            // If calculated total matches stored total (within reasonable margin), use cents conversion
-            const price = Math.abs(calculatedTotal - totalInDollars) < 1 ? priceInDollars : rawPrice;
-            const total = Math.abs(calculatedTotal - totalInDollars) < 1 ? totalInDollars : rawTotal;
+            const price = parseFloat(item.unitPrice || item.price || item.pricePerUnit || 0);
+            const total = parseFloat(item.total || item.totalPrice || 0);
             
             return {
               id: item.id || `item-${index}`,
@@ -914,16 +904,8 @@ export default function EstimatesWizardFixed() {
         else if (projectData.items && Array.isArray(projectData.items)) {
           estimateItems = projectData.items.map((item: any, index: number) => {
             const quantity = parseFloat(item.quantity || 1);
-            const rawPrice = parseFloat(item.unitPrice || item.price || 0);
-            const rawTotal = parseFloat(item.totalPrice || item.total || 0);
-            
-            // Apply same logic for cents detection
-            const priceInDollars = rawPrice / 100;
-            const totalInDollars = rawTotal / 100;
-            const calculatedTotal = quantity * priceInDollars;
-            
-            const price = Math.abs(calculatedTotal - totalInDollars) < 1 ? priceInDollars : rawPrice;
-            const total = Math.abs(calculatedTotal - totalInDollars) < 1 ? totalInDollars : (rawTotal || quantity * price);
+            const price = parseFloat(item.unitPrice || item.price || 0);
+            const total = parseFloat(item.totalPrice || item.total || 0);
             
             return {
               id: item.id || `item-${index}`,
