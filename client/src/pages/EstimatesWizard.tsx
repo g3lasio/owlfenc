@@ -887,10 +887,9 @@ export default function EstimatesWizardFixed() {
             const rawPrice = parseFloat(item.unitPrice || item.price || item.pricePerUnit || 0);
             const rawTotal = parseFloat(item.total || item.totalPrice || 0);
             
-            // Detectar si los valores están en centavos (valores muy altos para precios normales)
-            // Si el precio unitario es > 1000 y el total/cantidad coincide, probablemente está en centavos
-            const price = rawPrice > 1000 && (rawTotal / quantity / 100) < 500 ? rawPrice / 100 : rawPrice;
-            const total = rawPrice > 1000 && (rawTotal / quantity / 100) < 500 ? rawTotal / 100 : rawTotal;
+            // Detectar si los valores están en centavos - si el precio es > 500, dividir por 100
+            const price = rawPrice > 500 ? rawPrice / 100 : rawPrice;
+            const total = rawTotal > 500 ? rawTotal / 100 : rawTotal;
             
             return {
               id: item.id || `item-${index}`,
@@ -912,10 +911,9 @@ export default function EstimatesWizardFixed() {
             const rawPrice = parseFloat(item.unitPrice || item.price || 0);
             const rawTotal = parseFloat(item.totalPrice || item.total || 0);
             
-            // Detectar si los valores están en centavos (valores muy altos para precios normales)
-            // Si el precio unitario es > 1000 y el total/cantidad coincide, probablemente está en centavos
-            const price = rawPrice > 1000 && (rawTotal / quantity / 100) < 500 ? rawPrice / 100 : rawPrice;
-            const total = rawPrice > 1000 && (rawTotal / quantity / 100) < 500 ? rawTotal / 100 : rawTotal;
+            // Detectar si los valores están en centavos - si el precio es > 500, dividir por 100
+            const price = rawPrice > 500 ? rawPrice / 100 : rawPrice;
+            const total = rawTotal > 500 ? rawTotal / 100 : rawTotal;
             
             return {
               id: item.id || `item-${index}`,
