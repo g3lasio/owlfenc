@@ -542,13 +542,13 @@ export class OptimizedPdfEmailService {
         </div>
       `;
 
-      const result = await resendService.sendEmail({
+      await resendService.sendEmail({
         to: estimate.contractorEmail,
         subject,
         html
       });
 
-      return result.success;
+      return true;
     } catch (error) {
       console.error('❌ [PDF-EMAIL] Error enviando notificación:', error);
       return false;

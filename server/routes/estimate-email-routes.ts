@@ -1,6 +1,7 @@
 import express from 'express';
 import { simpleTracker } from '../services/SimpleEstimateTracker.js';
 import { resendService } from '../services/resendService.js';
+import { optimizedPdfEmailService } from '../services/OptimizedPdfEmailService.js';
 
 const router = express.Router();
 
@@ -403,6 +404,43 @@ router.post('/adjust', async (req, res) => {
       </body>
       </html>
     `);
+  }
+});
+
+// Endpoint optimizado para envío de PDFs con PDF Monkey
+router.post('/send-optimized', async (req, res) => {
+  try {
+    console.log('🚀 [OPTIMIZED-PDF] Procesando envío optimizado de estimado...');
+    
+    const result = await optimizedPdfEmailService.sendEstimateEmail(req.body);
+    
+    if (result.success) {
+      console.log(`✅ [OPTIMIZED-PDF] Estimado enviado exitosamente en ${result.processingTime}ms`);
+      res.json({
+        success: true,
+        message: 'Estimado enviado exitosamente con PDF generado por PDF Monkey',
+        data: {
+          messageId: result.messageId,
+          pdfGenerated: result.pdfGenerated,
+          pdfSize: result.pdfSize,
+          processingTime: result.processingTime,
+          estimateTracked: result.estimateTracked
+        }
+      });
+    } else {
+      console.log(`❌ [OPTIMIZED-PDF] Error: ${result.error}`);
+      res.status(500).json({
+        success: false,
+        error: result.error,
+        processingTime: result.processingTime
+      });
+    }
+  } catch (error) {
+    console.error('❌ [OPTIMIZED-PDF] Error crítico:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Error desconocido'
+    });
   }
 });
 
