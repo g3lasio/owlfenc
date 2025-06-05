@@ -3,7 +3,7 @@
  * Arquitectura clara con 2 flujos principales: Proyectos Existentes + PDF Upload
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -52,84 +52,59 @@ export default function ContractGeneratorSimplified() {
   // Templates disponibles
   const [templates] = useState<ContractTemplate[]>(contractTemplateService.getAvailableTemplates());
 
-  // Proyectos de ejemplo disponibles inmediatamente
-  const sampleProjects: Project[] = [
-    {
-      id: "est-001",
-      estimateNumber: "EST-2024-001",
-      clientName: "Turner Group Construction",
-      clientEmail: "contact@turnergroup.com",
-      clientPhone: "(555) 123-4567",
-      clientAddress: "123 Main Street, Springfield, IL 62701",
-      projectType: "Wood Fence Installation",
-      projectDescription: "Installation of 150 ft wood privacy fence, 6ft height with concrete posts",
-      total: 4500,
-      status: "approved",
-      createdAt: "2024-01-15"
-    },
-    {
-      id: "est-002", 
-      estimateNumber: "EST-2024-002",
-      clientName: "Kevin & Derek Terry",
-      clientEmail: "kevin.terry@email.com",
-      clientPhone: "(555) 987-6543",
-      clientAddress: "456 Oak Avenue, Springfield, IL 62702",
-      projectType: "Vinyl Fence Installation",
-      projectDescription: "Installation of 200 ft vinyl fence, 6ft height around backyard perimeter",
-      total: 6200,
-      status: "sent",
-      createdAt: "2024-01-20"
-    },
-    {
-      id: "est-003",
-      estimateNumber: "EST-2024-003", 
-      clientName: "Springfield Property Management",
-      clientEmail: "projects@springfieldpm.com",
-      clientPhone: "(555) 456-7890",
-      clientAddress: "789 Business Park Dr, Springfield, IL 62703",
-      projectType: "Chain Link Fence Installation",
-      projectDescription: "Commercial chain link fencing, 300 ft perimeter with gate access",
-      total: 3800,
-      status: "draft",
-      createdAt: "2024-01-25"
-    }
-  ];
 
-  // Cargar proyectos del usuario
+
+  // Cargar proyectos del usuario desde Firebase
   const loadUserProjects = async () => {
     setLoadingProjects(true);
     try {
-      const response = await fetch('/api/estimates');
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success && result.data) {
-          setProjects(result.data);
-          toast({
-            title: "Proyectos cargados",
-            description: `Se encontraron ${result.data.length} proyectos`
-          });
-        } else {
-          setProjects([]);
-          toast({
-            title: "Sin proyectos",
-            description: "No se encontraron proyectos existentes"
-          });
-        }
-      } else {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
+      const { getProjects } = await import('@/lib/firebase');
+      const firebaseProjects = await getProjects();
+      
+      // Filtrar proyectos que tienen datos suficientes para generar contratos
+      const contractReadyProjects = firebaseProjects.filter((project: any) => 
+        project.clientName && 
+        project.address && 
+        (project.totalPrice || project.estimateAmount)
+      );
+
+      // Convertir a formato compatible con el generador de contratos
+      const formattedProjects = contractReadyProjects.map((project: any) => ({
+        id: project.id,
+        estimateNumber: project.projectId || project.id,
+        clientName: project.clientName,
+        clientEmail: project.clientEmail || '',
+        clientPhone: project.clientPhone || '',
+        clientAddress: project.address,
+        projectType: project.projectType || project.fenceType || 'Proyecto de construcción',
+        projectDescription: project.projectDescription || project.description || '',
+        total: project.totalPrice || project.estimateAmount || 0,
+        status: project.status || 'draft',
+        createdAt: project.createdAt?.toDate ? project.createdAt.toDate().toISOString() : new Date().toISOString()
+      }));
+
+      setProjects(formattedProjects);
+      toast({
+        title: "Proyectos cargados",
+        description: `Se encontraron ${formattedProjects.length} proyectos disponibles`
+      });
     } catch (error) {
       console.error('Error loading projects:', error);
       setProjects([]);
       toast({
         title: "Error",
-        description: "No se pudieron cargar los proyectos",
+        description: "No se pudieron cargar los proyectos desde Firebase",
         variant: "destructive"
       });
     } finally {
       setLoadingProjects(false);
     }
   };
+
+  // Cargar proyectos automáticamente al inicializar
+  useEffect(() => {
+    loadUserProjects();
+  }, []);
 
   // Manejo de selección de proyecto
   const handleProjectSelection = (project: Project) => {
@@ -267,43 +242,57 @@ export default function ContractGeneratorSimplified() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <Button onClick={loadUserProjects} disabled={loadingProjects}>
-                    {loadingProjects ? 'Cargando...' : 'Cargar Mis Proyectos'}
-                  </Button>
-                  
-                  {projects.length > 0 && (
-                    <div className="grid gap-4 max-h-60 overflow-y-auto">
-                      {projects.map(project => (
-                        <div 
-                          key={project.id}
-                          className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                            selectedProject?.id === project.id 
-                              ? 'border-green-500 bg-green-50' 
-                              : 'border-gray-200 hover:border-green-300'
-                          }`}
-                          onClick={() => handleProjectSelection(project)}
-                        >
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h3 className="font-semibold">{project.clientName}</h3>
-                              <p className="text-sm text-gray-600">{project.clientAddress}</p>
-                              <p className="text-sm text-gray-500">{project.projectType}</p>
-                              <p className="text-xs text-gray-400">#{project.estimateNumber}</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-bold text-green-600">
-                                ${project.total?.toFixed(2) || 'N/A'}
-                              </p>
-                              <p className="text-xs text-gray-500 capitalize">{project.status}</p>
-                              {selectedProject?.id === project.id && (
-                                <CheckCircle className="w-5 h-5 text-green-500 mt-1" />
-                              )}
+                <div className="space-y-3">
+                  {loadingProjects ? (
+                    <div className="text-center py-4">
+                      <p className="text-gray-500">Cargando proyectos...</p>
+                    </div>
+                  ) : projects.length === 0 ? (
+                    <div className="text-center py-4">
+                      <p className="text-gray-500">No se encontraron proyectos disponibles</p>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-sm text-gray-600 mb-3">Selecciona un proyecto para generar contrato:</p>
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {projects.map(project => (
+                          <div 
+                            key={project.id}
+                            className={`p-3 border rounded-lg cursor-pointer transition-all ${
+                              selectedProject?.id === project.id 
+                                ? 'border-green-500 bg-green-50' 
+                                : 'border-gray-200 hover:border-green-300'
+                            }`}
+                            onClick={() => handleProjectSelection(project)}
+                          >
+                            <div className="flex justify-between items-center">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <h3 className="font-semibold text-sm truncate">{project.clientName}</h3>
+                                  <span className={`px-2 py-1 text-xs rounded-full ${
+                                    project.status === 'approved' ? 'bg-green-100 text-green-700' :
+                                    project.status === 'sent' ? 'bg-blue-100 text-blue-700' :
+                                    'bg-gray-100 text-gray-700'
+                                  }`}>
+                                    {project.status}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-gray-500 truncate">{project.projectType}</p>
+                                <p className="text-xs text-gray-400">#{project.estimateNumber}</p>
+                              </div>
+                              <div className="text-right ml-2">
+                                <p className="font-bold text-green-600 text-sm">
+                                  ${project.total.toFixed(2)}
+                                </p>
+                                {selectedProject?.id === project.id && (
+                                  <CheckCircle className="w-4 h-4 text-green-500 mt-1 mx-auto" />
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    </>
                   )}
                 </div>
               </CardContent>
