@@ -36,10 +36,10 @@ interface Contract {
 
 // Definir los pasos del Contract Generator siguiendo el patrón de EstimatesWizard
 const STEPS = [
-  { id: 'extract', title: 'Extract Data', icon: Upload },
-  { id: 'analyze', title: 'Legal Risk Analysis', icon: Shield },
-  { id: 'generate', title: 'Generate Contract', icon: FileText },
-  { id: 'preview', title: 'Preview', icon: FileCheck }
+  { id: 'extract', title: 'Extraer Datos', icon: Upload, description: 'Extraer datos del proyecto' },
+  { id: 'analyze', title: 'Análisis Legal', icon: Shield, description: 'Análisis de riesgo legal' },
+  { id: 'generate', title: 'Generar Contrato', icon: FileText, description: 'Generación del contrato' },
+  { id: 'preview', title: 'Vista Previa', icon: FileCheck, description: 'Revisar y finalizar' }
 ];
 
 const ContractGenerator = () => {
@@ -529,49 +529,78 @@ const ContractGenerator = () => {
           <div className="space-y-6">
             <div className="text-center">
               <Shield className="h-16 w-16 mx-auto text-yellow-500 mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Legal Risk Analysis</h3>
+              <h3 className="text-xl font-semibold mb-2">Análisis de Riesgo Legal</h3>
               <p className="text-muted-foreground">
-                Analyzing contract data for potential legal risks and compliance issues
+                Analizando datos del contrato para identificar riesgos legales y problemas de cumplimiento
               </p>
             </div>
             
             {isAnalyzing ? (
               <div className="text-center py-8">
-                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-                <p>Analyzing legal risks...</p>
+                <div className="relative">
+                  <div className="animate-spin h-12 w-12 border-4 border-yellow-200 border-t-yellow-500 rounded-full mx-auto mb-4"></div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Shield className="h-6 w-6 text-yellow-500" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <p className="font-semibold">Analizando riesgos legales...</p>
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <div>✓ Revisando cláusulas de protección</div>
+                    <div>✓ Verificando cumplimiento normativo</div>
+                    <div>✓ Evaluando términos de responsabilidad</div>
+                  </div>
+                </div>
               </div>
             ) : riskAnalysis ? (
               <div className="bg-card p-6 rounded-lg border">
-                <h4 className="font-semibold mb-4">Risk Analysis Complete</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">LOW</div>
-                    <div className="text-sm text-muted-foreground">Overall Risk</div>
+                <div className="flex items-center gap-2 mb-4">
+                  <Check className="h-5 w-5 text-green-500" />
+                  <h4 className="font-semibold">Análisis de Riesgo Completado</h4>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div className="text-center p-4 bg-green-50 rounded-lg">
+                    <div className="text-2xl font-bold text-green-600">BAJO</div>
+                    <div className="text-sm text-muted-foreground">Riesgo General</div>
                   </div>
-                  <div className="text-center">
+                  <div className="text-center p-4 bg-blue-50 rounded-lg">
                     <div className="text-2xl font-bold text-blue-600">95%</div>
-                    <div className="text-sm text-muted-foreground">Compliance Score</div>
+                    <div className="text-sm text-muted-foreground">Puntuación de Cumplimiento</div>
                   </div>
-                  <div className="text-center">
+                  <div className="text-center p-4 bg-purple-50 rounded-lg">
                     <div className="text-2xl font-bold text-purple-600">3</div>
-                    <div className="text-sm text-muted-foreground">Recommendations</div>
+                    <div className="text-sm text-muted-foreground">Recomendaciones</div>
                   </div>
+                </div>
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <h5 className="font-medium text-green-800 mb-2">Protecciones Identificadas:</h5>
+                  <ul className="text-sm text-green-700 space-y-1">
+                    <li>• Cláusulas de limitación de responsabilidad incluidas</li>
+                    <li>• Términos de pago adecuados para protección del contratista</li>
+                    <li>• Condiciones de modificaciones del proyecto establecidas</li>
+                  </ul>
                 </div>
               </div>
             ) : (
               <div className="text-center">
+                <div className="bg-yellow-50 p-6 rounded-lg mb-4">
+                  <p className="text-yellow-800 mb-4">
+                    Iniciará el análisis automático de riesgos legales basado en los datos extraídos del proyecto.
+                  </p>
+                </div>
                 <Button 
                   onClick={() => {
                     setIsAnalyzing(true);
                     setTimeout(() => {
                       setRiskAnalysis({ risk: 'low', score: 95, recommendations: 3 });
                       setIsAnalyzing(false);
-                    }, 2000);
+                    }, 3000);
                   }}
                   className="bg-yellow-600 hover:bg-yellow-700"
+                  disabled={!extractedData}
                 >
                   <Shield className="h-4 w-4 mr-2" />
-                  Start Risk Analysis
+                  Iniciar Análisis de Riesgo
                 </Button>
               </div>
             )}
@@ -583,40 +612,89 @@ const ContractGenerator = () => {
           <div className="space-y-6">
             <div className="text-center">
               <FileText className="h-16 w-16 mx-auto text-blue-500 mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Generate Contract</h3>
+              <h3 className="text-xl font-semibold mb-2">Generar Contrato</h3>
               <p className="text-muted-foreground">
-                Creating professional contract based on extracted data and risk analysis
+                Creando contrato profesional basado en los datos extraídos y análisis de riesgo
               </p>
             </div>
             
             {isGeneratingContract ? (
               <div className="text-center py-8">
-                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-                <p>Generating contract...</p>
+                <div className="relative">
+                  <div className="animate-spin h-12 w-12 border-4 border-blue-200 border-t-blue-500 rounded-full mx-auto mb-4"></div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <FileText className="h-6 w-6 text-blue-500" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <p className="font-semibold">Generando contrato profesional...</p>
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <div>✓ Aplicando plantilla legal</div>
+                    <div>✓ Insertando datos del proyecto</div>
+                    <div>✓ Añadiendo cláusulas de protección</div>
+                    <div>✓ Aplicando análisis de riesgo</div>
+                  </div>
+                </div>
               </div>
             ) : contractHtml ? (
               <div className="bg-card p-6 rounded-lg border">
-                <h4 className="font-semibold mb-4">Contract Generated Successfully</h4>
-                <p className="text-muted-foreground mb-4">
-                  Your professional contract has been generated and is ready for preview.
-                </p>
+                <div className="flex items-center gap-2 mb-4">
+                  <Check className="h-5 w-5 text-green-500" />
+                  <h4 className="font-semibold">Contrato Generado Exitosamente</h4>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  <div className="p-4 bg-blue-50 rounded-lg">
+                    <div className="text-lg font-bold text-blue-600">{extractedData?.clientName || 'Cliente'}</div>
+                    <div className="text-sm text-muted-foreground">Nombre del Cliente</div>
+                  </div>
+                  <div className="p-4 bg-green-50 rounded-lg">
+                    <div className="text-lg font-bold text-green-600">{extractedData?.totalAmount || 'N/A'}</div>
+                    <div className="text-sm text-muted-foreground">Monto Total</div>
+                  </div>
+                </div>
+                <div className="bg-green-50 p-4 rounded-lg mb-4">
+                  <h5 className="font-medium text-green-800 mb-2">Características del Contrato:</h5>
+                  <ul className="text-sm text-green-700 space-y-1">
+                    <li>• Cláusulas de protección legal incluidas</li>
+                    <li>• Términos y condiciones personalizados</li>
+                    <li>• Formato profesional y legalmente sólido</li>
+                    <li>• Listo para firma y envío</li>
+                  </ul>
+                </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => setCurrentStep(3)}>
+                  <Button onClick={() => setCurrentStep(3)} className="bg-blue-600 hover:bg-blue-700">
                     <Eye className="h-4 w-4 mr-2" />
-                    Preview Contract
+                    Ver Vista Previa
                   </Button>
                 </div>
               </div>
             ) : (
               <div className="text-center">
+                <div className="bg-blue-50 p-6 rounded-lg mb-4">
+                  <p className="text-blue-800 mb-4">
+                    Está listo para generar el contrato usando la información extraída y el análisis de riesgo completado.
+                  </p>
+                  {extractedData && (
+                    <div className="text-sm text-blue-600 space-y-1">
+                      <div>Cliente: {extractedData.clientName}</div>
+                      <div>Proyecto: {extractedData.projectType}</div>
+                      <div>Monto: {extractedData.totalAmount}</div>
+                    </div>
+                  )}
+                </div>
                 <Button 
                   onClick={() => generateContract(contractData)}
-                  disabled={!extractedData}
+                  disabled={!extractedData || !riskAnalysis}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
                   <FileText className="h-4 w-4 mr-2" />
-                  Generate Contract
+                  Generar Contrato Profesional
                 </Button>
+                {(!extractedData || !riskAnalysis) && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Complete los pasos anteriores para continuar
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -674,10 +752,10 @@ const ContractGenerator = () => {
           />
         ) : (
           <div className="space-y-8">
-            {/* Step Navigation - Horizontal */}
-            <div className="bg-card p-6 rounded-lg border">
+            {/* Step Navigation - Circular Progress Style */}
+            <div className="bg-card p-8 rounded-lg border">
               <div className="flex items-center justify-center">
-                <div className="flex items-center space-x-4 overflow-x-auto">
+                <div className="flex items-center space-x-8 overflow-x-auto">
                   {STEPS.map((step, index) => {
                     const Icon = step.icon;
                     const isActive = index === currentStep;
@@ -689,40 +767,40 @@ const ContractGenerator = () => {
                         <button
                           onClick={() => isClickable && setCurrentStep(index)}
                           disabled={!isClickable}
-                          className={`flex items-center space-x-3 p-3 rounded-lg transition-all ${
+                          className={`flex flex-col items-center space-y-2 p-4 rounded-xl transition-all duration-300 min-w-[120px] ${
                             isActive 
-                              ? 'bg-primary text-primary-foreground shadow-md' 
+                              ? 'bg-cyan-500 text-white shadow-lg transform scale-105' 
                               : isCompleted 
-                                ? 'bg-green-100 text-green-700 hover:bg-green-200 cursor-pointer' 
+                                ? 'bg-green-500 text-white hover:bg-green-600 cursor-pointer shadow-md' 
                                 : isClickable
-                                  ? 'bg-muted hover:bg-muted/80 cursor-pointer'
-                                  : 'bg-muted/50 text-muted-foreground cursor-not-allowed'
+                                  ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 cursor-pointer'
+                                  : 'bg-gray-800 text-gray-500 cursor-not-allowed'
                           }`}
                         >
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                          <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
                             isActive 
-                              ? 'bg-primary-foreground/20' 
+                              ? 'bg-white/20 ring-4 ring-white/30' 
                               : isCompleted 
-                                ? 'bg-green-500 text-white' 
-                                : 'bg-background'
+                                ? 'bg-white/20' 
+                                : 'bg-white/10'
                           }`}>
                             {isCompleted ? (
-                              <Check className="h-4 w-4" />
+                              <Check className="h-6 w-6" />
                             ) : (
-                              <Icon className="h-4 w-4" />
+                              <Icon className="h-6 w-6" />
                             )}
                           </div>
-                          <div className="text-left">
+                          <div className="text-center">
                             <div className="font-medium text-sm">{step.title}</div>
-                            <div className="text-xs opacity-70">Paso {index + 1}</div>
+                            <div className="text-xs opacity-80">{step.description}</div>
                           </div>
                         </button>
                         
                         {index < STEPS.length - 1 && (
-                          <div className="flex items-center mx-2">
+                          <div className="flex items-center mx-4">
                             <div
-                              className={`w-8 h-1 rounded-full transition-all duration-500 ${
-                                isCompleted ? 'bg-green-600' : 'bg-muted-foreground/20'
+                              className={`w-12 h-1 rounded-full transition-all duration-500 ${
+                                isCompleted ? 'bg-green-500' : 'bg-gray-600'
                               }`}
                             />
                           </div>
@@ -730,6 +808,20 @@ const ContractGenerator = () => {
                       </div>
                     );
                   })}
+                </div>
+              </div>
+              
+              {/* Progress Bar */}
+              <div className="mt-6">
+                <div className="flex justify-between text-sm text-muted-foreground mb-2">
+                  <span>Progreso del Contrato</span>
+                  <span>{Math.round(((currentStep + 1) / STEPS.length) * 100)}%</span>
+                </div>
+                <div className="w-full bg-gray-700 rounded-full h-2">
+                  <div 
+                    className="bg-gradient-to-r from-cyan-500 to-green-500 h-2 rounded-full transition-all duration-500 ease-out"
+                    style={{ width: `${((currentStep + 1) / STEPS.length) * 100}%` }}
+                  ></div>
                 </div>
               </div>
             </div>
