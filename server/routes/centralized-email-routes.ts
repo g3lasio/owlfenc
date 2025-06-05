@@ -5,6 +5,7 @@
 
 import express from 'express';
 import { resendService } from '../services/resendService';
+import { EstimateEmailService } from '../services/estimateEmailService';
 
 const router = express.Router();
 
@@ -33,14 +34,8 @@ router.post('/send-estimate', async (req, res) => {
       });
     }
 
-    // Generar contenido HTML del estimado
-    const estimateHtml = generateEstimateHTML({
-      clientName,
-      contractorName,
-      contractorCompany: contractorCompany || contractorName,
-      estimateData,
-      customMessage
-    });
+    // Usar el servicio completo de email de estimados con todos los datos
+    const estimateHtml = EstimateEmailService.generateEstimateHTML(estimateData);
 
     // Enviar email usando sistema centralizado
     const result = await resendService.sendCentralizedEmail({
