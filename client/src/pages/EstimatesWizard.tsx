@@ -3998,20 +3998,20 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
 
       {/* Enhanced Email Dialog */}
       <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
-        <DialogContent className="w-[98vw] sm:w-[95vw] max-w-4xl h-[98vh] sm:h-[90vh] flex flex-col p-3 sm:p-6">
-          <DialogHeader className="border-b border-gray-200 pb-3 sm:pb-4 flex-shrink-0">
-            <DialogTitle className="flex items-center gap-2 sm:gap-3 text-lg sm:text-xl">
-              <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg">
-                <Mail className="h-4 w-4 sm:h-6 sm:w-6 text-blue-600" />
+        <DialogContent className="w-[95vw] sm:w-[90vw] max-w-4xl h-[95vh] sm:h-[85vh] flex flex-col p-4 sm:p-6 overflow-hidden">
+          <DialogHeader className="border-b border-gray-200 pb-3 flex-shrink-0">
+            <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Mail className="h-5 w-5 text-blue-600" />
               </div>
               Send Professional Estimate
             </DialogTitle>
-            <DialogDescription className="text-gray-600 mt-1 sm:mt-2 text-xs sm:text-sm">
+            <DialogDescription className="text-gray-600 text-sm">
               Send your professional estimate directly to the client with a personalized message
             </DialogDescription>
           </DialogHeader>
           
-          <div className="flex-1 overflow-y-auto space-y-4 sm:space-y-6 py-3 sm:py-4 min-h-0">
+          <div className="flex-1 overflow-y-auto space-y-4 py-4 min-h-0 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100">
             {/* Client Information Card */}
             {estimate.client && (
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-3 sm:p-4">
@@ -4039,78 +4039,85 @@ ${profile?.website ? `🌐 ${profile.website}` : ''}
             )}
 
             {/* Email Form */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-              {/* Left Column - Email Details */}
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="toEmail" className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                    <Mail className="h-4 w-4" />
-                    Client Email Address *
-                  </Label>
-                  <Input
-                    id="toEmail"
-                    type="email"
-                    value={emailData.toEmail}
-                    onChange={(e) => setEmailData(prev => ({ ...prev, toEmail: e.target.value }))}
-                    placeholder="client@email.com"
-                    className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="subject" className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Email Subject *
-                  </Label>
-                  <Input
-                    id="subject"
-                    value={emailData.subject}
-                    onChange={(e) => setEmailData(prev => ({ ...prev, subject: e.target.value }))}
-                    placeholder="Professional Estimate - Your Project"
-                    className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
-                  />
-                </div>
+            <div className="space-y-6">
+              {/* Email Details Section */}
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  Email Details
+                </h4>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="toEmail" className="text-sm font-medium text-gray-700 mb-1 block">
+                      Client Email Address *
+                    </Label>
+                    <Input
+                      id="toEmail"
+                      type="email"
+                      value={emailData.toEmail}
+                      onChange={(e) => setEmailData(prev => ({ ...prev, toEmail: e.target.value }))}
+                      placeholder="client@email.com"
+                      className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="subject" className="text-sm font-medium text-gray-700 mb-1 block">
+                      Email Subject *
+                    </Label>
+                    <Input
+                      id="subject"
+                      value={emailData.subject}
+                      onChange={(e) => setEmailData(prev => ({ ...prev, subject: e.target.value }))}
+                      placeholder="Professional Estimate - Your Project"
+                      className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </div>
 
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium text-gray-700">
-                    Email Options
-                  </Label>
-                  <div className="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200">
-                    <div className="flex items-start space-x-3">
-                      <input
-                        type="checkbox"
-                        id="sendCopy"
-                        checked={emailData.sendCopy}
-                        onChange={(e) => setEmailData(prev => ({ ...prev, sendCopy: e.target.checked }))}
-                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5 flex-shrink-0"
-                      />
-                      <div className="flex flex-col space-y-1">
-                        <Label htmlFor="sendCopy" className="text-sm font-medium text-gray-700 cursor-pointer">
-                          Send me a copy
-                        </Label>
-                        <p className="text-xs text-gray-500 break-words">
-                          Copy will be sent to: {profile?.email || 'your email'}
-                        </p>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                      Email Options
+                    </Label>
+                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                      <div className="flex items-start space-x-3">
+                        <input
+                          type="checkbox"
+                          id="sendCopy"
+                          checked={emailData.sendCopy}
+                          onChange={(e) => setEmailData(prev => ({ ...prev, sendCopy: e.target.checked }))}
+                          className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5 flex-shrink-0"
+                        />
+                        <div className="flex flex-col space-y-1">
+                          <Label htmlFor="sendCopy" className="text-sm font-medium text-gray-700 cursor-pointer">
+                            Send me a copy
+                          </Label>
+                          <p className="text-xs text-gray-600">
+                            Copy will be sent to: {profile?.email || 'your email'}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Right Column - Message */}
-              <div className="space-y-4">
+              {/* Message Section */}
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <Edit className="h-4 w-4" />
+                  Personal Message
+                </h4>
                 <div>
-                  <Label htmlFor="message" className="text-sm font-medium text-gray-700 flex items-center gap-2 mb-2">
-                    <Edit className="h-4 w-4" />
-                    Personal Message *
+                  <Label htmlFor="message" className="text-sm font-medium text-gray-700 mb-1 block">
+                    Message to Client *
                   </Label>
                   <Textarea
                     id="message"
                     value={emailData.message}
                     onChange={(e) => setEmailData(prev => ({ ...prev, message: e.target.value }))}
                     placeholder="Your personalized message to the client..."
-                    rows={window.innerWidth < 640 ? 8 : 12}
-                    className="resize-none border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base leading-relaxed"
+                    rows={6}
+                    className="w-full resize-none border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     This message will be included in the email along with your estimate
