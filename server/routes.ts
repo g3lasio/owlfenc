@@ -54,7 +54,7 @@ import { setupTemplatesRoutes } from "./routes/templates";
 import { aiEnhancementRoutes } from "./routes/aiEnhancementRoutes"; // Import new AI enhancement routes
 import { registerDeepSearchRoutes } from "./routes/deepSearchRoutes"; // Import DeepSearch AI routes
 import { registerLaborDeepSearchRoutes } from "./routes/laborDeepSearchRoutes"; // Import Labor DeepSearch AI routes
-import legalDefenseRoutes from "./routes/legal-defense-routes"; // Import Legal Defense Engine routes
+// import legalDefenseRoutes from "./routes/legal-defense-routes"; // Temporarily disabled for horizontal navigation
 import unifiedContractRoutes from "./routes/unifiedContractRoutes"; // Import Unified Contract Management routes
 import pdfContractProcessorRoutes from "./routes/pdf-contract-processor"; // Import PDF Contract Processor routes
 import centralizedEmailRoutes from "./routes/centralized-email-routes"; // Import Centralized Email routes
@@ -1091,7 +1091,7 @@ Output in English regardless of input language. Make it suitable for contracts a
   app.use("/api/project", aiEnhancementRoutes);
 
   // Registrar rutas del Motor de Abogado Defensor Digital
-  app.use("/api/legal-defense", legalDefenseRoutes);
+  // app.use("/api/legal-defense", legalDefenseRoutes); // Temporarily disabled for horizontal navigation
 
   // Registrar rutas del sistema unificado de contratos
   app.use("/api/unified-contracts", unifiedContractRoutes);
