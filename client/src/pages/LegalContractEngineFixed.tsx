@@ -45,6 +45,43 @@ export default function LegalContractEngineFixed() {
   const [isSigning, setIsSigning] = useState(false);
   const [signatureData, setSignatureData] = useState<{contractor: string, client: string, date: string} | null>(null);
   const [selectedContractType, setSelectedContractType] = useState<string>('');
+  const [selectedState, setSelectedState] = useState<string>('');
+
+  // Requisitos legales específicos por estado
+  const STATE_REQUIREMENTS = {
+    'california': {
+      name: '🇺🇸 California',
+      requirements: [
+        'Contrato escrito obligatorio (> $500)',
+        'Dibujo en contratos de piscina',
+        'Límite anticipo 10% o $1,000',
+        'Derecho a cancelar en 3 días'
+      ]
+    },
+    'florida': {
+      name: '🇺🇸 Florida', 
+      requirements: [
+        'Aviso obligatorio sobre gravámenes en primera página (> $2,500)',
+        'Licencia obligatoria claramente indicada'
+      ]
+    },
+    'texas': {
+      name: '🇺🇸 Texas',
+      requirements: [
+        'Firma cónyuge obligatoria en contratos para vivienda protegida (homestead)',
+        'Aviso destacado sobre pérdida de derechos de propiedad'
+      ]
+    },
+    'newyork': {
+      name: '🇺🇸 Nueva York',
+      requirements: [
+        'Contrato escrito (> $500)',
+        'Número de licencia obligatorio (NYC)',
+        'Avisos obligatorios de cancelación',
+        'Manejo especial de anticipos'
+      ]
+    }
+  };
 
   // Tipos de contratos especializados
   const CONTRACT_TYPES = [
@@ -149,7 +186,7 @@ export default function LegalContractEngineFixed() {
 
   const canProceedToNext = () => {
     switch (currentStep) {
-      case 0: return extractedData !== null && selectedContractType !== '';
+      case 0: return extractedData !== null && selectedContractType !== '' && selectedState !== '';
       case 1: return riskAnalysis !== null;
       case 2: return generatedContract !== "";
       case 3: return true;
@@ -247,16 +284,72 @@ export default function LegalContractEngineFixed() {
     }
   };
 
-  const generateContractByType = (contractType: string, data: any) => {
+  const generateContractByType = (contractType: string, data: any, state: string) => {
     const selectedType = CONTRACT_TYPES.find(t => t.id === contractType);
+    const stateReqs = STATE_REQUIREMENTS[state as keyof typeof STATE_REQUIREMENTS];
     
     const baseContract = `
       <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6;">
         <h1 style="text-align: center; color: #2563eb; margin-bottom: 30px;">${selectedType?.title.toUpperCase()}</h1>
+        <p style="text-align: center; font-weight: bold; color: #7c3aed; margin-bottom: 20px;">
+          CONTRATO VÁLIDO PARA ${stateReqs?.name}
+        </p>
     `;
 
     let specificClauses = '';
+    let stateSpecificClauses = '';
     let protections: string[] = [];
+
+    // Generar cláusulas específicas por estado
+    switch (state) {
+      case 'california':
+        stateSpecificClauses = `
+          <h2 style="color: #dc2626;">REQUISITOS LEGALES DE CALIFORNIA</h2>
+          <div style="background-color: #fef2f2; padding: 15px; border-left: 4px solid #dc2626; margin: 15px 0;">
+            <p><strong>CONTRATO ESCRITO OBLIGATORIO:</strong> Este contrato es requerido por la ley de California para trabajos superiores a $500.</p>
+            ${contractType === 'pool' ? '<p><strong>DIBUJO TÉCNICO ADJUNTO:</strong> Se incluye plano a escala como parte integral del contrato (Código de California).</p>' : ''}
+            <p><strong>LÍMITE DE ANTICIPO:</strong> El anticipo no puede exceder 10% del precio total del contrato o $1,000, lo que sea menor.</p>
+            <p><strong>DERECHO A CANCELAR:</strong> El cliente tiene derecho a cancelar este contrato dentro de 3 días hábiles sin penalidad.</p>
+          </div>
+        `;
+        break;
+      case 'florida':
+        stateSpecificClauses = `
+          <h2 style="color: #dc2626;">REQUISITOS LEGALES DE FLORIDA</h2>
+          <div style="background-color: #fef2f2; padding: 15px; border-left: 4px solid #dc2626; margin: 15px 0;">
+            ${data?.totalAmount && parseFloat(data.totalAmount.replace(/[^0-9.-]+/g,"")) > 2500 ? 
+              '<p><strong>AVISO OBLIGATORIO SOBRE GRAVÁMENES:</strong> IMPORTANTE: El contratista puede tener derecho legal a presentar un gravamen sobre la propiedad si no se realiza el pago completo según los términos del contrato.</p>' : 
+              ''}
+            <p><strong>LICENCIA OBLIGATORIA:</strong> Número de licencia del contratista: [LICENCIA REQUERIDA] - Verificable en MyFloridaLicense.com</p>
+          </div>
+        `;
+        break;
+      case 'texas':
+        stateSpecificClauses = `
+          <h2 style="color: #dc2626;">REQUISITOS LEGALES DE TEXAS</h2>
+          <div style="background-color: #fef2f2; padding: 15px; border-left: 4px solid #dc2626; margin: 15px 0;">
+            <p><strong>FIRMA DE CÓNYUGE REQUERIDA:</strong> Si esta propiedad es una vivienda protegida (homestead), se requiere la firma de ambos cónyuges.</p>
+            <p><strong>AVISO SOBRE DERECHOS DE PROPIEDAD:</strong> ATENCIÓN: Al firmar este contrato, el propietario puede estar renunciando a ciertos derechos de propiedad. Consulte con un abogado si tiene dudas.</p>
+            <div style="margin-top: 10px; padding: 10px; background-color: #fee2e2;">
+              <p><strong>Firmas Requeridas:</strong></p>
+              <p>Propietario: _________________________ Fecha: _______</p>
+              <p>Cónyuge: ____________________________ Fecha: _______</p>
+            </div>
+          </div>
+        `;
+        break;
+      case 'newyork':
+        stateSpecificClauses = `
+          <h2 style="color: #dc2626;">REQUISITOS LEGALES DE NUEVA YORK</h2>
+          <div style="background-color: #fef2f2; padding: 15px; border-left: 4px solid #dc2626; margin: 15px 0;">
+            <p><strong>CONTRATO ESCRITO OBLIGATORIO:</strong> Requerido por ley de NY para trabajos superiores a $500.</p>
+            <p><strong>NÚMERO DE LICENCIA NYC:</strong> [LICENCIA REQUERIDA] - Verificable en NYC.gov/consumers</p>
+            <p><strong>AVISO DE CANCELACIÓN:</strong> El cliente tiene derecho a cancelar este contrato según las regulaciones de protección al consumidor de Nueva York.</p>
+            <p><strong>MANEJO ESPECIAL DE ANTICIPOS:</strong> Los anticipos están regulados por las leyes de protección al consumidor de NY.</p>
+          </div>
+        `;
+        break;
+    }
 
     switch (contractType) {
       case 'general':
@@ -404,6 +497,8 @@ export default function LegalContractEngineFixed() {
       <p><strong>Tipo de Proyecto:</strong> ${data?.projectType}</p>
       <p><strong>Monto Total:</strong> ${data?.totalAmount}</p>
       
+      ${stateSpecificClauses}
+      
       ${specificClauses}
       
       <h2>TÉRMINOS GENERALES</h2>
@@ -412,8 +507,9 @@ export default function LegalContractEngineFixed() {
       </ul>
       
       <h2>DISPOSICIONES FINALES</h2>
-      <p>Este contrato ha sido generado conforme a las regulaciones específicas para ${selectedType?.name}.</p>
+      <p>Este contrato ha sido generado conforme a las regulaciones específicas para ${selectedType?.name} en ${stateReqs?.name}.</p>
       <p><strong>Regulación Aplicable:</strong> ${selectedType?.regulations}</p>
+      <p><strong>Cumplimiento Legal:</strong> Cumple con ${stateReqs?.requirements.length} requisitos legales específicos del estado.</p>
       
       <p style="margin-top: 30px; text-align: center; font-size: 12px; color: #666;">
         Contrato generado por Legal Defense Engine - ${new Date().toLocaleDateString('es-ES')}
@@ -421,7 +517,11 @@ export default function LegalContractEngineFixed() {
     </div>
     `;
 
-    return { contract: fullContract, protections };
+    // Combinar protecciones específicas del tipo de contrato con protecciones del estado
+    const stateProtections = stateReqs?.requirements || [];
+    const allProtections = [...protections, ...stateProtections];
+
+    return { contract: fullContract, protections: allProtections };
   };
 
   const generateContract = async () => {
@@ -429,15 +529,18 @@ export default function LegalContractEngineFixed() {
     try {
       await new Promise(resolve => setTimeout(resolve, 3000));
       
-      const { contract, protections } = generateContractByType(selectedContractType, extractedData);
+      const { contract, protections } = generateContractByType(selectedContractType, extractedData, selectedState);
       
       setGeneratedContract(contract);
-      setContractStrength(88);
+      setContractStrength(92);
       setProtectionsApplied(protections);
+      
+      const contractTypeName = CONTRACT_TYPES.find(t => t.id === selectedContractType)?.name;
+      const stateName = STATE_REQUIREMENTS[selectedState as keyof typeof STATE_REQUIREMENTS]?.name;
       
       toast({
         title: "✅ Contrato especializado generado",
-        description: `Contrato ${CONTRACT_TYPES.find(t => t.id === selectedContractType)?.name} listo`,
+        description: `Contrato ${contractTypeName} para ${stateName} completado`,
       });
       
       nextStep();
@@ -620,6 +723,61 @@ export default function LegalContractEngineFixed() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Selector de Estado */}
+                {!selectedState && (
+                  <div className="space-y-4">
+                    <h4 className="text-lg font-semibold text-center">Selecciona el Estado</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      {Object.entries(STATE_REQUIREMENTS).map(([stateKey, stateInfo]) => (
+                        <Card 
+                          key={stateKey}
+                          className={`cursor-pointer transition-all hover:shadow-lg ${
+                            selectedState === stateKey ? 'ring-2 ring-blue-500 bg-blue-50' : ''
+                          }`}
+                          onClick={() => setSelectedState(stateKey)}
+                        >
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-sm">
+                              {stateInfo.name}
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="text-xs space-y-1">
+                              {stateInfo.requirements.slice(0, 2).map((req, idx) => (
+                                <p key={idx} className="text-gray-600">• {req}</p>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {selectedState && (
+                  <Card className="border-purple-200 bg-purple-50">
+                    <CardContent className="pt-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-semibold text-purple-800">
+                            Estado: {STATE_REQUIREMENTS[selectedState as keyof typeof STATE_REQUIREMENTS]?.name}
+                          </p>
+                          <p className="text-sm text-purple-700">
+                            Requisitos legales específicos aplicables
+                          </p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedState('')}
+                        >
+                          Cambiar
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             )}
             
