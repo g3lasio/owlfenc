@@ -22,8 +22,8 @@ export interface EmailData {
 }
 
 export class ResendEmailService {
-  private defaultFromEmail = 'noreply@owlfenc.com';
-  private supportEmail = 'support@owlfenc.com';
+  private defaultFromEmail = 'onboarding@resend.dev'; // Usar dominio verificado de Resend
+  private supportEmail = 'gelasio@chyrris.com'; // Email verificado del usuario
 
   /**
    * Enviar email centralizado desde la plataforma con Reply-To del contratista
