@@ -26,7 +26,10 @@ import {
   MapPin,
   DollarSign,
   FileText,
-  Package
+  Package,
+  Mail,
+  FileSignature,
+  CheckSquare
 } from 'lucide-react';
 
 interface WorkflowStep {
@@ -287,9 +290,45 @@ export default function CyberpunkLegalDefense() {
       materials: formData.get('materialsWarranty') as string
     };
 
+    // Collect extra clauses
+    const extraClauses = formData.getAll('extraClauses') as string[];
+
+    // Collect electronic consents
+    const consents = {
+      electronicCommunications: formData.get('electronicConsent') === 'on',
+      electronicSignatures: formData.get('esignConsent') === 'on'
+    };
+
+    // Collect signatures
+    const signatures = {
+      contractor: {
+        name: formData.get('contractorSignatureName') as string,
+        date: formData.get('contractorSignatureDate') as string
+      },
+      client: {
+        name: formData.get('clientSignatureName') as string,
+        date: formData.get('clientSignatureDate') as string
+      }
+    };
+
+    // Collect final confirmations
+    const confirmations = {
+      finalReview: formData.get('finalReview') === 'on',
+      legalNoticesAck: formData.get('legalNoticesAck') === 'on',
+      authorityConfirm: formData.get('authorityConfirm') === 'on'
+    };
+
+    // Generate automatic license disclaimer based on contractor license status
+    const licenseDisclaimer = contractorInfo.hasLicense 
+      ? `This contractor is licensed under the Contractors' State License Law (Chapter 9 (commencing with Section 7000) of Division 3 of the Business and Professions Code). License Number: ${contractorInfo.licenseNumber}, Classification: ${contractorInfo.licenseClassification}.`
+      : "This contractor is not licensed under the Contractors' State License Law (Chapter 9 (commencing with Section 7000) of Division 3 of the Business and Professions Code).";
+
     const legalNotices = {
-      lienNotice: formData.get('lienNotice') === 'on',
-      cancelNotice: formData.get('cancelNotice') === 'on'
+      lienNotice: true, // Always mandatory
+      cancelNotice: true, // Always mandatory
+      licenseDisclaimer,
+      preliminaryNotice: "As required by the Mechanics Lien Law of the state of California, you are hereby notified that a Preliminary Notice may be served upon you. Even though you have paid your contractor in full, if the contractor fails to pay subcontractors or material suppliers or becomes unable to meet these obligations during the course of construction of your project, the subcontractors or material suppliers may look to your property for satisfaction of the obligations owed to them by filing liens against your property.",
+      cancellationNotice: "You, the buyer, have the right to cancel this contract within three business days. You may cancel by e-mailing, mailing, faxing or delivering a written notice to the contractor at the contractor's place of business by midnight of the third business day after you received a signed copy of the contract that includes this notice. Include your name, your address, and the date you received the signed copy of the contract and this notice."
     };
 
     return {
@@ -300,6 +339,10 @@ export default function CyberpunkLegalDefense() {
       timeline,
       permits,
       warranties,
+      extraClauses,
+      consents,
+      signatures,
+      confirmations,
       legalNotices
     };
   };
@@ -1472,19 +1515,155 @@ export default function CyberpunkLegalDefense() {
                     </h3>
                     <div className="space-y-4">
                       <div className="flex items-center space-x-3">
-                        <input type="checkbox" defaultChecked id="lienNotice" className="text-red-400" />
-                        <label htmlFor="lienNotice" className="text-gray-300">Include Preliminary 20-Day Lien Notice</label>
+                        <input type="checkbox" defaultChecked disabled name="lienNotice" className="text-red-400" />
+                        <label className="text-gray-300">Include Preliminary 20-Day Lien Notice (MANDATORY)</label>
                       </div>
                       <div className="flex items-center space-x-3">
-                        <input type="checkbox" defaultChecked id="cancelNotice" className="text-red-400" />
-                        <label htmlFor="cancelNotice" className="text-gray-300">Include 3-Day Right to Cancel Notice</label>
+                        <input type="checkbox" defaultChecked disabled name="cancelNotice" className="text-red-400" />
+                        <label className="text-gray-300">Include 3-Day Right to Cancel Notice (MANDATORY)</label>
                       </div>
                       <div className="bg-red-900/20 border border-red-400/30 rounded p-3">
-                        <div className="text-red-400 text-xs font-bold mb-2">MANDATORY NOTICES:</div>
-                        <div className="text-gray-300 text-xs space-y-1">
-                          <div>• Three-Day Right to Cancel: "You, the buyer, have the right to cancel this contract within three business days."</div>
-                          <div>• Preliminary Notice: "As required by the Mechanics Lien Law of the state of California..."</div>
-                          <div>• License Notice: Required disclosure of contractor license status</div>
+                        <div className="text-red-400 text-xs font-bold mb-2">MANDATORY CALIFORNIA NOTICES:</div>
+                        <div className="text-gray-300 text-xs space-y-2">
+                          <div>• <strong>Three-Day Right to Cancel:</strong> "You, the buyer, have the right to cancel this contract within three business days. The right to cancel agreement is attached to this contract."</div>
+                          <div>• <strong>Preliminary Lien Notice:</strong> "As required by the Mechanics Lien Law of the state of California, you are hereby notified that a Preliminary Notice may be served upon you..."</div>
+                          <div>• <strong>License Disclosure:</strong> Automatic disclosure based on contractor license status will be included</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Customizable Clause Library */}
+                  <div className="bg-gray-900/50 border border-cyan-400/30 rounded-lg p-4">
+                    <h3 className="text-cyan-400 font-bold mb-4 flex items-center">
+                      <FileText className="h-4 w-4 mr-2" />
+                      ADDITIONAL PROTECTIVE CLAUSES
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="text-gray-400 text-sm mb-3">
+                        Add specialized clauses for enhanced protection (optional):
+                      </div>
+                      <div className="space-y-2">
+                        <label className="flex items-center space-x-2">
+                          <input type="checkbox" name="extraClauses" value="weather" className="text-cyan-400" />
+                          <span className="text-gray-300 text-sm">Weather delay protection clause</span>
+                        </label>
+                        <label className="flex items-center space-x-2">
+                          <input type="checkbox" name="extraClauses" value="materials" className="text-cyan-400" />
+                          <span className="text-gray-300 text-sm">Material price escalation protection</span>
+                        </label>
+                        <label className="flex items-center space-x-2">
+                          <input type="checkbox" name="extraClauses" value="equipment" className="text-cyan-400" />
+                          <span className="text-gray-300 text-sm">Equipment breakdown contingency</span>
+                        </label>
+                        <label className="flex items-center space-x-2">
+                          <input type="checkbox" name="extraClauses" value="safety" className="text-cyan-400" />
+                          <span className="text-gray-300 text-sm">Enhanced safety compliance clause</span>
+                        </label>
+                        <label className="flex items-center space-x-2">
+                          <input type="checkbox" name="extraClauses" value="covid" className="text-cyan-400" />
+                          <span className="text-gray-300 text-sm">Health emergency work suspension clause</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Electronic Communications Consent */}
+                  <div className="bg-gray-900/50 border border-blue-400/30 rounded-lg p-4">
+                    <h3 className="text-blue-400 font-bold mb-4 flex items-center">
+                      <User className="h-4 w-4 mr-2" />
+                      ELECTRONIC COMMUNICATIONS CONSENT
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-3">
+                        <input type="checkbox" name="electronicConsent" className="text-blue-400" />
+                        <label className="text-gray-300">I consent to receive contract documents, updates, and notifications electronically</label>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <input type="checkbox" name="esignConsent" className="text-blue-400" />
+                        <label className="text-gray-300">I agree to use electronic signatures as legally binding (E-Sign Act compliance)</label>
+                      </div>
+                      <div className="bg-blue-900/20 border border-blue-400/30 rounded p-3">
+                        <div className="text-blue-400 text-xs font-bold mb-1">ELECTRONIC SIGNATURE DISCLOSURE:</div>
+                        <div className="text-gray-300 text-xs">
+                          By consenting above, you agree that electronic signatures will have the same legal effect as handwritten signatures under federal and state electronic signature laws.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Electronic Signatures */}
+                  <div className="bg-gray-900/50 border border-green-400/30 rounded-lg p-4">
+                    <h3 className="text-green-400 font-bold mb-4 flex items-center">
+                      <PenTool className="h-4 w-4 mr-2" />
+                      ELECTRONIC SIGNATURES
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="border border-gray-600 rounded p-4">
+                        <div className="text-green-400 font-semibold mb-3">CONTRACTOR SIGNATURE</div>
+                        <div className="bg-gray-800 border border-gray-600 rounded p-3 mb-3 h-16 flex items-center justify-center">
+                          <span className="text-gray-500 text-sm">Pending Electronic Signature</span>
+                        </div>
+                        <div className="space-y-2">
+                          <input
+                            type="text"
+                            name="contractorSignatureName"
+                            placeholder="Contractor printed name"
+                            className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:border-green-400 focus:outline-none"
+                          />
+                          <input
+                            type="date"
+                            name="contractorSignatureDate"
+                            className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:border-green-400 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                      <div className="border border-gray-600 rounded p-4">
+                        <div className="text-green-400 font-semibold mb-3">CLIENT SIGNATURE</div>
+                        <div className="bg-gray-800 border border-gray-600 rounded p-3 mb-3 h-16 flex items-center justify-center">
+                          <span className="text-gray-500 text-sm">Pending Electronic Signature</span>
+                        </div>
+                        <div className="space-y-2">
+                          <input
+                            type="text"
+                            name="clientSignatureName"
+                            placeholder="Client printed name"
+                            defaultValue={extractedData.clientInfo?.name || ''}
+                            className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:border-green-400 focus:outline-none"
+                          />
+                          <input
+                            type="date"
+                            name="clientSignatureDate"
+                            className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:border-green-400 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Final Review and Confirmation */}
+                  <div className="bg-gray-900/50 border border-yellow-400/30 rounded-lg p-4">
+                    <h3 className="text-yellow-400 font-bold mb-4 flex items-center">
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      FINAL REVIEW & CONFIRMATION
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-3">
+                        <input type="checkbox" required name="finalReview" className="text-yellow-400" />
+                        <label className="text-gray-300">I have reviewed and agree to all contract terms and conditions</label>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <input type="checkbox" required name="legalNoticesAck" className="text-yellow-400" />
+                        <label className="text-gray-300">I acknowledge receipt of all required California legal notices</label>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <input type="checkbox" required name="authorityConfirm" className="text-yellow-400" />
+                        <label className="text-gray-300">I confirm I have authority to enter into this contract</label>
+                      </div>
+                      <div className="bg-yellow-900/20 border border-yellow-400/30 rounded p-3">
+                        <div className="text-yellow-400 text-xs font-bold mb-1">IMPORTANT:</div>
+                        <div className="text-gray-300 text-xs">
+                          All confirmations above are required before contract generation. This ensures full legal compliance and protects both parties.
                         </div>
                       </div>
                     </div>
