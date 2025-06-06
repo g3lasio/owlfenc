@@ -2521,71 +2521,45 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     }
   };
 
-  const handleDownload=async()=>{
-    try{
-      // console.log(JSON.stringify(estimate))
-      // const payload={
-      //     company_logo_url: "https://yourdomain.com/logo.png",
-      //     company_name: "Mervin Solutions Inc.",
-      //     company_address: "1234 Market Street, Suite 100, San Francisco, CA 94103",
-      //     company_email: "contact@mervin.ai",
-      //     company_phone: "+1 (555) 123-4567",
-      //     estimate_date: "2025-06-03",
-      //     estimate_number: "EST-001234",
-      //     valid_until: "2025-07-03",
-      //     client_name: "John Doe",
-      //     client_email: "johndoe@example.com",
-      //     client_phone: "+1 (555) 987-6543",
-      //     client_address: "789 Elm Street, Springfield, IL 62704",
-      //       lineItems : [
-      //       {
-      //         category: "Web Development",
-      //         description: "Full-stack development",
-      //         quantity: 1,
-      //         unit_price: "$3,000",
-      //         total: "$3,000"
-      //       }
-      //     ],
-      //     grand_total: "$3,740.00",
-      //     scope_of_work: "The project involves designing, developing, and deploying a full-stack web application, along with providing hosting and support for 12 months."
-      //   }
+  const handleDownload = async () => {
+    try {
       const payload = {
         company_logo_url: "https://yourdomain.com/logo.png",
         company_name: "Mervin Solutions Inc.",
-        company_address: "1234 Market Street, Suite 100, San Francisco, CA 94103",
+        company_address:
+          "1234 Market Street, Suite 100, San Francisco, CA 94103",
         company_email: "contact@mervin.ai",
         company_phone: "+1 (555) 123-4567",
         estimate_date: new Date().toISOString().split("T")[0], // today's date
         estimate_number: "EST-" + Date.now(), // simple unique number
-        valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // +30 days
+        valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .split("T")[0], // +30 days
         client_name: estimate.client.name,
         client_email: estimate.client.email || "",
         client_phone: estimate.client.phone,
         client_address: `${estimate.client.address}, ${estimate.client.city}, ${estimate.client.state} ${estimate.client.zipcode}, ${estimate.client.country}`,
-        items: estimate.items.map(item => ({
+        items: estimate.items.map((item) => ({
           name: item.name,
           description: item.description,
           quantity: item.quantity,
           unit_price: `$${Number(item.price).toFixed(2)}`,
-          total: `$${Number(item.total).toFixed(2)}`
+          total: `$${Number(item.total).toFixed(2)}`,
         })),
         grand_total: `$${Number(estimate.total).toFixed(2)}`,
-        scope_of_work: estimate.projectDetails
+        scope_of_work: estimate.projectDetails,
       };
-      const res=await axios.post("/api/estimate-basic-pdf",payload)
+      const res = await axios.post("/api/estimate-basic-pdf", payload);
       const downloadUrl = res.data.data.download_url;
-        if (downloadUrl) {
-          window.open(downloadUrl, '_blank');
-        } else {
-          console.error('Download URL not found in response.');
-        }
-
- 
-      
-    }catch(error){
-    console.error(error)
+      if (downloadUrl) {
+        window.open(downloadUrl, "_blank");
+      } else {
+        console.error("Download URL not found in response.");
+      }
+    } catch (error) {
+      console.error(error);
     }
-  }
+  };
 
   // Render current step
   const renderCurrentStep = () => {
@@ -3963,7 +3937,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         <div className="flex flex-col sm:flex-row gap-2 order-1 sm:order-2">
           {currentStep === STEPS.length - 1 ? (
             <Button
-              onClick={downloadPDF}
+              onClick={handleDownload}
               disabled={!estimate.client || estimate.items.length === 0}
               className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
             >
@@ -4696,7 +4670,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                 Send Email
               </Button>
               <Button
-                onClick={downloadPDF}
+                onClick={handleDownload}
                 disabled={!estimate.client || estimate.items.length === 0}
                 className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
               >
