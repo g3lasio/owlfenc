@@ -2523,41 +2523,42 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
   const handleDownload=async()=>{
     try{
-      const payload={
-          company_logo_url: "https://yourdomain.com/logo.png",
-          company_name: "Mervin Solutions Inc.",
-          company_address: "1234 Market Street, Suite 100, San Francisco, CA 94103",
-          company_email: "contact@mervin.ai",
-          company_phone: "+1 (555) 123-4567",
-          estimate_date: "2025-06-03",
-          estimate_number: "EST-001234",
-          valid_until: "2025-07-03",
-          client_name: "John Doe",
-          client_email: "johndoe@example.com",
-          client_phone: "+1 (555) 987-6543",
-          client_address: "789 Elm Street, Springfield, IL 62704",
-          items: [
-            {
-              name: "Web Development",
-              description: "Full-stack development",
-              quantity: 1,
-              unit_price: "$3,000",
-              total: "$3,000"
-            }
-          ],
-          grand_total: "$3,740.00",
-          scope_of_work: "The project involves designing, developing, and deploying a full-stack web application, along with providing hosting and support for 12 months."
-        }
-      const res=await axios.post("/api/estimate-basic-pdf",payload)
-      const downloadUrl = res.data.data.download_url;
-        if (downloadUrl) {
-          window.open(downloadUrl, '_blank');
-        } else {
-          console.error('Download URL not found in response.');
-        }
+      console.log(estimate)
+      // const payload={
+      //     company_logo_url: "https://yourdomain.com/logo.png",
+      //     company_name: "Mervin Solutions Inc.",
+      //     company_address: "1234 Market Street, Suite 100, San Francisco, CA 94103",
+      //     company_email: "contact@mervin.ai",
+      //     company_phone: "+1 (555) 123-4567",
+      //     estimate_date: "2025-06-03",
+      //     estimate_number: "EST-001234",
+      //     valid_until: "2025-07-03",
+      //     client_name: "John Doe",
+      //     client_email: "johndoe@example.com",
+      //     client_phone: "+1 (555) 987-6543",
+      //     client_address: "789 Elm Street, Springfield, IL 62704",
+      //       lineItems : [
+      //       {
+      //         category: "Web Development",
+      //         description: "Full-stack development",
+      //         quantity: 1,
+      //         unit_price: "$3,000",
+      //         total: "$3,000"
+      //       }
+      //     ],
+      //     grand_total: "$3,740.00",
+      //     scope_of_work: "The project involves designing, developing, and deploying a full-stack web application, along with providing hosting and support for 12 months."
+      //   }
+      // const res=await axios.post("/api/estimate-basic-pdf",payload)
+      // const downloadUrl = res.data.data.download_url;
+      //   if (downloadUrl) {
+      //     window.open(downloadUrl, '_blank');
+      //   } else {
+      //     console.error('Download URL not found in response.');
+      //   }
       
-    }catch(err){
-      
+    }catch(error){
+    console.error(error)
     }
   }
 
@@ -3784,7 +3785,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       </Button>
 
                       <Button
-                        onClick={handleDownload}
+                        {/* onClick={downloadPDF} */}
+                      onClick={handleDownload}
                         disabled={
                           !estimate.client || estimate.items.length === 0
                         }
