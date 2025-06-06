@@ -219,17 +219,16 @@ export default function CyberpunkLegalDefense() {
         if (hasCriticalMissing && missingCritical?.length > 0) {
           toast({
             title: "⚠️ INCOMPLETE DATA EXTRACTED",
-            description: `Missing critical fields: ${missingCritical.join(', ')}. Continuing with available data...`,
+            description: `Missing critical fields: ${missingCritical.join(', ')}. Review extracted data below.`,
           });
         } else {
           toast({
             title: "✅ OCR EXTRACTION COMPLETE",
-            description: `Data extracted with ${data.extractionQuality?.confidence || 85}% confidence. Proceeding to contract arsenal...`,
+            description: `Data extracted with ${data.extractionQuality?.confidence || 85}% confidence. Review data below.`,
           });
         }
         
-        // Always continue with workflow if we have extracted data
-        await processExtractedDataWorkflow(data);
+        // Don't auto-continue - let user review data first
       }
     } catch (error) {
       console.error('OCR processing error:', error);
