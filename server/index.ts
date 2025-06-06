@@ -134,7 +134,7 @@ app.use((req, res, next) => {
       try {
         await setupVite(app, server);
       } catch (error) {
-        console.error('Vite setup error (non-critical):', error.message);
+        console.error('Vite setup error (non-critical):', error instanceof Error ? error.message : String(error));
       }
     } else {
       serveStatic(app);
