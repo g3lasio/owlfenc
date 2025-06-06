@@ -234,9 +234,9 @@ export default function EstimatesWizardFixed() {
 
     if (!description || description.length < 10) {
       toast({
-        title: "Descripción requerida",
+        title: "Description Required",
         description:
-          "Por favor describe tu proyecto con al menos 10 caracteres para usar Smart Search IA",
+          "Please describe your project with at least 10 characters to use Smart Search AI",
         variant: "destructive",
       });
       return;
@@ -247,9 +247,9 @@ export default function EstimatesWizardFixed() {
     // Si la descripción es muy básica, sugerir mejorarla
     if (!evaluation.isDetailed) {
       toast({
-        title: "Descripción muy básica para DeepSearch",
+        title: "Description too basic for DeepSearch",
         description:
-          'Para ejecutar DeepSearch necesito más detalles de tu proyecto. Incluye medidas, materiales específicos, o usa "Enhance with Mervin AI" primero.',
+          'To run DeepSearch I need more project details. Include measurements, specific materials, or use "Enhance with Mervin AI" first.',
         variant: "destructive",
       });
       return;
@@ -265,15 +265,15 @@ export default function EstimatesWizardFixed() {
       switch (smartSearchMode) {
         case "materials":
           endpoint = "/api/deepsearch/materials-only";
-          successMessage = "materiales";
+          successMessage = "materials";
           break;
         case "labor":
           endpoint = "/api/labor-deepsearch/generate-items";
-          successMessage = "servicios de labor";
+          successMessage = "labor services";
           break;
         case "both":
           endpoint = "/api/labor-deepsearch/combined";
-          successMessage = "materiales y labor";
+          successMessage = "materials and labor";
           break;
       }
 
@@ -291,7 +291,7 @@ export default function EstimatesWizardFixed() {
       setAiProgress(70);
 
       if (!response.ok) {
-        throw new Error("Error al generar con Smart Search IA");
+        throw new Error("Error generating with Smart Search AI");
       }
 
       const result = await response.json();
@@ -300,7 +300,7 @@ export default function EstimatesWizardFixed() {
       if (result.success) {
         const newItems: EstimateItem[] = [];
 
-        // Agregar materiales si existen Y guardarlos automáticamente al inventario
+        // Add materials if they exist AND automatically save them to inventory
         if (result.materials && result.materials.length > 0) {
           result.materials.forEach((material: any) => {
             newItems.push({
@@ -315,7 +315,7 @@ export default function EstimatesWizardFixed() {
             });
           });
 
-          // Auto-guardar materiales al inventario de Firebase
+          // Auto-save materials to Firebase inventory
           if (currentUser?.uid) {
             console.log(
               "🚀 STARTING AUTO-SAVE for materials:",
@@ -351,7 +351,7 @@ export default function EstimatesWizardFixed() {
           }
         }
 
-        // Agregar servicios de labor si existen (usando 'items' para labor endpoint)
+        // Add labor services if they exist (using 'items' for labor endpoint)
         if (result.items) {
           result.items.forEach((service: any) => {
             // Mapear unidades de construcción reales
