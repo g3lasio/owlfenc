@@ -44,12 +44,25 @@ router.post('/extract-pdf', upload.single('pdf'), async (req, res) => {
       });
     }
 
-    // Convert PDF buffer to base64
-    const pdfBase64 = req.file.buffer.toString('base64');
+    // Extract text from PDF using pdf-parse
+    const pdfData = await pdf(req.file.buffer);
+    const pdfText = pdfData.text;
+
+    if (!pdfText || pdfText.trim().length === 0) {
+      return res.status(400).json({ 
+        error: 'Could not extract text from PDF',
+        message: 'The PDF appears to be empty or contains only images'
+      });
+    }
 
     // Create structured extraction prompt for Claude Sonnet
     const extractionPrompt = `
-You are an advanced document analysis AI. Extract comprehensive data from this PDF estimate/contract document and return it as a structured JSON object.
+You are an advanced document analysis AI specializing in construction estimate and contract analysis. Extract comprehensive data from this PDF text and return it as a structured JSON object.
+
+PDF TEXT CONTENT:
+${pdfText}
+
+Return a JSON object with the following structure:
 
 REQUIRED OUTPUT FORMAT (JSON only, no other text):
 {
@@ -104,37 +117,24 @@ EXTRACTION RULES:
 Analyze this document thoroughly and extract all relevant project data:
 `;
 
-    // Send PDF to Claude for analysis
+    // Send extracted text to Claude for analysis
     const response = await anthropic.messages.create({
-      model: 'claude-3-sonnet-20240229',
+      model: 'claude-sonnet-4-20250514', // the newest Anthropic model is "claude-sonnet-4-20250514" which was released May 14, 2025. Use this by default unless user has already selected claude-3-7-sonnet-20250219
       max_tokens: 4000,
       messages: [
         {
           role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: extractionPrompt
-            },
-            {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: 'application/pdf',
-                data: pdfBase64
-              }
-            }
-          ]
+          content: extractionPrompt
         }
       ]
     });
 
-    const extractedText = response.content[0].text;
+    const responseText = response.content[0].type === 'text' ? response.content[0].text : '';
     
     // Parse the JSON response from Claude
     let extractedData;
     try {
-      extractedData = JSON.parse(extractedText);
+      extractedData = JSON.parse(responseText);
     } catch (parseError) {
       console.error('Failed to parse Claude response:', extractedText);
       return res.status(500).json({ 
