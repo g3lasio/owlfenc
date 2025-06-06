@@ -2523,7 +2523,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
   const handleDownload=async()=>{
     try{
-      console.log(JSON.stringify(estimate))
+      // console.log(JSON.stringify(estimate))
       // const payload={
       //     company_logo_url: "https://yourdomain.com/logo.png",
       //     company_name: "Mervin Solutions Inc.",
@@ -2549,13 +2549,38 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       //     grand_total: "$3,740.00",
       //     scope_of_work: "The project involves designing, developing, and deploying a full-stack web application, along with providing hosting and support for 12 months."
       //   }
-      // const res=await axios.post("/api/estimate-basic-pdf",payload)
-      // const downloadUrl = res.data.data.download_url;
-      //   if (downloadUrl) {
-      //     window.open(downloadUrl, '_blank');
-      //   } else {
-      //     console.error('Download URL not found in response.');
-      //   }
+      const payload = {
+        company_logo_url: "https://yourdomain.com/logo.png",
+        company_name: "Mervin Solutions Inc.",
+        company_address: "1234 Market Street, Suite 100, San Francisco, CA 94103",
+        company_email: "contact@mervin.ai",
+        company_phone: "+1 (555) 123-4567",
+        estimate_date: new Date().toISOString().split("T")[0], // today's date
+        estimate_number: "EST-" + Date.now(), // simple unique number
+        valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // +30 days
+        client_name: estimate.client.name,
+        client_email: estimate.client.email || "",
+        client_phone: estimate.client.phone,
+        client_address: `${estimate.client.address}, ${estimate.client.city}, ${estimate.client.state} ${estimate.client.zipcode}, ${estimate.client.country}`,
+        items: estimate.items.map(item => ({
+          name: item.name,
+          description: item.description,
+          quantity: item.quantity,
+          unit_price: `$${Number(item.price).toFixed(2)}`,
+          total: `$${Number(item.total).toFixed(2)}`
+        })),
+        grand_total: `$${Number(estimate.total).toFixed(2)}`,
+        scope_of_work: estimate.projectDetails
+      };
+      const res=await axios.post("/api/estimate-basic-pdf",payload)
+      const downloadUrl = res.data.data.download_url;
+        if (downloadUrl) {
+          window.open(downloadUrl, '_blank');
+        } else {
+          console.error('Download URL not found in response.');
+        }
+
+ 
       
     }catch(error){
     console.error(error)
@@ -3785,7 +3810,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       </Button>
 
                       <Button
-                        onClick={handleDownload}
+                        {/* onClick={downloadPDF} */}
+                      onClick={handleDownload}
                         disabled={
                           !estimate.client || estimate.items.length === 0
                         }
