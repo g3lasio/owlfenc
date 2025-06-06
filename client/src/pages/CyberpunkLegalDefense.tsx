@@ -138,8 +138,8 @@ export default function CyberpunkLegalDefense() {
         
         if (data.projects.length === 0) {
           toast({
-            title: "⚡ NO APPROVED PROJECTS",
-            description: "No approved projects found. Upload a PDF estimate or create a project first.",
+            title: "⚡ NO SAVED PROJECTS",
+            description: "No saved projects found. Upload a PDF estimate or create a project first.",
           });
         }
       } else {
