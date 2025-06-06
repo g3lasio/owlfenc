@@ -19,7 +19,11 @@ import {
   Clock,
   Zap,
   Play,
-  ArrowRight
+  ArrowRight,
+  List,
+  Calendar,
+  MapPin,
+  DollarSign
 } from 'lucide-react';
 
 interface WorkflowStep {
@@ -62,6 +66,42 @@ export default function CyberpunkLegalDefense() {
   const [generatedContract, setGeneratedContract] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  
+  // Estados del toggle de método de entrada
+  const [dataInputMethod, setDataInputMethod] = useState<'upload' | 'select'>('upload');
+  const [selectedProject, setSelectedProject] = useState<any>(null);
+  const [approvedProjects] = useState([
+    {
+      id: 1,
+      clientName: 'Sarah Johnson',
+      projectType: 'Privacy Fence Installation',
+      address: '123 Oak Street, Austin, TX 78701',
+      totalAmount: 3250.00,
+      status: 'approved',
+      date: '2024-12-15',
+      materials: 'Cedar Privacy Panels, Steel Posts'
+    },
+    {
+      id: 2,
+      clientName: 'Mike Rodriguez',
+      projectType: 'Commercial Chain Link',
+      address: '456 Industrial Blvd, Houston, TX 77001',
+      totalAmount: 8750.00,
+      status: 'approved',
+      date: '2024-12-10',
+      materials: 'Galvanized Chain Link, Commercial Gates'
+    },
+    {
+      id: 3,
+      clientName: 'Emma Davis',
+      projectType: 'Decorative Iron Fence',
+      address: '789 Elm Drive, Dallas, TX 75201',
+      totalAmount: 5600.00,
+      status: 'approved',
+      date: '2024-12-08',
+      materials: 'Wrought Iron Panels, Decorative Posts'
+    }
+  ]);
 
   // Definir pasos del workflow cyberpunk
   const workflowSteps: WorkflowStep[] = [
@@ -128,6 +168,86 @@ export default function CyberpunkLegalDefense() {
       setIsProcessing(false);
     }
   }, []);
+
+  // Manejo de selección de proyecto
+  const handleProjectSelection = useCallback(async (project: any) => {
+    setIsProcessing(true);
+    
+    try {
+      // Simular procesamiento de proyecto existente
+      toast({
+        title: "🔥 PROJECT DATA ACQUIRED",
+        description: `Extracting data from ${project.clientName} project...`,
+      });
+
+      // Simular extracción de datos del proyecto
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const projectData = {
+        clientName: project.clientName,
+        projectType: project.projectType,
+        address: project.address,
+        totalAmount: project.totalAmount,
+        materials: project.materials,
+        date: project.date,
+        status: project.status
+      };
+
+      setExtractedData(projectData);
+      setCurrentStep(2);
+      
+      toast({
+        title: "✅ PROJECT DATA SECURED",
+        description: "Data extraction complete. Proceeding to contract arsenal...",
+      });
+
+      // Continuar con el workflow
+      await processProjectWorkflow(projectData);
+      
+    } catch (error) {
+      console.error('Error en selección de proyecto:', error);
+      toast({
+        title: "⚡ SYSTEM ERROR",
+        description: "Project data extraction failed. Please try again...",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  }, []);
+
+  // Procesamiento del workflow para proyectos seleccionados
+  const processProjectWorkflow = async (projectData: any) => {
+    // Simular análisis de contrato para proyecto existente
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    const analysis: ContractAnalysis = {
+      riskLevel: 'bajo',
+      riskScore: 25,
+      protectionsApplied: [
+        'Liability Protection Clauses',
+        'Payment Terms Enforcement',
+        'Material Quality Guarantees',
+        'Timeline Protection'
+      ],
+      legalAdvice: [
+        'Standard residential fence contract approved',
+        'Payment schedule protects contractor interests',
+        'All local permits and regulations covered'
+      ],
+      contractStrength: 90,
+      complianceScore: 95,
+      stateCompliance: true
+    };
+
+    setContractAnalysis(analysis);
+    setCurrentStep(3);
+
+    toast({
+      title: "🛡️ CONTRACT ARSENAL READY",
+      description: `Defense level: ${analysis.riskLevel.toUpperCase()} | Strength: ${analysis.contractStrength}%`,
+    });
+  };
 
   // Procesamiento completo del workflow
   const processCompleteWorkflow = async (file: File) => {
@@ -462,32 +582,144 @@ export default function CyberpunkLegalDefense() {
               </CardHeader>
               
               <CardContent className="px-4 md:px-8 pb-6 md:pb-8">
-                <div className="border-2 border-dashed border-cyan-400/50 rounded-lg p-6 md:p-8 text-center relative group hover:border-cyan-400 transition-all duration-300">
-                  <input
-                    type="file"
-                    accept=".pdf"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    id="pdf-upload-cyberpunk"
-                    disabled={isProcessing}
-                  />
-                  
-                  <label htmlFor="pdf-upload-cyberpunk" className="cursor-pointer block">
-                    <div className={`mb-4 md:mb-6 ${isProcessing ? 'animate-spin' : ''}`}>
-                      <Upload className="h-12 w-12 md:h-16 md:w-16 text-cyan-400 mx-auto" />
+                {/* Toggle Switch */}
+                <div className="mb-6">
+                  <div className="flex justify-center">
+                    <div className="relative bg-gray-800/50 rounded-lg p-1 border border-cyan-400/30">
+                      <div className="flex relative">
+                        {/* Sliding Background */}
+                        <div
+                          className={`absolute top-1 bottom-1 w-1/2 bg-cyan-400/20 border border-cyan-400 rounded transition-all duration-300 ease-in-out ${
+                            dataInputMethod === 'upload' ? 'left-1' : 'left-1/2'
+                          }`}
+                        />
+                        
+                        {/* Upload Option */}
+                        <button
+                          onClick={() => setDataInputMethod('upload')}
+                          className={`relative z-10 flex items-center space-x-2 px-4 py-3 rounded transition-all duration-300 ${
+                            dataInputMethod === 'upload'
+                              ? 'text-cyan-400 font-bold'
+                              : 'text-gray-400 hover:text-gray-300'
+                          }`}
+                        >
+                          <Upload className="h-4 w-4" />
+                          <span className="text-sm font-mono">Upload PDF Estimate</span>
+                        </button>
+                        
+                        {/* Select Option */}
+                        <button
+                          onClick={() => setDataInputMethod('select')}
+                          className={`relative z-10 flex items-center space-x-2 px-4 py-3 rounded transition-all duration-300 ${
+                            dataInputMethod === 'select'
+                              ? 'text-cyan-400 font-bold'
+                              : 'text-gray-400 hover:text-gray-300'
+                          }`}
+                        >
+                          <List className="h-4 w-4" />
+                          <span className="text-sm font-mono">Select Approved Project</span>
+                        </button>
+                      </div>
                     </div>
-                    <h3 className="text-lg md:text-xl font-bold text-white mb-2 md:mb-3">
-                      {isProcessing ? 'NEURAL PROCESSING...' : 'DROP PDF OR CLICK TO SELECT'}
-                    </h3>
-                    <p className="text-gray-400 text-xs md:text-sm mb-4 md:mb-6">
-                      Advanced OCR • Threat Assessment • Legal Compliance
-                    </p>
-                    {!isProcessing && (
-                      <Button className="bg-cyan-600 hover:bg-cyan-500 text-black font-bold py-2 px-4 md:py-3 md:px-6 rounded border-0 shadow-none text-sm md:text-base">
-                        EXECUTE COMMAND
-                      </Button>
-                    )}
-                  </label>
+                  </div>
+                </div>
+
+                {/* Dynamic Content Area */}
+                <div className="relative overflow-hidden">
+                  {/* Upload PDF Content */}
+                  {dataInputMethod === 'upload' && (
+                    <div className="animate-in fade-in-0 slide-in-from-left-5 duration-300">
+                      <div className="border-2 border-dashed border-cyan-400/50 rounded-lg p-6 md:p-8 text-center relative group hover:border-cyan-400 transition-all duration-300">
+                        <input
+                          type="file"
+                          accept=".pdf"
+                          onChange={handleFileUpload}
+                          className="hidden"
+                          id="pdf-upload-cyberpunk"
+                          disabled={isProcessing}
+                        />
+                        
+                        <label htmlFor="pdf-upload-cyberpunk" className="cursor-pointer block">
+                          <div className={`mb-4 md:mb-6 ${isProcessing ? 'animate-spin' : ''}`}>
+                            <Upload className="h-12 w-12 md:h-16 md:w-16 text-cyan-400 mx-auto" />
+                          </div>
+                          <h3 className="text-lg md:text-xl font-bold text-white mb-2 md:mb-3">
+                            {isProcessing ? 'NEURAL PROCESSING...' : 'DROP PDF OR CLICK TO SELECT'}
+                          </h3>
+                          <p className="text-gray-400 text-xs md:text-sm mb-4 md:mb-6">
+                            Advanced OCR • Threat Assessment • Legal Compliance
+                          </p>
+                          {!isProcessing && (
+                            <Button className="bg-cyan-600 hover:bg-cyan-500 text-black font-bold py-2 px-4 md:py-3 md:px-6 rounded border-0 shadow-none text-sm md:text-base">
+                              EXECUTE COMMAND
+                            </Button>
+                          )}
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Select Project Content */}
+                  {dataInputMethod === 'select' && (
+                    <div className="animate-in fade-in-0 slide-in-from-right-5 duration-300">
+                      <div className="space-y-3">
+                        {approvedProjects.map((project) => (
+                          <div
+                            key={project.id}
+                            onClick={() => setSelectedProject(project)}
+                            className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-300 ${
+                              selectedProject?.id === project.id
+                                ? 'border-cyan-400 bg-cyan-400/10 shadow-lg shadow-cyan-400/25'
+                                : 'border-gray-600 bg-gray-800/30 hover:border-cyan-400/50 hover:bg-gray-800/50'
+                            }`}
+                          >
+                            <div className="flex justify-between items-start mb-2">
+                              <h4 className={`font-bold text-sm ${
+                                selectedProject?.id === project.id ? 'text-cyan-400' : 'text-white'
+                              }`}>
+                                {project.clientName}
+                              </h4>
+                              <Badge className={`text-xs ${
+                                selectedProject?.id === project.id
+                                  ? 'bg-cyan-400/20 text-cyan-400 border-cyan-400'
+                                  : 'bg-green-400/20 text-green-400 border-green-400'
+                              }`}>
+                                APPROVED
+                              </Badge>
+                            </div>
+                            
+                            <p className="text-gray-300 text-xs mb-2">{project.projectType}</p>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs text-gray-400">
+                              <div className="flex items-center space-x-1">
+                                <MapPin className="h-3 w-3" />
+                                <span className="truncate">{project.address}</span>
+                              </div>
+                              <div className="flex items-center space-x-1">
+                                <DollarSign className="h-3 w-3" />
+                                <span>${project.totalAmount.toLocaleString()}</span>
+                              </div>
+                              <div className="flex items-center space-x-1">
+                                <Calendar className="h-3 w-3" />
+                                <span>{project.date}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        
+                        {selectedProject && (
+                          <div className="pt-4">
+                            <Button 
+                              onClick={() => handleProjectSelection(selectedProject)}
+                              className="w-full bg-cyan-600 hover:bg-cyan-500 text-black font-bold py-2 px-4 md:py-3 md:px-6 rounded border-0 shadow-none text-sm md:text-base"
+                            >
+                              EXECUTE WITH SELECTED PROJECT
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
