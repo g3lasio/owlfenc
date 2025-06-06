@@ -22,11 +22,15 @@ interface EstimateData {
     quantity: number;
     unit: string;
     unitPrice: number;
-    totalPrice: number;
+    totalPrice?: number;
+    total?: number;
   }>;
   subtotal?: number;
   discount?: number;
+  discountType?: string;
+  discountValue?: number;
   tax?: number;
+  taxRate?: number;
   taxPercentage?: number;
   total?: number;
   projectDescription?: string;
@@ -58,16 +62,16 @@ function mapEstimateDataToTemplate(data: EstimateData) {
       description: item.description,
       qty: item.quantity.toString(),
       unit: item.unit,
-      unit_price: `$${(item.unitPrice / 100).toFixed(2)}`,
-      total: `$${(item.totalPrice / 100).toFixed(2)}`
+      unit_price: `$${(item.unitPrice || 0).toFixed(2)}`,
+      total: `$${(item.total || item.totalPrice || 0).toFixed(2)}`
     })),
     
     // Totals
-    subtotal: `$${((data.subtotal || 0) / 100).toFixed(2)}`,
-    discount: `$${((data.discount || 0) / 100).toFixed(2)}`,
-    tax_percentage: `${data.taxPercentage || 0}%`,
-    tax: `$${((data.tax || 0) / 100).toFixed(2)}`,
-    total: `$${((data.total || 0) / 100).toFixed(2)}`,
+    subtotal: `$${(data.subtotal || 0).toFixed(2)}`,
+    discount: `$${(data.discount || 0).toFixed(2)}`,
+    tax_percentage: `${data.taxRate || data.taxPercentage || 0}%`,
+    tax: `$${(data.tax || 0).toFixed(2)}`,
+    total: `$${(data.total || 0).toFixed(2)}`,
     
     // Project description
     project_description: data.projectDescription || '',
@@ -103,14 +107,14 @@ CLIENTE:
 
 ITEMS:
 ${(estimateData.items || []).map(item => 
-  `- ${item.name}: ${item.description} | Cantidad: ${item.quantity} ${item.unit} | Precio unitario: $${(item.unitPrice / 100).toFixed(2)} | Total: $${(item.totalPrice / 100).toFixed(2)}`
+  `- ${item.name}: ${item.description} | Cantidad: ${item.quantity} ${item.unit} | Precio unitario: $${(item.unitPrice || 0).toFixed(2)} | Total: $${(item.total || item.totalPrice || 0).toFixed(2)}`
 ).join('\n')}
 
 TOTALES:
-- Subtotal: $${((estimateData.subtotal || 0) / 100).toFixed(2)}
-- Descuento: $${((estimateData.discount || 0) / 100).toFixed(2)}
-- Impuestos (${estimateData.taxPercentage || 0}%): $${((estimateData.tax || 0) / 100).toFixed(2)}
-- Total: $${((estimateData.total || 0) / 100).toFixed(2)}
+- Subtotal: $${(estimateData.subtotal || 0).toFixed(2)}
+- Descuento: $${(estimateData.discount || 0).toFixed(2)}
+- Impuestos (${estimateData.taxRate || estimateData.taxPercentage || 0}%): $${(estimateData.tax || 0).toFixed(2)}
+- Total: $${(estimateData.total || 0).toFixed(2)}
 
 DESCRIPCIÓN DEL PROYECTO: ${estimateData.projectDescription || ''}
 NOTAS: ${estimateData.notes || ''}

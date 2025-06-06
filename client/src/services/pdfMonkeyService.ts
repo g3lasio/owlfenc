@@ -69,16 +69,16 @@ class PDFMonkeyService {
         description: item.description,
         qty: item.quantity.toString(),
         unit: item.unit,
-        unit_price: `$${(item.unitPrice / 100).toFixed(2)}`,
-        total: `$${(item.totalPrice / 100).toFixed(2)}`
+        unit_price: `$${(item.unitPrice || 0).toFixed(2)}`,
+        total: `$${(item.totalPrice || item.total || 0).toFixed(2)}`
       })),
       
       // Totales
-      subtotal: `$${((data.subtotal || 0) / 100).toFixed(2)}`,
-      discount: `$${((data.discount || 0) / 100).toFixed(2)}`,
-      tax_percentage: `${data.taxPercentage || 0}%`,
-      tax: `$${((data.tax || 0) / 100).toFixed(2)}`,
-      total: `$${((data.total || 0) / 100).toFixed(2)}`,
+      subtotal: `$${(data.subtotal || 0).toFixed(2)}`,
+      discount: `$${(data.discount || 0).toFixed(2)}`,
+      tax_percentage: `${data.taxPercentage || data.taxRate || 0}%`,
+      tax: `$${(data.tax || 0).toFixed(2)}`,
+      total: `$${(data.total || 0).toFixed(2)}`,
       
       // Descripción del proyecto
       project_description: data.projectDescription || '',

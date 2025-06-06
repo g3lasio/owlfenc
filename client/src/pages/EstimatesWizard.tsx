@@ -2469,11 +2469,13 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           unitPrice: item.unitPrice || item.price || 0,
           total: item.total || item.price * item.quantity || 0,
         })),
-        subtotal:
-          estimate.subtotal || estimate.projectTotalCosts?.subtotal || 0,
-        tax: estimate.taxAmount || estimate.projectTotalCosts?.tax || 0,
-        taxRate: Math.min(estimate.taxRate || 10, 100), // Máximo 100%
-        total: estimate.total || estimate.projectTotalCosts?.total || 0,
+        subtotal: estimate.subtotal || 0,
+        discount: estimate.discountAmount || 0,
+        discountType: estimate.discountType || 'percentage',
+        discountValue: estimate.discountValue || 0,
+        tax: estimate.tax || 0,
+        taxRate: estimate.taxRate || 10,
+        total: estimate.total || 0,
         notes: estimate.notes || "Estimado generado por Owl Fence",
       };
 
