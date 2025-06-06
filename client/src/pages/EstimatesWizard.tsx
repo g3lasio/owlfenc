@@ -2549,7 +2549,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           scope_of_work: "The project involves designing, developing, and deploying a full-stack web application, along with providing hosting and support for 12 months."
         }
       const res=await axios.post("/api/estimate-basic-pdf",payload)
-      const downloadUrl = res.data?.document?.downloadUrl;
+      const downloadUrl = res.data.data.download_url;
         if (downloadUrl) {
           window.open(downloadUrl, '_blank');
         } else {
@@ -3784,7 +3784,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       </Button>
 
                       <Button
-                        onClick={handleDownload}
+                        {/* onClick={downloadPDF} */}
+                      onClick={handleDownload}
                         disabled={
                           !estimate.client || estimate.items.length === 0
                         }
