@@ -14,7 +14,7 @@ export const users = pgTable('users', {
 
 // Projects table
 export const projects = pgTable('projects', {
-  id: integer('id').primaryKey(),
+  id: serial('id').primaryKey(),
   userId: integer('user_id').notNull(),
   projectId: text('project_id'),
   clientName: text('client_name'),
@@ -236,8 +236,6 @@ export const insertUserSchema = createInsertSchema(users).omit({
 
 export const insertProjectSchema = createInsertSchema(projects).omit({
   id: true,
-  createdAt: true,
-  updatedAt: true,
 });
 
 export const insertTemplateSchema = createInsertSchema(templates).omit({
