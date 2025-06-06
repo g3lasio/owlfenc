@@ -16,6 +16,7 @@ import {
   Download,
   PenTool,
   Users,
+  User,
   Clock,
   Zap,
   Play,
@@ -23,7 +24,9 @@ import {
   List,
   Calendar,
   MapPin,
-  DollarSign
+  DollarSign,
+  FileText,
+  Package
 } from 'lucide-react';
 
 interface WorkflowStep {
