@@ -323,183 +323,134 @@ export default function CyberpunkLegalDefense() {
   );
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 relative overflow-hidden">
-      {/* Fondo animado */}
-      <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-purple-900 opacity-50"></div>
-      <div className="absolute inset-0" style={{
-        backgroundImage: `
-          radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
-          radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
-          radial-gradient(circle at 40% 40%, rgba(120, 119, 198, 0.2) 0%, transparent 50%)
-        `
-      }}></div>
+    <div className="min-h-screen bg-black text-white p-6 relative overflow-hidden" style={{ fontFamily: 'ui-monospace, monospace' }}>
+      {/* Fondo limpio */}
+      <div className="absolute inset-0 bg-gradient-to-b from-gray-900 to-black"></div>
       
-      <div className="relative z-10 max-w-7xl mx-auto">
-        {/* Header */}
+      <div className="relative z-10 max-w-4xl mx-auto">
+        {/* Header simplificado */}
         <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-4">
+          <h1 className="text-4xl font-bold text-cyan-400 mb-2">
             OWL FENC LEGAL DEFENSE
           </h1>
-          <p className="text-xl text-gray-300 font-mono">
-            CYBERNETIC CONTRACT WARFARE SYSTEM // STATUS: OPERATIONAL
+          <p className="text-gray-400 font-mono text-sm">
+            CYBERNETIC CONTRACT WARFARE SYSTEM
           </p>
-          <div className="mt-4 flex justify-center">
-            <div className="px-4 py-2 bg-gradient-to-r from-cyan-900/50 to-purple-900/50 border border-cyan-400/50 rounded-lg">
-              <span className="text-cyan-400 font-mono text-sm">
-                NEURAL LINK: ACTIVE // THREAT LEVEL: NEUTRALIZED
-              </span>
+        </div>
+
+        {/* Horizontal Stepper HUD */}
+        <div className="mb-12">
+          <div className="flex items-center justify-center space-x-8 mb-8">
+            {workflowSteps.map((step, index) => (
+              <div key={step.id} className="flex items-center">
+                {/* Step Circle */}
+                <div className={`w-12 h-12 rounded-full border-2 flex items-center justify-center relative ${
+                  step.status === 'completed' ? 'border-green-400 bg-green-400/20' :
+                  step.status === 'processing' ? 'border-cyan-400 bg-cyan-400/20 animate-pulse' :
+                  step.step === currentStep ? 'border-cyan-400 bg-cyan-400/10' :
+                  'border-gray-600 bg-gray-800/30'
+                }`}>
+                  {step.status === 'completed' ? (
+                    <CheckCircle className="h-6 w-6 text-green-400" />
+                  ) : (
+                    <span className={`text-sm font-bold ${
+                      step.status === 'processing' ? 'text-cyan-400' :
+                      step.step === currentStep ? 'text-cyan-400' :
+                      'text-gray-500'
+                    }`}>
+                      {step.step}
+                    </span>
+                  )}
+                  
+                  {step.status === 'processing' && (
+                    <div className="absolute inset-0 rounded-full border-2 border-cyan-400 animate-ping"></div>
+                  )}
+                </div>
+
+                {/* Connection Line */}
+                {index < workflowSteps.length - 1 && (
+                  <div className={`w-16 h-0.5 mx-4 ${
+                    step.status === 'completed' ? 'bg-green-400' :
+                    step.status === 'processing' ? 'bg-cyan-400' :
+                    'bg-gray-600'
+                  }`}></div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Step Labels */}
+          <div className="flex justify-center">
+            <div className="grid grid-cols-4 gap-16 text-center max-w-4xl">
+              {workflowSteps.map((step) => (
+                <div key={step.id} className="text-xs">
+                  <p className={`font-mono ${
+                    step.status === 'completed' ? 'text-green-400' :
+                    step.status === 'processing' ? 'text-cyan-400' :
+                    step.step === currentStep ? 'text-cyan-400' :
+                    'text-gray-500'
+                  }`}>
+                    {step.title.toUpperCase()}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* Workflow Steps Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          {workflowSteps.map((step, index) => (
-            <div key={step.id} className="relative group">
-              <Card className={`relative overflow-hidden transition-all duration-500 border-2 shadow-2xl ${getStepStatusClass(step)}`}>
-                <HUDCorners />
-                <ScanLines active={step.status === 'processing'} />
-                
-                <CardHeader className="relative">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className={`p-3 rounded-full ${
-                      step.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-                      step.status === 'processing' ? 'bg-cyan-500/20 text-cyan-400' :
-                      'bg-gray-500/20 text-gray-400'
-                    } ${step.status === 'processing' ? 'animate-pulse' : ''}`}>
-                      {step.icon}
-                    </div>
-                    <Badge 
-                      variant="outline" 
-                      className={`font-mono text-xs ${
-                        step.status === 'completed' ? 'border-green-400 text-green-400' :
-                        step.status === 'processing' ? 'border-cyan-400 text-cyan-400' :
-                        'border-gray-500 text-gray-400'
-                      }`}
-                    >
-                      STEP {step.step}
-                    </Badge>
+        {/* Current Step Card */}
+        <div className="max-w-2xl mx-auto">
+          {currentPhase === 'data-command' && (
+            <Card className="border-2 border-cyan-400 bg-black/80 relative overflow-hidden">
+              <HUDCorners />
+              {isProcessing && <ScanLines active={true} />}
+              
+              <CardHeader className="text-center">
+                <div className="flex items-center justify-center mb-4">
+                  <div className={`p-4 rounded-full border-2 border-cyan-400 ${isProcessing ? 'animate-pulse' : ''}`}>
+                    <Database className="h-8 w-8 text-cyan-400" />
                   </div>
-                  <CardTitle className="text-lg font-bold text-white mb-2">
-                    {step.title}
-                  </CardTitle>
-                </CardHeader>
-                
-                <CardContent className="relative">
-                  <p className="text-sm text-gray-300 mb-4 leading-relaxed">
-                    {step.description}
-                  </p>
-                  
-                  {/* Progress Bar */}
-                  <div className="mb-4">
-                    <div className="flex justify-between text-xs text-gray-400 mb-1">
-                      <span>PROGRESS</span>
-                      <span>{step.progress}%</span>
-                    </div>
-                    <Progress 
-                      value={step.progress} 
-                      className={`h-2 ${
-                        step.status === 'completed' ? '[&>div]:bg-green-400' :
-                        step.status === 'processing' ? '[&>div]:bg-cyan-400' :
-                        '[&>div]:bg-gray-500'
-                      }`}
-                    />
-                  </div>
-
-                  {/* Status and Time */}
-                  <div className="flex justify-between items-center">
-                    <Badge 
-                      className={`text-xs ${
-                        step.status === 'completed' ? 'bg-green-900/50 text-green-400 border-green-400' :
-                        step.status === 'processing' ? 'bg-cyan-900/50 text-cyan-400 border-cyan-400' :
-                        step.status === 'error' ? 'bg-red-900/50 text-red-400 border-red-400' :
-                        'bg-gray-900/50 text-gray-400 border-gray-500'
-                      }`}
-                    >
-                      {step.status === 'completed' ? 'SECURED' :
-                       step.status === 'processing' ? 'EXECUTING' :
-                       step.status === 'error' ? 'COMPROMISED' :
-                       'STANDBY'}
-                    </Badge>
-                    {step.estimatedTime && (
-                      <span className="text-xs text-gray-500 font-mono">
-                        <Clock className="h-3 w-3 inline mr-1" />
-                        {step.estimatedTime}
-                      </span>
-                    )}
-                  </div>
-                </CardContent>
-
-                {/* Holographic Border Effect */}
-                <div className={`absolute inset-0 rounded-lg opacity-50 ${
-                  step.status === 'processing' ? 'animate-pulse' : ''
-                } ${
-                  step.status === 'completed' ? 'shadow-lg shadow-green-400/25' :
-                  step.status === 'processing' ? 'shadow-lg shadow-cyan-400/25' :
-                  'shadow-lg shadow-gray-500/10'
-                }`}></div>
-              </Card>
-
-              {/* Connection Line */}
-              {index < workflowSteps.length - 1 && (
-                <div className="hidden lg:block absolute top-1/2 -right-3 w-6 h-0.5 bg-gradient-to-r from-cyan-400/50 to-purple-400/50 transform -translate-y-1/2 z-20">
-                  <ArrowRight className="h-4 w-4 text-cyan-400 absolute -right-2 -top-1.5" />
                 </div>
-              )}
-            </div>
-          ))}
+                <CardTitle className="text-2xl font-bold text-cyan-400 mb-2">
+                  Project Data Command
+                </CardTitle>
+                <p className="text-gray-300 text-sm">
+                  Seize control from the start. Instantly extract all key project data—select from your portfolio or upload an approved estimate. No detail escapes.
+                </p>
+              </CardHeader>
+              
+              <CardContent className="px-8 pb-8">
+                <div className="border-2 border-dashed border-cyan-400/50 rounded-lg p-8 text-center relative group hover:border-cyan-400 transition-all duration-300">
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    id="pdf-upload-cyberpunk"
+                    disabled={isProcessing}
+                  />
+                  
+                  <label htmlFor="pdf-upload-cyberpunk" className="cursor-pointer block">
+                    <div className={`mb-6 ${isProcessing ? 'animate-spin' : ''}`}>
+                      <Upload className="h-16 w-16 text-cyan-400 mx-auto" />
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-3">
+                      {isProcessing ? 'NEURAL PROCESSING...' : 'DROP PDF OR CLICK TO SELECT'}
+                    </h3>
+                    <p className="text-gray-400 text-sm mb-6">
+                      Advanced OCR • Threat Assessment • Legal Compliance
+                    </p>
+                    {!isProcessing && (
+                      <Button className="bg-cyan-600 hover:bg-cyan-500 text-black font-bold py-3 px-6 rounded border-0 shadow-none">
+                        EXECUTE COMMAND
+                      </Button>
+                    )}
+                  </label>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
-
-        {/* Main Action Area */}
-        {currentPhase === 'data-command' && (
-          <Card className="border-2 border-cyan-400/50 bg-gradient-to-br from-cyan-900/20 to-purple-900/20 shadow-2xl shadow-cyan-400/25 relative overflow-hidden">
-            <HUDCorners />
-            <ScanLines active={isProcessing} />
-            
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-2xl">
-                <Database className="h-8 w-8 text-cyan-400" />
-                PROJECT DATA COMMAND CENTER
-              </CardTitle>
-              <p className="text-gray-300">
-                Deploy intelligence extraction protocols. Upload your estimate for immediate data seizure and analysis.
-              </p>
-            </CardHeader>
-            
-            <CardContent>
-              <div className="border-2 border-dashed border-cyan-400/50 rounded-lg p-12 text-center relative overflow-hidden group hover:border-cyan-400 transition-colors">
-                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                
-                <input
-                  type="file"
-                  accept=".pdf"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  id="pdf-upload-cyberpunk"
-                  disabled={isProcessing}
-                />
-                
-                <label htmlFor="pdf-upload-cyberpunk" className="cursor-pointer relative z-10">
-                  <div className={`mb-6 ${isProcessing ? 'animate-spin' : ''}`}>
-                    <Upload className="h-20 w-20 text-cyan-400 mx-auto" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-white mb-4">
-                    {isProcessing ? 'NEURAL PROCESSING...' : 'INITIATE DATA EXTRACTION'}
-                  </h3>
-                  <p className="text-gray-300 mb-6">
-                    Drop your PDF estimate or click to select • Advanced OCR • Threat Assessment • Legal Compliance
-                  </p>
-                  {!isProcessing && (
-                    <Button className="bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white font-bold py-3 px-8 rounded-lg shadow-lg shadow-cyan-400/25">
-                      <Play className="h-5 w-5 mr-2" />
-                      EXECUTE COMMAND
-                    </Button>
-                  )}
-                </label>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Processing Indicator */}
         {isProcessing && (
