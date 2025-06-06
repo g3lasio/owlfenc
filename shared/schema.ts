@@ -55,6 +55,8 @@ export const projects = pgTable('projects', {
   priority: text('priority'),
 });
 
+
+
 // Templates table
 export const templates = pgTable('templates', {
   id: text('id').primaryKey(),

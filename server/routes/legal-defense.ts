@@ -283,12 +283,9 @@ router.post('/create-project', async (req, res) => {
     // Validate with schema
     const validatedProject = insertProjectSchema.parse(projectData);
 
-    // Generate unique ID
-    const projectId = `proj_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
     const [newProject] = await db
       .insert(projects)
-      .values({ id: projectId, ...validatedProject })
+      .values(validatedProject)
       .returning();
 
     res.json({
