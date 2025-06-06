@@ -127,15 +127,25 @@ export default function CyberpunkLegalDefense() {
   const loadApprovedProjects = useCallback(async () => {
     setLoadingProjects(true);
     try {
-      const response = await fetch('/api/legal-defense/approved-projects');
+      // Get user ID from Firebase auth or session
+      const userId = 1; // This should be dynamically obtained from auth context
+      
+      const response = await fetch(`/api/projects/approved?userId=${userId}`);
       const data = await response.json();
       
       if (data.success) {
         setApprovedProjects(data.projects);
+        
+        if (data.projects.length === 0) {
+          toast({
+            title: "⚡ NO APPROVED PROJECTS",
+            description: "No approved projects found. Upload a PDF estimate or create a project first.",
+          });
+        }
       } else {
         toast({
           title: "⚡ DATA RETRIEVAL ERROR",
-          description: "Failed to load approved projects from database",
+          description: data.error || "Failed to load approved projects from database",
           variant: "destructive"
         });
       }
@@ -157,6 +167,58 @@ export default function CyberpunkLegalDefense() {
       loadApprovedProjects();
     }
   }, [dataInputMethod, loadApprovedProjects]);
+
+  // Función para manejar la selección de proyecto y cargar todos sus datos
+  const handleProjectSelection = useCallback(async (project: any) => {
+    setIsProcessing(true);
+    
+    try {
+      const userId = 1; // This should be dynamically obtained from auth context
+      
+      toast({
+        title: "🔥 PROJECT DATA EXTRACTION",
+        description: `Loading complete data for ${project.clientName}'s project...`,
+      });
+
+      // Fetch complete project data for contract generation
+      const response = await fetch(`/api/projects/${project.id}/contract-data?userId=${userId}`);
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to load project data');
+      }
+
+      if (result.success) {
+        // Set the extracted data with all project information
+        setExtractedData(result.extractedData);
+        setCurrentStep(2);
+        setCurrentPhase('arsenal-builder');
+
+        // Mark as selected project source
+        setSelectedFile(null); // Clear any uploaded file
+        
+        toast({
+          title: "✅ PROJECT DATA LOADED",
+          description: `All data for ${project.clientName}'s project loaded successfully. Ready for contract generation.`,
+        });
+
+        console.log('Project data loaded:', result.extractedData);
+        
+      } else {
+        throw new Error(result.error || 'Invalid project data received');
+      }
+
+    } catch (error) {
+      console.error('Error loading project data:', error);
+      toast({
+        title: "⚡ PROJECT LOADING ERROR",
+        description: error.message || "Failed to load complete project data",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [toast]);
 
   // Manejo de carga de archivos con Claude Sonnet OCR
   const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -393,52 +455,7 @@ export default function CyberpunkLegalDefense() {
     }
   }, [toast, extractedData]);
 
-  // Manejo de selección de proyecto
-  const handleProjectSelection = useCallback(async (project: any) => {
-    setIsProcessing(true);
-    
-    try {
-      // Simular procesamiento de proyecto existente
-      toast({
-        title: "🔥 PROJECT DATA ACQUIRED",
-        description: `Extracting data from ${project.clientName} project...`,
-      });
 
-      // Simular extracción de datos del proyecto
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const projectData = {
-        clientName: project.clientName,
-        projectType: project.projectType,
-        address: project.address,
-        totalAmount: project.totalAmount,
-        materials: project.materials,
-        date: project.date,
-        status: project.status
-      };
-
-      setExtractedData(projectData);
-      setCurrentStep(2);
-      
-      toast({
-        title: "✅ PROJECT DATA SECURED",
-        description: "Data extraction complete. Proceeding to contract arsenal...",
-      });
-
-      // Continuar con el workflow
-      await processProjectWorkflow(projectData);
-      
-    } catch (error) {
-      console.error('Error en selección de proyecto:', error);
-      toast({
-        title: "⚡ SYSTEM ERROR",
-        description: "Project data extraction failed. Please try again...",
-        variant: "destructive"
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  }, []);
 
   // Procesamiento del workflow con datos extraídos de OCR
   const processExtractedDataWorkflow = async (extractedData: any) => {

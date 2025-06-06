@@ -743,6 +743,161 @@ ${extractedText}`,
     },
   );
 
+  // Endpoint para obtener proyectos aprobados para generación de contratos
+  app.get("/api/projects/approved", async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      
+      if (!userId) {
+        return res.status(400).json({ error: "userId is required" });
+      }
+
+      // Obtener proyectos aprobados del usuario
+      const approvedProjects = await storage.getProjectsByUserId(parseInt(userId));
+      
+      // Filtrar solo proyectos con status 'approved' o 'completed'
+      const filteredProjects = approvedProjects.filter(project => 
+        project.status === 'approved' || project.status === 'completed'
+      );
+
+      // Mapear datos para el frontend
+      const projectsForContract = filteredProjects.map(project => ({
+        id: project.id,
+        projectId: project.projectId,
+        clientName: project.clientName,
+        clientEmail: project.clientEmail,
+        clientPhone: project.clientPhone,
+        address: project.address,
+        projectType: project.projectType || 'General Project',
+        projectSubtype: project.projectSubtype,
+        projectDescription: project.projectDescription,
+        projectScope: project.projectScope,
+        fenceType: project.fenceType,
+        length: project.length,
+        height: project.height,
+        gates: project.gates,
+        additionalDetails: project.additionalDetails,
+        materialsList: project.materialsList,
+        laborHours: project.laborHours,
+        totalPrice: project.totalPrice,
+        totalAmount: project.totalPrice ? (project.totalPrice / 100) : 0, // Convert from cents
+        status: project.status,
+        paymentStatus: project.paymentStatus,
+        paymentDetails: project.paymentDetails,
+        scheduledDate: project.scheduledDate,
+        completedDate: project.completedDate,
+        createdAt: project.createdAt,
+        date: project.createdAt ? new Date(project.createdAt).toLocaleDateString() : 'N/A'
+      }));
+
+      res.json({
+        success: true,
+        projects: projectsForContract
+      });
+
+    } catch (error) {
+      console.error("Error fetching approved projects:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to fetch approved projects",
+        details: error.message
+      });
+    }
+  });
+
+  // Endpoint para obtener datos completos de un proyecto específico para contrato
+  app.get("/api/projects/:projectId/contract-data", async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const userId = req.query.userId as string;
+
+      if (!userId) {
+        return res.status(400).json({ error: "userId is required" });
+      }
+
+      // Obtener proyecto específico
+      const project = await storage.getProject(parseInt(projectId));
+      
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+
+      // Verificar que el proyecto pertenece al usuario
+      if (project.userId !== parseInt(userId)) {
+        return res.status(403).json({ error: "Unauthorized access to project" });
+      }
+
+      // Verificar que el proyecto está aprobado
+      if (project.status !== 'approved' && project.status !== 'completed') {
+        return res.status(400).json({ error: "Project is not approved for contract generation" });
+      }
+
+      // Mapear datos del proyecto a formato de contrato
+      const contractData = {
+        success: true,
+        extractedData: {
+          clientInfo: {
+            name: project.clientName,
+            email: project.clientEmail,
+            phone: project.clientPhone,
+            address: project.address
+          },
+          projectInfo: {
+            type: project.projectType || 'General Project',
+            subtype: project.projectSubtype,
+            description: project.projectDescription,
+            scope: project.projectScope,
+            location: project.address,
+            fenceType: project.fenceType,
+            length: project.length,
+            height: project.height,
+            gates: project.gates,
+            additionalDetails: project.additionalDetails
+          },
+          financialInfo: {
+            totalAmount: project.totalPrice ? (project.totalPrice / 100) : 0,
+            subtotal: project.totalPrice ? (project.totalPrice / 100) : 0,
+            materials: project.materialsList,
+            laborHours: project.laborHours
+          },
+          timeline: {
+            scheduledDate: project.scheduledDate,
+            estimatedCompletion: project.completedDate,
+            projectDuration: project.laborHours ? `${project.laborHours} hours` : 'TBD'
+          },
+          paymentInfo: {
+            status: project.paymentStatus,
+            details: project.paymentDetails
+          },
+          projectMetadata: {
+            projectId: project.projectId,
+            status: project.status,
+            createdAt: project.createdAt,
+            internalNotes: project.internalNotes,
+            clientNotes: project.clientNotes
+          },
+          extractionQuality: {
+            confidence: 95, // High confidence since this is from approved project data
+            source: 'approved_project'
+          }
+        },
+        missingFields: [],
+        canProceed: true,
+        hasCriticalMissing: false
+      };
+
+      res.json(contractData);
+
+    } catch (error) {
+      console.error("Error fetching project contract data:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to fetch project contract data",
+        details: error.message
+      });
+    }
+  });
+
   // Endpoint optimizado para generar contratos defensivos
   app.post("/api/anthropic/generate-defensive-contract", async (req, res) => {
     try {
