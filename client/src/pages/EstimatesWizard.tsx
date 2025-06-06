@@ -2523,7 +2523,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
   const handleDownload=async()=>{
     try{
-      console.log(estimate)
+      console.log(JSON.stringify(estimate))
       // const payload={
       //     company_logo_url: "https://yourdomain.com/logo.png",
       //     company_name: "Mervin Solutions Inc.",
@@ -3785,7 +3785,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       </Button>
 
                       <Button
-                        onClick={handleDownload}
+                        {/* onClick={downloadPDF} */}
+                      onClick={handleDownload}
                         disabled={
                           !estimate.client || estimate.items.length === 0
                         }
