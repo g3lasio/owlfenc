@@ -1,0 +1,56 @@
+Data Flow Breaking:
+Es probable que los datos extraídos por el OCR no se están pasando correctamente al componente del Paso 3.
+Puede deberse a:
+
+Los datos quedan en un estado local o variable que no es “levantada” (lifted) a un contexto global o state manager (ej. Redux, Context API, useState del padre).
+
+El evento de “continuar”/“next step” NO transfiere los datos o no dispara el render del componente correspondiente.
+
+El Paso 3 espera props, state o datos de contexto que no existen o vienen undefined.
+
+UI/UX Breaking:
+
+El componente del paso 3 puede estar montando pero recibiendo props vacíos o con error, por lo que renderiza null, un fallback o ni siquiera llega al render.
+
+Instrucciones Técnicas para el Dev
+1. REVISAR DATA FLOW:
+
+Asegúrate que el resultado del OCR (JSON estructurado) sea almacenado en un estado global/contexto compartido (ej: useContext, Redux, o lifting de useState en el componente padre que maneja el stepper).
+
+NO dejes los datos solo en el componente del paso 1 o 2. Los datos deben ser persistentes y accesibles por el paso 3 (“Defense Review & Correction”).
+
+2. PROPS/PERSISTENCIA:
+
+El componente del paso 3 debe recibir explícitamente el objeto de datos extraídos (ejemplo: <DefenseReviewStep data={extractedData} />).
+
+Si usas router, asegúrate de pasar los datos vía navegación o de cargar del estado global.
+
+3. CONTROL DE TRANSICIÓN:
+
+El botón “Next” o “Continue” debe:
+
+Validar que el OCR entregó datos válidos.
+
+Guardar esos datos en el contexto global.
+
+Desbloquear/renderizar el Paso 3.
+
+4. UI/UX:
+
+El Paso 3 debe:
+
+Renderizar un resumen editable de los datos extraídos, con opción de corregir campos antes de avanzar.
+
+Si no hay datos (o están vacíos), debe mostrar un mensaje claro (“No data received from OCR. Please restart or upload again.”), y nunca dejar la pantalla vacía.
+
+5. DEBUGGING:
+
+Haz un console.log en el Paso 3 para verificar que los datos llegan (ej: console.log('Received data:', props.data)).
+
+Si llegan como undefined o {}, revisa el state management.
+
+6. UX OPTIMIZATION:
+
+Muestra un loader o animación de transición entre pasos (para que el usuario sepa que el proceso sigue).
+
+Una vez el usuario corrige o valida los datos en el Paso 3, guarda los cambios antes de pasar al Paso 4 (firma/vault).

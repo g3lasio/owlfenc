@@ -235,6 +235,47 @@ export default function CyberpunkLegalDefense() {
     }
   };
 
+  // Generate defensive contract with extracted data
+  const generateDefensiveContract = useCallback(async (data: any) => {
+    setIsProcessing(true);
+    
+    try {
+      toast({
+        title: "🔥 GENERATING DEFENSIVE CONTRACT",
+        description: "AI crafting maximum legal protection with extracted data...",
+      });
+
+      const response = await fetch('/api/legal-defense/generate-contract', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ extractedData: data }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setGeneratedContract(result.contract);
+        toast({
+          title: "✅ DEFENSIVE CONTRACT GENERATED",
+          description: "Legal protection deployed successfully. Ready for review and signature.",
+        });
+      } else {
+        throw new Error(result.error || 'Contract generation failed');
+      }
+    } catch (error) {
+      console.error('Contract generation error:', error);
+      toast({
+        title: "⚡ GENERATION ERROR",
+        description: "Failed to generate defensive contract. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [toast]);
+
   // Manejo de selección de proyecto
   const handleProjectSelection = useCallback(async (project: any) => {
     setIsProcessing(true);
@@ -369,8 +410,7 @@ export default function CyberpunkLegalDefense() {
       
       // Paso 3: Generación de contrato
       setCurrentStep(3);
-      const contractHtml = await generateDefensiveContract(data, analysis);
-      setGeneratedContract(contractHtml);
+      await generateDefensiveContract(data);
       
       // Paso 4: Preparación para firma
       setCurrentStep(4);
@@ -438,29 +478,7 @@ export default function CyberpunkLegalDefense() {
     return await response.json();
   };
 
-  // Generación de contrato defensivo
-  const generateDefensiveContract = async (projectData: any, analysis: ContractAnalysis): Promise<string> => {
-    const response = await fetch('/api/pdf-contract-processor/pdf-to-contract', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        projectData,
-        riskAnalysis: analysis,
-        enhancementLevel: 'maximum_protection',
-        includeVeteranClauses: true,
-        stateCompliance: true
-      }),
-    });
 
-    if (!response.ok) {
-      throw new Error(`Error generando contrato: ${response.status}`);
-    }
-
-    const result = await response.json();
-    return result.data.contractHtml;
-  };
 
   // Sistema de respaldo
   const handleProcessingFallback = async (file: File) => {
@@ -936,12 +954,172 @@ export default function CyberpunkLegalDefense() {
                 <div className="mt-8 text-center">
                   <Button 
                     onClick={() => {
+                      console.log('Advancing to step 3 with data:', extractedData);
                       setCurrentStep(3);
+                      setCurrentPhase('defense-review');
                       processExtractedDataWorkflow(extractedData);
                     }}
                     className="bg-purple-600 hover:bg-purple-500 text-black font-bold py-3 px-8 rounded border-0 shadow-none text-base"
                   >
                     GENERATE DEFENSIVE CONTRACT
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Step 3: Defense Review & Correction */}
+          {extractedData && currentStep === 3 && currentPhase === 'defense-review' && (
+            <Card className="border-2 border-green-400 bg-black/80 relative overflow-hidden mt-6">
+              <HUDCorners />
+              
+              <CardHeader className="text-center px-4 md:px-6">
+                <div className="flex items-center justify-center mb-4">
+                  <div className="p-3 md:p-4 rounded-full border-2 border-green-400">
+                    <Eye className="h-6 w-6 md:h-8 md:w-8 text-green-400" />
+                  </div>
+                </div>
+                <CardTitle className="text-xl md:text-2xl font-bold text-green-400 mb-2">
+                  Defense Review & Correction
+                </CardTitle>
+                <p className="text-gray-300 text-xs md:text-sm leading-relaxed">
+                  Review and validate all extracted data before contract generation. Make corrections as needed for maximum legal protection.
+                </p>
+              </CardHeader>
+              
+              <CardContent className="px-4 md:px-8 pb-6 md:pb-8">
+                <div className="space-y-6">
+                  {/* Editable Client Information */}
+                  <div className="bg-gray-900/50 border border-green-400/30 rounded-lg p-4">
+                    <h3 className="text-green-400 font-bold mb-4 flex items-center">
+                      <User className="h-4 w-4 mr-2" />
+                      CLIENT INFORMATION
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-gray-400 text-sm">Client Name</label>
+                        <input
+                          type="text"
+                          value={extractedData.clientInfo?.name || ''}
+                          className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-green-400 focus:outline-none"
+                          readOnly
+                        />
+                      </div>
+                      <div>
+                        <label className="text-gray-400 text-sm">Address</label>
+                        <input
+                          type="text"
+                          value={extractedData.clientInfo?.address || extractedData.projectDetails?.location || ''}
+                          className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-green-400 focus:outline-none"
+                          readOnly
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Editable Project Details */}
+                  <div className="bg-gray-900/50 border border-green-400/30 rounded-lg p-4">
+                    <h3 className="text-green-400 font-bold mb-4 flex items-center">
+                      <FileText className="h-4 w-4 mr-2" />
+                      PROJECT DETAILS
+                    </h3>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-gray-400 text-sm">Project Type</label>
+                        <input
+                          type="text"
+                          value={extractedData.projectDetails?.type || ''}
+                          className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-green-400 focus:outline-none"
+                          readOnly
+                        />
+                      </div>
+                      <div>
+                        <label className="text-gray-400 text-sm">Description</label>
+                        <textarea
+                          value={extractedData.projectDetails?.description || extractedData.specifications || ''}
+                          className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-green-400 focus:outline-none h-20"
+                          readOnly
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Financial Summary */}
+                  <div className="bg-gray-900/50 border border-green-400/30 rounded-lg p-4">
+                    <h3 className="text-green-400 font-bold mb-4 flex items-center">
+                      <DollarSign className="h-4 w-4 mr-2" />
+                      FINANCIAL SUMMARY
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                      <div className="bg-gray-800/50 rounded p-3">
+                        <div className="text-gray-400 text-xs">SUBTOTAL</div>
+                        <div className="text-green-400 font-mono text-lg">${extractedData.financials?.subtotal?.toFixed(2) || '0.00'}</div>
+                      </div>
+                      <div className="bg-gray-800/50 rounded p-3">
+                        <div className="text-gray-400 text-xs">TAX</div>
+                        <div className="text-green-400 font-mono text-lg">${extractedData.financials?.tax?.toFixed(2) || '0.00'}</div>
+                      </div>
+                      <div className="bg-gray-800/50 rounded p-3">
+                        <div className="text-gray-400 text-xs">MATERIALS</div>
+                        <div className="text-green-400 font-mono text-lg">{extractedData.materials?.length || 0}</div>
+                      </div>
+                      <div className="bg-gray-800/50 rounded p-3 border border-green-400/50">
+                        <div className="text-gray-400 text-xs">TOTAL</div>
+                        <div className="text-green-400 font-mono text-xl font-bold">${extractedData.financials?.total?.toFixed(2) || '0.00'}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Data Quality Status */}
+                  <div className="bg-gray-900/50 border border-cyan-400/30 rounded-lg p-4">
+                    <h3 className="text-cyan-400 font-bold mb-4 flex items-center">
+                      <Zap className="h-4 w-4 mr-2" />
+                      DATA VALIDATION STATUS
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <div className="text-gray-400 text-sm">Extraction Confidence</div>
+                        <div className="flex items-center mt-1">
+                          <div className="flex-1 bg-gray-700 rounded-full h-2">
+                            <div 
+                              className="bg-cyan-400 h-2 rounded-full" 
+                              style={{ width: `${extractedData.extractionQuality?.confidence || 85}%` }}
+                            ></div>
+                          </div>
+                          <span className="text-cyan-400 ml-2 font-bold">{extractedData.extractionQuality?.confidence || 85}%</span>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-gray-400 text-sm">Data Completeness</div>
+                        <div className="text-green-400 font-semibold">Ready for Contract Generation</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+                  <Button 
+                    onClick={() => {
+                      setCurrentStep(2);
+                      setCurrentPhase('arsenal-builder');
+                    }}
+                    variant="outline"
+                    className="border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-300"
+                  >
+                    BACK TO REVIEW
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      console.log('Proceeding to contract generation with data:', extractedData);
+                      setCurrentStep(4);
+                      setCurrentPhase('digital-execution');
+                      // Generate contract with validated data
+                      generateDefensiveContract(extractedData);
+                    }}
+                    className="bg-green-600 hover:bg-green-500 text-black font-bold py-3 px-8 rounded border-0 shadow-none"
+                  >
+                    GENERATE LEGAL CONTRACT
                   </Button>
                 </div>
               </CardContent>
