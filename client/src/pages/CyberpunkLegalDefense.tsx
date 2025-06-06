@@ -1138,6 +1138,7 @@ export default function CyberpunkLegalDefense() {
                         <label className="text-gray-400 text-sm">Business Address *</label>
                         <input
                           type="text"
+                          name="businessAddress"
                           placeholder="Enter business address"
                           className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-blue-400 focus:outline-none"
                         />
@@ -1146,6 +1147,7 @@ export default function CyberpunkLegalDefense() {
                         <label className="text-gray-400 text-sm">Phone Number *</label>
                         <input
                           type="tel"
+                          name="contractorPhone"
                           placeholder="(555) 123-4567"
                           className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-blue-400 focus:outline-none"
                         />
@@ -1161,7 +1163,7 @@ export default function CyberpunkLegalDefense() {
                     </h3>
                     <div className="space-y-4">
                       <div className="flex items-center space-x-3">
-                        <input type="checkbox" id="hasLicense" className="text-yellow-400" />
+                        <input type="checkbox" id="hasLicense" name="hasLicense" className="text-yellow-400" />
                         <label htmlFor="hasLicense" className="text-gray-300">Contractor has valid California license</label>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1169,6 +1171,7 @@ export default function CyberpunkLegalDefense() {
                           <label className="text-gray-400 text-sm">License Number</label>
                           <input
                             type="text"
+                            name="licenseNumber"
                             placeholder="Enter CA license number"
                             className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-400 focus:outline-none"
                           />
@@ -1177,6 +1180,7 @@ export default function CyberpunkLegalDefense() {
                           <label className="text-gray-400 text-sm">License Classification</label>
                           <input
                             type="text"
+                            name="licenseClassification"
                             placeholder="e.g., C-13 Fencing"
                             className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-400 focus:outline-none"
                           />
@@ -1249,6 +1253,7 @@ export default function CyberpunkLegalDefense() {
                         <label className="text-gray-400 text-sm">Client Name</label>
                         <input
                           type="text"
+                          name="clientName"
                           defaultValue={extractedData.clientInfo?.name || ''}
                           className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-green-400 focus:outline-none"
                         />
@@ -1257,6 +1262,7 @@ export default function CyberpunkLegalDefense() {
                         <label className="text-gray-400 text-sm">Client Address</label>
                         <input
                           type="text"
+                          name="clientAddress"
                           defaultValue={extractedData.clientInfo?.address || extractedData.projectDetails?.location || ''}
                           className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-green-400 focus:outline-none"
                         />
@@ -1265,6 +1271,7 @@ export default function CyberpunkLegalDefense() {
                         <label className="text-gray-400 text-sm">Email</label>
                         <input
                           type="email"
+                          name="clientEmail"
                           defaultValue={extractedData.clientInfo?.email || ''}
                           placeholder="client@email.com"
                           className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-green-400 focus:outline-none"
@@ -1274,6 +1281,7 @@ export default function CyberpunkLegalDefense() {
                         <label className="text-gray-400 text-sm">Phone</label>
                         <input
                           type="tel"
+                          name="clientPhone"
                           defaultValue={extractedData.clientInfo?.phone || ''}
                           placeholder="(555) 123-4567"
                           className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-green-400 focus:outline-none"
