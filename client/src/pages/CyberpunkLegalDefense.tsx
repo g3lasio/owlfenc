@@ -882,7 +882,7 @@ export default function CyberpunkLegalDefense() {
                           }`}
                         >
                           <List className="h-4 w-4" />
-                          <span className="text-sm font-mono">Select Approved Project</span>
+                          <span className="text-sm font-mono">Select Saved Project</span>
                         </button>
                       </div>
                     </div>

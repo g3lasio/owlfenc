@@ -755,10 +755,8 @@ ${extractedText}`,
       // Obtener proyectos aprobados del usuario
       const approvedProjects = await storage.getProjectsByUserId(parseInt(userId));
       
-      // Filtrar solo proyectos con status 'approved' o 'completed'
-      const filteredProjects = approvedProjects.filter(project => 
-        project.status === 'approved' || project.status === 'completed'
-      );
+      // Obtener todos los proyectos guardados (sin filtro de status)
+      const filteredProjects = approvedProjects;
 
       // Mapear datos para el frontend
       const projectsForContract = filteredProjects.map(project => ({
