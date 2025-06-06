@@ -336,9 +336,9 @@ function mapToClientField(fieldType: FieldType, header: string): string {
     case 'zipcode': return 'zipCode';
     case 'country': return 'country';
     default:
-      return header.toLowerCase().includes('note') || 
-             header.toLowerCase().includes('nota') ? 
-             'notes' : 'unknown';
+      return (header.toLowerCase().includes('note') || 
+              header.toLowerCase().includes('nota')) ? 
+              'notes' : 'unknown';
   }
 }
 

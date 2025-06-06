@@ -280,9 +280,9 @@ function mapToClientField(fieldType: FieldType, header: string): string {
     default:
       // Para campos desconocidos, usamos el nombre del encabezado
       // para campos personalizados o 'unknown' para ignorar
-      return header.toLowerCase().includes('note') || 
-             header.toLowerCase().includes('nota') ? 
-             'notes' : 'unknown';
+      return (header.toLowerCase().includes('note') || 
+              header.toLowerCase().includes('nota')) ? 
+              'notes' : 'unknown';
   }
 }
 
