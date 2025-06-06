@@ -362,7 +362,7 @@ export default function CyberpunkLegalDefense() {
         description: "AI crafting maximum legal protection with extracted data...",
       });
 
-      const response = await fetch('/api/legal-defense/generate-contract', {
+      const response = await fetch('/api/legal-defense/generate-defensive-contract', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

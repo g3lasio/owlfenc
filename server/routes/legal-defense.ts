@@ -406,7 +406,7 @@ router.post('/generate-contract', async (req, res) => {
 });
 
 // Generate defensive contract from extracted data
-router.post('/generate-contract', async (req, res) => {
+router.post('/generate-defensive-contract', async (req, res) => {
   try {
     const { extractedData } = req.body;
     
