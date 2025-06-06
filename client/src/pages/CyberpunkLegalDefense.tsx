@@ -70,38 +70,8 @@ export default function CyberpunkLegalDefense() {
   // Estados del toggle de método de entrada
   const [dataInputMethod, setDataInputMethod] = useState<'upload' | 'select'>('upload');
   const [selectedProject, setSelectedProject] = useState<any>(null);
-  const [approvedProjects] = useState([
-    {
-      id: 1,
-      clientName: 'Sarah Johnson',
-      projectType: 'Privacy Fence Installation',
-      address: '123 Oak Street, Austin, TX 78701',
-      totalAmount: 3250.00,
-      status: 'approved',
-      date: '2024-12-15',
-      materials: 'Cedar Privacy Panels, Steel Posts'
-    },
-    {
-      id: 2,
-      clientName: 'Mike Rodriguez',
-      projectType: 'Commercial Chain Link',
-      address: '456 Industrial Blvd, Houston, TX 77001',
-      totalAmount: 8750.00,
-      status: 'approved',
-      date: '2024-12-10',
-      materials: 'Galvanized Chain Link, Commercial Gates'
-    },
-    {
-      id: 3,
-      clientName: 'Emma Davis',
-      projectType: 'Decorative Iron Fence',
-      address: '789 Elm Drive, Dallas, TX 75201',
-      totalAmount: 5600.00,
-      status: 'approved',
-      date: '2024-12-08',
-      materials: 'Wrought Iron Panels, Decorative Posts'
-    }
-  ]);
+  const [approvedProjects, setApprovedProjects] = useState<any[]>([]);
+  const [loadingProjects, setLoadingProjects] = useState(false);
 
   // Definir pasos del workflow cyberpunk
   const workflowSteps: WorkflowStep[] = [

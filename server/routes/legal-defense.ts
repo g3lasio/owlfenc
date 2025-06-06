@@ -1,0 +1,293 @@
+import express from 'express';
+import multer from 'multer';
+import Anthropic from '@anthropic-ai/sdk';
+import { db } from '../db';
+import { projects, insertProjectSchema } from '@shared/schema';
+import { eq } from 'drizzle-orm';
+import { z } from 'zod';
+
+const router = express.Router();
+
+// Configure multer for PDF uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PDF files are allowed'), false);
+    }
+  },
+});
+
+// Initialize Anthropic client
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
+
+// PDF OCR extraction endpoint
+router.post('/extract-pdf', upload.single('pdf'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No PDF file provided' });
+    }
+
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return res.status(500).json({ 
+        error: 'Anthropic API key not configured',
+        message: 'Please provide ANTHROPIC_API_KEY environment variable'
+      });
+    }
+
+    // Convert PDF buffer to base64
+    const pdfBase64 = req.file.buffer.toString('base64');
+
+    // Create structured extraction prompt for Claude Sonnet
+    const extractionPrompt = `
+You are an advanced document analysis AI. Extract comprehensive data from this PDF estimate/contract document and return it as a structured JSON object.
+
+REQUIRED OUTPUT FORMAT (JSON only, no other text):
+{
+  "clientInfo": {
+    "name": "string",
+    "email": "string", 
+    "phone": "string",
+    "address": "string"
+  },
+  "projectDetails": {
+    "type": "string",
+    "description": "string",
+    "location": "string", 
+    "startDate": "YYYY-MM-DD or null",
+    "endDate": "YYYY-MM-DD or null"
+  },
+  "materials": [
+    {
+      "item": "string",
+      "quantity": "number",
+      "unit": "string",
+      "unitPrice": "number",
+      "totalPrice": "number"
+    }
+  ],
+  "financials": {
+    "subtotal": "number",
+    "tax": "number",
+    "taxRate": "number",
+    "total": "number"
+  },
+  "paymentTerms": "string",
+  "specifications": "string",
+  "extractionQuality": {
+    "confidence": "number (0-100)",
+    "missingFields": ["array of field names that couldn't be extracted"],
+    "warnings": ["array of potential data quality issues"]
+  }
+}
+
+EXTRACTION RULES:
+- Extract all monetary values as numbers (remove $ symbols)
+- Convert dates to YYYY-MM-DD format or null if not found
+- Be precise with quantities and measurements
+- Include all line items from estimates
+- Identify contractor/company information vs client information
+- If a field cannot be found, use null or empty array
+- Confidence should reflect data extraction accuracy (0-100)
+- List missing critical fields in missingFields array
+- Flag any unclear or potentially incorrect data in warnings
+
+Analyze this document thoroughly and extract all relevant project data:
+`;
+
+    // Send PDF to Claude for analysis
+    const response = await anthropic.messages.create({
+      model: 'claude-3-sonnet-20240229',
+      max_tokens: 4000,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: extractionPrompt
+            },
+            {
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: 'application/pdf',
+                data: pdfBase64
+              }
+            }
+          ]
+        }
+      ]
+    });
+
+    const extractedText = response.content[0].text;
+    
+    // Parse the JSON response from Claude
+    let extractedData;
+    try {
+      extractedData = JSON.parse(extractedText);
+    } catch (parseError) {
+      console.error('Failed to parse Claude response:', extractedText);
+      return res.status(500).json({ 
+        error: 'Failed to parse extracted data',
+        rawResponse: extractedText
+      });
+    }
+
+    // Validate extracted data structure
+    const validationSchema = z.object({
+      clientInfo: z.object({
+        name: z.string().nullable(),
+        email: z.string().email().nullable(),
+        phone: z.string().nullable(),
+        address: z.string().nullable()
+      }),
+      projectDetails: z.object({
+        type: z.string().nullable(),
+        description: z.string().nullable(),
+        location: z.string().nullable(),
+        startDate: z.string().nullable(),
+        endDate: z.string().nullable()
+      }),
+      materials: z.array(z.object({
+        item: z.string(),
+        quantity: z.number(),
+        unit: z.string(),
+        unitPrice: z.number(),
+        totalPrice: z.number()
+      })),
+      financials: z.object({
+        subtotal: z.number(),
+        tax: z.number(),
+        taxRate: z.number(),
+        total: z.number()
+      }),
+      paymentTerms: z.string().nullable(),
+      specifications: z.string().nullable(),
+      extractionQuality: z.object({
+        confidence: z.number().min(0).max(100),
+        missingFields: z.array(z.string()),
+        warnings: z.array(z.string())
+      })
+    });
+
+    const validatedData = validationSchema.parse(extractedData);
+
+    // Check for critical missing fields
+    const criticalFields = ['clientInfo.name', 'projectDetails.type', 'financials.total'];
+    const missingCritical = criticalFields.filter(field => {
+      const keys = field.split('.');
+      let value = validatedData;
+      for (const key of keys) {
+        value = value[key];
+      }
+      return !value;
+    });
+
+    res.json({
+      success: true,
+      data: validatedData,
+      hasCriticalMissing: missingCritical.length > 0,
+      missingCritical,
+      canProceed: validatedData.extractionQuality.confidence >= 70 && missingCritical.length === 0
+    });
+
+  } catch (error) {
+    console.error('PDF extraction error:', error);
+    
+    if (error.message?.includes('API key')) {
+      return res.status(500).json({ 
+        error: 'Anthropic API authentication failed',
+        message: 'Please verify ANTHROPIC_API_KEY is correctly configured'
+      });
+    }
+    
+    res.status(500).json({ 
+      error: 'PDF extraction failed',
+      message: error.message 
+    });
+  }
+});
+
+// Get approved projects for user
+router.get('/approved-projects', async (req, res) => {
+  try {
+    const userId = req.query.userId ? parseInt(req.query.userId as string) : 1; // Default for demo
+    
+    const approvedProjects = await db
+      .select()
+      .from(projects)
+      .where(eq(projects.status, 'approved'))
+      .orderBy(projects.createdAt);
+
+    res.json({
+      success: true,
+      projects: approvedProjects
+    });
+
+  } catch (error) {
+    console.error('Error fetching approved projects:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch approved projects',
+      message: error.message 
+    });
+  }
+});
+
+// Create project from extracted data
+router.post('/create-project', async (req, res) => {
+  try {
+    const { extractedData, userId = 1 } = req.body;
+
+    const projectData = {
+      name: `${extractedData.projectDetails.type} - ${extractedData.clientInfo.name}`,
+      description: extractedData.projectDetails.description,
+      clientName: extractedData.clientInfo.name,
+      clientEmail: extractedData.clientInfo.email,
+      clientPhone: extractedData.clientInfo.phone,
+      projectType: extractedData.projectDetails.type,
+      address: extractedData.projectDetails.location || extractedData.clientInfo.address,
+      totalAmount: extractedData.financials.total.toString(),
+      materials: extractedData.materials,
+      specifications: extractedData.specifications,
+      paymentTerms: extractedData.paymentTerms,
+      startDate: extractedData.projectDetails.startDate ? new Date(extractedData.projectDetails.startDate) : null,
+      endDate: extractedData.projectDetails.endDate ? new Date(extractedData.projectDetails.endDate) : null,
+      status: 'pending',
+      extractedData: extractedData,
+      userId
+    };
+
+    // Validate with schema
+    const validatedProject = insertProjectSchema.parse(projectData);
+
+    // Generate unique ID
+    const projectId = `proj_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    const [newProject] = await db
+      .insert(projects)
+      .values({ id: projectId, ...validatedProject })
+      .returning();
+
+    res.json({
+      success: true,
+      project: newProject
+    });
+
+  } catch (error) {
+    console.error('Error creating project:', error);
+    res.status(500).json({ 
+      error: 'Failed to create project',
+      message: error.message 
+    });
+  }
+});
+
+export default router;

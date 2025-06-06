@@ -45,6 +45,9 @@ import pdfMonkeyEstimatesRoutes from './routes/pdfmonkey-estimates';
 import anthropicContractRoutes from './routes/anthropicContractRoutes';
 import contractRoutes from './routes/contractRoutes';
 
+// 🛡️ LEGAL DEFENSE SYSTEM - Advanced OCR & Project Management
+import legalDefenseRoutes from './routes/legal-defense';
+
 // Registrar rutas de pagos
 app.use('/api', paymentRoutes);
 app.use('/api', emailRoutes);
@@ -67,6 +70,7 @@ console.log('🐒 [PDFMONKEY] Template específico de estimados registrado en /a
 // 🤖 Registrar sistema inteligente de contratos
 app.use('/api/anthropic', anthropicContractRoutes);
 app.use('/api/contracts', contractRoutes);
+app.use('/api/legal-defense', legalDefenseRoutes);
 console.log('🤖 [ANTHROPIC] Sistema inteligente de contratos registrado en /api/anthropic/generate-contract');
 console.log('📄 [CONTRACTS] API de contratos registrada en /api/contracts');
 
