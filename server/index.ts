@@ -115,6 +115,12 @@ app.use((req, res, next) => {
   
   // Add OCR simplified routes
   app.use('/api/ocr', ocrSimpleRoutes);
+  
+  // Add email contract routes
+  app.use('/api/email', emailContractRoutes);
+  
+  // Add contract management routes
+  app.use('/api/contracts', contractManagementRoutes);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
