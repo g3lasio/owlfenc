@@ -822,6 +822,130 @@ export default function CyberpunkLegalDefense() {
               </CardContent>
             </Card>
           )}
+
+          {/* OCR Data Review Step */}
+          {extractedData && currentStep === 2 && (
+            <Card className="border-2 border-purple-400 bg-black/80 relative overflow-hidden mt-6">
+              <HUDCorners />
+              
+              <CardHeader className="text-center px-4 md:px-6">
+                <div className="flex items-center justify-center mb-4">
+                  <div className="p-3 md:p-4 rounded-full border-2 border-purple-400">
+                    <Shield className="h-6 w-6 md:h-8 md:w-8 text-purple-400" />
+                  </div>
+                </div>
+                <CardTitle className="text-xl md:text-2xl font-bold text-purple-400 mb-2">
+                  Contract Arsenal Builder
+                </CardTitle>
+                <p className="text-gray-300 text-xs md:text-sm leading-relaxed">
+                  Review extracted data and generate defensive contract with AI-powered legal protection.
+                </p>
+              </CardHeader>
+              
+              <CardContent className="px-4 md:px-8 pb-6 md:pb-8">
+                {/* Extracted Data Display */}
+                <div className="space-y-6">
+                  {/* Client Information */}
+                  <div className="bg-gray-900/50 border border-purple-400/30 rounded-lg p-4">
+                    <h3 className="text-purple-400 font-bold mb-3 flex items-center">
+                      <User className="h-4 w-4 mr-2" />
+                      CLIENT DATA ACQUIRED
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <span className="text-gray-400">Name:</span>
+                        <span className="text-white ml-2">{extractedData.clientInfo?.name || 'Not specified'}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Location:</span>
+                        <span className="text-white ml-2">{extractedData.clientInfo?.address || extractedData.projectDetails?.location || 'Not specified'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Project Information */}
+                  <div className="bg-gray-900/50 border border-purple-400/30 rounded-lg p-4">
+                    <h3 className="text-purple-400 font-bold mb-3 flex items-center">
+                      <FileText className="h-4 w-4 mr-2" />
+                      PROJECT SPECIFICATIONS
+                    </h3>
+                    <div className="space-y-2 text-sm">
+                      <div>
+                        <span className="text-gray-400">Type:</span>
+                        <span className="text-white ml-2">{extractedData.projectDetails?.type || 'Not specified'}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Description:</span>
+                        <span className="text-white ml-2">{extractedData.projectDetails?.description || extractedData.specifications || 'Not specified'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Financial Information */}
+                  <div className="bg-gray-900/50 border border-purple-400/30 rounded-lg p-4">
+                    <h3 className="text-purple-400 font-bold mb-3 flex items-center">
+                      <DollarSign className="h-4 w-4 mr-2" />
+                      FINANCIAL PARAMETERS
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-400">Subtotal:</span>
+                        <span className="text-green-400 ml-2 font-mono">${extractedData.financials?.subtotal?.toFixed(2) || '0.00'}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Total:</span>
+                        <span className="text-green-400 ml-2 font-mono font-bold">${extractedData.financials?.total?.toFixed(2) || '0.00'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Materials Count */}
+                  <div className="bg-gray-900/50 border border-purple-400/30 rounded-lg p-4">
+                    <h3 className="text-purple-400 font-bold mb-3 flex items-center">
+                      <Package className="h-4 w-4 mr-2" />
+                      MATERIALS INVENTORY
+                    </h3>
+                    <div className="text-sm">
+                      <span className="text-gray-400">Items detected:</span>
+                      <span className="text-white ml-2">{extractedData.materials?.length || 0} material entries</span>
+                    </div>
+                  </div>
+
+                  {/* Extraction Quality */}
+                  <div className="bg-gray-900/50 border border-cyan-400/30 rounded-lg p-4">
+                    <h3 className="text-cyan-400 font-bold mb-3 flex items-center">
+                      <Zap className="h-4 w-4 mr-2" />
+                      EXTRACTION ANALYSIS
+                    </h3>
+                    <div className="space-y-2 text-sm">
+                      <div>
+                        <span className="text-gray-400">Confidence Level:</span>
+                        <span className="text-cyan-400 ml-2 font-bold">{extractedData.extractionQuality?.confidence || 85}%</span>
+                      </div>
+                      {extractedData.extractionQuality?.warnings?.length > 0 && (
+                        <div>
+                          <span className="text-yellow-400 text-xs">⚠ Warnings detected in source document</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Next Button */}
+                <div className="mt-8 text-center">
+                  <Button 
+                    onClick={() => {
+                      setCurrentStep(3);
+                      processExtractedDataWorkflow(extractedData);
+                    }}
+                    className="bg-purple-600 hover:bg-purple-500 text-black font-bold py-3 px-8 rounded border-0 shadow-none text-base"
+                  >
+                    GENERATE DEFENSIVE CONTRACT
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Processing Indicator */}
