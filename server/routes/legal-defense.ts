@@ -405,4 +405,194 @@ router.post('/generate-contract', async (req, res) => {
   }
 });
 
+// Generate defensive contract from extracted data
+router.post('/generate-contract', async (req, res) => {
+  try {
+    const { extractedData } = req.body;
+    
+    if (!extractedData) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing extracted data for contract generation'
+      });
+    }
+
+    // Generate comprehensive contract HTML using the extracted data
+    const contractHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>California Construction Contract - Legal Defense</title>
+      <style>
+        body { font-family: 'Times New Roman', serif; line-height: 1.6; color: #000; max-width: 8.5in; margin: 0 auto; padding: 1in; }
+        .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 1em; margin-bottom: 2em; }
+        .header h1 { font-size: 24px; font-weight: bold; margin: 0; text-transform: uppercase; }
+        .section { margin: 1.5em 0; }
+        .section-header { font-size: 18px; font-weight: bold; margin: 1em 0 0.5em 0; text-transform: uppercase; border-bottom: 1px solid #000; }
+        .notice-block { border: 2px solid #000; padding: 1em; margin: 1em 0; background-color: #f9f9f9; }
+        .signature-block { margin-top: 3em; border: 1px solid #000; padding: 1em; }
+        .legal-text { font-size: 12px; margin: 0.5em 0; }
+        .materials-table { width: 100%; border-collapse: collapse; margin: 1em 0; }
+        .materials-table th, .materials-table td { border: 1px solid #000; padding: 8px; text-align: left; }
+        .materials-table th { background-color: #f0f0f0; font-weight: bold; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>California Construction Contract</h1>
+        <h2>Legal Defense Edition</h2>
+      </div>
+
+      <div class="section">
+        <div class="section-header">I. Parties to the Agreement</div>
+        <p><strong>Contractor:</strong> ${extractedData.contractorName || '[Contractor Name]'}</p>
+        <p><strong>Address:</strong> ${extractedData.contractorAddress || '[Contractor Address]'}</p>
+        <p><strong>Phone:</strong> ${extractedData.contractorPhone || '[Contractor Phone]'}</p>
+        <p><strong>Email:</strong> ${extractedData.contractorEmail || '[Contractor Email]'}</p>
+        <p><strong>License #:</strong> ${extractedData.contractorLicense || '[License Number]'}</p>
+        
+        <p><strong>Client:</strong> ${extractedData.clientInfo?.name || '[Client Name]'}</p>
+        <p><strong>Address:</strong> ${extractedData.clientInfo?.address || extractedData.projectDetails?.location || '[Client Address]'}</p>
+        <p><strong>Phone:</strong> ${extractedData.clientInfo?.phone || '[Client Phone]'}</p>
+        <p><strong>Email:</strong> ${extractedData.clientInfo?.email || '[Client Email]'}</p>
+      </div>
+
+      <div class="section">
+        <div class="section-header">II. Recital</div>
+        <p>WHEREAS, Contractor is a licensed construction professional authorized to perform construction services in the State of California; and</p>
+        <p>WHEREAS, Client desires to engage Contractor for construction services as described herein; and</p>
+        <p>WHEREAS, both parties wish to establish clear terms that protect their respective interests;</p>
+        <p>NOW, THEREFORE, in consideration of the mutual covenants contained herein, the parties agree as follows:</p>
+      </div>
+
+      <div class="section">
+        <div class="section-header">III. Scope of Services</div>
+        <p><strong>Project Type:</strong> ${extractedData.projectDetails?.type || '[Project Type]'}</p>
+        <p><strong>Project Description:</strong> ${extractedData.projectDetails?.description || '[Project Description]'}</p>
+        <p><strong>Location:</strong> ${extractedData.projectDetails?.location || '[Project Location]'}</p>
+        <p><strong>Specifications:</strong> ${extractedData.specifications || 'Work to be performed according to industry standards and applicable building codes.'}</p>
+        
+        ${extractedData.materials && extractedData.materials.length > 0 ? `
+        <div class="section-header">Materials and Labor</div>
+        <table class="materials-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Quantity</th>
+              <th>Unit</th>
+              <th>Unit Price</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${extractedData.materials.map((material: any) => `
+              <tr>
+                <td>${material.item}</td>
+                <td>${material.quantity}</td>
+                <td>${material.unit}</td>
+                <td>$${material.unitPrice?.toFixed(2) || '0.00'}</td>
+                <td>$${material.totalPrice?.toFixed(2) || '0.00'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        ` : ''}
+      </div>
+
+      <div class="section">
+        <div class="section-header">IV. Duration and Completion</div>
+        <p><strong>Start Date:</strong> ${extractedData.projectDetails?.startDate ? new Date(extractedData.projectDetails.startDate).toLocaleDateString() : '[Start Date]'}</p>
+        <p><strong>Completion Date:</strong> ${extractedData.projectDetails?.endDate ? new Date(extractedData.projectDetails.endDate).toLocaleDateString() : '[Completion Date]'}</p>
+        <p><strong>Time Extensions:</strong> Contractor shall not be responsible for delays caused by weather, permit delays, client changes, or force majeure events.</p>
+      </div>
+
+      <div class="section">
+        <div class="section-header">V. Compensation and Payment Terms</div>
+        <p><strong>Total Contract Amount:</strong> $${extractedData.financials?.total?.toFixed(2) || '[Total Amount]'}</p>
+        <p><strong>Payment Schedule:</strong></p>
+        <ul>
+          <li>30% deposit ($${(extractedData.financials?.total * 0.3)?.toFixed(2) || '[Deposit Amount]'}) due upon contract execution</li>
+          <li>Progress payments tied to completion milestones</li>
+          <li>Final payment due within 10 days of completion</li>
+        </ul>
+        <p><strong>Late Payment:</strong> Client agrees to pay 1.5% per month on overdue amounts.</p>
+      </div>
+
+      <div class="section">
+        <div class="section-header">VI. Confidentiality and Non-Disclosure</div>
+        <p>Both parties agree to maintain confidentiality of proprietary information, trade secrets, and business practices disclosed during the course of this project.</p>
+      </div>
+
+      <div class="section">
+        <div class="section-header">VII. Subcontracting</div>
+        <p>Contractor reserves the right to subcontract portions of the work to qualified subcontractors while maintaining overall responsibility for project completion.</p>
+      </div>
+
+      <div class="section">
+        <div class="section-header">VIII. Exclusivity</div>
+        <p>During the term of this agreement, Client agrees not to engage other contractors for similar work without written consent from Contractor.</p>
+      </div>
+
+      <div class="section">
+        <div class="section-header">IX. Notifications and Communications</div>
+        <p>All notices, changes, and communications must be in writing and delivered to the addresses specified in Section I.</p>
+      </div>
+
+      <div class="section">
+        <div class="section-header">X. Indemnification</div>
+        <p>Client agrees to indemnify and hold Contractor harmless from claims arising from Client's negligence, property conditions unknown to Contractor, or work performed by others.</p>
+      </div>
+
+      <div class="section">
+        <div class="section-header">XI. Modifications</div>
+        <p>No modifications to this contract shall be valid unless in writing and signed by both parties. All change orders must include updated pricing and timeline adjustments.</p>
+      </div>
+
+      <div class="section">
+        <div class="section-header">XII. Entire Agreement</div>
+        <p>This contract constitutes the entire agreement between the parties and supersedes all prior negotiations, representations, or agreements relating to the subject matter herein.</p>
+      </div>
+
+      <div class="notice-block">
+        <div class="section-header">XIII. California Legal Notices</div>
+        <div class="legal-text">
+          <p><strong>NOTICE TO OWNER:</strong> Under the California Mechanics' Lien Law, any contractor, subcontractor, laborer, supplier, or other person or entity who helps to improve your property, but is not paid for their work or supplies, has a right to place a lien on your home, land, or property where the work was performed and to sue you in court to obtain payment.</p>
+          
+          <p><strong>THREE DAY RIGHT TO CANCEL:</strong> You, the buyer, have the right to cancel this contract within three business days. You may cancel by delivering a signed and dated copy of this cancellation notice to the contractor at the address stated in the contract before midnight of the third business day after you received a signed and dated copy of the contract that includes this notice.</p>
+          
+          <p><strong>CONTRACTOR LICENSE NOTICE:</strong> This contractor is licensed by the Contractors State License Board. For information concerning a contractor, you may contact the Contractors State License Board.</p>
+        </div>
+      </div>
+
+      <div class="signature-block">
+        <div class="section-header">XIV. Signatures</div>
+        <br>
+        <p><strong>Contractor:</strong> ${extractedData.contractorName || '[Contractor Name]'}</p>
+        <p>Signature: _________________________ Date: _____________</p>
+        <br>
+        <p><strong>Client:</strong> ${extractedData.clientInfo?.name || '[Client Name]'}</p>
+        <p>Signature: _________________________ Date: _____________</p>
+        <br>
+        <p><em>This contract provides comprehensive legal protection while ensuring professional project completion in accordance with California law.</em></p>
+      </div>
+    </body>
+    </html>`;
+
+    res.json({
+      success: true,
+      contract: contractHtml,
+      message: 'Defensive contract generated successfully with California legal compliance'
+    });
+
+  } catch (error) {
+    console.error('Contract generation error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate contract',
+      message: (error as Error).message
+    });
+  }
+});
+
 export default router;
