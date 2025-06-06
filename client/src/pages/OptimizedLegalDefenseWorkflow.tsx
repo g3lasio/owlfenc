@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { 
-  FileUpload,
+  Upload,
   Shield, 
   Scale, 
   Brain,
@@ -347,7 +347,7 @@ export default function OptimizedLegalDefenseWorkflow() {
 
   const getPhaseIcon = (phase: string) => {
     switch (phase) {
-      case 'upload': return <FileUpload className="h-5 w-5" />;
+      case 'upload': return <Upload className="h-5 w-5" />;
       case 'validation': return <CheckCircle className="h-5 w-5" />;
       case 'analysis': return <Brain className="h-5 w-5" />;
       case 'generation': return <Shield className="h-5 w-5" />;
@@ -442,7 +442,7 @@ export default function OptimizedLegalDefenseWorkflow() {
         <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-green-50">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <FileUpload className="h-6 w-6 text-blue-600" />
+              <Upload className="h-6 w-6 text-blue-600" />
               Carga Inteligente de Estimado PDF
             </CardTitle>
           </CardHeader>
@@ -457,7 +457,7 @@ export default function OptimizedLegalDefenseWorkflow() {
                 disabled={isProcessing}
               />
               <label htmlFor="pdf-upload-optimized" className="cursor-pointer">
-                <FileUpload className="h-16 w-16 text-blue-400 mx-auto mb-4" />
+                <Upload className="h-16 w-16 text-blue-400 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-gray-700 mb-2">
                   Arrastra tu PDF de estimado aquí o haz clic para seleccionar
                 </h3>
