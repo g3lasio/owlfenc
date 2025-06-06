@@ -2219,10 +2219,10 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       // Generate estimate number
       const estimateNumber = `EST-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, "0")}`;
 
-      // Calculate tax
-      const taxRate = 10; // Default 10% tax rate
-      const tax = estimate.subtotal * (taxRate / 100);
-      const total = estimate.subtotal + tax;
+      // Use the correct calculated values from the estimate (which already includes discount)
+      const taxRate = estimate.taxRate;
+      const tax = estimate.tax;
+      const total = estimate.total;
 
       // Prepare estimate data for new HTML email service
       const estimateData = {
