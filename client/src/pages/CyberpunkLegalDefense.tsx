@@ -235,13 +235,87 @@ export default function CyberpunkLegalDefense() {
     }
   };
 
-  // Generate defensive contract with extracted data
+  // Collect all form data from the comprehensive legal blocks
+  const collectContractData = () => {
+    const form = document.querySelector('#defense-review-form') as HTMLFormElement;
+    if (!form) return extractedData;
+
+    const formData = new FormData(form);
+    const contractorInfo = {
+      companyName: formData.get('contractorCompany') as string,
+      contractorName: formData.get('contractorName') as string,
+      businessAddress: formData.get('businessAddress') as string,
+      phone: formData.get('contractorPhone') as string,
+      hasLicense: formData.get('hasLicense') === 'on',
+      licenseNumber: formData.get('licenseNumber') as string,
+      licenseClassification: formData.get('licenseClassification') as string,
+      hasInsurance: formData.get('hasInsurance') === 'on',
+      insuranceCompany: formData.get('insuranceCompany') as string,
+      policyNumber: formData.get('policyNumber') as string,
+      coverageAmount: formData.get('coverageAmount') as string,
+      insuranceExpiration: formData.get('insuranceExpiration') as string
+    };
+
+    const clientInfo = {
+      ...extractedData.clientInfo,
+      name: formData.get('clientName') as string || extractedData.clientInfo?.name,
+      address: formData.get('clientAddress') as string || extractedData.clientInfo?.address,
+      email: formData.get('clientEmail') as string || extractedData.clientInfo?.email,
+      phone: formData.get('clientPhone') as string || extractedData.clientInfo?.phone
+    };
+
+    const paymentTerms = {
+      downPayment: formData.get('downPayment') as string,
+      progressPayment: formData.get('progressPayment') as string,
+      finalPayment: formData.get('finalPayment') as string
+    };
+
+    const timeline = {
+      startDate: formData.get('startDate') as string,
+      completionDate: formData.get('completionDate') as string,
+      estimatedDuration: formData.get('estimatedDuration') as string
+    };
+
+    const permits = {
+      required: formData.get('permitsRequired') === 'on',
+      responsibility: formData.get('permitResponsibility') as string,
+      numbers: formData.get('permitNumbers') as string
+    };
+
+    const warranties = {
+      workmanship: formData.get('workmanshipWarranty') as string,
+      materials: formData.get('materialsWarranty') as string
+    };
+
+    const legalNotices = {
+      lienNotice: formData.get('lienNotice') === 'on',
+      cancelNotice: formData.get('cancelNotice') === 'on'
+    };
+
+    return {
+      ...extractedData,
+      contractorInfo,
+      clientInfo,
+      paymentTerms,
+      timeline,
+      permits,
+      warranties,
+      legalNotices
+    };
+  };
+
+  // Generate defensive contract with collected comprehensive data
   const generateDefensiveContract = useCallback(async (data: any) => {
     setIsProcessing(true);
     
     try {
+      // Collect all form data from the comprehensive legal blocks
+      const comprehensiveData = collectContractData();
+      
+      console.log('Comprehensive contract data:', comprehensiveData);
+
       toast({
-        title: "🔥 GENERATING DEFENSIVE CONTRACT",
+        title: "GENERATING DEFENSIVE CONTRACT",
         description: "AI crafting maximum legal protection with extracted data...",
       });
 
@@ -250,7 +324,7 @@ export default function CyberpunkLegalDefense() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ extractedData: data }),
+        body: JSON.stringify({ extractedData: comprehensiveData }),
       });
 
       const result = await response.json();
@@ -258,7 +332,7 @@ export default function CyberpunkLegalDefense() {
       if (result.success) {
         setGeneratedContract(result.contract);
         toast({
-          title: "✅ DEFENSIVE CONTRACT GENERATED",
+          title: "DEFENSIVE CONTRACT GENERATED",
           description: "Legal protection deployed successfully. Ready for review and signature.",
         });
       } else {
@@ -267,14 +341,14 @@ export default function CyberpunkLegalDefense() {
     } catch (error) {
       console.error('Contract generation error:', error);
       toast({
-        title: "⚡ GENERATION ERROR",
+        title: "GENERATION ERROR",
         description: "Failed to generate defensive contract. Please try again.",
         variant: "destructive"
       });
     } finally {
       setIsProcessing(false);
     }
-  }, [toast]);
+  }, [toast, extractedData]);
 
   // Manejo de selección de proyecto
   const handleProjectSelection = useCallback(async (project: any) => {
@@ -1034,7 +1108,7 @@ export default function CyberpunkLegalDefense() {
               </CardHeader>
               
               <CardContent className="px-4 md:px-8 pb-6 md:pb-8">
-                <div className="space-y-6">
+                <form id="defense-review-form" className="space-y-6">
                   {/* Contractor Information */}
                   <div className="bg-gray-900/50 border border-blue-400/30 rounded-lg p-4">
                     <h3 className="text-blue-400 font-bold mb-4 flex items-center">
@@ -1046,6 +1120,7 @@ export default function CyberpunkLegalDefense() {
                         <label className="text-gray-400 text-sm">Company Name *</label>
                         <input
                           type="text"
+                          name="contractorCompany"
                           placeholder="Enter contractor company name"
                           className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-blue-400 focus:outline-none"
                         />
@@ -1054,6 +1129,7 @@ export default function CyberpunkLegalDefense() {
                         <label className="text-gray-400 text-sm">Contractor Name *</label>
                         <input
                           type="text"
+                          name="contractorName"
                           placeholder="Enter contractor full name"
                           className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-blue-400 focus:outline-none"
                         />
@@ -1173,7 +1249,7 @@ export default function CyberpunkLegalDefense() {
                         <label className="text-gray-400 text-sm">Client Name</label>
                         <input
                           type="text"
-                          value={extractedData.clientInfo?.name || ''}
+                          defaultValue={extractedData.clientInfo?.name || ''}
                           className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-green-400 focus:outline-none"
                         />
                       </div>
@@ -1181,7 +1257,7 @@ export default function CyberpunkLegalDefense() {
                         <label className="text-gray-400 text-sm">Client Address</label>
                         <input
                           type="text"
-                          value={extractedData.clientInfo?.address || extractedData.projectDetails?.location || ''}
+                          defaultValue={extractedData.clientInfo?.address || extractedData.projectDetails?.location || ''}
                           className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-green-400 focus:outline-none"
                         />
                       </div>
@@ -1189,7 +1265,7 @@ export default function CyberpunkLegalDefense() {
                         <label className="text-gray-400 text-sm">Email</label>
                         <input
                           type="email"
-                          value={extractedData.clientInfo?.email || ''}
+                          defaultValue={extractedData.clientInfo?.email || ''}
                           placeholder="client@email.com"
                           className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-green-400 focus:outline-none"
                         />
@@ -1198,7 +1274,7 @@ export default function CyberpunkLegalDefense() {
                         <label className="text-gray-400 text-sm">Phone</label>
                         <input
                           type="tel"
-                          value={extractedData.clientInfo?.phone || ''}
+                          defaultValue={extractedData.clientInfo?.phone || ''}
                           placeholder="(555) 123-4567"
                           className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-green-400 focus:outline-none"
                         />
@@ -1543,7 +1619,7 @@ export default function CyberpunkLegalDefense() {
                       </div>
                     </div>
                   </div>
-                </div>
+                </form>
 
                 {/* Action Buttons */}
                 <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
