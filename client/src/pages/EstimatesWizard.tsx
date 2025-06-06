@@ -3204,14 +3204,14 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   <DialogContent className="max-w-4xl">
                     <DialogHeader>
                       <DialogTitle>
-                        Seleccionar Material del Inventario
+                        Select Material from Inventory
                       </DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
                       <div className="relative">
                         <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                         <Input
-                          placeholder="Buscar materiales..."
+                          placeholder="Search materials..."
                           value={materialSearch}
                           onChange={(e) => setMaterialSearch(e.target.value)}
                           className="pl-10"
@@ -3220,13 +3220,13 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       <div className="max-h-96 overflow-y-auto">
                         {isLoadingMaterials ? (
                           <p className="text-center py-4 text-muted-foreground">
-                            Cargando materiales...
+                            Loading materials...
                           </p>
                         ) : filteredMaterials.length === 0 ? (
                           <p className="text-center py-4 text-muted-foreground">
                             {materialSearch
-                              ? "No se encontraron materiales"
-                              : "No hay materiales disponibles"}
+                              ? "No materials found"
+                              : "No materials available"}
                           </p>
                         ) : (
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -3257,9 +3257,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
               {estimate.items.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No hay materiales agregados al estimado</p>
+                  <p>No materials added to estimate</p>
                   <p className="text-sm">
-                    Haz clic en "Agregar Material" para comenzar
+                    Click "Add Material" to get started
                   </p>
                 </div>
               ) : (
@@ -3276,7 +3276,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                             }
                             className="w-full text-sm text-muted-foreground bg-transparent border border-gray-300 rounded px-2 py-1 mt-1 resize-none"
                             rows={2}
-                            placeholder="Descripción del material..."
+                            placeholder="Material description..."
                           />
                           <div className="flex items-center gap-2 mt-2">
                             <span className="text-sm">$</span>
