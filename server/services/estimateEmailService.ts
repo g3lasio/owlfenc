@@ -44,6 +44,9 @@ export interface EstimateData {
     total: number;
   }>;
   subtotal: number;
+  discount?: number;
+  discountType?: 'percentage' | 'fixed';
+  discountValue?: number;
   tax: number;
   taxRate: number;
   total: number;
@@ -671,9 +674,15 @@ export class EstimateEmailService {
               
               <div class="totals">
                 <div class="total-line">
-                  <span>Subtotal:</span>
+                  <span>Materiales (${data.items.length} items):</span>
                   <span>$${data.subtotal.toFixed(2)}</span>
                 </div>
+                ${data.discount && data.discount > 0 ? `
+                <div class="total-line" style="color: #059669;">
+                  <span>Descuento${data.discountType === 'percentage' ? ` (${data.discountValue}%)` : ''}:</span>
+                  <span>-$${data.discount.toFixed(2)}</span>
+                </div>
+                ` : ''}
                 <div class="total-line">
                   <span>Impuesto (${data.taxRate}%):</span>
                   <span>$${data.tax.toFixed(2)}</span>
