@@ -5,6 +5,8 @@ import { db } from '../db';
 import { projects, insertProjectSchema } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
+import pdf from 'pdf-parse';
+import sharp from 'sharp';
 
 const router = express.Router();
 
@@ -18,7 +20,7 @@ const upload = multer({
     if (file.mimetype === 'application/pdf') {
       cb(null, true);
     } else {
-      cb(new Error('Only PDF files are allowed'), false);
+      cb(null, false);
     }
   },
 });
