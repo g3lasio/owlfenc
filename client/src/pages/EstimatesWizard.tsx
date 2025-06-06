@@ -1879,18 +1879,18 @@ export default function EstimatesWizardFixed() {
         </div>
         
         <div style="border: 2px dashed #d1d5db; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-          <h3 style="color: #6b7280;">Información de la Empresa</h3>
-          <p style="color: #6b7280;">${contractor?.companyName || "[Nombre de empresa requerido]"}</p>
+          <h3 style="color: #6b7280;">Company Information</h3>
+          <p style="color: #6b7280;">${contractor?.companyName || "[Company name required]"}</p>
         </div>
         
         <div style="border: 2px dashed #d1d5db; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-          <h3 style="color: #6b7280;">Cliente</h3>
-          <p style="color: #6b7280;">${estimate.client?.name || "[Cliente requerido]"}</p>
+          <h3 style="color: #6b7280;">Client</h3>
+          <p style="color: #6b7280;">${estimate.client?.name || "[Client required]"}</p>
         </div>
         
         <div style="border: 2px dashed #d1d5db; padding: 20px; border-radius: 8px;">
-          <h3 style="color: #6b7280;">Materiales y Servicios</h3>
-          <p style="color: #6b7280;">${estimate.items.length > 0 ? `${estimate.items.length} materiales agregados` : "[Materiales requeridos]"}</p>
+          <h3 style="color: #6b7280;">Materials and Services</h3>
+          <p style="color: #6b7280;">${estimate.items.length > 0 ? `${estimate.items.length} materials added` : "[Materials required]"}</p>
         </div>
       </div>
     `;
@@ -2940,11 +2940,11 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   <div className="flex items-start gap-2 mt-2 p-3 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
                     <Brain className="h-4 w-4 text-purple-600 mt-0.5 flex-shrink-0" />
                     <p className="text-xs text-purple-700">
-                      <strong>Tip:</strong> Escribe una descripción básica de tu
-                      proyecto y usa <strong>"Enhance with Mervin AI"</strong>{" "}
-                      para generar automáticamente una descripción profesional
-                      completa con todos los detalles técnicos necesarios para
-                      el estimado.
+                      <strong>Tip:</strong> Write a basic description of your
+                      project and use <strong>"Enhance with Mervin AI"</strong>{" "}
+                      to automatically generate a complete professional
+                      description with all technical details needed for
+                      the estimate.
                     </p>
                   </div>
                 )}
@@ -2960,7 +2960,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
               <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <Package className="h-5 w-5" />
-                  Agregar Materiales ({estimate.items.length})
+                  Add Materials ({estimate.items.length})
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2">
                   {/* Smart Search IA - Interfaz Futurista Tony Stark */}
@@ -3197,8 +3197,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   <DialogTrigger asChild>
                     <Button size="sm" className="w-full sm:w-auto">
                       <Plus className="h-4 w-4 mr-2" />
-                      <span className="hidden sm:inline">Agregar Material</span>
-                      <span className="sm:hidden">Agregar</span>
+                      <span className="hidden sm:inline">Add Material</span>
+                      <span className="sm:hidden">Add</span>
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="max-w-4xl">
