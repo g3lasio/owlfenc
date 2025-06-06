@@ -354,14 +354,14 @@ export default function EstimatesWizardFixed() {
         // Add labor services if they exist (using 'items' for labor endpoint)
         if (result.items) {
           result.items.forEach((service: any) => {
-            // Mapear unidades de construcción reales
+            // Map real construction units
             const unitMapping: Record<string, string> = {
-              linear_ft: "ft lineal",
+              linear_ft: "linear ft",
               square_ft: "ft²",
               cubic_yard: "yd³",
-              square: "escuadra",
-              project: "proyecto",
-              per_unit: "unidad",
+              square: "square",
+              project: "project",
+              per_unit: "unit",
             };
 
             newItems.push({
@@ -371,13 +371,13 @@ export default function EstimatesWizardFixed() {
               description: service.description || "",
               quantity: service.quantity || 1,
               price: service.unitPrice || service.totalCost || 0,
-              unit: unitMapping[service.unit] || service.unit || "servicio",
+              unit: unitMapping[service.unit] || service.unit || "service",
               total:
                 service.totalCost || service.unitPrice * service.quantity || 0,
             });
           });
 
-          // Auto-guardar servicios de labor como "materiales" en el inventario para reutilización futura
+          // Auto-save labor services as "materials" in inventory for future reuse
           if (currentUser?.uid) {
             // Convertir servicios de labor a formato de material para el inventario
             const laborMaterials = result.items.map((service: any) => ({
