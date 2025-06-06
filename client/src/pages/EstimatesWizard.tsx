@@ -1773,17 +1773,17 @@ export default function EstimatesWizardFixed() {
           </div>
           
           <div style="text-align: right;">
-            <h1 style="margin: 0; color: #2563eb; font-size: 2.2em;">ESTIMADO PROFESIONAL</h1>
-            <p style="margin: 10px 0; font-size: 1.1em;"><strong>Estimado #:</strong> ${estimateNumber}</p>
-            <p style="margin: 5px 0;"><strong>Fecha:</strong> ${estimateDate}</p>
+            <h1 style="margin: 0; color: #2563eb; font-size: 2.2em;">PROFESSIONAL ESTIMATE</h1>
+            <p style="margin: 10px 0; font-size: 1.1em;"><strong>Estimate #:</strong> ${estimateNumber}</p>
+            <p style="margin: 5px 0;"><strong>Date:</strong> ${estimateDate}</p>
           </div>
         </div>
         
         <!-- Client Information -->
         <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
           <div style="flex: 1; padding-right: 20px;">
-            <h3 style="color: #2563eb; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">FACTURAR A:</h3>
-            <p style="margin: 5px 0; font-size: 1.1em; color: #000000;"><strong>${estimate.client?.name || "Cliente no especificado"}</strong></p>
+            <h3 style="color: #2563eb; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">BILL TO:</h3>
+            <p style="margin: 5px 0; font-size: 1.1em; color: #000000;"><strong>${estimate.client?.name || "Client not specified"}</strong></p>
             <p style="margin: 5px 0; color: #000000;">${estimate.client?.email || ""}</p>
             <p style="margin: 5px 0; color: #000000;">${estimate.client?.phone || ""}</p>
             <p style="margin: 5px 0; color: #000000;">${estimate.client?.address || ""}</p>
@@ -1793,7 +1793,7 @@ export default function EstimatesWizardFixed() {
 
         <!-- Project Details -->
         <div style="margin-bottom: 30px;">
-          <h3 style="color: #2563eb; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">MATERIALES Y SERVICIOS:</h3>
+          <h3 style="color: #2563eb; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">MATERIALS AND SERVICES:</h3>
           <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #2563eb; line-height: 1.6;">
             ${estimate.projectDetails.replace(/\n/g, "<br>")}
           </div>
@@ -1803,10 +1803,10 @@ export default function EstimatesWizardFixed() {
         <table style="width: 100%; border-collapse: collapse; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 30px;">
           <thead>
             <tr style="background: #2563eb; color: white;">
-              <th style="border: 1px solid #2563eb; padding: 12px; text-align: left; font-weight: bold;">Descripción</th>
-              <th style="border: 1px solid #2563eb; padding: 12px; text-align: center; font-weight: bold;">Cant.</th>
-              <th style="border: 1px solid #2563eb; padding: 12px; text-align: center; font-weight: bold;">Unidad</th>
-              <th style="border: 1px solid #2563eb; padding: 12px; text-align: right; font-weight: bold;">Precio Unit.</th>
+              <th style="border: 1px solid #2563eb; padding: 12px; text-align: left; font-weight: bold;">Description</th>
+              <th style="border: 1px solid #2563eb; padding: 12px; text-align: center; font-weight: bold;">Qty.</th>
+              <th style="border: 1px solid #2563eb; padding: 12px; text-align: center; font-weight: bold;">Unit</th>
+              <th style="border: 1px solid #2563eb; padding: 12px; text-align: right; font-weight: bold;">Unit Price</th>
               <th style="border: 1px solid #2563eb; padding: 12px; text-align: right; font-weight: bold;">Total</th>
             </tr>
           </thead>
@@ -1840,14 +1840,14 @@ export default function EstimatesWizardFixed() {
             estimate.discountAmount > 0
               ? `
             <div style="margin-bottom: 10px; font-size: 1.1em; color: #22c55e;">
-              <span style="margin-right: 40px; color: #22c55e;"><strong>Descuento ${estimate.discountName ? "(" + estimate.discountName + ")" : ""} (${estimate.discountType === "percentage" ? estimate.discountValue + "%" : "Fijo"}):</strong></span>
+              <span style="margin-right: 40px; color: #22c55e;"><strong>Discount ${estimate.discountName ? "(" + estimate.discountName + ")" : ""} (${estimate.discountType === "percentage" ? estimate.discountValue + "%" : "Fixed"}):</strong></span>
               <span style="font-weight: bold; color: #22c55e;">-$${estimate.discountAmount.toFixed(2)}</span>
             </div>
           `
               : ""
           }
           <div style="margin-bottom: 15px; font-size: 1.1em; color: #000000;">
-            <span style="margin-right: 40px; color: #000000;"><strong>Impuesto (${estimate.taxRate}%):</strong></span>
+            <span style="margin-right: 40px; color: #000000;"><strong>Tax (${estimate.taxRate}%):</strong></span>
             <span style="font-weight: bold; color: #000000;">$${estimate.tax.toFixed(2)}</span>
           </div>
           <div style="border-top: 2px solid #2563eb; padding-top: 15px; font-size: 1.3em; color: #2563eb;">
@@ -1874,8 +1874,8 @@ export default function EstimatesWizardFixed() {
     return `
       <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f9fafb; opacity: 0.7;">
         <div style="text-align: center; margin-bottom: 20px;">
-          <h2 style="color: #6b7280;">Vista Previa del Estimado</h2>
-          <p style="color: #6b7280;">Completa la información para ver el estimado final</p>
+          <h2 style="color: #6b7280;">Estimate Preview</h2>
+          <p style="color: #6b7280;">Complete the information to see the final estimate</p>
         </div>
         
         <div style="border: 2px dashed #d1d5db; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
