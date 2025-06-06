@@ -50,7 +50,7 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import AuthDiagnostic from './pages/AuthDiagnostic';
 import AppleAuthTest from './pages/AppleAuthTest';
 import { lazy } from 'react';
-import OptimizedLegalDefenseWorkflow from './pages/OptimizedLegalDefenseWorkflow';
+import CyberpunkLegalDefense from './pages/CyberpunkLegalDefense';
 
 import { Redirect } from "wouter";
 
@@ -167,7 +167,7 @@ function Router() {
         {() => <ProtectedRoute component={LegalContractEngineFixed} />}
       </Route>
       <Route path="/legal-defense">
-        {() => <ProtectedRoute component={OptimizedLegalDefenseWorkflow} />}
+        {() => <ProtectedRoute component={CyberpunkLegalDefense} />}
       </Route>
 
       <Route path="/unified-contracts">

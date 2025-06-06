@@ -20,15 +20,20 @@ import {
   Clock,
   Eye,
   Zap,
-  Award
+  Award,
+  Database,
+  Cog,
+  Lock
 } from 'lucide-react';
 
 interface WorkflowStep {
   id: string;
+  step: number;
   title: string;
   description: string;
   status: 'pending' | 'processing' | 'completed' | 'error';
   progress: number;
+  icon: React.ReactNode;
   estimatedTime?: string;
 }
 
