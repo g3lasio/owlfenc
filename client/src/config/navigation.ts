@@ -61,10 +61,10 @@ export const navigationGroups: NavigationGroup[] = [
         icon: "ri-file-list-3-line"
       },
       {
-        id: "contracts",
+        id: "legal-defense",
         label: "navigation.contractGenerator",
-        path: "/contracts",
-        icon: "ri-file-text-line"
+        path: "/legal-defense",
+        icon: "ri-shield-keyhole-line"
       },
       {
         id: "property-verifier",

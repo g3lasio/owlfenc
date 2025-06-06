@@ -156,9 +156,7 @@ function Router() {
       <Route path="/security">
         {() => <ProtectedRoute component={SecuritySettings} />}
       </Route>
-      <Route path="/contracts">
-        {() => <ProtectedRoute component={SmartContractWizard} />}
-      </Route>
+
       <Route path="/smart-contract-wizard">
         {() => <ProtectedRoute component={SmartContractWizard} />}
       </Route>
@@ -169,7 +167,7 @@ function Router() {
         {() => <ProtectedRoute component={LegalContractEngineFixed} />}
       </Route>
       <Route path="/legal-defense">
-        {() => <ProtectedRoute component={LegalContractEngineFixed} />}
+        {() => <ProtectedRoute component={OptimizedLegalDefenseWorkflow} />}
       </Route>
 
       <Route path="/unified-contracts">
