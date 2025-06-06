@@ -169,6 +169,9 @@ function Router() {
       <Route path="/legal-defense">
         {() => <ProtectedRoute component={CyberpunkLegalDefense} />}
       </Route>
+      <Route path="/cyberpunk-legal-defense">
+        {() => <ProtectedRoute component={CyberpunkLegalDefense} />}
+      </Route>
 
       <Route path="/unified-contracts">
         {() => <ProtectedRoute component={UnifiedContractManager} />}
