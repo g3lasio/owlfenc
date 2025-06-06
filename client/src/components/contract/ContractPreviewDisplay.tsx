@@ -461,17 +461,171 @@ const ContractPreviewDisplay: React.FC<ContractPreviewDisplayProps> = ({
         </CardContent>
       </Card>
 
-      {/* Action Buttons */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row gap-4">
+      {/* Final Actions: Email, Save, Download */}
+      <Card className="border-2 border-green-400/50 bg-green-900/20">
+        <CardHeader>
+          <CardTitle className="text-green-400 flex items-center">
+            <CheckCircle className="h-5 w-5 mr-2" />
+            CONTRACT READY - FINAL ACTIONS
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            
+            {/* Email Contract */}
+            <div className="bg-gray-900/50 border border-blue-400/30 rounded-lg p-4">
+              <h3 className="text-blue-400 font-semibold mb-3 flex items-center">
+                <Download className="h-4 w-4 mr-2" />
+                Send via Email
+              </h3>
+              <div className="space-y-3">
+                <input
+                  type="email"
+                  placeholder="Client email address"
+                  className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:border-blue-400 focus:outline-none"
+                  defaultValue={contract.contractData.clientEmail || ''}
+                />
+                <input
+                  type="email"
+                  placeholder="CC: Your email (optional)"
+                  className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:border-blue-400 focus:outline-none"
+                />
+                <Button 
+                  onClick={async () => {
+                    try {
+                      // Send contract via Resend
+                      const response = await fetch('/api/email/send-contract', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          contractData: contract,
+                          clientEmail: contract.contractData.clientEmail,
+                          contractHtml: contract.html
+                        })
+                      });
+                      
+                      if (response.ok) {
+                        alert('Contract sent successfully via email');
+                      } else {
+                        throw new Error('Failed to send email');
+                      }
+                    } catch (error) {
+                      alert('Failed to send contract. Please check your email settings.');
+                    }
+                  }}
+                  className="w-full bg-blue-600 hover:bg-blue-500 text-white"
+                >
+                  Send Contract Email
+                </Button>
+              </div>
+            </div>
+
+            {/* Save to History */}
+            <div className="bg-gray-900/50 border border-purple-400/30 rounded-lg p-4">
+              <h3 className="text-purple-400 font-semibold mb-3 flex items-center">
+                <FileText className="h-4 w-4 mr-2" />
+                Save to History
+              </h3>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="Contract name/reference"
+                  className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:border-purple-400 focus:outline-none"
+                  defaultValue={`${contract.contractData.clientName || 'Client'} - ${contract.contractData.projectType || 'Project'}`}
+                />
+                <div className="text-xs text-gray-400">
+                  Save this contract for future reference and tracking
+                </div>
+                <Button 
+                  onClick={async () => {
+                    try {
+                      // Save contract to history
+                      const response = await fetch('/api/contracts/save', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          contractData: contract,
+                          name: `${contract.contractData.clientName || 'Client'} - ${contract.contractData.projectType || 'Project'}`,
+                          status: 'generated'
+                        })
+                      });
+                      
+                      if (response.ok) {
+                        alert('Contract saved to history successfully');
+                      } else {
+                        throw new Error('Failed to save contract');
+                      }
+                    } catch (error) {
+                      alert('Failed to save contract to history.');
+                    }
+                  }}
+                  className="w-full bg-purple-600 hover:bg-purple-500 text-white"
+                >
+                  Save to History
+                </Button>
+              </div>
+            </div>
+
+            {/* Download PDF */}
+            <div className="bg-gray-900/50 border border-green-400/30 rounded-lg p-4">
+              <h3 className="text-green-400 font-semibold mb-3 flex items-center">
+                <Download className="h-4 w-4 mr-2" />
+                Download PDF
+              </h3>
+              <div className="space-y-3">
+                <div className="text-sm text-gray-300">
+                  <div>Client: {contract.contractData.clientName}</div>
+                  <div>Project: {contract.contractData.projectType}</div>
+                  <div>Amount: ${contract.contractData.totalAmount}</div>
+                </div>
+                <Button 
+                  onClick={async () => {
+                    try {
+                      // Generate and download PDF
+                      const response = await fetch('/api/contracts/generate-pdf', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          contractHtml: contract.html,
+                          contractData: contract.contractData,
+                          fileName: `Contract_${contract.contractData.clientName?.replace(/\s+/g, '_') || 'Client'}_${new Date().toISOString().split('T')[0]}.pdf`
+                        })
+                      });
+                      
+                      if (response.ok) {
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = `Contract_${contract.contractData.clientName?.replace(/\s+/g, '_') || 'Client'}_${new Date().toISOString().split('T')[0]}.pdf`;
+                        link.click();
+                        window.URL.revokeObjectURL(url);
+                        
+                        alert('PDF downloaded successfully');
+                      } else {
+                        throw new Error('Failed to generate PDF');
+                      }
+                    } catch (error) {
+                      alert('Failed to generate PDF. Please try again.');
+                    }
+                  }}
+                  className="w-full bg-green-600 hover:bg-green-500 text-white"
+                >
+                  Download PDF
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Original Action Buttons */}
+          <div className="flex flex-col md:flex-row gap-4 mb-4">
             <Button 
               onClick={onApprove}
               className="flex-1 bg-green-600 hover:bg-green-700"
               size="lg"
             >
               <CheckCircle className="h-5 w-5 mr-2" />
-              Aprobar y Proceder al PDF
+              Approve Contract
             </Button>
             
             <Button 
@@ -480,7 +634,7 @@ const ContractPreviewDisplay: React.FC<ContractPreviewDisplayProps> = ({
               size="lg"
             >
               <Edit className="h-5 w-5 mr-2" />
-              Editar Contrato
+              Edit Contract
             </Button>
             
             <Button 
@@ -489,14 +643,18 @@ const ContractPreviewDisplay: React.FC<ContractPreviewDisplayProps> = ({
               size="lg"
             >
               <FileText className="h-5 w-5 mr-2" />
-              Regenerar con IA
+              Regenerate with AI
             </Button>
           </div>
-          
-          <p className="text-sm text-gray-600 text-center mt-4">
-            Revise cuidadosamente las cláusulas defensivas antes de aprobar. 
-            Una vez aprobado, se generará el PDF final para envío al cliente.
-          </p>
+
+          {/* Success Message */}
+          <div className="bg-green-900/20 border border-green-400/30 rounded p-4">
+            <div className="text-green-400 font-semibold mb-2">Contract Generation Complete</div>
+            <div className="text-gray-300 text-sm">
+              Your California-compliant construction contract has been generated with all required legal protections. 
+              You can now send it to your client, save it for your records, or download a PDF copy.
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -47,6 +47,8 @@ import contractRoutes from './routes/contractRoutes';
 
 // 🛡️ LEGAL DEFENSE SYSTEM - Advanced OCR & Project Management
 import legalDefenseRoutes from './routes/legal-defense';
+import emailContractRoutes from './routes/email-contract';
+import contractManagementRoutes from './routes/contract-management';
 
 // Registrar rutas de pagos
 app.use('/api', paymentRoutes);

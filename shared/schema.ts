@@ -170,6 +170,32 @@ export const propertySearchHistory = pgTable('property_search_history', {
   searchDate: timestamp('search_date').defaultNow().notNull(),
 });
 
+// Contracts table for generated contracts
+export const contracts = pgTable('contracts', {
+  id: serial('id').primaryKey(),
+  clientName: text('client_name').notNull(),
+  clientAddress: text('client_address'),
+  clientPhone: text('client_phone'),
+  clientEmail: text('client_email'),
+  projectType: text('project_type').notNull(),
+  projectDescription: text('project_description'),
+  projectLocation: text('project_location'),
+  contractorName: text('contractor_name'),
+  contractorAddress: text('contractor_address'),
+  contractorPhone: text('contractor_phone'),
+  contractorEmail: text('contractor_email'),
+  contractorLicense: text('contractor_license'),
+  totalAmount: text('total_amount'),
+  startDate: timestamp('start_date'),
+  completionDate: timestamp('completion_date'),
+  html: text('html').notNull(),
+  status: text('status').notNull().default('draft'),
+  isComplete: boolean('is_complete').notNull().default(false),
+  missingFields: jsonb('missing_fields'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
 export const estimates = pgTable('estimates', {
   id: text('id').primaryKey(),
   estimateNumber: varchar('estimate_number', { length: 50 }).notNull(),
