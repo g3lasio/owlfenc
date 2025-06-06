@@ -3784,8 +3784,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       </Button>
 
                       <Button
-                        {/* onClick={downloadPDF} */}
-                      onClick={handleDownload}
+                        onClick={handleDownload}
                         disabled={
                           !estimate.client || estimate.items.length === 0
                         }
