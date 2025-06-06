@@ -132,6 +132,9 @@ Analyze this document thoroughly and extract all relevant project data:
     const responseText = response.content[0].type === 'text' ? response.content[0].text : '';
     
     // Parse the JSON response from Claude (remove markdown formatting if present)
+    console.log('🔍 Raw Claude response length:', responseText.length);
+    console.log('🔍 Raw Claude response preview:', responseText.substring(0, 500));
+    
     let extractedData;
     try {
       let cleanedResponse = responseText.trim();
@@ -139,11 +142,15 @@ Analyze this document thoroughly and extract all relevant project data:
       // Remove markdown code block formatting if present
       if (cleanedResponse.startsWith('```json')) {
         cleanedResponse = cleanedResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+        console.log('✅ Removed JSON markdown formatting');
       } else if (cleanedResponse.startsWith('```')) {
         cleanedResponse = cleanedResponse.replace(/^```\s*/, '').replace(/\s*```$/, '');
+        console.log('✅ Removed code block formatting');
       }
       
+      console.log('🔧 Cleaned response preview:', cleanedResponse.substring(0, 500));
       extractedData = JSON.parse(cleanedResponse);
+      console.log('✅ Successfully parsed JSON from Claude');
     } catch (parseError) {
       console.error('Failed to parse Claude response:', responseText);
       return res.status(500).json({ 
@@ -176,10 +183,10 @@ Analyze this document thoroughly and extract all relevant project data:
         totalPrice: z.number()
       })),
       financials: z.object({
-        subtotal: z.number(),
-        tax: z.number(),
-        taxRate: z.number(),
-        total: z.number()
+        subtotal: z.number().nullable().default(0),
+        tax: z.number().nullable().default(0),
+        taxRate: z.number().nullable().default(0),
+        total: z.number().nullable().default(0)
       }),
       paymentTerms: z.string().nullable(),
       specifications: z.string().nullable(),
@@ -190,7 +197,33 @@ Analyze this document thoroughly and extract all relevant project data:
       })
     });
 
-    const validatedData = validationSchema.parse(extractedData);
+    console.log('🔍 Extracted data structure:', JSON.stringify(extractedData, null, 2));
+    console.log('🔧 Starting validation process...');
+    
+    // Fix financial data if it contains null values before validation
+    if (extractedData.financials) {
+      console.log('🔧 Checking financial data:', extractedData.financials);
+      extractedData.financials.subtotal = extractedData.financials.subtotal || 0;
+      extractedData.financials.tax = extractedData.financials.tax || 0;
+      extractedData.financials.taxRate = extractedData.financials.taxRate || 0;
+      extractedData.financials.total = extractedData.financials.total || 0;
+      console.log('✅ Fixed financial data with defaults');
+    }
+
+    const validationResult = validationSchema.safeParse(extractedData);
+    
+    if (!validationResult.success) {
+      console.error('❌ Validation failed:', validationResult.error.errors);
+      return res.json({
+        success: false,
+        error: 'Validation failed',
+        validationErrors: validationResult.error.errors,
+        extractedData: extractedData
+      });
+    }
+
+    const validatedData = validationResult.data;
+    console.log('✅ Validation successful');
 
     // Check for critical missing fields
     const criticalFields = ['clientInfo.name', 'projectDetails.type', 'financials.total'];
@@ -202,6 +235,8 @@ Analyze this document thoroughly and extract all relevant project data:
       }
       return !value;
     });
+
+    console.log('🔍 Missing critical fields:', missingCritical);
 
     res.json({
       success: true,
