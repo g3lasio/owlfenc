@@ -1035,7 +1035,134 @@ export default function CyberpunkLegalDefense() {
               
               <CardContent className="px-4 md:px-8 pb-6 md:pb-8">
                 <div className="space-y-6">
-                  {/* Editable Client Information */}
+                  {/* Contractor Information */}
+                  <div className="bg-gray-900/50 border border-blue-400/30 rounded-lg p-4">
+                    <h3 className="text-blue-400 font-bold mb-4 flex items-center">
+                      <User className="h-4 w-4 mr-2" />
+                      CONTRACTOR INFORMATION
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-gray-400 text-sm">Company Name *</label>
+                        <input
+                          type="text"
+                          placeholder="Enter contractor company name"
+                          className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-blue-400 focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-gray-400 text-sm">Contractor Name *</label>
+                        <input
+                          type="text"
+                          placeholder="Enter contractor full name"
+                          className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-blue-400 focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-gray-400 text-sm">Business Address *</label>
+                        <input
+                          type="text"
+                          placeholder="Enter business address"
+                          className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-blue-400 focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-gray-400 text-sm">Phone Number *</label>
+                        <input
+                          type="tel"
+                          placeholder="(555) 123-4567"
+                          className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-blue-400 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* License Information */}
+                  <div className="bg-gray-900/50 border border-yellow-400/30 rounded-lg p-4">
+                    <h3 className="text-yellow-400 font-bold mb-4 flex items-center">
+                      <Shield className="h-4 w-4 mr-2" />
+                      CONTRACTOR LICENSE
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-3">
+                        <input type="checkbox" id="hasLicense" className="text-yellow-400" />
+                        <label htmlFor="hasLicense" className="text-gray-300">Contractor has valid California license</label>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-gray-400 text-sm">License Number</label>
+                          <input
+                            type="text"
+                            placeholder="Enter CA license number"
+                            className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-400 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-gray-400 text-sm">License Classification</label>
+                          <input
+                            type="text"
+                            placeholder="e.g., C-13 Fencing"
+                            className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-400 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                      <div className="bg-yellow-900/20 border border-yellow-400/30 rounded p-3">
+                        <div className="text-yellow-400 text-xs font-bold mb-1">CALIFORNIA COMPLIANCE NOTICE:</div>
+                        <div className="text-gray-300 text-xs">
+                          If no license: "This contractor is not licensed under the Contractors' State License Law (Chapter 9 (commencing with Section 7000) of Division 3 of the Business and Professions Code)."
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Insurance Information */}
+                  <div className="bg-gray-900/50 border border-purple-400/30 rounded-lg p-4">
+                    <h3 className="text-purple-400 font-bold mb-4 flex items-center">
+                      <Shield className="h-4 w-4 mr-2" />
+                      INSURANCE COVERAGE
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-3">
+                        <input type="checkbox" id="hasInsurance" className="text-purple-400" />
+                        <label htmlFor="hasInsurance" className="text-gray-300">Contractor carries liability insurance</label>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-gray-400 text-sm">Insurance Company</label>
+                          <input
+                            type="text"
+                            placeholder="Enter insurance provider"
+                            className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-purple-400 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-gray-400 text-sm">Policy Number</label>
+                          <input
+                            type="text"
+                            placeholder="Enter policy number"
+                            className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-purple-400 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-gray-400 text-sm">Coverage Amount</label>
+                          <input
+                            type="text"
+                            placeholder="e.g., $1,000,000"
+                            className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-purple-400 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-gray-400 text-sm">Expiration Date</label>
+                          <input
+                            type="date"
+                            className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-purple-400 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Client Information */}
                   <div className="bg-gray-900/50 border border-green-400/30 rounded-lg p-4">
                     <h3 className="text-green-400 font-bold mb-4 flex items-center">
                       <User className="h-4 w-4 mr-2" />
@@ -1048,16 +1175,32 @@ export default function CyberpunkLegalDefense() {
                           type="text"
                           value={extractedData.clientInfo?.name || ''}
                           className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-green-400 focus:outline-none"
-                          readOnly
                         />
                       </div>
                       <div>
-                        <label className="text-gray-400 text-sm">Address</label>
+                        <label className="text-gray-400 text-sm">Client Address</label>
                         <input
                           type="text"
                           value={extractedData.clientInfo?.address || extractedData.projectDetails?.location || ''}
                           className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-green-400 focus:outline-none"
-                          readOnly
+                        />
+                      </div>
+                      <div>
+                        <label className="text-gray-400 text-sm">Email</label>
+                        <input
+                          type="email"
+                          value={extractedData.clientInfo?.email || ''}
+                          placeholder="client@email.com"
+                          className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-green-400 focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-gray-400 text-sm">Phone</label>
+                        <input
+                          type="tel"
+                          value={extractedData.clientInfo?.phone || ''}
+                          placeholder="(555) 123-4567"
+                          className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-green-400 focus:outline-none"
                         />
                       </div>
                     </div>
@@ -1090,28 +1233,175 @@ export default function CyberpunkLegalDefense() {
                     </div>
                   </div>
 
-                  {/* Financial Summary */}
+                  {/* Payment Terms */}
                   <div className="bg-gray-900/50 border border-green-400/30 rounded-lg p-4">
                     <h3 className="text-green-400 font-bold mb-4 flex items-center">
                       <DollarSign className="h-4 w-4 mr-2" />
-                      FINANCIAL SUMMARY
+                      PAYMENT TERMS
                     </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                      <div className="bg-gray-800/50 rounded p-3">
-                        <div className="text-gray-400 text-xs">SUBTOTAL</div>
-                        <div className="text-green-400 font-mono text-lg">${extractedData.financials?.subtotal?.toFixed(2) || '0.00'}</div>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                        <div className="bg-gray-800/50 rounded p-3">
+                          <div className="text-gray-400 text-xs">SUBTOTAL</div>
+                          <div className="text-green-400 font-mono text-lg">${extractedData.financials?.subtotal?.toFixed(2) || '0.00'}</div>
+                        </div>
+                        <div className="bg-gray-800/50 rounded p-3">
+                          <div className="text-gray-400 text-xs">TAX</div>
+                          <div className="text-green-400 font-mono text-lg">${extractedData.financials?.tax?.toFixed(2) || '0.00'}</div>
+                        </div>
+                        <div className="bg-gray-800/50 rounded p-3">
+                          <div className="text-gray-400 text-xs">MATERIALS</div>
+                          <div className="text-green-400 font-mono text-lg">{extractedData.materials?.length || 0}</div>
+                        </div>
+                        <div className="bg-gray-800/50 rounded p-3 border border-green-400/50">
+                          <div className="text-gray-400 text-xs">TOTAL</div>
+                          <div className="text-green-400 font-mono text-xl font-bold">${extractedData.financials?.total?.toFixed(2) || '0.00'}</div>
+                        </div>
                       </div>
-                      <div className="bg-gray-800/50 rounded p-3">
-                        <div className="text-gray-400 text-xs">TAX</div>
-                        <div className="text-green-400 font-mono text-lg">${extractedData.financials?.tax?.toFixed(2) || '0.00'}</div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="text-gray-400 text-sm">Down Payment</label>
+                          <input
+                            type="text"
+                            placeholder={`30% (${((extractedData.financials?.total || 0) * 0.3).toFixed(0)})`}
+                            className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-green-400 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-gray-400 text-sm">Progress Payment</label>
+                          <input
+                            type="text"
+                            placeholder={`40% (${((extractedData.financials?.total || 0) * 0.4).toFixed(0)})`}
+                            className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-green-400 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-gray-400 text-sm">Final Payment</label>
+                          <input
+                            type="text"
+                            placeholder={`30% (${((extractedData.financials?.total || 0) * 0.3).toFixed(0)})`}
+                            className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-green-400 focus:outline-none"
+                          />
+                        </div>
                       </div>
-                      <div className="bg-gray-800/50 rounded p-3">
-                        <div className="text-gray-400 text-xs">MATERIALS</div>
-                        <div className="text-green-400 font-mono text-lg">{extractedData.materials?.length || 0}</div>
+                    </div>
+                  </div>
+
+                  {/* Project Timeline */}
+                  <div className="bg-gray-900/50 border border-cyan-400/30 rounded-lg p-4">
+                    <h3 className="text-cyan-400 font-bold mb-4 flex items-center">
+                      <Calendar className="h-4 w-4 mr-2" />
+                      PROJECT TIMELINE
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="text-gray-400 text-sm">Start Date</label>
+                        <input
+                          type="date"
+                          className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-cyan-400 focus:outline-none"
+                        />
                       </div>
-                      <div className="bg-gray-800/50 rounded p-3 border border-green-400/50">
-                        <div className="text-gray-400 text-xs">TOTAL</div>
-                        <div className="text-green-400 font-mono text-xl font-bold">${extractedData.financials?.total?.toFixed(2) || '0.00'}</div>
+                      <div>
+                        <label className="text-gray-400 text-sm">Completion Date</label>
+                        <input
+                          type="date"
+                          className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-cyan-400 focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-gray-400 text-sm">Estimated Duration</label>
+                        <input
+                          type="text"
+                          placeholder="e.g., 5-7 business days"
+                          className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-cyan-400 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Permits and Compliance */}
+                  <div className="bg-gray-900/50 border border-orange-400/30 rounded-lg p-4">
+                    <h3 className="text-orange-400 font-bold mb-4 flex items-center">
+                      <FileText className="h-4 w-4 mr-2" />
+                      PERMITS & COMPLIANCE
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-3">
+                        <input type="checkbox" id="permitsRequired" className="text-orange-400" />
+                        <label htmlFor="permitsRequired" className="text-gray-300">Building permits required for this project</label>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-gray-400 text-sm">Permit Responsibility</label>
+                          <select className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-orange-400 focus:outline-none">
+                            <option>Contractor obtains permits</option>
+                            <option>Owner obtains permits</option>
+                            <option>No permits required</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-gray-400 text-sm">Permit Numbers</label>
+                          <input
+                            type="text"
+                            placeholder="Enter permit numbers if available"
+                            className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-orange-400 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Warranties and Guarantees */}
+                  <div className="bg-gray-900/50 border border-purple-400/30 rounded-lg p-4">
+                    <h3 className="text-purple-400 font-bold mb-4 flex items-center">
+                      <Shield className="h-4 w-4 mr-2" />
+                      WARRANTIES & GUARANTEES
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-gray-400 text-sm">Workmanship Warranty</label>
+                          <select className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-purple-400 focus:outline-none">
+                            <option>1 Year</option>
+                            <option>2 Years</option>
+                            <option>3 Years</option>
+                            <option>No warranty</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-gray-400 text-sm">Materials Warranty</label>
+                          <select className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-purple-400 focus:outline-none">
+                            <option>Manufacturer warranty only</option>
+                            <option>1 Year contractor warranty</option>
+                            <option>2 Years contractor warranty</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* California Legal Notices */}
+                  <div className="bg-gray-900/50 border border-red-400/30 rounded-lg p-4">
+                    <h3 className="text-red-400 font-bold mb-4 flex items-center">
+                      <AlertTriangle className="h-4 w-4 mr-2" />
+                      CALIFORNIA LEGAL NOTICES
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-3">
+                        <input type="checkbox" defaultChecked id="lienNotice" className="text-red-400" />
+                        <label htmlFor="lienNotice" className="text-gray-300">Include Preliminary 20-Day Lien Notice</label>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <input type="checkbox" defaultChecked id="cancelNotice" className="text-red-400" />
+                        <label htmlFor="cancelNotice" className="text-gray-300">Include 3-Day Right to Cancel Notice</label>
+                      </div>
+                      <div className="bg-red-900/20 border border-red-400/30 rounded p-3">
+                        <div className="text-red-400 text-xs font-bold mb-2">MANDATORY NOTICES:</div>
+                        <div className="text-gray-300 text-xs space-y-1">
+                          <div>• Three-Day Right to Cancel: "You, the buyer, have the right to cancel this contract within three business days."</div>
+                          <div>• Preliminary Notice: "As required by the Mechanics Lien Law of the state of California..."</div>
+                          <div>• License Notice: Required disclosure of contractor license status</div>
+                        </div>
                       </div>
                     </div>
                   </div>
