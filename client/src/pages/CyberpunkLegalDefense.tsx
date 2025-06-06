@@ -214,7 +214,8 @@ export default function CyberpunkLegalDefense() {
         console.log('OCR Result:', { data, hasCriticalMissing, missingCritical, canProceed });
         
         setExtractedData(data);
-        setCurrentStep(2); // Always advance to step 2 with successful extraction
+        setCurrentStep(2);
+        setCurrentPhase('arsenal-builder'); // Change phase to show data review interface
 
         if (hasCriticalMissing && missingCritical?.length > 0) {
           toast({
@@ -227,8 +228,6 @@ export default function CyberpunkLegalDefense() {
             description: `Data extracted with ${data.extractionQuality?.confidence || 85}% confidence. Review data below.`,
           });
         }
-        
-        // Don't auto-continue - let user review data first
       }
     } catch (error) {
       console.error('OCR processing error:', error);
