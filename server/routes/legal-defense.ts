@@ -131,10 +131,19 @@ Analyze this document thoroughly and extract all relevant project data:
 
     const responseText = response.content[0].type === 'text' ? response.content[0].text : '';
     
-    // Parse the JSON response from Claude
+    // Parse the JSON response from Claude (remove markdown formatting if present)
     let extractedData;
     try {
-      extractedData = JSON.parse(responseText);
+      let cleanedResponse = responseText.trim();
+      
+      // Remove markdown code block formatting if present
+      if (cleanedResponse.startsWith('```json')) {
+        cleanedResponse = cleanedResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+      } else if (cleanedResponse.startsWith('```')) {
+        cleanedResponse = cleanedResponse.replace(/^```\s*/, '').replace(/\s*```$/, '');
+      }
+      
+      extractedData = JSON.parse(cleanedResponse);
     } catch (parseError) {
       console.error('Failed to parse Claude response:', responseText);
       return res.status(500).json({ 
@@ -187,9 +196,9 @@ Analyze this document thoroughly and extract all relevant project data:
     const criticalFields = ['clientInfo.name', 'projectDetails.type', 'financials.total'];
     const missingCritical = criticalFields.filter(field => {
       const keys = field.split('.');
-      let value = validatedData;
+      let value: any = validatedData;
       for (const key of keys) {
-        value = value[key];
+        value = value?.[key];
       }
       return !value;
     });
@@ -202,10 +211,12 @@ Analyze this document thoroughly and extract all relevant project data:
       canProceed: validatedData.extractionQuality.confidence >= 70 && missingCritical.length === 0
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('PDF extraction error:', error);
     
-    if (error.message?.includes('API key')) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    if (errorMessage.includes('API key')) {
       return res.status(500).json({ 
         error: 'Anthropic API authentication failed',
         message: 'Please verify ANTHROPIC_API_KEY is correctly configured'
@@ -214,7 +225,7 @@ Analyze this document thoroughly and extract all relevant project data:
     
     res.status(500).json({ 
       error: 'PDF extraction failed',
-      message: error.message 
+      message: errorMessage 
     });
   }
 });
@@ -235,11 +246,12 @@ router.get('/approved-projects', async (req, res) => {
       projects: approvedProjects
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching approved projects:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     res.status(500).json({ 
       error: 'Failed to fetch approved projects',
-      message: error.message 
+      message: errorMessage 
     });
   }
 });
