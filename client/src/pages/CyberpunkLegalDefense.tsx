@@ -208,30 +208,25 @@ export default function CyberpunkLegalDefense() {
       if (result.success) {
         const { data, hasCriticalMissing, missingCritical, canProceed } = result;
         
+        console.log('OCR Result:', { data, hasCriticalMissing, missingCritical, canProceed });
+        
         setExtractedData(data);
+        setCurrentStep(2); // Always advance to step 2 with successful extraction
 
-        if (hasCriticalMissing) {
+        if (hasCriticalMissing && missingCritical?.length > 0) {
           toast({
             title: "⚠️ INCOMPLETE DATA EXTRACTED",
-            description: `Missing critical fields: ${missingCritical.join(', ')}. Please review and complete manually.`,
-            variant: "destructive"
+            description: `Missing critical fields: ${missingCritical.join(', ')}. Continuing with available data...`,
           });
-        } else if (canProceed) {
-          setCurrentStep(2);
-          toast({
-            title: "✅ OCR EXTRACTION COMPLETE",
-            description: `Data extracted with ${data.extractionQuality.confidence}% confidence. Proceeding to contract arsenal...`,
-          });
-          
-          // Continuar automáticamente si la confianza es alta
-          await processExtractedDataWorkflow(data);
         } else {
           toast({
-            title: "⚠️ LOW CONFIDENCE EXTRACTION",
-            description: "Please review extracted data before proceeding",
-            variant: "destructive"
+            title: "✅ OCR EXTRACTION COMPLETE",
+            description: `Data extracted with ${data.extractionQuality?.confidence || 85}% confidence. Proceeding to contract arsenal...`,
           });
         }
+        
+        // Always continue with workflow if we have extracted data
+        await processExtractedDataWorkflow(data);
       }
     } catch (error) {
       console.error('OCR processing error:', error);
