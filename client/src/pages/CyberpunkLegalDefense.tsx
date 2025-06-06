@@ -577,102 +577,134 @@ export default function CyberpunkLegalDefense() {
 
         {/* Horizontal Stepper HUD */}
         <div className="mb-8 md:mb-12 px-4">
-          {/* Mobile: Vertical Stepper */}
+          {/* Mobile: Vertical Icon Cards */}
           <div className="md:hidden space-y-4 mb-8">
             {workflowSteps.map((step, index) => (
-              <div key={step.id} className="flex items-center space-x-4">
-                {/* Step Circle */}
-                <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center relative flex-shrink-0 ${
-                  step.status === 'completed' ? 'border-green-400 bg-green-400/20' :
-                  step.status === 'processing' ? 'border-cyan-400 bg-cyan-400/20 animate-pulse' :
-                  step.step === currentStep ? 'border-cyan-400 bg-cyan-400/10' :
-                  'border-gray-600 bg-gray-800/30'
-                }`}>
-                  {step.status === 'completed' ? (
-                    <CheckCircle className="h-5 w-5 text-green-400" />
-                  ) : (
-                    <span className={`text-xs font-bold ${
-                      step.status === 'processing' ? 'text-cyan-400' :
-                      step.step === currentStep ? 'text-cyan-400' :
-                      'text-gray-500'
-                    }`}>
-                      {step.step}
-                    </span>
-                  )}
-                </div>
-
-                {/* Step Label */}
-                <div className="flex-1 min-w-0">
-                  <p className={`text-xs font-mono truncate ${
-                    step.status === 'completed' ? 'text-green-400' :
-                    step.status === 'processing' ? 'text-cyan-400' :
-                    step.step === currentStep ? 'text-cyan-400' :
-                    'text-gray-500'
-                  }`}>
-                    {step.title}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Desktop: Horizontal Stepper */}
-          <div className="hidden md:block">
-            <div className="flex items-center justify-center space-x-4 lg:space-x-8 mb-8">
-              {workflowSteps.map((step, index) => (
-                <div key={step.id} className="flex items-center">
-                  {/* Step Circle */}
-                  <div className={`w-12 h-12 rounded-full border-2 flex items-center justify-center relative ${
+              <div key={step.id} className={`p-4 rounded-lg border-2 transition-all duration-300 ${
+                step.status === 'completed' ? 'border-green-400 bg-green-400/10 shadow-green-400/20 shadow-lg' :
+                step.status === 'processing' ? 'border-cyan-400 bg-cyan-400/10 shadow-cyan-400/50 shadow-lg' :
+                step.step === currentStep ? 'border-cyan-400 bg-cyan-400/5' :
+                'border-gray-600 bg-gray-800/30'
+              }`}>
+                <div className="flex items-center space-x-4">
+                  {/* Step Icon Circle */}
+                  <div className={`w-16 h-16 rounded-full border-2 flex items-center justify-center relative flex-shrink-0 ${
                     step.status === 'completed' ? 'border-green-400 bg-green-400/20' :
-                    step.status === 'processing' ? 'border-cyan-400 bg-cyan-400/20 animate-pulse' :
+                    step.status === 'processing' ? 'border-cyan-400 bg-cyan-400/20' :
                     step.step === currentStep ? 'border-cyan-400 bg-cyan-400/10' :
                     'border-gray-600 bg-gray-800/30'
                   }`}>
                     {step.status === 'completed' ? (
-                      <CheckCircle className="h-6 w-6 text-green-400" />
+                      <div className="relative">
+                        <div className="text-gray-400 opacity-30 text-2xl">
+                          {step.icon}
+                        </div>
+                        <CheckCircle className="h-8 w-8 text-green-400 absolute inset-0 m-auto" />
+                      </div>
                     ) : (
-                      <span className={`text-sm font-bold ${
+                      <div className={`text-2xl ${
                         step.status === 'processing' ? 'text-cyan-400' :
                         step.step === currentStep ? 'text-cyan-400' :
                         'text-gray-500'
                       }`}>
-                        {step.step}
-                      </span>
+                        {step.icon}
+                      </div>
                     )}
                     
                     {step.status === 'processing' && (
-                      <div className="absolute inset-0 rounded-full border-2 border-cyan-400 animate-ping"></div>
+                      <div className="absolute inset-0 rounded-full border-2 border-cyan-400 animate-ping opacity-75"></div>
                     )}
                   </div>
 
-                  {/* Connection Line */}
-                  {index < workflowSteps.length - 1 && (
-                    <div className={`w-8 lg:w-16 h-0.5 mx-2 lg:mx-4 ${
-                      step.status === 'completed' ? 'bg-green-400' :
-                      step.status === 'processing' ? 'bg-cyan-400' :
-                      'bg-gray-600'
-                    }`}></div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Step Labels */}
-            <div className="flex justify-center">
-              <div className="grid grid-cols-4 gap-4 lg:gap-16 text-center max-w-4xl">
-                {workflowSteps.map((step) => (
-                  <div key={step.id} className="text-xs">
-                    <p className={`font-mono ${
+                  {/* Step Label */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className={`font-bold text-lg font-mono ${
                       step.status === 'completed' ? 'text-green-400' :
                       step.status === 'processing' ? 'text-cyan-400' :
                       step.step === currentStep ? 'text-cyan-400' :
                       'text-gray-500'
                     }`}>
                       {step.title.toUpperCase()}
-                    </p>
+                    </h3>
+                    <p className="text-sm text-gray-400 mt-1">{step.estimatedTime}</p>
                   </div>
-                ))}
+                </div>
               </div>
+            ))}
+          </div>
+
+          {/* Desktop: Horizontal Icon Stepper */}
+          <div className="hidden md:block">
+            <div className="flex items-center justify-center space-x-8 lg:space-x-16 mb-8">
+              {workflowSteps.map((step, index) => (
+                <div key={step.id} className="flex items-center">
+                  {/* Step Icon Circle */}
+                  <div className="flex flex-col items-center">
+                    <div className={`w-20 h-20 lg:w-24 lg:h-24 rounded-full border-4 flex items-center justify-center relative transition-all duration-500 ${
+                      step.status === 'completed' ? 'border-green-400 bg-green-400/20 shadow-green-400/50 shadow-lg' :
+                      step.status === 'processing' ? 'border-cyan-400 bg-cyan-400/20 shadow-cyan-400/50 shadow-xl' :
+                      step.step === currentStep ? 'border-cyan-400 bg-cyan-400/10 shadow-cyan-400/30 shadow-lg' :
+                      'border-gray-600 bg-gray-800/30'
+                    }`}>
+                      {step.status === 'completed' ? (
+                        <div className="relative">
+                          <div className="text-gray-400 opacity-30 text-3xl lg:text-4xl">
+                            {step.icon}
+                          </div>
+                          <CheckCircle className="h-8 w-8 lg:h-10 lg:w-10 text-green-400 absolute inset-0 m-auto" />
+                        </div>
+                      ) : (
+                        <div className={`transform transition-all duration-300 text-3xl lg:text-4xl ${
+                          step.status === 'processing' ? 'text-cyan-400 scale-110' :
+                          step.step === currentStep ? 'text-cyan-400 scale-105' :
+                          'text-gray-500 scale-100'
+                        }`}>
+                          {step.icon}
+                        </div>
+                      )}
+                      
+                      {step.status === 'processing' && (
+                        <>
+                          <div className="absolute inset-0 rounded-full border-4 border-cyan-400 animate-ping opacity-75"></div>
+                          <div className="absolute inset-0 rounded-full border-2 border-cyan-400 animate-pulse opacity-50"></div>
+                        </>
+                      )}
+                      
+                      {step.step === currentStep && step.status !== 'processing' && step.status !== 'completed' && (
+                        <div className="absolute inset-0 rounded-full border-2 border-cyan-400 animate-pulse opacity-50"></div>
+                      )}
+                    </div>
+                    
+                    {/* Step Title */}
+                    <div className="mt-4 text-center">
+                      <h3 className={`font-bold text-sm lg:text-base font-mono transition-colors duration-300 max-w-32 ${
+                        step.status === 'completed' ? 'text-green-400' :
+                        step.status === 'processing' ? 'text-cyan-400' :
+                        step.step === currentStep ? 'text-cyan-400' :
+                        'text-gray-500'
+                      }`}>
+                        {step.title.toUpperCase()}
+                      </h3>
+                      <p className="text-xs text-gray-400 mt-1">{step.estimatedTime}</p>
+                    </div>
+                  </div>
+
+                  {/* Connection Line */}
+                  {index < workflowSteps.length - 1 && (
+                    <div className="flex items-center mx-4 lg:mx-8 -mt-8">
+                      <div className={`w-12 lg:w-20 h-1 transition-all duration-500 ${
+                        step.status === 'completed' ? 'bg-gradient-to-r from-green-400 to-green-300' :
+                        step.status === 'processing' ? 'bg-gradient-to-r from-cyan-400 to-cyan-300 animate-pulse' :
+                        'bg-gray-600'
+                      }`}>
+                        {step.status === 'processing' && (
+                          <div className="h-full bg-cyan-400 animate-pulse"></div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         </div>
