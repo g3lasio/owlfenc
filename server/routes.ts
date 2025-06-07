@@ -771,8 +771,18 @@ ${extractedText}`,
         additionalDetails: project.additionalDetails || project.notes || '',
         materialsList: project.materialsList || project.materials || [],
         laborHours: project.laborHours || 0,
-        totalPrice: project.totalPrice || project.totalAmount || project.grandTotal || project.total || project.estimateAmount || project.amount || project.cost || 0,
-        totalAmount: project.totalPrice || project.totalAmount || project.grandTotal || project.total || project.estimateAmount || project.amount || project.cost || 0,
+        totalPrice: (() => {
+          const rawAmount = project.totalPrice || project.totalAmount || project.grandTotal || project.total || project.estimateAmount || project.amount || project.cost || 0;
+          const numAmount = Number(rawAmount);
+          // If amount is likely in cents (over 100,000), convert to dollars
+          return numAmount > 100000 ? Math.round(numAmount / 100) : numAmount;
+        })(),
+        totalAmount: (() => {
+          const rawAmount = project.totalPrice || project.totalAmount || project.grandTotal || project.total || project.estimateAmount || project.amount || project.cost || 0;
+          const numAmount = Number(rawAmount);
+          // If amount is likely in cents (over 100,000), convert to dollars
+          return numAmount > 100000 ? Math.round(numAmount / 100) : numAmount;
+        })(),
         status: project.status || 'draft',
         paymentStatus: project.paymentStatus || 'pending',
         paymentDetails: project.paymentDetails || {},
