@@ -111,16 +111,11 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Add optimized routes first
-  
   // Add OCR simplified routes
   app.use('/api/ocr', ocrSimpleRoutes);
   
   // Add email contract routes
   app.use('/api/email', emailContractRoutes);
-  
-  // Add contract management routes
-  app.use('/api/contracts', contractManagementRoutes);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -140,18 +135,16 @@ app.use((req, res, next) => {
     console.log('📊 Fixed: Analysis time 5+ min → 2 seconds');
     console.log('🎯 Fixed: Data accuracy OWL FENC LLC, $6,679.30');
     console.log('📄 Fixed: Complete professional contract preview');
-    
-    // Setup vite after server is listening to avoid WebSocket conflicts
-    if (app.get("env") === "development") {
-      try {
-        await setupVite(app, server);
-      } catch (error) {
-        console.error('Vite setup error (non-critical):', error instanceof Error ? error.message : String(error));
-      }
-    } else {
-      serveStatic(app);
-    }
   });
+  
+  // Setup Vite middleware after server starts
+  try {
+    await setupVite(app, server);
+  } catch (error) {
+    console.error('Vite setup error:', error instanceof Error ? error.message : String(error));
+    // Fallback to static serving if Vite fails
+    serveStatic(app);
+  }
   
   server.on('error', (e: any) => {
     if (e.code === 'EADDRINUSE') {

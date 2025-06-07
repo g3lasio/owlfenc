@@ -752,12 +752,11 @@ ${extractedText}`,
         return res.status(400).json({ error: "userId is required" });
       }
 
-      // Importar getProjects de Firebase dinámicamente para acceder a los 27 proyectos
-      const firebaseModule = await import('../client/src/lib/firebase.ts');
-      const { getProjects } = firebaseModule;
+      // Importar el servicio Firebase Admin para acceso server-side
+      const { getProjectsFromFirestore } = await import('./firebase-admin');
       
-      // Obtener todos los proyectos desde Firebase (misma fuente que /projects)
-      const firebaseProjects = await getProjects();
+      // Obtener todos los proyectos desde Firestore usando Admin SDK
+      const firebaseProjects = await getProjectsFromFirestore();
       
       console.log(`📊 Proyectos encontrados en Firebase: ${firebaseProjects.length}`);
 
