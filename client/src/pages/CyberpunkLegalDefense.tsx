@@ -932,53 +932,66 @@ export default function CyberpunkLegalDefense() {
                     </div>
                   )}
 
-                  {/* Select Project Content */}
+                  {/* Select Project Content - Compact Dropdown */}
                   {dataInputMethod === 'select' && (
                     <div className="animate-in fade-in-0 slide-in-from-right-5 duration-300">
-                      <div className="space-y-3">
-                        {approvedProjects.map((project) => (
-                          <div
-                            key={project.id}
-                            onClick={() => setSelectedProject(project)}
-                            className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-300 ${
-                              selectedProject?.id === project.id
-                                ? 'border-cyan-400 bg-cyan-400/10 shadow-lg shadow-cyan-400/25'
-                                : 'border-gray-600 bg-gray-800/30 hover:border-cyan-400/50 hover:bg-gray-800/50'
-                            }`}
+                      <div className="space-y-4">
+                        {/* Compact Project Selector */}
+                        <div className="bg-gray-900/50 border border-cyan-400/30 rounded-lg p-4">
+                          <label className="block text-cyan-400 text-sm font-bold mb-2">
+                            SELECT PROJECT ({approvedProjects.length} found)
+                          </label>
+                          <select 
+                            className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:border-cyan-400 focus:outline-none"
+                            value={selectedProject?.id || ''}
+                            onChange={(e) => {
+                              const project = approvedProjects.find(p => p.id === e.target.value);
+                              if (project) {
+                                setSelectedProject(project);
+                                console.log('Selected project with full data:', project);
+                              }
+                            }}
                           >
-                            <div className="flex justify-between items-start mb-2">
-                              <h4 className={`font-bold text-sm ${
-                                selectedProject?.id === project.id ? 'text-cyan-400' : 'text-white'
-                              }`}>
-                                {project.clientName}
-                              </h4>
-                              <Badge className={`text-xs ${
-                                selectedProject?.id === project.id
-                                  ? 'bg-cyan-400/20 text-cyan-400 border-cyan-400'
-                                  : 'bg-green-400/20 text-green-400 border-green-400'
-                              }`}>
-                                APPROVED
-                              </Badge>
-                            </div>
-                            
-                            <p className="text-gray-300 text-xs mb-2">{project.projectType}</p>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs text-gray-400">
-                              <div className="flex items-center space-x-1">
-                                <MapPin className="h-3 w-3" />
-                                <span className="truncate">{project.address}</span>
+                            <option value="">Choose a saved project...</option>
+                            {approvedProjects.map((project) => (
+                              <option key={project.id} value={project.id}>
+                                {project.clientName} - {project.projectType} - ${(project.totalAmount || project.totalPrice || 0).toLocaleString()}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Selected Project Preview */}
+                        {selectedProject && (
+                          <div className="bg-cyan-900/20 border border-cyan-400/50 rounded-lg p-4">
+                            <h4 className="text-cyan-400 font-bold mb-3 flex items-center">
+                              <Shield className="h-4 w-4 mr-2" />
+                              SELECTED PROJECT DATA
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                              <div>
+                                <span className="text-gray-400">Client:</span>
+                                <span className="text-white ml-2">{selectedProject.clientName}</span>
                               </div>
-                              <div className="flex items-center space-x-1">
-                                <DollarSign className="h-3 w-3" />
-                                <span>${project.totalAmount.toLocaleString()}</span>
+                              <div>
+                                <span className="text-gray-400">Amount:</span>
+                                <span className="text-green-400 ml-2 font-mono">${(selectedProject.totalAmount || selectedProject.totalPrice || 0).toLocaleString()}</span>
                               </div>
-                              <div className="flex items-center space-x-1">
-                                <Calendar className="h-3 w-3" />
-                                <span>{project.date}</span>
+                              <div>
+                                <span className="text-gray-400">Type:</span>
+                                <span className="text-white ml-2">{selectedProject.projectType}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-400">Status:</span>
+                                <span className="text-green-400 ml-2">{selectedProject.status || 'Active'}</span>
+                              </div>
+                              <div className="md:col-span-2">
+                                <span className="text-gray-400">Address:</span>
+                                <span className="text-white ml-2">{selectedProject.address}</span>
                               </div>
                             </div>
                           </div>
-                        ))}
+                        )}
                         
                         {selectedProject && (
                           <div className="pt-4">
