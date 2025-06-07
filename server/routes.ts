@@ -743,25 +743,17 @@ ${extractedText}`,
     },
   );
 
-  // Endpoint para obtener proyectos guardados desde Firebase (misma fuente que la página de proyectos)
-  app.get("/api/projects/approved", async (req, res) => {
+  // Endpoint simple - el frontend enviará los proyectos directamente
+  app.post("/api/projects/sync", async (req, res) => {
     try {
-      const userId = req.query.userId as string;
+      const { projects } = req.body;
       
-      if (!userId) {
-        return res.status(400).json({ error: "userId is required" });
+      if (!projects || !Array.isArray(projects)) {
+        return res.status(400).json({ error: "Projects array is required" });
       }
 
-      // Importar el servicio Firebase Admin para acceso server-side
-      const { getProjectsFromFirestore } = await import('./firebase-admin');
-      
-      // Obtener todos los proyectos desde Firestore usando Admin SDK
-      const firebaseProjects = await getProjectsFromFirestore();
-      
-      console.log(`📊 Proyectos encontrados en Firebase: ${firebaseProjects.length}`);
-
-      // Mapear datos para el frontend con formato consistente
-      const projectsForContract = firebaseProjects.map((project: any) => ({
+      // Simplemente devolver los proyectos recibidos del frontend
+      const projectsForContract = projects.map((project: any) => ({
         id: project.id,
         projectId: project.projectId || project.id,
         clientName: project.clientName || project.customerName || 'Unknown Client',
@@ -790,7 +782,7 @@ ${extractedText}`,
         date: project.createdAt ? (project.createdAt.toDate ? project.createdAt.toDate().toLocaleDateString() : new Date(project.createdAt).toLocaleDateString()) : 'N/A'
       }));
 
-      console.log(`✅ Proyectos mapeados para contratos: ${projectsForContract.length}`);
+      console.log(`✅ Proyectos sincronizados: ${projectsForContract.length}`);
 
       res.json({
         success: true,
@@ -798,11 +790,10 @@ ${extractedText}`,
       });
 
     } catch (error) {
-      console.error("❌ Error fetching projects from Firebase:", error);
+      console.error("❌ Error syncing projects:", error);
       res.status(500).json({
         success: false,
-        error: "Failed to fetch projects from Firebase",
-        details: error.message
+        error: "Failed to sync projects"
       });
     }
   });

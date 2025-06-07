@@ -123,30 +123,37 @@ export default function CyberpunkLegalDefense() {
     }
   ];
 
-  // Función para cargar proyectos aprobados
+  // Función para cargar proyectos directamente desde Firebase
   const loadApprovedProjects = useCallback(async () => {
     setLoadingProjects(true);
     try {
-      // Get user ID from Firebase auth or session
-      const userId = 1; // This should be dynamically obtained from auth context
+      // Importar función de Firebase
+      const { getProjects } = await import('@/lib/firebase');
       
-      const response = await fetch(`/api/projects/approved?userId=${userId}`);
-      const data = await response.json();
+      // Obtener proyectos directamente desde Firebase
+      const firebaseProjects = await getProjects();
       
-      if (data.success) {
-        setApprovedProjects(data.projects);
+      if (firebaseProjects.length > 0) {
+        // Enviar proyectos al backend para formateo
+        const response = await fetch('/api/projects/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ projects: firebaseProjects })
+        });
         
-        if (data.projects.length === 0) {
-          toast({
-            title: "⚡ NO SAVED PROJECTS",
-            description: "No saved projects found. Upload a PDF estimate or create a project first.",
-          });
+        const data = await response.json();
+        
+        if (data.success) {
+          setApprovedProjects(data.projects);
+          console.log(`✅ Proyectos cargados: ${data.projects.length}`);
+        } else {
+          throw new Error(data.error);
         }
       } else {
+        setApprovedProjects([]);
         toast({
-          title: "⚡ DATA RETRIEVAL ERROR",
-          description: data.error || "Failed to load approved projects from database",
-          variant: "destructive"
+          title: "⚡ NO SAVED PROJECTS",
+          description: "No saved projects found. Upload a PDF estimate or create a project first.",
         });
       }
     } catch (error) {
@@ -156,6 +163,7 @@ export default function CyberpunkLegalDefense() {
         description: "Cannot connect to project database",
         variant: "destructive"
       });
+      setApprovedProjects([]);
     } finally {
       setLoadingProjects(false);
     }
