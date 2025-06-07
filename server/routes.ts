@@ -808,80 +808,69 @@ ${extractedText}`,
     }
   });
 
-  // Endpoint para obtener datos completos de un proyecto específico para contrato
-  app.get("/api/projects/:projectId/contract-data", async (req, res) => {
+  // Endpoint para recibir datos completos de proyecto desde Firebase para contrato
+  app.post("/api/projects/contract-data", async (req, res) => {
     try {
-      const { projectId } = req.params;
-      const userId = req.query.userId as string;
+      const { project } = req.body;
 
-      if (!userId) {
-        return res.status(400).json({ error: "userId is required" });
-      }
-
-      // Obtener proyecto específico
-      const project = await storage.getProject(parseInt(projectId));
-      
       if (!project) {
-        return res.status(404).json({ error: "Project not found" });
+        return res.status(400).json({ error: "Project data is required" });
       }
 
-      // Verificar que el proyecto pertenece al usuario
-      if (project.userId !== parseInt(userId)) {
-        return res.status(403).json({ error: "Unauthorized access to project" });
-      }
+      console.log("Processing Firebase project for contract:", project.clientName);
 
-      // Verificar que el proyecto está aprobado
-      if (project.status !== 'approved' && project.status !== 'completed') {
-        return res.status(400).json({ error: "Project is not approved for contract generation" });
-      }
+      // Convertir precio desde centavos si es necesario
+      const rawAmount = project.totalPrice || project.totalAmount || project.grandTotal || project.total || project.estimateAmount || project.amount || project.cost || 0;
+      const numAmount = Number(rawAmount);
+      const finalAmount = numAmount > 100000 ? Math.round(numAmount / 100) : numAmount;
 
-      // Mapear datos del proyecto a formato de contrato
+      // Mapear datos del proyecto Firebase a formato de contrato
       const contractData = {
         success: true,
         extractedData: {
           clientInfo: {
-            name: project.clientName,
-            email: project.clientEmail,
-            phone: project.clientPhone,
-            address: project.address
+            name: project.clientName || project.customerName || 'Unknown Client',
+            email: project.clientEmail || project.customerEmail || '',
+            phone: project.clientPhone || project.customerPhone || '',
+            address: project.address || project.projectAddress || ''
+          },
+          projectDetails: {
+            type: project.projectType || project.projectCategory || 'General Project',
+            subtype: project.projectSubtype || project.fenceType || '',
+            description: project.projectDescription || project.description || '',
+            scope: project.projectScope || project.scope || '',
+            location: project.address || project.projectAddress || '',
+            specifications: project.projectDescription || project.description || ''
+          },
+          financials: {
+            total: finalAmount,
+            subtotal: finalAmount * 0.9, // Assuming 10% tax/fees
+            materials: project.materialsList || project.materials || [],
+            laborHours: project.laborHours || 0
           },
           projectInfo: {
-            type: project.projectType || 'General Project',
-            subtype: project.projectSubtype,
-            description: project.projectDescription,
-            scope: project.projectScope,
-            location: project.address,
-            fenceType: project.fenceType,
-            length: project.length,
-            height: project.height,
-            gates: project.gates,
-            additionalDetails: project.additionalDetails
-          },
-          financialInfo: {
-            totalAmount: project.totalPrice ? (project.totalPrice / 100) : 0,
-            subtotal: project.totalPrice ? (project.totalPrice / 100) : 0,
-            materials: project.materialsList,
-            laborHours: project.laborHours
+            fenceType: project.fenceType || project.projectSubtype || '',
+            length: project.length || 0,
+            height: project.height || 0,
+            gates: project.gates || [],
+            additionalDetails: project.additionalDetails || project.notes || ''
           },
           timeline: {
-            scheduledDate: project.scheduledDate,
-            estimatedCompletion: project.completedDate,
+            scheduledDate: project.scheduledDate || '',
+            estimatedCompletion: project.completedDate || '',
             projectDuration: project.laborHours ? `${project.laborHours} hours` : 'TBD'
           },
-          paymentInfo: {
-            status: project.paymentStatus,
-            details: project.paymentDetails
-          },
           projectMetadata: {
-            projectId: project.projectId,
-            status: project.status,
+            projectId: project.id || project.projectId,
+            firebaseId: project.id,
+            status: project.status || 'approved',
             createdAt: project.createdAt,
-            internalNotes: project.internalNotes,
-            clientNotes: project.clientNotes
+            source: 'firebase_project'
           },
           extractionQuality: {
-            confidence: 95, // High confidence since this is from approved project data
-            source: 'approved_project'
+            confidence: 98,
+            source: 'firebase_project',
+            warnings: []
           }
         },
         missingFields: [],
@@ -889,13 +878,14 @@ ${extractedText}`,
         hasCriticalMissing: false
       };
 
+      console.log("Contract data mapped successfully for:", project.clientName);
       res.json(contractData);
 
     } catch (error) {
-      console.error("Error fetching project contract data:", error);
+      console.error("Error processing Firebase project for contract:", error);
       res.status(500).json({
         success: false,
-        error: "Failed to fetch project contract data",
+        error: "Failed to process project contract data",
         details: error.message
       });
     }

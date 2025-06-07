@@ -188,8 +188,12 @@ export default function CyberpunkLegalDefense() {
         description: `Loading complete data for ${project.clientName}'s project...`,
       });
 
-      // Fetch complete project data for contract generation
-      const response = await fetch(`/api/projects/${project.id}/contract-data?userId=${userId}`);
+      // Send complete project data to backend for contract processing
+      const response = await fetch('/api/projects/contract-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ project })
+      });
       const result = await response.json();
 
       if (!response.ok) {
