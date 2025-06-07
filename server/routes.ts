@@ -743,7 +743,7 @@ ${extractedText}`,
     },
   );
 
-  // Endpoint para obtener proyectos aprobados para generación de contratos
+  // Endpoint para obtener proyectos guardados desde Firebase (misma fuente que la página de proyectos)
   app.get("/api/projects/approved", async (req, res) => {
     try {
       const userId = req.query.userId as string;
@@ -752,41 +752,46 @@ ${extractedText}`,
         return res.status(400).json({ error: "userId is required" });
       }
 
-      // Obtener proyectos aprobados del usuario
-      const approvedProjects = await storage.getProjectsByUserId(parseInt(userId));
+      // Importar getProjects de Firebase dinámicamente para acceder a los 27 proyectos
+      const firebaseModule = await import('../client/src/lib/firebase.ts');
+      const { getProjects } = firebaseModule;
       
-      // Obtener todos los proyectos guardados (sin filtro de status)
-      const filteredProjects = approvedProjects;
+      // Obtener todos los proyectos desde Firebase (misma fuente que /projects)
+      const firebaseProjects = await getProjects();
+      
+      console.log(`📊 Proyectos encontrados en Firebase: ${firebaseProjects.length}`);
 
-      // Mapear datos para el frontend
-      const projectsForContract = filteredProjects.map(project => ({
+      // Mapear datos para el frontend con formato consistente
+      const projectsForContract = firebaseProjects.map((project: any) => ({
         id: project.id,
-        projectId: project.projectId,
-        clientName: project.clientName,
-        clientEmail: project.clientEmail,
-        clientPhone: project.clientPhone,
-        address: project.address,
-        projectType: project.projectType || 'General Project',
-        projectSubtype: project.projectSubtype,
-        projectDescription: project.projectDescription,
-        projectScope: project.projectScope,
-        fenceType: project.fenceType,
-        length: project.length,
-        height: project.height,
-        gates: project.gates,
-        additionalDetails: project.additionalDetails,
-        materialsList: project.materialsList,
-        laborHours: project.laborHours,
-        totalPrice: project.totalPrice,
-        totalAmount: project.totalPrice ? (project.totalPrice / 100) : 0, // Convert from cents
-        status: project.status,
-        paymentStatus: project.paymentStatus,
-        paymentDetails: project.paymentDetails,
+        projectId: project.projectId || project.id,
+        clientName: project.clientName || project.customerName || 'Unknown Client',
+        clientEmail: project.clientEmail || project.customerEmail || '',
+        clientPhone: project.clientPhone || project.customerPhone || '',
+        address: project.address || '',
+        projectType: project.projectType || project.projectCategory || 'General Project',
+        projectSubtype: project.projectSubtype || project.fenceType || '',
+        projectDescription: project.projectDescription || project.description || '',
+        projectScope: project.projectScope || project.scope || '',
+        fenceType: project.fenceType || '',
+        length: project.length || 0,
+        height: project.height || 0,
+        gates: project.gates || [],
+        additionalDetails: project.additionalDetails || project.notes || '',
+        materialsList: project.materialsList || project.materials || [],
+        laborHours: project.laborHours || 0,
+        totalPrice: project.totalPrice || project.estimateAmount || 0,
+        totalAmount: project.totalPrice || project.estimateAmount || 0,
+        status: project.status || 'draft',
+        paymentStatus: project.paymentStatus || 'pending',
+        paymentDetails: project.paymentDetails || {},
         scheduledDate: project.scheduledDate,
         completedDate: project.completedDate,
         createdAt: project.createdAt,
-        date: project.createdAt ? new Date(project.createdAt).toLocaleDateString() : 'N/A'
+        date: project.createdAt ? (project.createdAt.toDate ? project.createdAt.toDate().toLocaleDateString() : new Date(project.createdAt).toLocaleDateString()) : 'N/A'
       }));
+
+      console.log(`✅ Proyectos mapeados para contratos: ${projectsForContract.length}`);
 
       res.json({
         success: true,
@@ -794,10 +799,10 @@ ${extractedText}`,
       });
 
     } catch (error) {
-      console.error("Error fetching approved projects:", error);
+      console.error("❌ Error fetching projects from Firebase:", error);
       res.status(500).json({
         success: false,
-        error: "Failed to fetch approved projects",
+        error: "Failed to fetch projects from Firebase",
         details: error.message
       });
     }
