@@ -89,12 +89,17 @@ export default function CyberpunkLegalDefense() {
   
   // Profile data for contractor information
   const { profile } = useProfile();
+  const { user } = useAuth();
   
   // Estados del toggle de método de entrada
   const [dataInputMethod, setDataInputMethod] = useState<'upload' | 'select'>('upload');
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [approvedProjects, setApprovedProjects] = useState<any[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
+  
+  // Contract history state
+  const [currentContractId, setCurrentContractId] = useState<string | null>(null);
+  const [pdfGenerationTime, setPdfGenerationTime] = useState<number>(0);
 
   // Definir pasos del workflow cyberpunk
   const workflowSteps: WorkflowStep[] = [
@@ -345,8 +350,45 @@ export default function CyberpunkLegalDefense() {
       }
 
       const result = await response.json();
+      setPdfGenerationTime(result.metadata?.generationTime || 0);
       
       if (result.success && result.pdfUrl) {
+        // Save contract to Firebase history
+        if (user?.uid) {
+          try {
+            const contractHistoryEntry = {
+              userId: user.uid,
+              contractId: `CONTRACT_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              clientName: contractData.client.name,
+              projectType: contractData.project.type,
+              status: 'completed' as const,
+              contractData: {
+                client: contractData.client,
+                contractor: contractData.contractor,
+                project: contractData.project,
+                financials: contractData.financials,
+                protections: contractData.protections.map(p => ({
+                  id: p.id,
+                  category: p.category,
+                  clause: p.clause
+                }))
+              },
+              pdfUrl: result.pdfUrl,
+              pageCount: result.metadata?.pageCount || 6,
+              generationTime: result.metadata?.generationTime || 0,
+              templateUsed: 'hybrid-professional'
+            };
+
+            const savedContractId = await contractHistoryService.saveContract(contractHistoryEntry);
+            setCurrentContractId(savedContractId);
+            
+            console.log('✅ Contract saved to Firebase history:', savedContractId);
+          } catch (firebaseError) {
+            console.error('❌ Failed to save contract to history:', firebaseError);
+            // Don't fail the PDF generation if Firebase save fails
+          }
+        }
+
         // Trigger automatic download
         const link = document.createElement('a');
         link.href = result.pdfUrl;
@@ -358,7 +400,7 @@ export default function CyberpunkLegalDefense() {
 
         toast({
           title: "Contract Generated Successfully",
-          description: `Professional ${result.metadata?.pageCount || 6}-page PDF contract downloaded automatically`,
+          description: `Professional ${result.metadata?.pageCount || 6}-page PDF contract downloaded and saved to history`,
         });
       } else {
         throw new Error(result.error || 'Contract generation failed');
