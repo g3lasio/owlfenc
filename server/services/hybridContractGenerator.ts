@@ -159,7 +159,7 @@ export class HybridContractGenerator {
 
     // Skip Claude generation for speed and use enhanced template directly
     console.log('🚀 [FAST-GENERATION] Using optimized template for speed...');
-    return this.generateEnhancedFallbackHTML(contractData);
+    return this.generateEnhancedFallbackHTML(contractData, contractorBranding);
 
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
@@ -271,13 +271,15 @@ export class HybridContractGenerator {
   /**
    * Genera HTML de respaldo mejorado cuando Claude falla
    */
-  private generateEnhancedFallbackHTML(contractData: ContractData): string {
-    // Only use data that's actually provided - no placeholders
-    const contractorName = contractData.contractor.name || 'Contractor';
-    const contractorAddress = contractData.contractor.address || '';
-    const contractorPhone = contractData.contractor.phone || '';
-    const contractorEmail = contractData.contractor.email || '';
-    const contractorLicense = contractData.contractor.license || '';
+  private generateEnhancedFallbackHTML(contractData: ContractData, contractorBranding: any = {}): string {
+    // Use personalized contractor branding - NO cross-contamination between contractors
+    const contractorName = contractorBranding.companyName || contractData.contractor.name || 'Contractor';
+    const contractorAddress = contractorBranding.address || contractData.contractor.address || '';
+    const contractorPhone = contractorBranding.phone || contractData.contractor.phone || '';
+    const contractorEmail = contractorBranding.email || contractData.contractor.email || '';
+    const contractorLicense = contractorBranding.licenseNumber || contractData.contractor.license || '';
+    const contractorState = contractorBranding.state || '';
+    const contractorBusinessType = contractorBranding.businessType || '';
     
     const clientPhone = contractData.client.phone || '';
     const clientEmail = contractData.client.email || '';
@@ -296,7 +298,7 @@ export class HybridContractGenerator {
             size: 8.5in 11in;
             margin: 0.6in 0.8in 0.8in 0.8in;
             @bottom-center {
-                content: "© " attr(data-year) " Owl Fenc - All Rights Reserved";
+                content: "© " attr(data-year) " ${contractorName} - All Rights Reserved";
                 font-size: 10px;
                 color: #666;
                 border-top: 1px solid #ccc;
@@ -657,7 +659,9 @@ export class HybridContractGenerator {
     console.log('🔄 [FALLBACK] Usando template mejorado...');
     
     try {
-      const enhancedHTML = this.generateEnhancedFallbackHTML(request.contractData);
+      const userId = request.contractData.userId || 1;
+      const contractorBranding = await this.getContractorBranding(userId);
+      const enhancedHTML = this.generateEnhancedFallbackHTML(request.contractData, contractorBranding);
       const pdfBuffer = await this.generatePDFFromHTML(enhancedHTML);
       
       return {
@@ -686,7 +690,7 @@ export class HybridContractGenerator {
   /**
    * Template base de fallback
    */
-  private generateFallbackHTML(contractData: ContractData): string {
+  private generateFallbackHTML(contractData: ContractData, contractorBranding: any = {}): string {
     const currentDate = new Date().toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
