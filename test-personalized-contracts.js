@@ -3,7 +3,7 @@
  * Cada contratista debe obtener su propio branding sin contaminación cruzada
  */
 
-const { hybridContractGenerator } = require('./server/services/hybridContractGenerator');
+import { hybridContractGenerator } from './server/services/hybridContractGenerator.js';
 
 async function testPersonalizedContracts() {
   console.log('🧪 Probando sistema personalizado de contratos...\n');

@@ -822,3 +822,4 @@ export class HybridContractGenerator {
 }
 
 export const hybridContractGenerator = new HybridContractGenerator();
+export default hybridContractGenerator;
