@@ -39,6 +39,7 @@ export function ContractHistoryPanel({ children, onEditContract }: ContractHisto
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredContracts, setFilteredContracts] = useState<ContractHistoryEntry[]>([]);
   const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
   const [stats, setStats] = useState({
     total: 0,
     completed: 0,
@@ -161,6 +162,8 @@ export function ContractHistoryPanel({ children, onEditContract }: ContractHisto
 
   const editContract = (contract: ContractHistoryEntry) => {
     if (onEditContract) {
+      // Close the history panel automatically
+      setIsOpen(false);
       onEditContract(contract);
       toast({
         title: "Opening Editor",
@@ -170,13 +173,16 @@ export function ContractHistoryPanel({ children, onEditContract }: ContractHisto
   };
 
   return (
-    <Sheet>
+    <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
         <Button 
           variant="ghost" 
           size="sm"
           className="p-2 hover:bg-cyan-500/10 hover:text-cyan-400 transition-all duration-300"
-          onClick={loadContractHistory}
+          onClick={() => {
+            setIsOpen(true);
+            loadContractHistory();
+          }}
         >
           <Server className="h-5 w-5 text-cyan-400" />
         </Button>

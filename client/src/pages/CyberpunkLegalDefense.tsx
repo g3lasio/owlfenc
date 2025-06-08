@@ -782,8 +782,8 @@ export default function CyberpunkLegalDefense() {
     await new Promise(resolve => setTimeout(resolve, 1500));
     
     const analysis: ContractAnalysis = {
-      riskLevel: extractedData.extractionQuality.confidence > 85 ? 'bajo' : 'medio',
-      riskScore: Math.max(10, 100 - extractedData.extractionQuality.confidence),
+      riskLevel: extractedData.extractionQuality?.confidence > 85 ? 'bajo' : 'medio',
+      riskScore: Math.max(10, 100 - (extractedData.extractionQuality?.confidence || 85)),
       protectionsApplied: [
         'Advanced OCR Data Validation',
         'Liability Protection Clauses',
