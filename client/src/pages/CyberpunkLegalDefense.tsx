@@ -6,9 +6,12 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { DefenseReviewPanel } from '@/components/contract/DefenseReviewPanel';
+import { ContractHistoryPanel } from '@/components/contract/ContractHistoryPanel';
 import { DefenseClause } from '@/services/deepSearchDefenseEngine';
 import { professionalContractGenerator, ContractData } from '@/services/professionalContractGenerator';
 import { useProfile } from '@/hooks/use-profile';
+import { contractHistoryService } from '@/services/contractHistoryService';
+import { useAuth } from '@/hooks/use-auth';
 import { 
   Upload,
   Shield, 
@@ -33,7 +36,10 @@ import {
   Package,
   Mail,
   FileSignature,
-  CheckSquare
+  CheckSquare,
+  Archive,
+  History,
+  Server
 } from 'lucide-react';
 
 interface WorkflowStep {
@@ -911,9 +917,14 @@ export default function CyberpunkLegalDefense() {
       <div className="relative z-10 max-w-4xl mx-auto">
         {/* Header simplificado */}
         <div className="text-center mb-8 md:mb-12">
-          <h1 className="text-2xl md:text-4xl font-bold text-cyan-400 mb-2">
-            FORTRESS DRAFT
-          </h1>
+          <div className="flex items-center justify-center gap-4 mb-2">
+            <h1 className="text-2xl md:text-4xl font-bold text-cyan-400">
+              FORTRESS DRAFT
+            </h1>
+            <ContractHistoryPanel>
+              <div />
+            </ContractHistoryPanel>
+          </div>
           <p className="text-gray-400 font-mono text-xs md:text-sm">
             Defensive Contracts for Relentless Protection
           </p>
