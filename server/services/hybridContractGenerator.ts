@@ -132,7 +132,8 @@ Genera SOLO el HTML completo, sin explicaciones. Usa CSS print media queries par
       system: 'Eres un experto en contratos legales y generación de documentos HTML profesionales. Genera contratos que cumplan exactamente con los requisitos de formato y contenido.'
     });
 
-    const htmlContent = response.content[0].text;
+    const firstBlock = response.content[0];
+    const htmlContent = firstBlock && 'text' in firstBlock ? firstBlock.text : '';
     console.log('🎯 [CLAUDE] HTML generado:', htmlContent.length, 'caracteres');
     
     return htmlContent;
@@ -212,7 +213,7 @@ Genera SOLO el HTML completo, sin explicaciones. Usa CSS print media queries par
       await browser.close();
       
       console.log('📄 [PDF] Generado exitosamente:', pdfBuffer.length, 'bytes');
-      return pdfBuffer;
+      return Buffer.from(pdfBuffer);
       
     } catch (error) {
       console.error('❌ [PDF] Error en generación:', error);

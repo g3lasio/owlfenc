@@ -288,11 +288,11 @@ export default function CyberpunkLegalDefense() {
           phone: extractedData.clientInfo?.phone
         },
         contractor: {
-          name: profile?.companyName || profile?.businessName || 'Contractor Name',
+          name: profile?.companyName || 'Contractor Name',
           address: profile?.address || 'Contractor Address',
           email: profile?.email,
           phone: profile?.phone,
-          license: profile?.licenseNumber
+          license: profile?.license
         },
         project: {
           type: extractedData.projectDetails?.type || 'Construction Services',
