@@ -985,4 +985,6 @@ export class DeepSearchDefenseEngine {
   }
 }
 
+// Create and export the singleton instance
+export const deepSearchDefenseEngine = new DeepSearchDefenseEngine();
 export default DeepSearchDefenseEngine;

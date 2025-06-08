@@ -5,7 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import DefenseReviewPanel from '@/components/contract/DefenseReviewPanel';
+import { DefenseReviewPanel } from '@/components/contract/DefenseReviewPanel';
 import DeepSearchDefenseEngine, { DefenseClause } from '@/services/deepSearchDefenseEngine';
 import { 
   Upload,
