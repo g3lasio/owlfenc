@@ -256,23 +256,19 @@ export class HybridContractGenerator {
             background: #f9f9f9;
             min-height: 50px;
         }
-        .material-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 3px 0;
+        .materials-list {
+            margin: 5px 0;
+            padding-left: 10px;
         }
-        .material-table th, .material-table td {
+        .total-box {
             border: 1px solid #000;
-            padding: 3px;
-            text-align: left;
-            font-size: 9px;
+            padding: 8px;
+            margin: 8px 0;
+            background: #f5f5f5;
+            text-align: center;
         }
-        .material-table th {
-            background-color: #f0f0f0;
-            font-weight: bold;
-        }
-        .material-table .amount {
-            text-align: right;
+        .total-box p {
+            margin: 3px 0;
         }
         .page-break { page-break-before: always; }
         .no-break { page-break-inside: avoid; }
@@ -320,28 +316,17 @@ export class HybridContractGenerator {
     <p class="compact">3. Contractor agrees to provide the following services ("Services"):</p>
     <p class="compact"><strong>Project Description:</strong> ${contractData.project.description}</p>
     
-    <p class="compact">4. Materials and labor breakdown:</p>
-    <table class="material-table">
-        <thead>
-            <tr>
-                <th>Description</th>
-                <th>Quantity</th>
-                <th>Unit Price</th>
-                <th>Total</th>
-            </tr>
-        </thead>
-        <tbody>
-            ${contractData.materials?.map(m => `
-                <tr>
-                    <td>${m.item}</td>
-                    <td>${m.quantity} ${m.unit}</td>
-                    <td>$${m.unitPrice?.toFixed(2) || '0.00'}</td>
-                    <td>$${m.totalPrice?.toFixed(2) || '0.00'}</td>
-                </tr>
-            `).join('') || '<tr><td colspan="4">Materials to be specified</td></tr>'}
-        </tbody>
-    </table>
-    <p><strong>TOTAL CONTRACT AMOUNT: $${contractData.financials.total?.toFixed(2) || '0.00'}</strong></p>
+    <p class="compact">4. Services and materials include:</p>
+    <div class="materials-list">
+        ${contractData.materials?.map(m => `
+            <p class="compact">• ${m.item}</p>
+        `).join('') || '<p class="compact">• Materials and services as specified in attached estimate</p>'}
+    </div>
+    
+    <div class="total-box">
+        <p><strong>TOTAL CONTRACT AMOUNT: $${contractData.financials.total?.toFixed(2) || '0.00'}</strong></p>
+        <p class="compact">*Detailed breakdown provided in separate estimate document</p>
+    </div>
 
     <div class="page-break"></div>
     
