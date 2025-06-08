@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { useProfile } from '@/hooks/use-profile';
 import { 
   Edit3, 
   Save, 
@@ -455,6 +456,7 @@ export const InteractiveContractPreview: React.FC<InteractiveContractPreviewProp
   onGoBack
 }) => {
   const [intelligentProtections, setIntelligentProtections] = useState<ProtectionClause[]>([]);
+  const { profile, isLoading: profileLoading } = useProfile();
 
   // Generar protecciones legales inteligentes al cargar el componente
   useEffect(() => {
@@ -468,9 +470,51 @@ export const InteractiveContractPreview: React.FC<InteractiveContractPreviewProp
     setIntelligentProtections(protections);
   }, [contractData]);
 
+  // Cargar automáticamente información del perfil de la compañía en la sección del contratista
+  useEffect(() => {
+    if (profile && !profileLoading) {
+      // Solo actualizar si los campos del contratista están vacíos o no han sido modificados
+      const shouldAutoFill = !contractData.contractorName || 
+                           !contractData.contractorAddress || 
+                           !contractData.contractorEmail || 
+                           !contractData.contractorPhone;
+
+      if (shouldAutoFill) {
+        const updatedData = {
+          ...contractData,
+          contractorName: contractData.contractorName || profile.companyName || '',
+          contractorAddress: contractData.contractorAddress || 
+            `${profile.address}${profile.city ? `, ${profile.city}` : ''}${profile.state ? `, ${profile.state}` : ''}${profile.zipCode ? ` ${profile.zipCode}` : ''}`,
+          contractorEmail: contractData.contractorEmail || profile.email || '',
+          contractorPhone: contractData.contractorPhone || profile.phone || profile.mobilePhone || '',
+          contractorLicense: contractData.contractorLicense || profile.license || ''
+        };
+        
+        onDataUpdate(updatedData);
+      }
+    }
+  }, [profile, profileLoading, onDataUpdate]);
+
   const updateField = (field: keyof ContractData, value: any) => {
     const updatedData = { ...contractData, [field]: value };
     onDataUpdate(updatedData);
+  };
+
+  // Función para refrescar manualmente los datos del perfil
+  const refreshCompanyInfo = () => {
+    if (profile) {
+      const updatedData = {
+        ...contractData,
+        contractorName: profile.companyName || contractData.contractorName,
+        contractorAddress: `${profile.address}${profile.city ? `, ${profile.city}` : ''}${profile.state ? `, ${profile.state}` : ''}${profile.zipCode ? ` ${profile.zipCode}` : ''}`,
+        contractorEmail: profile.email || contractData.contractorEmail,
+        contractorPhone: profile.phone || profile.mobilePhone || contractData.contractorPhone,
+        contractorLicense: profile.license || contractData.contractorLicense,
+        insuranceInfo: profile.insurancePolicy ? `Current Policy: ${profile.insurancePolicy}` : contractData.insuranceInfo
+      };
+      
+      onDataUpdate(updatedData);
+    }
   };
 
   const today = new Date().toLocaleDateString('en-US', { 
@@ -539,7 +583,28 @@ export const InteractiveContractPreview: React.FC<InteractiveContractPreviewProp
               </div>
               
               <div className="bg-black p-4 rounded-lg cyberpunk-corner-frame border border-green-500 space-y-3">
-                <h5 className="font-semibold text-green-300 mb-3">CONTRACTOR (Service Provider)</h5>
+                <div className="flex items-center justify-between mb-3">
+                  <h5 className="font-semibold text-green-300">CONTRACTOR (Service Provider)</h5>
+                  <div className="flex items-center gap-2">
+                    {profile && !profileLoading && (
+                      <Badge variant="secondary" className="text-xs bg-green-900/50 text-green-300 border-green-600">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Company Profile Connected
+                      </Badge>
+                    )}
+                    {profile && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={refreshCompanyInfo}
+                        className="text-xs h-6 px-2 border-green-600 text-green-300 hover:bg-green-900/50"
+                      >
+                        <Building className="h-3 w-3 mr-1" />
+                        Refresh
+                      </Button>
+                    )}
+                  </div>
+                </div>
                 <EditableField
                   label="Company Name"
                   value={contractData.contractorName}
@@ -661,6 +726,15 @@ export const InteractiveContractPreview: React.FC<InteractiveContractPreviewProp
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="bg-black p-4 rounded-lg cyberpunk-corner-frame border border-yellow-500 space-y-3">
+              <div className="flex items-center justify-between mb-3">
+                <h5 className="font-semibold text-yellow-300">Contract Value & Terms</h5>
+                {profile?.ein && (
+                  <Badge variant="secondary" className="text-xs bg-yellow-900/50 text-yellow-300 border-yellow-600">
+                    <Building className="h-3 w-3 mr-1" />
+                    EIN: {profile.ein}
+                  </Badge>
+                )}
+              </div>
               <EditableField
                 label="Total Contract Amount"
                 value={contractData.totalAmount}
@@ -674,6 +748,12 @@ export const InteractiveContractPreview: React.FC<InteractiveContractPreviewProp
                 multiline
                 icon={<DollarSign className="h-4 w-4" />}
               />
+              {profile?.businessType && (
+                <div className="text-xs text-yellow-300/70 mt-2">
+                  Business Type: {profile.businessType}
+                  {profile.yearEstablished && ` • Established: ${profile.yearEstablished}`}
+                </div>
+              )}
             </div>
 
             <div className="bg-black p-4 rounded-lg cyberpunk-corner-frame border border-yellow-500">
@@ -696,13 +776,27 @@ export const InteractiveContractPreview: React.FC<InteractiveContractPreviewProp
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="bg-black p-4 rounded-lg cyberpunk-corner-frame border border-purple-500 space-y-3">
+              <div className="flex items-center justify-between mb-3">
+                <h5 className="font-semibold text-purple-300">Insurance & Liability Coverage</h5>
+                {profile?.insurancePolicy && (
+                  <Badge variant="secondary" className="text-xs bg-purple-900/50 text-purple-300 border-purple-600">
+                    <Shield className="h-3 w-3 mr-1" />
+                    Policy on File
+                  </Badge>
+                )}
+              </div>
               <EditableField
                 label="Insurance Requirements"
-                value={contractData.insuranceInfo}
+                value={contractData.insuranceInfo || (profile?.insurancePolicy ? `Current Policy: ${profile.insurancePolicy}` : '')}
                 onSave={(value) => updateField('insuranceInfo', value)}
                 multiline
                 icon={<Shield className="h-4 w-4" />}
               />
+              {profile?.license && (
+                <div className="text-xs text-purple-300/70 mt-2">
+                  Contractor License: {profile.license}
+                </div>
+              )}
             </div>
 
             <div className="grid md:grid-cols-2 gap-4">
