@@ -984,7 +984,7 @@ export default function CyberpunkLegalDefense() {
             <h1 className="text-2xl md:text-4xl font-bold text-cyan-400">
               FORTRESS DRAFT
             </h1>
-            <ContractHistoryPanel>
+            <ContractHistoryPanel onEditContract={handleEditContract}>
               <div />
             </ContractHistoryPanel>
           </div>
