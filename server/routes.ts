@@ -4329,6 +4329,97 @@ Output in English regardless of input language. Make it suitable for contracts a
   // Registrar rutas del módulo Labor DeepSearch IA
   registerLaborDeepSearchRoutes(app);
 
+  // Hybrid Contract Generation with Claude + PDF
+  app.post('/api/contracts/generate-professional', async (req, res) => {
+    try {
+      console.log('🤖 [API] Iniciando generación híbrida de contrato...');
+      
+      const { hybridContractGenerator } = await import('./services/hybridContractGenerator');
+      
+      const request = {
+        contractData: req.body,
+        templatePreferences: {
+          style: 'professional',
+          includeProtections: true,
+          pageLayout: '6-page'
+        }
+      };
+      
+      const result = await hybridContractGenerator.generateProfessionalContract(request);
+      
+      if (!result.success) {
+        return res.status(500).json({
+          success: false,
+          error: result.error || 'Contract generation failed'
+        });
+      }
+      
+      // Store PDF temporarily and return download link
+      const contractId = `contract_${Date.now()}`;
+      
+      // Save PDF buffer to file system temporarily
+      const fs = await import('fs');
+      const path = await import('path');
+      
+      const tempDir = path.join(process.cwd(), 'temp');
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+      }
+      
+      const fullPdfPath = path.join(tempDir, `${contractId}.pdf`);
+      fs.writeFileSync(fullPdfPath, result.pdfBuffer!);
+      
+      console.log(`✅ [API] Contrato generado: ${result.metadata.pageCount} páginas, ${result.metadata.generationTime}ms`);
+      
+      res.json({
+        success: true,
+        contractId,
+        pdfUrl: `/api/contracts/download/${contractId}.pdf`,
+        metadata: result.metadata,
+        previewHtml: result.html
+      });
+      
+    } catch (error) {
+      console.error('❌ [API] Error en generación de contrato:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Contract generation service unavailable' 
+      });
+    }
+  });
+
+  // Download generated contract PDF
+  app.get('/api/contracts/download/:filename', async (req, res) => {
+    try {
+      const { filename } = req.params;
+      const path = await import('path');
+      const fs = await import('fs');
+      
+      const filePath = path.join(process.cwd(), 'temp', filename);
+      
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: 'Contract not found' });
+      }
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      
+      const fileStream = fs.createReadStream(filePath);
+      fileStream.pipe(res);
+      
+      // Clean up file after 1 hour
+      setTimeout(() => {
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      }, 3600000);
+      
+    } catch (error) {
+      console.error('Error downloading contract:', error);
+      res.status(500).json({ error: 'Download failed' });
+    }
+  });
+
   // Crear y retornar el servidor HTTP
   const server = createServer(app);
   return server;
