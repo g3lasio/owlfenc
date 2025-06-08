@@ -459,37 +459,37 @@ export class HybridContractGenerator {
     <div class="page-break"></div>
     
     <h2>FORCE MAJEURE</h2>
-    <p class="compact">22. Neither party shall be liable for delays or failure to perform due to causes beyond their reasonable control, including but not limited to acts of God, weather conditions, labor strikes, material shortages, government regulations, or public health emergencies.</p>
+    <p class="compact"><span class="section-number">22.</span> Neither party shall be liable for delays or failure to perform due to causes beyond their reasonable control, including but not limited to acts of God, weather conditions, labor strikes, material shortages, government regulations, or public health emergencies.</p>
 
     <h2>INDEPENDENT CONTRACTOR STATUS</h2>
-    <p class="compact">23. Contractor is engaged as an independent contractor and is not an employee, agent, partner, or joint venturer of Client.</p>
-    <p class="compact">24. Contractor shall have the right to control and determine the method, details, and means of performing the Services, subject to the requirement that Services be performed in accordance with this Agreement.</p>
-    <p class="compact">25. Contractor shall be solely responsible for payment of all taxes, social security contributions, insurance premiums, and other expenses relating to Contractor's performance of Services.</p>
+    <p class="compact"><span class="section-number">23.</span> Contractor is engaged as an independent contractor and is not an employee, agent, partner, or joint venturer of Client.</p>
+    <p class="compact"><span class="section-number">24.</span> Contractor shall have the right to control and determine the method, details, and means of performing the Services, subject to the requirement that Services be performed in accordance with this Agreement.</p>
+    <p class="compact"><span class="section-number">25.</span> Contractor shall be solely responsible for payment of all taxes, social security contributions, insurance premiums, and other expenses relating to Contractor's performance of Services.</p>
 
     <h2>TERMINATION</h2>
-    <p class="compact">26. Either party may terminate this Agreement upon written notice if the other party materially breaches this Agreement and fails to cure such breach within ten (10) days after written notice.</p>
-    <p class="compact">27. In the event of termination, Client shall pay Contractor for all Services satisfactorily performed through the date of termination, less any amounts previously paid.</p>
+    <p class="compact"><span class="section-number">26.</span> Either party may terminate this Agreement upon written notice if the other party materially breaches this Agreement and fails to cure such breach within ten (10) days after written notice.</p>
+    <p class="compact"><span class="section-number">27.</span> In the event of termination, Client shall pay Contractor for all Services satisfactorily performed through the date of termination, less any amounts previously paid.</p>
 
     <h2>NOTICES</h2>
-    <p class="compact">28. All notices required under this Agreement shall be in writing and delivered to the addresses set forth above, or to such other addresses as the parties may designate in writing.</p>
+    <p class="compact"><span class="section-number">28.</span> All notices required under this Agreement shall be in writing and delivered to the addresses set forth above, or to such other addresses as the parties may designate in writing.</p>
 
     <div class="page-break"></div>
     
     <h2>DISPUTE RESOLUTION</h2>
-    <p class="compact">29. The parties agree to first attempt to resolve any disputes through good faith negotiation. If unsuccessful, disputes shall be resolved through binding arbitration in accordance with California law.</p>
+    <p class="compact"><span class="section-number">29.</span> The parties agree to first attempt to resolve any disputes through good faith negotiation. If unsuccessful, disputes shall be resolved through binding arbitration in accordance with California law.</p>
 
     <h2>INDEMNIFICATION</h2>
-    <p class="compact">30. Each party agrees to indemnify and hold harmless the other party from and against any claims, damages, losses, or expenses arising out of or relating to such party's negligent acts or omissions in connection with this Agreement.</p>
-    <p class="compact">31. Client agrees to indemnify Contractor against any claims arising from pre-existing conditions at the Property or from Client's failure to disclose material information about the Property or required Services.</p>
+    <p class="compact"><span class="section-number">30.</span> Each party agrees to indemnify and hold harmless the other party from and against any claims, damages, losses, or expenses arising out of or relating to such party's negligent acts or omissions in connection with this Agreement.</p>
+    <p class="compact"><span class="section-number">31.</span> Client agrees to indemnify Contractor against any claims arising from pre-existing conditions at the Property or from Client's failure to disclose material information about the Property or required Services.</p>
 
     <h2>GOVERNING LAW</h2>
-    <p class="compact">32. This Agreement shall be governed by and construed in accordance with the laws of the State of California, without regard to conflict of law principles.</p>
-    <p class="compact">33. Any legal proceedings arising under this Agreement shall be brought in the appropriate state or federal courts located in the county where the Property is located.</p>
+    <p class="compact"><span class="section-number">32.</span> This Agreement shall be governed by and construed in accordance with the laws of the State of California, without regard to conflict of law principles.</p>
+    <p class="compact"><span class="section-number">33.</span> Any legal proceedings arising under this Agreement shall be brought in the appropriate state or federal courts located in the county where the Property is located.</p>
 
     <h2>SEVERABILITY AND INTEGRATION</h2>
-    <p class="compact">34. If any provision of this Agreement is held to be invalid or unenforceable, the remainder of this Agreement shall remain in full force and effect.</p>
-    <p class="compact">35. This Agreement constitutes the entire agreement between the parties and supersedes all prior negotiations, representations, or agreements relating to the subject matter herein.</p>
-    <p class="compact">36. This Agreement may only be modified by written instrument signed by both parties.</p>
+    <p class="compact"><span class="section-number">34.</span> If any provision of this Agreement is held to be invalid or unenforceable, the remainder of this Agreement shall remain in full force and effect.</p>
+    <p class="compact"><span class="section-number">35.</span> This Agreement constitutes the entire agreement between the parties and supersedes all prior negotiations, representations, or agreements relating to the subject matter herein.</p>
+    <p class="compact"><span class="section-number">36.</span> This Agreement may only be modified by written instrument signed by both parties.</p>
 
     <div class="page-break"></div>
     
