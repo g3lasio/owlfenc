@@ -103,8 +103,46 @@ export default function CyberpunkLegalDefense() {
   
   // Edit contract handler
   const handleEditContract = useCallback((contract: any) => {
+    console.log('🔧 Editing contract:', contract);
+    
+    // Map the contract history data to the expected format for the editor
+    const mappedData = {
+      // Client information
+      clientName: contract.contractData?.client?.name || contract.clientName || '',
+      clientAddress: contract.contractData?.client?.address || '',
+      clientEmail: contract.contractData?.client?.email || '',
+      clientPhone: contract.contractData?.client?.phone || '',
+      
+      // Project information
+      projectType: contract.contractData?.project?.type || contract.projectType || '',
+      projectDescription: contract.contractData?.project?.description || '',
+      projectLocation: contract.contractData?.project?.location || '',
+      
+      // Financial information
+      totalAmount: contract.contractData?.financials?.total || 0,
+      subtotal: contract.contractData?.financials?.subtotal || 0,
+      tax: contract.contractData?.financials?.tax || 0,
+      
+      // Contractor information (from user profile will be used as fallback)
+      contractorName: contract.contractData?.contractor?.name || profile?.companyName || '',
+      contractorAddress: contract.contractData?.contractor?.address || profile?.address || '',
+      contractorEmail: contract.contractData?.contractor?.email || profile?.email || '',
+      contractorPhone: contract.contractData?.contractor?.phone || profile?.phone || '',
+      contractorLicense: contract.contractData?.contractor?.license || profile?.licenseNumber || '',
+      
+      // Additional data that might be present
+      materials: contract.contractData?.materials || [],
+      timeline: contract.contractData?.timeline || {},
+      terms: contract.contractData?.terms || {},
+      
+      // Preserve original contract data structure
+      originalContractData: contract.contractData
+    };
+    
+    console.log('🔧 Mapped data for editing:', mappedData);
+    
     // Load contract data into the form for editing
-    setExtractedData(contract.contractData);
+    setExtractedData(mappedData);
     setCurrentPhase('arsenal-builder');
     setCurrentStep(2);
     
@@ -120,7 +158,9 @@ export default function CyberpunkLegalDefense() {
     
     // Store the contract ID for updating
     setCurrentContractId(contract.id);
-  }, []);
+    
+    console.log('🔧 Contract editing state prepared');
+  }, [profile]);
 
   // Definir pasos del workflow cyberpunk
   const workflowSteps: WorkflowStep[] = [
@@ -1478,6 +1518,8 @@ export default function CyberpunkLegalDefense() {
                         <input
                           type="text"
                           name="contractorCompany"
+                          value={extractedData?.contractorName || profile?.companyName || ''}
+                          onChange={(e) => setExtractedData(prev => ({...prev, contractorName: e.target.value}))}
                           placeholder="Enter contractor company name"
                           className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-blue-400 focus:outline-none"
                         />
@@ -1487,6 +1529,8 @@ export default function CyberpunkLegalDefense() {
                         <input
                           type="text"
                           name="contractorName"
+                          value={extractedData?.contractorName || profile?.companyName || ''}
+                          onChange={(e) => setExtractedData(prev => ({...prev, contractorName: e.target.value}))}
                           placeholder="Enter contractor full name"
                           className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-blue-400 focus:outline-none"
                         />
@@ -1496,6 +1540,8 @@ export default function CyberpunkLegalDefense() {
                         <input
                           type="text"
                           name="businessAddress"
+                          value={extractedData?.contractorAddress || profile?.address || ''}
+                          onChange={(e) => setExtractedData(prev => ({...prev, contractorAddress: e.target.value}))}
                           placeholder="Enter business address"
                           className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-blue-400 focus:outline-none"
                         />
@@ -1505,6 +1551,8 @@ export default function CyberpunkLegalDefense() {
                         <input
                           type="tel"
                           name="contractorPhone"
+                          value={extractedData?.contractorPhone || profile?.phone || ''}
+                          onChange={(e) => setExtractedData(prev => ({...prev, contractorPhone: e.target.value}))}
                           placeholder="(555) 123-4567"
                           className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-blue-400 focus:outline-none"
                         />
@@ -1611,7 +1659,8 @@ export default function CyberpunkLegalDefense() {
                         <input
                           type="text"
                           name="clientName"
-                          defaultValue={extractedData.clientInfo?.name || ''}
+                          value={extractedData?.clientName || extractedData?.clientInfo?.name || ''}
+                          onChange={(e) => setExtractedData(prev => ({...prev, clientName: e.target.value}))}
                           className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-green-400 focus:outline-none"
                         />
                       </div>
