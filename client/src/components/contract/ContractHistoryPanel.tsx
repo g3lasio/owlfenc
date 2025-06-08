@@ -7,7 +7,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
 import { contractHistoryService, ContractHistoryEntry } from '@/services/contractHistoryService';
-import { useAuth } from '@/hooks/use-auth';
+import { auth } from '@/lib/firebase';
+import { User as FirebaseUser, onAuthStateChanged } from 'firebase/auth';
 import { 
   Server, 
   FileText, 
@@ -15,7 +16,7 @@ import {
   Search, 
   Calendar, 
   DollarSign,
-  User,
+  UserIcon,
   MapPin,
   Clock,
   CheckCircle,
@@ -35,6 +36,7 @@ export function ContractHistoryPanel({ children }: ContractHistoryPanelProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredContracts, setFilteredContracts] = useState<ContractHistoryEntry[]>([]);
+  const [user, setUser] = useState<FirebaseUser | null>(null);
   const [stats, setStats] = useState({
     total: 0,
     completed: 0,
@@ -43,8 +45,15 @@ export function ContractHistoryPanel({ children }: ContractHistoryPanelProps) {
     totalValue: 0
   });
   
-  const { user } = useAuth();
   const { toast } = useToast();
+
+  // Listen to authentication state changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+    });
+    return () => unsubscribe();
+  }, []);
 
   // Load contract history when panel opens
   const loadContractHistory = async () => {
@@ -171,137 +180,108 @@ export function ContractHistoryPanel({ children }: ContractHistoryPanelProps) {
           </SheetDescription>
         </SheetHeader>
 
-        <div className="mt-6 space-y-6">
-          {/* Stats Overview - Mobile Responsive */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <Card className="bg-slate-800 border-cyan-500/20 hover:border-cyan-400/40 transition-all duration-300">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-xl sm:text-2xl font-bold text-cyan-400">{stats.total}</div>
-                    <div className="text-xs text-gray-400">Total Contracts</div>
-                  </div>
-                  <FileText className="h-6 w-6 text-cyan-400/60" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-slate-800 border-green-500/20 hover:border-green-400/40 transition-all duration-300">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-xl sm:text-2xl font-bold text-green-400">{stats.completed}</div>
-                    <div className="text-xs text-gray-400">Completed</div>
-                  </div>
-                  <CheckCircle className="h-6 w-6 text-green-400/60" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-slate-800 border-yellow-500/20 hover:border-yellow-400/40 transition-all duration-300">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-xl sm:text-2xl font-bold text-yellow-400">{stats.drafts}</div>
-                    <div className="text-xs text-gray-400">Drafts</div>
-                  </div>
-                  <Eye className="h-6 w-6 text-yellow-400/60" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-slate-800 border-blue-500/20 hover:border-blue-400/40 transition-all duration-300">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-lg sm:text-xl font-bold text-blue-400">${stats.totalValue.toLocaleString()}</div>
-                    <div className="text-xs text-gray-400">Total Value</div>
-                  </div>
-                  <DollarSign className="h-6 w-6 text-blue-400/60" />
-                </div>
-              </CardContent>
-            </Card>
+        <div className="mt-4 space-y-3">
+          {/* Ultra-Compact Stats Row */}
+          <div className="grid grid-cols-4 gap-1">
+            <div className="bg-slate-800/50 border border-cyan-500/20 rounded p-1.5 text-center min-w-0">
+              <div className="text-sm font-bold text-cyan-400">{stats.total}</div>
+              <div className="text-xs text-gray-500 truncate">Total</div>
+            </div>
+            <div className="bg-slate-800/50 border border-green-500/20 rounded p-1.5 text-center min-w-0">
+              <div className="text-sm font-bold text-green-400">{stats.completed}</div>
+              <div className="text-xs text-gray-500 truncate">Done</div>
+            </div>
+            <div className="bg-slate-800/50 border border-yellow-500/20 rounded p-1.5 text-center min-w-0">
+              <div className="text-sm font-bold text-yellow-400">{stats.drafts}</div>
+              <div className="text-xs text-gray-500 truncate">Draft</div>
+            </div>
+            <div className="bg-slate-800/50 border border-blue-500/20 rounded p-1.5 text-center min-w-0">
+              <div className="text-xs font-bold text-blue-400 truncate">
+                ${stats.totalValue > 999 ? `${(stats.totalValue/1000).toFixed(0)}k` : stats.totalValue}
+              </div>
+              <div className="text-xs text-gray-500 truncate">Value</div>
+            </div>
           </div>
 
-          {/* Search */}
+          {/* Compact Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-gray-400" />
             <Input
-              placeholder="Search contracts by client, project type, or description..."
+              placeholder="Search by client, type..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-slate-800 border-cyan-500/20 text-white placeholder:text-gray-400"
+              className="pl-9 h-8 text-sm bg-slate-800 border-cyan-500/20 text-white placeholder:text-gray-400"
             />
           </div>
 
-          {/* Contract List */}
-          <ScrollArea className="h-[500px]">
+          {/* Contract List - Ultra Compact */}
+          <ScrollArea className="h-[450px]">
             {isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-cyan-400" />
-                <span className="ml-2 text-gray-400">Loading contracts...</span>
+              <div className="flex items-center justify-center py-6">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-cyan-400"></div>
+                <span className="ml-2 text-gray-400 text-sm">Loading...</span>
               </div>
             ) : filteredContracts.length === 0 ? (
-              <div className="text-center py-8 text-gray-400">
+              <div className="text-center py-8 text-gray-400 text-sm">
                 {contracts.length === 0 ? 'No contracts generated yet' : 'No contracts match your search'}
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {filteredContracts.map((contract) => (
-                  <Card key={contract.id} className="bg-slate-800 border-cyan-500/20 hover:border-cyan-400/40 transition-all duration-300">
-                    <CardContent className="p-3 sm:p-4">
-                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                        <div className="space-y-2 flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            {getStatusIcon(contract.status)}
-                            <h3 className="font-semibold text-white text-sm sm:text-base truncate flex-1">
-                              {contract.clientName}
-                            </h3>
-                            <Badge className={`text-xs ${getStatusColor(contract.status)} flex-shrink-0`}>
-                              {contract.status}
-                            </Badge>
+                  <div key={contract.id} className="bg-slate-800/50 border border-cyan-500/20 hover:border-cyan-400/40 rounded-lg p-2 transition-all duration-300">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          {getStatusIcon(contract.status)}
+                          <span className="font-medium text-white text-sm truncate">
+                            {contract.clientName}
+                          </span>
+                          <Badge className={`text-xs ${getStatusColor(contract.status)} px-1.5 py-0.5`}>
+                            {contract.status}
+                          </Badge>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-1 text-xs text-gray-400">
+                          <div className="flex items-center gap-1 truncate">
+                            <FileText className="h-3 w-3 flex-shrink-0" />
+                            <span className="truncate">{contract.projectType}</span>
                           </div>
-                          
-                          <div className="text-xs sm:text-sm text-gray-400 space-y-1">
-                            <div className="flex items-center gap-1">
-                              <FileText className="h-3 w-3 flex-shrink-0" />
-                              <span className="truncate">{contract.projectType}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <MapPin className="h-3 w-3 flex-shrink-0" />
-                              <span className="truncate">{contract.contractData.project.location}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <DollarSign className="h-3 w-3 flex-shrink-0" />
-                              <span className="font-mono">${contract.contractData.financials.total.toLocaleString()}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-3 w-3 flex-shrink-0" />
-                              <span className="text-xs">{formatDistanceToNow(contract.createdAt, { addSuffix: true })}</span>
-                            </div>
+                          <div className="flex items-center gap-1 truncate">
+                            <DollarSign className="h-3 w-3 flex-shrink-0" />
+                            <span className="font-mono truncate">${contract.contractData.financials.total.toLocaleString()}</span>
+                          </div>
+                          <div className="flex items-center gap-1 truncate col-span-2">
+                            <MapPin className="h-3 w-3 flex-shrink-0" />
+                            <span className="truncate">{contract.contractData.project.location}</span>
                           </div>
                         </div>
-
-                        <div className="flex flex-row sm:flex-col gap-2 justify-between sm:justify-start">
-                          {contract.pdfUrl && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => downloadContract(contract)}
-                              className="border-cyan-500/20 hover:border-cyan-400 hover:bg-cyan-500/10 text-xs flex-1 sm:flex-initial"
-                            >
-                              <Download className="h-3 w-3 mr-1" />
-                              <span className="hidden sm:inline">PDF</span>
-                              <span className="sm:hidden">Download</span>
-                            </Button>
-                          )}
-                          
-                          {contract.pageCount && (
-                            <Badge variant="outline" className="text-xs border-cyan-500/20 text-cyan-400 flex-shrink-0">
-                              {contract.pageCount}p
-                            </Badge>
-                          )}
+                        
+                        <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
+                          <Clock className="h-3 w-3 flex-shrink-0" />
+                          <span>{formatDistanceToNow(contract.createdAt, { addSuffix: true })}</span>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
+
+                      <div className="flex flex-col gap-1 items-end">
+                        {contract.pdfUrl && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => downloadContract(contract)}
+                            className="h-7 px-2 border-cyan-500/20 hover:border-cyan-400 hover:bg-cyan-500/10 text-xs"
+                          >
+                            <Download className="h-3 w-3" />
+                          </Button>
+                        )}
+                        
+                        {contract.pageCount && (
+                          <Badge variant="outline" className="text-xs border-cyan-500/20 text-cyan-400 h-5 px-1">
+                            {contract.pageCount}p
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
