@@ -100,6 +100,27 @@ export default function CyberpunkLegalDefense() {
   // Contract history state
   const [currentContractId, setCurrentContractId] = useState<string | null>(null);
   const [pdfGenerationTime, setPdfGenerationTime] = useState<number>(0);
+  
+  // Edit contract handler
+  const handleEditContract = useCallback((contract: any) => {
+    // Load contract data into the form for editing
+    setExtractedData(contract.contractData);
+    setCurrentPhase('arsenal-builder');
+    setCurrentStep(2);
+    
+    // Set approved clauses if they exist
+    if (contract.approvedClauses) {
+      setApprovedClauses(contract.approvedClauses);
+    }
+    
+    // Set customizations if they exist
+    if (contract.clauseCustomizations) {
+      setClauseCustomizations(contract.clauseCustomizations);
+    }
+    
+    // Store the contract ID for updating
+    setCurrentContractId(contract.id);
+  }, []);
 
   // Definir pasos del workflow cyberpunk
   const workflowSteps: WorkflowStep[] = [

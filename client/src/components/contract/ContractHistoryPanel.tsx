@@ -23,15 +23,17 @@ import {
   AlertCircle,
   Loader2,
   Eye,
-  Archive
+  Archive,
+  Edit3
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface ContractHistoryPanelProps {
   children: React.ReactNode;
+  onEditContract?: (contract: ContractHistoryEntry) => void;
 }
 
-export function ContractHistoryPanel({ children }: ContractHistoryPanelProps) {
+export function ContractHistoryPanel({ children, onEditContract }: ContractHistoryPanelProps) {
   const [contracts, setContracts] = useState<ContractHistoryEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -157,6 +159,16 @@ export function ContractHistoryPanel({ children }: ContractHistoryPanelProps) {
     }
   };
 
+  const editContract = (contract: ContractHistoryEntry) => {
+    if (onEditContract) {
+      onEditContract(contract);
+      toast({
+        title: "Opening Editor",
+        description: `Opening contract editor for ${contract.clientName}.`,
+      });
+    }
+  };
+
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -263,16 +275,31 @@ export function ContractHistoryPanel({ children }: ContractHistoryPanelProps) {
                       </div>
 
                       <div className="flex flex-col gap-1 items-end">
-                        {contract.pdfUrl && (
+                        <div className="flex gap-1">
+                          {/* Edit Button */}
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => downloadContract(contract)}
-                            className="h-7 px-2 border-cyan-500/20 hover:border-cyan-400 hover:bg-cyan-500/10 text-xs"
+                            onClick={() => editContract(contract)}
+                            className="h-7 px-2 border-orange-500/20 hover:border-orange-400 hover:bg-orange-500/10 text-xs"
+                            title="Edit Contract"
                           >
-                            <Download className="h-3 w-3" />
+                            <Edit3 className="h-3 w-3" />
                           </Button>
-                        )}
+                          
+                          {/* Download Button */}
+                          {contract.pdfUrl && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => downloadContract(contract)}
+                              className="h-7 px-2 border-cyan-500/20 hover:border-cyan-400 hover:bg-cyan-500/10 text-xs"
+                              title="Download PDF"
+                            >
+                              <Download className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
                         
                         {contract.pageCount && (
                           <Badge variant="outline" className="text-xs border-cyan-500/20 text-cyan-400 h-5 px-1">
