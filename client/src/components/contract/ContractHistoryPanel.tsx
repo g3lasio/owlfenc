@@ -160,7 +160,7 @@ export function ContractHistoryPanel({ children }: ContractHistoryPanelProps) {
           <Server className="h-5 w-5 text-cyan-400" />
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-[600px] sm:w-[800px] bg-slate-900 border-cyan-500/20">
+      <SheetContent className="w-full sm:w-[90vw] md:w-[600px] lg:w-[800px] max-w-[95vw] bg-slate-900 border-cyan-500/20">
         <SheetHeader>
           <SheetTitle className="text-cyan-400 flex items-center gap-2">
             <Archive className="h-5 w-5" />
@@ -172,30 +172,50 @@ export function ContractHistoryPanel({ children }: ContractHistoryPanelProps) {
         </SheetHeader>
 
         <div className="mt-6 space-y-6">
-          {/* Stats Overview */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card className="bg-slate-800 border-cyan-500/20">
-              <CardContent className="p-3">
-                <div className="text-2xl font-bold text-cyan-400">{stats.total}</div>
-                <div className="text-xs text-gray-400">Total Contracts</div>
+          {/* Stats Overview - Mobile Responsive */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <Card className="bg-slate-800 border-cyan-500/20 hover:border-cyan-400/40 transition-all duration-300">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-xl sm:text-2xl font-bold text-cyan-400">{stats.total}</div>
+                    <div className="text-xs text-gray-400">Total Contracts</div>
+                  </div>
+                  <FileText className="h-6 w-6 text-cyan-400/60" />
+                </div>
               </CardContent>
             </Card>
-            <Card className="bg-slate-800 border-green-500/20">
-              <CardContent className="p-3">
-                <div className="text-2xl font-bold text-green-400">{stats.completed}</div>
-                <div className="text-xs text-gray-400">Completed</div>
+            <Card className="bg-slate-800 border-green-500/20 hover:border-green-400/40 transition-all duration-300">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-xl sm:text-2xl font-bold text-green-400">{stats.completed}</div>
+                    <div className="text-xs text-gray-400">Completed</div>
+                  </div>
+                  <CheckCircle className="h-6 w-6 text-green-400/60" />
+                </div>
               </CardContent>
             </Card>
-            <Card className="bg-slate-800 border-yellow-500/20">
-              <CardContent className="p-3">
-                <div className="text-2xl font-bold text-yellow-400">{stats.drafts}</div>
-                <div className="text-xs text-gray-400">Drafts</div>
+            <Card className="bg-slate-800 border-yellow-500/20 hover:border-yellow-400/40 transition-all duration-300">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-xl sm:text-2xl font-bold text-yellow-400">{stats.drafts}</div>
+                    <div className="text-xs text-gray-400">Drafts</div>
+                  </div>
+                  <Eye className="h-6 w-6 text-yellow-400/60" />
+                </div>
               </CardContent>
             </Card>
-            <Card className="bg-slate-800 border-blue-500/20">
-              <CardContent className="p-3">
-                <div className="text-2xl font-bold text-blue-400">${stats.totalValue.toLocaleString()}</div>
-                <div className="text-xs text-gray-400">Total Value</div>
+            <Card className="bg-slate-800 border-blue-500/20 hover:border-blue-400/40 transition-all duration-300">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-lg sm:text-xl font-bold text-blue-400">${stats.totalValue.toLocaleString()}</div>
+                    <div className="text-xs text-gray-400">Total Value</div>
+                  </div>
+                  <DollarSign className="h-6 w-6 text-blue-400/60" />
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -226,53 +246,56 @@ export function ContractHistoryPanel({ children }: ContractHistoryPanelProps) {
               <div className="space-y-3">
                 {filteredContracts.map((contract) => (
                   <Card key={contract.id} className="bg-slate-800 border-cyan-500/20 hover:border-cyan-400/40 transition-all duration-300">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-2 flex-1">
-                          <div className="flex items-center gap-2">
+                    <CardContent className="p-3 sm:p-4">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                        <div className="space-y-2 flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
                             {getStatusIcon(contract.status)}
-                            <h3 className="font-semibold text-white">{contract.clientName}</h3>
-                            <Badge className={`text-xs ${getStatusColor(contract.status)}`}>
+                            <h3 className="font-semibold text-white text-sm sm:text-base truncate flex-1">
+                              {contract.clientName}
+                            </h3>
+                            <Badge className={`text-xs ${getStatusColor(contract.status)} flex-shrink-0`}>
                               {contract.status}
                             </Badge>
                           </div>
                           
-                          <div className="text-sm text-gray-400 space-y-1">
+                          <div className="text-xs sm:text-sm text-gray-400 space-y-1">
                             <div className="flex items-center gap-1">
-                              <FileText className="h-3 w-3" />
-                              {contract.projectType}
+                              <FileText className="h-3 w-3 flex-shrink-0" />
+                              <span className="truncate">{contract.projectType}</span>
                             </div>
                             <div className="flex items-center gap-1">
-                              <MapPin className="h-3 w-3" />
-                              {contract.contractData.project.location}
+                              <MapPin className="h-3 w-3 flex-shrink-0" />
+                              <span className="truncate">{contract.contractData.project.location}</span>
                             </div>
                             <div className="flex items-center gap-1">
-                              <DollarSign className="h-3 w-3" />
-                              ${contract.contractData.financials.total.toLocaleString()}
+                              <DollarSign className="h-3 w-3 flex-shrink-0" />
+                              <span className="font-mono">${contract.contractData.financials.total.toLocaleString()}</span>
                             </div>
                             <div className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {formatDistanceToNow(contract.createdAt, { addSuffix: true })}
+                              <Clock className="h-3 w-3 flex-shrink-0" />
+                              <span className="text-xs">{formatDistanceToNow(contract.createdAt, { addSuffix: true })}</span>
                             </div>
                           </div>
                         </div>
 
-                        <div className="flex flex-col gap-2">
+                        <div className="flex flex-row sm:flex-col gap-2 justify-between sm:justify-start">
                           {contract.pdfUrl && (
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => downloadContract(contract)}
-                              className="border-cyan-500/20 hover:border-cyan-400 hover:bg-cyan-500/10"
+                              className="border-cyan-500/20 hover:border-cyan-400 hover:bg-cyan-500/10 text-xs flex-1 sm:flex-initial"
                             >
                               <Download className="h-3 w-3 mr-1" />
-                              PDF
+                              <span className="hidden sm:inline">PDF</span>
+                              <span className="sm:hidden">Download</span>
                             </Button>
                           )}
                           
                           {contract.pageCount && (
-                            <Badge variant="outline" className="text-xs border-cyan-500/20 text-cyan-400">
-                              {contract.pageCount} pages
+                            <Badge variant="outline" className="text-xs border-cyan-500/20 text-cyan-400 flex-shrink-0">
+                              {contract.pageCount}p
                             </Badge>
                           )}
                         </div>

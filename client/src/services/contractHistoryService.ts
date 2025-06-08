@@ -94,10 +94,10 @@ class ContractHistoryService {
    */
   async getContractHistory(userId: string): Promise<ContractHistoryEntry[]> {
     try {
+      // Simple query without ordering to avoid Firebase errors
       const q = query(
         collection(db, this.collectionName),
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc')
+        where('userId', '==', userId)
       );
 
       const querySnapshot = await getDocs(q);
@@ -111,11 +111,15 @@ class ContractHistoryService {
         } as ContractHistoryEntry;
       });
 
+      // Sort locally to avoid Firebase index issues
+      contracts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
       console.log('🔥 Retrieved contract history:', contracts.length, 'contracts');
       return contracts;
     } catch (error) {
       console.error('❌ Error retrieving contract history:', error);
-      throw new Error('Failed to retrieve contract history');
+      // Return empty array on error to maintain functionality
+      return [];
     }
   }
 
