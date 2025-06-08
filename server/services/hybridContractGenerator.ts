@@ -41,6 +41,59 @@ export class HybridContractGenerator {
   }
 
   /**
+   * Obtiene información personalizada del contratista desde la base de datos
+   */
+  private async getContractorBranding(userId: number): Promise<{
+    companyName: string;
+    address: string;
+    phone: string;
+    licenseNumber: string;
+    website: string;
+    businessType: string;
+    state: string;
+  }> {
+    try {
+      // En producción, esto obtendrá datos del usuario registrado desde la base de datos
+      const { storage } = require('../storage');
+      const user = await storage.getUserById(userId);
+      
+      if (user && user.companyName) {
+        return {
+          companyName: user.companyName,
+          address: user.address || "Address on file",
+          phone: user.phone || "Phone on file", 
+          licenseNumber: user.licenseNumber || "License on file",
+          website: user.website || "",
+          businessType: user.businessType || "contractor",
+          state: user.state || "California"
+        };
+      }
+      
+      // Fallback para usuarios sin información completa
+      return {
+        companyName: "Professional Contractor Services",
+        address: "Business Address",
+        phone: "Business Phone",
+        licenseNumber: "License Number",
+        website: "",
+        businessType: "general",
+        state: "California"
+      };
+    } catch (error) {
+      console.error('Error obteniendo información del contratista:', error);
+      return {
+        companyName: "Professional Contractor Services", 
+        address: "Business Address",
+        phone: "Business Phone",
+        licenseNumber: "License Number",
+        website: "",
+        businessType: "general",
+        state: "California"
+      };
+    }
+  }
+
+  /**
    * Genera contrato completo usando Claude + PDF-lib
    */
   async generateProfessionalContract(request: ContractGenerationRequest): Promise<ContractGenerationResult> {
@@ -49,18 +102,22 @@ export class HybridContractGenerator {
     try {
       console.log('🤖 [HYBRID-CONTRACT] Iniciando generación inteligente...');
       
-      // Paso 1: Claude genera HTML personalizado
-      const intelligentHTML = await this.generateIntelligentHTML(request);
+      // Paso 1: Obtener información personalizada del contratista
+      const userId = request.contractData.contractor?.userId || 1;
+      const contractorBranding = await this.getContractorBranding(userId);
       
-      // Paso 2: Validar y optimizar HTML
-      const optimizedHTML = await this.validateAndOptimizeHTML(intelligentHTML, request.contractData);
+      // Paso 2: Claude genera HTML personalizado con branding específico
+      const intelligentHTML = await this.generateIntelligentHTML(request, contractorBranding);
       
-      // Paso 3: Generar PDF con PDF-lib
+      // Paso 3: Validar y optimizar HTML con información personalizada
+      const optimizedHTML = await this.validateAndOptimizeHTML(intelligentHTML, request.contractData, contractorBranding);
+      
+      // Paso 4: Generar PDF con PDF-lib
       const pdfBuffer = await this.generatePDFFromHTML(optimizedHTML);
       
       const generationTime = Date.now() - startTime;
       
-      console.log(`✅ [HYBRID-CONTRACT] Contrato generado exitosamente en ${generationTime}ms`);
+      console.log(`✅ [HYBRID-CONTRACT] Contrato generado para ${contractorBranding.companyName} en ${generationTime}ms`);
       
       return {
         success: true,
@@ -518,7 +575,7 @@ export class HybridContractGenerator {
     </div>
 
     <div class="footer">
-        <p>© ${new Date().getFullYear()} Owl Fenc - All Rights Reserved</p>
+        <p>© ${new Date().getFullYear()} ${contractorName} - All Rights Reserved</p>
     </div>
 </body>
 </html>`;
