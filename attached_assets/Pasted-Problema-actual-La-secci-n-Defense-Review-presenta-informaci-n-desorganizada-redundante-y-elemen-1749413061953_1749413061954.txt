@@ -1,0 +1,33 @@
+Problema actual:
+La sección “Defense Review” presenta información desorganizada, redundante y elementos que no corresponden a esta fase del proceso, lo que genera confusión y dificulta una revisión eficiente y profesional del contrato.
+
+Cambios requeridos (obligatorios, sin alterar otras funcionalidades existentes):
+Separar y eliminar elementos no pertinentes:
+
+No incluir el consentimiento de comunicación electrónica (“electronic communication consent”) en esta sección. Este apartado debe ser gestionado únicamente dentro del sistema de firmado, a implementarse posteriormente.
+
+Eliminar cualquier caja o campo relacionado con firmas electrónicas. La funcionalidad de firmas será implementada en un sistema dedicado y no debe aparecer aquí.
+
+Eliminar la caja de “Final Review and Confirmation”. La validación y confirmación del contrato serán parte del flujo de firmado, no de la revisión.
+
+Eliminar la caja de “Data Validation Status”. Esta validación no corresponde al usuario final en esta etapa.
+
+Eliminar la sección de “Payment Protection”. Su inclusión es innecesaria en esta pantalla y debe ser gestionada en la lógica de pagos o en el contrato en sí, no como un bloque visual extra en Defense Review.
+
+Eliminar el botón “Activate Research”. Este control no es relevante ni aporta valor en esta etapa.
+
+Optimización del contenido y experiencia de usuario:
+
+Presentar un preview limpio y bien organizado de los datos del contratista y del cliente, permitiendo ajustar o corregir información si es necesario antes de avanzar.
+
+En este paso, el sistema debe listar exclusivamente todas las cláusulas obligatorias que, por ley, deben incluirse en el contrato, y, de manera separada, mostrar las cláusulas opcionales sugeridas por la IA para ser seleccionadas o descartadas por el usuario.
+
+No agregar información adicional no solicitada.
+Limítate estrictamente a lo mencionado arriba para evitar confusión y desorden.
+
+Corrección de controles de navegación:
+
+Eliminar los botones duplicados “Back to Review”. Solo debe existir una opción de retroceso clara y funcional.
+
+No alteres ninguna lógica funcional o procesos en otras partes de la aplicación.
+Limítate únicamente a refactorizar y optimizar la sección “Defense Review” conforme a estas instrucciones.

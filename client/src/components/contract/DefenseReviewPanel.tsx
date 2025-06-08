@@ -1,20 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
 import { 
   Shield, 
-  AlertTriangle, 
-  CheckCircle, 
-  XCircle, 
   ArrowLeft,
   FileText,
-  DollarSign,
-  Clock,
-  Building
+  User,
+  Building,
+  MapPin,
+  Phone,
+  Mail,
+  DollarSign
 } from 'lucide-react';
 import { deepSearchDefenseEngine } from '@/services/deepSearchDefenseEngine';
 import type { DefenseClause, DefenseAnalysisResult } from '@/services/deepSearchDefenseEngine';
@@ -29,6 +28,19 @@ export function DefenseReviewPanel({ projectData, onDefenseComplete, onGoBack }:
   const [isAnalyzing, setIsAnalyzing] = useState(true);
   const [analysisResult, setAnalysisResult] = useState<DefenseAnalysisResult | null>(null);
   const [selectedClauses, setSelectedClauses] = useState<Set<string>>(new Set());
+  const [contractorData, setContractorData] = useState({
+    name: projectData?.contractorName || '',
+    address: projectData?.contractorAddress || '',
+    phone: projectData?.contractorPhone || '',
+    email: projectData?.contractorEmail || '',
+    license: projectData?.contractorLicense || ''
+  });
+  const [clientData, setClientData] = useState({
+    name: projectData?.clientName || '',
+    address: projectData?.clientAddress || projectData?.projectLocation || '',
+    phone: projectData?.clientPhone || '',
+    email: projectData?.clientEmail || ''
+  });
 
   useEffect(() => {
     const runAnalysis = async () => {
@@ -69,7 +81,13 @@ export function DefenseReviewPanel({ projectData, onDefenseComplete, onGoBack }:
       clause => selectedClauses.has(clause.id)
     );
     
-    onDefenseComplete(approvedClauses, {});
+    const customizations = {
+      contractorData,
+      clientData,
+      projectData
+    };
+    
+    onDefenseComplete(approvedClauses, customizations);
   };
 
   if (isAnalyzing) {
@@ -82,16 +100,15 @@ export function DefenseReviewPanel({ projectData, onDefenseComplete, onGoBack }:
             </div>
           </div>
           <CardTitle className="text-xl md:text-2xl font-bold text-blue-400 mb-2">
-            Contract Defense Analysis
+            Analizando Protecciones del Contrato
           </CardTitle>
           <p className="text-gray-300 text-xs md:text-sm leading-relaxed">
-            Reviewing contract protection options and legal safeguards...
+            Revisando opciones de protección legal y cláusulas de salvaguarda...
           </p>
         </CardHeader>
         <CardContent className="px-4 md:px-8 pb-6 md:pb-8">
           <div className="text-center space-y-4">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto"></div>
-            <Progress value={75} className="w-full [&>div]:bg-blue-400" />
           </div>
         </CardContent>
       </Card>
@@ -100,20 +117,16 @@ export function DefenseReviewPanel({ projectData, onDefenseComplete, onGoBack }:
 
   if (!analysisResult) {
     return (
-      <Alert className="border-red-400 bg-red-900/20">
-        <AlertTriangle className="h-4 w-4 text-red-400" />
-        <AlertDescription className="text-red-300">
-          Error analyzing contract defense options. Please try again.
-        </AlertDescription>
-      </Alert>
+      <Card className="border-2 border-red-400 bg-black/80 mt-6">
+        <CardContent className="p-6 text-center">
+          <p className="text-red-400">Error al analizar las opciones de protección del contrato. Intente nuevamente.</p>
+        </CardContent>
+      </Card>
     );
   }
 
-  const essentialClauses = analysisResult.recommendedClauses.filter(
-    clause => clause.category === 'Payment Protection' || 
-              clause.category === 'Scope Protection' || 
-              clause.category === 'Legal Compliance'
-  );
+  const mandatoryClauses = analysisResult.recommendedClauses.filter(clause => clause.applicability.mandatory);
+  const optionalClauses = analysisResult.recommendedClauses.filter(clause => !clause.applicability.mandatory);
 
   return (
     <Card className="border-2 border-green-400 bg-black/80 relative overflow-hidden mt-6">
@@ -124,190 +137,192 @@ export function DefenseReviewPanel({ projectData, onDefenseComplete, onGoBack }:
           </div>
         </div>
         <CardTitle className="text-xl md:text-2xl font-bold text-green-400 mb-2">
-          Contract Protection Review
+          Revisión Final del Contrato
         </CardTitle>
         <p className="text-gray-300 text-xs md:text-sm leading-relaxed">
-          Select protective clauses to include in your contract. Essential protections are pre-selected.
+          Verifique los datos y seleccione las cláusulas de protección antes de generar el contrato final.
         </p>
       </CardHeader>
 
       <CardContent className="px-4 md:px-8 pb-6 md:pb-8 space-y-6">
-        {/* Critical Warnings */}
-        {analysisResult.criticalWarnings.length > 0 && (
-          <Alert className="border-red-400 bg-red-900/20">
-            <AlertTriangle className="h-4 w-4 text-red-400" />
-            <AlertDescription>
-              <div className="font-semibold text-red-300 mb-2">Important Considerations:</div>
-              <ul className="space-y-1">
-                {analysisResult.criticalWarnings.map((warning, index) => (
-                  <li key={index} className="text-red-300 text-sm">
-                    • {warning.message}
-                  </li>
-                ))}
-              </ul>
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Progress Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="bg-gray-900/50 border-green-400/30">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-2xl font-bold text-green-400">{essentialClauses.length}</div>
-                  <div className="text-sm text-gray-400">Available Protections</div>
-                </div>
-                <Shield className="h-8 w-8 text-green-400" />
+        
+        {/* Preview de Datos del Contratista */}
+        <Card className="bg-gray-900/50 border-cyan-400/30">
+          <CardHeader>
+            <CardTitle className="text-cyan-400 flex items-center text-lg">
+              <Building className="h-5 w-5 mr-2" />
+              Datos del Contratista
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-gray-400 text-sm">Nombre de la Empresa</label>
+                <Input
+                  value={contractorData.name}
+                  onChange={(e) => setContractorData(prev => ({...prev, name: e.target.value}))}
+                  className="bg-gray-800 border-gray-600 text-white"
+                />
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gray-900/50 border-blue-400/30">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-2xl font-bold text-blue-400">{selectedClauses.size}</div>
-                  <div className="text-sm text-gray-400">Selected</div>
-                </div>
-                <CheckCircle className="h-8 w-8 text-blue-400" />
+              <div>
+                <label className="text-gray-400 text-sm">Dirección del Negocio</label>
+                <Input
+                  value={contractorData.address}
+                  onChange={(e) => setContractorData(prev => ({...prev, address: e.target.value}))}
+                  className="bg-gray-800 border-gray-600 text-white"
+                />
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gray-900/50 border-purple-400/30">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-2xl font-bold text-purple-400">{Math.round((selectedClauses.size / essentialClauses.length) * 100)}%</div>
-                  <div className="text-sm text-gray-400">Coverage</div>
-                </div>
-                <Building className="h-8 w-8 text-purple-400" />
+              <div>
+                <label className="text-gray-400 text-sm">Teléfono</label>
+                <Input
+                  value={contractorData.phone}
+                  onChange={(e) => setContractorData(prev => ({...prev, phone: e.target.value}))}
+                  className="bg-gray-800 border-gray-600 text-white"
+                />
               </div>
-            </CardContent>
-          </Card>
-        </div>
+              <div>
+                <label className="text-gray-400 text-sm">Email</label>
+                <Input
+                  value={contractorData.email}
+                  onChange={(e) => setContractorData(prev => ({...prev, email: e.target.value}))}
+                  className="bg-gray-800 border-gray-600 text-white"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* Essential Protection Clauses */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-bold text-green-400 flex items-center">
-            <Shield className="h-5 w-5 mr-2" />
-            Essential Contract Protections
-          </h3>
-          
-          {/* Payment Protection */}
-          <Card className="bg-gray-900/50 border-cyan-400/30">
-            <CardHeader>
-              <CardTitle className="text-cyan-400 flex items-center">
-                <DollarSign className="h-4 w-4 mr-2" />
-                Payment Protection
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {essentialClauses
-                .filter(clause => clause.category === 'Payment Protection')
-                .map((clause) => (
-                  <div key={clause.id} className="flex items-start space-x-3">
-                    <Checkbox
-                      checked={selectedClauses.has(clause.id)}
-                      onCheckedChange={() => toggleClause(clause.id)}
-                      className="mt-1"
-                    />
-                    <div className="flex-1">
-                      <div className="font-medium text-white">{clause.subcategory}</div>
-                      <div className="text-sm text-gray-400">{clause.rationale}</div>
-                      {clause.applicability.mandatory && (
-                        <Badge variant="destructive" className="mt-1 text-xs">
-                          REQUIRED
-                        </Badge>
-                      )}
-                    </div>
+        {/* Preview de Datos del Cliente */}
+        <Card className="bg-gray-900/50 border-green-400/30">
+          <CardHeader>
+            <CardTitle className="text-green-400 flex items-center text-lg">
+              <User className="h-5 w-5 mr-2" />
+              Datos del Cliente
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-gray-400 text-sm">Nombre del Cliente</label>
+                <Input
+                  value={clientData.name}
+                  onChange={(e) => setClientData(prev => ({...prev, name: e.target.value}))}
+                  className="bg-gray-800 border-gray-600 text-white"
+                />
+              </div>
+              <div>
+                <label className="text-gray-400 text-sm">Dirección del Proyecto</label>
+                <Input
+                  value={clientData.address}
+                  onChange={(e) => setClientData(prev => ({...prev, address: e.target.value}))}
+                  className="bg-gray-800 border-gray-600 text-white"
+                />
+              </div>
+              <div>
+                <label className="text-gray-400 text-sm">Teléfono</label>
+                <Input
+                  value={clientData.phone}
+                  onChange={(e) => setClientData(prev => ({...prev, phone: e.target.value}))}
+                  className="bg-gray-800 border-gray-600 text-white"
+                />
+              </div>
+              <div>
+                <label className="text-gray-400 text-sm">Email</label>
+                <Input
+                  value={clientData.email}
+                  onChange={(e) => setClientData(prev => ({...prev, email: e.target.value}))}
+                  className="bg-gray-800 border-gray-600 text-white"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Cláusulas Obligatorias por Ley */}
+        <Card className="bg-gray-900/50 border-red-400/30">
+          <CardHeader>
+            <CardTitle className="text-red-400 flex items-center text-lg">
+              <Shield className="h-5 w-5 mr-2" />
+              Cláusulas Obligatorias por Ley de California
+            </CardTitle>
+            <p className="text-gray-400 text-sm">
+              Estas cláusulas son requeridas por ley y se incluirán automáticamente en el contrato.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {mandatoryClauses.map((clause) => (
+              <div key={clause.id} className="flex items-start space-x-3 p-3 bg-gray-800/50 rounded border border-red-400/20">
+                <Checkbox 
+                  checked={true} 
+                  disabled={true}
+                  className="mt-1 border-red-400"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-medium text-red-300">{clause.title}</h4>
+                    <Badge className="bg-red-500/20 text-red-300 border-red-500/30">
+                      Obligatoria
+                    </Badge>
                   </div>
-                ))}
-            </CardContent>
-          </Card>
+                  <p className="text-gray-300 text-sm">{clause.description}</p>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
 
-          {/* Scope Protection */}
-          <Card className="bg-gray-900/50 border-green-400/30">
-            <CardHeader>
-              <CardTitle className="text-green-400 flex items-center">
-                <FileText className="h-4 w-4 mr-2" />
-                Scope Protection
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {essentialClauses
-                .filter(clause => clause.category === 'Scope Protection')
-                .map((clause) => (
-                  <div key={clause.id} className="flex items-start space-x-3">
-                    <Checkbox
-                      checked={selectedClauses.has(clause.id)}
-                      onCheckedChange={() => toggleClause(clause.id)}
-                      className="mt-1"
-                    />
-                    <div className="flex-1">
-                      <div className="font-medium text-white">{clause.subcategory}</div>
-                      <div className="text-sm text-gray-400">{clause.rationale}</div>
-                      {clause.applicability.mandatory && (
-                        <Badge variant="destructive" className="mt-1 text-xs">
-                          REQUIRED
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                ))}
-            </CardContent>
-          </Card>
-
-          {/* Legal Compliance */}
+        {/* Cláusulas Opcionales Sugeridas por IA */}
+        {optionalClauses.length > 0 && (
           <Card className="bg-gray-900/50 border-yellow-400/30">
             <CardHeader>
-              <CardTitle className="text-yellow-400 flex items-center">
-                <Building className="h-4 w-4 mr-2" />
-                Legal Compliance
+              <CardTitle className="text-yellow-400 flex items-center text-lg">
+                <Shield className="h-5 w-5 mr-2" />
+                Cláusulas Opcionales Recomendadas
               </CardTitle>
+              <p className="text-gray-400 text-sm">
+                Seleccione las cláusulas adicionales que desea incluir para mayor protección.
+              </p>
             </CardHeader>
             <CardContent className="space-y-3">
-              {essentialClauses
-                .filter(clause => clause.category === 'Legal Compliance')
-                .map((clause) => (
-                  <div key={clause.id} className="flex items-start space-x-3">
-                    <Checkbox
-                      checked={selectedClauses.has(clause.id)}
-                      onCheckedChange={() => toggleClause(clause.id)}
-                      className="mt-1"
-                    />
-                    <div className="flex-1">
-                      <div className="font-medium text-white">{clause.subcategory}</div>
-                      <div className="text-sm text-gray-400">{clause.rationale}</div>
-                      {clause.applicability.mandatory && (
-                        <Badge variant="destructive" className="mt-1 text-xs">
-                          REQUIRED
-                        </Badge>
-                      )}
+              {optionalClauses.map((clause) => (
+                <div key={clause.id} className="flex items-start space-x-3 p-3 bg-gray-800/50 rounded border border-yellow-400/20">
+                  <Checkbox 
+                    checked={selectedClauses.has(clause.id)}
+                    onCheckedChange={() => toggleClause(clause.id)}
+                    className="mt-1 border-yellow-400"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-yellow-300">{clause.title}</h4>
+                      <Badge className="bg-yellow-500/20 text-yellow-300 border-yellow-500/30">
+                        Opcional
+                      </Badge>
                     </div>
+                    <p className="text-gray-300 text-sm">{clause.description}</p>
                   </div>
-                ))}
+                </div>
+              ))}
             </CardContent>
           </Card>
-        </div>
+        )}
 
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center pt-6">
-          <Button 
+        {/* Controles de Navegación */}
+        <div className="flex justify-between pt-6">
+          <Button
             onClick={onGoBack}
             variant="outline"
-            className="border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-300"
+            className="border-gray-600 hover:border-gray-400"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            BACK TO REVIEW
+            Regresar
           </Button>
-          <Button 
+          
+          <Button
             onClick={handleComplete}
-            className="bg-green-600 hover:bg-green-500 text-black font-bold py-3 px-8 rounded border-0 shadow-none"
-            disabled={selectedClauses.size === 0}
+            className="bg-green-600 hover:bg-green-700 text-white"
           >
-            APPLY SELECTED PROTECTIONS
+            <FileText className="h-4 w-4 mr-2" />
+            Generar Contrato Final
           </Button>
         </div>
       </CardContent>
