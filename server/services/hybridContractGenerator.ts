@@ -100,54 +100,9 @@ export class HybridContractGenerator {
       `${m.item} | ${m.quantity} ${m.unit} | $${m.unitPrice?.toFixed(2) || '0.00'} | $${m.totalPrice?.toFixed(2) || '0.00'}`
     ).join('\n') || 'Materials to be specified';
 
-    const prompt = `Generate a professional 6-page Independent Contractor Agreement in HTML. This contract must be flexible and usable by any contractor using our service.
-
-CONTRACT DATA:
-- Client: ${contractData.client.name}
-- Client Address: ${contractData.client.address}
-- Client Phone: ${contractData.client.phone || '[CLIENT_PHONE]'}
-- Client Email: ${contractData.client.email || '[CLIENT_EMAIL]'}
-- Contractor: ${contractorName}
-- Contractor Address: ${contractorAddress}
-- Contractor Phone: ${contractorPhone}
-- Contractor Email: ${contractorEmail}
-- Contractor License: ${contractorLicense}
-- Project: ${contractData.project.description}
-- Location: ${contractData.project.location}
-- Total Amount: $${contractData.financials.total?.toFixed(2) || '0.00'}
-- Down Payment: $${(contractData.financials.total * 0.1)?.toFixed(2) || '0.00'} (10%)
-- Progress Payment: $${(contractData.financials.total * 0.4)?.toFixed(2) || '0.00'} (40% at 50% completion)
-- Final Payment: $${(contractData.financials.total * 0.5)?.toFixed(2) || '0.00'} (50% at completion)
-
-MATERIALS TABLE FORMAT:
-${materialsTable}
-
-CRITICAL REQUIREMENTS:
-1. Professional organized layout with information boxes for client and contractor
-2. Clean signature boxes with proper spacing
-3. NO unnecessary white space between pages
-4. Exactly 6 pages when printed on letter size (8.5x11")
-5. Include all California legal requirements:
-   - Right to Cancel clause (3-day cancellation period)
-   - Proper lien procedures and mechanics lien rights
-   - Required insurance minimums ($1M general liability)
-   - Workers compensation requirements
-   - Permit clarifications
-6. Flexible placeholder system for any contractor type
-7. Professional material table formatting
-8. Proper payment schedule (10%-40%-50%)
-9. Complete contractor information section
-10. Certificate of Insurance requirement
-
-STRUCTURE REQUIREMENTS:
-- Page 1: Header with organized info boxes, Background, Services with material table
-- Page 2: Terms, Payment schedule, Expenses, Insurance requirements  
-- Page 3: Payment protection, Lien rights, Additional costs, Right to Cancel
-- Page 4: Liability protection, Quality standards, Warranties, Force majeure
-- Page 5: Independent contractor status, Termination, Notices, Dispute resolution
-- Page 6: Indemnification, Governing law, Severability, Professional signature boxes
-
-Generate ONLY complete HTML with embedded CSS. Use organized information boxes, professional styling, and eliminate all unnecessary spacing.`;
+    // Skip Claude generation for speed and use enhanced template directly
+    console.log('🚀 [FAST-GENERATION] Using optimized template for speed...');
+    return this.generateEnhancedFallbackHTML(contractData);
 
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
@@ -257,11 +212,15 @@ Generate ONLY complete HTML with embedded CSS. Use organized information boxes, 
    * Genera HTML de respaldo mejorado cuando Claude falla
    */
   private generateEnhancedFallbackHTML(contractData: ContractData): string {
-    const contractorName = contractData.contractor.name || '[CONTRACTOR_NAME]';
-    const contractorAddress = contractData.contractor.address || '[CONTRACTOR_ADDRESS]';
-    const contractorPhone = contractData.contractor.phone || '[CONTRACTOR_PHONE]';
-    const contractorEmail = contractData.contractor.email || '[CONTRACTOR_EMAIL]';
-    const contractorLicense = contractData.contractor.license || '[LICENSE_NUMBER]';
+    // Only use data that's actually provided - no placeholders
+    const contractorName = contractData.contractor.name || 'Contractor';
+    const contractorAddress = contractData.contractor.address || '';
+    const contractorPhone = contractData.contractor.phone || '';
+    const contractorEmail = contractData.contractor.email || '';
+    const contractorLicense = contractData.contractor.license || '';
+    
+    const clientPhone = contractData.client.phone || '';
+    const clientEmail = contractData.client.email || '';
     
     const downPayment = (contractData.financials.total * 0.1).toFixed(2);
     const progressPayment = (contractData.financials.total * 0.4).toFixed(2);
@@ -275,47 +234,54 @@ Generate ONLY complete HTML with embedded CSS. Use organized information boxes, 
     <style>
         @page {
             size: 8.5in 11in;
-            margin: 0.5in 0.75in;
+            margin: 0.5in 0.6in;
         }
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Times New Roman', serif;
             font-size: 11px;
-            line-height: 1.3;
+            line-height: 1.2;
             margin: 0;
             padding: 0;
         }
         .info-box {
-            border: 2px solid #333;
-            padding: 8px;
-            margin: 5px 0;
+            border: 1px solid #000;
+            padding: 6px;
+            margin: 3px 0;
             background: #f9f9f9;
         }
         .signature-box {
-            border: 2px solid #333;
-            padding: 15px;
-            margin: 10px 0;
+            border: 1px solid #000;
+            padding: 10px;
+            margin: 6px 0;
             background: #f9f9f9;
-            min-height: 60px;
+            min-height: 50px;
         }
         .material-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 5px 0;
+            margin: 3px 0;
         }
         .material-table th, .material-table td {
-            border: 1px solid #333;
-            padding: 4px;
+            border: 1px solid #000;
+            padding: 3px;
             text-align: left;
-            font-size: 10px;
+            font-size: 9px;
+        }
+        .material-table th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+        }
+        .material-table .amount {
+            text-align: right;
         }
         .page-break { page-break-before: always; }
         .no-break { page-break-inside: avoid; }
-        h1 { font-size: 16px; margin: 5px 0; text-align: center; }
-        h2 { font-size: 14px; margin: 8px 0 4px 0; }
-        h3 { font-size: 12px; margin: 6px 0 3px 0; }
-        p { margin: 3px 0; }
-        .compact { margin: 2px 0; }
-        .two-column { display: flex; gap: 20px; }
+        h1 { font-size: 16px; margin: 3px 0; text-align: center; font-weight: bold; text-transform: uppercase; }
+        h2 { font-size: 12px; margin: 6px 0 3px 0; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #000; }
+        h3 { font-size: 11px; margin: 4px 0 2px 0; font-weight: bold; }
+        p { margin: 2px 0; }
+        .compact { margin: 1px 0; }
+        .two-column { display: flex; gap: 15px; margin-bottom: 8px; }
         .column { flex: 1; }
     </style>
 </head>
@@ -328,8 +294,8 @@ Generate ONLY complete HTML with embedded CSS. Use organized information boxes, 
                 <h3>CLIENT:</h3>
                 <p><strong>${contractData.client.name}</strong></p>
                 <p>${contractData.client.address}</p>
-                <p>Phone: ${contractData.client.phone || '[CLIENT_PHONE]'}</p>
-                <p>Email: ${contractData.client.email || '[CLIENT_EMAIL]'}</p>
+                ${clientPhone ? `<p>Phone: ${clientPhone}</p>` : ''}
+                ${clientEmail ? `<p>Email: ${clientEmail}</p>` : ''}
                 <p>("Client")</p>
             </div>
         </div>
@@ -337,10 +303,10 @@ Generate ONLY complete HTML with embedded CSS. Use organized information boxes, 
             <div class="info-box">
                 <h3>CONTRACTOR:</h3>
                 <p><strong>${contractorName}</strong></p>
-                <p>${contractorAddress}</p>
-                <p>Phone: ${contractorPhone}</p>
-                <p>Email: ${contractorEmail}</p>
-                <p>License #: ${contractorLicense}</p>
+                ${contractorAddress ? `<p>${contractorAddress}</p>` : ''}
+                ${contractorPhone ? `<p>Phone: ${contractorPhone}</p>` : ''}
+                ${contractorEmail ? `<p>Email: ${contractorEmail}</p>` : ''}
+                ${contractorLicense ? `<p>License #: ${contractorLicense}</p>` : ''}
                 <p>("Contractor")</p>
             </div>
         </div>
