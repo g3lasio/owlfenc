@@ -88,42 +88,66 @@ export class HybridContractGenerator {
   private async generateIntelligentHTML(request: ContractGenerationRequest): Promise<string> {
     const { contractData } = request;
     
-    const prompt = `Genera un contrato profesional de Independent Contractor Agreement en HTML que DEBE tener exactamente 6 páginas cuando se imprima en formato carta (8.5x11").
+    // Preparar datos del contratista de forma flexible
+    const contractorName = contractData.contractor.name || '[CONTRACTOR_NAME]';
+    const contractorAddress = contractData.contractor.address || '[CONTRACTOR_ADDRESS]';
+    const contractorPhone = contractData.contractor.phone || '[CONTRACTOR_PHONE]';
+    const contractorEmail = contractData.contractor.email || '[CONTRACTOR_EMAIL]';
+    const contractorLicense = contractData.contractor.license || '[LICENSE_NUMBER]';
+    
+    // Formatear materiales de forma profesional
+    const materialsTable = contractData.materials?.map(m => 
+      `${m.item} | ${m.quantity} ${m.unit} | $${m.unitPrice?.toFixed(2) || '0.00'} | $${m.totalPrice?.toFixed(2) || '0.00'}`
+    ).join('\n') || 'Materials to be specified';
 
-DATOS DEL CONTRATO:
-- Cliente: ${contractData.client.name}
-- Dirección Cliente: ${contractData.client.address}
-- Contratista: ${contractData.contractor.name}
-- Dirección Contratista: ${contractData.contractor.address}
-- Proyecto: ${contractData.project.description}
-- Ubicación: ${contractData.project.location}
-- Monto Total: $${contractData.financials.total}
-- Anticipo: $${contractData.paymentTerms.retainer}
+    const prompt = `Generate a professional 6-page Independent Contractor Agreement in HTML. This contract must be flexible and usable by any contractor using our service.
 
-PROTECCIONES LEGALES SELECCIONADAS:
-${contractData.protections.map(p => `- ${p.category}: ${p.clause}`).join('\n')}
+CONTRACT DATA:
+- Client: ${contractData.client.name}
+- Client Address: ${contractData.client.address}
+- Client Phone: ${contractData.client.phone || '[CLIENT_PHONE]'}
+- Client Email: ${contractData.client.email || '[CLIENT_EMAIL]'}
+- Contractor: ${contractorName}
+- Contractor Address: ${contractorAddress}
+- Contractor Phone: ${contractorPhone}
+- Contractor Email: ${contractorEmail}
+- Contractor License: ${contractorLicense}
+- Project: ${contractData.project.description}
+- Location: ${contractData.project.location}
+- Total Amount: $${contractData.financials.total?.toFixed(2) || '0.00'}
+- Down Payment: $${(contractData.financials.total * 0.1)?.toFixed(2) || '0.00'} (10%)
+- Progress Payment: $${(contractData.financials.total * 0.4)?.toFixed(2) || '0.00'} (40% at 50% completion)
+- Final Payment: $${(contractData.financials.total * 0.5)?.toFixed(2) || '0.00'} (50% at completion)
 
-MATERIALES DEL PROYECTO:
-${contractData.materials?.slice(0, 8).map(m => `- ${m.item} (${m.quantity} ${m.unit}) - $${m.totalPrice}`).join('\n') || 'No materials listed'}
+MATERIALS TABLE FORMAT:
+${materialsTable}
 
-REQUISITOS CRÍTICOS:
-1. DEBE ser exactamente 6 páginas cuando se imprima
-2. Formato legal profesional estilo California
-3. Incluir TODAS las secciones: Background, Services, Terms, Compensation, Protections, Signatures
-4. Usar CSS para controlar saltos de página (@page, page-break-before, page-break-after)
-5. Estructura similar a contratos LawDepot profesionales
-6. Incluir numeración de cláusulas (1, 2, 3, etc.)
-7. Secciones de firma al final con líneas para firmas
+CRITICAL REQUIREMENTS:
+1. Professional organized layout with information boxes for client and contractor
+2. Clean signature boxes with proper spacing
+3. NO unnecessary white space between pages
+4. Exactly 6 pages when printed on letter size (8.5x11")
+5. Include all California legal requirements:
+   - Right to Cancel clause (3-day cancellation period)
+   - Proper lien procedures and mechanics lien rights
+   - Required insurance minimums ($1M general liability)
+   - Workers compensation requirements
+   - Permit clarifications
+6. Flexible placeholder system for any contractor type
+7. Professional material table formatting
+8. Proper payment schedule (10%-40%-50%)
+9. Complete contractor information section
+10. Certificate of Insurance requirement
 
-ESTRUCTURA REQUERIDA:
-- Página 1: Encabezado, partes contratantes, background, servicios
-- Página 2: Términos del acuerdo, moneda, compensación inicial
-- Página 3: Detalles de pago, gastos, intereses
-- Página 4: Confidencialidad, propiedad intelectual, protecciones específicas
-- Página 5: Capacidad de contratista independiente, exclusividad, notificaciones
-- Página 6: Indemnización, ley aplicable, separabilidad, firmas
+STRUCTURE REQUIREMENTS:
+- Page 1: Header with organized info boxes, Background, Services with material table
+- Page 2: Terms, Payment schedule, Expenses, Insurance requirements  
+- Page 3: Payment protection, Lien rights, Additional costs, Right to Cancel
+- Page 4: Liability protection, Quality standards, Warranties, Force majeure
+- Page 5: Independent contractor status, Termination, Notices, Dispute resolution
+- Page 6: Indemnification, Governing law, Severability, Professional signature boxes
 
-Genera SOLO el HTML completo, sin explicaciones. Usa CSS print media queries para garantizar 6 páginas exactas.`;
+Generate ONLY complete HTML with embedded CSS. Use organized information boxes, professional styling, and eliminate all unnecessary spacing.`;
 
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
@@ -143,15 +167,18 @@ Genera SOLO el HTML completo, sin explicaciones. Usa CSS print media queries par
    * Valida y optimiza el HTML generado por Claude
    */
   private async validateAndOptimizeHTML(html: string, contractData: ContractData): Promise<string> {
-    // Verificar que tiene elementos críticos
+    // Verificar que tiene elementos críticos mejorados
     const requiredSections = [
       'INDEPENDENT CONTRACTOR AGREEMENT',
       contractData.client.name,
-      contractData.contractor.name,
+      contractData.contractor.name || '[CONTRACTOR_NAME]',
       'BACKGROUND',
       'SERVICES PROVIDED',
       'COMPENSATION',
-      'IN WITNESS WHEREOF'
+      'RIGHT TO CANCEL',
+      'INSURANCE REQUIREMENTS',
+      'MECHANIC\'S LIEN RIGHTS',
+      'SIGNATURES'
     ];
 
     let optimizedHTML = html;
@@ -160,26 +187,299 @@ Genera SOLO el HTML completo, sin explicaciones. Usa CSS print media queries par
     for (const section of requiredSections) {
       if (!html.includes(section)) {
         console.warn(`⚠️ [VALIDATION] Sección faltante: ${section}`);
-        // Podríamos agregar la sección faltante aquí
       }
     }
 
-    // Optimizar CSS para 6 páginas exactas
+    // Si el HTML de Claude no es válido, usar template de respaldo mejorado
+    if (html.length < 5000 || !html.includes('<!DOCTYPE html>')) {
+      console.warn('⚠️ [VALIDATION] HTML inválido, usando template mejorado');
+      return this.generateEnhancedFallbackHTML(contractData);
+    }
+
+    // Optimizar CSS para diseño compacto y sin espacios innecesarios
+    const enhancedCSS = `
+      <style>
+        @page {
+          size: 8.5in 11in;
+          margin: 0.5in 0.75in;
+        }
+        body {
+          font-family: Arial, sans-serif;
+          font-size: 11px;
+          line-height: 1.3;
+          margin: 0;
+          padding: 0;
+        }
+        .info-box {
+          border: 2px solid #333;
+          padding: 8px;
+          margin: 5px 0;
+          background: #f9f9f9;
+        }
+        .signature-box {
+          border: 2px solid #333;
+          padding: 15px;
+          margin: 10px 0;
+          background: #f9f9f9;
+          min-height: 60px;
+        }
+        .material-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 5px 0;
+        }
+        .material-table th, .material-table td {
+          border: 1px solid #333;
+          padding: 4px;
+          text-align: left;
+          font-size: 10px;
+        }
+        .page-break { page-break-before: always; }
+        .no-break { page-break-inside: avoid; }
+        h1 { font-size: 16px; margin: 5px 0; text-align: center; }
+        h2 { font-size: 14px; margin: 8px 0 4px 0; }
+        h3 { font-size: 12px; margin: 6px 0 3px 0; }
+        p { margin: 3px 0; }
+        .compact { margin: 2px 0; }
+      </style>
+    `;
+
     if (!html.includes('@page')) {
-      const pageCSS = `
-        <style>
-          @page {
-            size: 8.5in 11in;
-            margin: 0.75in;
-          }
-          .page-break { page-break-before: always; }
-          .no-break { page-break-inside: avoid; }
-        </style>
-      `;
-      optimizedHTML = html.replace('<head>', '<head>' + pageCSS);
+      optimizedHTML = html.replace('<head>', '<head>' + enhancedCSS);
+    } else {
+      optimizedHTML = html.replace(/<style[\s\S]*?<\/style>/, enhancedCSS);
     }
 
     return optimizedHTML;
+  }
+
+  /**
+   * Genera HTML de respaldo mejorado cuando Claude falla
+   */
+  private generateEnhancedFallbackHTML(contractData: ContractData): string {
+    const contractorName = contractData.contractor.name || '[CONTRACTOR_NAME]';
+    const contractorAddress = contractData.contractor.address || '[CONTRACTOR_ADDRESS]';
+    const contractorPhone = contractData.contractor.phone || '[CONTRACTOR_PHONE]';
+    const contractorEmail = contractData.contractor.email || '[CONTRACTOR_EMAIL]';
+    const contractorLicense = contractData.contractor.license || '[LICENSE_NUMBER]';
+    
+    const downPayment = (contractData.financials.total * 0.1).toFixed(2);
+    const progressPayment = (contractData.financials.total * 0.4).toFixed(2);
+    const finalPayment = (contractData.financials.total * 0.5).toFixed(2);
+
+    return `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Independent Contractor Agreement</title>
+    <style>
+        @page {
+            size: 8.5in 11in;
+            margin: 0.5in 0.75in;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            line-height: 1.3;
+            margin: 0;
+            padding: 0;
+        }
+        .info-box {
+            border: 2px solid #333;
+            padding: 8px;
+            margin: 5px 0;
+            background: #f9f9f9;
+        }
+        .signature-box {
+            border: 2px solid #333;
+            padding: 15px;
+            margin: 10px 0;
+            background: #f9f9f9;
+            min-height: 60px;
+        }
+        .material-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 5px 0;
+        }
+        .material-table th, .material-table td {
+            border: 1px solid #333;
+            padding: 4px;
+            text-align: left;
+            font-size: 10px;
+        }
+        .page-break { page-break-before: always; }
+        .no-break { page-break-inside: avoid; }
+        h1 { font-size: 16px; margin: 5px 0; text-align: center; }
+        h2 { font-size: 14px; margin: 8px 0 4px 0; }
+        h3 { font-size: 12px; margin: 6px 0 3px 0; }
+        p { margin: 3px 0; }
+        .compact { margin: 2px 0; }
+        .two-column { display: flex; gap: 20px; }
+        .column { flex: 1; }
+    </style>
+</head>
+<body>
+    <h1>INDEPENDENT CONTRACTOR AGREEMENT</h1>
+    
+    <div class="two-column">
+        <div class="column">
+            <div class="info-box">
+                <h3>CLIENT:</h3>
+                <p><strong>${contractData.client.name}</strong></p>
+                <p>${contractData.client.address}</p>
+                <p>Phone: ${contractData.client.phone || '[CLIENT_PHONE]'}</p>
+                <p>Email: ${contractData.client.email || '[CLIENT_EMAIL]'}</p>
+                <p>("Client")</p>
+            </div>
+        </div>
+        <div class="column">
+            <div class="info-box">
+                <h3>CONTRACTOR:</h3>
+                <p><strong>${contractorName}</strong></p>
+                <p>${contractorAddress}</p>
+                <p>Phone: ${contractorPhone}</p>
+                <p>Email: ${contractorEmail}</p>
+                <p>License #: ${contractorLicense}</p>
+                <p>("Contractor")</p>
+            </div>
+        </div>
+    </div>
+
+    <h2>BACKGROUND</h2>
+    <p class="compact">1. Client desires to engage Contractor as an independent contractor to perform ${contractData.project.type || 'construction'} services at the property located at ${contractData.project.location} ("Property").</p>
+    <p class="compact">2. Contractor represents that it has the necessary skills, experience, and resources to perform the required services in a professional and workmanlike manner.</p>
+
+    <h2>SERVICES TO BE PERFORMED</h2>
+    <p class="compact">3. Contractor agrees to provide the following services ("Services"):</p>
+    <p class="compact"><strong>Project Description:</strong> ${contractData.project.description}</p>
+    
+    <p class="compact">4. Materials and labor breakdown:</p>
+    <table class="material-table">
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th>Quantity</th>
+                <th>Unit Price</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${contractData.materials?.map(m => `
+                <tr>
+                    <td>${m.item}</td>
+                    <td>${m.quantity} ${m.unit}</td>
+                    <td>$${m.unitPrice?.toFixed(2) || '0.00'}</td>
+                    <td>$${m.totalPrice?.toFixed(2) || '0.00'}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="4">Materials to be specified</td></tr>'}
+        </tbody>
+    </table>
+    <p><strong>TOTAL CONTRACT AMOUNT: $${contractData.financials.total?.toFixed(2) || '0.00'}</strong></p>
+
+    <div class="page-break"></div>
+    
+    <h2>TERMS OF AGREEMENT</h2>
+    <p class="compact">5. This Agreement shall commence upon execution by both parties and shall continue until all Services have been completed and final payment has been made, unless terminated earlier in accordance with the provisions herein.</p>
+    <p class="compact">6. Time is of the essence in this Agreement. Contractor shall commence work within a reasonable time after receipt of the down payment and shall diligently pursue completion of the Services.</p>
+    <p class="compact">7. Contractor warrants that all work will be performed in a good and workmanlike manner in accordance with industry standards and applicable building codes.</p>
+
+    <h2>PAYMENT SCHEDULE</h2>
+    <p class="compact">8. In consideration for the Services, Client agrees to pay Contractor the total sum of $${contractData.financials.total?.toFixed(2) || '0.00'}.</p>
+    <p class="compact">9. Payment schedule:</p>
+    <p class="compact">a) Down payment of $${downPayment} (10%) due upon execution of this Agreement</p>
+    <p class="compact">b) Progress payment of $${progressPayment} (40%) due at 50% completion of Services</p>
+    <p class="compact">c) Final payment of $${finalPayment} (50%) due upon completion of Services</p>
+
+    <h2>INSURANCE REQUIREMENTS</h2>
+    <p class="compact">10. Contractor shall maintain and provide proof of the following insurance coverage:</p>
+    <p class="compact">a) General Liability Insurance: Minimum $1,000,000 per occurrence</p>
+    <p class="compact">b) Workers' Compensation Insurance as required by California law</p>
+    <p class="compact">c) Certificate of Insurance must be provided before work commences</p>
+
+    <h2>EXPENSES AND ADDITIONAL COSTS</h2>
+    <p class="compact">11. The contract price includes all materials, labor, equipment, and other costs necessary to complete the Services as specified herein.</p>
+    <p class="compact">12. Any additional work requested by Client beyond the scope of Services described herein shall require a written change order signed by both parties and may result in additional charges.</p>
+    <p class="compact">13. Client shall be responsible for obtaining any necessary permits, unless otherwise specified in writing. Contractor shall perform work in compliance with applicable permits and codes.</p>
+
+    <div class="page-break"></div>
+    
+    <h2>PAYMENT PROTECTION</h2>
+    <p class="compact">14. Late payments shall incur a penalty of 1.5% per month (18% annually) or the maximum rate permitted by law, whichever is lower. After 30 days delinquency, Contractor may suspend all work and demand immediate payment of all outstanding amounts plus accrued penalties.</p>
+    <p class="compact">15. Contractor expressly reserves all mechanic's lien rights under California Civil Code Section 8000 et seq. Client acknowledges these rights and waives any objection to preliminary notice. Lien rights may be exercised immediately upon any payment default without additional notice.</p>
+    <p class="compact">16. Client agrees to pay all costs of collection, including reasonable attorney's fees and court costs, incurred by Contractor in collecting any overdue amounts.</p>
+
+    <h2>RIGHT TO CANCEL</h2>
+    <p class="compact">17. <strong>CALIFORNIA LAW NOTICE:</strong> Client has the right to cancel this contract within three (3) business days after signing. To cancel, Client must provide written notice to Contractor at the address above. If Client cancels within this period, any payments made will be refunded within ten (10) days, minus any materials already ordered specifically for this project.</p>
+
+    <h2>LIABILITY PROTECTION</h2>
+    <p class="compact">18. Contractor's total liability for any and all claims shall not exceed the total contract price. Contractor shall not be liable for consequential, incidental, special, or punitive damages under any circumstances.</p>
+    <p class="compact">19. Each party shall be responsible for its own acts and omissions and those of its employees, agents, and subcontractors.</p>
+
+    <h2>QUALITY STANDARDS AND WARRANTIES</h2>
+    <p class="compact">20. Contractor warrants that all Services will be performed in accordance with industry standards and that all materials will be of good quality and free from defects.</p>
+    <p class="compact">21. Contractor provides a limited warranty on workmanship for a period of one (1) year from completion of Services. This warranty covers defects in workmanship but does not cover normal wear and tear, damage from misuse, or damage from acts of nature.</p>
+
+    <div class="page-break"></div>
+    
+    <h2>FORCE MAJEURE</h2>
+    <p class="compact">22. Neither party shall be liable for delays or failure to perform due to causes beyond their reasonable control, including but not limited to acts of God, weather conditions, labor strikes, material shortages, government regulations, or public health emergencies.</p>
+
+    <h2>INDEPENDENT CONTRACTOR STATUS</h2>
+    <p class="compact">23. Contractor is engaged as an independent contractor and is not an employee, agent, partner, or joint venturer of Client.</p>
+    <p class="compact">24. Contractor shall have the right to control and determine the method, details, and means of performing the Services, subject to the requirement that Services be performed in accordance with this Agreement.</p>
+    <p class="compact">25. Contractor shall be solely responsible for payment of all taxes, social security contributions, insurance premiums, and other expenses relating to Contractor's performance of Services.</p>
+
+    <h2>TERMINATION</h2>
+    <p class="compact">26. Either party may terminate this Agreement upon written notice if the other party materially breaches this Agreement and fails to cure such breach within ten (10) days after written notice.</p>
+    <p class="compact">27. In the event of termination, Client shall pay Contractor for all Services satisfactorily performed through the date of termination, less any amounts previously paid.</p>
+
+    <h2>NOTICES</h2>
+    <p class="compact">28. All notices required under this Agreement shall be in writing and delivered to the addresses set forth above, or to such other addresses as the parties may designate in writing.</p>
+
+    <div class="page-break"></div>
+    
+    <h2>DISPUTE RESOLUTION</h2>
+    <p class="compact">29. The parties agree to first attempt to resolve any disputes through good faith negotiation. If unsuccessful, disputes shall be resolved through binding arbitration in accordance with California law.</p>
+
+    <h2>INDEMNIFICATION</h2>
+    <p class="compact">30. Each party agrees to indemnify and hold harmless the other party from and against any claims, damages, losses, or expenses arising out of or relating to such party's negligent acts or omissions in connection with this Agreement.</p>
+    <p class="compact">31. Client agrees to indemnify Contractor against any claims arising from pre-existing conditions at the Property or from Client's failure to disclose material information about the Property or required Services.</p>
+
+    <h2>GOVERNING LAW</h2>
+    <p class="compact">32. This Agreement shall be governed by and construed in accordance with the laws of the State of California, without regard to conflict of law principles.</p>
+    <p class="compact">33. Any legal proceedings arising under this Agreement shall be brought in the appropriate state or federal courts located in the county where the Property is located.</p>
+
+    <h2>SEVERABILITY AND INTEGRATION</h2>
+    <p class="compact">34. If any provision of this Agreement is held to be invalid or unenforceable, the remainder of this Agreement shall remain in full force and effect.</p>
+    <p class="compact">35. This Agreement constitutes the entire agreement between the parties and supersedes all prior negotiations, representations, or agreements relating to the subject matter herein.</p>
+    <p class="compact">36. This Agreement may only be modified by written instrument signed by both parties.</p>
+
+    <div class="page-break"></div>
+    
+    <h2>SIGNATURES</h2>
+    <p>This Agreement has been executed on the dates set forth below.</p>
+    
+    <div class="signature-box">
+        <h3>CLIENT:</h3>
+        <p>_________________________________</p>
+        <p><strong>${contractData.client.name}</strong></p>
+        <p>Date: _______________</p>
+    </div>
+
+    <div class="signature-box">
+        <h3>CONTRACTOR:</h3>
+        <p>_________________________________</p>
+        <p><strong>${contractorName}</strong></p>
+        <p>License #: ${contractorLicense}</p>
+        <p>Date: _______________</p>
+    </div>
+
+    <div class="info-box">
+        <p><strong>NOTICE:</strong> This Agreement has been executed on the dates set forth above. Both parties acknowledge they have read and understood all terms and conditions.</p>
+    </div>
+</body>
+</html>`;
   }
 
   /**
@@ -252,26 +552,26 @@ Genera SOLO el HTML completo, sin explicaciones. Usa CSS print media queries par
    * Fallback si Claude falla - usa template base
    */
   private async generateFallbackContract(request: ContractGenerationRequest, startTime: number): Promise<ContractGenerationResult> {
-    console.log('🔄 [FALLBACK] Usando template base...');
+    console.log('🔄 [FALLBACK] Usando template mejorado...');
     
     try {
-      const fallbackHTML = this.generateFallbackHTML(request.contractData);
-      const pdfBuffer = await this.generatePDFFromHTML(fallbackHTML);
+      const enhancedHTML = this.generateEnhancedFallbackHTML(request.contractData);
+      const pdfBuffer = await this.generatePDFFromHTML(enhancedHTML);
       
       return {
         success: true,
-        html: fallbackHTML,
+        html: enhancedHTML,
         pdfBuffer,
         metadata: {
           pageCount: 6,
           generationTime: Date.now() - startTime,
-          templateUsed: 'fallback-base-template'
+          templateUsed: 'enhanced-fallback-template'
         }
       };
     } catch (error) {
       return {
         success: false,
-        error: `Contract generation failed: ${error.message}`,
+        error: `Contract generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         metadata: {
           pageCount: 0,
           generationTime: Date.now() - startTime,
