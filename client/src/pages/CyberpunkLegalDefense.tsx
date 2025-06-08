@@ -5,6 +5,8 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
+import DefenseReviewPanel from '@/components/contract/DefenseReviewPanel';
+import DeepSearchDefenseEngine, { DefenseClause } from '@/services/deepSearchDefenseEngine';
 import { 
   Upload,
   Shield, 
@@ -72,6 +74,11 @@ export default function CyberpunkLegalDefense() {
   const [generatedContract, setGeneratedContract] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  
+  // Estados para el nuevo sistema DeepSearch Defense
+  const [defenseEngine] = useState(() => DeepSearchDefenseEngine.getInstance());
+  const [approvedClauses, setApprovedClauses] = useState<DefenseClause[]>([]);
+  const [clauseCustomizations, setClauseCustomizations] = useState<Record<string, any>>({});
   
   // Estados del toggle de método de entrada
   const [dataInputMethod, setDataInputMethod] = useState<'upload' | 'select'>('upload');
@@ -158,6 +165,7 @@ export default function CyberpunkLegalDefense() {
       }
     } catch (error) {
       console.error('Error loading projects:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
         title: "⚡ CONNECTION ERROR",
         description: "Cannot connect to project database",
