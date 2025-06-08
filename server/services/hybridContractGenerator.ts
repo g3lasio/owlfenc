@@ -4,7 +4,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
-import { ContractData } from '../../client/src/services/professionalContractGenerator';
+import type { ContractData } from '../../client/src/services/professionalContractGenerator';
 
 // the newest Anthropic model is "claude-sonnet-4-20250514" which was released May 14, 2025. Use this by default unless user has already selected claude-3-7-sonnet-20250219
 const anthropic = new Anthropic({
@@ -103,7 +103,7 @@ export class HybridContractGenerator {
       console.log('🤖 [HYBRID-CONTRACT] Iniciando generación inteligente...');
       
       // Paso 1: Obtener información personalizada del contratista
-      const userId = request.contractData.contractor?.userId || 1;
+      const userId = request.contractData.userId || 1;
       const contractorBranding = await this.getContractorBranding(userId);
       
       // Paso 2: Claude genera HTML personalizado con branding específico
@@ -142,7 +142,7 @@ export class HybridContractGenerator {
   /**
    * Claude genera HTML inteligente y personalizado
    */
-  private async generateIntelligentHTML(request: ContractGenerationRequest): Promise<string> {
+  private async generateIntelligentHTML(request: ContractGenerationRequest, contractorBranding: any): Promise<string> {
     const { contractData } = request;
     
     // Preparar datos del contratista de forma flexible
@@ -164,12 +164,15 @@ export class HybridContractGenerator {
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 8000,
-      messages: [{ role: 'user', content: prompt }],
-      system: 'Eres un experto en contratos legales y generación de documentos HTML profesionales. Genera contratos que cumplan exactamente con los requisitos de formato y contenido. RESPONDE ÚNICAMENTE CON HTML VÁLIDO, sin explicaciones adicionales.'
+      system: 'Eres un experto en contratos legales y generación de documentos HTML profesionales. Genera contratos que cumplan exactamente con los requisitos de formato y contenido. RESPONDE ÚNICAMENTE CON HTML VÁLIDO, sin explicaciones adicionales.',
+      messages: [{
+        role: 'user',
+        content: `Genera un contrato HTML completo usando estos datos:\n\n${JSON.stringify(request.contractData, null, 2)}\n\nInformación del contratista:\n${JSON.stringify(contractorBranding, null, 2)}\n\nRequisitos específicos:\n- 6 páginas exactas\n- Fuente 12pt para texto principal, 14pt para títulos\n- Footer personalizado con nombre de la empresa del contratista\n- Secciones numeradas en negrita\n- HTML completo con DOCTYPE`
+      }]
     });
 
     const firstBlock = response.content[0];
-    const htmlContent = firstBlock && 'text' in firstBlock ? firstBlock.text : '';
+    const htmlContent = firstBlock && firstBlock.type === 'text' ? firstBlock.text : '';
     console.log('🎯 [CLAUDE] HTML generado:', htmlContent.length, 'caracteres');
     
     return htmlContent;
@@ -178,7 +181,7 @@ export class HybridContractGenerator {
   /**
    * Valida y optimiza el HTML generado por Claude
    */
-  private async validateAndOptimizeHTML(html: string, contractData: ContractData): Promise<string> {
+  private async validateAndOptimizeHTML(html: string, contractData: ContractData, contractorBranding: any): Promise<string> {
     // Verificar que tiene elementos críticos mejorados
     const requiredSections = [
       'INDEPENDENT CONTRACTOR AGREEMENT',
@@ -205,7 +208,7 @@ export class HybridContractGenerator {
     // Si el HTML de Claude no es válido, usar template de respaldo mejorado
     if (html.length < 5000 || !html.includes('<!DOCTYPE html>')) {
       console.warn('⚠️ [VALIDATION] HTML inválido, usando template mejorado');
-      return this.generateEnhancedFallbackHTML(contractData);
+      return this.generateEnhancedFallbackHTML(contractData, contractorBranding);
     }
 
     // Optimizar CSS para diseño compacto y sin espacios innecesarios

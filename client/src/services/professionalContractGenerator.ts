@@ -4,6 +4,7 @@
  */
 
 export interface ContractData {
+  userId?: number; // ID del usuario/contratista logueado
   client: {
     name: string;
     address: string;
