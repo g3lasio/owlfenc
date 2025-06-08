@@ -234,27 +234,74 @@ export class HybridContractGenerator {
     <style>
         @page {
             size: 8.5in 11in;
-            margin: 0.5in 0.6in;
+            margin: 0.6in 0.8in 0.8in 0.8in;
+            @bottom-center {
+                content: "© " attr(data-year) " Owl Fenc - All Rights Reserved";
+                font-size: 10px;
+                color: #666;
+                border-top: 1px solid #ccc;
+                padding-top: 5px;
+            }
+            @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 10px;
+                color: #666;
+            }
         }
         body {
             font-family: 'Times New Roman', serif;
-            font-size: 11px;
-            line-height: 1.2;
+            font-size: 12pt;
+            line-height: 1.4;
             margin: 0;
             padding: 0;
+            color: #000;
         }
         .info-box {
-            border: 1px solid #000;
-            padding: 6px;
-            margin: 3px 0;
+            border: 2px solid #000;
+            padding: 12px;
+            margin: 5px 0;
             background: #f9f9f9;
+            border-radius: 3px;
+        }
+        .info-box h3 {
+            font-size: 13pt;
+            font-weight: bold;
+            margin: 0 0 8px 0;
+            text-transform: uppercase;
+            border-bottom: 1px solid #333;
+            padding-bottom: 3px;
+        }
+        .info-box p {
+            margin: 4px 0;
+            font-size: 12pt;
         }
         .signature-box {
-            border: 1px solid #000;
-            padding: 10px;
-            margin: 6px 0;
+            border: 2px solid #000;
+            padding: 15px;
+            margin: 10px 0;
             background: #f9f9f9;
-            min-height: 50px;
+            min-height: 80px;
+            border-radius: 3px;
+        }
+        .signature-section {
+            display: flex;
+            gap: 30px;
+            margin-top: 30px;
+        }
+        .signature-box h4 {
+            font-size: 13pt;
+            font-weight: bold;
+            margin: 0 0 15px 0;
+            text-transform: uppercase;
+        }
+        .signature-line {
+            border-bottom: 2px solid #000;
+            margin: 20px 0 5px 0;
+            height: 1px;
+        }
+        .section-number {
+            font-weight: bold;
+            font-size: 14pt;
         }
         .materials-list {
             margin: 5px 0;
@@ -272,13 +319,51 @@ export class HybridContractGenerator {
         }
         .page-break { page-break-before: always; }
         .no-break { page-break-inside: avoid; }
-        h1 { font-size: 16px; margin: 3px 0; text-align: center; font-weight: bold; text-transform: uppercase; }
-        h2 { font-size: 12px; margin: 6px 0 3px 0; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #000; }
-        h3 { font-size: 11px; margin: 4px 0 2px 0; font-weight: bold; }
-        p { margin: 2px 0; }
-        .compact { margin: 1px 0; }
-        .two-column { display: flex; gap: 15px; margin-bottom: 8px; }
-        .column { flex: 1; }
+        h1 { 
+            font-size: 18pt; 
+            margin: 15px 0 20px 0; 
+            text-align: center; 
+            font-weight: bold; 
+            text-transform: uppercase; 
+            letter-spacing: 1px;
+        }
+        h2 { 
+            font-size: 14pt; 
+            margin: 15px 0 8px 0; 
+            font-weight: bold; 
+            text-transform: uppercase; 
+            border-bottom: 2px solid #000; 
+            padding-bottom: 3px;
+        }
+        h3 { 
+            font-size: 13pt; 
+            margin: 10px 0 5px 0; 
+            font-weight: bold; 
+        }
+        p { margin: 6px 0; }
+        .compact { margin: 4px 0; }
+        .two-column { 
+            display: flex; 
+            gap: 20px; 
+            margin-bottom: 15px; 
+            width: 100%;
+        }
+        .column { 
+            flex: 1; 
+            width: 48%;
+        }
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 10pt;
+            color: #666;
+            border-top: 1px solid #ccc;
+            padding: 5px 0;
+            background: white;
+        }
     </style>
 </head>
 <body>
@@ -309,14 +394,14 @@ export class HybridContractGenerator {
     </div>
 
     <h2>BACKGROUND</h2>
-    <p class="compact">1. Client desires to engage Contractor as an independent contractor to perform ${contractData.project.type || 'construction'} services at the property located at ${contractData.project.location} ("Property").</p>
-    <p class="compact">2. Contractor represents that it has the necessary skills, experience, and resources to perform the required services in a professional and workmanlike manner.</p>
+    <p class="compact"><span class="section-number">1.</span> Client desires to engage Contractor as an independent contractor to perform ${contractData.project.type || 'construction'} services at the property located at ${contractData.project.location} ("Property").</p>
+    <p class="compact"><span class="section-number">2.</span> Contractor represents that it has the necessary skills, experience, and resources to perform the required services in a professional and workmanlike manner.</p>
 
     <h2>SERVICES TO BE PERFORMED</h2>
-    <p class="compact">3. Contractor agrees to provide the following services ("Services"):</p>
+    <p class="compact"><span class="section-number">3.</span> Contractor agrees to provide the following services ("Services"):</p>
     <p class="compact"><strong>Project Description:</strong> ${contractData.project.description}</p>
     
-    <p class="compact">4. Services and materials include:</p>
+    <p class="compact"><span class="section-number">4.</span> Services and materials include:</p>
     <div class="materials-list">
         ${contractData.materials?.map(m => `
             <p class="compact">• ${m.item}</p>
@@ -331,45 +416,45 @@ export class HybridContractGenerator {
     <div class="page-break"></div>
     
     <h2>TERMS OF AGREEMENT</h2>
-    <p class="compact">5. This Agreement shall commence upon execution by both parties and shall continue until all Services have been completed and final payment has been made, unless terminated earlier in accordance with the provisions herein.</p>
-    <p class="compact">6. Time is of the essence in this Agreement. Contractor shall commence work within a reasonable time after receipt of the down payment and shall diligently pursue completion of the Services.</p>
-    <p class="compact">7. Contractor warrants that all work will be performed in a good and workmanlike manner in accordance with industry standards and applicable building codes.</p>
+    <p class="compact"><span class="section-number">5.</span> This Agreement shall commence upon execution by both parties and shall continue until all Services have been completed and final payment has been made, unless terminated earlier in accordance with the provisions herein.</p>
+    <p class="compact"><span class="section-number">6.</span> Time is of the essence in this Agreement. Contractor shall commence work within a reasonable time after receipt of the down payment and shall diligently pursue completion of the Services.</p>
+    <p class="compact"><span class="section-number">7.</span> Contractor warrants that all work will be performed in a good and workmanlike manner in accordance with industry standards and applicable building codes.</p>
 
     <h2>PAYMENT SCHEDULE</h2>
-    <p class="compact">8. In consideration for the Services, Client agrees to pay Contractor the total sum of $${contractData.financials.total?.toFixed(2) || '0.00'}.</p>
-    <p class="compact">9. Payment schedule:</p>
+    <p class="compact"><span class="section-number">8.</span> In consideration for the Services, Client agrees to pay Contractor the total sum of $${contractData.financials.total?.toFixed(2) || '0.00'}.</p>
+    <p class="compact"><span class="section-number">9.</span> Payment schedule:</p>
     <p class="compact">a) Down payment of $${downPayment} (10%) due upon execution of this Agreement</p>
     <p class="compact">b) Progress payment of $${progressPayment} (40%) due at 50% completion of Services</p>
     <p class="compact">c) Final payment of $${finalPayment} (50%) due upon completion of Services</p>
 
     <h2>INSURANCE REQUIREMENTS</h2>
-    <p class="compact">10. Contractor shall maintain and provide proof of the following insurance coverage:</p>
+    <p class="compact"><span class="section-number">10.</span> Contractor shall maintain and provide proof of the following insurance coverage:</p>
     <p class="compact">a) General Liability Insurance: Minimum $1,000,000 per occurrence</p>
     <p class="compact">b) Workers' Compensation Insurance as required by California law</p>
     <p class="compact">c) Certificate of Insurance must be provided before work commences</p>
 
     <h2>EXPENSES AND ADDITIONAL COSTS</h2>
-    <p class="compact">11. The contract price includes all materials, labor, equipment, and other costs necessary to complete the Services as specified herein.</p>
-    <p class="compact">12. Any additional work requested by Client beyond the scope of Services described herein shall require a written change order signed by both parties and may result in additional charges.</p>
-    <p class="compact">13. Client shall be responsible for obtaining any necessary permits, unless otherwise specified in writing. Contractor shall perform work in compliance with applicable permits and codes.</p>
+    <p class="compact"><span class="section-number">11.</span> The contract price includes all materials, labor, equipment, and other costs necessary to complete the Services as specified herein.</p>
+    <p class="compact"><span class="section-number">12.</span> Any additional work requested by Client beyond the scope of Services described herein shall require a written change order signed by both parties and may result in additional charges.</p>
+    <p class="compact"><span class="section-number">13.</span> Client shall be responsible for obtaining any necessary permits, unless otherwise specified in writing. Contractor shall perform work in compliance with applicable permits and codes.</p>
 
     <div class="page-break"></div>
     
     <h2>PAYMENT PROTECTION</h2>
-    <p class="compact">14. Late payments shall incur a penalty of 1.5% per month (18% annually) or the maximum rate permitted by law, whichever is lower. After 30 days delinquency, Contractor may suspend all work and demand immediate payment of all outstanding amounts plus accrued penalties.</p>
-    <p class="compact">15. Contractor expressly reserves all mechanic's lien rights under California Civil Code Section 8000 et seq. Client acknowledges these rights and waives any objection to preliminary notice. Lien rights may be exercised immediately upon any payment default without additional notice.</p>
-    <p class="compact">16. Client agrees to pay all costs of collection, including reasonable attorney's fees and court costs, incurred by Contractor in collecting any overdue amounts.</p>
+    <p class="compact"><span class="section-number">14.</span> Late payments shall incur a penalty of 1.5% per month (18% annually) or the maximum rate permitted by law, whichever is lower. After 30 days delinquency, Contractor may suspend all work and demand immediate payment of all outstanding amounts plus accrued penalties.</p>
+    <p class="compact"><span class="section-number">15.</span> Contractor expressly reserves all mechanic's lien rights under California Civil Code Section 8000 et seq. Client acknowledges these rights and waives any objection to preliminary notice. Lien rights may be exercised immediately upon any payment default without additional notice.</p>
+    <p class="compact"><span class="section-number">16.</span> Client agrees to pay all costs of collection, including reasonable attorney's fees and court costs, incurred by Contractor in collecting any overdue amounts.</p>
 
     <h2>RIGHT TO CANCEL</h2>
-    <p class="compact">17. <strong>CALIFORNIA LAW NOTICE:</strong> Client has the right to cancel this contract within three (3) business days after signing. To cancel, Client must provide written notice to Contractor at the address above. If Client cancels within this period, any payments made will be refunded within ten (10) days, minus any materials already ordered specifically for this project.</p>
+    <p class="compact"><span class="section-number">17.</span> <strong>CALIFORNIA LAW NOTICE:</strong> Client has the right to cancel this contract within three (3) business days after signing. To cancel, Client must provide written notice to Contractor at the address above. If Client cancels within this period, any payments made will be refunded within ten (10) days, minus any materials already ordered specifically for this project.</p>
 
     <h2>LIABILITY PROTECTION</h2>
-    <p class="compact">18. Contractor's total liability for any and all claims shall not exceed the total contract price. Contractor shall not be liable for consequential, incidental, special, or punitive damages under any circumstances.</p>
-    <p class="compact">19. Each party shall be responsible for its own acts and omissions and those of its employees, agents, and subcontractors.</p>
+    <p class="compact"><span class="section-number">18.</span> Contractor's total liability for any and all claims shall not exceed the total contract price. Contractor shall not be liable for consequential, incidental, special, or punitive damages under any circumstances.</p>
+    <p class="compact"><span class="section-number">19.</span> Each party shall be responsible for its own acts and omissions and those of its employees, agents, and subcontractors.</p>
 
     <h2>QUALITY STANDARDS AND WARRANTIES</h2>
-    <p class="compact">20. Contractor warrants that all Services will be performed in accordance with industry standards and that all materials will be of good quality and free from defects.</p>
-    <p class="compact">21. Contractor provides a limited warranty on workmanship for a period of one (1) year from completion of Services. This warranty covers defects in workmanship but does not cover normal wear and tear, damage from misuse, or damage from acts of nature.</p>
+    <p class="compact"><span class="section-number">20.</span> Contractor warrants that all Services will be performed in accordance with industry standards and that all materials will be of good quality and free from defects.</p>
+    <p class="compact"><span class="section-number">21.</span> Contractor provides a limited warranty on workmanship for a period of one (1) year from completion of Services. This warranty covers defects in workmanship but does not cover normal wear and tear, damage from misuse, or damage from acts of nature.</p>
 
     <div class="page-break"></div>
     
@@ -411,23 +496,29 @@ export class HybridContractGenerator {
     <h2>SIGNATURES</h2>
     <p>This Agreement has been executed on the dates set forth below.</p>
     
-    <div class="signature-box">
-        <h3>CLIENT:</h3>
-        <p>_________________________________</p>
-        <p><strong>${contractData.client.name}</strong></p>
-        <p>Date: _______________</p>
+    <div class="signature-section">
+        <div class="signature-box">
+            <h4>CLIENT:</h4>
+            <div class="signature-line"></div>
+            <p><strong>${contractData.client.name}</strong></p>
+            <p>Date: _______________</p>
+        </div>
+
+        <div class="signature-box">
+            <h4>CONTRACTOR:</h4>
+            <div class="signature-line"></div>
+            <p><strong>${contractorName}</strong></p>
+            <p>License #: ${contractorLicense || 'TBD'}</p>
+            <p>Date: _______________</p>
+        </div>
     </div>
 
-    <div class="signature-box">
-        <h3>CONTRACTOR:</h3>
-        <p>_________________________________</p>
-        <p><strong>${contractorName}</strong></p>
-        <p>License #: ${contractorLicense}</p>
-        <p>Date: _______________</p>
-    </div>
-
-    <div class="info-box">
+    <div class="info-box" style="margin-top: 20px; text-align: center;">
         <p><strong>NOTICE:</strong> This Agreement has been executed on the dates set forth above. Both parties acknowledge they have read and understood all terms and conditions.</p>
+    </div>
+
+    <div class="footer">
+        <p>© ${new Date().getFullYear()} Owl Fenc - All Rights Reserved</p>
     </div>
 </body>
 </html>`;
