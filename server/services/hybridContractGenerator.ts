@@ -127,9 +127,9 @@ Genera SOLO el HTML completo, sin explicaciones. Usa CSS print media queries par
 
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 4000,
+      max_tokens: 8000,
       messages: [{ role: 'user', content: prompt }],
-      system: 'Eres un experto en contratos legales y generación de documentos HTML profesionales. Genera contratos que cumplan exactamente con los requisitos de formato y contenido.'
+      system: 'Eres un experto en contratos legales y generación de documentos HTML profesionales. Genera contratos que cumplan exactamente con los requisitos de formato y contenido. RESPONDE ÚNICAMENTE CON HTML VÁLIDO, sin explicaciones adicionales.'
     });
 
     const firstBlock = response.content[0];
@@ -183,20 +183,39 @@ Genera SOLO el HTML completo, sin explicaciones. Usa CSS print media queries par
   }
 
   /**
-   * Genera PDF usando puppeteer (más robusto que PDF-lib para HTML complejo)
+   * Genera PDF usando puppeteer con timeout optimizado
    */
   private async generatePDFFromHTML(html: string): Promise<Buffer> {
+    let browser;
     try {
-      // Usar puppeteer para generar PDF de alta calidad
+      console.log('🎯 [PDF] Iniciando conversión HTML a PDF...');
+      
+      // Usar puppeteer con timeout reducido
       const puppeteer = await import('puppeteer');
       
-      const browser = await puppeteer.default.launch({
+      browser = await puppeteer.default.launch({
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        executablePath: '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium',
+        timeout: 30000, // 30 segundos timeout
+        args: [
+          '--no-sandbox', 
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--no-first-run',
+          '--no-zygote',
+          '--disable-gpu',
+          '--disable-web-security',
+          '--disable-background-timer-throttling',
+          '--disable-features=TranslateUI'
+        ]
       });
       
       const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: 'networkidle0' });
+      await page.setContent(html, { 
+        waitUntil: 'domcontentloaded',
+        timeout: 15000 
+      });
       
       const pdfBuffer = await page.pdf({
         format: 'Letter',
@@ -207,7 +226,8 @@ Genera SOLO el HTML completo, sin explicaciones. Usa CSS print media queries par
           left: '0.75in'
         },
         printBackground: true,
-        preferCSSPageSize: true
+        preferCSSPageSize: true,
+        timeout: 15000
       });
       
       await browser.close();
@@ -216,6 +236,13 @@ Genera SOLO el HTML completo, sin explicaciones. Usa CSS print media queries par
       return Buffer.from(pdfBuffer);
       
     } catch (error) {
+      if (browser) {
+        try {
+          await browser.close();
+        } catch (closeError) {
+          console.log('Browser already closed');
+        }
+      }
       console.error('❌ [PDF] Error en generación:', error);
       throw new Error('Failed to generate PDF from HTML');
     }
