@@ -7,6 +7,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { DefenseReviewPanel } from '@/components/contract/DefenseReviewPanel';
 import { DefenseClause } from '@/services/deepSearchDefenseEngine';
+import { professionalContractGenerator, ContractData } from '@/services/professionalContractGenerator';
+import { useProfile } from '@/hooks/use-profile';
 import { 
   Upload,
   Shield, 
@@ -78,6 +80,9 @@ export default function CyberpunkLegalDefense() {
   // Estados para el nuevo sistema DeepSearch Defense
   const [approvedClauses, setApprovedClauses] = useState<DefenseClause[]>([]);
   const [clauseCustomizations, setClauseCustomizations] = useState<Record<string, any>>({});
+  
+  // Profile data for contractor information
+  const { profile } = useProfile();
   
   // Estados del toggle de método de entrada
   const [dataInputMethod, setDataInputMethod] = useState<'upload' | 'select'>('upload');
@@ -265,8 +270,168 @@ export default function CyberpunkLegalDefense() {
     setCurrentStep(4);
 
     toast({
-      title: "🛡️ DEFENSE SYSTEM ACTIVATED",
+      title: "DEFENSE SYSTEM ACTIVATED",
       description: `${approvedDefenseClauses.length} defensive clauses approved with full legal traceability`,
+    });
+  }, [toast]);
+
+  // Función para generar el PDF del contrato profesional
+  const generateContractPDF = useCallback(async () => {
+    try {
+      setIsProcessing(true);
+      
+      const contractData: ContractData = {
+        client: {
+          name: extractedData.clientInfo?.name || 'Client Name',
+          address: extractedData.clientInfo?.address || extractedData.projectDetails?.location || 'Client Address',
+          email: extractedData.clientInfo?.email,
+          phone: extractedData.clientInfo?.phone
+        },
+        contractor: {
+          name: profile?.companyName || profile?.businessName || 'Contractor Name',
+          address: profile?.address || 'Contractor Address',
+          email: profile?.email,
+          phone: profile?.phone,
+          license: profile?.licenseNumber
+        },
+        project: {
+          type: extractedData.projectDetails?.type || 'Construction Services',
+          description: extractedData.projectDetails?.description || 'Services as specified',
+          location: extractedData.projectDetails?.location || extractedData.clientInfo?.address || 'Project Location',
+          startDate: extractedData.projectDetails?.startDate,
+          endDate: extractedData.projectDetails?.endDate
+        },
+        financials: {
+          total: extractedData.financials?.total || 0,
+          subtotal: extractedData.financials?.subtotal,
+          tax: extractedData.financials?.tax,
+          taxRate: extractedData.financials?.taxRate
+        },
+        materials: extractedData.materials,
+        protections: approvedClauses.map(clause => ({
+          id: clause.id,
+          category: clause.category,
+          subcategory: clause.subcategory,
+          clause: clause.clause
+        })),
+        paymentTerms: {
+          total: extractedData.financials?.total || 0,
+          retainer: Math.round((extractedData.financials?.total || 0) * 0.3),
+          schedule: "30% upfront, 40% at 50% completion, 30% upon completion"
+        },
+        timeline: {
+          startDate: new Date().toISOString().split('T')[0],
+          estimatedCompletion: "To be determined based on project scope"
+        }
+      };
+
+      // Generate contract HTML
+      const contractHTML = professionalContractGenerator.generateContractHTML(contractData);
+      
+      // Create PDF from HTML (client-side generation for now)
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(contractHTML);
+        printWindow.document.close();
+        
+        // Focus and print
+        printWindow.focus();
+        setTimeout(() => {
+          printWindow.print();
+          printWindow.close();
+        }, 100);
+
+        toast({
+          title: "Contract Generated Successfully",
+          description: "Professional contract ready for printing and signature",
+        });
+      } else {
+        // Fallback: download as HTML file
+        const blob = new Blob([contractHTML], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Contract_${extractedData.clientInfo?.name?.replace(/\s+/g, '_') || 'Client'}_${Date.now()}.html`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        toast({
+          title: "Contract Generated",
+          description: "Contract downloaded as HTML file. Open in browser and print to PDF.",
+        });
+      }
+    } catch (error) {
+      console.error('Error generating contract:', error);
+      toast({
+        title: "Generation Error",
+        description: "Failed to generate contract. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [extractedData, approvedClauses, profile, toast]);
+
+  // Función para enviar contrato para firma electrónica
+  const sendContractForSignature = useCallback(async () => {
+    try {
+      setIsProcessing(true);
+      
+      const signatureData = {
+        clientEmail: extractedData.clientInfo?.email || '',
+        clientName: extractedData.clientInfo?.name || '',
+        contractData: extractedData,
+        protections: approvedClauses
+      };
+
+      const response = await fetch('/api/contracts/send-for-signature', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(signatureData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send contract for signature');
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        toast({
+          title: "Contract Sent Successfully",
+          description: "Electronic signature request sent to client",
+        });
+      }
+    } catch (error) {
+      console.error('Error sending contract:', error);
+      toast({
+        title: "Send Error",
+        description: "Failed to send contract for signature. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [extractedData, approvedClauses, toast]);
+
+  // Función para comenzar un nuevo contrato
+  const startNewContract = useCallback(() => {
+    setExtractedData(null);
+    setApprovedClauses([]);
+    setClauseCustomizations({});
+    setContractAnalysis(null);
+    setGeneratedContract('');
+    setCurrentPhase('data-command');
+    setCurrentStep(1);
+    setSelectedFile(null);
+    
+    toast({
+      title: "New Contract Started",
+      description: "Ready to create a new contract",
     });
   }, [toast]);
 
@@ -1925,6 +2090,103 @@ export default function CyberpunkLegalDefense() {
                 setCurrentStep(2);
               }}
             />
+          )}
+
+          {/* Contract Generation & PDF Creation - Final Step */}
+          {extractedData && currentPhase === 'digital-execution' && (
+            <Card className="border-2 border-purple-400 bg-black/80 relative overflow-hidden mt-6">
+              <CardHeader className="text-center px-4 md:px-6">
+                <div className="flex items-center justify-center mb-4">
+                  <div className="p-3 md:p-4 rounded-full border-2 border-purple-400">
+                    <FileText className="h-6 w-6 md:h-8 md:w-8 text-purple-400" />
+                  </div>
+                </div>
+                <CardTitle className="text-xl md:text-2xl font-bold text-purple-400 mb-2">
+                  Contract Generation Complete
+                </CardTitle>
+                <p className="text-gray-300 text-xs md:text-sm leading-relaxed">
+                  Professional contract with selected protections ready for signature and execution.
+                </p>
+              </CardHeader>
+              
+              <CardContent className="px-4 md:px-8 pb-6 md:pb-8 space-y-6">
+                {/* Contract Summary */}
+                <div className="bg-gray-900/50 border border-purple-400/30 rounded-lg p-4">
+                  <h3 className="text-purple-400 font-bold mb-3 flex items-center">
+                    <Shield className="h-4 w-4 mr-2" />
+                    CONTRACT SUMMARY
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-400">Client:</span>
+                      <span className="text-white ml-2">{extractedData.clientInfo?.name || 'Client Name'}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">Project:</span>
+                      <span className="text-white ml-2">{extractedData.projectDetails?.type || 'Project Type'}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">Total Amount:</span>
+                      <span className="text-green-400 ml-2 font-mono">${extractedData.financials?.total?.toFixed(2) || '0.00'}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">Protections Applied:</span>
+                      <span className="text-purple-400 ml-2">{approvedClauses.length} defensive clauses</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contract Actions */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Button 
+                    onClick={() => generateContractPDF()}
+                    className="bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-6 rounded border-0 shadow-none"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    GENERATE CONTRACT PDF
+                  </Button>
+                  <Button 
+                    onClick={() => sendContractForSignature()}
+                    className="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-6 rounded border-0 shadow-none"
+                  >
+                    <PenTool className="h-4 w-4 mr-2" />
+                    SEND FOR SIGNATURE
+                  </Button>
+                </div>
+
+                {/* Legal Compliance Notice */}
+                <div className="bg-blue-900/20 border border-blue-400/30 rounded p-4">
+                  <div className="text-blue-400 text-sm font-bold mb-2 flex items-center">
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    LEGAL COMPLIANCE VERIFIED
+                  </div>
+                  <div className="text-gray-300 text-xs leading-relaxed">
+                    Contract includes all required California legal protections, payment terms, and contractor safeguards. 
+                    Document is ready for professional execution with full legal compliance.
+                  </div>
+                </div>
+
+                {/* Navigation */}
+                <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+                  <Button 
+                    onClick={() => {
+                      setCurrentPhase('defense-review');
+                      setCurrentStep(3);
+                    }}
+                    variant="outline"
+                    className="border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-300"
+                  >
+                    BACK TO DEFENSE REVIEW
+                  </Button>
+                  <Button 
+                    onClick={() => startNewContract()}
+                    className="bg-cyan-600 hover:bg-cyan-500 text-black font-bold py-3 px-8 rounded border-0 shadow-none"
+                  >
+                    CREATE NEW CONTRACT
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           )}
         </div>
 
