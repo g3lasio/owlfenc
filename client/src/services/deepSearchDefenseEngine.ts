@@ -122,29 +122,21 @@ export interface DefenseAnalysisResult {
   }[];
 }
 
-export class DeepSearchDefenseEngine {
-  private static instance: DeepSearchDefenseEngine;
+class DeepSearchDefenseEngine {
   private defenseClauses: Map<string, DefenseClause> = new Map();
   private complianceRequirements: Map<string, ComplianceRequirement[]> = new Map();
   private legalSources: Map<string, LegalSource> = new Map();
 
-  private constructor() {
+  constructor() {
     this.initializeDefenseClauses();
     this.initializeComplianceRequirements();
     this.initializeLegalSources();
   }
 
-  public static getInstance(): DeepSearchDefenseEngine {
-    if (!DeepSearchDefenseEngine.instance) {
-      DeepSearchDefenseEngine.instance = new DeepSearchDefenseEngine();
-    }
-    return DeepSearchDefenseEngine.instance;
-  }
-
   /**
    * Análisis principal de defensa contractual
    */
-  public async analyzeContractDefense(projectData: any): Promise<DefenseAnalysisResult> {
+  public async analyzeContract(projectData: any): Promise<DefenseAnalysisResult> {
     const analysisDate = new Date().toISOString();
     const jurisdiction = this.extractJurisdiction(projectData);
     const projectType = this.normalizeProjectType(projectData.projectDetails?.type || 'general');
@@ -987,4 +979,5 @@ export class DeepSearchDefenseEngine {
 
 // Create and export the singleton instance
 export const deepSearchDefenseEngine = new DeepSearchDefenseEngine();
+export { DeepSearchDefenseEngine };
 export default DeepSearchDefenseEngine;

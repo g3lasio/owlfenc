@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { DefenseReviewPanel } from '@/components/contract/DefenseReviewPanel';
-import DeepSearchDefenseEngine, { DefenseClause } from '@/services/deepSearchDefenseEngine';
+import { DefenseClause } from '@/services/deepSearchDefenseEngine';
 import { 
   Upload,
   Shield, 
@@ -76,7 +76,6 @@ export default function CyberpunkLegalDefense() {
   const [currentStep, setCurrentStep] = useState(1);
   
   // Estados para el nuevo sistema DeepSearch Defense
-  const [defenseEngine] = useState(() => DeepSearchDefenseEngine.getInstance());
   const [approvedClauses, setApprovedClauses] = useState<DefenseClause[]>([]);
   const [clauseCustomizations, setClauseCustomizations] = useState<Record<string, any>>({});
   
