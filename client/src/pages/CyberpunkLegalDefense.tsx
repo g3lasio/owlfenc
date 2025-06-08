@@ -325,42 +325,37 @@ export default function CyberpunkLegalDefense() {
         }
       };
 
-      // Generate contract HTML
-      const contractHTML = professionalContractGenerator.generateContractHTML(contractData);
-      
-      // Create PDF from HTML (client-side generation for now)
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(contractHTML);
-        printWindow.document.close();
-        
-        // Focus and print
-        printWindow.focus();
-        setTimeout(() => {
-          printWindow.print();
-          printWindow.close();
-        }, 100);
+      // Call the hybrid contract generation API
+      const response = await fetch('/api/contracts/generate-professional', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(contractData),
+      });
 
-        toast({
-          title: "Contract Generated Successfully",
-          description: "Professional contract ready for printing and signature",
-        });
-      } else {
-        // Fallback: download as HTML file
-        const blob = new Blob([contractHTML], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
+      if (!response.ok) {
+        throw new Error('Failed to generate professional contract');
+      }
+
+      const result = await response.json();
+      
+      if (result.success && result.pdfUrl) {
+        // Trigger automatic download
         const link = document.createElement('a');
-        link.href = url;
-        link.download = `Contract_${extractedData.clientInfo?.name?.replace(/\s+/g, '_') || 'Client'}_${Date.now()}.html`;
+        link.href = result.pdfUrl;
+        link.download = `Contract_${extractedData.clientInfo?.name?.replace(/\s+/g, '_') || 'Client'}_${Date.now()}.pdf`;
+        link.style.display = 'none';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        URL.revokeObjectURL(url);
 
         toast({
-          title: "Contract Generated",
-          description: "Contract downloaded as HTML file. Open in browser and print to PDF.",
+          title: "Contract Generated Successfully",
+          description: `Professional ${result.metadata?.pageCount || 6}-page PDF contract downloaded automatically`,
         });
+      } else {
+        throw new Error(result.error || 'Contract generation failed');
       }
     } catch (error) {
       console.error('Error generating contract:', error);
