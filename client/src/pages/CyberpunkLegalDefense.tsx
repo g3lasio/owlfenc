@@ -1931,59 +1931,13 @@ export default function CyberpunkLegalDefense() {
                     </div>
                   </div>
 
-                  {/* Electronic Communications Consent */}
-                  <div className="bg-gray-900/50 border border-blue-400/30 rounded-lg p-4">
-                    <h3 className="text-blue-400 font-bold mb-4 flex items-center">
-                      <User className="h-4 w-4 mr-2" />
-                      ELECTRONIC COMMUNICATIONS CONSENT
-                    </h3>
-                    <div className="space-y-4">
-                      <div className="flex items-center space-x-3">
-                        <input type="checkbox" name="electronicConsent" className="text-blue-400" />
-                        <label className="text-gray-300">I consent to receive contract documents, updates, and notifications electronically</label>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <input type="checkbox" name="esignConsent" className="text-blue-400" />
-                        <label className="text-gray-300">I agree to use electronic signatures as legally binding (E-Sign Act compliance)</label>
-                      </div>
-                      <div className="bg-blue-900/20 border border-blue-400/30 rounded p-3">
-                        <div className="text-blue-400 text-xs font-bold mb-1">ELECTRONIC SIGNATURE DISCLOSURE:</div>
-                        <div className="text-gray-300 text-xs">
-                          By consenting above, you agree that electronic signatures will have the same legal effect as handwritten signatures under federal and state electronic signature laws.
-                        </div>
-                      </div>
-                    </div>
-                  </div>
 
 
 
 
 
-                  {/* Data Quality Status */}
-                  <div className="bg-gray-900/50 border border-cyan-400/30 rounded-lg p-4">
-                    <h3 className="text-cyan-400 font-bold mb-4 flex items-center">
-                      <Zap className="h-4 w-4 mr-2" />
-                      DATA VALIDATION STATUS
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <div className="text-gray-400 text-sm">Extraction Confidence</div>
-                        <div className="flex items-center mt-1">
-                          <div className="flex-1 bg-gray-700 rounded-full h-2">
-                            <div 
-                              className="bg-cyan-400 h-2 rounded-full" 
-                              style={{ width: `${extractedData.extractionQuality?.confidence || 85}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-cyan-400 ml-2 font-bold">{extractedData.extractionQuality?.confidence || 85}%</span>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-gray-400 text-sm">Data Completeness</div>
-                        <div className="text-green-400 font-semibold">Ready for Contract Generation</div>
-                      </div>
-                    </div>
-                  </div>
+
+
 
                   {/* AI-Powered Clause Suggestions */}
                   <div className="bg-gray-900/50 border border-cyan-400/30 rounded-lg p-4">
