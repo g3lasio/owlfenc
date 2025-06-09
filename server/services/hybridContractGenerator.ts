@@ -370,10 +370,9 @@ FORMATO REQUERIDO:
     const clientPhone = contractData.client.phone || '';
     const clientEmail = contractData.client.email || '';
     
-    // Use default payment schedule (can be customized later through UI)
+    // Use 50/50 payment schedule as requested
     const totalCost = contractData.financials.total || 0;
-    const downPayment = (totalCost * 0.1).toFixed(2);
-    const progressPayment = (totalCost * 0.4).toFixed(2);
+    const downPayment = (totalCost * 0.5).toFixed(2);
     const finalPayment = (totalCost * 0.5).toFixed(2);
 
     return `<!DOCTYPE html>
@@ -683,76 +682,72 @@ FORMATO REQUERIDO:
     <p class="compact"><span class="section-number">6.</span> Time is of the essence in this Agreement. Contractor shall commence work within a reasonable time after receipt of the down payment and shall diligently pursue completion of the Services.</p>
     <p class="compact"><span class="section-number">7.</span> Contractor warrants that all work will be performed in a good and workmanlike manner in accordance with industry standards and applicable building codes.</p>
 
-    <h2>PAYMENT SCHEDULE</h2>
+    <h2>PAYMENT SCHEDULE AND FINANCIAL PROTECTIONS</h2>
     <p class="compact"><span class="section-number">8.</span> In consideration for the Services, Client agrees to pay Contractor the total sum of $${totalCost.toFixed(2)}.</p>
-    <p class="compact"><span class="section-number">9.</span> Payment schedule:</p>
-    <p class="compact">a) Down payment of $${downPayment} (10%) due upon execution of this Agreement</p>
-    <p class="compact">b) Progress payment of $${progressPayment} (40%) due at 50% completion of Services</p>
-    <p class="compact">c) Final payment of $${finalPayment} (50%) due upon completion of Services</p>
+    <p class="compact"><span class="section-number">9.</span> <strong>NON-NEGOTIABLE PAYMENT SCHEDULE:</strong></p>
+    <p class="compact">a) Down payment of $${downPayment} (50%) due upon execution of this Agreement and before any work commences</p>
+    <p class="compact">b) Final payment of $${finalPayment} (50%) due upon completion and acceptance of Services</p>
+    <p class="compact"><span class="section-number">10.</span> <strong>LATE PAYMENT PENALTIES:</strong> Payments more than five (5) days past due shall automatically incur a penalty of 2% per month compounded monthly, plus a $150 administrative fee per violation. After five (5) days delinquency, Contractor may immediately suspend all work without penalty.</p>
+    <p class="compact"><span class="section-number">11.</span> <strong>MATERIAL TITLE RETENTION:</strong> Contractor retains legal title to all materials delivered to the Property until full payment is received. In case of payment default, Contractor may immediately remove all materials without notice or court order.</p>
+
+    <h2>SCOPE PROTECTION AND CHANGE ORDERS</h2>
+    <p class="compact"><span class="section-number">12.</span> <strong>STRICT SCOPE DEFINITION:</strong> The Services include only those items specifically listed in this Agreement. Any work not explicitly described herein, including but not limited to additional excavation, utility relocation, soil treatment, drainage work, or cleanup beyond normal construction debris, constitutes extra work subject to additional charges.</p>
+    <p class="compact"><span class="section-number">13.</span> <strong>CHANGE ORDER REQUIREMENTS:</strong> All modifications, additions, or deletions to the original scope require a written change order signed by both parties with 50% payment in advance of additional work cost. Verbal requests or approvals are void and unenforceable.</p>
+    <p class="compact"><span class="section-number">14.</span> <strong>SITE CONDITIONS:</strong> Client warrants that the Property is accessible, free from underground utilities conflicts, and suitable for the intended work. Discovery of adverse conditions, including but not limited to rock, unsuitable soil, or utility conflicts, will result in additional charges at prevailing rates plus 20% markup.</p>
+    <p class="compact"><span class="section-number">15.</span> <strong>MATERIAL ESCALATION:</strong> Material prices are subject to adjustment based on supplier price changes occurring after contract execution. Price increases become effective immediately upon notification to Client.</p>
+
+    <h2>ENHANCED LEGAL PROTECTIONS</h2>
+    <p class="compact"><span class="section-number">16.</span> <strong>PERFECTED LIEN RIGHTS:</strong> Contractor hereby provides notice of intent to file mechanics lien and may record a Notice of Right to Lien immediately upon commencement of work. This notice satisfies all preliminary notice requirements under California Civil Code Section 8200 et seq.</p>
+    <p class="compact"><span class="section-number">17.</span> <strong>ATTORNEY FEES AND COSTS:</strong> In any dispute, litigation, or collection action, the prevailing party shall be entitled to recover all attorney fees, court costs, and collection expenses from the non-prevailing party, regardless of whether suit is filed.</p>
+    <p class="compact"><span class="section-number">18.</span> <strong>JURISDICTION AND VENUE:</strong> Any legal proceedings arising from this Agreement shall be filed exclusively in the Superior Court of the county where Contractor maintains its principal place of business. Client waives any objection to venue or jurisdiction.</p>
 
     <h2>INSURANCE REQUIREMENTS</h2>
-    <p class="compact"><span class="section-number">10.</span> Contractor shall maintain and provide proof of the following insurance coverage:</p>
+    <p class="compact"><span class="section-number">19.</span> Contractor shall maintain and provide proof of the following insurance coverage:</p>
     <p class="compact">a) General Liability Insurance: Minimum $1,000,000 per occurrence</p>
     <p class="compact">b) Workers' Compensation Insurance as required by California law</p>
     <p class="compact">c) Certificate of Insurance must be provided before work commences</p>
 
-    <h2>EXPENSES AND ADDITIONAL COSTS</h2>
-    <p class="compact"><span class="section-number">11.</span> The contract price includes all materials, labor, equipment, and other costs necessary to complete the Services as specified herein.</p>
-    <p class="compact"><span class="section-number">12.</span> Any additional work requested by Client beyond the scope of Services described herein shall require a written change order signed by both parties and may result in additional charges.</p>
-    <p class="compact"><span class="section-number">13.</span> Client shall be responsible for obtaining any necessary permits, unless otherwise specified in writing. Contractor shall perform work in compliance with applicable permits and codes.</p>
+    <h2>FORCE MAJEURE AND DELAY COMPENSATION</h2>
+    <p class="compact"><span class="section-number">20.</span> <strong>COVERED EVENTS:</strong> Force majeure events include but are not limited to: weather conditions preventing safe work (precipitation >0.1", wind >25mph, temperature <40°F or >95°F), material shortages, supply chain disruptions, labor strikes, governmental actions, utility company delays, and any event beyond Contractor's reasonable control.</p>
+    <p class="compact"><span class="section-number">21.</span> <strong>DELAY COMPENSATION:</strong> Client shall pay Contractor $200 per day for each day of delay caused by force majeure events or Client-caused delays, including failure to provide access, late permit approvals, or site condition changes.</p>
+    <p class="compact"><span class="section-number">22.</span> <strong>MATERIAL SHORTAGES:</strong> In the event of material shortages or price increases exceeding 3% of original estimate, Contractor may substitute equivalent materials or adjust pricing accordingly with immediate notice to Client.</p>
 
     <div class="page-break"></div>
     
-    <h2>PAYMENT PROTECTION</h2>
-    <p class="compact"><span class="section-number">14.</span> Late payments shall incur a penalty of 1.5% per month (18% annually) or the maximum rate permitted by law, whichever is lower. After 30 days delinquency, Contractor may suspend all work and demand immediate payment of all outstanding amounts plus accrued penalties.</p>
-    <p class="compact"><span class="section-number">15.</span> Contractor expressly reserves all mechanic's lien rights under California Civil Code Section 8000 et seq. Client acknowledges these rights and waives any objection to preliminary notice. Lien rights may be exercised immediately upon any payment default without additional notice.</p>
-    <p class="compact"><span class="section-number">16.</span> Client agrees to pay all costs of collection, including reasonable attorney's fees and court costs, incurred by Contractor in collecting any overdue amounts.</p>
+    <h2>CONTRACTOR LIABILITY LIMITATIONS</h2>
+    <p class="compact"><span class="section-number">23.</span> <strong>MAXIMUM LIABILITY CAP:</strong> Contractor's total liability for any and all claims, damages, losses, or expenses arising from or related to this Agreement shall not exceed the total contract price. This limitation applies regardless of the legal theory upon which the claim is based.</p>
+    <p class="compact"><span class="section-number">24.</span> <strong>EXCLUDED DAMAGES:</strong> Under no circumstances shall Contractor be liable for consequential, incidental, special, punitive, or indirect damages, including but not limited to lost profits, business interruption, or loss of use, even if Contractor has been advised of the possibility of such damages.</p>
+    <p class="compact"><span class="section-number">25.</span> <strong>CLIENT INDEMNIFICATION:</strong> Client agrees to indemnify, defend, and hold harmless Contractor from any claims, damages, or expenses arising from: (a) pre-existing conditions at the Property, (b) Client's failure to disclose material information, (c) changes to the scope of work requested by Client, and (d) Client's interference with Contractor's performance.</p>
 
-    <h2>RIGHT TO CANCEL</h2>
-    <p class="compact"><span class="section-number">17.</span> <strong>CALIFORNIA LAW NOTICE:</strong> Client has the right to cancel this contract within three (3) business days after signing. To cancel, Client must provide written notice to Contractor at the address above. If Client cancels within this period, any payments made will be refunded within ten (10) days, minus any materials already ordered specifically for this project.</p>
+    <h2>TERMINATION AND BREACH REMEDIES</h2>
+    <p class="compact"><span class="section-number">26.</span> <strong>TERMINATION FOR CAUSE:</strong> Either party may terminate this Agreement immediately upon material breach by the other party. Material breach by Client includes but is not limited to: failure to make payments when due, denial of access to the Property, or interference with Contractor's work.</p>
+    <p class="compact"><span class="section-number">27.</span> <strong>PAYMENT UPON TERMINATION:</strong> Upon termination for any reason, Client shall immediately pay Contractor for all work performed, materials delivered, and reasonable costs incurred through the termination date, plus any applicable penalties or fees under this Agreement.</p>
+    <p class="compact"><span class="section-number">28.</span> <strong>RIGHT TO CURE LIMITED:</strong> Client shall have only three (3) business days to cure any material breach after written notice from Contractor. Failure to cure within this period shall result in automatic termination and immediate payment obligations.</p>
 
-    <h2>LIABILITY PROTECTION</h2>
-    <p class="compact"><span class="section-number">18.</span> Contractor's total liability for any and all claims shall not exceed the total contract price. Contractor shall not be liable for consequential, incidental, special, or punitive damages under any circumstances.</p>
-    <p class="compact"><span class="section-number">19.</span> Each party shall be responsible for its own acts and omissions and those of its employees, agents, and subcontractors.</p>
-
-    <h2>QUALITY STANDARDS AND WARRANTIES</h2>
-    <p class="compact"><span class="section-number">20.</span> Contractor warrants that all Services will be performed in accordance with industry standards and that all materials will be of good quality and free from defects.</p>
-    <p class="compact"><span class="section-number">21.</span> Contractor provides a limited warranty on workmanship for a period of one (1) year from completion of Services. This warranty covers defects in workmanship but does not cover normal wear and tear, damage from misuse, or damage from acts of nature.</p>
+    <h2>WARRANTIES AND QUALITY STANDARDS</h2>
+    <p class="compact"><span class="section-number">29.</span> <strong>WORKMANSHIP WARRANTY:</strong> Contractor warrants that all Services will be performed in accordance with industry standards using commercially reasonable care and skill. This warranty extends for one (1) year from completion and covers defects in workmanship only.</p>
+    <p class="compact"><span class="section-number">30.</span> <strong>WARRANTY LIMITATIONS:</strong> The warranty specifically excludes: (a) normal wear and tear, (b) damage from Client misuse or neglect, (c) damage from acts of nature, (d) modifications by others, and (e) failure to maintain the installation according to manufacturer specifications.</p>
+    <p class="compact"><span class="section-number">31.</span> <strong>EXCLUSIVE REMEDY:</strong> Contractor's sole obligation under this warranty is to repair or replace defective work at Contractor's option. Client waives all other remedies and warranties, express or implied, including merchantability and fitness for a particular purpose.</p>
 
     <div class="page-break"></div>
     
-    <h2>FORCE MAJEURE</h2>
-    <p class="compact"><span class="section-number">22.</span> Neither party shall be liable for delays or failure to perform due to causes beyond their reasonable control, including but not limited to acts of God, weather conditions, labor strikes, material shortages, government regulations, or public health emergencies.</p>
-
     <h2>INDEPENDENT CONTRACTOR STATUS</h2>
-    <p class="compact"><span class="section-number">23.</span> Contractor is engaged as an independent contractor and is not an employee, agent, partner, or joint venturer of Client.</p>
-    <p class="compact"><span class="section-number">24.</span> Contractor shall have the right to control and determine the method, details, and means of performing the Services, subject to the requirement that Services be performed in accordance with this Agreement.</p>
-    <p class="compact"><span class="section-number">25.</span> Contractor shall be solely responsible for payment of all taxes, social security contributions, insurance premiums, and other expenses relating to Contractor's performance of Services.</p>
+    <p class="compact"><span class="section-number">32.</span> <strong>CONTRACTOR INDEPENDENCE:</strong> Contractor is engaged as an independent contractor and is not an employee, agent, partner, or joint venturer of Client. Contractor shall have the right to control and determine the method, details, and means of performing the Services.</p>
+    <p class="compact"><span class="section-number">33.</span> <strong>TAX OBLIGATIONS:</strong> Contractor shall be solely responsible for payment of all taxes, social security contributions, insurance premiums, and other expenses relating to Contractor's performance of Services.</p>
 
-    <h2>TERMINATION</h2>
-    <p class="compact"><span class="section-number">26.</span> Either party may terminate this Agreement upon written notice if the other party materially breaches this Agreement and fails to cure such breach within ten (10) days after written notice.</p>
-    <p class="compact"><span class="section-number">27.</span> In the event of termination, Client shall pay Contractor for all Services satisfactorily performed through the date of termination, less any amounts previously paid.</p>
+    <h2>DISPUTE RESOLUTION AND GOVERNING LAW</h2>
+    <p class="compact"><span class="section-number">34.</span> <strong>MANDATORY ARBITRATION:</strong> Any dispute arising from this Agreement shall be resolved through binding arbitration administered by the American Arbitration Association under its Construction Industry Arbitration Rules. The arbitration shall take place in the county where Contractor maintains its principal place of business.</p>
+    <p class="compact"><span class="section-number">35.</span> <strong>GOVERNING LAW:</strong> This Agreement shall be governed by and construed in accordance with the laws of the State of California. Any legal proceedings arising under this Agreement shall be brought exclusively in the Superior Court of the county where Contractor maintains its principal place of business.</p>
+    <p class="compact"><span class="section-number">36.</span> <strong>ATTORNEY FEES:</strong> The prevailing party in any dispute shall be entitled to recover all reasonable attorney fees, expert witness fees, and costs incurred, whether or not litigation is commenced.</p>
 
-    <h2>NOTICES</h2>
-    <p class="compact"><span class="section-number">28.</span> All notices required under this Agreement shall be in writing and delivered to the addresses set forth above, or to such other addresses as the parties may designate in writing.</p>
+    <h2>CALIFORNIA LEGAL COMPLIANCE</h2>
+    <p class="compact"><span class="section-number">37.</span> <strong>RIGHT TO CANCEL NOTICE:</strong> Under California law, Client has the right to cancel this contract within three (3) business days after signing by providing written notice to Contractor. Upon timely cancellation, payments will be refunded within ten (10) days, minus costs of materials specifically ordered for this project.</p>
+    <p class="compact"><span class="section-number">38.</span> <strong>MECHANIC'S LIEN NOTICE:</strong> Under California Civil Code Section 8200, Contractor hereby provides notice of the right to file a mechanic's lien upon the Property for unpaid amounts. This Agreement serves as the preliminary notice required by law.</p>
 
-    <div class="page-break"></div>
-    
-    <h2>DISPUTE RESOLUTION</h2>
-    <p class="compact"><span class="section-number">29.</span> The parties agree to first attempt to resolve any disputes through good faith negotiation. If unsuccessful, disputes shall be resolved through binding arbitration in accordance with California law.</p>
-
-    <h2>INDEMNIFICATION</h2>
-    <p class="compact"><span class="section-number">30.</span> Each party agrees to indemnify and hold harmless the other party from and against any claims, damages, losses, or expenses arising out of or relating to such party's negligent acts or omissions in connection with this Agreement.</p>
-    <p class="compact"><span class="section-number">31.</span> Client agrees to indemnify Contractor against any claims arising from pre-existing conditions at the Property or from Client's failure to disclose material information about the Property or required Services.</p>
-
-    <h2>GOVERNING LAW</h2>
-    <p class="compact"><span class="section-number">32.</span> This Agreement shall be governed by and construed in accordance with the laws of the State of California, without regard to conflict of law principles.</p>
-    <p class="compact"><span class="section-number">33.</span> Any legal proceedings arising under this Agreement shall be brought in the appropriate state or federal courts located in the county where the Property is located.</p>
-
-    <h2>SEVERABILITY AND INTEGRATION</h2>
-    <p class="compact"><span class="section-number">34.</span> If any provision of this Agreement is held to be invalid or unenforceable, the remainder of this Agreement shall remain in full force and effect.</p>
-    <p class="compact"><span class="section-number">35.</span> This Agreement constitutes the entire agreement between the parties and supersedes all prior negotiations, representations, or agreements relating to the subject matter herein.</p>
-    <p class="compact"><span class="section-number">36.</span> This Agreement may only be modified by written instrument signed by both parties.</p>
+    <h2>GENERAL PROVISIONS</h2>
+    <p class="compact"><span class="section-number">39.</span> <strong>SEVERABILITY:</strong> If any provision of this Agreement is held to be invalid or unenforceable, the remainder of this Agreement shall remain in full force and effect.</p>
+    <p class="compact"><span class="section-number">40.</span> <strong>ENTIRE AGREEMENT:</strong> This Agreement constitutes the entire agreement between the parties and supersedes all prior negotiations, representations, or agreements relating to the subject matter herein. This Agreement may only be modified by written instrument signed by both parties.</p>
+    <p class="compact"><span class="section-number">41.</span> <strong>NOTICES:</strong> All notices required under this Agreement shall be in writing and delivered to the addresses set forth above by certified mail, personal delivery, or email with delivery confirmation.</p>
 
     <div class="page-break"></div>
     
