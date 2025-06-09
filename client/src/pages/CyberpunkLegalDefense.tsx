@@ -752,36 +752,37 @@ export default function CyberpunkLegalDefense() {
     };
   };
 
-  // Generate defensive contract with collected comprehensive data
+  // Generate defensive contract with intelligent clauses
   const generateDefensiveContract = useCallback(async (data: any) => {
     setIsProcessing(true);
     
     try {
-      // Collect all form data from the comprehensive legal blocks
-      const comprehensiveData = collectContractData();
-      
-      console.log('Comprehensive contract data:', comprehensiveData);
+      console.log('Generating contract with data including clauses:', data);
 
       toast({
         title: "GENERATING DEFENSIVE CONTRACT",
-        description: "AI crafting maximum legal protection with extracted data...",
+        description: "AI crafting maximum legal protection with intelligent clauses...",
       });
 
-      const response = await fetch('/api/legal-defense/generate-defensive-contract', {
+      const response = await fetch('/api/anthropic/generate-defensive-contract', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ extractedData: comprehensiveData }),
+        body: JSON.stringify({ 
+          extractedData: data,
+          riskAnalysis: contractAnalysis,
+          protectiveRecommendations: intelligentClauses 
+        }),
       });
 
       const result = await response.json();
 
       if (result.success) {
-        setGeneratedContract(result.contract);
+        setGeneratedContract(result.contractHtml);
         toast({
           title: "DEFENSIVE CONTRACT GENERATED",
-          description: "Legal protection deployed successfully. Ready for review and signature.",
+          description: `Legal protection deployed with ${result.clausesApplied || 0} intelligent clauses.`,
         });
       } else {
         throw new Error(result.error || 'Contract generation failed');
@@ -796,7 +797,7 @@ export default function CyberpunkLegalDefense() {
     } finally {
       setIsProcessing(false);
     }
-  }, [toast, extractedData]);
+  }, [toast, contractAnalysis, intelligentClauses]);
 
 
 
@@ -2104,10 +2105,24 @@ export default function CyberpunkLegalDefense() {
                   </Button>
                   <Button 
                     onClick={() => {
-                      console.log('Advancing to contract generation with data:', extractedData);
+                      // Recopilar cláusulas seleccionadas del motor de Legal Defense
+                      const selectedClausesData = intelligentClauses.filter(clause => 
+                        selectedClauses.has(clause.id) || clause.category === 'MANDATORY'
+                      );
+                      
+                      // Crear datos completos incluyendo cláusulas seleccionadas
+                      const completeData = {
+                        ...extractedData,
+                        selectedIntelligentClauses: selectedClausesData,
+                        clauseCount: selectedClausesData.length
+                      };
+                      
+                      console.log('Advancing to contract generation with complete data:', completeData);
+                      console.log('Selected clauses:', selectedClausesData);
+                      
                       setCurrentStep(4);
                       setCurrentPhase('digital-execution');
-                      processExtractedDataWorkflow(extractedData);
+                      processExtractedDataWorkflow(completeData);
                     }}
                     className="bg-green-600 hover:bg-green-500 text-black font-bold py-3 px-8 rounded border-0 shadow-none"
                   >

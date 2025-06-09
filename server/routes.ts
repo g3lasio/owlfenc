@@ -891,78 +891,169 @@ ${extractedText}`,
     }
   });
 
-  // Endpoint optimizado para generar contratos defensivos
+  // Endpoint optimizado para generar contratos defensivos con cláusulas inteligentes
   app.post("/api/anthropic/generate-defensive-contract", async (req, res) => {
     try {
-      const { extractedData, riskAnalysis, protectiveRecommendations } =
-        req.body;
+      const { extractedData, riskAnalysis, protectiveRecommendations } = req.body;
 
-      // Generar contrato profesional inmediatamente
+      // Extraer información del proyecto de los datos
+      const clientName = extractedData?.clientInfo?.name || extractedData?.clientName || 'Cliente';
+      const clientAddress = extractedData?.clientInfo?.address || extractedData?.clientAddress || 'Dirección del cliente';
+      const contractorName = extractedData?.contractor?.name || extractedData?.contractorName || 'Contratista';
+      const contractorAddress = extractedData?.contractor?.address || extractedData?.contractorAddress || 'Dirección del contratista';
+      const contractorPhone = extractedData?.contractor?.phone || extractedData?.contractorPhone || '';
+      const contractorEmail = extractedData?.contractor?.email || extractedData?.contractorEmail || '';
+      const projectType = extractedData?.projectDetails?.type || extractedData?.projectType || 'Instalación de cerca';
+      const projectDescription = extractedData?.projectDetails?.description || extractedData?.projectDescription || '';
+      const totalAmount = extractedData?.financials?.total || extractedData?.totalAmount || 0;
+      const subtotal = extractedData?.financials?.subtotal || extractedData?.subtotal || totalAmount;
+      
+      // Procesar cláusulas inteligentes seleccionadas
+      const selectedClauses = extractedData?.selectedIntelligentClauses || [];
+      
+      console.log('Generando contrato con cláusulas seleccionadas:', selectedClauses.length);
+
+      // Generar sección de cláusulas dinámicamente
+      let clausesHtml = '';
+      if (selectedClauses.length > 0) {
+        clausesHtml = `
+        <div class="section">
+          <h2>CLÁUSULAS DE PROTECCIÓN LEGAL</h2>
+          ${selectedClauses.map((clause, index) => `
+            <div class="clause-section">
+              <h3>${index + 1}. ${clause.title}</h3>
+              <p class="clause-text">${clause.clause}</p>
+              <p class="clause-justification"><em>Justificación legal:</em> ${clause.justification}</p>
+              ${clause.category === 'MANDATORY' ? '<p class="mandatory-notice"><strong>⚠️ CLÁUSULA OBLIGATORIA POR LEY</strong></p>' : ''}
+            </div>
+          `).join('')}
+        </div>`;
+      }
+
+      // Generar contrato profesional con datos reales
       const contractHtml = `
     <!DOCTYPE html>
     <html>
     <head>
-      <title>Professional Construction Contract</title>
+      <title>Contrato Profesional de Construcción</title>
       <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; margin: 40px; }
-        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; }
-        .section { margin: 20px 0; }
-        .amount { font-weight: bold; color: #2563eb; }
+        body { 
+          font-family: 'Times New Roman', serif; 
+          line-height: 1.8; 
+          margin: 40px; 
+          color: #333;
+          font-size: 12pt;
+        }
+        .header { 
+          text-align: center; 
+          border-bottom: 3px solid #2563eb; 
+          padding-bottom: 20px; 
+          margin-bottom: 30px;
+        }
+        .header h1 {
+          font-size: 18pt;
+          font-weight: bold;
+          margin: 0;
+        }
+        .section { 
+          margin: 25px 0; 
+          page-break-inside: avoid;
+        }
+        .section h2 {
+          font-size: 14pt;
+          font-weight: bold;
+          color: #2563eb;
+          border-bottom: 1px solid #ccc;
+          padding-bottom: 5px;
+        }
+        .section h3 {
+          font-size: 13pt;
+          font-weight: bold;
+          color: #333;
+          margin-top: 15px;
+        }
+        .amount { 
+          font-weight: bold; 
+          color: #2563eb; 
+          font-size: 13pt;
+        }
+        .clause-section {
+          margin: 20px 0;
+          padding: 15px;
+          border-left: 4px solid #2563eb;
+          background-color: #f8f9fa;
+        }
+        .clause-text {
+          font-weight: bold;
+          margin: 10px 0;
+        }
+        .clause-justification {
+          font-style: italic;
+          color: #666;
+          font-size: 11pt;
+        }
+        .mandatory-notice {
+          color: #dc3545;
+          font-weight: bold;
+          font-size: 11pt;
+        }
+        .footer {
+          margin-top: 40px;
+          border-top: 2px solid #2563eb;
+          padding-top: 20px;
+          text-align: center;
+        }
+        @media print {
+          body { margin: 20px; }
+          .section { page-break-inside: avoid; }
+        }
       </style>
     </head>
     <body>
       <div class="header">
-        <h1>PROFESSIONAL CONSTRUCTION CONTRACT</h1>
-        <p><strong>Contract for Chain Link Fence Installation</strong></p>
+        <h1>CONTRATO PROFESIONAL DE CONSTRUCCIÓN</h1>
+        <p><strong>Contrato para ${projectType}</strong></p>
+        <p>Fecha: ${new Date().toLocaleDateString('es-ES')}</p>
       </div>
       
       <div class="section">
-        <h2>CONTRACTOR INFORMATION</h2>
-        <p><strong>Company:</strong> OWL FENC LLC</p>
-        <p><strong>Address:</strong> 2901 Owens Ct, Fairfield, CA 94534</p>
-        <p><strong>Phone:</strong> (202) 549-3519</p>
-        <p><strong>Email:</strong> gelasio@chyrris.com</p>
+        <h2>INFORMACIÓN DEL CONTRATISTA</h2>
+        <p><strong>Empresa:</strong> ${contractorName}</p>
+        <p><strong>Dirección:</strong> ${contractorAddress}</p>
+        ${contractorPhone ? `<p><strong>Teléfono:</strong> ${contractorPhone}</p>` : ''}
+        ${contractorEmail ? `<p><strong>Email:</strong> ${contractorEmail}</p>` : ''}
       </div>
 
       <div class="section">
-        <h2>CLIENT INFORMATION</h2>
-        <p><strong>Name:</strong> Isaac Tich</p>
-        <p><strong>Address:</strong> 25340 Buckeye Rd, Winters, CA 95694</p>
+        <h2>INFORMACIÓN DEL CLIENTE</h2>
+        <p><strong>Nombre:</strong> ${clientName}</p>
+        <p><strong>Dirección:</strong> ${clientAddress}</p>
       </div>
 
       <div class="section">
-        <h2>PROJECT DETAILS</h2>
-        <p><strong>Project Type:</strong> Chain Link Fence Installation</p>
-        <p><strong>Description:</strong> Professional installation of 180 linear ft, 5 ft high chain link fence with 4 gates</p>
-        <p><strong>Materials:</strong> 6-ft H x 50-ft W 11.5-Gauge Galvanized Steel Chain Link Fence with posts and hardware</p>
+        <h2>DETALLES DEL PROYECTO</h2>
+        <p><strong>Tipo de Proyecto:</strong> ${projectType}</p>
+        ${projectDescription ? `<p><strong>Descripción:</strong> ${projectDescription}</p>` : ''}
       </div>
 
       <div class="section">
-        <h2>FINANCIAL TERMS</h2>
-        <p><strong>Subtotal:</strong> <span class="amount">$7,421.44</span></p>
-        <p><strong>Discount (10%):</strong> <span class="amount">-$742.14</span></p>
-        <p><strong>Total Contract Amount:</strong> <span class="amount">$6,679.30</span></p>
-        <p><strong>Payment Terms:</strong> 30% deposit ($2,003.79) required before work begins, remaining balance due upon completion</p>
+        <h2>TÉRMINOS FINANCIEROS</h2>
+        ${subtotal !== totalAmount ? `<p><strong>Subtotal:</strong> <span class="amount">$${subtotal.toLocaleString()}</span></p>` : ''}
+        <p><strong>Monto Total del Contrato:</strong> <span class="amount">$${totalAmount.toLocaleString()}</span></p>
+        <p><strong>Términos de Pago:</strong> 30% de depósito requerido antes de comenzar el trabajo, saldo restante al completar</p>
       </div>
 
-      <div class="section">
-        <h2>PROTECTIVE CLAUSES</h2>
-        <h3>Payment Protection</h3>
-        <p>30% deposit required before work begins, progress payments tied to completion milestones, final payment within 10 days of completion</p>
-        
-        <h3>Scope Protection</h3>
-        <p>All scope changes must be approved in writing with updated pricing before implementation</p>
-        
-        <h3>Liability Limitation</h3>
-        <p>Contractor liability limited to contract value, client responsible for property boundary verification</p>
-        
-        <h3>Timeline Protection</h3>
-        <p>Weather delays and permit delays excluded from completion timeline, force majeure clause included</p>
-      </div>
+      ${clausesHtml}
 
       <div class="section">
-        <h2>TERMS AND CONDITIONS</h2>
-        <p>This contract protects both parties while ensuring professional completion of the fence installation project. All work will be completed according to California construction standards and local building codes.</p>
+        <h2>TÉRMINOS Y CONDICIONES GENERALES</h2>
+        <p>Este contrato protege a ambas partes asegurando la finalización profesional del proyecto. Todo el trabajo se completará de acuerdo con los estándares de construcción de California y códigos de construcción locales.</p>
+        <p>Las modificaciones a este contrato deben ser por escrito y firmadas por ambas partes. Este contrato se rige por las leyes del Estado de California.</p>
+      </div>
+
+      <div class="footer">
+        <p><strong>Generado el:</strong> ${new Date().toLocaleString('es-ES')}</p>
+        <p><strong>Cláusulas de protección aplicadas:</strong> ${selectedClauses.length}</p>
       </div>
     </body>
     </html>`;
@@ -970,7 +1061,8 @@ ${extractedText}`,
       res.json({
         success: true,
         contractHtml,
-        message: "Defensive contract generated successfully",
+        message: "Contrato defensivo generado exitosamente con cláusulas inteligentes",
+        clausesApplied: selectedClauses.length
       });
     } catch (error) {
       console.error("Error generating defensive contract:", error);
