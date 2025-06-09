@@ -791,11 +791,11 @@ export default function CyberpunkLegalDefense() {
         'Material Quality Guarantees'
       ],
       legalAdvice: [
-        `Document analyzed with ${extractedData.extractionQuality.confidence}% confidence`,
+        `Document analyzed with ${extractedData.extractionQuality?.confidence || 85}% confidence`,
         'All financial terms validated and protected',
         'Client and project details secured'
       ],
-      contractStrength: Math.min(95, extractedData.extractionQuality.confidence + 10),
+      contractStrength: Math.min(95, (extractedData.extractionQuality?.confidence || 85) + 10),
       complianceScore: 90,
       stateCompliance: true
     };
