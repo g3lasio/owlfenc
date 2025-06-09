@@ -1809,12 +1809,12 @@ export default function CyberpunkLegalDefense() {
                   </div>
 
                   {/* Client Information */}
-                  <div className="bg-gray-900/50 border border-green-400/30 rounded-lg p-4">
-                    <h3 className="text-green-400 font-bold mb-4 flex items-center">
-                      <User className="h-4 w-4 mr-2" />
+                  <div className="bg-gray-900/50 border border-green-400/30 rounded-lg p-3 sm:p-4 w-full max-w-full">
+                    <h3 className="text-green-400 font-bold mb-4 flex items-center text-sm sm:text-base">
+                      <User className="h-4 w-4 mr-2 flex-shrink-0" />
                       CLIENT INFORMATION
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 w-full">
                       <div>
                         <label className="text-gray-400 text-sm">Client Name</label>
                         <input
