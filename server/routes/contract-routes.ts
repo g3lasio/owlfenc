@@ -5,6 +5,7 @@ import path from "path";
 import fs from "fs";
 import { MistralService } from "../services/mistralService";
 import generateContract from "../services/generateContract";
+import { hybridContractGenerator } from "../services/hybridContractGenerator";
 import OpenAI from "openai";
 
 // Inicializar router y servicios
@@ -657,5 +658,57 @@ function generarContratoHTML(datos: DatosExtraidos): string {
 </html>
   `;
 }
+
+// Enhanced contract generator endpoint
+router.post("/generate-hybrid", async (req, res) => {
+  try {
+    console.log('🚀 [HYBRID-CONTRACT] Iniciando generación de contrato mejorado...');
+    
+    const { contractData, templatePreferences } = req.body;
+    
+    if (!contractData) {
+      return res.status(400).json({
+        success: false,
+        error: "Contract data is required"
+      });
+    }
+
+    // Generate contract using the hybrid system
+    const result = await hybridContractGenerator.generateProfessionalContract({
+      contractData,
+      templatePreferences: templatePreferences || {
+        style: 'professional',
+        includeProtections: true,
+        pageLayout: '6-page'
+      }
+    });
+
+    if (result.success) {
+      console.log('✅ [HYBRID-CONTRACT] Contrato generado exitosamente');
+      
+      // Return both HTML and PDF data
+      res.status(200).json({
+        success: true,
+        html: result.html,
+        pdfBase64: result.pdfBuffer ? result.pdfBuffer.toString('base64') : null,
+        metadata: result.metadata
+      });
+    } else {
+      console.error('❌ [HYBRID-CONTRACT] Error en generación:', result.error);
+      res.status(500).json({
+        success: false,
+        error: result.error || "Failed to generate contract"
+      });
+    }
+    
+  } catch (error: any) {
+    console.error('💥 [HYBRID-CONTRACT] Error crítico:', error);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+      details: error.message
+    });
+  }
+});
 
 export default router;

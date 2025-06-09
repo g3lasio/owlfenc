@@ -3,11 +3,20 @@
  * Verifies improvements: larger fonts, side-by-side layout, page numbering
  */
 
-import { hybridContractGenerator } from './server/services/hybridContractGenerator.js';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Import the generator using require since it's a TypeScript module
+import('./server/services/hybridContractGenerator.ts').catch(() => {
+  console.log('Using direct HTTP test instead of module import');
+});
 
 async function testEnhancedContractGeneration() {
-  console.log('🚀 Testing Enhanced Contract PDF Generation...\n');
+  console.log('Testing Enhanced Contract PDF Generation via API...\n');
 
   const testContractData = {
     client: {
@@ -40,36 +49,35 @@ async function testEnhancedContractGeneration() {
     ]
   };
 
-  const contractorBranding = {
-    companyName: 'Professional Contractor LLC',
-    address: '456 Business Ave, Los Angeles, CA 90211',
-    phone: '(555) 987-6543',
-    email: 'contact@professionalcontractor.com',
-    licenseNumber: 'C-27 #123456',
-    state: 'California',
-    businessType: 'Fencing Contractor'
-  };
-
   try {
-    const startTime = Date.now();
-    
-    const request = {
-      contractData: testContractData,
-      templatePreferences: {
-        style: 'professional',
-        includeProtections: true,
-        pageLayout: '6-page'
-      }
-    };
-
-    console.log('📋 Contract Data:');
+    console.log('Contract Data:');
     console.log(`- Client: ${testContractData.client.name}`);
-    console.log(`- Contractor: ${contractorBranding.companyName}`);
+    console.log(`- Contractor: ${testContractData.contractor.name}`);
     console.log(`- Project: ${testContractData.project.type}`);
     console.log(`- Total Cost: $${testContractData.financials.total.toFixed(2)}`);
     console.log('');
 
-    const result = await hybridContractGenerator.generateProfessionalContract(request);
+    // Test via HTTP API call to the server
+    const response = await fetch('http://localhost:3000/api/contracts/generate-hybrid', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contractData: testContractData,
+        templatePreferences: {
+          style: 'professional',
+          includeProtections: true,
+          pageLayout: '6-page'
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
 
     if (result.success) {
       console.log('✅ Contract Generated Successfully!');
