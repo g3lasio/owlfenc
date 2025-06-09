@@ -1933,40 +1933,7 @@ export default function CyberpunkLegalDefense() {
                     </div>
                   </div>
 
-                  {/* Customizable Clause Library */}
-                  <div className="bg-gray-900/50 border border-cyan-400/30 rounded-lg p-4">
-                    <h3 className="text-cyan-400 font-bold mb-4 flex items-center">
-                      <FileText className="h-4 w-4 mr-2" />
-                      ADDITIONAL PROTECTIVE CLAUSES
-                    </h3>
-                    <div className="space-y-4">
-                      <div className="text-gray-400 text-sm mb-3">
-                        Add specialized clauses for enhanced protection (optional):
-                      </div>
-                      <div className="space-y-2">
-                        <label className="flex items-center space-x-2">
-                          <input type="checkbox" name="extraClauses" value="weather" className="text-cyan-400" />
-                          <span className="text-gray-300 text-sm">Weather delay protection clause</span>
-                        </label>
-                        <label className="flex items-center space-x-2">
-                          <input type="checkbox" name="extraClauses" value="materials" className="text-cyan-400" />
-                          <span className="text-gray-300 text-sm">Material price escalation protection</span>
-                        </label>
-                        <label className="flex items-center space-x-2">
-                          <input type="checkbox" name="extraClauses" value="equipment" className="text-cyan-400" />
-                          <span className="text-gray-300 text-sm">Equipment breakdown contingency</span>
-                        </label>
-                        <label className="flex items-center space-x-2">
-                          <input type="checkbox" name="extraClauses" value="safety" className="text-cyan-400" />
-                          <span className="text-gray-300 text-sm">Enhanced safety compliance clause</span>
-                        </label>
-                        <label className="flex items-center space-x-2">
-                          <input type="checkbox" name="extraClauses" value="covid" className="text-cyan-400" />
-                          <span className="text-gray-300 text-sm">Health emergency work suspension clause</span>
-                        </label>
-                      </div>
-                    </div>
-                  </div>
+
 
 
 
