@@ -5,7 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { DefenseReviewPanel } from '@/components/contract/DefenseReviewPanel';
+
 import { ContractHistoryPanel } from '@/components/contract/ContractHistoryPanel';
 import { DefenseClause } from '@/services/deepSearchDefenseEngine';
 import { professionalContractGenerator, ContractData } from '@/services/professionalContractGenerator';
@@ -2004,33 +2004,7 @@ export default function CyberpunkLegalDefense() {
                     </div>
                   </div>
 
-                  {/* Final Review and Confirmation */}
-                  <div className="bg-gray-900/50 border border-yellow-400/30 rounded-lg p-4">
-                    <h3 className="text-yellow-400 font-bold mb-4 flex items-center">
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      FINAL REVIEW & CONFIRMATION
-                    </h3>
-                    <div className="space-y-4">
-                      <div className="flex items-center space-x-3">
-                        <input type="checkbox" required name="finalReview" className="text-yellow-400" />
-                        <label className="text-gray-300">I have reviewed and agree to all contract terms and conditions</label>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <input type="checkbox" required name="legalNoticesAck" className="text-yellow-400" />
-                        <label className="text-gray-300">I acknowledge receipt of all required California legal notices</label>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <input type="checkbox" required name="authorityConfirm" className="text-yellow-400" />
-                        <label className="text-gray-300">I confirm I have authority to enter into this contract</label>
-                      </div>
-                      <div className="bg-yellow-900/20 border border-yellow-400/30 rounded p-3">
-                        <div className="text-yellow-400 text-xs font-bold mb-1">IMPORTANT:</div>
-                        <div className="text-gray-300 text-xs">
-                          All confirmations above are required before contract generation. This ensures full legal compliance and protects both parties.
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+
 
                   {/* Data Quality Status */}
                   <div className="bg-gray-900/50 border border-cyan-400/30 rounded-lg p-4">
@@ -2198,17 +2172,7 @@ export default function CyberpunkLegalDefense() {
             </Card>
           )}
 
-          {/* DeepSearch Defense Review - Comprehensive Legal Analysis */}
-          {extractedData && currentPhase === 'defense-review' && (
-            <DefenseReviewPanel
-              projectData={extractedData}
-              onDefenseComplete={handleDefenseComplete}
-              onGoBack={() => {
-                setCurrentPhase('arsenal-builder');
-                setCurrentStep(2);
-              }}
-            />
-          )}
+
 
           {/* Contract Generation & PDF Creation - Final Step */}
           {extractedData && currentPhase === 'digital-execution' && (
