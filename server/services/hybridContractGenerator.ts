@@ -196,10 +196,9 @@ FORMATO REQUERIDO:
     });
 
     const firstBlock = response.content[0];
-    if (firstBlock && 'text' in firstBlock) {
-      const htmlContent = firstBlock.text;
-      console.log('🎯 [CLAUDE] HTML generado:', htmlContent.length, 'caracteres');
-      return htmlContent;
+    if (firstBlock && firstBlock.type === 'text') {
+      console.log('🎯 [CLAUDE] HTML generado:', firstBlock.text.length, 'caracteres');
+      return firstBlock.text;
     }
     
     console.warn('⚠️ [CLAUDE] Respuesta inválida, usando template de respaldo');
@@ -371,14 +370,11 @@ FORMATO REQUERIDO:
     const clientPhone = contractData.client.phone || '';
     const clientEmail = contractData.client.email || '';
     
-    // Use custom payment terms if provided, otherwise use default 10/40/50 split
-    const paymentTerms = contractData.paymentTerms || [
-      { percentage: 10, description: 'Down payment due upon execution of this Agreement' },
-      { percentage: 40, description: 'Progress payment due at 50% completion of Services' },
-      { percentage: 50, description: 'Final payment due upon completion of Services' }
-    ];
-    
-    const totalCost = contractData.totalCost || contractData.financials.total || 0;
+    // Use default payment schedule (can be customized later through UI)
+    const totalCost = contractData.financials.total || 0;
+    const downPayment = (totalCost * 0.1).toFixed(2);
+    const progressPayment = (totalCost * 0.4).toFixed(2);
+    const finalPayment = (totalCost * 0.5).toFixed(2);
 
     return `<!DOCTYPE html>
 <html>
@@ -688,7 +684,7 @@ FORMATO REQUERIDO:
     <p class="compact"><span class="section-number">7.</span> Contractor warrants that all work will be performed in a good and workmanlike manner in accordance with industry standards and applicable building codes.</p>
 
     <h2>PAYMENT SCHEDULE</h2>
-    <p class="compact"><span class="section-number">8.</span> In consideration for the Services, Client agrees to pay Contractor the total sum of $${contractData.financials.total?.toFixed(2) || '0.00'}.</p>
+    <p class="compact"><span class="section-number">8.</span> In consideration for the Services, Client agrees to pay Contractor the total sum of $${totalCost.toFixed(2)}.</p>
     <p class="compact"><span class="section-number">9.</span> Payment schedule:</p>
     <p class="compact">a) Down payment of $${downPayment} (10%) due upon execution of this Agreement</p>
     <p class="compact">b) Progress payment of $${progressPayment} (40%) due at 50% completion of Services</p>
