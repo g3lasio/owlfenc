@@ -68,45 +68,55 @@ const PaymentTermRow: React.FC<PaymentTermRowProps> = ({
   const amount = (totalAmount * term.percentage) / 100;
   
   return (
-    <div className="bg-gray-800/50 border border-gray-600 rounded-lg p-3">
-      <div className="flex items-center justify-between mb-2">
-        <input
-          type="text"
-          value={term.label}
-          onChange={(e) => onUpdate(term.id, 'label', e.target.value)}
-          className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-gray-300 text-sm font-medium flex-1 mr-3 focus:border-green-400 focus:outline-none"
-        />
-        <span className="text-green-400 font-mono font-bold">${amount.toFixed(2)}</span>
-        {isRemovable && onRemove && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onRemove(term.id)}
-            className="ml-2 text-red-400 hover:text-red-300 hover:bg-red-900/20"
-          >
-            ×
-          </Button>
-        )}
-      </div>
-      <div className="flex items-center gap-3 text-sm">
-        <div className="flex items-center gap-2">
+    <div className="bg-gray-800/50 border border-gray-600 rounded-lg p-3 w-full">
+      {/* Mobile-First Layout */}
+      <div className="space-y-3">
+        {/* First Row: Label and Amount */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <input
-            type="number"
-            value={term.percentage}
-            onChange={(e) => onUpdate(term.id, 'percentage', parseFloat(e.target.value) || 0)}
-            className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-gray-300 w-16 focus:border-green-400 focus:outline-none"
-            min="0"
-            max="100"
+            type="text"
+            value={term.label}
+            onChange={(e) => onUpdate(term.id, 'label', e.target.value)}
+            className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-gray-300 text-sm font-medium focus:border-green-400 focus:outline-none w-full sm:flex-1 sm:mr-3"
+            placeholder="Payment label..."
           />
-          <span className="text-gray-400">%</span>
+          <div className="flex items-center justify-between sm:justify-end gap-2">
+            <span className="text-green-400 font-mono font-bold text-lg">${amount.toFixed(2)}</span>
+            {isRemovable && onRemove && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onRemove(term.id)}
+                className="text-red-400 hover:text-red-300 hover:bg-red-900/20 p-1 h-8 w-8"
+              >
+                ×
+              </Button>
+            )}
+          </div>
         </div>
-        <input
-          type="text"
-          value={term.description}
-          onChange={(e) => onUpdate(term.id, 'description', e.target.value)}
-          className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-gray-300 text-xs flex-1 focus:border-green-400 focus:outline-none"
-          placeholder="Payment description..."
-        />
+        
+        {/* Second Row: Percentage and Description */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex items-center gap-2 sm:w-auto">
+            <input
+              type="number"
+              value={term.percentage}
+              onChange={(e) => onUpdate(term.id, 'percentage', parseFloat(e.target.value) || 0)}
+              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-gray-300 w-20 focus:border-green-400 focus:outline-none text-center"
+              min="0"
+              max="100"
+              step="1"
+            />
+            <span className="text-gray-400 text-sm">%</span>
+          </div>
+          <input
+            type="text"
+            value={term.description}
+            onChange={(e) => onUpdate(term.id, 'description', e.target.value)}
+            className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-gray-300 text-sm flex-1 focus:border-green-400 focus:outline-none"
+            placeholder="Payment description..."
+          />
+        </div>
       </div>
     </div>
   );
@@ -1487,9 +1497,9 @@ export default function CyberpunkLegalDefense() {
                 </p>
               </CardHeader>
               
-              <CardContent className="px-4 md:px-8 pb-6 md:pb-8">
+              <CardContent className="px-2 sm:px-4 md:px-8 pb-6 md:pb-8">
                 {/* Extracted Data Display */}
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6 max-w-full overflow-x-hidden">
                   {/* Client Information */}
                   <div className="bg-gray-900/50 border border-purple-400/30 rounded-lg p-4">
                     <h3 className="text-purple-400 font-bold mb-3 flex items-center">
@@ -1875,23 +1885,23 @@ export default function CyberpunkLegalDefense() {
                   </div>
 
                   {/* Payment Terms */}
-                  <div className="bg-gray-900/50 border border-green-400/30 rounded-lg p-4">
-                    <h3 className="text-green-400 font-bold mb-4 flex items-center">
-                      <DollarSign className="h-4 w-4 mr-2" />
+                  <div className="bg-gray-900/50 border border-green-400/30 rounded-lg p-3 sm:p-4 w-full max-w-full overflow-hidden">
+                    <h3 className="text-green-400 font-bold mb-4 flex items-center text-sm sm:text-base">
+                      <DollarSign className="h-4 w-4 mr-2 flex-shrink-0" />
                       PAYMENT TERMS
                     </h3>
-                    <div className="space-y-4">
+                    <div className="space-y-4 w-full">
                       {/* Total Cost Display */}
-                      <div className="text-center">
-                        <div className="bg-gray-800/50 rounded-lg p-4 border border-green-400/50">
-                          <div className="text-gray-400 text-sm">TOTAL COST</div>
-                          <div className="flex items-center justify-center gap-2">
-                            <span className="text-green-400 font-mono text-2xl font-bold">$</span>
+                      <div className="w-full">
+                        <div className="bg-gray-800/50 rounded-lg p-4 border border-green-400/50 max-w-full">
+                          <div className="text-gray-400 text-sm text-center mb-2">TOTAL COST</div>
+                          <div className="flex items-center justify-center gap-1 sm:gap-2 flex-wrap">
+                            <span className="text-green-400 font-mono text-xl sm:text-2xl font-bold">$</span>
                             <input
                               type="number"
                               value={totalCost || extractedData.financials?.total || 0}
                               onChange={(e) => setTotalCost(parseFloat(e.target.value) || 0)}
-                              className="bg-transparent text-green-400 font-mono text-2xl font-bold text-center border-none outline-none focus:ring-2 focus:ring-green-400/50 rounded px-2"
+                              className="bg-transparent text-green-400 font-mono text-xl sm:text-2xl font-bold text-center border-none outline-none focus:ring-2 focus:ring-green-400/50 rounded px-2 w-32 sm:w-auto max-w-full"
                               placeholder="0.00"
                               step="0.01"
                               min="0"
@@ -1915,10 +1925,10 @@ export default function CyberpunkLegalDefense() {
                       </div>
 
                       {/* Payment Summary */}
-                      <div className="mt-4 p-3 bg-gray-800/30 rounded border border-gray-600">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-400">Total Percentage:</span>
-                          <span className={`font-mono ${
+                      <div className="mt-4 p-3 bg-gray-800/30 rounded border border-gray-600 w-full">
+                        <div className="flex flex-col sm:flex-row sm:justify-between gap-2 text-sm">
+                          <span className="text-gray-400 text-center sm:text-left">Total Percentage:</span>
+                          <span className={`font-mono text-center sm:text-right font-bold ${
                             paymentTerms.reduce((sum, term) => sum + term.percentage, 0) === 100 
                               ? 'text-green-400' 
                               : 'text-yellow-400'
@@ -1929,15 +1939,14 @@ export default function CyberpunkLegalDefense() {
                       </div>
 
                       {/* Add Payment Button */}
-                      <div className="text-center">
-                        <Button
-                          variant="outline"
-                          size="sm"
+                      <div className="w-full flex justify-center">
+                        <button
+                          type="button"
                           onClick={addPaymentTerm}
-                          className="border-green-400 text-green-400 hover:bg-green-400 hover:text-black"
+                          className="w-full sm:w-auto px-4 py-2 border border-green-400 text-green-400 bg-transparent rounded-lg hover:bg-green-400 hover:text-black transition-colors duration-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-green-400/50"
                         >
                           + Add Progressive Payment
-                        </Button>
+                        </button>
                       </div>
                     </div>
                   </div>
