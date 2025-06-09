@@ -1,467 +1,251 @@
 /**
- * Motor de Abogado Defensor Digital - Mervin AI Legal Defense Engine
+ * Legal Defense Engine - Generador inteligente de cláusulas protectivas
  * 
- * Este motor analiza proyectos y genera contratos que protegen específicamente
- * al contratista, actuando como un abogado defensor especializado.
+ * Este motor analiza los datos del proyecto y genera cláusulas específicas
+ * de alto valor jurídico para protección contractual profesional.
  */
 
-import { Project } from "@shared/schema";
-
-export interface LegalRiskAnalysis {
-  riskLevel: 'bajo' | 'medio' | 'alto' | 'crítico';
-  riskScore: number;
-  protectiveRecommendations: string[];
-  contractorProtections: string[];
-  paymentSafeguards: string[];
-  liabilityShields: string[];
-  scopeProtections: string[];
-  veteranClauses: string[];
-  industrySpecificProtections: string[];
+export interface ProjectAnalysis {
+  clientInfo?: {
+    name?: string;
+    address?: string;
+    email?: string;
+    phone?: string;
+  };
+  projectDetails?: {
+    type?: string;
+    description?: string;
+    location?: string;
+    startDate?: string;
+    endDate?: string;
+  };
+  financials?: {
+    total?: number;
+    subtotal?: number;
+    tax?: number;
+    taxRate?: number;
+  };
+  materials?: Array<{
+    item: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+  }>;
 }
 
-export interface ContractorProtectionConfig {
-  emphasizePaymentTerms: boolean;
-  includeScopeChangeProtection: boolean;
-  addLiabilityLimitations: boolean;
-  requireProgressivePayments: boolean;
-  includeForceClausures: boolean;
-  addMaterialEscalationClause: boolean;
-  requireClientResponsibilities: boolean;
+export interface LegalClause {
+  id: string;
+  category: 'MANDATORY' | 'RECOMMENDED';
+  title: string;
+  clause: string;
+  justification: string;
+  riskLevel: 'HIGH' | 'MEDIUM' | 'LOW';
+  applicability: string;
 }
 
 export class LegalDefenseEngine {
-  
-  /**
-   * Analiza los riesgos legales específicos para el contratista con IA avanzada
-   */
-  static async analyzeLegalRisks(project: Project): Promise<LegalRiskAnalysis> {
-    console.log('🛡️ Iniciando análisis legal veterano para protección máxima del contratista...');
-    
-    let riskScore = 0;
-    const protectiveRecommendations: string[] = [];
-    const contractorProtections: string[] = [];
-    const paymentSafeguards: string[] = [];
-    const liabilityShields: string[] = [];
-    const scopeProtections: string[] = [];
-    const veteranClauses: string[] = [];
-    const industrySpecificProtections: string[] = [];
+  private analyzeProjectRisks(data: ProjectAnalysis): string[] {
+    const risks: string[] = [];
+    const location = data.projectDetails?.location || '';
+    const projectType = data.projectDetails?.type || '';
+    const total = data.financials?.total || 0;
+    const description = data.projectDetails?.description || '';
 
-    // Análisis de riesgo financiero escalado
-    if (project.totalPrice && project.totalPrice > 1000000) {
-      riskScore += 4;
-      protectiveRecommendations.push('Proyecto de muy alto valor - requiere protección máxima');
-      paymentSafeguards.push('Depósito inicial del 40% antes de comenzar');
-      paymentSafeguards.push('Pagos semanales por etapas completadas');
-      paymentSafeguards.push('Bono de cumplimiento del 10% del valor total');
-      paymentSafeguards.push('Seguro de responsabilidad mínimo $2,000,000');
-      veteranClauses.push('Cláusula de Financiamiento: Cliente debe demostrar fondos antes del inicio');
-    } else if (project.totalPrice && project.totalPrice > 500000) {
-      riskScore += 2;
-      protectiveRecommendations.push('Proyecto de alto valor - requiere pagos progresivos estrictos');
-      paymentSafeguards.push('Depósito inicial del 30% antes de comenzar');
-      paymentSafeguards.push('Pagos por etapas con aprobación del cliente');
-      paymentSafeguards.push('Retención máxima del 5% al completar');
-      veteranClauses.push('Cláusula de Verificación Financiera: Cliente puede requerir verificación de fondos');
-    } else if (project.totalPrice && project.totalPrice > 100000) {
-      riskScore += 1;
-      paymentSafeguards.push('Depósito inicial del 25% antes de comenzar');
-      paymentSafeguards.push('Pagos por hitos principales del proyecto');
-      veteranClauses.push('Cláusula de Progreso: Pagos vinculados a entregables específicos');
+    // Análisis de jurisdicción
+    if (location.toLowerCase().includes('california') || location.toLowerCase().includes('ca')) {
+      risks.push('CALIFORNIA_JURISDICTION');
     }
 
-    // Análisis geográfico por estado
-    const projectState = this.detectProjectState(project.address);
-    if (projectState) {
-      const stateProtections = this.getStateSpecificProtections(projectState);
-      contractorProtections.push(...stateProtections.required);
-      veteranClauses.push(...stateProtections.veteran);
-      riskScore += stateProtections.riskModifier;
+    // Análisis de tipo de proyecto
+    if (projectType.toLowerCase().includes('fence') || description.toLowerCase().includes('fence')) {
+      risks.push('FENCE_INSTALLATION');
     }
 
-    // Análisis avanzado por industria con protecciones veteranas
-    if (project.projectType === 'roofing') {
-      riskScore += 2;
-      liabilityShields.push('Limitación de responsabilidad por filtraciones después de 1 año');
-      liabilityShields.push('Exclusión de daños por condiciones climáticas extremas');
-      contractorProtections.push('Inspección previa de estructura existente documentada');
-      veteranClauses.push('Cláusula de Protección Climática: Trabajo suspendido automáticamente con vientos >25mph');
-      veteranClauses.push('Cláusula de Estructura Preexistente: Cliente certifica que techo actual cumple códigos');
-      industrySpecificProtections.push('Garantía limitada exclusivamente a mano de obra, no a materiales del cliente');
+    // Análisis de valor del proyecto
+    if (total > 25000) {
+      risks.push('HIGH_VALUE_PROJECT');
+    } else if (total > 10000) {
+      risks.push('MEDIUM_VALUE_PROJECT');
     }
 
-    if (project.projectType === 'plumbing') {
-      riskScore += 1;
-      liabilityShields.push('Responsabilidad limitada a trabajos realizados únicamente');
-      liabilityShields.push('Exclusión de problemas en tuberías preexistentes');
-      veteranClauses.push('Cláusula de Prueba de Presión: Cliente acepta pruebas de presión como estándar final');
-      industrySpecificProtections.push('Exclusión total de responsabilidad por tuberías no accesibles para inspección');
+    // Análisis de complejidad
+    if (description.toLowerCase().includes('gate') || description.toLowerCase().includes('custom')) {
+      risks.push('CUSTOM_WORK');
     }
 
-    if (project.projectType === 'fencing' || project.projectType === 'cerca') {
-      riskScore += 1;
-      veteranClauses.push('Cláusula de Límites de Propiedad: Cliente garantiza ubicación exacta de linderos');
-      veteranClauses.push('Cláusula de Servicios Subterráneos: Cliente responsable de localizar utilidades enterradas');
-      industrySpecificProtections.push('No responsabilidad por daños a servicios no marcados por empresa de servicios');
-      liabilityShields.push('Limitación de garantía a defectos de instalación únicamente');
+    if (description.toLowerCase().includes('removal') || description.toLowerCase().includes('demolish')) {
+      risks.push('DEMOLITION_WORK');
     }
 
-    if (project.projectType === 'electrical') {
-      riskScore += 2;
-      veteranClauses.push('Cláusula de Código Eléctrico: Trabajo sujeto a aprobación de inspector municipal');
-      veteranClauses.push('Cláusula de Corte de Energía: Cliente acepta interrupciones necesarias para seguridad');
-      industrySpecificProtections.push('Responsabilidad limitada a trabajo nuevo, no a sistema eléctrico existente');
-    }
-
-    // Análisis de permisos
-    if (!project.permitStatus || project.permitStatus === 'pending') {
-      riskScore += 2;
-      protectiveRecommendations.push('Permisos pendientes - cliente debe obtenerlos antes del inicio');
-      contractorProtections.push('Cliente responsable de obtener todos los permisos');
-      contractorProtections.push('Trabajo no iniciará sin permisos aprobados');
-    }
-
-    // Análisis de información del cliente
-    if (!project.clientEmail || !project.clientPhone) {
-      riskScore += 1;
-      protectiveRecommendations.push('Información de contacto incompleta - completar antes del contrato');
-    }
-
-    // Protecciones de alcance
-    scopeProtections.push('Cualquier cambio al alcance requiere orden de cambio por escrito');
-    scopeProtections.push('Cambios adicionales se facturan por separado');
-    scopeProtections.push('Cliente debe proporcionar acceso libre al área de trabajo');
-
-    // Protecciones generales del contratista
-    contractorProtections.push('Derecho a suspender trabajo por falta de pago');
-    contractorProtections.push('Retención de materiales hasta pago completo');
-    contractorProtections.push('Protección contra demoras causadas por el cliente');
-    
-    // Cláusulas veteranas de protección máxima
-    veteranClauses.push('Cláusula de Descubrimiento Oculto: Condiciones no detectables en inspección inicial son trabajo adicional');
-    veteranClauses.push('Cláusula de Escalación de Materiales: Incrementos >5% en materiales se transfieren al cliente');
-    veteranClauses.push('Cláusula de Acceso Garantizado: Cliente proporciona acceso libre 24/7 durante días laborales');
-    veteranClauses.push('Cláusula de Modificación: Cambios verbales no tienen validez legal alguna');
-    veteranClauses.push('Cláusula de Indemnización: Cliente protege a contratista de reclamaciones de terceros');
-    
-    // Protecciones de responsabilidad avanzadas
-    liabilityShields.push('Limitación de responsabilidad total al valor del contrato');
-    liabilityShields.push('Exclusión de daños consecuenciales, indirectos o punitivos');
-    liabilityShields.push('Período de notificación: Reclamaciones deben presentarse dentro de 30 días');
-    liabilityShields.push('Arbitraje obligatorio: Disputas se resuelven en arbitraje privado');
-
-    // Salvaguardas de pago adicionales
-    paymentSafeguards.push('Intereses por pagos atrasados después de 15 días');
-    paymentSafeguards.push('Costos legales de cobro a cargo del cliente');
-    paymentSafeguards.push('Derecho de gravamen: Aplicación automática de mechanics lien por falta de pago');
-    paymentSafeguards.push('Suspensión inmediata: Trabajo para automáticamente al día 16 de atraso');
-
-    // Determinar nivel de riesgo
-    let riskLevel: 'bajo' | 'medio' | 'alto' | 'crítico';
-    if (riskScore >= 6) riskLevel = 'crítico';
-    else if (riskScore >= 4) riskLevel = 'alto';
-    else if (riskScore >= 2) riskLevel = 'medio';
-    else riskLevel = 'bajo';
-
-    return {
-      riskLevel,
-      riskScore,
-      protectiveRecommendations,
-      contractorProtections,
-      paymentSafeguards,
-      liabilityShields,
-      scopeProtections,
-      veteranClauses,
-      industrySpecificProtections
-    };
+    return risks;
   }
 
-  /**
-   * Detecta el estado basado en la dirección del proyecto
-   */
-  private static detectProjectState(address: string): string | null {
-    const stateMapping: Record<string, string[]> = {
-      'California': ['ca', 'california', 'los angeles', 'san francisco', 'sacramento', 'san diego'],
-      'Texas': ['tx', 'texas', 'houston', 'dallas', 'austin', 'san antonio'],
-      'Florida': ['fl', 'florida', 'miami', 'orlando', 'tampa', 'jacksonville'],
-      'New York': ['ny', 'new york', 'nyc', 'brooklyn', 'queens', 'manhattan'],
-      'Nevada': ['nv', 'nevada', 'las vegas', 'reno', 'henderson'],
-      'Arizona': ['az', 'arizona', 'phoenix', 'tucson', 'mesa', 'scottsdale']
-    };
+  private generateCaliforniaMandatoryClauses(data: ProjectAnalysis): LegalClause[] {
+    const clauses: LegalClause[] = [];
+    const total = data.financials?.total || 0;
 
-    const addressLower = address.toLowerCase();
-    
-    for (const [state, keywords] of Object.entries(stateMapping)) {
-      if (keywords.some(keyword => addressLower.includes(keyword))) {
-        return state;
-      }
+    // Cláusula de Lien Rights - OBLIGATORIA en California
+    clauses.push({
+      id: 'CA_LIEN_MANDATORY',
+      category: 'MANDATORY',
+      title: 'California Mechanic\'s Lien Rights (Civil Code §8000)',
+      clause: `NOTICE TO PROPERTY OWNER: Under California law, those who work on your property or provide materials may file a lien on your property if they are not paid. A lien means that your property may be sold to pay for work done or materials provided. To preserve their right to file a lien, certain claimants such as subcontractors or material suppliers are each required to provide you with a document called a "Preliminary Notice." Contractors and laborers who contract directly with you generally are not required to provide this notice. A Preliminary Notice is not a lien. The purpose of the notice is to let you know that the person who sends you the notice has provided or will be providing work or materials for your project, and to inform you of your rights. GENERALLY, THE DEADLINE FOR FILING A LIEN IS 90 DAYS AFTER COMPLETION OF YOUR PROJECT.`,
+      justification: 'Obligatorio bajo Civil Code §8000 para todos los proyectos de construcción en California',
+      riskLevel: 'HIGH',
+      applicability: 'Todos los proyectos de construcción en California'
+    });
+
+    // Cláusula de Right to Cancel - OBLIGATORIA para contratos residenciales > $25
+    if (total > 25) {
+      clauses.push({
+        id: 'CA_CANCEL_MANDATORY',
+        category: 'MANDATORY',
+        title: 'Three-Day Right to Cancel (Civil Code §1689.5)',
+        clause: `THREE-DAY RIGHT TO CANCEL: You, the buyer, have the right to cancel this contract within three business days. You may cancel by delivering a signed and dated copy of this cancellation notice, or any other written notice to [CONTRACTOR NAME] at [CONTRACTOR ADDRESS] no later than midnight of the third business day after you signed this contract. You may also cancel by sending a telegram to the above address no later than midnight of the third business day after you signed this contract. If you cancel this contract, the contractor must return to you anything you paid within 10 days of receiving the cancellation notice.`,
+        justification: 'Obligatorio bajo Civil Code §1689.5 para contratos residenciales superiores a $25',
+        riskLevel: 'HIGH',
+        applicability: 'Contratos residenciales en California > $25'
+      });
     }
-    
-    return null;
+
+    return clauses;
   }
 
-  /**
-   * Obtiene protecciones específicas por estado
-   */
-  private static getStateSpecificProtections(state: string): {
-    required: string[];
-    veteran: string[];
-    riskModifier: number;
-  } {
-    const stateProtections: Record<string, any> = {
-      'California': {
-        required: [
-          'Licencia de contratista requerida y debe mostrarse en contrato',
-          'Derecho de cancelación de 3 días para proyectos residenciales',
-          'Aviso de derecho de gravamen mecánico obligatorio'
-        ],
-        veteran: [
-          'Cláusula de Salario Prevaleciente: Proyectos públicos sujetos a salarios estatales',
-          'Cláusula de Código Sísmico: Trabajo debe cumplir estándares sísmicos de California',
-          'Cláusula de Responsabilidad Ambiental: Cliente responsable de materiales peligrosos preexistentes'
-        ],
-        riskModifier: 1
-      },
-      'Texas': {
-        required: [
-          'Bono de pago para proyectos comerciales >$25,000',
-          'Aviso de prácticas comerciales engañosas'
-        ],
-        veteran: [
-          'Cláusula de Clima Extremo: Protección contra huracanes y clima severo',
-          'Cláusula de Propiedad de Petróleo: Exclusión de responsabilidad por derechos minerales'
-        ],
-        riskModifier: 0
-      },
-      'Florida': {
-        required: [
-          'Garantía contra intrusión de humedad obligatoria',
-          'Cláusula de protección contra huracanes para techos'
-        ],
-        veteran: [
-          'Cláusula de Temporada de Huracanes: Trabajo suspendido durante alertas',
-          'Cláusula de Arena y Suelo: Exclusión por condiciones de suelo no detectables'
-        ],
-        riskModifier: 2
-      },
-      'Nevada': {
-        required: [
-          'Licencia de contratista estatal obligatoria',
-          'Bono de licencia para protección del consumidor'
-        ],
-        veteran: [
-          'Cláusula de Clima Desértico: Protección contra condiciones extremas de calor',
-          'Cláusula de Escasez de Agua: Adaptaciones por restricciones hídricas'
-        ],
-        riskModifier: 1
-      }
-    };
+  private generateProjectSpecificClauses(data: ProjectAnalysis, risks: string[]): LegalClause[] {
+    const clauses: LegalClause[] = [];
+    const total = data.financials?.total || 0;
+    const projectType = data.projectDetails?.type || '';
+    const description = data.projectDetails?.description || '';
 
-    return stateProtections[state] || {
-      required: ['Cumplimiento con códigos locales de construcción'],
-      veteran: ['Cláusula de Jurisdicción Local: Disputas resueltas en cortes locales'],
-      riskModifier: 0
-    };
-  }
-
-  /**
-   * Genera configuración de protección específica para el contratista
-   */
-  static generateProtectionConfig(riskAnalysis: LegalRiskAnalysis): ContractorProtectionConfig {
-    return {
-      emphasizePaymentTerms: riskAnalysis.riskScore >= 2,
-      includeScopeChangeProtection: true, // Siempre incluir
-      addLiabilityLimitations: riskAnalysis.riskScore >= 1,
-      requireProgressivePayments: riskAnalysis.riskScore >= 3,
-      includeForceClausures: riskAnalysis.riskScore >= 4,
-      addMaterialEscalationClause: riskAnalysis.riskScore >= 2,
-      requireClientResponsibilities: true // Siempre incluir
-    };
-  }
-
-  /**
-   * Genera prompt para IA que enfatiza la protección del contratista
-   */
-  static generateDefensiveContractPrompt(
-    project: Project, 
-    riskAnalysis: LegalRiskAnalysis,
-    protectionConfig: ContractorProtectionConfig
-  ): string {
-    return `
-Actúa como un abogado especializado en protección de contratistas. Genera un contrato que PROTEGE ESPECÍFICAMENTE AL CONTRATISTA contra riesgos comunes.
-
-INFORMACIÓN DEL PROYECTO:
-- Cliente: ${project.clientName}
-- Proyecto: ${project.projectType || 'General'}
-- Dirección: ${project.address}
-- Valor: $${project.totalPrice ? (project.totalPrice / 100).toLocaleString() : 'No especificado'}
-
-NIVEL DE RIESGO DETECTADO: ${riskAnalysis.riskLevel.toUpperCase()} (Puntuación: ${riskAnalysis.riskScore})
-
-PROTECCIONES REQUERIDAS:
-${riskAnalysis.contractorProtections.map(p => `• ${p}`).join('\n')}
-
-SALVAGUARDAS DE PAGO:
-${riskAnalysis.paymentSafeguards.map(p => `• ${p}`).join('\n')}
-
-PROTECCIONES DE RESPONSABILIDAD:
-${riskAnalysis.liabilityShields.map(p => `• ${p}`).join('\n')}
-
-PROTECCIONES DE ALCANCE:
-${riskAnalysis.scopeProtections.map(p => `• ${p}`).join('\n')}
-
-INSTRUCCIONES ESPECÍFICAS:
-1. El contrato DEBE favorecer al contratista en términos ambiguos
-2. Incluir cláusulas de protección contra cambios de alcance
-3. Establecer términos de pago que protejan el flujo de efectivo
-4. Limitar la responsabilidad del contratista a lo razonable
-5. Transferir riesgos apropiados al cliente
-6. Usar lenguaje legal claro pero favorable al contratista
-
-${protectionConfig.emphasizePaymentTerms ? 'ÉNFASIS: Términos de pago muy estrictos debido al riesgo financiero.' : ''}
-${protectionConfig.requireProgressivePayments ? 'REQUERIDO: Pagos progresivos obligatorios.' : ''}
-${protectionConfig.includeForceClausures ? 'INCLUIR: Cláusulas de fuerza mayor extensas.' : ''}
-
-Genera un contrato en HTML profesional que proteja al contratista como su prioridad principal.
-`;
-  }
-
-  /**
-   * Genera contrato usando el motor defensivo
-   */
-  static async generateDefensiveContract(
-    project: Project,
-    baseTemplate?: string
-  ): Promise<{ html: string; analysis: LegalRiskAnalysis; protections: string[] }> {
-    try {
-      console.log('🛡️ Iniciando generación de contrato defensivo...');
-
-      // 1. Analizar riesgos legales
-      const riskAnalysis = await this.analyzeLegalRisks(project);
-      console.log(`📊 Análisis completado - Riesgo: ${riskAnalysis.riskLevel}`);
-
-      // 2. Generar configuración de protección
-      const protectionConfig = this.generateProtectionConfig(riskAnalysis);
-
-      // 3. Crear prompt defensivo
-      const defensivePrompt = this.generateDefensiveContractPrompt(project, riskAnalysis, protectionConfig);
-
-      // 4. Llamar a la API de generación con énfasis defensivo
-      const response = await fetch('/api/anthropic/generate-defensive-contract', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompt: defensivePrompt,
-          projectData: project,
-          riskAnalysis,
-          protectionConfig,
-          baseTemplate
-        }),
+    // Cláusulas específicas para proyectos de alta valor
+    if (risks.includes('HIGH_VALUE_PROJECT')) {
+      clauses.push({
+        id: 'HIGH_VALUE_PAYMENT',
+        category: 'RECOMMENDED',
+        title: 'Structured Payment Protection for High-Value Projects',
+        clause: `ENHANCED PAYMENT SECURITY: Due to the significant value of this project (${total.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}), payments shall be structured as follows: (1) Initial payment of 15% upon contract execution, (2) Progress payments of 25% at 25% completion, 35% at 65% completion, and (3) Final payment of 25% upon substantial completion and client acceptance. Each progress payment is contingent upon documented completion milestones and photographic evidence. Late payments incur a penalty of 2% per month (24% annually). Contractor reserves the right to suspend work immediately upon any payment default exceeding 10 days.`,
+        justification: 'Proyectos de alto valor requieren protección financiera estructurada para mitigar riesgo de impago',
+        riskLevel: 'HIGH',
+        applicability: 'Proyectos superiores a $25,000'
       });
 
-      if (!response.ok) {
-        throw new Error(`Error en generación defensiva: ${response.status}`);
-      }
-
-      const result = await response.json();
-
-      // 5. Compilar lista de protecciones aplicadas
-      const appliedProtections = [
-        ...riskAnalysis.contractorProtections,
-        ...riskAnalysis.paymentSafeguards,
-        ...riskAnalysis.liabilityShields,
-        ...riskAnalysis.scopeProtections
-      ];
-
-      console.log('✅ Contrato defensivo generado exitosamente');
-
-      return {
-        html: result.html,
-        analysis: riskAnalysis,
-        protections: appliedProtections
-      };
-
-    } catch (error) {
-      console.error('❌ Error en generación defensiva:', error);
-      
-      // Fallback: generar contrato básico con protecciones mínimas
-      const basicProtections = [
-        'Términos de pago estrictos incluidos',
-        'Protección contra cambios de alcance',
-        'Limitación de responsabilidad aplicada'
-      ];
-
-      return {
-        html: await this.generateFallbackDefensiveContract(project),
-        analysis: await this.analyzeLegalRisks(project),
-        protections: basicProtections
-      };
+      clauses.push({
+        id: 'HIGH_VALUE_MATERIALS',
+        category: 'RECOMMENDED',
+        title: 'Material Escalation and Supply Chain Protection',
+        clause: `MATERIAL COST PROTECTION: Given current market volatility and project value, material costs are subject to adjustment if increases exceed 5% from quoted prices due to market conditions, supply chain disruptions, or government regulations occurring after contract execution. Client will be notified within 48 hours of any anticipated cost increases exceeding $500. Contractor reserves the right to suspend work if materials become unavailable or if price increases exceed 15% without client approval for revised pricing.`,
+        justification: 'Proyectos de alto valor enfrentan mayor exposición a fluctuaciones de materiales',
+        riskLevel: 'MEDIUM',
+        applicability: 'Proyectos con componentes materiales significativos'
+      });
     }
+
+    // Cláusulas específicas para trabajos de cerca
+    if (risks.includes('FENCE_INSTALLATION')) {
+      clauses.push({
+        id: 'FENCE_BOUNDARY_PROTECTION',
+        category: 'RECOMMENDED',
+        title: 'Property Boundary and Easement Verification',
+        clause: `BOUNDARY VERIFICATION REQUIREMENT: Prior to commencement, Client must provide current survey or property boundary documentation. Any fence installation on or near property lines requires Client's written certification of boundary accuracy. Contractor is not liable for boundary disputes, easement violations, or neighbor objections arising from fence placement. If boundary disputes arise during construction, work will be suspended until resolution, with Client responsible for any delay costs. Underground utility marking (811 service) is Client's responsibility unless specifically contracted otherwise.`,
+        justification: 'Instalaciones de cerca enfrentan riesgos únicos de disputas de límites y servicios subterráneos',
+        riskLevel: 'HIGH',
+        applicability: 'Proyectos de instalación de cercas y límites de propiedad'
+      });
+
+      if (description.toLowerCase().includes('gate')) {
+        clauses.push({
+          id: 'CUSTOM_GATE_SPECIFICATION',
+          category: 'RECOMMENDED',
+          title: 'Custom Gate Engineering and Warranty Limitations',
+          clause: `CUSTOM GATE SPECIFICATIONS: Custom gate work requires Client approval of detailed engineering specifications before fabrication begins. Changes to gate specifications after fabrication commencement will incur additional charges of actual costs plus 25% markup. Gate hardware warranty is limited to 1 year for mechanical components, excluding normal wear from weather exposure. Automated gate systems require separate electrical permit and inspection at Client's expense.`,
+          justification: 'Trabajos de puertas personalizadas requieren especificaciones técnicas precisas',
+          riskLevel: 'MEDIUM',
+          applicability: 'Proyectos con componentes de puertas personalizadas'
+        });
+      }
+    }
+
+    // Cláusulas para trabajo de demolición
+    if (risks.includes('DEMOLITION_WORK')) {
+      clauses.push({
+        id: 'DEMOLITION_HAZARD_PROTECTION',
+        category: 'RECOMMENDED',
+        title: 'Demolition Hazard and Unknown Conditions',
+        clause: `DEMOLITION RISK ALLOCATION: Removal of existing structures may reveal unknown conditions including hazardous materials, structural damage, or concealed utilities. Discovery of asbestos, lead paint, or other hazardous materials will result in immediate work suspension pending professional remediation at Client's expense. Contractor's responsibility is limited to careful removal using standard industry practices. Client assumes all risk for unknown conditions discovered during demolition. Additional charges will apply for disposal of hazardous materials or unexpected structural complications.`,
+        justification: 'Trabajo de demolición presenta riesgos únicos de materiales peligrosos y condiciones ocultas',
+        riskLevel: 'HIGH',
+        applicability: 'Proyectos que incluyen demolición o remoción de estructuras existentes'
+      });
+    }
+
+    return clauses;
   }
 
-  /**
-   * Genera contrato de respaldo con protecciones básicas
-   */
-  private static async generateFallbackDefensiveContract(project: Project): Promise<string> {
-    return `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Contrato de Servicios - ${project.clientName}</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
-        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; }
-        .protection-notice { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; margin: 20px 0; border-radius: 5px; }
-        .terms { margin: 20px 0; }
-        .signature-section { margin-top: 40px; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>CONTRATO DE SERVICIOS DE CONSTRUCCIÓN</h1>
-        <p><strong>PROTECCIÓN LEGAL PARA EL CONTRATISTA</strong></p>
-    </div>
+  private generateAdvancedProtectionClauses(data: ProjectAnalysis): LegalClause[] {
+    const clauses: LegalClause[] = [];
+    const total = data.financials?.total || 0;
 
-    <div class="protection-notice">
-        <strong>🛡️ AVISO:</strong> Este contrato ha sido generado por el Motor de Defensa Legal para proteger específicamente los intereses del contratista.
-    </div>
+    // Cláusula de Force Majeure especializada
+    clauses.push({
+      id: 'ENHANCED_FORCE_MAJEURE',
+      category: 'RECOMMENDED',
+      title: 'Enhanced Force Majeure and Pandemic Protection',
+      clause: `FORCE MAJEURE PROTECTION: Performance under this contract is subject to force majeure events including but not limited to: acts of God, government regulations, pandemic-related restrictions, labor strikes, material shortages exceeding 30 days, and utility service interruptions beyond Contractor's control. Upon occurrence of force majeure, Contractor will notify Client within 72 hours. Contract timeline will be extended day-for-day during force majeure periods. If force majeure continues beyond 60 days, either party may terminate with Contractor compensated for work completed plus reasonable demobilization costs.`,
+      justification: 'Protección integral contra eventos extraordinarios que han aumentado en frecuencia',
+      riskLevel: 'MEDIUM',
+      applicability: 'Todos los proyectos de construcción'
+    });
 
-    <div class="terms">
-        <h2>TÉRMINOS DE PAGO PROTECTIVOS</h2>
-        <p>• Depósito inicial del 30% requerido antes del inicio</p>
-        <p>• Pagos progresivos según avance del trabajo</p>
-        <p>• Intereses del 1.5% mensual por pagos atrasados</p>
-        <p>• Derecho a suspender trabajo por falta de pago</p>
+    // Cláusula de Change Order Protection
+    clauses.push({
+      id: 'CHANGE_ORDER_PROTECTION',
+      category: 'RECOMMENDED',
+      title: 'Change Order Authorization and Cost Protection',
+      clause: `CHANGE ORDER PROTOCOL: All changes to original scope must be documented in writing and signed by both parties before implementation. Verbal change authorizations are not binding. Change orders will be priced at actual cost plus 20% markup for overhead and profit. Emergency changes necessary for safety or code compliance may be implemented immediately with written notification within 24 hours. Client's failure to approve or deny change orders within 5 business days will result in work suspension until resolution.`,
+      justification: 'Protección contra cambios no autorizados que pueden generar disputas costosas',
+      riskLevel: 'HIGH',
+      applicability: 'Proyectos con potencial de modificaciones durante construcción'
+    });
 
-        <h2>PROTECCIÓN CONTRA CAMBIOS DE ALCANCE</h2>
-        <p>• Cualquier modificación requiere orden de cambio por escrito</p>
-        <p>• Cambios adicionales se facturan por separado</p>
-        <p>• Cliente responsable de costos por demoras no atribuibles al contratista</p>
+    // Cláusula de Weather Protection específica
+    if (data.projectDetails?.location?.toLowerCase().includes('california')) {
+      clauses.push({
+        id: 'CALIFORNIA_WEATHER_PROTECTION',
+        category: 'RECOMMENDED',
+        title: 'California Weather and Wildfire Delay Protection',
+        clause: `CALIFORNIA ENVIRONMENTAL DELAYS: Work may be suspended during Red Flag Warning conditions, excessive heat warnings (above 105°F), or Air Quality Index exceeding 150 due to wildfire smoke, as determined by official weather services. Timeline extensions will be granted for weather delays exceeding 2 consecutive days. During wildfire season (May-October), emergency evacuation orders will trigger immediate work suspension with timeline extension equal to delay period plus 3 days for remobilization.`,
+        justification: 'California enfrenta condiciones climáticas únicas que afectan significativamente la construcción',
+        riskLevel: 'MEDIUM',
+        applicability: 'Proyectos en California durante temporada de incendios'
+      });
+    }
 
-        <h2>LIMITACIÓN DE RESPONSABILIDAD</h2>
-        <p>• Responsabilidad limitada al valor del contrato</p>
-        <p>• Exclusión de daños consecuenciales</p>
-        <p>• Garantía limitada a defectos de mano de obra únicamente</p>
-    </div>
+    return clauses;
+  }
 
-    <div class="signature-section">
-        <p>Cliente: ${project.clientName}</p>
-        <p>Dirección del Proyecto: ${project.address}</p>
-        <p>Valor del Contrato: $${project.totalPrice ? (project.totalPrice / 100).toLocaleString() : 'A determinar'}</p>
-        
-        <br><br>
-        <p>_____________________&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;_____________________</p>
-        <p>Firma del Cliente&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Fecha</p>
-        
-        <br><br>
-        <p>_____________________&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;_____________________</p>
-        <p>Firma del Contratista&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Fecha</p>
-    </div>
-</body>
-</html>`;
+  public generateIntelligentClauses(data: ProjectAnalysis): LegalClause[] {
+    console.log('🧠 Legal Defense Engine: Analyzing project for intelligent clause generation');
+    
+    const risks = this.analyzeProjectRisks(data);
+    console.log('⚖️ Identified risks:', risks);
+
+    const allClauses: LegalClause[] = [];
+
+    // Generar cláusulas obligatorias por jurisdicción
+    if (risks.includes('CALIFORNIA_JURISDICTION')) {
+      allClauses.push(...this.generateCaliforniaMandatoryClauses(data));
+    }
+
+    // Generar cláusulas específicas del proyecto
+    allClauses.push(...this.generateProjectSpecificClauses(data, risks));
+
+    // Generar cláusulas de protección avanzada
+    allClauses.push(...this.generateAdvancedProtectionClauses(data));
+
+    console.log(`🛡️ Generated ${allClauses.length} intelligent protective clauses`);
+    
+    return allClauses;
   }
 }
 
-export default LegalDefenseEngine;
+export const legalDefenseEngine = new LegalDefenseEngine();

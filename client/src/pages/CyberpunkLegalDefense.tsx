@@ -12,6 +12,7 @@ import { professionalContractGenerator, ContractData } from '@/services/professi
 import { useProfile } from '@/hooks/use-profile';
 import { contractHistoryService } from '@/services/contractHistoryService';
 import { useAuth } from '@/hooks/use-auth';
+import { legalDefenseEngine, type LegalClause } from '@/services/legalDefenseEngine';
 import { 
   Upload,
   Shield, 
@@ -86,6 +87,10 @@ export default function CyberpunkLegalDefense() {
   // Estados para el nuevo sistema DeepSearch Defense
   const [approvedClauses, setApprovedClauses] = useState<DefenseClause[]>([]);
   const [clauseCustomizations, setClauseCustomizations] = useState<Record<string, any>>({});
+  
+  // Estados para el motor de Legal Defense inteligente
+  const [intelligentClauses, setIntelligentClauses] = useState<LegalClause[]>([]);
+  const [selectedClauses, setSelectedClauses] = useState<Set<string>>(new Set());
   
   // Profile data for contractor information
   const { profile } = useProfile();
@@ -522,6 +527,23 @@ export default function CyberpunkLegalDefense() {
     }
   }, [extractedData, approvedClauses, toast]);
 
+  // Función para generar cláusulas inteligentes usando el motor de Legal Defense
+  const generateIntelligentClauses = useCallback((data: any) => {
+    console.log('🧠 Generating intelligent legal clauses for project data');
+    
+    const clauses = legalDefenseEngine.generateIntelligentClauses(data);
+    setIntelligentClauses(clauses);
+    
+    // Pre-seleccionar cláusulas obligatorias
+    const mandatoryClauses = clauses
+      .filter(clause => clause.category === 'MANDATORY')
+      .map(clause => clause.id);
+    
+    setSelectedClauses(new Set(mandatoryClauses));
+    
+    console.log(`🛡️ Generated ${clauses.length} clauses (${mandatoryClauses.length} mandatory)`);
+  }, []);
+
   // Función para comenzar un nuevo contrato
   const startNewContract = useCallback(() => {
     setExtractedData(null);
@@ -532,6 +554,8 @@ export default function CyberpunkLegalDefense() {
     setCurrentPhase('data-command');
     setCurrentStep(1);
     setSelectedFile(null);
+    setIntelligentClauses([]);
+    setSelectedClauses(new Set());
     
     toast({
       title: "New Contract Started",
@@ -778,6 +802,9 @@ export default function CyberpunkLegalDefense() {
 
   // Procesamiento del workflow con datos extraídos de OCR
   const processExtractedDataWorkflow = async (extractedData: any) => {
+    // Generar cláusulas inteligentes basadas en los datos del proyecto
+    generateIntelligentClauses(extractedData);
+    
     // Análisis de contrato con datos extraídos por Claude Sonnet
     await new Promise(resolve => setTimeout(resolve, 1500));
     
@@ -1949,116 +1976,150 @@ export default function CyberpunkLegalDefense() {
 
 
 
-                  {/* AI-Powered Clause Suggestions */}
+                  {/* AI-Powered Legal Defense Engine */}
                   <div className="bg-gray-900/50 border border-cyan-400/30 rounded-lg p-4">
                     <h3 className="text-cyan-400 font-bold mb-4 flex items-center">
                       <Shield className="h-4 w-4 mr-2" />
-                      INTELLIGENT PROTECTIVE CLAUSES
+                      INTELLIGENT LEGAL DEFENSE ENGINE
                     </h3>
                     
-                    <div className="space-y-4">
-                      {/* Payment Protection */}
-                      <div className="bg-gray-800/50 border border-cyan-400/20 rounded p-3">
-                        <h4 className="text-cyan-400 font-semibold mb-2 flex items-center">
-                          <DollarSign className="h-3 w-3 mr-2" />
-                          Payment Protection
-                        </h4>
-                        <div className="space-y-2">
-                          <label className="flex items-center space-x-2">
-                            <input type="checkbox" defaultChecked className="text-cyan-400" />
-                            <span className="text-gray-300 text-sm">Progressive payment schedule (30% down, 40% midpoint, 30% completion)</span>
-                          </label>
-                          <label className="flex items-center space-x-2">
-                            <input type="checkbox" defaultChecked className="text-cyan-400" />
-                            <span className="text-gray-300 text-sm">Late payment penalty (1.5% per month)</span>
-                          </label>
-                          <label className="flex items-center space-x-2">
-                            <input type="checkbox" defaultChecked className="text-cyan-400" />
-                            <span className="text-gray-300 text-sm">Right to suspend work for non-payment</span>
-                          </label>
+                    {intelligentClauses.length === 0 ? (
+                      <div className="text-center py-8">
+                        <div className="text-gray-400 mb-2">Analyzing project data...</div>
+                        <div className="text-xs text-gray-500">Legal Defense Engine processing project specifics</div>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {/* Mandatory Clauses */}
+                        {intelligentClauses.filter(clause => clause.category === 'MANDATORY').length > 0 && (
+                          <div className="bg-red-900/20 border border-red-400/30 rounded p-4">
+                            <h4 className="text-red-400 font-bold mb-3 flex items-center">
+                              <AlertTriangle className="h-4 w-4 mr-2" />
+                              OBLIGATORIAS POR LEY
+                            </h4>
+                            <div className="space-y-3">
+                              {intelligentClauses
+                                .filter(clause => clause.category === 'MANDATORY')
+                                .map((clause) => (
+                                  <div key={clause.id} className="bg-red-800/20 border border-red-400/20 rounded p-3">
+                                    <div className="flex items-start space-x-3">
+                                      <input 
+                                        type="checkbox" 
+                                        checked={selectedClauses.has(clause.id)}
+                                        disabled={clause.category === 'MANDATORY'}
+                                        className="text-red-400 mt-1" 
+                                      />
+                                      <div className="flex-1">
+                                        <div className="text-red-400 font-semibold text-sm mb-1">
+                                          {clause.title}
+                                        </div>
+                                        <div className="text-gray-300 text-xs mb-2 leading-relaxed">
+                                          {clause.clause.length > 200 
+                                            ? `${clause.clause.substring(0, 200)}...` 
+                                            : clause.clause
+                                          }
+                                        </div>
+                                        <div className="flex items-center space-x-4 text-xs">
+                                          <Badge variant="destructive" className="text-xs">
+                                            {clause.riskLevel} RISK
+                                          </Badge>
+                                          <span className="text-red-400 font-bold">OBLIGATORIA</span>
+                                        </div>
+                                        <div className="text-gray-400 text-xs mt-2">
+                                          <strong>Justificación:</strong> {clause.justification}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Recommended Clauses */}
+                        {intelligentClauses.filter(clause => clause.category === 'RECOMMENDED').length > 0 && (
+                          <div className="bg-cyan-900/20 border border-cyan-400/30 rounded p-4">
+                            <h4 className="text-cyan-400 font-bold mb-3 flex items-center">
+                              <Shield className="h-4 w-4 mr-2" />
+                              RECOMENDADAS POR IA LEGAL
+                            </h4>
+                            <div className="space-y-3">
+                              {intelligentClauses
+                                .filter(clause => clause.category === 'RECOMMENDED')
+                                .map((clause) => (
+                                  <div key={clause.id} className="bg-cyan-800/20 border border-cyan-400/20 rounded p-3">
+                                    <div className="flex items-start space-x-3">
+                                      <input 
+                                        type="checkbox" 
+                                        checked={selectedClauses.has(clause.id)}
+                                        onChange={(e) => {
+                                          const newSelected = new Set(selectedClauses);
+                                          if (e.target.checked) {
+                                            newSelected.add(clause.id);
+                                          } else {
+                                            newSelected.delete(clause.id);
+                                          }
+                                          setSelectedClauses(newSelected);
+                                        }}
+                                        className="text-cyan-400 mt-1" 
+                                      />
+                                      <div className="flex-1">
+                                        <div className="text-cyan-400 font-semibold text-sm mb-1">
+                                          {clause.title}
+                                        </div>
+                                        <div className="text-gray-300 text-xs mb-2 leading-relaxed">
+                                          {clause.clause.length > 200 
+                                            ? `${clause.clause.substring(0, 200)}...` 
+                                            : clause.clause
+                                          }
+                                        </div>
+                                        <div className="flex items-center space-x-4 text-xs">
+                                          <Badge 
+                                            variant={clause.riskLevel === 'HIGH' ? 'destructive' : 
+                                                   clause.riskLevel === 'MEDIUM' ? 'default' : 'secondary'} 
+                                            className="text-xs"
+                                          >
+                                            {clause.riskLevel} RISK
+                                          </Badge>
+                                          <span className="text-cyan-400">RECOMENDADA</span>
+                                        </div>
+                                        <div className="text-gray-400 text-xs mt-2">
+                                          <strong>Justificación:</strong> {clause.justification}
+                                        </div>
+                                        <div className="text-gray-500 text-xs mt-1">
+                                          <strong>Aplicabilidad:</strong> {clause.applicability}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Legal Analysis Summary */}
+                        <div className="bg-blue-900/20 border border-blue-400/30 rounded p-4">
+                          <div className="text-blue-400 text-sm font-bold mb-2 flex items-center">
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            ANÁLISIS LEGAL INTELIGENTE
+                          </div>
+                          <div className="text-gray-300 text-xs leading-relaxed">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <strong>Proyecto:</strong> {extractedData.projectDetails?.type || 'N/A'}<br/>
+                                <strong>Ubicación:</strong> {extractedData.projectDetails?.location || 'N/A'}<br/>
+                                <strong>Valor:</strong> ${extractedData.financials?.total?.toLocaleString() || '0'}
+                              </div>
+                              <div>
+                                <strong>Cláusulas Generadas:</strong> {intelligentClauses.length}<br/>
+                                <strong>Obligatorias:</strong> {intelligentClauses.filter(c => c.category === 'MANDATORY').length}<br/>
+                                <strong>Recomendadas:</strong> {intelligentClauses.filter(c => c.category === 'RECOMMENDED').length}
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
-
-                      {/* Scope Protection */}
-                      <div className="bg-gray-800/50 border border-green-400/20 rounded p-3">
-                        <h4 className="text-green-400 font-semibold mb-2 flex items-center">
-                          <FileText className="h-3 w-3 mr-2" />
-                          Scope of Work Protection
-                        </h4>
-                        <div className="space-y-2">
-                          <label className="flex items-center space-x-2">
-                            <input type="checkbox" defaultChecked className="text-green-400" />
-                            <span className="text-gray-300 text-sm">Detailed work specifications and exclusions</span>
-                          </label>
-                          <label className="flex items-center space-x-2">
-                            <input type="checkbox" defaultChecked className="text-green-400" />
-                            <span className="text-gray-300 text-sm">Change order approval process</span>
-                          </label>
-                          <label className="flex items-center space-x-2">
-                            <input type="checkbox" defaultChecked className="text-green-400" />
-                            <span className="text-gray-300 text-sm">Material cost fluctuation protection</span>
-                          </label>
-                        </div>
-                      </div>
-
-                      {/* California Compliance */}
-                      <div className="bg-gray-800/50 border border-yellow-400/20 rounded p-3">
-                        <h4 className="text-yellow-400 font-semibold mb-2 flex items-center">
-                          <AlertTriangle className="h-3 w-3 mr-2" />
-                          California Legal Compliance
-                        </h4>
-                        <div className="space-y-2">
-                          <label className="flex items-center space-x-2">
-                            <input type="checkbox" defaultChecked className="text-yellow-400" />
-                            <span className="text-gray-300 text-sm">Preliminary lien notice (20-day notice)</span>
-                          </label>
-                          <label className="flex items-center space-x-2">
-                            <input type="checkbox" defaultChecked className="text-yellow-400" />
-                            <span className="text-gray-300 text-sm">Right to cancel notice (3-day cancellation period)</span>
-                          </label>
-                          <label className="flex items-center space-x-2">
-                            <input type="checkbox" className="text-yellow-400" />
-                            <span className="text-gray-300 text-sm">Contractor license verification clause</span>
-                            <span className="text-red-400 text-xs ml-2">(Optional - verify license status)</span>
-                          </label>
-                        </div>
-                      </div>
-
-                      {/* Risk Mitigation */}
-                      <div className="bg-gray-800/50 border border-purple-400/20 rounded p-3">
-                        <h4 className="text-purple-400 font-semibold mb-2 flex items-center">
-                          <Shield className="h-3 w-3 mr-2" />
-                          Risk Mitigation
-                        </h4>
-                        <div className="space-y-2">
-                          <label className="flex items-center space-x-2">
-                            <input type="checkbox" defaultChecked className="text-purple-400" />
-                            <span className="text-gray-300 text-sm">Force majeure protection</span>
-                          </label>
-                          <label className="flex items-center space-x-2">
-                            <input type="checkbox" defaultChecked className="text-purple-400" />
-                            <span className="text-gray-300 text-sm">Dispute resolution procedure</span>
-                          </label>
-                          <label className="flex items-center space-x-2">
-                            <input type="checkbox" className="text-purple-400" />
-                            <span className="text-gray-300 text-sm">Workmanship warranty (1 year)</span>
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Legal Compliance Warning */}
-                    <div className="mt-4 bg-yellow-900/20 border border-yellow-400/30 rounded p-3">
-                      <div className="text-yellow-400 text-sm font-bold mb-2 flex items-center">
-                        <AlertTriangle className="h-4 w-4 mr-2" />
-                        COMPLIANCE ANALYSIS
-                      </div>
-                      <div className="text-gray-300 text-xs leading-relaxed">
-                        Based on the fence installation project in California worth ${extractedData.financials?.total?.toFixed(0) || '31,920'}, 
-                        this contract requires compliance with California contractors' license laws and lien notice requirements. 
-                        License verification is recommended but optional for this project size.
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </form>
 
