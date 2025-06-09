@@ -1467,8 +1467,18 @@ export default function CyberpunkLegalDefense() {
                   </div>
                 </div>
 
-                {/* Next Button */}
-                <div className="mt-8 text-center">
+                {/* Action Buttons */}
+                <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+                  <Button 
+                    onClick={() => {
+                      setCurrentStep(1);
+                      setCurrentPhase('data-extraction');
+                    }}
+                    variant="outline"
+                    className="border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-300"
+                  >
+                    BACK TO UPLOAD
+                  </Button>
                   <Button 
                     onClick={() => {
                       console.log('Advancing to step 3 with data:', extractedData);
@@ -1478,7 +1488,7 @@ export default function CyberpunkLegalDefense() {
                     }}
                     className="bg-purple-600 hover:bg-purple-500 text-black font-bold py-3 px-8 rounded border-0 shadow-none text-base"
                   >
-                    GENERATE DEFENSIVE CONTRACT
+                    NEXT TO PREVIEW CONTRACT
                   </Button>
                 </div>
               </CardContent>
