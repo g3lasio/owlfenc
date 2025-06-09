@@ -43,6 +43,75 @@ import {
   Server
 } from 'lucide-react';
 
+interface PaymentTerm {
+  id: string;
+  label: string;
+  percentage: number;
+  description: string;
+}
+
+interface PaymentTermRowProps {
+  term: PaymentTerm;
+  totalAmount: number;
+  onUpdate: (id: string, field: keyof PaymentTerm, value: string | number) => void;
+  onRemove?: (id: string) => void;
+  isRemovable?: boolean;
+}
+
+const PaymentTermRow: React.FC<PaymentTermRowProps> = ({ 
+  term, 
+  totalAmount, 
+  onUpdate, 
+  onRemove, 
+  isRemovable = false 
+}) => {
+  const amount = (totalAmount * term.percentage) / 100;
+  
+  return (
+    <div className="bg-gray-800/50 border border-gray-600 rounded-lg p-3">
+      <div className="flex items-center justify-between mb-2">
+        <input
+          type="text"
+          value={term.label}
+          onChange={(e) => onUpdate(term.id, 'label', e.target.value)}
+          className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-gray-300 text-sm font-medium flex-1 mr-3 focus:border-green-400 focus:outline-none"
+        />
+        <span className="text-green-400 font-mono font-bold">${amount.toFixed(2)}</span>
+        {isRemovable && onRemove && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onRemove(term.id)}
+            className="ml-2 text-red-400 hover:text-red-300 hover:bg-red-900/20"
+          >
+            ×
+          </Button>
+        )}
+      </div>
+      <div className="flex items-center gap-3 text-sm">
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            value={term.percentage}
+            onChange={(e) => onUpdate(term.id, 'percentage', parseFloat(e.target.value) || 0)}
+            className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-gray-300 w-16 focus:border-green-400 focus:outline-none"
+            min="0"
+            max="100"
+          />
+          <span className="text-gray-400">%</span>
+        </div>
+        <input
+          type="text"
+          value={term.description}
+          onChange={(e) => onUpdate(term.id, 'description', e.target.value)}
+          className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-gray-300 text-xs flex-1 focus:border-green-400 focus:outline-none"
+          placeholder="Payment description..."
+        />
+      </div>
+    </div>
+  );
+};
+
 interface WorkflowStep {
   id: string;
   step: number;
@@ -92,6 +161,22 @@ export default function CyberpunkLegalDefense() {
   const [intelligentClauses, setIntelligentClauses] = useState<LegalClause[]>([]);
   const [selectedClauses, setSelectedClauses] = useState<Set<string>>(new Set());
   
+  // Estados para términos de pago
+  const [paymentTerms, setPaymentTerms] = useState<PaymentTerm[]>([
+    {
+      id: '1',
+      label: 'Initial Payment (50%)',
+      percentage: 50,
+      description: '50% after contract signed'
+    },
+    {
+      id: '2',
+      label: 'Final Payment',
+      percentage: 50,
+      description: 'Upon project completion'
+    }
+  ]);
+  
   // Profile data for contractor information
   const { profile } = useProfile();
   const { user } = useAuth();
@@ -105,6 +190,27 @@ export default function CyberpunkLegalDefense() {
   // Contract history state
   const [currentContractId, setCurrentContractId] = useState<string | null>(null);
   const [pdfGenerationTime, setPdfGenerationTime] = useState<number>(0);
+
+  // Funciones para manejar términos de pago
+  const updatePaymentTerm = useCallback((id: string, field: keyof PaymentTerm, value: string | number) => {
+    setPaymentTerms(prev => prev.map(term => 
+      term.id === id ? { ...term, [field]: value } : term
+    ));
+  }, []);
+
+  const addPaymentTerm = useCallback(() => {
+    const newTerm: PaymentTerm = {
+      id: Date.now().toString(),
+      label: 'Progressive Payment',
+      percentage: 0,
+      description: 'Payment milestone description'
+    };
+    setPaymentTerms(prev => [...prev, newTerm]);
+  }, []);
+
+  const removePaymentTerm = useCallback((id: string) => {
+    setPaymentTerms(prev => prev.filter(term => term.id !== id));
+  }, []);
   
   // Edit contract handler
   const handleEditContract = useCallback((contract: any) => {
@@ -1768,49 +1874,52 @@ export default function CyberpunkLegalDefense() {
                       PAYMENT TERMS
                     </h3>
                     <div className="space-y-4">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                        <div className="bg-gray-800/50 rounded p-3">
-                          <div className="text-gray-400 text-xs">SUBTOTAL</div>
-                          <div className="text-green-400 font-mono text-lg">${extractedData.financials?.subtotal?.toFixed(2) || '0.00'}</div>
-                        </div>
-                        <div className="bg-gray-800/50 rounded p-3">
-                          <div className="text-gray-400 text-xs">TAX</div>
-                          <div className="text-green-400 font-mono text-lg">${extractedData.financials?.tax?.toFixed(2) || '0.00'}</div>
-                        </div>
-                        <div className="bg-gray-800/50 rounded p-3">
-                          <div className="text-gray-400 text-xs">MATERIALS</div>
-                          <div className="text-green-400 font-mono text-lg">{extractedData.materials?.length || 0}</div>
-                        </div>
-                        <div className="bg-gray-800/50 rounded p-3 border border-green-400/50">
-                          <div className="text-gray-400 text-xs">TOTAL</div>
-                          <div className="text-green-400 font-mono text-xl font-bold">${extractedData.financials?.total?.toFixed(2) || '0.00'}</div>
+                      {/* Total Cost Display */}
+                      <div className="text-center">
+                        <div className="bg-gray-800/50 rounded-lg p-4 border border-green-400/50">
+                          <div className="text-gray-400 text-sm">TOTAL COST</div>
+                          <div className="text-green-400 font-mono text-3xl font-bold">${extractedData.financials?.total?.toFixed(2) || '0.00'}</div>
                         </div>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <label className="text-gray-400 text-sm">Down Payment</label>
-                          <input
-                            type="text"
-                            placeholder={`30% (${((extractedData.financials?.total || 0) * 0.3).toFixed(0)})`}
-                            className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-green-400 focus:outline-none"
+
+                      {/* Payment Schedule */}
+                      <div className="space-y-3">
+                        {paymentTerms.map((term, index) => (
+                          <PaymentTermRow
+                            key={term.id}
+                            term={term}
+                            totalAmount={extractedData.financials?.total || 0}
+                            onUpdate={updatePaymentTerm}
+                            onRemove={paymentTerms.length > 2 ? removePaymentTerm : undefined}
+                            isRemovable={paymentTerms.length > 2 && index > 1}
                           />
+                        ))}
+                      </div>
+
+                      {/* Payment Summary */}
+                      <div className="mt-4 p-3 bg-gray-800/30 rounded border border-gray-600">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">Total Percentage:</span>
+                          <span className={`font-mono ${
+                            paymentTerms.reduce((sum, term) => sum + term.percentage, 0) === 100 
+                              ? 'text-green-400' 
+                              : 'text-yellow-400'
+                          }`}>
+                            {paymentTerms.reduce((sum, term) => sum + term.percentage, 0)}%
+                          </span>
                         </div>
-                        <div>
-                          <label className="text-gray-400 text-sm">Progress Payment</label>
-                          <input
-                            type="text"
-                            placeholder={`40% (${((extractedData.financials?.total || 0) * 0.4).toFixed(0)})`}
-                            className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-green-400 focus:outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-gray-400 text-sm">Final Payment</label>
-                          <input
-                            type="text"
-                            placeholder={`30% (${((extractedData.financials?.total || 0) * 0.3).toFixed(0)})`}
-                            className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-green-400 focus:outline-none"
-                          />
-                        </div>
+                      </div>
+
+                      {/* Add Payment Button */}
+                      <div className="text-center">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={addPaymentTerm}
+                          className="border-green-400 text-green-400 hover:bg-green-400 hover:text-black"
+                        >
+                          + Add Progressive Payment
+                        </Button>
                       </div>
                     </div>
                   </div>
