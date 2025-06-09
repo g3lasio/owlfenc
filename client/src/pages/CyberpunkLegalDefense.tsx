@@ -177,6 +177,9 @@ export default function CyberpunkLegalDefense() {
     }
   ]);
   
+  // Estado para el costo total editable
+  const [totalCost, setTotalCost] = useState<number>(0);
+  
   // Profile data for contractor information
   const { profile } = useProfile();
   const { user } = useAuth();
@@ -846,7 +849,8 @@ export default function CyberpunkLegalDefense() {
       ...extractedData,
       contractorInfo,
       clientInfo,
-      paymentTerms,
+      paymentTerms: paymentTerms,
+      totalCost: totalCost || extractedData.financials?.total || 0,
       timeline,
       permits,
       warranties,
@@ -854,7 +858,10 @@ export default function CyberpunkLegalDefense() {
       consents,
       signatures,
       confirmations,
-      legalNotices
+      legalNotices,
+      selectedIntelligentClauses: Array.from(selectedClauses).map(id => 
+        intelligentClauses.find(clause => clause.id === id)
+      ).filter(Boolean)
     };
   };
 
@@ -1878,7 +1885,18 @@ export default function CyberpunkLegalDefense() {
                       <div className="text-center">
                         <div className="bg-gray-800/50 rounded-lg p-4 border border-green-400/50">
                           <div className="text-gray-400 text-sm">TOTAL COST</div>
-                          <div className="text-green-400 font-mono text-3xl font-bold">${extractedData.financials?.total?.toFixed(2) || '0.00'}</div>
+                          <div className="flex items-center justify-center gap-2">
+                            <span className="text-green-400 font-mono text-2xl font-bold">$</span>
+                            <input
+                              type="number"
+                              value={totalCost || extractedData.financials?.total || 0}
+                              onChange={(e) => setTotalCost(parseFloat(e.target.value) || 0)}
+                              className="bg-transparent text-green-400 font-mono text-2xl font-bold text-center border-none outline-none focus:ring-2 focus:ring-green-400/50 rounded px-2"
+                              placeholder="0.00"
+                              step="0.01"
+                              min="0"
+                            />
+                          </div>
                         </div>
                       </div>
 
@@ -1888,7 +1906,7 @@ export default function CyberpunkLegalDefense() {
                           <PaymentTermRow
                             key={term.id}
                             term={term}
-                            totalAmount={extractedData.financials?.total || 0}
+                            totalAmount={totalCost || extractedData.financials?.total || 0}
                             onUpdate={updatePaymentTerm}
                             onRemove={paymentTerms.length > 2 ? removePaymentTerm : undefined}
                             isRemovable={paymentTerms.length > 2 && index > 1}
