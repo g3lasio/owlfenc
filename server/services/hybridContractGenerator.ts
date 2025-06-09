@@ -164,18 +164,46 @@ export class HybridContractGenerator {
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 8000,
-      system: 'Eres un experto en contratos legales y generación de documentos HTML profesionales. Genera contratos que cumplan exactamente con los requisitos de formato y contenido. RESPONDE ÚNICAMENTE CON HTML VÁLIDO, sin explicaciones adicionales.',
+      system: `Eres un experto en contratos legales profesionales. Genera HTML completo y válido para contratos de construcción que cumplan con estándares legales de California. RESPONDE ÚNICAMENTE CON HTML VÁLIDO, sin explicaciones adicionales.
+
+REQUISITOS CRÍTICOS:
+- Layout de cajas lado a lado para Cliente y Contratista usando flexbox
+- Fuente Times New Roman 12pt para texto, 14pt para títulos, 18pt para el encabezado principal
+- Numeración de páginas en el footer (Page X of 6)
+- Secciones numeradas profesionalmente
+- Términos de pago personalizados según datos proporcionados
+- Espaciado eficiente sin desperdicio de espacio
+- 6 páginas exactas con contenido completo`,
       messages: [{
         role: 'user',
-        content: `Genera un contrato HTML completo usando estos datos:\n\n${JSON.stringify(request.contractData, null, 2)}\n\nInformación del contratista:\n${JSON.stringify(contractorBranding, null, 2)}\n\nRequisitos específicos:\n- 6 páginas exactas\n- Fuente 12pt para texto principal, 14pt para títulos\n- Footer personalizado con nombre de la empresa del contratista\n- Secciones numeradas en negrita\n- HTML completo con DOCTYPE`
+        content: `Genera un contrato HTML profesional usando estos datos:
+
+DATOS DEL CONTRATO:
+${JSON.stringify(request.contractData, null, 2)}
+
+INFORMACIÓN DEL CONTRATISTA:
+${JSON.stringify(contractorBranding, null, 2)}
+
+FORMATO REQUERIDO:
+- Layout paralelo para información de Cliente y Contratista
+- CSS profesional con fuentes legibles
+- Secciones numeradas: BACKGROUND, SERVICES, PAYMENT TERMS, etc.
+- Términos de pago personalizados si están incluidos en contractData.paymentTerms
+- Pie de página con numeración: "Page X of 6"
+- Márgenes optimizados para máximo contenido
+- HTML completo con DOCTYPE y todas las etiquetas necesarias`
       }]
     });
 
     const firstBlock = response.content[0];
-    const htmlContent = firstBlock && firstBlock.type === 'text' ? firstBlock.text : '';
-    console.log('🎯 [CLAUDE] HTML generado:', htmlContent.length, 'caracteres');
+    if (firstBlock && 'text' in firstBlock) {
+      const htmlContent = firstBlock.text;
+      console.log('🎯 [CLAUDE] HTML generado:', htmlContent.length, 'caracteres');
+      return htmlContent;
+    }
     
-    return htmlContent;
+    console.warn('⚠️ [CLAUDE] Respuesta inválida, usando template de respaldo');
+    return this.generateEnhancedFallbackHTML(contractData, contractorBranding);
   }
 
   /**
@@ -211,51 +239,110 @@ export class HybridContractGenerator {
       return this.generateEnhancedFallbackHTML(contractData, contractorBranding);
     }
 
-    // Optimizar CSS para diseño compacto y sin espacios innecesarios
+    // CSS mejorado para mejor legibilidad y diseño eficiente
     const enhancedCSS = `
       <style>
         @page {
           size: 8.5in 11in;
-          margin: 0.5in 0.75in;
+          margin: 0.6in 0.75in 0.8in 0.75in;
+          counter-increment: page;
+          @bottom-center {
+            content: "Page " counter(page) " of 6";
+            font-size: 10px;
+            color: #666;
+          }
         }
         body {
-          font-family: Arial, sans-serif;
-          font-size: 11px;
-          line-height: 1.3;
+          font-family: 'Times New Roman', serif;
+          font-size: 12pt;
+          line-height: 1.4;
           margin: 0;
           padding: 0;
+          color: #000;
+        }
+        .info-section {
+          display: flex;
+          width: 100%;
+          margin: 8px 0;
+          gap: 15px;
         }
         .info-box {
-          border: 2px solid #333;
-          padding: 8px;
-          margin: 5px 0;
-          background: #f9f9f9;
+          border: 2px solid #000;
+          padding: 12px;
+          background: #f8f8f8;
+          flex: 1;
+          min-height: 100px;
+        }
+        .info-box h3 {
+          margin: 0 0 8px 0;
+          font-size: 13pt;
+          font-weight: bold;
+          text-decoration: underline;
+        }
+        .info-box p {
+          margin: 4px 0;
+          font-size: 12pt;
         }
         .signature-box {
-          border: 2px solid #333;
-          padding: 15px;
-          margin: 10px 0;
-          background: #f9f9f9;
-          min-height: 60px;
+          border: 2px solid #000;
+          padding: 20px;
+          margin: 15px 0;
+          background: #f8f8f8;
+          min-height: 80px;
         }
         .material-table {
           width: 100%;
           border-collapse: collapse;
-          margin: 5px 0;
+          margin: 10px 0;
+          font-size: 11pt;
         }
-        .material-table th, .material-table td {
-          border: 1px solid #333;
-          padding: 4px;
+        .material-table th {
+          border: 1px solid #000;
+          padding: 8px 6px;
+          background: #e8e8e8;
+          font-weight: bold;
           text-align: left;
-          font-size: 10px;
+        }
+        .material-table td {
+          border: 1px solid #000;
+          padding: 6px;
+          text-align: left;
         }
         .page-break { page-break-before: always; }
         .no-break { page-break-inside: avoid; }
-        h1 { font-size: 16px; margin: 5px 0; text-align: center; }
-        h2 { font-size: 14px; margin: 8px 0 4px 0; }
-        h3 { font-size: 12px; margin: 6px 0 3px 0; }
-        p { margin: 3px 0; }
-        .compact { margin: 2px 0; }
+        h1 { 
+          font-size: 18pt; 
+          margin: 10px 0 20px 0; 
+          text-align: center; 
+          font-weight: bold;
+          text-decoration: underline;
+        }
+        h2 { 
+          font-size: 14pt; 
+          margin: 15px 0 8px 0; 
+          font-weight: bold;
+          text-decoration: underline;
+        }
+        h3 { 
+          font-size: 13pt; 
+          margin: 10px 0 6px 0; 
+          font-weight: bold;
+        }
+        p { 
+          margin: 6px 0; 
+          text-align: justify;
+          font-size: 12pt;
+        }
+        .compact { margin: 4px 0; }
+        .text-center { text-align: center; }
+        .text-bold { font-weight: bold; }
+        .contract-header {
+          text-align: center;
+          margin-bottom: 25px;
+        }
+        .parties-section {
+          margin: 20px 0;
+        }
       </style>
     `;
 
@@ -284,9 +371,14 @@ export class HybridContractGenerator {
     const clientPhone = contractData.client.phone || '';
     const clientEmail = contractData.client.email || '';
     
-    const downPayment = (contractData.financials.total * 0.1).toFixed(2);
-    const progressPayment = (contractData.financials.total * 0.4).toFixed(2);
-    const finalPayment = (contractData.financials.total * 0.5).toFixed(2);
+    // Use custom payment terms if provided, otherwise use default 10/40/50 split
+    const paymentTerms = contractData.paymentTerms || [
+      { percentage: 10, description: 'Down payment due upon execution of this Agreement' },
+      { percentage: 40, description: 'Progress payment due at 50% completion of Services' },
+      { percentage: 50, description: 'Final payment due upon completion of Services' }
+    ];
+    
+    const totalCost = contractData.totalCost || contractData.financials.total || 0;
 
     return `<!DOCTYPE html>
 <html>
@@ -296,19 +388,132 @@ export class HybridContractGenerator {
     <style>
         @page {
             size: 8.5in 11in;
-            margin: 0.6in 0.8in 0.8in 0.8in;
+            margin: 0.6in 0.75in 0.8in 0.75in;
+            counter-increment: page;
             @bottom-center {
-                content: "© " attr(data-year) " ${contractorName} - All Rights Reserved";
-                font-size: 10px;
-                color: #666;
-                border-top: 1px solid #ccc;
-                padding-top: 5px;
-            }
-            @bottom-right {
-                content: "Page " counter(page) " of " counter(pages);
+                content: "Page " counter(page) " of 6";
                 font-size: 10px;
                 color: #666;
             }
+        }
+        body {
+            font-family: 'Times New Roman', serif;
+            font-size: 12pt;
+            line-height: 1.4;
+            margin: 0;
+            padding: 0;
+            color: #000;
+        }
+        .info-section {
+            display: flex;
+            width: 100%;
+            margin: 15px 0;
+            gap: 20px;
+        }
+        .info-box {
+            border: 2px solid #000;
+            padding: 12px;
+            background: #f8f8f8;
+            flex: 1;
+            min-height: 120px;
+        }
+        .info-box h3 {
+            margin: 0 0 8px 0;
+            font-size: 13pt;
+            font-weight: bold;
+            text-decoration: underline;
+        }
+        .info-box p {
+            margin: 4px 0;
+            font-size: 12pt;
+        }
+        .signature-box {
+            border: 2px solid #000;
+            padding: 20px;
+            margin: 15px 0;
+            background: #f8f8f8;
+            min-height: 80px;
+        }
+        .material-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            font-size: 11pt;
+        }
+        .material-table th {
+            border: 1px solid #000;
+            padding: 8px 6px;
+            background: #e8e8e8;
+            font-weight: bold;
+            text-align: left;
+        }
+        .material-table td {
+            border: 1px solid #000;
+            padding: 6px;
+            text-align: left;
+        }
+        .page-break { page-break-before: always; }
+        .no-break { page-break-inside: avoid; }
+        h1 { 
+            font-size: 18pt; 
+            margin: 10px 0 20px 0; 
+            text-align: center; 
+            font-weight: bold;
+            text-decoration: underline;
+        }
+        h2 { 
+            font-size: 14pt; 
+            margin: 15px 0 8px 0; 
+            font-weight: bold;
+            text-decoration: underline;
+        }
+        h3 { 
+            font-size: 13pt; 
+            margin: 10px 0 6px 0; 
+            font-weight: bold;
+        }
+        p { 
+            margin: 6px 0; 
+            text-align: justify;
+            font-size: 12pt;
+        }
+        .contract-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .parties-section {
+            margin: 20px 0;
+        }
+        .payment-terms {
+            margin: 15px 0;
+        }
+        .two-column {
+            display: flex;
+            gap: 20px;
+            margin: 15px 0;
+            width: 100%;
+        }
+        .column {
+            flex: 1;
+            width: 48%;
+        }
+        .materials-list {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f5f5f5;
+            border: 1px solid #ccc;
+        }
+        .total-box {
+            background: #e8f4f8;
+            border: 2px solid #0066cc;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: center;
+            font-weight: bold;
+        }
+        .section-number {
+            font-weight: bold;
+            margin-right: 5px;
         }
         body {
             font-family: 'Times New Roman', serif;
