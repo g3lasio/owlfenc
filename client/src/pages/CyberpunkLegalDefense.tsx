@@ -1955,54 +1955,7 @@ export default function CyberpunkLegalDefense() {
                     </div>
                   </div>
 
-                  {/* Electronic Signatures */}
-                  <div className="bg-gray-900/50 border border-green-400/30 rounded-lg p-4">
-                    <h3 className="text-green-400 font-bold mb-4 flex items-center">
-                      <PenTool className="h-4 w-4 mr-2" />
-                      ELECTRONIC SIGNATURES
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="border border-gray-600 rounded p-4">
-                        <div className="text-green-400 font-semibold mb-3">CONTRACTOR SIGNATURE</div>
-                        <div className="bg-gray-800 border border-gray-600 rounded p-3 mb-3 h-16 flex items-center justify-center">
-                          <span className="text-gray-500 text-sm">Pending Electronic Signature</span>
-                        </div>
-                        <div className="space-y-2">
-                          <input
-                            type="text"
-                            name="contractorSignatureName"
-                            placeholder="Contractor printed name"
-                            className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:border-green-400 focus:outline-none"
-                          />
-                          <input
-                            type="date"
-                            name="contractorSignatureDate"
-                            className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:border-green-400 focus:outline-none"
-                          />
-                        </div>
-                      </div>
-                      <div className="border border-gray-600 rounded p-4">
-                        <div className="text-green-400 font-semibold mb-3">CLIENT SIGNATURE</div>
-                        <div className="bg-gray-800 border border-gray-600 rounded p-3 mb-3 h-16 flex items-center justify-center">
-                          <span className="text-gray-500 text-sm">Pending Electronic Signature</span>
-                        </div>
-                        <div className="space-y-2">
-                          <input
-                            type="text"
-                            name="clientSignatureName"
-                            placeholder="Client printed name"
-                            defaultValue={extractedData.clientInfo?.name || ''}
-                            className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:border-green-400 focus:outline-none"
-                          />
-                          <input
-                            type="date"
-                            name="clientSignatureDate"
-                            className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:border-green-400 focus:outline-none"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+
 
 
 
@@ -2159,13 +2112,14 @@ export default function CyberpunkLegalDefense() {
                   </Button>
                   <Button 
                     onClick={() => {
-                      console.log('Proceeding to DeepSearch Defense Review with data:', extractedData);
-                      setCurrentStep(3);
-                      setCurrentPhase('defense-review');
+                      console.log('Advancing to contract generation with data:', extractedData);
+                      setCurrentStep(4);
+                      setCurrentPhase('digital-execution');
+                      processExtractedDataWorkflow(extractedData);
                     }}
                     className="bg-green-600 hover:bg-green-500 text-black font-bold py-3 px-8 rounded border-0 shadow-none"
                   >
-                    ACTIVATE DEEPSEARCH DEFENSE
+                    GENERATE CONTRACT
                   </Button>
                 </div>
               </CardContent>
