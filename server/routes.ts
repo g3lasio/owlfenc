@@ -1303,7 +1303,7 @@ Output in English regardless of input language. Make it suitable for contracts a
   app.use("/api/pdf-contract-processor", pdfContractProcessorRoutes);
 
   // Registrar rutas de contratos
-  app.use("/api", contractRoutes);
+  app.use("/api/contracts", contractRoutes);
 
   // Registrar rutas de clientes
   app.use("/api/clients", clientRoutes);
