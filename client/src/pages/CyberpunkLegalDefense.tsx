@@ -199,6 +199,8 @@ export default function CyberpunkLegalDefense() {
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [approvedProjects, setApprovedProjects] = useState<any[]>([]);
   const [showPreview, setShowPreview] = useState(false);
+  const [contractPreviewHtml, setContractPreviewHtml] = useState<string>('');
+  const [loadingPreview, setLoadingPreview] = useState(false);
   const [loadingProjects, setLoadingProjects] = useState(false);
   
   // Contract history state
@@ -471,6 +473,76 @@ export default function CyberpunkLegalDefense() {
       description: `${approvedDefenseClauses.length} defensive clauses approved with full legal traceability`,
     });
   }, [toast]);
+
+  // Generar preview real del contrato
+  const generateRealContractPreview = useCallback(async () => {
+    if (!extractedData) return;
+
+    setLoadingPreview(true);
+    try {
+      const selectedClausesData = intelligentClauses.filter(clause => 
+        selectedClauses.has(clause.id) || clause.category === 'MANDATORY'
+      );
+
+      const contractData = {
+        client: {
+          name: extractedData.clientInfo?.name || extractedData.clientName || '',
+          address: extractedData.clientInfo?.address || extractedData.clientAddress || extractedData.projectDetails?.location || '',
+          email: extractedData.clientInfo?.email || extractedData.clientEmail || '',
+          phone: extractedData.clientInfo?.phone || extractedData.clientPhone || ''
+        },
+        contractor: {
+          name: profile?.companyName || '',
+          address: profile?.address || '',
+          email: profile?.email || '',
+          phone: profile?.phone || '',
+          license: profile?.licenseNumber || ''
+        },
+        project: {
+          type: extractedData.projectDetails?.type || extractedData.projectType || '',
+          description: extractedData.projectDetails?.description || extractedData.projectDescription || '',
+          location: extractedData.projectDetails?.location || extractedData.projectLocation || '',
+          startDate: extractedData.projectDetails?.startDate || null,
+          endDate: extractedData.projectDetails?.endDate || null
+        },
+        financials: {
+          total: extractedData.financials?.total || extractedData.totalAmount || 0,
+          subtotal: extractedData.financials?.subtotal || extractedData.subtotal || 0,
+          tax: extractedData.financials?.tax || extractedData.tax || 0,
+          taxRate: extractedData.financials?.taxRate || 0
+        },
+        protections: selectedClausesData
+      };
+
+      const response = await fetch('/api/contracts/preview', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(contractData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error generando preview del contrato');
+      }
+
+      const previewData = await response.json();
+      setContractPreviewHtml(previewData.html);
+      
+    } catch (error) {
+      console.error('Error generando preview:', error);
+      setContractPreviewHtml('<div class="error">Error generando preview del contrato</div>');
+    } finally {
+      setLoadingPreview(false);
+    }
+  }, [extractedData, intelligentClauses, selectedClauses, profile]);
+
+  // Actualizar preview cuando cambien los datos o selecciones
+  useEffect(() => {
+    if (extractedData && showPreview && currentStep === 3) {
+      generateRealContractPreview();
+    }
+  }, [extractedData, selectedClauses, showPreview, currentStep, generateRealContractPreview]);
 
   // Función para generar el PDF del contrato profesional
   const generateContractPDF = useCallback(async () => {
@@ -2264,84 +2336,33 @@ export default function CyberpunkLegalDefense() {
                         VISTA PREVIA DEL CONTRATO
                       </h3>
                       
-                      {/* Responsive Preview Container */}
-                      <div className="bg-white text-black rounded overflow-hidden">
-                        {/* Mobile/Tablet optimized scrollable preview */}
-                        <div className="h-64 md:h-80 xl:h-96 overflow-y-auto p-2 md:p-4">
-                          <div className="contract-preview-content space-y-3 md:space-y-4">
-                            
-                            {/* Header */}
-                            <div className="text-center border-b border-gray-300 pb-2">
-                              <h1 className="font-bold text-sm md:text-lg">CONTRATO DE SERVICIOS INDEPENDIENTES</h1>
-                              <p className="text-xs text-gray-600 mt-1">Documento Legal Profesional</p>
+                      {/* Real Contract Preview Container */}
+                      <div className="bg-white text-black rounded overflow-hidden border">
+                        {loadingPreview ? (
+                          <div className="h-64 md:h-80 xl:h-96 flex items-center justify-center">
+                            <div className="text-center">
+                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                              <p className="text-sm text-gray-600">Generando preview real del contrato...</p>
                             </div>
-                            
-                            {/* Parties Section - Responsive Grid */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4">
-                              <div className="border border-gray-400 p-2 rounded">
-                                <h4 className="font-bold text-xs md:text-sm text-blue-600">CLIENTE:</h4>
-                                <p className="text-xs md:text-sm font-medium">{extractedData.clientInfo?.name || 'Nombre del Cliente'}</p>
-                                <p className="text-xs text-gray-700 break-words">{extractedData.clientInfo?.address || extractedData.projectDetails?.location || 'Dirección del Cliente'}</p>
-                              </div>
-                              <div className="border border-gray-400 p-2 rounded">
-                                <h4 className="font-bold text-xs md:text-sm text-purple-600">CONTRATISTA:</h4>
-                                <p className="text-xs md:text-sm font-medium">{profile?.companyName || 'Nombre del Contratista'}</p>
-                                <p className="text-xs text-gray-700 break-words">{profile?.address || 'Dirección del Contratista'}</p>
-                              </div>
-                            </div>
-
-                            {/* Services Section */}
-                            <div className="border-l-4 border-green-500 pl-3">
-                              <h2 className="font-bold text-xs md:text-sm text-green-700 mb-1">SERVICIOS A REALIZAR</h2>
-                              <p className="text-xs text-gray-800 leading-relaxed">{extractedData.projectDetails?.description || 'Descripción del proyecto'}</p>
-                              <p className="text-xs text-gray-600 mt-1">Ubicación: {extractedData.projectDetails?.location || 'Por definir'}</p>
-                            </div>
-
-                            {/* Legal Protections */}
-                            <div className="border-l-4 border-cyan-500 pl-3">
-                              <h2 className="font-bold text-xs md:text-sm text-cyan-700 mb-1">PROTECCIONES LEGALES APLICADAS</h2>
-                              <div className="space-y-1 md:space-y-2">
-                                {intelligentClauses.filter(clause => 
-                                  selectedClauses.has(clause.id) || clause.category === 'MANDATORY'
-                                ).slice(0, 3).map((clause, index) => (
-                                  <div key={clause.id} className="bg-cyan-50 border-l-2 border-cyan-400 pl-2 py-1">
-                                    <div className="font-bold text-xs text-cyan-800">{index + 16}. {clause.category}</div>
-                                    <div className="text-xs text-gray-700 leading-tight">{clause.clause.substring(0, 100)}...</div>
-                                  </div>
-                                ))}
-                                {intelligentClauses.filter(clause => 
-                                  selectedClauses.has(clause.id) || clause.category === 'MANDATORY'
-                                ).length > 3 && (
-                                  <div className="text-xs text-gray-500 italic">
-                                    +{intelligentClauses.filter(clause => 
-                                      selectedClauses.has(clause.id) || clause.category === 'MANDATORY'
-                                    ).length - 3} cláusulas adicionales...
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Payment Terms */}
-                            <div className="border-l-4 border-yellow-500 pl-3">
-                              <h2 className="font-bold text-xs md:text-sm text-yellow-700 mb-1">TÉRMINOS DE PAGO</h2>
-                              <div className="bg-yellow-50 p-2 rounded">
-                                <p className="text-xs md:text-sm font-bold text-green-600">
-                                  Monto Total del Contrato: ${extractedData.financials?.total?.toFixed(2) || '0.00'}
-                                </p>
-                                <div className="mt-1 space-y-1">
-                                  <p className="text-xs text-gray-700">• Pago Inicial (50%): ${((extractedData.financials?.total || 0) * 0.5).toFixed(2)}</p>
-                                  <p className="text-xs text-gray-700">• Pago Final (50%): ${((extractedData.financials?.total || 0) * 0.5).toFixed(2)}</p>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Footer */}
-                            <div className="text-center border-t border-gray-300 pt-2 mt-4">
-                              <p className="text-xs text-gray-500">Documento generado automáticamente - Versión preliminar</p>
-                            </div>
-                            
                           </div>
-                        </div>
+                        ) : contractPreviewHtml ? (
+                          <div 
+                            className="h-64 md:h-80 xl:h-96 overflow-y-auto p-3 md:p-4 contract-content"
+                            dangerouslySetInnerHTML={{ __html: contractPreviewHtml }}
+                            style={{
+                              fontSize: '11px',
+                              lineHeight: '1.4',
+                              fontFamily: 'Arial, sans-serif'
+                            }}
+                          />
+                        ) : (
+                          <div className="h-64 md:h-80 xl:h-96 flex items-center justify-center">
+                            <div className="text-center text-gray-500">
+                              <p className="text-sm mb-2">Vista previa del contrato real</p>
+                              <p className="text-xs">Selecciona protecciones legales para ver el contenido</p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                       
                       {/* Status Indicator */}

@@ -47,6 +47,38 @@ interface DatosExtraidos {
   detallesAdicionales?: Record<string, any>;
 }
 
+// Generate contract preview HTML
+router.post('/preview', async (req, res) => {
+  try {
+    console.log('📋 Generando preview del contrato...');
+    
+    const contractData = req.body;
+    
+    if (!contractData) {
+      return res.status(400).json({
+        success: false,
+        error: 'Datos del contrato requeridos'
+      });
+    }
+
+    // Usar el generador híbrido para obtener el HTML del contrato
+    const contractHtml = await hybridContractGenerator.generateContractHTML(contractData);
+    
+    res.json({
+      success: true,
+      html: contractHtml
+    });
+    
+  } catch (error) {
+    console.error('Error generando preview del contrato:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error interno del servidor',
+      details: error.message
+    });
+  }
+});
+
 // Generate contract pdf
 router.post("/generate-contract", async (req, res) => {
   try {
