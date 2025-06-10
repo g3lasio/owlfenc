@@ -2337,7 +2337,86 @@ export default function CyberpunkLegalDefense() {
                       </h3>
                       
                       {/* Real Contract Preview Container */}
-                      <div className="bg-white text-black rounded overflow-hidden border">
+                      <div className="bg-white text-black rounded overflow-hidden border shadow-lg">
+                        <style dangerouslySetInnerHTML={{ __html: `
+                          .contract-content h1 {
+                            font-size: 14px !important;
+                            font-weight: bold !important;
+                            text-align: center !important;
+                            margin: 10px 0 !important;
+                            text-transform: uppercase !important;
+                          }
+                          .contract-content h2 {
+                            font-size: 12px !important;
+                            font-weight: bold !important;
+                            margin: 8px 0 4px 0 !important;
+                            text-transform: uppercase !important;
+                            border-bottom: 1px solid #333 !important;
+                            padding-bottom: 2px !important;
+                          }
+                          .contract-content .parties {
+                            display: flex !important;
+                            justify-content: space-between !important;
+                            margin: 10px 0 !important;
+                            border: 1px solid #000 !important;
+                            padding: 8px !important;
+                          }
+                          .contract-content .party {
+                            flex: 1 !important;
+                            text-align: center !important;
+                            padding: 0 4px !important;
+                          }
+                          .contract-content .party-title {
+                            font-weight: bold !important;
+                            font-size: 11px !important;
+                            margin-bottom: 4px !important;
+                          }
+                          .contract-content .section {
+                            margin: 8px 0 !important;
+                          }
+                          .contract-content .section-title {
+                            font-weight: bold !important;
+                            font-size: 11px !important;
+                            margin-bottom: 4px !important;
+                          }
+                          .contract-content .clause {
+                            margin: 4px 0 !important;
+                            text-align: justify !important;
+                          }
+                          .contract-content p {
+                            margin: 4px 0 !important;
+                            font-size: 9px !important;
+                            line-height: 1.2 !important;
+                          }
+                          .contract-content .signature-section {
+                            display: flex !important;
+                            gap: 15px !important;
+                            margin-top: 15px !important;
+                          }
+                          .contract-content .signature-box {
+                            border: 1px solid #000 !important;
+                            padding: 8px !important;
+                            background: #f9f9f9 !important;
+                            flex: 1 !important;
+                          }
+                          .contract-content .signature-line {
+                            border-bottom: 1px solid #000 !important;
+                            margin: 8px 0 2px 0 !important;
+                            height: 1px !important;
+                          }
+                          .contract-content .info-box {
+                            border: 1px solid #333 !important;
+                            padding: 6px !important;
+                            margin: 4px 0 !important;
+                            background: #f9f9f9 !important;
+                          }
+                          .contract-content .total-box {
+                            border: 1px solid #000 !important;
+                            padding: 6px !important;
+                            background: #f5f5f5 !important;
+                            text-align: center !important;
+                          }
+                        `}} />
                         {loadingPreview ? (
                           <div className="h-64 md:h-80 xl:h-96 flex items-center justify-center">
                             <div className="text-center">
@@ -2350,9 +2429,9 @@ export default function CyberpunkLegalDefense() {
                             className="h-64 md:h-80 xl:h-96 overflow-y-auto p-3 md:p-4 contract-content"
                             dangerouslySetInnerHTML={{ __html: contractPreviewHtml }}
                             style={{
-                              fontSize: '11px',
-                              lineHeight: '1.4',
-                              fontFamily: 'Arial, sans-serif'
+                              fontSize: '9px',
+                              lineHeight: '1.2',
+                              fontFamily: 'Times New Roman, serif'
                             }}
                           />
                         ) : (
