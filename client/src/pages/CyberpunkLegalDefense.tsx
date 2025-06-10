@@ -1646,7 +1646,7 @@ export default function CyberpunkLegalDefense() {
             </Card>
           )}
 
-          {/* Step 3: Defense Review & Correction */}
+          {/* Step 3: Defense Review & Correction with Live Preview */}
           {extractedData && currentStep === 3 && currentPhase === 'defense-review' && (
             <Card className="border-2 border-green-400 bg-black/80 relative overflow-hidden mt-6">
               <HUDCorners />
@@ -1658,15 +1658,20 @@ export default function CyberpunkLegalDefense() {
                   </div>
                 </div>
                 <CardTitle className="text-xl md:text-2xl font-bold text-green-400 mb-2">
-                  Defense Review & Correction
+                  Defense Review & Live Contract Preview
                 </CardTitle>
                 <p className="text-gray-300 text-xs md:text-sm leading-relaxed">
-                  Review and validate all extracted data before contract generation. Make corrections as needed for maximum legal protection.
+                  Configure your contract settings on the left and see the exact document preview on the right in real-time.
                 </p>
               </CardHeader>
               
               <CardContent className="px-4 md:px-8 pb-6 md:pb-8">
-                <form id="defense-review-form" className="space-y-6">
+                {/* Split Layout: Configuration Left, Preview Right */}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                  
+                  {/* Left Panel: Configuration */}
+                  <div className="space-y-6">
+                    <form id="defense-review-form" className="space-y-6">
                   {/* Contractor Information */}
                   <div className="bg-gray-900/50 border border-blue-400/30 rounded-lg p-4">
                     <h3 className="text-blue-400 font-bold mb-4 flex items-center">
@@ -2080,20 +2085,20 @@ export default function CyberpunkLegalDefense() {
 
 
 
-                  {/* AI-Powered Legal Defense Engine */}
-                  <div className="bg-gray-900/50 border border-cyan-400/30 rounded-lg p-4">
-                    <h3 className="text-cyan-400 font-bold mb-4 flex items-center">
-                      <Shield className="h-4 w-4 mr-2" />
-                      INTELLIGENT LEGAL DEFENSE ENGINE
-                    </h3>
-                    
-                    {intelligentClauses.length === 0 ? (
-                      <div className="text-center py-8">
-                        <div className="text-gray-400 mb-2">Analyzing project data...</div>
-                        <div className="text-xs text-gray-500">Legal Defense Engine processing project specifics</div>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
+                      {/* AI-Powered Legal Defense Engine */}
+                      <div className="bg-gray-900/50 border border-cyan-400/30 rounded-lg p-4">
+                        <h3 className="text-cyan-400 font-bold mb-4 flex items-center">
+                          <Shield className="h-4 w-4 mr-2" />
+                          INTELLIGENT LEGAL DEFENSE ENGINE
+                        </h3>
+                        
+                        {intelligentClauses.length === 0 ? (
+                          <div className="text-center py-8">
+                            <div className="text-gray-400 mb-2">Analyzing project data...</div>
+                            <div className="text-xs text-gray-500">Legal Defense Engine processing project specifics</div>
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
                         {/* Mandatory Clauses */}
                         {intelligentClauses.filter(clause => clause.category === 'MANDATORY').length > 0 && (
                           <div className="bg-red-900/20 border border-red-400/30 rounded p-4">
@@ -2225,7 +2230,60 @@ export default function CyberpunkLegalDefense() {
                       </div>
                     )}
                   </div>
-                </form>
+                    </form>
+                  </div>
+
+                  {/* Right Panel: Live Contract Preview */}
+                  <div className="xl:block hidden">
+                    <div className="bg-gray-900/50 border border-green-400/30 rounded-lg p-4 h-full">
+                      <h3 className="text-green-400 font-bold mb-4 flex items-center">
+                        <Eye className="h-4 w-4 mr-2" />
+                        LIVE CONTRACT PREVIEW
+                      </h3>
+                      <div className="bg-white text-black p-4 rounded h-96 overflow-y-auto text-xs">
+                        <div className="contract-preview-content">
+                          <h1 className="text-center font-bold text-lg mb-4">INDEPENDENT CONTRACTOR AGREEMENT</h1>
+                          
+                          <div className="grid grid-cols-2 gap-4 mb-4">
+                            <div className="border border-black p-2">
+                              <h4 className="font-bold">CLIENT:</h4>
+                              <p>{extractedData.clientInfo?.name || 'Client Name'}</p>
+                              <p>{extractedData.clientInfo?.address || extractedData.projectDetails?.location || 'Client Address'}</p>
+                            </div>
+                            <div className="border border-black p-2">
+                              <h4 className="font-bold">CONTRACTOR:</h4>
+                              <p>{profile?.companyName || 'Contractor Name'}</p>
+                              <p>{profile?.address || 'Contractor Address'}</p>
+                            </div>
+                          </div>
+
+                          <h2 className="font-bold text-sm mb-2">SERVICES TO BE PERFORMED</h2>
+                          <p className="mb-4 text-xs">{extractedData.projectDetails?.description || 'Project description'}</p>
+
+                          <h2 className="font-bold text-sm mb-2">ENHANCED LEGAL PROTECTIONS</h2>
+                          <div className="space-y-2 mb-4">
+                            {intelligentClauses.filter(clause => 
+                              selectedClauses.has(clause.id) || clause.category === 'MANDATORY'
+                            ).map((clause, index) => (
+                              <div key={clause.id} className="border-l-2 border-cyan-400 pl-2">
+                                <div className="font-bold text-xs">{index + 16}. {clause.subcategory}</div>
+                                <div className="text-xs">{clause.clause.substring(0, 150)}...</div>
+                              </div>
+                            ))}
+                          </div>
+
+                          <h2 className="font-bold text-sm mb-2">PAYMENT TERMS</h2>
+                          <p className="mb-2 text-xs">Total Contract Amount: ${extractedData.financials?.total?.toFixed(2) || '0.00'}</p>
+                          <p className="text-xs">• Down Payment (50%): ${((extractedData.financials?.total || 0) * 0.5).toFixed(2)}</p>
+                          <p className="text-xs">• Final Payment (50%): ${((extractedData.financials?.total || 0) * 0.5).toFixed(2)}</p>
+                        </div>
+                      </div>
+                      <div className="mt-2 text-center">
+                        <span className="text-xs text-gray-400">Preview updates in real-time as you make changes</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
                 {/* Action Buttons */}
                 <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
