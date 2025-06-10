@@ -310,23 +310,34 @@ FORMATO REQUERIDO:
       return this.generateEnhancedFallbackHTML(contractData, contractorBranding);
     }
 
-    // CSS mejorado para mejor legibilidad y diseño eficiente
+    // CSS optimizado para diseño compacto y paginado profesional
     const enhancedCSS = `
       <style>
         @page {
           size: 8.5in 11in;
-          margin: 0.6in 0.75in 0.8in 0.75in;
+          margin: 0.5in 0.6in 0.7in 0.6in;
           counter-increment: page;
           @bottom-center {
-            content: "Page " counter(page) " of 6";
-            font-size: 10px;
+            content: "Página " counter(page);
+            font-size: 9pt;
+            color: #333;
+            font-family: 'Times New Roman', serif;
+          }
+          @bottom-left {
+            content: "© 2025 " attr(data-contractor);
+            font-size: 8pt;
+            color: #666;
+          }
+          @bottom-right {
+            content: "Contrato Generado: " attr(data-date);
+            font-size: 8pt;
             color: #666;
           }
         }
         body {
           font-family: 'Times New Roman', serif;
-          font-size: 12pt;
-          line-height: 1.4;
+          font-size: 11pt;
+          line-height: 1.3;
           margin: 0;
           padding: 0;
           color: #000;
@@ -334,77 +345,110 @@ FORMATO REQUERIDO:
         .info-section {
           display: flex;
           width: 100%;
-          margin: 8px 0;
-          gap: 15px;
+          margin: 6px 0;
+          gap: 12px;
         }
         .info-box {
           border: 2px solid #000;
-          padding: 12px;
+          padding: 8px;
           background: #f8f8f8;
           flex: 1;
-          min-height: 100px;
+          min-height: 70px;
         }
         .info-box h3 {
-          margin: 0 0 8px 0;
-          font-size: 13pt;
+          margin: 0 0 4px 0;
+          font-size: 12pt;
           font-weight: bold;
           text-decoration: underline;
         }
         .info-box p {
-          margin: 4px 0;
-          font-size: 12pt;
+          margin: 2px 0;
+          font-size: 10pt;
+          line-height: 1.2;
         }
         .signature-box {
           border: 2px solid #000;
-          padding: 20px;
-          margin: 15px 0;
+          padding: 12px;
+          margin: 8px 0;
           background: #f8f8f8;
-          min-height: 80px;
+          min-height: 60px;
         }
         .material-table {
           width: 100%;
           border-collapse: collapse;
-          margin: 10px 0;
-          font-size: 11pt;
+          margin: 6px 0;
+          font-size: 10pt;
         }
         .material-table th {
           border: 1px solid #000;
-          padding: 8px 6px;
+          padding: 4px;
           background: #e8e8e8;
           font-weight: bold;
           text-align: left;
         }
         .material-table td {
           border: 1px solid #000;
-          padding: 6px;
+          padding: 3px;
           text-align: left;
         }
         .page-break { page-break-before: always; }
         .no-break { page-break-inside: avoid; }
+        .footer {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 30px;
+          text-align: center;
+          font-size: 8pt;
+          color: #666;
+          border-top: 1px solid #ccc;
+          padding-top: 5px;
+          background: white;
+        }
         h1 { 
-          font-size: 18pt; 
-          margin: 10px 0 20px 0; 
+          font-size: 16pt; 
+          margin: 8px 0 12px 0; 
           text-align: center; 
           font-weight: bold;
           text-decoration: underline;
         }
         h2 { 
-          font-size: 14pt; 
-          margin: 15px 0 8px 0; 
+          font-size: 13pt; 
+          margin: 10px 0 6px 0; 
           font-weight: bold;
           text-decoration: underline;
         }
         h3 { 
-          font-size: 13pt; 
-          margin: 10px 0 6px 0; 
+          font-size: 12pt; 
+          margin: 8px 0 4px 0; 
           font-weight: bold;
         }
         p { 
-          margin: 6px 0; 
+          margin: 4px 0; 
           text-align: justify;
-          font-size: 12pt;
+          line-height: 1.3;
         }
-        .compact { margin: 4px 0; }
+        .compact {
+          margin: 2px 0;
+          line-height: 1.2;
+        }
+        .section-number {
+          font-weight: bold;
+          color: #000;
+        }
+        .total-box {
+          border: 2px solid #000;
+          padding: 6px;
+          background: #f5f5f5;
+          text-align: center;
+          margin: 4px 0;
+        }
+        .signature-line {
+          border-bottom: 1px solid #000;
+          height: 30px;
+          margin: 8px 0;
+        }
         .text-center { text-align: center; }
         .text-bold { font-weight: bold; }
         .contract-header {
@@ -478,6 +522,10 @@ FORMATO REQUERIDO:
       general: generalSection
     });
 
+    // Obtener fecha actual para el footer
+    const currentDate = new Date().toLocaleDateString('es-ES');
+    const contractorNameForFooter = contractorName || 'Contractor';
+
     return `<!DOCTYPE html>
 <html>
 <head>
@@ -486,18 +534,29 @@ FORMATO REQUERIDO:
     <style>
         @page {
             size: 8.5in 11in;
-            margin: 0.6in 0.75in 0.8in 0.75in;
+            margin: 0.5in 0.6in 0.7in 0.6in;
             counter-increment: page;
             @bottom-center {
-                content: "Page " counter(page) " of 6";
-                font-size: 10px;
+                content: "Página " counter(page);
+                font-size: 9pt;
+                color: #333;
+                font-family: 'Times New Roman', serif;
+            }
+            @bottom-left {
+                content: "© 2025 ${contractorName}";
+                font-size: 8pt;
+                color: #666;
+            }
+            @bottom-right {
+                content: "Generado: ${currentDate}";
+                font-size: 8pt;
                 color: #666;
             }
         }
         body {
             font-family: 'Times New Roman', serif;
-            font-size: 12pt;
-            line-height: 1.4;
+            font-size: 11pt;
+            line-height: 1.3;
             margin: 0;
             padding: 0;
             color: #000;
@@ -505,56 +564,57 @@ FORMATO REQUERIDO:
         .info-section {
             display: flex;
             width: 100%;
-            margin: 15px 0;
-            gap: 20px;
+            margin: 6px 0;
+            gap: 12px;
         }
         .info-box {
             border: 2px solid #000;
-            padding: 12px;
+            padding: 8px;
             background: #f8f8f8;
             flex: 1;
-            min-height: 120px;
+            min-height: 70px;
         }
         .info-box h3 {
-            margin: 0 0 8px 0;
-            font-size: 13pt;
+            margin: 0 0 4px 0;
+            font-size: 12pt;
             font-weight: bold;
             text-decoration: underline;
         }
         .info-box p {
-            margin: 4px 0;
-            font-size: 12pt;
+            margin: 2px 0;
+            font-size: 10pt;
+            line-height: 1.2;
         }
         .signature-box {
             border: 2px solid #000;
-            padding: 20px;
-            margin: 15px 0;
+            padding: 12px;
+            margin: 8px 0;
             background: #f8f8f8;
-            min-height: 80px;
+            min-height: 60px;
         }
         .material-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 10px 0;
-            font-size: 11pt;
+            margin: 6px 0;
+            font-size: 10pt;
         }
         .material-table th {
             border: 1px solid #000;
-            padding: 8px 6px;
+            padding: 4px;
             background: #e8e8e8;
             font-weight: bold;
             text-align: left;
         }
         .material-table td {
             border: 1px solid #000;
-            padding: 6px;
+            padding: 3px;
             text-align: left;
         }
         .page-break { page-break-before: always; }
         .no-break { page-break-inside: avoid; }
         h1 { 
-            font-size: 18pt; 
-            margin: 10px 0 20px 0; 
+            font-size: 16pt; 
+            margin: 8px 0 12px 0; 
             text-align: center; 
             font-weight: bold;
             text-decoration: underline;
