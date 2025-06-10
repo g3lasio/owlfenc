@@ -95,8 +95,10 @@ export default function AppLayout({ children }: AppLayoutProps) {
   // Para el resto de las páginas (protegidas), mostrar el layout completo
   return (
     <div className="flex h-screen w-screen overflow-hidden">
-      {/* Sidebar único con todas las funcionalidades */}
-      <Sidebar />
+      {/* Sidebar único con todas las funcionalidades - Solo en desktop */}
+      <div className="hidden md:block">
+        <Sidebar />
+      </div>
 
       {/* Contenido principal */}
       <main className="flex-1 flex flex-col overflow-hidden">
