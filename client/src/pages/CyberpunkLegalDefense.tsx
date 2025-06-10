@@ -198,6 +198,7 @@ export default function CyberpunkLegalDefense() {
   const [dataInputMethod, setDataInputMethod] = useState<'upload' | 'select'>('upload');
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [approvedProjects, setApprovedProjects] = useState<any[]>([]);
+  const [showPreview, setShowPreview] = useState(false);
   const [loadingProjects, setLoadingProjects] = useState(false);
   
   // Contract history state
@@ -1666,11 +1667,33 @@ export default function CyberpunkLegalDefense() {
               </CardHeader>
               
               <CardContent className="px-4 md:px-8 pb-6 md:pb-8">
+                {/* Mobile-First Preview Toggle */}
+                <div className="mb-4 xl:hidden">
+                  <div className="flex items-center justify-center gap-4">
+                    <Button
+                      onClick={() => setShowPreview(false)}
+                      variant={!showPreview ? "default" : "outline"}
+                      size="sm"
+                      className="flex-1"
+                    >
+                      Configuración
+                    </Button>
+                    <Button
+                      onClick={() => setShowPreview(true)}
+                      variant={showPreview ? "default" : "outline"}
+                      size="sm"
+                      className="flex-1"
+                    >
+                      Vista Previa
+                    </Button>
+                  </div>
+                </div>
+
                 {/* Split Layout: Configuration Left, Preview Right */}
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                   
                   {/* Left Panel: Configuration */}
-                  <div className="space-y-6">
+                  <div className={`space-y-6 ${showPreview ? 'hidden xl:block' : 'block'}`}>
                     <form id="defense-review-form" className="space-y-6">
                   {/* Contractor Information */}
                   <div className="bg-gray-900/50 border border-blue-400/30 rounded-lg p-4">
@@ -2233,53 +2256,100 @@ export default function CyberpunkLegalDefense() {
                     </form>
                   </div>
 
-                  {/* Right Panel: Live Contract Preview */}
-                  <div className="xl:block hidden">
-                    <div className="bg-gray-900/50 border border-green-400/30 rounded-lg p-4 h-full">
-                      <h3 className="text-green-400 font-bold mb-4 flex items-center">
-                        <Eye className="h-4 w-4 mr-2" />
-                        LIVE CONTRACT PREVIEW
+                  {/* Right Panel: Live Contract Preview - Responsive */}
+                  <div className={`${!showPreview ? 'hidden xl:block' : 'block xl:block'}`}>
+                    <div className="bg-gray-900/50 border border-green-400/30 rounded-lg p-3 md:p-4 h-full">
+                      <h3 className="text-green-400 font-bold mb-3 md:mb-4 flex items-center text-sm md:text-base">
+                        <Eye className="h-3 w-3 md:h-4 md:w-4 mr-2" />
+                        VISTA PREVIA DEL CONTRATO
                       </h3>
-                      <div className="bg-white text-black p-4 rounded h-96 overflow-y-auto text-xs">
-                        <div className="contract-preview-content">
-                          <h1 className="text-center font-bold text-lg mb-4">INDEPENDENT CONTRACTOR AGREEMENT</h1>
-                          
-                          <div className="grid grid-cols-2 gap-4 mb-4">
-                            <div className="border border-black p-2">
-                              <h4 className="font-bold">CLIENT:</h4>
-                              <p>{extractedData.clientInfo?.name || 'Client Name'}</p>
-                              <p>{extractedData.clientInfo?.address || extractedData.projectDetails?.location || 'Client Address'}</p>
+                      
+                      {/* Responsive Preview Container */}
+                      <div className="bg-white text-black rounded overflow-hidden">
+                        {/* Mobile/Tablet optimized scrollable preview */}
+                        <div className="h-64 md:h-80 xl:h-96 overflow-y-auto p-2 md:p-4">
+                          <div className="contract-preview-content space-y-3 md:space-y-4">
+                            
+                            {/* Header */}
+                            <div className="text-center border-b border-gray-300 pb-2">
+                              <h1 className="font-bold text-sm md:text-lg">CONTRATO DE SERVICIOS INDEPENDIENTES</h1>
+                              <p className="text-xs text-gray-600 mt-1">Documento Legal Profesional</p>
                             </div>
-                            <div className="border border-black p-2">
-                              <h4 className="font-bold">CONTRACTOR:</h4>
-                              <p>{profile?.companyName || 'Contractor Name'}</p>
-                              <p>{profile?.address || 'Contractor Address'}</p>
-                            </div>
-                          </div>
-
-                          <h2 className="font-bold text-sm mb-2">SERVICES TO BE PERFORMED</h2>
-                          <p className="mb-4 text-xs">{extractedData.projectDetails?.description || 'Project description'}</p>
-
-                          <h2 className="font-bold text-sm mb-2">ENHANCED LEGAL PROTECTIONS</h2>
-                          <div className="space-y-2 mb-4">
-                            {intelligentClauses.filter(clause => 
-                              selectedClauses.has(clause.id) || clause.category === 'MANDATORY'
-                            ).map((clause, index) => (
-                              <div key={clause.id} className="border-l-2 border-cyan-400 pl-2">
-                                <div className="font-bold text-xs">{index + 16}. {clause.subcategory}</div>
-                                <div className="text-xs">{clause.clause.substring(0, 150)}...</div>
+                            
+                            {/* Parties Section - Responsive Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4">
+                              <div className="border border-gray-400 p-2 rounded">
+                                <h4 className="font-bold text-xs md:text-sm text-blue-600">CLIENTE:</h4>
+                                <p className="text-xs md:text-sm font-medium">{extractedData.clientInfo?.name || 'Nombre del Cliente'}</p>
+                                <p className="text-xs text-gray-700 break-words">{extractedData.clientInfo?.address || extractedData.projectDetails?.location || 'Dirección del Cliente'}</p>
                               </div>
-                            ))}
-                          </div>
+                              <div className="border border-gray-400 p-2 rounded">
+                                <h4 className="font-bold text-xs md:text-sm text-purple-600">CONTRATISTA:</h4>
+                                <p className="text-xs md:text-sm font-medium">{profile?.companyName || 'Nombre del Contratista'}</p>
+                                <p className="text-xs text-gray-700 break-words">{profile?.address || 'Dirección del Contratista'}</p>
+                              </div>
+                            </div>
 
-                          <h2 className="font-bold text-sm mb-2">PAYMENT TERMS</h2>
-                          <p className="mb-2 text-xs">Total Contract Amount: ${extractedData.financials?.total?.toFixed(2) || '0.00'}</p>
-                          <p className="text-xs">• Down Payment (50%): ${((extractedData.financials?.total || 0) * 0.5).toFixed(2)}</p>
-                          <p className="text-xs">• Final Payment (50%): ${((extractedData.financials?.total || 0) * 0.5).toFixed(2)}</p>
+                            {/* Services Section */}
+                            <div className="border-l-4 border-green-500 pl-3">
+                              <h2 className="font-bold text-xs md:text-sm text-green-700 mb-1">SERVICIOS A REALIZAR</h2>
+                              <p className="text-xs text-gray-800 leading-relaxed">{extractedData.projectDetails?.description || 'Descripción del proyecto'}</p>
+                              <p className="text-xs text-gray-600 mt-1">Ubicación: {extractedData.projectDetails?.location || 'Por definir'}</p>
+                            </div>
+
+                            {/* Legal Protections */}
+                            <div className="border-l-4 border-cyan-500 pl-3">
+                              <h2 className="font-bold text-xs md:text-sm text-cyan-700 mb-1">PROTECCIONES LEGALES APLICADAS</h2>
+                              <div className="space-y-1 md:space-y-2">
+                                {intelligentClauses.filter(clause => 
+                                  selectedClauses.has(clause.id) || clause.category === 'MANDATORY'
+                                ).slice(0, 3).map((clause, index) => (
+                                  <div key={clause.id} className="bg-cyan-50 border-l-2 border-cyan-400 pl-2 py-1">
+                                    <div className="font-bold text-xs text-cyan-800">{index + 16}. {clause.category}</div>
+                                    <div className="text-xs text-gray-700 leading-tight">{clause.clause.substring(0, 100)}...</div>
+                                  </div>
+                                ))}
+                                {intelligentClauses.filter(clause => 
+                                  selectedClauses.has(clause.id) || clause.category === 'MANDATORY'
+                                ).length > 3 && (
+                                  <div className="text-xs text-gray-500 italic">
+                                    +{intelligentClauses.filter(clause => 
+                                      selectedClauses.has(clause.id) || clause.category === 'MANDATORY'
+                                    ).length - 3} cláusulas adicionales...
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Payment Terms */}
+                            <div className="border-l-4 border-yellow-500 pl-3">
+                              <h2 className="font-bold text-xs md:text-sm text-yellow-700 mb-1">TÉRMINOS DE PAGO</h2>
+                              <div className="bg-yellow-50 p-2 rounded">
+                                <p className="text-xs md:text-sm font-bold text-green-600">
+                                  Monto Total del Contrato: ${extractedData.financials?.total?.toFixed(2) || '0.00'}
+                                </p>
+                                <div className="mt-1 space-y-1">
+                                  <p className="text-xs text-gray-700">• Pago Inicial (50%): ${((extractedData.financials?.total || 0) * 0.5).toFixed(2)}</p>
+                                  <p className="text-xs text-gray-700">• Pago Final (50%): ${((extractedData.financials?.total || 0) * 0.5).toFixed(2)}</p>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Footer */}
+                            <div className="text-center border-t border-gray-300 pt-2 mt-4">
+                              <p className="text-xs text-gray-500">Documento generado automáticamente - Versión preliminar</p>
+                            </div>
+                            
+                          </div>
                         </div>
                       </div>
+                      
+                      {/* Status Indicator */}
                       <div className="mt-2 text-center">
-                        <span className="text-xs text-gray-400">Preview updates in real-time as you make changes</span>
+                        <span className="text-xs text-green-400 flex items-center justify-center gap-1">
+                          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                          Actualizándose en tiempo real
+                        </span>
                       </div>
                     </div>
                   </div>
