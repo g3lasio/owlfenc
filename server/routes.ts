@@ -4428,16 +4428,9 @@ Output in English regardless of input language. Make it suitable for contracts a
       
       const { hybridContractGenerator } = await import('./services/hybridContractGenerator');
       
-      const request = {
-        contractData: req.body,
-        templatePreferences: {
-          style: 'professional',
-          includeProtections: true,
-          pageLayout: '6-page'
-        }
-      };
-      
-      const result = await hybridContractGenerator.generateProfessionalContract(request);
+      const result = await hybridContractGenerator.generateProfessionalContract(req.body, {
+        contractorBranding: req.body.contractorBranding || {}
+      });
       
       if (!result.success) {
         return res.status(500).json({
@@ -4446,29 +4439,13 @@ Output in English regardless of input language. Make it suitable for contracts a
         });
       }
       
-      // Store PDF temporarily and return download link
-      const contractId = `contract_${Date.now()}`;
+      console.log(`✅ [API] Contrato generado: ${result.metadata?.pageCount} páginas, ${result.metadata?.generationTime}ms`);
       
-      // Save PDF buffer to file system temporarily
-      const fs = await import('fs');
-      const path = await import('path');
-      
-      const tempDir = path.join(process.cwd(), 'temp');
-      if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir, { recursive: true });
-      }
-      
-      const fullPdfPath = path.join(tempDir, `${contractId}.pdf`);
-      fs.writeFileSync(fullPdfPath, result.pdfBuffer!);
-      
-      console.log(`✅ [API] Contrato generado: ${result.metadata.pageCount} páginas, ${result.metadata.generationTime}ms`);
-      
+      // Return contract HTML and metadata
       res.json({
         success: true,
-        contractId,
-        pdfUrl: `/api/contracts/download/${contractId}.pdf`,
-        metadata: result.metadata,
-        previewHtml: result.html
+        html: result.html,
+        metadata: result.metadata
       });
       
     } catch (error) {
