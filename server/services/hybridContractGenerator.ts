@@ -543,7 +543,7 @@ FORMATO REQUERIDO:
                 font-family: 'Times New Roman', serif;
             }
             @bottom-left {
-                content: "© 2025 ${contractorName}";
+                content: "© 2025 ${contractorNameForFooter}";
                 font-size: 8pt;
                 color: #666;
             }
@@ -620,35 +620,40 @@ FORMATO REQUERIDO:
             text-decoration: underline;
         }
         h2 { 
-            font-size: 14pt; 
-            margin: 15px 0 8px 0; 
+            font-size: 13pt; 
+            margin: 10px 0 6px 0; 
             font-weight: bold;
             text-decoration: underline;
         }
         h3 { 
-            font-size: 13pt; 
-            margin: 10px 0 6px 0; 
+            font-size: 12pt; 
+            margin: 8px 0 4px 0; 
             font-weight: bold;
         }
         p { 
-            margin: 6px 0; 
+            margin: 4px 0; 
             text-align: justify;
-            font-size: 12pt;
+            font-size: 11pt;
+            line-height: 1.3;
+        }
+        .compact {
+            margin: 2px 0;
+            line-height: 1.2;
         }
         .contract-header {
             text-align: center;
-            margin-bottom: 25px;
+            margin-bottom: 15px;
         }
         .parties-section {
-            margin: 20px 0;
+            margin: 10px 0;
         }
         .payment-terms {
-            margin: 15px 0;
+            margin: 8px 0;
         }
         .two-column {
             display: flex;
-            gap: 20px;
-            margin: 15px 0;
+            gap: 12px;
+            margin: 8px 0;
             width: 100%;
         }
         .column {
@@ -656,40 +661,84 @@ FORMATO REQUERIDO:
             width: 48%;
         }
         .materials-list {
-            margin: 10px 0;
-            padding: 10px;
+            margin: 6px 0;
+            padding: 6px;
             background: #f5f5f5;
             border: 1px solid #ccc;
+            font-size: 10pt;
         }
         .total-box {
             background: #e8f4f8;
             border: 2px solid #0066cc;
-            padding: 15px;
-            margin: 15px 0;
+            padding: 8px;
+            margin: 8px 0;
             text-align: center;
             font-weight: bold;
+            font-size: 11pt;
         }
         .section-number {
             font-weight: bold;
-            margin-right: 5px;
+            margin-right: 3px;
         }
-        body {
-            font-family: 'Times New Roman', serif;
-            font-size: 12pt;
-            line-height: 1.4;
-            margin: 0;
-            padding: 0;
-            color: #000;
+        .signature-line {
+            border-bottom: 1px solid #000;
+            height: 25px;
+            margin: 6px 0;
         }
-        .info-box {
-            border: 2px solid #000;
-            padding: 12px;
-            margin: 5px 0;
-            background: #f9f9f9;
-            border-radius: 3px;
-        }
-        .info-box h3 {
-            font-size: 13pt;
+        .text-center { text-align: center; }
+    </style>
+</head>
+<body data-contractor="${contractorNameForFooter}" data-date="${currentDate}">
+
+    <div class="contract-header">
+        <h1>INDEPENDENT CONTRACTOR AGREEMENT</h1>
+        <p><strong>Contract ID:</strong> CON-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}</p>
+    </div>
+
+    <div class="info-section">
+        <div class="info-box">
+            <h3>CONTRATISTA</h3>
+            <p><strong>${contractorName}</strong></p>
+            <p>${contractorAddress}</p>
+            <p>Teléfono: ${contractorPhone}</p>
+            <p>Email: ${contractorEmail}</p>
+            <p>Licencia: ${contractorLicense}</p>
+        </div>
+        
+        <div class="info-box">
+            <h3>CLIENTE</h3>
+            <p><strong>${contractData.client.name}</strong></p>
+            <p>${contractData.client.address}</p>
+            <p>Teléfono: ${contractData.client.phone || 'N/A'}</p>
+            <p>Email: ${contractData.client.email || 'N/A'}</p>
+        </div>
+    </div>
+
+    <h2>DETALLES DEL PROYECTO</h2>
+    <div class="compact">
+        <p><strong>Descripción:</strong> ${contractData.project.description}</p>
+        <p><strong>Tipo de Proyecto:</strong> ${contractData.project.type || 'Instalación de Cerca'}</p>
+        <p><strong>Fecha de Inicio:</strong> ${contractData.project.startDate || 'Por determinar'}</p>
+        <p><strong>Fecha de Finalización:</strong> ${contractData.project.endDate || 'Por determinar'}</p>
+    </div>
+
+    <h2>TÉRMINOS FINANCIEROS</h2>
+    <div class="total-box">
+        <p><strong>SUBTOTAL:</strong> $${(contractData.financials.subtotal || contractData.financials.total * 0.9).toLocaleString()}</p>
+        <p><strong>IMPUESTOS:</strong> $${(contractData.financials.tax || contractData.financials.total * 0.1).toLocaleString()}</p>
+        <p><strong>TOTAL DEL CONTRATO:</strong> $${contractData.financials.total.toLocaleString()}</p>
+        <p><strong>DEPÓSITO (50%):</strong> $${(contractData.financials.total * 0.5).toLocaleString()}</p>
+        <p><strong>SALDO FINAL:</strong> $${(contractData.financials.total * 0.5).toLocaleString()}</p>
+    </div>
+
+    <h2>TÉRMINOS Y CONDICIONES PRINCIPALES</h2>
+    <div class="compact">
+        <p class="compact"><span class="section-number">1.</span> <strong>PARTES:</strong> Este acuerdo se celebra entre ${contractorName} (el "Contratista") y ${contractData.client.name} (el "Cliente").</p>
+        <p class="compact"><span class="section-number">2.</span> <strong>ALCANCE DEL TRABAJO:</strong> El Contratista proporcionará todos los materiales, mano de obra, equipo y servicios necesarios para ${contractData.project.description}.</p>
+        <p class="compact"><span class="section-number">3.</span> <strong>PRECIO DEL CONTRATO:</strong> El precio total del contrato es de $${contractData.financials.total.toLocaleString()}, pagadero según los términos establecidos.</p>
+        <p class="compact"><span class="section-number">4.</span> <strong>PROGRAMA DE PAGOS:</strong> Depósito inicial de $${(contractData.financials.total * 0.5).toLocaleString()} al firmar. Saldo de $${(contractData.financials.total * 0.5).toLocaleString()} al completar el trabajo.</p>
+        <p class="compact"><span class="section-number">5.</span> <strong>MATERIALES:</strong> Todos los materiales serán de primera calidad y cumplirán con los códigos de construcción locales aplicables.</p>
+    </div>
             font-weight: bold;
             margin: 0 0 8px 0;
             text-transform: uppercase;
