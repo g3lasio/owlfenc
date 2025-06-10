@@ -20,8 +20,8 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   const { logout } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [isToolsExpanded, setIsToolsExpanded] = useState(true);
-  const [isFeaturesExpanded, setIsFeaturesExpanded] = useState(true);
+  const [isToolsExpanded, setIsToolsExpanded] = useState(false);
+  const [isFeaturesExpanded, setIsFeaturesExpanded] = useState(false);
   const [isAccountExpanded, setIsAccountExpanded] = useState(false);
   const { t } = useTranslation(); // Añadimos soporte para traducciones
   const { language } = useLanguage(); // Obtenemos el idioma actual del contexto
