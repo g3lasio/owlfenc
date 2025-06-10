@@ -66,6 +66,39 @@ export class HybridContractGenerator {
   }
 
   /**
+   * Generate professional contract with PDF generation capability
+   */
+  async generateProfessionalContract(contractData: ContractData, options: any = {}): Promise<ContractGenerationResult> {
+    const startTime = Date.now();
+    
+    try {
+      console.log('🤖 [CONTRACT] Iniciando generación profesional de contrato...');
+      
+      // Generate HTML contract
+      const html = await this.generateContractHTML(contractData, options.contractorBranding || {});
+      
+      const generationTime = Date.now() - startTime;
+      
+      return {
+        success: true,
+        html,
+        metadata: {
+          pageCount: this.estimatePageCount(html),
+          generationTime,
+          templateUsed: 'hybrid-optimized'
+        }
+      };
+      
+    } catch (error) {
+      console.error('❌ [CONTRACT] Error en generación profesional:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error desconocido'
+      };
+    }
+  }
+
+  /**
    * Generate contract HTML with real-time preview functionality
    */
   async generateContractHTML(contractData: ContractData, contractorBranding: any = {}): Promise<string> {
@@ -104,16 +137,6 @@ export class HybridContractGenerator {
     // Calculate dynamic section numbering based on selected clauses
     const numSelectedClauses = contractData.protections?.length || 0;
     
-    const insuranceSection = 6 + numSelectedClauses;
-    const forceMajeureSection = insuranceSection + 2;
-    const liabilitySection = forceMajeureSection + 3;
-    const terminationSection = liabilitySection + 3;
-    const warrantySection = terminationSection + 3;
-    const independentSection = warrantySection + 3;
-    const disputeSection = independentSection + 2;
-    const complianceSection = disputeSection + 3;
-    const generalSection = complianceSection + 2;
-
     // Use personalized contractor branding
     const contractorName = contractorBranding.companyName || contractData.contractor.name || 'Contractor';
     const contractorAddress = contractorBranding.address || contractData.contractor.address || '';
@@ -151,6 +174,7 @@ export class HybridContractGenerator {
                 color: #666;
             }
         }
+        
         body {
             font-family: 'Times New Roman', serif;
             font-size: 11pt;
@@ -158,247 +182,171 @@ export class HybridContractGenerator {
             margin: 0;
             padding: 0;
             color: #000;
+            background: white;
         }
-        .info-section {
-            display: flex;
-            width: 100%;
-            margin: 6px 0;
-            gap: 12px;
-        }
-        .info-box {
-            border: 2px solid #000;
-            padding: 8px;
-            background: #f8f8f8;
-            flex: 1;
-            min-height: 70px;
-        }
-        .info-box h3 {
-            margin: 0 0 4px 0;
-            font-size: 12pt;
-            font-weight: bold;
-            text-decoration: underline;
-        }
-        .info-box p {
-            margin: 2px 0;
-            font-size: 10pt;
-            line-height: 1.2;
-        }
-        .signature-box {
-            border: 2px solid #000;
-            padding: 12px;
-            margin: 8px 0;
-            background: #f8f8f8;
-            min-height: 60px;
-        }
-        .material-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 6px 0;
-            font-size: 10pt;
-        }
-        .material-table th {
-            border: 1px solid #000;
-            padding: 4px;
-            background: #e8e8e8;
-            font-weight: bold;
-            text-align: left;
-        }
-        .material-table td {
-            border: 1px solid #000;
-            padding: 3px;
-            text-align: left;
-        }
-        .page-break { page-break-before: always; }
-        .no-break { page-break-inside: avoid; }
-        h1 { 
-            font-size: 16pt; 
-            margin: 8px 0 12px 0; 
-            text-align: center; 
-            font-weight: bold;
-            text-decoration: underline;
-        }
-        h2 { 
-            font-size: 13pt; 
-            margin: 10px 0 6px 0; 
-            font-weight: bold;
-            text-decoration: underline;
-        }
-        h3 { 
-            font-size: 12pt; 
-            margin: 8px 0 4px 0; 
-            font-weight: bold;
-        }
-        p { 
-            margin: 4px 0; 
-            text-align: justify;
-            font-size: 11pt;
-            line-height: 1.3;
-        }
+        
         .compact {
             margin: 2px 0;
-            line-height: 1.2;
+            padding: 0;
         }
-        .contract-header {
-            text-align: center;
-            margin-bottom: 15px;
+        
+        p.compact {
+            margin: 3px 0 4px 0;
+            padding: 0;
+            text-align: justify;
         }
-        .total-box {
-            background: #e8f4f8;
-            border: 2px solid #0066cc;
-            padding: 8px;
-            margin: 8px 0;
-            text-align: center;
+        
+        h1 {
+            font-size: 16pt;
             font-weight: bold;
-            font-size: 11pt;
+            text-align: center;
+            margin: 8px 0 12px 0;
+            text-transform: uppercase;
         }
+        
+        h2 {
+            font-size: 13pt;
+            font-weight: bold;
+            margin: 10px 0 6px 0;
+            text-transform: uppercase;
+        }
+        
         .section-number {
             font-weight: bold;
-            margin-right: 3px;
+            margin-right: 4px;
         }
-        .signature-line {
-            border-bottom: 1px solid #000;
-            height: 25px;
+        
+        .signature-section {
+            margin-top: 25px;
+            page-break-inside: avoid;
+        }
+        
+        .signature-box {
+            border: 1px solid #000;
+            padding: 8px;
+            margin: 8px 0;
+            min-height: 60px;
+        }
+        
+        .two-column {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+        }
+        
+        .column {
+            flex: 1;
+        }
+        
+        .financial-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 8px 0;
+        }
+        
+        .financial-table td {
+            padding: 4px 8px;
+            border: 1px solid #ccc;
+            font-size: 10pt;
+        }
+        
+        .highlight {
+            background-color: #f5f5f5;
+            padding: 6px;
+            border-left: 3px solid #333;
             margin: 6px 0;
         }
-        .text-center { text-align: center; }
     </style>
 </head>
 <body>
 
-    <div class="contract-header">
-        <h1>INDEPENDENT CONTRACTOR AGREEMENT</h1>
-        <p><strong>Contract ID:</strong> CON-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}</p>
-    </div>
+    <h1>ACUERDO DE CONTRATISTA INDEPENDIENTE PROFESIONAL</h1>
 
-    <div class="info-section">
-        <div class="info-box">
-            <h3>CONTRATISTA</h3>
-            <p><strong>${contractorName}</strong></p>
-            <p>${contractorAddress}</p>
-            <p>Teléfono: ${contractorPhone}</p>
-            <p>Email: ${contractorEmail}</p>
-            <p>Licencia: ${contractorLicense}</p>
-        </div>
-        
-        <div class="info-box">
-            <h3>CLIENTE</h3>
-            <p><strong>${contractData.client.name}</strong></p>
-            <p>${contractData.client.address}</p>
-            <p>Teléfono: ${contractData.client.phone || 'N/A'}</p>
-            <p>Email: ${contractData.client.email || 'N/A'}</p>
-        </div>
-    </div>
-
-    <h2>DETALLES DEL PROYECTO</h2>
     <div class="compact">
-        <p><strong>Descripción:</strong> ${contractData.project.description}</p>
-        <p><strong>Tipo de Proyecto:</strong> ${contractData.project.type || 'Instalación de Cerca'}</p>
-        <p><strong>Fecha de Inicio:</strong> ${contractData.project.startDate || 'Por determinar'}</p>
-        <p><strong>Fecha de Finalización:</strong> ${contractData.project.endDate || 'Por determinar'}</p>
+        <p class="compact"><strong>FECHA:</strong> ${new Date().toLocaleDateString('es-ES')}</p>
+        <p class="compact"><strong>ENTRE:</strong> ${contractData.client.name} ("Cliente") y ${contractorName} ("Contratista")</p>
     </div>
 
-    <h2>TÉRMINOS FINANCIEROS</h2>
-    <div class="total-box">
-        <p><strong>SUBTOTAL:</strong> $${(contractData.financials.subtotal || contractData.financials.total * 0.9).toLocaleString()}</p>
-        <p><strong>IMPUESTOS:</strong> $${(contractData.financials.tax || contractData.financials.total * 0.1).toLocaleString()}</p>
-        <p><strong>TOTAL DEL CONTRATO:</strong> $${contractData.financials.total.toLocaleString()}</p>
-        <p><strong>DEPÓSITO (50%):</strong> $${(contractData.financials.total * 0.5).toLocaleString()}</p>
-        <p><strong>SALDO FINAL:</strong> $${(contractData.financials.total * 0.5).toLocaleString()}</p>
+    <h2>1. INFORMACIÓN DE LAS PARTES</h2>
+    <div class="two-column">
+        <div class="column">
+            <p class="compact"><strong>CLIENTE:</strong></p>
+            <p class="compact">Nombre: ${contractData.client.name}</p>
+            <p class="compact">Dirección: ${contractData.client.address}</p>
+            ${contractData.client.phone ? `<p class="compact">Teléfono: ${contractData.client.phone}</p>` : ''}
+            ${contractData.client.email ? `<p class="compact">Email: ${contractData.client.email}</p>` : ''}
+        </div>
+        <div class="column">
+            <p class="compact"><strong>CONTRATISTA:</strong></p>
+            <p class="compact">Nombre: ${contractorName}</p>
+            ${contractorAddress ? `<p class="compact">Dirección: ${contractorAddress}</p>` : ''}
+            ${contractorPhone ? `<p class="compact">Teléfono: ${contractorPhone}</p>` : ''}
+            ${contractorEmail ? `<p class="compact">Email: ${contractorEmail}</p>` : ''}
+            ${contractorLicense ? `<p class="compact">Licencia: ${contractorLicense}</p>` : ''}
+        </div>
     </div>
 
-    <h2>TÉRMINOS Y CONDICIONES PRINCIPALES</h2>
-    <div class="compact">
-        <p class="compact"><span class="section-number">1.</span> <strong>PARTES:</strong> Este acuerdo se celebra entre ${contractorName} (el "Contratista") y ${contractData.client.name} (el "Cliente").</p>
-        <p class="compact"><span class="section-number">2.</span> <strong>ALCANCE DEL TRABAJO:</strong> El Contratista proporcionará todos los materiales, mano de obra, equipo y servicios necesarios para ${contractData.project.description}.</p>
-        <p class="compact"><span class="section-number">3.</span> <strong>PRECIO DEL CONTRATO:</strong> El precio total del contrato es de $${contractData.financials.total.toLocaleString()}, pagadero según los términos establecidos.</p>
-        <p class="compact"><span class="section-number">4.</span> <strong>PROGRAMA DE PAGOS:</strong> Depósito inicial de $${(contractData.financials.total * 0.5).toLocaleString()} al firmar. Saldo de $${(contractData.financials.total * 0.5).toLocaleString()} al completar el trabajo.</p>
-        <p class="compact"><span class="section-number">5.</span> <strong>MATERIALES:</strong> Todos los materiales serán de primera calidad y cumplirán con los códigos de construcción locales aplicables.</p>
-    </div>
+    <h2>2. DESCRIPCIÓN DEL TRABAJO</h2>
+    <p class="compact"><strong>Tipo de Proyecto:</strong> ${contractData.project.type}</p>
+    <p class="compact"><strong>Descripción:</strong> ${contractData.project.description}</p>
+    <p class="compact"><strong>Ubicación:</strong> ${contractData.project.location || contractData.client.address}</p>
 
-    <!-- Selected Defense Clauses -->
+    <h2>3. TÉRMINOS FINANCIEROS</h2>
+    <table class="financial-table">
+        <tr>
+            <td><strong>Subtotal:</strong></td>
+            <td>$${(contractData.financials.subtotal || contractData.financials.total).toLocaleString()}</td>
+        </tr>
+        ${contractData.financials.tax ? `
+        <tr>
+            <td><strong>Impuestos:</strong></td>
+            <td>$${contractData.financials.tax.toLocaleString()}</td>
+        </tr>` : ''}
+        <tr>
+            <td><strong>TOTAL:</strong></td>
+            <td><strong>$${contractData.financials.total.toLocaleString()}</strong></td>
+        </tr>
+    </table>
+
+    <h2>4. CRONOGRAMA</h2>
+    <p class="compact"><strong>Fecha de Inicio:</strong> ${contractData.project.startDate || 'Por determinar'}</p>
+    <p class="compact"><strong>Fecha de Finalización:</strong> ${contractData.project.endDate || 'Por determinar'}</p>
+
+    <h2>5. TÉRMINOS Y CONDICIONES GENERALES</h2>
+    <p class="compact"><span class="section-number">5.1.</span> <strong>TRABAJO:</strong> El Contratista realizará todos los trabajos descritos en este acuerdo de manera profesional y de acuerdo con los estándares de la industria.</p>
+    <p class="compact"><span class="section-number">5.2.</span> <strong>MATERIALES:</strong> Todos los materiales serán de calidad comercial estándar o superior, según se especifique en este acuerdo.</p>
+    <p class="compact"><span class="section-number">5.3.</span> <strong>PERMISOS:</strong> El Contratista obtendrá todos los permisos necesarios para realizar el trabajo.</p>
+
     ${selectedClausesHtml}
 
-    <h2>SEGURO Y RESPONSABILIDAD</h2>
-    <div class="compact">
-        <p class="compact"><span class="section-number">${insuranceSection}.</span> <strong>SEGURO DE RESPONSABILIDAD GENERAL:</strong> El Contratista mantendrá un seguro de responsabilidad general comercial con límites mínimos de $1,000,000 por incidente y $2,000,000 agregado anual.</p>
-        <p class="compact"><span class="section-number">${insuranceSection + 1}.</span> <strong>SEGURO DE COMPENSACIÓN LABORAL:</strong> El Contratista proporcionará cobertura de compensación laboral según los requisitos estatales para todos los empleados y subcontratistas.</p>
-    </div>
+    <h2>${6 + numSelectedClauses}. SEGUROS Y LICENCIAS</h2>
+    <p class="compact">El Contratista mantendrá seguro de responsabilidad civil general y seguro de compensación laboral según sea requerido por la ley.</p>
 
-    <h2>FUERZA MAYOR</h2>
-    <div class="compact">
-        <p class="compact"><span class="section-number">${forceMajeureSection}.</span> <strong>EVENTOS DE FUERZA MAYOR:</strong> Ninguna de las partes será responsable por demoras o incumplimientos causados por actos de Dios, guerra, terrorismo, disturbios civiles, huelgas, epidemias, regulaciones gubernamentales, incendios, inundaciones u otras causas fuera del control razonable de las partes.</p>
-        <p class="compact"><span class="section-number">${forceMajeureSection + 1}.</span> <strong>NOTIFICACIÓN:</strong> La parte afectada notificará por escrito a la otra parte dentro de los 7 días del evento de fuerza mayor.</p>
-        <p class="compact"><span class="section-number">${forceMajeureSection + 2}.</span> <strong>MITIGACIÓN:</strong> Las partes harán esfuerzos razonables para mitigar los efectos de cualquier evento de fuerza mayor.</p>
-    </div>
+    <h2>${8 + numSelectedClauses}. FUERZA MAYOR</h2>
+    <p class="compact">Ninguna de las partes será responsable por retrasos causados por circunstancias fuera de su control razonable.</p>
 
-    <div class="page-break"></div>
-    
-    <h2>LIMITACIÓN DE RESPONSABILIDAD</h2>
-    <div class="compact">
-        <p class="compact"><span class="section-number">${liabilitySection}.</span> <strong>LÍMITE DE RESPONSABILIDAD:</strong> La responsabilidad total del Contratista bajo este acuerdo no excederá el monto total del contrato.</p>
-        <p class="compact"><span class="section-number">${liabilitySection + 1}.</span> <strong>EXCLUSIÓN DE DAÑOS CONSECUENCIALES:</strong> En ningún caso el Contratista será responsable por daños indirectos, incidentales, especiales o consecuenciales.</p>
-        <p class="compact"><span class="section-number">${liabilitySection + 2}.</span> <strong>RECUPERACIÓN DE HONORARIOS LEGALES:</strong> En caso de disputa legal, la parte prevaleciente tendrá derecho a recuperar todos los honorarios razonables de abogados, costos de testigos expertos y gastos incurridos.</p>
-    </div>
+    <h2>${10 + numSelectedClauses}. RESOLUCIÓN DE DISPUTAS</h2>
+    <p class="compact">Cualquier disputa se resolverá mediante arbitraje vinculante bajo las reglas de la Asociación Americana de Arbitraje.</p>
 
-    <h2>TERMINACIÓN</h2>
-    <div class="compact">
-        <p class="compact"><span class="section-number">${terminationSection}.</span> <strong>TERMINACIÓN POR CONVENIENCIA:</strong> Cualquier parte puede terminar este acuerdo con 30 días de aviso previo por escrito.</p>
-        <p class="compact"><span class="section-number">${terminationSection + 1}.</span> <strong>TERMINACIÓN POR CAUSA:</strong> Este acuerdo puede ser terminado inmediatamente por incumplimiento material que no sea curado dentro de 10 días después del aviso escrito.</p>
-        <p class="compact"><span class="section-number">${terminationSection + 2}.</span> <strong>EFECTOS DE LA TERMINACIÓN:</strong> Al terminar, el Cliente pagará por todo el trabajo completado satisfactoriamente hasta la fecha de terminación.</p>
-    </div>
-
-    <h2>GARANTÍA</h2>
-    <div class="compact">
-        <p class="compact"><span class="section-number">${warrantySection}.</span> <strong>GARANTÍA DE MANO DE OBRA:</strong> El Contratista garantiza que toda la mano de obra estará libre de defectos por un período de 2 años desde la finalización.</p>
-        <p class="compact"><span class="section-number">${warrantySection + 1}.</span> <strong>GARANTÍA DE MATERIALES:</strong> Los materiales estarán cubiertos por las garantías del fabricante, las cuales serán transferidas al Cliente.</p>
-        <p class="compact"><span class="section-number">${warrantySection + 2}.</span> <strong>EXCLUSIONES DE GARANTÍA:</strong> Las garantías no cubren daños causados por uso indebido, negligencia, alteraciones no autorizadas o desgaste normal.</p>
-    </div>
-
-    <h2>CONTRATISTA INDEPENDIENTE</h2>
-    <div class="compact">
-        <p class="compact"><span class="section-number">${independentSection}.</span> <strong>RELACIÓN INDEPENDIENTE:</strong> El Contratista es un contratista independiente y no un empleado del Cliente. El Contratista es responsable de todos los impuestos, seguro social y otros beneficios.</p>
-        <p class="compact"><span class="section-number">${independentSection + 1}.</span> <strong>CONTROL:</strong> El Contratista mantendrá control exclusivo sobre los métodos y medios de realizar el trabajo, sujeto a los resultados especificados en este acuerdo.</p>
-    </div>
-
-    <h2>RESOLUCIÓN DE DISPUTAS</h2>
-    <div class="compact">
-        <p class="compact"><span class="section-number">${disputeSection}.</span> <strong>MEDIACIÓN OBLIGATORIA:</strong> Las partes primero intentarán resolver cualquier disputa a través de mediación con un mediador mutuamente acordado.</p>
-        <p class="compact"><span class="section-number">${disputeSection + 1}.</span> <strong>ARBITRAJE VINCULANTE:</strong> Si la mediación falla, las disputas serán resueltas a través de arbitraje vinculante bajo las reglas de la Asociación Americana de Arbitraje.</p>
-        <p class="compact"><span class="section-number">${disputeSection + 2}.</span> <strong>HONORARIOS DE ABOGADOS:</strong> La parte prevaleciente tendrá derecho a recuperar todos los honorarios razonables de abogados, honorarios de testigos expertos y costos incurridos, ya sea que se inicie o no el litigio.</p>
-    </div>
-
-    <h2>CUMPLIMIENTO LEGAL DE CALIFORNIA</h2>
-    <div class="compact">
-        <p class="compact"><span class="section-number">${complianceSection}.</span> <strong>AVISO DE DERECHO DE CANCELACIÓN:</strong> Bajo la ley de California, el Cliente tiene derecho a cancelar este contrato dentro de tres (3) días hábiles después de firmarlo proporcionando aviso escrito al Contratista. Tras la cancelación oportuna, los pagos serán reembolsados dentro de diez (10) días, menos los costos de materiales específicamente ordenados para este proyecto.</p>
-        <p class="compact"><span class="section-number">${complianceSection + 1}.</span> <strong>AVISO DE GRAVAMEN MECÁNICO:</strong> Bajo el Código Civil de California Sección 8200, el Contratista por este medio proporciona aviso del derecho a presentar un gravamen mecánico sobre la Propiedad por montos impagos. Este Acuerdo sirve como el aviso preliminar requerido por ley.</p>
-    </div>
-
-    <h2>DISPOSICIONES GENERALES</h2>
-    <div class="compact">
-        <p class="compact"><span class="section-number">${generalSection}.</span> <strong>DIVISIBILIDAD:</strong> Si cualquier disposición de este Acuerdo se considera inválida o inaplicable, el resto de este Acuerdo permanecerá en pleno vigor y efecto.</p>
-        <p class="compact"><span class="section-number">${generalSection + 1}.</span> <strong>ACUERDO COMPLETO:</strong> Este Acuerdo constituye el acuerdo completo entre las partes y reemplaza todas las negociaciones, representaciones o acuerdos previos relacionados con el tema aquí tratado. Este Acuerdo solo puede ser modificado por instrumento escrito firmado por ambas partes.</p>
-        <p class="compact"><span class="section-number">${generalSection + 2}.</span> <strong>AVISOS:</strong> Todos los avisos requeridos bajo este Acuerdo serán por escrito y entregados a las direcciones establecidas arriba por correo certificado, entrega personal o correo electrónico con confirmación de entrega.</p>
-    </div>
-
-    <div class="page-break"></div>
-    
-    <h2>FIRMAS</h2>
-    <p>Este Acuerdo ha sido ejecutado en las fechas establecidas a continuación.</p>
-    
-    <div style="display: flex; gap: 20px; margin-top: 20px;">
-        <div class="signature-box" style="flex: 1;">
-            <h4>CLIENTE:</h4>
-            <div class="signature-line"></div>
-            <p><strong>${contractData.client.name}</strong></p>
-            <p>Fecha: _______________</p>
-        </div>
-
-        <div class="signature-box" style="flex: 1;">
-            <h4>CONTRATISTA:</h4>
-            <div class="signature-line"></div>
-            <p><strong>${contractorName}</strong></p>
-            <p>Licencia #: ${contractorLicense}</p>
-            <p>Fecha: _______________</p>
+    <div class="signature-section">
+        <h2>FIRMAS</h2>
+        <div class="two-column">
+            <div class="column">
+                <div class="signature-box">
+                    <p class="compact"><strong>CLIENTE:</strong></p>
+                    <p class="compact">Firma: _________________________</p>
+                    <p class="compact">Nombre: ${contractData.client.name}</p>
+                    <p class="compact">Fecha: _________________________</p>
+                </div>
+            </div>
+            <div class="column">
+                <div class="signature-box">
+                    <p class="compact"><strong>CONTRATISTA:</strong></p>
+                    <p class="compact">Firma: _________________________</p>
+                    <p class="compact">Nombre: ${contractorName}</p>
+                    <p class="compact">Fecha: _________________________</p>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -408,6 +356,16 @@ export class HybridContractGenerator {
 
 </body>
 </html>`;
+  }
+
+  /**
+   * Estimate page count based on content length
+   */
+  private estimatePageCount(html: string): number {
+    // Estimate based on content length and average characters per page
+    const contentLength = html.replace(/<[^>]*>/g, '').length;
+    const avgCharsPerPage = 2500; // Compact design allows more content per page
+    return Math.max(1, Math.ceil(contentLength / avgCharsPerPage));
   }
 }
 
