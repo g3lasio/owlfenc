@@ -188,6 +188,30 @@ export class HybridContractGenerator {
   }
 
   /**
+   * Genera HTML del contrato para preview (método público)
+   */
+  async generateContractHTML(contractData: any): Promise<string> {
+    try {
+      console.log('📋 [PREVIEW] Generando HTML del contrato para preview...');
+      
+      // Usar el generador híbrido con datos por defecto para el contratista
+      const defaultContractorBranding = {
+        companyName: contractData.contractor?.name || 'Professional Contractor',
+        address: contractData.contractor?.address || '',
+        phone: contractData.contractor?.phone || '',
+        email: contractData.contractor?.email || '',
+        licenseNumber: contractData.contractor?.license || ''
+      };
+
+      return this.generateEnhancedFallbackHTML(contractData, defaultContractorBranding);
+      
+    } catch (error) {
+      console.error('Error generando preview HTML:', error);
+      return this.generateFallbackHTML(contractData);
+    }
+  }
+
+  /**
    * Claude genera HTML inteligente y personalizado
    */
   private async generateIntelligentHTML(request: ContractGenerationRequest, contractorBranding: any): Promise<string> {
@@ -245,8 +269,8 @@ FORMATO REQUERIDO:
 
     const firstBlock = response.content[0];
     if (firstBlock && firstBlock.type === 'text') {
-      console.log('🎯 [CLAUDE] HTML generado:', firstBlock.text.length, 'caracteres');
-      return firstBlock.text;
+      console.log('🎯 [CLAUDE] HTML generado:', (firstBlock as any).text.length, 'caracteres');
+      return (firstBlock as any).text;
     }
     
     console.warn('⚠️ [CLAUDE] Respuesta inválida, usando template de respaldo');
@@ -855,6 +879,120 @@ FORMATO REQUERIDO:
     <div class="footer">
         <p>© ${new Date().getFullYear()} ${contractorName} - All Rights Reserved</p>
     </div>
+</body>
+</html>`;
+  }
+
+  /**
+   * Genera HTML básico de fallback para preview
+   */
+  private generateBasicFallbackHTML(contractData: any): string {
+    const currentDate = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Independent Contractor Agreement</title>
+    <style>
+        body {
+            font-family: 'Times New Roman', serif;
+            font-size: 12px;
+            line-height: 1.6;
+            margin: 20px;
+            color: #000;
+        }
+        .header {
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+        }
+        .parties {
+            display: flex;
+            justify-content: space-between;
+            margin: 30px 0;
+            border: 1px solid #000;
+            padding: 20px;
+        }
+        .party {
+            flex: 1;
+            text-align: center;
+        }
+        .party-title {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .section {
+            margin: 25px 0;
+        }
+        .section-title {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        .clause {
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        INDEPENDENT CONTRACTOR AGREEMENT
+    </div>
+
+    <p>THIS INDEPENDENT CONTRACTOR AGREEMENT is dated this ${currentDate}.</p>
+
+    <div class="parties">
+        <div class="party">
+            <div class="party-title">CLIENT</div>
+            <div>${contractData.client?.name || 'Client Name'}</div>
+            <div>${contractData.client?.address || 'Client Address'}</div>
+            ${contractData.client?.email ? `<div>${contractData.client.email}</div>` : ''}
+            ${contractData.client?.phone ? `<div>${contractData.client.phone}</div>` : ''}
+        </div>
+        <div class="party">
+            <div class="party-title">CONTRACTOR</div>
+            <div>${contractData.contractor?.name || 'Contractor Name'}</div>
+            <div>${contractData.contractor?.address || 'Contractor Address'}</div>
+            ${contractData.contractor?.email ? `<div>${contractData.contractor.email}</div>` : ''}
+            ${contractData.contractor?.phone ? `<div>${contractData.contractor.phone}</div>` : ''}
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">SERVICES PROVIDED</div>
+        <div class="clause">
+            The Contractor agrees to provide the following services:
+            ${contractData.project?.description || 'Construction services as specified'}
+            at ${contractData.project?.location || 'Project location'}
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">COMPENSATION</div>
+        <div class="clause">
+            Total contract amount: $${contractData.financials?.total?.toFixed(2) || '0.00'}
+        </div>
+    </div>
+
+    ${contractData.protections && contractData.protections.length > 0 ? `
+    <div class="section">
+        <div class="section-title">LEGAL PROTECTIONS</div>
+        ${contractData.protections.slice(0, 3).map((protection: any) => `
+            <div class="clause">${protection.category}: ${protection.clause}</div>
+        `).join('')}
+    </div>
+    ` : ''}
+
 </body>
 </html>`;
   }

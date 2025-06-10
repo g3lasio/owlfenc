@@ -69,12 +69,12 @@ router.post('/preview', async (req, res) => {
       html: contractHtml
     });
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error generando preview del contrato:', error);
     res.status(500).json({
       success: false,
       error: 'Error interno del servidor',
-      details: error.message
+      details: error?.message || 'Error desconocido'
     });
   }
 });

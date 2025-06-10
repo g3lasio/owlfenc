@@ -496,7 +496,7 @@ export default function CyberpunkLegalDefense() {
           address: profile?.address || '',
           email: profile?.email || '',
           phone: profile?.phone || '',
-          license: profile?.licenseNumber || ''
+          license: profile?.license || ''
         },
         project: {
           type: extractedData.projectDetails?.type || extractedData.projectType || '',
