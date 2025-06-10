@@ -94,6 +94,40 @@ export class HybridContractGenerator {
   }
 
   /**
+   * Genera HTML para las cláusulas seleccionadas por el usuario
+   */
+  private generateSelectedClausesHTML(selectedProtections: any[], startingSectionNumber: number): string {
+    if (!selectedProtections || selectedProtections.length === 0) {
+      // Fallback con cláusulas básicas si no hay selecciones específicas
+      return `
+        <p class="compact"><span class="section-number">${startingSectionNumber}.</span> <strong>PERFECTED LIEN RIGHTS:</strong> Contractor hereby provides notice of intent to file mechanics lien and may record a Notice of Right to Lien immediately upon commencement of work. This notice satisfies all preliminary notice requirements under California Civil Code Section 8200 et seq.</p>
+        <p class="compact"><span class="section-number">${startingSectionNumber + 1}.</span> <strong>ATTORNEY FEES AND COSTS:</strong> In any dispute, litigation, or collection action, the prevailing party shall be entitled to recover all attorney fees, court costs, and collection expenses from the non-prevailing party, regardless of whether suit is filed.</p>
+        <p class="compact"><span class="section-number">${startingSectionNumber + 2}.</span> <strong>JURISDICTION AND VENUE:</strong> Any legal proceedings arising from this Agreement shall be filed exclusively in the Superior Court of the county where Contractor maintains its principal place of business. Client waives any objection to venue or jurisdiction.</p>
+      `;
+    }
+
+    console.log(`🎯 [CLAUSE-GENERATION] Usando ${selectedProtections.length} cláusulas seleccionadas por el usuario`);
+    
+    let clauseHTML = '';
+    let sectionNumber = startingSectionNumber;
+    
+    // Generar HTML para cada cláusula seleccionada
+    selectedProtections.forEach((protection) => {
+      const clauseTitle = protection.subcategory || protection.category || 'LEGAL PROTECTION';
+      const clauseText = protection.clause || 'Legal protection clause to be specified.';
+      
+      clauseHTML += `
+        <p class="compact"><span class="section-number">${sectionNumber}.</span> <strong>${clauseTitle.toUpperCase()}:</strong> ${clauseText}</p>
+      `;
+      
+      sectionNumber++;
+    });
+    
+    console.log(`✅ [CLAUSE-GENERATION] Generadas ${selectedProtections.length} cláusulas personalizadas del usuario`);
+    return clauseHTML;
+  }
+
+  /**
    * Genera contrato completo usando Claude + PDF-lib
    */
   async generateProfessionalContract(request: ContractGenerationRequest): Promise<ContractGenerationResult> {
@@ -697,15 +731,10 @@ FORMATO REQUERIDO:
     <p class="compact"><span class="section-number">15.</span> <strong>MATERIAL ESCALATION:</strong> Material prices are subject to adjustment based on supplier price changes occurring after contract execution. Price increases become effective immediately upon notification to Client.</p>
 
     <h2>ENHANCED LEGAL PROTECTIONS</h2>
-    <p class="compact"><span class="section-number">16.</span> <strong>PERFECTED LIEN RIGHTS:</strong> Contractor hereby provides notice of intent to file mechanics lien and may record a Notice of Right to Lien immediately upon commencement of work. This notice satisfies all preliminary notice requirements under California Civil Code Section 8200 et seq.</p>
-    <p class="compact"><span class="section-number">17.</span> <strong>ATTORNEY FEES AND COSTS:</strong> In any dispute, litigation, or collection action, the prevailing party shall be entitled to recover all attorney fees, court costs, and collection expenses from the non-prevailing party, regardless of whether suit is filed.</p>
-    <p class="compact"><span class="section-number">18.</span> <strong>JURISDICTION AND VENUE:</strong> Any legal proceedings arising from this Agreement shall be filed exclusively in the Superior Court of the county where Contractor maintains its principal place of business. Client waives any objection to venue or jurisdiction.</p>
+    ${this.generateSelectedClausesHTML(contractData.protections || [], 16)}
 
     <h2>INSURANCE REQUIREMENTS</h2>
-    <p class="compact"><span class="section-number">19.</span> Contractor shall maintain and provide proof of the following insurance coverage:</p>
-    <p class="compact">a) General Liability Insurance: Minimum $1,000,000 per occurrence</p>
-    <p class="compact">b) Workers' Compensation Insurance as required by California law</p>
-    <p class="compact">c) Certificate of Insurance must be provided before work commences</p>
+    ${this.generateInsuranceSection(contractData.protections || [], 16)}
 
     <h2>FORCE MAJEURE AND DELAY COMPENSATION</h2>
     <p class="compact"><span class="section-number">20.</span> <strong>COVERED EVENTS:</strong> Force majeure events include but are not limited to: weather conditions preventing safe work (precipitation >0.1", wind >25mph, temperature <40°F or >95°F), material shortages, supply chain disruptions, labor strikes, governmental actions, utility company delays, and any event beyond Contractor's reasonable control.</p>
