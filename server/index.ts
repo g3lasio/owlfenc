@@ -71,10 +71,8 @@ console.log('🐒 [PDFMONKEY] Template específico de estimados registrado en /a
 
 // 🤖 Registrar sistema inteligente de contratos
 app.use('/api/anthropic', anthropicContractRoutes);
-app.use('/api/contracts', contractRoutes);
 app.use('/api/legal-defense', legalDefenseRoutes);
 console.log('🤖 [ANTHROPIC] Sistema inteligente de contratos registrado en /api/anthropic/generate-contract');
-console.log('📄 [CONTRACTS] API de contratos registrada en /api/contracts');
 
 // 🔧 Registrar rutas principales (incluye AI enhancement y DeepSearch)
 registerRoutes(app);
