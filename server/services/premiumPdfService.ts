@@ -92,59 +92,37 @@ class PremiumPdfService {
                 padding-bottom: 80px;
             }
             
-            /* Premium Header Card */
-            .header-card {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                padding: 30px;
-                border-radius: 12px;
-                box-shadow: 0 8px 32px rgba(102, 126, 234, 0.15);
-                margin-bottom: 40px;
+            /* Professional Legal Header */
+            .header-section {
+                border-bottom: 3px solid #000000;
+                padding-bottom: 20px;
+                margin-bottom: 30px;
                 text-align: center;
-                position: relative;
-                overflow: hidden;
-            }
-            
-            .header-card::before {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.05"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.05"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-                pointer-events: none;
             }
             
             .contract-title {
-                font-size: 24pt;
-                font-weight: 700;
+                font-size: 18pt;
+                font-weight: bold;
                 text-transform: uppercase;
-                letter-spacing: 3px;
-                margin-bottom: 8px;
-                position: relative;
-                z-index: 1;
+                letter-spacing: 1px;
+                margin-bottom: 10px;
+                color: #000000;
             }
             
             .contract-subtitle {
-                font-size: 14pt;
-                font-weight: 400;
-                opacity: 0.9;
-                margin-bottom: 20px;
-                position: relative;
-                z-index: 1;
+                font-size: 12pt;
+                font-weight: normal;
+                margin-bottom: 15px;
+                color: #333333;
             }
             
             .contract-date {
-                font-size: 12pt;
-                font-weight: 500;
-                position: relative;
-                z-index: 1;
-                padding: 8px 16px;
-                background: rgba(255, 255, 255, 0.15);
-                border-radius: 20px;
+                font-size: 11pt;
+                font-weight: normal;
+                color: #000000;
+                border: 1px solid #000000;
+                padding: 8px 15px;
                 display: inline-block;
-                backdrop-filter: blur(10px);
             }
             
             /* Premium Information Cards */
@@ -156,120 +134,94 @@ class PremiumPdfService {
             }
             
             .party-card {
-                background: rgba(255, 255, 255, 0.8);
-                backdrop-filter: blur(20px);
-                border: 1px solid rgba(102, 126, 234, 0.1);
-                border-radius: 16px;
-                padding: 24px;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-                transition: all 0.3s ease;
-                position: relative;
-                overflow: hidden;
-            }
-            
-            .party-card::before {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                height: 4px;
-                background: linear-gradient(90deg, #667eea, #764ba2);
-                border-radius: 16px 16px 0 0;
+                background: white;
+                border: 2px solid #000000;
+                padding: 20px;
+                margin-bottom: 20px;
+                page-break-inside: avoid;
             }
             
             .party-label {
-                font-size: 14pt;
-                font-weight: 700;
+                font-size: 12pt;
+                font-weight: bold;
                 text-transform: uppercase;
-                letter-spacing: 1px;
-                color: #667eea;
-                margin-bottom: 16px;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-            
-            .party-label::before {
-                content: '';
-                width: 8px;
-                height: 8px;
-                background: #667eea;
-                border-radius: 50%;
+                letter-spacing: 0.5px;
+                color: #000000;
+                margin-bottom: 15px;
+                border-bottom: 1px solid #000000;
+                padding-bottom: 5px;
             }
             
             .party-name {
-                font-size: 16pt;
-                font-weight: 600;
-                color: #1a1a1a;
-                margin-bottom: 12px;
+                font-size: 14pt;
+                font-weight: bold;
+                color: #000000;
+                margin-bottom: 10px;
             }
             
             .party-details {
-                color: #4a5568;
-                line-height: 1.6;
+                color: #333333;
+                line-height: 1.5;
+                font-size: 11pt;
             }
             
             .party-details div {
-                margin-bottom: 4px;
+                margin-bottom: 3px;
             }
             
-            /* Content Sections */
+            /* Legal Content Sections */
             .section-card {
                 background: white;
-                border-radius: 12px;
-                padding: 24px;
-                margin-bottom: 24px;
-                box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-                border: 1px solid rgba(0, 0, 0, 0.05);
+                border: 1px solid #000000;
+                padding: 20px;
+                margin-bottom: 20px;
+                page-break-inside: avoid;
             }
             
             .section-title {
-                font-size: 16pt;
-                font-weight: 700;
-                color: #2d3748;
-                margin-bottom: 16px;
-                padding-bottom: 8px;
-                border-bottom: 2px solid #667eea;
-                display: flex;
-                align-items: center;
-                gap: 12px;
+                font-size: 14pt;
+                font-weight: bold;
+                color: #000000;
+                margin-bottom: 15px;
+                text-transform: uppercase;
+                border-bottom: 1px solid #000000;
+                padding-bottom: 5px;
             }
             
             .section-number {
-                background: linear-gradient(135deg, #667eea, #764ba2);
+                background: #000000;
                 color: white;
-                width: 32px;
-                height: 32px;
-                border-radius: 8px;
-                display: flex;
+                width: 25px;
+                height: 25px;
+                display: inline-flex;
                 align-items: center;
                 justify-content: center;
-                font-weight: 600;
-                font-size: 14pt;
+                font-weight: bold;
+                font-size: 12pt;
+                margin-right: 10px;
             }
             
             .section-content {
-                color: #4a5568;
-                line-height: 1.8;
+                color: #333333;
+                line-height: 1.6;
+                font-size: 11pt;
             }
             
             .section-content p {
-                margin-bottom: 12px;
+                margin-bottom: 10px;
             }
             
             .section-content strong {
-                color: #2d3748;
-                font-weight: 600;
+                color: #000000;
+                font-weight: bold;
             }
             
-            /* Premium Protection Clauses */
+            /* Legal Protection Clauses */
             .clause-card {
-                background: linear-gradient(145deg, #f8fafc, #e2e8f0);
-                border-radius: 12px;
-                padding: 20px;
-                margin-bottom: 16px;
-                border-left: 4px solid #667eea;
+                background: #f9f9f9;
+                border: 1px solid #666666;
+                padding: 15px;
+                margin-bottom: 15px;
                 box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
             }
             
@@ -367,64 +319,30 @@ class PremiumPdfService {
                 display: inline-block;
             }
             
-            /* Premium Footer with Pagination */
+            /* Legal Footer with Page Numbers */
             .footer {
                 position: fixed;
-                bottom: 30px;
+                bottom: 20px;
                 left: 40px;
                 right: 40px;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 16px 24px;
-                background: linear-gradient(135deg, #667eea, #764ba2);
-                color: white;
-                border-radius: 8px;
+                text-align: center;
                 font-size: 10pt;
-                box-shadow: 0 -2px 12px rgba(102, 126, 234, 0.2);
+                color: #000000;
+                border-top: 1px solid #000000;
+                padding-top: 10px;
             }
             
-            .footer-left {
-                display: flex;
-                align-items: center;
-                gap: 8px;
+            .page-counter::before {
+                content: "Page " counter(page) " of " counter(pages);
             }
             
-            .footer-logo {
-                width: 24px;
-                height: 24px;
-                background: white;
-                border-radius: 4px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: 700;
-                color: #667eea;
-                font-size: 12pt;
-            }
-            
-            .footer-text {
-                font-weight: 500;
-            }
-            
-            .footer-right {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-            }
-            
-            .page-number {
-                background: rgba(255, 255, 255, 0.2);
-                padding: 6px 12px;
-                border-radius: 16px;
-                font-weight: 600;
-                backdrop-filter: blur(10px);
-            }
-            
-            .footer-divider {
-                width: 1px;
-                height: 20px;
-                background: rgba(255, 255, 255, 0.3);
+            @page {
+                margin: 1in;
+                @bottom-center {
+                    content: "Page " counter(page) " of " counter(pages);
+                    font-size: 10pt;
+                    color: #000000;
+                }
             }
             
             /* Print Styles */
