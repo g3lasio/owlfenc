@@ -4456,6 +4456,45 @@ Output in English regardless of input language. Make it suitable for contracts a
     }
   });
 
+  // High-Quality PDF Generation
+  app.post('/api/contracts/generate-pdf', async (req, res) => {
+    try {
+      console.log('📄 [API] Starting high-quality PDF generation...');
+      
+      const { professionalPdfService } = await import('./services/professionalPdfService');
+      
+      const contractData = req.body;
+      
+      // Validate required data
+      if (!contractData.client?.name || !contractData.contractor?.name) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required client or contractor information'
+        });
+      }
+      
+      // Generate PDF with professional formatting
+      const pdfBuffer = await professionalPdfService.generatePDF(contractData);
+      
+      // Set headers for PDF download
+      const filename = `Contract_${contractData.client.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      
+      console.log(`✅ [API] High-quality PDF generated: ${pdfBuffer.length} bytes`);
+      res.send(pdfBuffer);
+      
+    } catch (error: any) {
+      console.error('❌ [API] Error generating high-quality PDF:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message || 'PDF generation failed'
+      });
+    }
+  });
+
   // Download generated contract PDF
   app.get('/api/contracts/download/:filename', async (req, res) => {
     try {
