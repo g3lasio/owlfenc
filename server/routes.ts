@@ -4442,31 +4442,47 @@ Output in English regardless of input language. Make it suitable for contracts a
       
       console.log('🎨 [PREMIUM] Using premium service with visual cards...');
       
-      // Use premium service to generate HTML with cards and visual design
+      // Use premium service to generate PDF binary file with cards and visual design
       const { premiumPdfService } = await import('./services/premiumPdfService');
       
-      // Generate premium HTML with cards, borders, and pagination
-      const html = premiumPdfService.generatePremiumContractHTML(contractData);
+      // Generate actual PDF binary file (not HTML)
+      const pdfBuffer = await premiumPdfService.generatePDF(contractData);
       
-      console.log(`✅ [PREMIUM] Contract with VISUAL CARDS generated: ${html.length} characters`);
+      // Set proper headers for PDF download
+      const filename = `Professional_Contract_${contractData.client.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
       
-      res.json({
-        success: true,
-        html: html,
-        metadata: {
-          pageCount: 6,
-          generationTime: '1ms',
-          design: 'premium-cards-borders',
-          visualElements: 'professional cards with borders and shadows'
-        }
-      });
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      
+      console.log(`✅ [PREMIUM] Professional PDF Contract generated: ${pdfBuffer.length} bytes`);
+      res.send(pdfBuffer);
       
     } catch (error: any) {
-      console.error('❌ [PREMIUM] Error in card-based contract generation:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Premium card-based contract generation failed'
-      });
+      console.error('❌ [PREMIUM] Error in PDF contract generation:', error);
+      console.error('❌ [PREMIUM] Full error details:', error.stack);
+      
+      // Try fallback PDF generation without premium features
+      try {
+        console.log('🔄 [PREMIUM] Attempting fallback PDF generation...');
+        const { premiumPdfService } = await import('./services/premiumPdfService');
+        const html = premiumPdfService.generatePremiumContractHTML(contractData);
+        
+        // Return HTML for now if PDF fails, but log the issue
+        console.log('⚠️ [PREMIUM] PDF generation failed, returning HTML as fallback');
+        res.json({
+          success: true,
+          html: html,
+          error: 'PDF generation failed, HTML returned as fallback',
+          originalError: error.message
+        });
+      } catch (fallbackError: any) {
+        console.error('❌ [PREMIUM] Fallback also failed:', fallbackError);
+        res.status(500).json({
+          success: false,
+          error: error.message || 'Premium contract generation completely failed'
+        });
+      }
     }
   });
 
