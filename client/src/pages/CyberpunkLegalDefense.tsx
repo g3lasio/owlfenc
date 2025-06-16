@@ -610,7 +610,37 @@ export default function CyberpunkLegalDefense() {
       const result = await response.json();
       setPdfGenerationTime(result.metadata?.generationTime || 0);
       
-      if (result.success && result.pdfUrl) {
+      if (result.success && result.html) {
+        // Generate PDF from HTML using server endpoint
+        const pdfResponse = await fetch('/api/generate-pdf', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            html: result.html,
+            options: {
+              format: 'Letter',
+              margin: { top: '0.5in', right: '0.5in', bottom: '0.5in', left: '0.5in' },
+              displayHeaderFooter: true,
+              footerTemplate: `
+                <div style="width: 100%; text-align: center; font-size: 10px; margin: 0 50px;">
+                  <span style="float: left;">© 2025 OWL FENC LLC</span>
+                  <span>Página <span class="pageNumber"></span></span>
+                  <span style="float: right;">Generado: ${new Date().toLocaleDateString()}</span>
+                </div>
+              `
+            }
+          }),
+        });
+
+        if (!pdfResponse.ok) {
+          throw new Error('Failed to generate PDF from HTML');
+        }
+
+        const pdfBlob = await pdfResponse.blob();
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+        
         // Save contract to Firebase history
         if (user?.uid) {
           try {
@@ -631,7 +661,7 @@ export default function CyberpunkLegalDefense() {
                   clause: p.clause
                 }))
               },
-              pdfUrl: result.pdfUrl,
+              pdfUrl: pdfUrl,
               pageCount: result.metadata?.pageCount || 6,
               generationTime: result.metadata?.generationTime || 0,
               templateUsed: 'hybrid-professional'
@@ -649,7 +679,7 @@ export default function CyberpunkLegalDefense() {
 
         // Trigger automatic download
         const link = document.createElement('a');
-        link.href = result.pdfUrl;
+        link.href = pdfUrl;
         link.download = `Contract_${extractedData.clientInfo?.name?.replace(/\s+/g, '_') || 'Client'}_${Date.now()}.pdf`;
         link.style.display = 'none';
         document.body.appendChild(link);

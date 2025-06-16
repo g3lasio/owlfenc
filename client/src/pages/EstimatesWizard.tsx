@@ -2266,7 +2266,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         })),
         subtotal: estimate.subtotal || estimate.total || 0,
         discount: estimate.discountAmount || 0,
-        discountType: estimate.discountType || 'percentage',
+        discountType: estimate.discountType || "percentage",
         discountValue: estimate.discountValue || 0,
         tax: tax,
         taxRate: taxRate,
@@ -2471,7 +2471,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         })),
         subtotal: estimate.subtotal || 0,
         discount: estimate.discountAmount || 0,
-        discountType: estimate.discountType || 'percentage',
+        discountType: estimate.discountType || "percentage",
         discountValue: estimate.discountValue || 0,
         tax: estimate.tax || 0,
         taxRate: estimate.taxRate || 10,
@@ -2526,6 +2526,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     }
   };
 
+  console.log(estimate);
   const handleDownload = async () => {
     try {
       const payload = {
@@ -2544,7 +2545,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         client_email: estimate.client.email || "",
         client_phone: estimate.client.phone,
         client_address: `${estimate.client.address}, ${estimate.client.city}, ${estimate.client.state} ${estimate.client.zipcode}, ${estimate.client.country}`,
-        items: estimate.items.map((item) => ({
+        lineItems: estimate.items.map((item) => ({
           name: item.name,
           description: item.description,
           quantity: item.quantity,
@@ -2943,8 +2944,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       <strong>Tip:</strong> Write a basic description of your
                       project and use <strong>"Enhance with Mervin AI"</strong>{" "}
                       to automatically generate a complete professional
-                      description with all technical details needed for
-                      the estimate.
+                      description with all technical details needed for the
+                      estimate.
                     </p>
                   </div>
                 )}
@@ -3203,9 +3204,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   </DialogTrigger>
                   <DialogContent className="max-w-4xl">
                     <DialogHeader>
-                      <DialogTitle>
-                        Select Material from Inventory
-                      </DialogTitle>
+                      <DialogTitle>Select Material from Inventory</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
                       <div className="relative">
@@ -3258,9 +3257,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                 <div className="text-center py-8 text-muted-foreground">
                   <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>No materials added to estimate</p>
-                  <p className="text-sm">
-                    Click "Add Material" to get started
-                  </p>
+                  <p className="text-sm">Click "Add Material" to get started</p>
                 </div>
               ) : (
                 <div className="space-y-4">
