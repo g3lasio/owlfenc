@@ -37,8 +37,7 @@ import securityRoutes from './routes/security-routes';
 import notificationsRoutes from './routes/notifications-routes';
 import integrationsRoutes from './routes/integrations-routes';
 
-// 🐒 SISTEMA PDFMONKEY - Único procesador profesional de PDFs
-import pdfRoutes from './routes/pdf-routes';
+// PDF generation now handled exclusively by premiumPdfService
 import pdfMonkeyEstimatesRoutes from './routes/pdfmonkey-estimates';
 
 // 🤖 SISTEMA INTELIGENTE DE CONTRATOS - Anthropic Claude

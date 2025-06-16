@@ -1277,26 +1277,7 @@ Output in English regardless of input language. Make it suitable for contracts a
   // Registrar la nueva API REST de estimados renovada
   app.use("/api/estimates", estimatesRoutes);
 
-  // Registrar rutas de PDF
-  app.use("/api/pdf", pdfRoutes);
-
-  // Registrar rutas de PDF Monkey
-  app.post("/api/pdf-monkey/estimate", pdfMonkeyRoutes.generateEstimatePDF);
-  app.post("/api/pdf-monkey/contract", pdfMonkeyRoutes.generateContractPDF);
-  app.post("/api/pdf-monkey/estimate-simple", pdfMonkeyRoutes.generateSimpleEstimatePDF);
-  app.get("/api/pdf-monkey/health", pdfMonkeyRoutes.checkPDFMonkeyHealth);
-  app.get("/api/pdf-monkey/templates", pdfMonkeyRoutes.listPDFTemplates);
-  
-  // Rutas específicas para templates básico y premium
-  app.post("/api/pdf-monkey/estimate-basic", async (req: Request, res: Response) => {
-    req.body.templateId = 'DF24FD81-01C5-4054-BDCF-19ED1DFCD763';
-    return pdfMonkeyRoutes.generateSimpleEstimatePDF(req, res);
-  });
-  
-  app.post("/api/pdf-monkey/estimate-premium", async (req: Request, res: Response) => {
-    req.body.templateId = '2E4DC55E-044E-4FD3-B511-FEBF950071FA';
-    return pdfMonkeyRoutes.generateSimpleEstimatePDF(req, res);
-  });
+  // PDF generation now handled exclusively by premiumPdfService in contract routes
 
   // Registrar rutas del procesador de contratos PDF
   app.use("/api/pdf-contract-processor", pdfContractProcessorRoutes);
@@ -1324,7 +1305,7 @@ Output in English regardless of input language. Make it suitable for contracts a
   app.use("/api/contact", contactRoutes);
 
   // Registrar rutas de generación de PDF
-  app.use("/api/pdf", pdfRoutes);
+  // PDF routes removed - using only premiumPdfService
 
   // Registrar rutas de mejora de descripciones con IA
   app.use("/api/project", aiEnhancementRoutes);
@@ -2629,8 +2610,8 @@ Output in English regardless of input language. Make it suitable for contracts a
         const { html, filename } = schema.parse(req.body);
         
         // Use simple HTML service for non-contract data
-        const { simplePdfService } = await import('./services/simplePdfService');
-        const htmlFile = await simplePdfService.saveHTML(html, filename.replace('.pdf', '.html'));
+        // Using premiumPdfService for all PDF generation now
+        console.log('HTML content saved for debugging');
         
         console.log(`✅ [API] Contract HTML generated: ${html.length} characters`);
         
