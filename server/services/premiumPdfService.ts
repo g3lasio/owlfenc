@@ -40,7 +40,7 @@ class PremiumPdfService {
     return PremiumPdfService.instance;
   }
 
-  private generatePremiumContractHTML(data: ContractPdfData): string {
+  generatePremiumContractHTML(data: ContractPdfData): string {
     const currentDate = new Date().toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
