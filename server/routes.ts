@@ -4456,12 +4456,12 @@ Output in English regardless of input language. Make it suitable for contracts a
     }
   });
 
-  // High-Quality Contract HTML Generation
+  // Premium Contract PDF Generation
   app.post('/api/contracts/generate-pdf', async (req, res) => {
     try {
-      console.log('📄 [API] Starting contract HTML generation...');
+      console.log('🎨 [API] Starting premium contract generation...');
       
-      const { simplePdfService } = await import('./services/simplePdfService');
+      const { premiumPdfService } = await import('./services/premiumPdfService');
       
       const contractData = req.body;
       
@@ -4473,28 +4473,24 @@ Output in English regardless of input language. Make it suitable for contracts a
         });
       }
       
-      // Generate HTML with professional formatting
-      const html = await simplePdfService.generateHTML(contractData);
+      // Generate premium PDF
+      const pdfBuffer = await premiumPdfService.generatePDF(contractData);
       
-      // Save HTML file for download
-      const filename = `Contract_${contractData.client.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.html`;
-      const filePath = await simplePdfService.saveHTML(html, filename);
+      // Set headers for PDF download
+      const filename = `Contract_${contractData.client.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
       
-      console.log(`✅ [API] Contract HTML generated: ${html.length} characters`);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
       
-      res.json({
-        success: true,
-        html: html,
-        filename: filename,
-        downloadUrl: `/api/contracts/download/${filename}`,
-        message: 'Contract generated successfully'
-      });
+      console.log(`✅ [API] Premium contract generated: ${pdfBuffer.length} bytes`);
+      res.send(pdfBuffer);
       
     } catch (error: any) {
-      console.error('❌ [API] Error generating contract:', error);
+      console.error('❌ [API] Error generating premium contract:', error);
       res.status(500).json({
         success: false,
-        error: error.message || 'Contract generation failed'
+        error: error.message || 'Premium contract generation failed'
       });
     }
   });
