@@ -55,22 +55,22 @@ class PremiumPdfService {
     <style>
         @page {
             size: A4;
-            margin: 1.2in 1in 1.4in 1in;
+            margin: 1.4in 1.2in 1.2in 1.2in;
             @bottom-center {
-                content: "Powered by Mervin AI                                                                                                                                       Page " counter(page) " of " counter(pages);
+                content: "Powered by Mervin AI                                                                    Page " counter(page) " of " counter(pages);
                 font-family: 'Times New Roman', serif;
                 font-size: 9pt;
-                color: #666;
-                border-top: 1px solid #ddd;
-                padding-top: 8px;
-                margin-top: 10px;
+                color: #777;
+                border-top: 1px solid #e0e0e0;
+                padding-top: 6px;
+                margin-top: 8px;
             }
         }
         
         body {
             font-family: 'Times New Roman', serif;
-            font-size: 11pt;
-            line-height: 1.5;
+            font-size: 12pt;
+            line-height: 1.6;
             color: #000;
             background: white;
             margin: 0;
@@ -391,11 +391,7 @@ class PremiumPdfService {
                     <p>Date: <span class="date-line"></span></p>
                 </div>
             </div>
-            
-            <div style="text-align: center; margin-top: 30px; font-size: 10pt; color: #666;">
-                <p>This Independent Contractor Agreement was prepared on ${currentDate}</p>
-                <p>All parties should retain a copy of this executed agreement for their records</p>
-            </div>
+
         </div>
     </div>
 </body>
