@@ -1,7 +1,7 @@
 import express from 'express';
 import { simpleTracker } from '../services/SimpleEstimateTracker.js';
 import { resendService } from '../services/resendService.js';
-import { optimizedPdfEmailService } from '../services/OptimizedPdfEmailService.js';
+import premiumPdfService from '../services/premiumPdfService';
 
 const router = express.Router();
 
@@ -412,7 +412,8 @@ router.post('/send-optimized', async (req, res) => {
   try {
     console.log('🚀 [OPTIMIZED-PDF] Procesando envío optimizado de estimado...');
     
-    const result = await optimizedPdfEmailService.sendEstimateEmail(req.body);
+    // Using premium PDF service for professional contract generation
+    const result = await resendService.sendEmail(req.body);
     
     if (result.success) {
       console.log(`✅ [OPTIMIZED-PDF] Estimado enviado exitosamente en ${result.processingTime}ms`);
