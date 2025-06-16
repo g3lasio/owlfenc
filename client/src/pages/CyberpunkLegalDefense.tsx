@@ -602,25 +602,15 @@ export default function CyberpunkLegalDefense() {
         throw new Error('Failed to generate professional contract');
       }
 
-      const result = await response.json();
-      setPdfGenerationTime(result.metadata?.generationTime || 0);
+      // Check content type to handle PDF or JSON response
+      const contentType = response.headers.get('content-type');
       
-      if (result.success && result.html) {
-        // Create a blob URL from the HTML for direct download
-        const htmlBlob = new Blob([result.html], { type: 'text/html' });
-        const htmlUrl = URL.createObjectURL(htmlBlob);
+      if (contentType?.includes('application/pdf')) {
+        // Handle PDF binary response
+        const pdfBlob = await response.blob();
+        const pdfUrl = URL.createObjectURL(pdfBlob);
         
-        // Open HTML in new window for PDF generation
-        const newWindow = window.open(htmlUrl, '_blank');
-        if (newWindow) {
-          newWindow.document.title = `Contract_${extractedData.clientInfo?.name?.replace(/\s+/g, '_') || 'Client'}_${Date.now()}`;
-          // Auto-trigger print dialog after a short delay
-          setTimeout(() => {
-            newWindow.print();
-          }, 1000);
-        }
-        
-        const pdfUrl = htmlUrl;
+        setPdfGenerationTime(Date.now());
         
         // Save contract to Firebase history
         if (user?.uid) {
@@ -643,9 +633,9 @@ export default function CyberpunkLegalDefense() {
                 }))
               },
               pdfUrl: pdfUrl,
-              pageCount: result.metadata?.pageCount || 6,
-              generationTime: result.metadata?.generationTime || 0,
-              templateUsed: 'hybrid-professional'
+              pageCount: 6, // Standard professional contract pages
+              generationTime: Date.now(),
+              templateUsed: 'professional-pdf'
             };
 
             const savedContractId = await contractHistoryService.saveContract(contractHistoryEntry);
@@ -669,10 +659,25 @@ export default function CyberpunkLegalDefense() {
 
         toast({
           title: "Contract Generated Successfully",
-          description: `Professional ${result.metadata?.pageCount || 6}-page PDF contract downloaded and saved to history`,
+          description: "Professional PDF contract downloaded successfully",
         });
       } else {
-        throw new Error(result.error || 'Contract generation failed');
+        // Handle JSON fallback response (when PDF generation fails)
+        try {
+          const result = await response.json();
+          if (result.success && result.html) {
+          // Create HTML preview if PDF generation failed
+          const htmlBlob = new Blob([result.html], { type: 'text/html' });
+          const htmlUrl = URL.createObjectURL(htmlBlob);
+          window.open(htmlUrl, '_blank');
+          
+          toast({
+            title: "Contract Preview Generated",
+            description: "PDF generation failed, showing HTML preview instead",
+          });
+        } else {
+          throw new Error(result.error || 'Contract generation failed');
+        }
       }
     } catch (error) {
       console.error('Error generating contract:', error);
