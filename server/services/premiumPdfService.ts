@@ -55,7 +55,16 @@ class PremiumPdfService {
     <style>
         @page {
             size: A4;
-            margin: 1.2in 1in 1in 1in;
+            margin: 1.2in 1in 1.4in 1in;
+            @bottom-center {
+                content: "Powered by Mervin AI                                                                                                                                       Page " counter(page) " of " counter(pages);
+                font-family: 'Times New Roman', serif;
+                font-size: 9pt;
+                color: #666;
+                border-top: 1px solid #ddd;
+                padding-top: 8px;
+                margin-top: 10px;
+            }
         }
         
         body {
