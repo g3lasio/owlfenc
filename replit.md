@@ -1,0 +1,146 @@
+# Owl Fence & Mervin AI Platform
+
+## Overview
+
+Owl Fence is a comprehensive SaaS platform designed for contractors in the construction industry, with specialized focus on fencing contractors. The platform combines conversational AI, automation, and specialized tools to revolutionize the construction industry through intelligent estimation, contract generation, and project management.
+
+## System Architecture
+
+### Frontend Architecture
+- **React 18** with TypeScript for modern, type-safe development
+- **Vite** for fast development and optimized builds
+- **TailwindCSS + Shadcn/ui** for consistent, professional UI components
+- **React Query** for efficient state management and API caching
+- **Wouter** for lightweight client-side routing
+- **Firebase SDK** for client-side authentication and real-time features
+
+### Backend Architecture
+- **Node.js with Express** and TypeScript for server-side logic
+- **Firebase** ecosystem (Firestore, Authentication, Storage) for data persistence
+- **RESTful API** design with comprehensive endpoint coverage
+- **Microservices pattern** for specialized functions (PDF generation, email, AI processing)
+
+### AI Integration
+- **OpenAI GPT-4** for natural language processing and content generation
+- **Anthropic Claude** for advanced document processing and analysis
+- **Hybrid AI approach** with fallback templates when AI services are unavailable
+- **Context-aware conversation management** for intelligent estimate generation
+
+## Key Components
+
+### 1. Mervin AI Assistant
+- Conversational interface for natural language estimate creation
+- Context-aware chat processing with memory management
+- Intelligent material calculation and cost estimation
+- Region-specific pricing adjustments
+
+### 2. Contract Generation System
+- **Multi-tenant architecture** ensuring complete brand isolation
+- Professional 6-page contract format with numbered sections
+- Dynamic contractor branding with personalized footers
+- AI-powered contract generation with template fallbacks
+- Support for multiple contract types and customization
+
+### 3. PDF Processing Engine
+- **Multiple PDF generation services** for redundancy and reliability
+- Puppeteer-based modern PDF service for fast rendering
+- PDFMonkey integration for professional cloud-based generation
+- Advanced PDF service with AI-powered data extraction
+- Comprehensive error handling with multiple fallback methods
+
+### 4. Payment Management
+- Stripe integration for secure payment processing
+- Payment link generation for client convenience
+- 50/50 payment split workflow (deposit and final payment)
+- Payment status tracking and notifications
+
+### 5. Project Management
+- Complete project lifecycle management
+- Material tracking with dynamic pricing
+- Client and contractor profile management
+- Project approval workflow with mobile-responsive interface
+
+### 6. Email Communication System
+- Professional estimate delivery via email
+- Mobile-responsive email templates
+- Integration with Resend for reliable email delivery
+- Automated approval workflows with one-click client responses
+
+## Data Flow
+
+### Estimate Generation Flow
+1. Client initiates conversation with Mervin AI
+2. AI processes requirements and generates material lists
+3. System calculates costs using dynamic pricing database
+4. Professional estimate is generated and formatted
+5. PDF is created using multi-service approach
+6. Email is sent to client with approval links
+
+### Contract Generation Flow
+1. Approved estimate triggers contract generation
+2. System retrieves contractor-specific branding data
+3. AI generates personalized contract content
+4. Professional PDF is created with proper formatting
+5. Contract is stored and made available for signatures
+
+### Payment Processing Flow
+1. Client approves estimate through email link
+2. Payment links are generated via Stripe
+3. Deposit payment is processed
+4. Project moves to active status
+5. Final payment is processed upon completion
+
+## External Dependencies
+
+### Core Services
+- **Firebase** (Authentication, Database, Storage)
+- **OpenAI API** (GPT-4 for content generation)
+- **Anthropic API** (Claude for document processing)
+- **Stripe** (Payment processing)
+- **Resend** (Email delivery)
+
+### Mapping and Location
+- **Google Maps API** (Address validation and mapping)
+- **Mapbox** (Alternative mapping service)
+
+### Property Data
+- **ATTOM Data API** (Property verification and details)
+- **CoreLogic API** (Additional property information)
+
+### PDF Generation
+- **PDFMonkey** (Professional PDF generation)
+- **Puppeteer** (Browser-based PDF rendering)
+
+### Business Integration
+- **QuickBooks API** (Accounting integration)
+
+## Deployment Strategy
+
+### Development Environment
+- **Replit** platform for development and testing
+- **Node.js 20** runtime environment
+- **PostgreSQL 16** for data persistence
+- Hot reload for rapid development
+
+### Production Deployment
+- **Autoscale deployment** target for dynamic scaling
+- Environment-specific configuration management
+- Database migrations with Drizzle ORM
+- Automated build process with Vite and esbuild
+
+### Database Strategy
+- **PostgreSQL** as primary database
+- **Drizzle ORM** for type-safe database operations
+- Structured schema for multi-tenant data isolation
+- Migration-based schema management
+
+## Changelog
+```
+Changelog:
+- June 16, 2025. Initial setup
+```
+
+## User Preferences
+```
+Preferred communication style: Simple, everyday language.
+```

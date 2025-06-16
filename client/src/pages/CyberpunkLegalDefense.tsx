@@ -553,22 +553,22 @@ export default function CyberpunkLegalDefense() {
         client: {
           name: extractedData.clientInfo?.name || 'Client Name',
           address: extractedData.clientInfo?.address || extractedData.projectDetails?.location || 'Client Address',
-          email: extractedData.clientInfo?.email,
-          phone: extractedData.clientInfo?.phone
+          email: extractedData.clientInfo?.email || '',
+          phone: extractedData.clientInfo?.phone || ''
         },
         contractor: {
           name: profile?.companyName || 'Contractor Name',
           address: profile?.address || 'Contractor Address',
-          email: profile?.email,
-          phone: profile?.phone,
-          license: profile?.license
+          email: profile?.email || '',
+          phone: profile?.phone || '',
+          license: profile?.license || ''
         },
         project: {
           type: extractedData.projectDetails?.type || 'Construction Services',
           description: extractedData.projectDetails?.description || 'Services as specified',
           location: extractedData.projectDetails?.location || extractedData.clientInfo?.address || 'Project Location',
-          startDate: extractedData.projectDetails?.startDate,
-          endDate: extractedData.projectDetails?.endDate
+          startDate: extractedData.projectDetails?.startDate || '',
+          endDate: extractedData.projectDetails?.endDate || ''
         },
         financials: {
           total: extractedData.financials?.total || 0,
@@ -576,22 +576,15 @@ export default function CyberpunkLegalDefense() {
           tax: extractedData.financials?.tax,
           taxRate: extractedData.financials?.taxRate
         },
-        materials: extractedData.materials,
-        protections: approvedClauses.map(clause => ({
+        protections: intelligentClauses.filter(clause => 
+          selectedClauses.has(clause.id) || clause.category === 'MANDATORY'
+        ).map(clause => ({
           id: clause.id,
-          category: clause.category,
-          subcategory: clause.subcategory,
-          clause: clause.clause
-        })),
-        paymentTerms: {
-          total: extractedData.financials?.total || 0,
-          retainer: Math.round((extractedData.financials?.total || 0) * 0.3),
-          schedule: "30% upfront, 40% at 50% completion, 30% upon completion"
-        },
-        timeline: {
-          startDate: new Date().toISOString().split('T')[0],
-          estimatedCompletion: "To be determined based on project scope"
-        }
+          title: clause.title || 'Protection Clause',
+          content: clause.clause || 'Standard protection clause',
+          category: clause.category || 'PROTECTION',
+          riskLevel: clause.riskLevel || 'MEDIUM'
+        }))
       };
 
       // Call the hybrid contract generation API
