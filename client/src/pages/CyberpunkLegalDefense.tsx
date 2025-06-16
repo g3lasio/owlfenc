@@ -604,35 +604,21 @@ export default function CyberpunkLegalDefense() {
       setPdfGenerationTime(result.metadata?.generationTime || 0);
       
       if (result.success && result.html) {
-        // Generate PDF from HTML using server endpoint
-        const pdfResponse = await fetch('/api/generate-pdf', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            html: result.html,
-            options: {
-              format: 'Letter',
-              margin: { top: '0.5in', right: '0.5in', bottom: '0.5in', left: '0.5in' },
-              displayHeaderFooter: true,
-              footerTemplate: `
-                <div style="width: 100%; text-align: center; font-size: 10px; margin: 0 50px;">
-                  <span style="float: left;">© 2025 OWL FENC LLC</span>
-                  <span>Página <span class="pageNumber"></span></span>
-                  <span style="float: right;">Generado: ${new Date().toLocaleDateString()}</span>
-                </div>
-              `
-            }
-          }),
-        });
-
-        if (!pdfResponse.ok) {
-          throw new Error('Failed to generate PDF from HTML');
+        // Create a blob URL from the HTML for direct download
+        const htmlBlob = new Blob([result.html], { type: 'text/html' });
+        const htmlUrl = URL.createObjectURL(htmlBlob);
+        
+        // Open HTML in new window for PDF generation
+        const newWindow = window.open(htmlUrl, '_blank');
+        if (newWindow) {
+          newWindow.document.title = `Contract_${extractedData.clientInfo?.name?.replace(/\s+/g, '_') || 'Client'}_${Date.now()}`;
+          // Auto-trigger print dialog after a short delay
+          setTimeout(() => {
+            newWindow.print();
+          }, 1000);
         }
-
-        const pdfBlob = await pdfResponse.blob();
-        const pdfUrl = URL.createObjectURL(pdfBlob);
+        
+        const pdfUrl = htmlUrl;
         
         // Save contract to Firebase history
         if (user?.uid) {
