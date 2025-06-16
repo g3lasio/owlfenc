@@ -666,17 +666,20 @@ export default function CyberpunkLegalDefense() {
         try {
           const result = await response.json();
           if (result.success && result.html) {
-          // Create HTML preview if PDF generation failed
-          const htmlBlob = new Blob([result.html], { type: 'text/html' });
-          const htmlUrl = URL.createObjectURL(htmlBlob);
-          window.open(htmlUrl, '_blank');
-          
-          toast({
-            title: "Contract Preview Generated",
-            description: "PDF generation failed, showing HTML preview instead",
-          });
-        } else {
-          throw new Error(result.error || 'Contract generation failed');
+            // Create HTML preview if PDF generation failed
+            const htmlBlob = new Blob([result.html], { type: 'text/html' });
+            const htmlUrl = URL.createObjectURL(htmlBlob);
+            window.open(htmlUrl, '_blank');
+            
+            toast({
+              title: "Contract Preview Generated",
+              description: "PDF generation failed, showing HTML preview instead",
+            });
+          } else {
+            throw new Error(result.error || 'Contract generation failed');
+          }
+        } catch (parseError) {
+          throw new Error('Failed to parse server response');
         }
       }
     } catch (error) {
@@ -689,7 +692,7 @@ export default function CyberpunkLegalDefense() {
     } finally {
       setIsProcessing(false);
     }
-  }, [extractedData, approvedClauses, profile, toast]);
+  }, [extractedData, intelligentClauses, selectedClauses, profile, toast]);
 
   // Función para enviar contrato para firma electrónica
   const sendContractForSignature = useCallback(async () => {
