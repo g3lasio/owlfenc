@@ -2603,7 +2603,7 @@ Output in English regardless of input language. Make it suitable for contracts a
         }
         
         // Generate premium PDF
-        const pdfBuffer = await premiumPdfService.generatePDF(contractData);
+        const pdfBuffer = await premiumPdfService.generateProfessionalPDF(contractData);
         
         // Set headers for PDF download
         const filename = `Contract_${contractData.client.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;

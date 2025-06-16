@@ -1,6 +1,4 @@
 import puppeteer from 'puppeteer';
-import { promises as fs } from 'fs';
-import path from 'path';
 
 export interface ContractPdfData {
   client: {
@@ -40,585 +38,421 @@ class PremiumPdfService {
     return PremiumPdfService.instance;
   }
 
-  generatePremiumContractHTML(data: ContractPdfData): string {
+  generateProfessionalLegalContractHTML(data: ContractPdfData): string {
     const currentDate = new Date().toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
 
-    const protectionClausesHtml = data.protectionClauses?.map((clause, index) => `
-      <div class="clause-card">
-        <div class="clause-header">
-          <div class="clause-number">${index + 1}</div>
-          <h4 class="clause-title">${clause.title}</h4>
-        </div>
-        <div class="clause-content">
-          <p>${clause.content}</p>
-        </div>
-      </div>
-    `).join('') || '';
-
     return `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Independent Contractor Agreement</title>
-        <style>
-            * {
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-            }
-            
-            body {
-                font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                font-size: 11pt;
-                line-height: 1.7;
-                color: #1a1a1a;
-                background: #ffffff;
-                margin: 0;
-                padding: 40px;
-                counter-reset: page;
-            }
-            
-            .page {
-                max-width: 210mm;
-                min-height: 297mm;
-                margin: 0 auto;
-                position: relative;
-                padding-bottom: 80px;
-            }
-            
-            /* Professional Legal Header */
-            .header-section {
-                border-bottom: 3px solid #000000;
-                padding-bottom: 20px;
-                margin-bottom: 30px;
-                text-align: center;
-            }
-            
-            .contract-title {
-                font-size: 18pt;
-                font-weight: bold;
-                text-transform: uppercase;
-                letter-spacing: 1px;
-                margin-bottom: 10px;
-                color: #000000;
-            }
-            
-            .contract-subtitle {
-                font-size: 12pt;
-                font-weight: normal;
-                margin-bottom: 15px;
-                color: #333333;
-            }
-            
-            .contract-date {
-                font-size: 11pt;
-                font-weight: normal;
-                color: #000000;
-                border: 1px solid #000000;
-                padding: 8px 15px;
-                display: inline-block;
-            }
-            
-            /* Premium Information Cards */
-            .parties-section {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 30px;
-                margin-bottom: 40px;
-            }
-            
-            .party-card {
-                background: white;
-                border: 2px solid #000000;
-                padding: 20px;
-                margin-bottom: 20px;
-                page-break-inside: avoid;
-            }
-            
-            .party-label {
-                font-size: 12pt;
-                font-weight: bold;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-                color: #000000;
-                margin-bottom: 15px;
-                border-bottom: 1px solid #000000;
-                padding-bottom: 5px;
-            }
-            
-            .party-name {
-                font-size: 14pt;
-                font-weight: bold;
-                color: #000000;
-                margin-bottom: 10px;
-            }
-            
-            .party-details {
-                color: #333333;
-                line-height: 1.5;
-                font-size: 11pt;
-            }
-            
-            .party-details div {
-                margin-bottom: 3px;
-            }
-            
-            /* Legal Content Sections */
-            .section-card {
-                background: white;
-                border: 1px solid #000000;
-                padding: 20px;
-                margin-bottom: 20px;
-                page-break-inside: avoid;
-            }
-            
-            .section-title {
-                font-size: 14pt;
-                font-weight: bold;
-                color: #000000;
-                margin-bottom: 15px;
-                text-transform: uppercase;
-                border-bottom: 1px solid #000000;
-                padding-bottom: 5px;
-            }
-            
-            .section-number {
-                background: #000000;
-                color: white;
-                width: 25px;
-                height: 25px;
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: bold;
-                font-size: 12pt;
-                margin-right: 10px;
-            }
-            
-            .section-content {
-                color: #333333;
-                line-height: 1.6;
-                font-size: 11pt;
-            }
-            
-            .section-content p {
-                margin-bottom: 10px;
-            }
-            
-            .section-content strong {
-                color: #000000;
-                font-weight: bold;
-            }
-            
-            /* Legal Protection Clauses */
-            .clause-card {
-                background: #f9f9f9;
-                border: 1px solid #666666;
-                padding: 15px;
-                margin-bottom: 15px;
-                box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
-            }
-            
-            .clause-header {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                margin-bottom: 12px;
-            }
-            
-            .clause-number {
-                background: #667eea;
-                color: white;
-                width: 28px;
-                height: 28px;
-                border-radius: 6px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: 600;
-                font-size: 12pt;
-            }
-            
-            .clause-title {
-                font-size: 14pt;
-                font-weight: 600;
-                color: #2d3748;
-                margin: 0;
-            }
-            
-            .clause-content {
-                color: #4a5568;
-                line-height: 1.7;
-                margin-left: 40px;
-            }
-            
-            /* Premium Signature Section */
-            .signature-section {
-                margin-top: 50px;
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 40px;
-                page-break-inside: avoid;
-            }
-            
-            .signature-card {
-                background: white;
-                border-radius: 12px;
-                padding: 24px;
-                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-                border: 2px solid #e2e8f0;
-                text-align: center;
-                position: relative;
-            }
-            
-            .signature-card::before {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                height: 3px;
-                background: linear-gradient(90deg, #667eea, #764ba2);
-                border-radius: 12px 12px 0 0;
-            }
-            
-            .signature-line {
-                border-bottom: 2px solid #667eea;
-                height: 60px;
-                margin-bottom: 12px;
-                position: relative;
-            }
-            
-            .signature-label {
-                font-weight: 700;
-                font-size: 14pt;
-                color: #2d3748;
-                margin-bottom: 8px;
-                text-transform: uppercase;
-                letter-spacing: 1px;
-            }
-            
-            .signature-name {
-                font-size: 12pt;
-                color: #4a5568;
-                margin-bottom: 8px;
-            }
-            
-            .signature-date {
-                font-size: 10pt;
-                color: #718096;
-                padding: 4px 12px;
-                background: #f7fafc;
-                border-radius: 16px;
-                display: inline-block;
-            }
-            
-            /* Legal Footer with Page Numbers */
-            .footer {
-                position: fixed;
-                bottom: 20px;
-                left: 40px;
-                right: 40px;
-                text-align: center;
-                font-size: 10pt;
-                color: #000000;
-                border-top: 1px solid #000000;
-                padding-top: 10px;
-            }
-            
-            .page-counter::before {
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Independent Contractor Agreement</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1in;
+            @bottom-center {
                 content: "Page " counter(page) " of " counter(pages);
+                font-family: 'Times New Roman', serif;
+                font-size: 10pt;
+                color: #666;
             }
-            
-            @page {
-                margin: 1in;
-                @bottom-center {
-                    content: "Page " counter(page) " of " counter(pages);
-                    font-size: 10pt;
-                    color: #000000;
-                }
-            }
-            
-            /* Print Styles */
-            @media print {
-                body { 
-                    margin: 0; 
-                    padding: 20px;
-                    -webkit-print-color-adjust: exact;
-                    print-color-adjust: exact;
-                }
-                .page-break { 
-                    page-break-before: always; 
-                }
-                .footer {
-                    position: fixed;
-                    bottom: 0;
-                }
-            }
-            
-            /* Responsive adjustments */
-            @media (max-width: 768px) {
-                .parties-section {
-                    grid-template-columns: 1fr;
-                }
-                .signature-section {
-                    grid-template-columns: 1fr;
-                }
-            }
-        </style>
-    </head>
-    <body>
-        <div class="page">
-            <!-- Premium Header Card -->
-            <div class="header-card">
-                <div class="contract-title">Independent Contractor Agreement</div>
-                <div class="contract-subtitle">Professional Construction Services Contract</div>
-                <div class="contract-date">${currentDate}</div>
-            </div>
+        }
+        
+        body {
+            font-family: 'Times New Roman', serif;
+            font-size: 11pt;
+            line-height: 1.4;
+            color: #000;
+            background: white;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .container {
+            max-width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 15px;
+        }
+        
+        .header h1 {
+            font-size: 18pt;
+            font-weight: bold;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+            border: 1px solid #ccc;
+            padding: 15px;
+            background: #fafafa;
+        }
+        
+        .section-title {
+            font-size: 14pt;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            border-bottom: 1px solid #666;
+            padding-bottom: 5px;
+        }
+        
+        .party-info {
+            display: table;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        .party-column {
+            display: table-cell;
+            width: 50%;
+            vertical-align: top;
+            padding-right: 10px;
+        }
+        
+        .party-box {
+            border: 1px solid #000;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .party-label {
+            font-weight: bold;
+            font-size: 12pt;
+            margin-bottom: 8px;
+            text-decoration: underline;
+        }
+        
+        .legal-text {
+            text-align: justify;
+            margin-bottom: 15px;
+            text-indent: 20px;
+        }
+        
+        .numbered-section {
+            margin-bottom: 20px;
+        }
+        
+        .section-number {
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        
+        .signature-section {
+            margin-top: 40px;
+            page-break-inside: avoid;
+        }
+        
+        .signature-box {
+            border: 1px solid #000;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .signature-line {
+            border-bottom: 1px solid #000;
+            height: 40px;
+            margin-bottom: 5px;
+        }
+        
+        .date-line {
+            border-bottom: 1px solid #000;
+            width: 150px;
+            height: 25px;
+            display: inline-block;
+        }
+        
+        .page-break {
+            page-break-before: always;
+        }
+        
+        .clause-box {
+            border: 1px solid #999;
+            padding: 12px;
+            margin: 10px 0;
+            background: #f9f9f9;
+        }
+        
+        .clause-title {
+            font-weight: bold;
+            font-size: 12pt;
+            margin-bottom: 8px;
+        }
+        
+        .footer-info {
+            font-size: 9pt;
+            color: #666;
+            text-align: center;
+            margin-top: 30px;
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Independent Contractor Agreement</h1>
+            <p style="margin: 10px 0; font-size: 12pt;">Date: ${currentDate}</p>
+        </div>
 
-            <!-- Premium Parties Information -->
-            <div class="parties-section">
-                <div class="party-card">
-                    <div class="party-label">Contractor</div>
-                    <div class="party-name">${data.contractor.name}</div>
-                    <div class="party-details">
-                        <div><strong>Address:</strong> ${data.contractor.address}</div>
-                        <div><strong>Phone:</strong> ${data.contractor.phone}</div>
-                        <div><strong>Email:</strong> ${data.contractor.email}</div>
-                        ${data.contractor.license ? `<div><strong>License:</strong> ${data.contractor.license}</div>` : ''}
+        <div class="section">
+            <div class="section-title">Parties to Agreement</div>
+            <div class="party-info">
+                <div class="party-column">
+                    <div class="party-box">
+                        <div class="party-label">CONTRACTOR:</div>
+                        <p><strong>${data.contractor.name}</strong></p>
+                        <p>${data.contractor.address}</p>
+                        <p>Phone: ${data.contractor.phone}</p>
+                        <p>Email: ${data.contractor.email}</p>
+                        ${data.contractor.license ? `<p>License: ${data.contractor.license}</p>` : ''}
                     </div>
                 </div>
-
-                <div class="party-card">
-                    <div class="party-label">Client</div>
-                    <div class="party-name">${data.client.name}</div>
-                    <div class="party-details">
-                        <div><strong>Address:</strong> ${data.client.address}</div>
-                        <div><strong>Phone:</strong> ${data.client.phone}</div>
-                        <div><strong>Email:</strong> ${data.client.email}</div>
+                <div class="party-column">
+                    <div class="party-box">
+                        <div class="party-label">CLIENT:</div>
+                        <p><strong>${data.client.name}</strong></p>
+                        <p>${data.client.address}</p>
+                        <p>Phone: ${data.client.phone}</p>
+                        <p>Email: ${data.client.email}</p>
                     </div>
-                </div>
-            </div>
-
-            <!-- Project Description Section -->
-            <div class="section-card">
-                <div class="section-title">
-                    <div class="section-number">1</div>
-                    Project Description & Scope
-                </div>
-                <div class="section-content">
-                    <p><strong>Project Type:</strong> ${data.project.type}</p>
-                    <p><strong>Location:</strong> ${data.project.location}</p>
-                    <p><strong>Description:</strong> ${data.project.description}</p>
-                </div>
-            </div>
-
-            <!-- Financial Terms Section -->
-            <div class="section-card">
-                <div class="section-title">
-                    <div class="section-number">2</div>
-                    Financial Terms & Payment Schedule
-                </div>
-                <div class="section-content">
-                    <p><strong>Total Contract Amount:</strong> $${data.financials.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                    <p><strong>Payment Structure:</strong></p>
-                    <ul style="margin-left: 20px; margin-top: 8px;">
-                        <li>50% deposit upon contract execution: $${(data.financials.total * 0.5).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</li>
-                        <li>50% final payment upon project completion: $${(data.financials.total * 0.5).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</li>
-                    </ul>
-                </div>
-            </div>
-
-            <!-- Scope of Work Section -->
-            <div class="section-card">
-                <div class="section-title">
-                    <div class="section-number">3</div>
-                    Scope of Work & Responsibilities
-                </div>
-                <div class="section-content">
-                    <p>The Contractor agrees to provide all labor, materials, equipment, and services necessary for the completion of the work described in the project description above. This includes but is not limited to:</p>
-                    <ul style="margin-left: 20px; margin-top: 12px;">
-                        <li>Professional site preparation and cleanup</li>
-                        <li>Supply of all materials meeting industry standards</li>
-                        <li>Skilled labor and supervision</li>
-                        <li>Compliance with all local building codes and regulations</li>
-                        <li>Final inspection and quality assurance</li>
-                    </ul>
-                </div>
-            </div>
-
-            <!-- Timeline Section -->
-            <div class="section-card">
-                <div class="section-title">
-                    <div class="section-number">4</div>
-                    Project Timeline & Completion
-                </div>
-                <div class="section-content">
-                    <p><strong>Commencement:</strong> Work shall commence within 5 business days of contract execution and receipt of initial payment.</p>
-                    <p><strong>Completion:</strong> Project timeline will be determined based on scope complexity, weather conditions, and permit requirements.</p>
-                    <p><strong>Communication:</strong> Regular progress updates will be provided to the client throughout the project duration.</p>
-                </div>
-            </div>
-
-            ${protectionClausesHtml ? `
-            <!-- Legal Protection Clauses Section -->
-            <div class="section-card">
-                <div class="section-title">
-                    <div class="section-number">5</div>
-                    Legal Protection & Risk Mitigation Clauses
-                </div>
-                <div class="section-content">
-                    ${protectionClausesHtml}
-                </div>
-            </div>
-            ` : ''}
-
-            <!-- General Terms Section -->
-            <div class="section-card">
-                <div class="section-title">
-                    <div class="section-number">${protectionClausesHtml ? '6' : '5'}</div>
-                    General Terms & Conditions
-                </div>
-                <div class="section-content">
-                    <p><strong>Entire Agreement:</strong> This contract constitutes the entire agreement between the parties and supersedes all prior negotiations, representations, or agreements.</p>
-                    <p><strong>Modifications:</strong> Any modifications to this agreement must be made in writing and signed by both parties.</p>
-                    <p><strong>Governing Law:</strong> This contract shall be governed by and construed in accordance with the laws of the State of California.</p>
-                    <p><strong>Dispute Resolution:</strong> Any disputes arising from this contract will be resolved through binding arbitration in accordance with California state law.</p>
-                </div>
-            </div>
-
-            <!-- Premium Signature Section -->
-            <div class="signature-section">
-                <div class="signature-card">
-                    <div class="signature-line"></div>
-                    <div class="signature-label">Contractor Signature</div>
-                    <div class="signature-name">${data.contractor.name}</div>
-                    <div class="signature-date">Date: ___________</div>
-                </div>
-                <div class="signature-card">
-                    <div class="signature-line"></div>
-                    <div class="signature-label">Client Signature</div>
-                    <div class="signature-name">${data.client.name}</div>
-                    <div class="signature-date">Date: ___________</div>
                 </div>
             </div>
         </div>
 
-        <!-- Premium Footer with Pagination -->
-        <div class="footer">
-            <div class="footer-left">
-                <div class="footer-logo">🦉</div>
-                <div class="footer-text">Owl Fence Legal Defense System</div>
-            </div>
-            <div class="footer-right">
-                <div class="footer-text">Professional Contract Management</div>
-                <div class="footer-divider"></div>
-                <div class="page-number">Page <span class="page-counter"></span></div>
+        <div class="section">
+            <div class="section-title">Project Description</div>
+            <div class="party-box">
+                <p><strong>Project Type:</strong> ${data.project.type}</p>
+                <p><strong>Location:</strong> ${data.project.location}</p>
+                <p><strong>Description:</strong></p>
+                <div class="legal-text">${data.project.description.replace(/\n/g, '</p><p class="legal-text">')}</div>
+                <p><strong>Total Contract Value:</strong> $${data.financials.total.toLocaleString()}</p>
             </div>
         </div>
 
-        <script>
-            // Add page numbering
-            document.addEventListener('DOMContentLoaded', function() {
-                const pages = document.querySelectorAll('.page');
-                const counters = document.querySelectorAll('.page-counter');
-                
-                counters.forEach((counter, index) => {
-                    counter.textContent = \`\${index + 1} of \${pages.length}\`;
-                });
-            });
-        </script>
-    </body>
-    </html>
+        <div class="page-break"></div>
+
+        <div class="section">
+            <div class="section-title">Terms and Conditions</div>
+            
+            <div class="numbered-section">
+                <p><span class="section-number">1. INDEPENDENT CONTRACTOR RELATIONSHIP</span></p>
+                <div class="legal-text">
+                    The Contractor is an independent contractor and not an employee, partner, or joint venturer of the Client. The Contractor will not be entitled to any benefits that the Client may make available to its employees, such as group health or life insurance, profit-sharing, or retirement benefits. The Contractor will be solely responsible for all tax returns and payments required to be filed with or made to any federal, state, or local tax authority with respect to the Contractor's performance of services and receipt of fees under this Agreement.
+                </div>
+            </div>
+
+            <div class="numbered-section">
+                <p><span class="section-number">2. SERVICES TO BE PERFORMED</span></p>
+                <div class="legal-text">
+                    The Contractor agrees to perform the services described in the Project Description section above. All services will be performed in a professional and workmanlike manner in accordance with industry standards and applicable building codes. The Contractor warrants that all work will be performed by properly licensed and insured personnel when required by law.
+                </div>
+            </div>
+
+            <div class="numbered-section">
+                <p><span class="section-number">3. COMPENSATION</span></p>
+                <div class="legal-text">
+                    In consideration for the services to be performed by the Contractor, the Client agrees to pay the Contractor the total amount of $${data.financials.total.toLocaleString()} according to the payment schedule agreed upon by both parties. Payment terms include a deposit of 50% upon signing this agreement, with the balance due upon completion of work and client approval.
+                </div>
+            </div>
+
+            <div class="numbered-section">
+                <p><span class="section-number">4. MATERIALS AND EQUIPMENT</span></p>
+                <div class="legal-text">
+                    Unless otherwise specified, the Contractor will provide all materials, equipment, and supplies necessary to complete the work described herein. All materials will be new and of good quality, conforming to applicable industry standards. The Contractor warrants all materials against defects for a period of one (1) year from completion of work.
+                </div>
+            </div>
+
+            <div class="numbered-section">
+                <p><span class="section-number">5. TIME OF PERFORMANCE</span></p>
+                <div class="legal-text">
+                    Work will commence within a reasonable time after execution of this agreement and receipt of any required permits. The Contractor will use reasonable efforts to complete the work in a timely manner, weather and other conditions permitting. Time extensions may be granted for circumstances beyond the Contractor's reasonable control, including but not limited to weather delays, permit delays, or changes requested by the Client.
+                </div>
+            </div>
+        </div>
+
+        <div class="page-break"></div>
+
+        <div class="section">
+            <div class="section-title">Additional Terms and Protections</div>
+            
+            <div class="numbered-section">
+                <p><span class="section-number">6. LIABILITY AND INSURANCE</span></p>
+                <div class="legal-text">
+                    The Contractor maintains general liability insurance in the amount of not less than $1,000,000 per occurrence and agrees to provide evidence of such coverage upon request. Each party agrees to indemnify and hold harmless the other party from any claims, damages, or expenses arising from their own negligent acts or omissions in connection with this agreement.
+                </div>
+            </div>
+
+            <div class="numbered-section">
+                <p><span class="section-number">7. CHANGE ORDERS</span></p>
+                <div class="legal-text">
+                    Any changes to the scope of work described herein must be agreed to in writing by both parties before implementation. Change orders will include adjustments to contract price and completion time as applicable. No additional work will be performed without written authorization from the Client.
+                </div>
+            </div>
+
+            <div class="numbered-section">
+                <p><span class="section-number">8. PERMITS AND COMPLIANCE</span></p>
+                <div class="legal-text">
+                    The Contractor will obtain all necessary permits and approvals required for the work, unless specifically agreed otherwise in writing. All work will be performed in compliance with applicable building codes, regulations, and industry standards. Any permits obtained will be transferred to the Client upon completion of work.
+                </div>
+            </div>
+
+            <div class="numbered-section">
+                <p><span class="section-number">9. WARRANTY</span></p>
+                <div class="legal-text">
+                    The Contractor warrants all work performed under this agreement against defects in workmanship for a period of one (1) year from completion. This warranty does not cover damage due to normal wear and tear, abuse, or failure to properly maintain the work. The Contractor's obligation under this warranty is limited to repair or replacement of defective work.
+                </div>
+            </div>
+
+            <div class="numbered-section">
+                <p><span class="section-number">10. TERMINATION</span></p>
+                <div class="legal-text">
+                    Either party may terminate this agreement upon written notice if the other party materially breaches the agreement and fails to cure such breach within ten (10) days after written notice. In the event of termination, the Contractor will be compensated for work satisfactorily completed prior to termination.
+                </div>
+            </div>
+        </div>
+
+        ${data.protectionClauses && data.protectionClauses.length > 0 ? `
+        <div class="page-break"></div>
+        <div class="section">
+            <div class="section-title">Project-Specific Protection Clauses</div>
+            ${data.protectionClauses.map((clause, index) => `
+                <div class="clause-box">
+                    <div class="clause-title">${index + 11}. ${clause.title.toUpperCase()}</div>
+                    <div class="legal-text">${clause.content}</div>
+                </div>
+            `).join('')}
+        </div>
+        ` : ''}
+
+        <div class="page-break"></div>
+
+        <div class="section">
+            <div class="section-title">General Provisions</div>
+            
+            <div class="numbered-section">
+                <p><span class="section-number">${data.protectionClauses ? data.protectionClauses.length + 11 : 11}. GOVERNING LAW</span></p>
+                <div class="legal-text">
+                    This Agreement shall be governed by and construed in accordance with the laws of the State of California, without regard to its conflict of laws principles. Any disputes arising under this Agreement shall be resolved in the courts of competent jurisdiction in the state where the work is performed.
+                </div>
+            </div>
+
+            <div class="numbered-section">
+                <p><span class="section-number">${data.protectionClauses ? data.protectionClauses.length + 12 : 12}. ENTIRE AGREEMENT</span></p>
+                <div class="legal-text">
+                    This Agreement constitutes the entire agreement between the parties and supersedes all prior negotiations, representations, or agreements relating to the subject matter hereof. This Agreement may not be amended except by written instrument signed by both parties.
+                </div>
+            </div>
+
+            <div class="numbered-section">
+                <p><span class="section-number">${data.protectionClauses ? data.protectionClauses.length + 13 : 13}. SEVERABILITY</span></p>
+                <div class="legal-text">
+                    If any provision of this Agreement is held to be invalid or unenforceable, the remaining provisions shall continue in full force and effect. The invalid provision shall be replaced by a valid provision that most closely approximates the intent and economic effect of the invalid provision.
+                </div>
+            </div>
+        </div>
+
+        <div class="signature-section">
+            <div class="section-title">Signatures</div>
+            
+            <div style="display: table; width: 100%;">
+                <div style="display: table-cell; width: 50%; padding-right: 20px;">
+                    <div class="signature-box">
+                        <p><strong>CONTRACTOR:</strong></p>
+                        <div class="signature-line"></div>
+                        <p>${data.contractor.name}</p>
+                        <p>Date: <span class="date-line"></span></p>
+                    </div>
+                </div>
+                <div style="display: table-cell; width: 50%;">
+                    <div class="signature-box">
+                        <p><strong>CLIENT:</strong></p>
+                        <div class="signature-line"></div>
+                        <p>${data.client.name}</p>
+                        <p>Date: <span class="date-line"></span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-info">
+            <p>This Independent Contractor Agreement was prepared on ${currentDate}</p>
+            <p>All parties should retain a copy of this executed agreement for their records</p>
+        </div>
+    </div>
+</body>
+</html>
     `;
   }
 
-  async generatePDF(data: ContractPdfData): Promise<Buffer> {
-    let browser;
+  async generateProfessionalPDF(data: ContractPdfData): Promise<Buffer> {
+    console.log('🎨 [PREMIUM PDF] Starting premium contract generation...');
     
     try {
-      console.log('🎨 [PREMIUM PDF] Starting premium contract generation...');
+      const html = this.generateProfessionalLegalContractHTML(data);
       
-      // Generate the premium HTML
-      const html = this.generatePremiumContractHTML(data);
-      
-      // Use system Chrome executable
-      const executablePath = '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium';
-
-      // Launch Puppeteer with premium settings
-      browser = await puppeteer.launch({
+      const browser = await puppeteer.launch({
         headless: true,
-        executablePath: executablePath,
+        executablePath: '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium',
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
           '--disable-dev-shm-usage',
           '--disable-accelerated-2d-canvas',
-          '--disable-gpu',
-          '--disable-extensions',
-          '--disable-plugins',
-          '--disable-background-timer-throttling',
-          '--disable-backgrounding-occluded-windows',
-          '--disable-renderer-backgrounding',
-          '--disable-features=TranslateUI',
-          '--disable-ipc-flooding-protection'
+          '--no-first-run',
+          '--no-zygote',
+          '--single-process',
+          '--disable-gpu'
         ]
       });
 
       const page = await browser.newPage();
-      
-      // Set content and generate PDF with premium settings
       await page.setContent(html, { waitUntil: 'networkidle0' });
       
-      // Premium PDF generation with optimal settings
       const pdfBuffer = await page.pdf({
         format: 'A4',
         printBackground: true,
-        preferCSSPageSize: true,
         margin: {
-          top: '20mm',
-          right: '15mm',
-          bottom: '25mm',
-          left: '15mm'
+          top: '1in',
+          right: '1in',
+          bottom: '1in',  
+          left: '1in'
         },
-        displayHeaderFooter: false, // We use custom footer
-        scale: 1.0
+        displayHeaderFooter: true,
+        headerTemplate: '<div></div>',
+        footerTemplate: `
+          <div style="font-size: 10px; text-align: center; width: 100%; color: #666;">
+            Page <span class="pageNumber"></span> of <span class="totalPages"></span>
+          </div>
+        `
       });
 
+      await browser.close();
+      
       console.log('✅ [PREMIUM PDF] Premium contract generated successfully');
-      return Buffer.from(pdfBuffer);
+      return pdfBuffer;
       
     } catch (error) {
-      console.error('❌ [PREMIUM PDF] Error generating premium contract:', error);
-      throw new Error(`Premium PDF generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      if (browser) {
-        await browser.close();
-      }
-    }
-  }
-
-  async savePDF(pdfBuffer: Buffer, filename: string): Promise<string> {
-    try {
-      const outputDir = path.join(process.cwd(), 'temp');
-      await fs.mkdir(outputDir, { recursive: true });
-      
-      const filePath = path.join(outputDir, filename);
-      await fs.writeFile(filePath, pdfBuffer);
-      
-      console.log('✅ [PREMIUM PDF] Premium contract saved successfully:', filePath);
-      return filePath;
-    } catch (error) {
-      console.error('❌ [PREMIUM PDF] Error saving premium contract:', error);
-      throw new Error(`Failed to save premium PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('❌ [PREMIUM PDF] Error generating PDF:', error);
+      throw new Error('Failed to generate premium PDF contract');
     }
   }
 }
 
-export const premiumPdfService = PremiumPdfService.getInstance();
+export default PremiumPdfService;
