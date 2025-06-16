@@ -44,8 +44,7 @@ import clientRoutes from "./routes/clientRoutes";
 import quickbooksRoutes from "./routes/quickbooks-routes";
 import contactRoutes from "./routes/contact-route";
 import anthropicRoutes from "./routes/anthropic";
-import pdfRoutes from "./routes/pdf-routes";
-import * as pdfMonkeyRoutes from "./routes/pdfMonkeyRoutes";
+// PDF routes removed - using only premiumPdfService
 import paymentRoutes from "./routes/payment-routes"; // Import payment routes
 import contractorPaymentRoutes from "./routes/contractor-payment-routes"; // Import contractor payment routes
 import estimatesRoutes from "./routes/estimates"; // Import new estimates routes
