@@ -49,15 +49,15 @@ export interface ContractGenerationResult {
 }
 
 /**
- * Hybrid Contract Generator with Compact Design and Professional Pagination
- * Optimized for space efficiency while maintaining legal document standards
+ * Professional Contract Generator in English
+ * Based on standard Independent Contractor Agreement format
  */
-export class HybridContractGenerator {
+export class ProfessionalContractGenerator {
   private anthropic: Anthropic;
 
   constructor() {
     if (!process.env.ANTHROPIC_API_KEY) {
-      throw new Error('ANTHROPIC_API_KEY no está configurada');
+      throw new Error('ANTHROPIC_API_KEY is not configured');
     }
     
     this.anthropic = new Anthropic({
@@ -72,7 +72,7 @@ export class HybridContractGenerator {
     const startTime = Date.now();
     
     try {
-      console.log('🤖 [CONTRACT] Iniciando generación profesional de contrato...');
+      console.log('🤖 [CONTRACT] Starting professional contract generation...');
       
       // Generate HTML contract
       const html = await this.generateContractHTML(contractData, options.contractorBranding || {});
@@ -85,15 +85,15 @@ export class HybridContractGenerator {
         metadata: {
           pageCount: this.estimatePageCount(html),
           generationTime,
-          templateUsed: 'hybrid-optimized'
+          templateUsed: 'professional-english'
         }
       };
       
     } catch (error) {
-      console.error('❌ [CONTRACT] Error en generación profesional:', error);
+      console.error('❌ [CONTRACT] Error in professional generation:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Error desconocido'
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
@@ -102,41 +102,21 @@ export class HybridContractGenerator {
    * Generate contract HTML with real-time preview functionality
    */
   async generateContractHTML(contractData: ContractData, contractorBranding: any = {}): Promise<string> {
-    console.log('📋 [PREVIEW] Generando HTML del contrato para preview...');
+    console.log('📋 [PREVIEW] Generating HTML contract for preview...');
     
     try {
-      // Generate selected clauses HTML
-      let selectedClausesHtml = '';
-      if (contractData.protections && contractData.protections.length > 0) {
-        console.log('🎯 [CLAUSE-GENERATION] Usando', contractData.protections.length, 'cláusulas seleccionadas por el usuario');
-        
-        selectedClausesHtml = '<h2>CLÁUSULAS DE PROTECCIÓN SELECCIONADAS</h2><div class="compact">';
-        contractData.protections.forEach((clause, index) => {
-          const sectionNumber = 6 + index;
-          selectedClausesHtml += `
-            <p class="compact"><span class="section-number">${sectionNumber}.</span> <strong>${clause.title.toUpperCase()}:</strong> ${clause.content}</p>
-          `;
-        });
-        selectedClausesHtml += '</div>';
-        
-        console.log('✅ [CLAUSE-GENERATION] Generadas', contractData.protections.length, 'cláusulas personalizadas del usuario');
-      }
-
-      return this.generateOptimizedFallbackHTML(contractData, contractorBranding, selectedClausesHtml);
+      return this.generateProfessionalHTML(contractData, contractorBranding);
       
     } catch (error) {
-      console.error('❌ [CONTRACT-HTML] Error generando HTML:', error);
-      return this.generateOptimizedFallbackHTML(contractData, contractorBranding, '');
+      console.error('❌ [CONTRACT-HTML] Error generating HTML:', error);
+      return this.generateProfessionalHTML(contractData, contractorBranding);
     }
   }
 
   /**
-   * Generate optimized contract HTML in English following professional standards
+   * Generate professional contract HTML in English following standard format
    */
-  private generateOptimizedFallbackHTML(contractData: ContractData, contractorBranding: any, selectedClausesHtml: string): string {
-    // Calculate dynamic section numbering based on selected clauses
-    const numSelectedClauses = contractData.protections?.length || 0;
-    
+  private generateProfessionalHTML(contractData: ContractData, contractorBranding: any): string {
     // Use personalized contractor branding
     const contractorName = contractorBranding.companyName || contractData.contractor.name || 'Contractor';
     const contractorAddress = contractorBranding.address || contractData.contractor.address || '';
@@ -144,14 +124,9 @@ export class HybridContractGenerator {
     const contractorEmail = contractorBranding.email || contractData.contractor.email || '';
     const contractorLicense = contractorBranding.licenseNumber || contractData.contractor.license || '';
 
-    // Get current date for footer in English format
-    const currentDate = new Date().toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
-
-    const dayOfMonth = new Date().getDate();
+    // Format current date
+    const currentDate = new Date();
+    const dayOfMonth = currentDate.getDate();
     const ordinalSuffix = (day: number) => {
       if (day > 3 && day < 21) return 'th';
       switch (day % 10) {
@@ -162,7 +137,23 @@ export class HybridContractGenerator {
       }
     };
 
-    const contractDate = `${dayOfMonth}${ordinalSuffix(dayOfMonth)} day of ${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`;
+    const contractDate = `${dayOfMonth}${ordinalSuffix(dayOfMonth)} day of ${currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`;
+
+    // Generate additional clauses if provided
+    let additionalClausesHtml = '';
+    if (contractData.protections && contractData.protections.length > 0) {
+      additionalClausesHtml = `
+        <div class="section-header">ADDITIONAL PROTECTIVE CLAUSES</div>
+      `;
+      contractData.protections.forEach((clause, index) => {
+        const sectionNumber = 20 + index;
+        additionalClausesHtml += `
+          <p class="numbered-section">
+              <span class="section-number">${sectionNumber}.</span> <strong>${clause.title.toUpperCase()}:</strong> ${clause.content}
+          </p>
+        `;
+      });
+    }
 
     return `<!DOCTYPE html>
 <html>
@@ -280,7 +271,7 @@ export class HybridContractGenerator {
         .signature-grid {
             display: flex;
             justify-content: space-between;
-            margin-top: 30px;
+            margin-top: 50px;
         }
         
         .signature-column {
@@ -299,8 +290,8 @@ export class HybridContractGenerator {
             font-size: 11pt;
         }
         
-        .financial-details {
-            margin: 15px 0;
+        .page-break {
+            page-break-before: always;
         }
         
         .copyright-notice {
@@ -308,10 +299,6 @@ export class HybridContractGenerator {
             text-align: center;
             font-size: 10pt;
             color: #666;
-        }
-        
-        .page-break {
-            page-break-before: always;
         }
     </style>
 </head>
@@ -446,9 +433,9 @@ export class HybridContractGenerator {
     <span class="section-number">19.</span> In providing the Services under this Agreement it is expressly agreed that the Contractor is acting as an independent contractor and not as an employee. The Contractor and the Client acknowledge that this Agreement does not create a partnership or joint venture between them, and is exclusively a contract for service.
 </p>
 
-<div class="page-break"></div>
+${additionalClausesHtml}
 
-${selectedClausesHtml}
+<div class="page-break"></div>
 
 <div class="signature-section">
     <div class="section-header">SIGNATURES</div>
@@ -484,10 +471,10 @@ ${selectedClausesHtml}
   private estimatePageCount(html: string): number {
     // Estimate based on content length and average characters per page
     const contentLength = html.replace(/<[^>]*>/g, '').length;
-    const avgCharsPerPage = 2500; // Compact design allows more content per page
+    const avgCharsPerPage = 2800; // Professional layout with proper spacing
     return Math.max(1, Math.ceil(contentLength / avgCharsPerPage));
   }
 }
 
 // Export singleton instance
-export const hybridContractGenerator = new HybridContractGenerator();
+export const professionalContractGenerator = new ProfessionalContractGenerator();

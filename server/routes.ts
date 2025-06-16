@@ -4421,14 +4421,14 @@ Output in English regardless of input language. Make it suitable for contracts a
   // Registrar rutas del módulo Labor DeepSearch IA
   registerLaborDeepSearchRoutes(app);
 
-  // Hybrid Contract Generation with Claude + PDF
+  // Professional Contract Generation in English
   app.post('/api/contracts/generate-professional', async (req, res) => {
     try {
-      console.log('🤖 [API] Iniciando generación híbrida de contrato...');
+      console.log('🤖 [API] Starting professional contract generation...');
       
-      const { hybridContractGenerator } = await import('./services/hybridContractGenerator');
+      const { professionalContractGenerator } = await import('./services/contractGenerator');
       
-      const result = await hybridContractGenerator.generateProfessionalContract(req.body, {
+      const result = await professionalContractGenerator.generateProfessionalContract(req.body, {
         contractorBranding: req.body.contractorBranding || {}
       });
       
@@ -4439,20 +4439,19 @@ Output in English regardless of input language. Make it suitable for contracts a
         });
       }
       
-      console.log(`✅ [API] Contrato generado: ${result.metadata?.pageCount} páginas, ${result.metadata?.generationTime}ms`);
+      console.log(`✅ [API] Contract generated: ${result.metadata?.pageCount} pages, ${result.metadata?.generationTime}ms`);
       
-      // Return contract HTML and metadata
       res.json({
         success: true,
         html: result.html,
         metadata: result.metadata
       });
       
-    } catch (error) {
-      console.error('❌ [API] Error en generación de contrato:', error);
-      res.status(500).json({ 
-        success: false, 
-        error: 'Contract generation service unavailable' 
+    } catch (error: any) {
+      console.error('❌ [API] Error in professional contract generation:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Internal server error'
       });
     }
   });
