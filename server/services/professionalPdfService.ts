@@ -419,17 +419,47 @@ class ProfessionalPdfService {
       // Generate the professional HTML
       const html = this.generateProfessionalContractHTML(data);
       
+      // Find Chrome executable dynamically
+      const { execSync } = require('child_process');
+      let executablePath: string | undefined;
+      
+      try {
+        executablePath = execSync('which chromium', { encoding: 'utf8' }).trim();
+      } catch {
+        try {
+          executablePath = execSync('which google-chrome', { encoding: 'utf8' }).trim();
+        } catch {
+          try {
+            executablePath = execSync('which chrome', { encoding: 'utf8' }).trim();
+          } catch {
+            // Use system default if available
+            executablePath = undefined;
+          }
+        }
+      }
+
       // Launch Puppeteer
-      browser = await puppeteer.launch({
+      const launchOptions: any = {
         headless: true,
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
           '--disable-dev-shm-usage',
           '--disable-accelerated-2d-canvas',
-          '--disable-gpu'
+          '--disable-gpu',
+          '--disable-extensions',
+          '--disable-plugins',
+          '--disable-background-timer-throttling',
+          '--disable-backgrounding-occluded-windows',
+          '--disable-renderer-backgrounding'
         ]
-      });
+      };
+
+      if (executablePath) {
+        launchOptions.executablePath = executablePath;
+      }
+
+      browser = await puppeteer.launch(launchOptions);
 
       const page = await browser.newPage();
       
