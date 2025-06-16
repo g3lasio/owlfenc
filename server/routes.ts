@@ -2582,100 +2582,79 @@ Output in English regardless of input language. Make it suitable for contracts a
 
   app.post("/api/generate-pdf", async (req: Request, res: Response) => {
     try {
-      const schema = z.object({
-        html: z.string(),
-        filename: z.string(),
-        templatePath: z.string().optional(),
-        contractData: z.record(z.any()).optional(),
-      });
-
-      const { html, filename, templatePath, contractData } = schema.parse(
-        req.body,
-      );
-
-      console.log("Generando PDF con los datos proporcionados");
-
-      // Si recibimos un templatePath, intentamos usar esa plantilla (misma que frontend)
-      let finalHtml = html;
-
-      if (templatePath && contractData) {
-        try {
-          // Intentar leer la plantilla desde el sistema de archivos
-          // (la plantilla debería estar en la carpeta public/templates)
-          const templateFilePath = path.join(
-            process.cwd(),
-            "client/public",
-            templatePath,
-          );
-          const fallbackPath = path.join(
-            process.cwd(),
-            "public/templates/contract-template.html",
-          );
-
-          let templateFilePaths = [
-            templateFilePath,
-            fallbackPath,
-            path.join(
-              process.cwd(),
-              "client/src/components/templates/contract-template.html",
-            ),
-          ];
-
-          let templateHtml = "";
-          let usedPath = "";
-
-          // Intentar cada ruta posible
-          for (const filePath of templateFilePaths) {
-            if (fs.existsSync(filePath)) {
-              templateHtml = fs.readFileSync(filePath, "utf-8");
-              usedPath = filePath;
-              break;
-            }
-          }
-
-          if (templateHtml) {
-            console.log(`Usando plantilla desde: ${usedPath}`);
-
-            // Procesar la plantilla con los datos del contrato
-            if (contractData) {
-              // Reemplazar variables en la plantilla
-              Object.entries(contractData).forEach(([section, sectionData]) => {
-                if (typeof sectionData === "object" && sectionData !== null) {
-                  Object.entries(sectionData).forEach(([key, value]) => {
-                    const placeholder = `{{${section}.${key}}}`;
-                    templateHtml = templateHtml.replace(
-                      new RegExp(placeholder, "g"),
-                      value?.toString() || "",
-                    );
-                  });
-                }
-              });
-            }
-
-            finalHtml = templateHtml;
-          } else {
-            console.log(
-              `La plantilla no se encontró en ${templateFilePath}, usando HTML proporcionado`,
-            );
-          }
-        } catch (templateError) {
-          console.error("Error al procesar la plantilla:", templateError);
-          console.log("Usando el HTML proporcionado como alternativa");
+      console.log('🎨 [API] Processing PDF generation request...');
+      console.log('Request body keys:', Object.keys(req.body));
+      
+      // Check if contract data is provided (has client and contractor objects)
+      if (req.body.client && req.body.contractor) {
+        console.log('🎨 [API] Detected contract data format - using premium service...');
+        
+        // Use premium service for contract data
+        const { premiumPdfService } = await import('./services/premiumPdfService');
+        
+        const contractData = req.body;
+        
+        // Validate required data
+        if (!contractData.client?.name || !contractData.contractor?.name) {
+          return res.status(400).json({
+            success: false,
+            error: 'Missing required client or contractor information'
+          });
         }
+        
+        // Generate premium PDF
+        const pdfBuffer = await premiumPdfService.generatePDF(contractData);
+        
+        // Set headers for PDF download
+        const filename = `Contract_${contractData.client.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+        
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.setHeader('Content-Length', pdfBuffer.length);
+        
+        console.log(`✅ [API] Premium contract generated: ${pdfBuffer.length} bytes`);
+        return res.send(pdfBuffer);
+        
+      } else if (req.body.html && req.body.filename) {
+        console.log('📄 [API] Detected HTML format - using simple service...');
+        
+        // Fallback for older HTML-based requests
+        const schema = z.object({
+          html: z.string(),
+          filename: z.string(),
+          templatePath: z.string().optional(),
+          contractData: z.record(z.any()).optional(),
+        });
+
+        const { html, filename } = schema.parse(req.body);
+        
+        // Use simple HTML service for non-contract data
+        const { simplePdfService } = await import('./services/simplePdfService');
+        const htmlFile = await simplePdfService.saveHTML(html, filename.replace('.pdf', '.html'));
+        
+        console.log(`✅ [API] Contract HTML generated: ${html.length} characters`);
+        
+        return res.json({
+          success: true,
+          html: html,
+          filename: filename.replace('.pdf', '.html'),
+          downloadUrl: `/api/contracts/download/${filename.replace('.pdf', '.html')}`,
+          message: 'Contract generated successfully'
+        });
+        
+      } else {
+        // Invalid format
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid request format. Expected either contract data (client/contractor objects) or HTML with filename.',
+          received: Object.keys(req.body)
+        });
       }
-
-      // Generate PDF from HTML
-      const pdfBuffer = await generatePDF(finalHtml, "contract");
-
-      res.setHeader("Content-Type", "application/pdf");
-      res.setHeader(
-        "Content-Disposition",
-        `attachment; filename="${filename}"`,
-      );
-      res.send(pdfBuffer);
-    } catch (error) {
-      console.error("Error generating PDF:", error);
-      res.status(400).json({
+      
+    } catch (error: any) {
+      console.error('❌ [API] Error in PDF generation:', error);
+      res.status(500).json({
+        success: false,
         message: "Failed to generate PDF",
         details: error instanceof Error ? error.message : "Unknown error",
       });
