@@ -4456,12 +4456,12 @@ Output in English regardless of input language. Make it suitable for contracts a
     }
   });
 
-  // High-Quality PDF Generation
+  // High-Quality Contract HTML Generation
   app.post('/api/contracts/generate-pdf', async (req, res) => {
     try {
-      console.log('📄 [API] Starting high-quality PDF generation...');
+      console.log('📄 [API] Starting contract HTML generation...');
       
-      const { professionalPdfService } = await import('./services/professionalPdfService');
+      const { simplePdfService } = await import('./services/simplePdfService');
       
       const contractData = req.body;
       
@@ -4473,24 +4473,28 @@ Output in English regardless of input language. Make it suitable for contracts a
         });
       }
       
-      // Generate PDF with professional formatting
-      const pdfBuffer = await professionalPdfService.generatePDF(contractData);
+      // Generate HTML with professional formatting
+      const html = await simplePdfService.generateHTML(contractData);
       
-      // Set headers for PDF download
-      const filename = `Contract_${contractData.client.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+      // Save HTML file for download
+      const filename = `Contract_${contractData.client.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.html`;
+      const filePath = await simplePdfService.saveHTML(html, filename);
       
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-      res.setHeader('Content-Length', pdfBuffer.length);
+      console.log(`✅ [API] Contract HTML generated: ${html.length} characters`);
       
-      console.log(`✅ [API] High-quality PDF generated: ${pdfBuffer.length} bytes`);
-      res.send(pdfBuffer);
+      res.json({
+        success: true,
+        html: html,
+        filename: filename,
+        downloadUrl: `/api/contracts/download/${filename}`,
+        message: 'Contract generated successfully'
+      });
       
     } catch (error: any) {
-      console.error('❌ [API] Error generating high-quality PDF:', error);
+      console.error('❌ [API] Error generating contract:', error);
       res.status(500).json({
         success: false,
-        error: error.message || 'PDF generation failed'
+        error: error.message || 'Contract generation failed'
       });
     }
   });
