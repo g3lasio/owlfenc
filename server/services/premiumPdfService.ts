@@ -55,22 +55,19 @@ class PremiumPdfService {
     <style>
         @page {
             size: A4;
-            margin: 1.4in 1.2in 1.2in 1.2in;
+            margin: 1in 1in 1in 1in;
             @bottom-center {
-                content: "Powered by Mervin AI                                                                    Page " counter(page) " of " counter(pages);
+                content: "Page " counter(page) " of " counter(pages);
                 font-family: 'Times New Roman', serif;
-                font-size: 9pt;
-                color: #777;
-                border-top: 1px solid #e0e0e0;
-                padding-top: 6px;
-                margin-top: 8px;
+                font-size: 10pt;
+                color: #666;
             }
         }
         
         body {
             font-family: 'Times New Roman', serif;
             font-size: 12pt;
-            line-height: 1.6;
+            line-height: 1.5;
             color: #000;
             background: white;
             margin: 0;
@@ -79,139 +76,147 @@ class PremiumPdfService {
         
         .container {
             max-width: 100%;
-            margin: 0;
-            padding: 0;
         }
         
         .header {
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 15px;
         }
         
         .header h1 {
-            font-size: 16pt;
+            font-size: 18pt;
             font-weight: bold;
-            margin: 0 0 5px 0;
+            margin: 0;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 2px;
         }
         
-        .date {
-            font-size: 11pt;
-            margin-top: 20px;
+        .date-section {
+            text-align: right;
+            margin: 20px 0;
+            font-weight: bold;
         }
         
         .parties-section {
-            margin: 40px 0;
+            margin: 30px 0;
         }
         
-        .parties-container {
+        .party-info {
             display: table;
             width: 100%;
             margin: 20px 0;
+            border-collapse: separate;
+            border-spacing: 20px 0;
         }
         
         .party-box {
             display: table-cell;
-            width: 48%;
-            border: 1px solid #000;
-            padding: 15px;
+            width: 45%;
+            border: 2px solid #000;
+            padding: 20px;
             vertical-align: top;
-        }
-        
-        .party-box + .party-box {
-            margin-left: 4%;
         }
         
         .party-title {
             font-weight: bold;
+            font-size: 14pt;
             text-align: center;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             text-transform: uppercase;
+            border-bottom: 1px solid #000;
+            padding-bottom: 5px;
+        }
+        
+        .party-details {
+            line-height: 1.8;
         }
         
         .content-section {
-            margin: 30px 0;
+            margin: 25px 0;
         }
         
         .section-title {
-            font-size: 12pt;
+            font-size: 14pt;
             font-weight: bold;
-            margin: 30px 0 15px 0;
+            margin: 25px 0 15px 0;
             text-transform: uppercase;
             text-align: center;
+            border-bottom: 1px solid #000;
+            padding-bottom: 5px;
         }
         
         .legal-text {
             text-align: justify;
             margin-bottom: 15px;
-            text-indent: 30px;
+            line-height: 1.6;
         }
         
         .numbered-section {
-            margin-bottom: 20px;
+            margin-bottom: 25px;
         }
         
         .section-number {
             font-weight: bold;
-            margin-right: 5px;
+            text-decoration: underline;
+            font-size: 13pt;
         }
         
-        .project-description {
-            margin: 25px 0;
-        }
-        
-        .project-title {
-            font-weight: bold;
-            margin-bottom: 10px;
+        .page-break {
+            page-break-before: always;
+            margin-top: 30px;
         }
         
         .signature-section {
-            margin-top: 50px;
+            margin-top: 60px;
             page-break-inside: avoid;
         }
         
         .signature-container {
             display: table;
             width: 100%;
-            margin: 30px 0;
+            margin: 40px 0;
+            border-collapse: separate;
+            border-spacing: 30px 0;
         }
         
         .signature-box {
             display: table-cell;
-            width: 48%;
-            border: 1px solid #000;
-            padding: 20px;
+            width: 45%;
+            border: 2px solid #000;
+            padding: 30px 20px;
             vertical-align: top;
-        }
-        
-        .signature-box + .signature-box {
-            margin-left: 4%;
+            text-align: center;
         }
         
         .signature-title {
             font-weight: bold;
-            text-align: center;
-            margin-bottom: 25px;
+            font-size: 14pt;
+            margin-bottom: 30px;
             text-transform: uppercase;
         }
         
         .signature-line {
-            border-bottom: 1px solid #000;
-            height: 35px;
-            margin-bottom: 8px;
+            border-bottom: 2px solid #000;
+            height: 50px;
+            margin: 25px 0;
         }
         
         .date-line {
             border-bottom: 1px solid #000;
-            width: 120px;
-            height: 25px;
             display: inline-block;
-            margin-top: 15px;
+            width: 150px;
+            height: 20px;
         }
         
-        .page-break {
-            page-break-before: always;
+        .footer-discrete {
+            text-align: center;
+            font-size: 8pt;
+            color: #999;
+            margin-top: 60px;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
         }
     </style>
 </head>
@@ -219,117 +224,136 @@ class PremiumPdfService {
     <div class="container">
         <div class="header">
             <h1>Independent Contractor Agreement</h1>
-            <p style="margin: 10px 0; font-size: 12pt;">Date: ${currentDate}</p>
+        </div>
+        
+        <div class="date-section">
+            <strong>Agreement Date:</strong> ${currentDate}
         </div>
 
         <div class="parties-section">
-            <div class="section-title">PARTIES TO AGREEMENT</div>
-            <div class="parties-container">
+            <div class="party-info">
                 <div class="party-box">
-                    <div class="party-title">CONTRACTOR:</div>
-                    <p><strong>${data.contractor.name}</strong></p>
-                    <p>${data.contractor.address}</p>
-                    <p>Phone: ${data.contractor.phone}</p>
-                    <p>Email: ${data.contractor.email}</p>
-                    ${data.contractor.license ? `<p>License: ${data.contractor.license}</p>` : ''}
+                    <div class="party-title">Contractor</div>
+                    <div class="party-details">
+                        <p><strong>Business Name:</strong> ${data.contractor.name}</p>
+                        <p><strong>Business Address:</strong><br>${data.contractor.address}</p>
+                        <p><strong>Telephone:</strong> ${data.contractor.phone}</p>
+                        <p><strong>Email:</strong> ${data.contractor.email}</p>
+                        ${data.contractor.license ? `<p><strong>License Number:</strong> ${data.contractor.license}</p>` : ''}
+                    </div>
                 </div>
                 <div class="party-box">
-                    <div class="party-title">CLIENT:</div>
-                    <p><strong>${data.client.name}</strong></p>
-                    <p>${data.client.address}</p>
-                    <p>Phone: ${data.client.phone}</p>
-                    <p>Email: ${data.client.email}</p>
+                    <div class="party-title">Client</div>
+                    <div class="party-details">
+                        <p><strong>Full Name/Company:</strong> ${data.client.name}</p>
+                        <p><strong>Property Address:</strong><br>${data.client.address}</p>
+                        <p><strong>Telephone:</strong> ${data.client.phone}</p>
+                        <p><strong>Email:</strong> ${data.client.email}</p>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="project-description">
-            <div class="section-title">PROJECT DESCRIPTION</div>
-            <p><strong>Project Type:</strong> ${data.project.type}</p>
-            <p><strong>Location:</strong> ${data.project.location}</p>
-            <p><strong>Description:</strong></p>
-            <div class="legal-text">${data.project.description.replace(/\n/g, '</p><p class="legal-text">')}</div>
-            <p><strong>Total Contract Value:</strong> $${data.financials.total.toLocaleString()}</p>
+        <div class="content-section">
+            <div class="section-title">WHEREAS CLAUSES</div>
+            <p class="legal-text">
+                <strong>WHEREAS,</strong> the Client desires to engage the services of an independent contractor to perform specialized ${data.project.type.toLowerCase()} work at the above-referenced property; and
+            </p>
+            <p class="legal-text">
+                <strong>WHEREAS,</strong> the Contractor represents that it possesses the requisite skill, experience, expertise, and all necessary licenses to perform the specified work in accordance with industry standards and applicable regulations; and
+            </p>
+            <p class="legal-text">
+                <strong>WHEREAS,</strong> both parties desire to establish clear terms and conditions governing their professional relationship and to define their respective rights, duties, and obligations;
+            </p>
+            <p class="legal-text">
+                <strong>NOW, THEREFORE,</strong> in consideration of the mutual covenants, agreements, and undertakings contained herein, and for other good and valuable consideration, the receipt and sufficiency of which are hereby acknowledged, the parties agree as follows:
+            </p>
         </div>
 
-        <div class="page-break"></div>
-
         <div class="content-section">
-            <div class="section-title">TERMS AND CONDITIONS</div>
-            
             <div class="numbered-section">
-                <p><span class="section-number">1. INDEPENDENT CONTRACTOR RELATIONSHIP</span></p>
+                <p><span class="section-number">1. SCOPE OF WORK AND SPECIFICATIONS</span></p>
                 <p class="legal-text">
-                    The Contractor is an independent contractor and not an employee, partner, or joint venturer of the Client. The Contractor will not be entitled to any benefits that the Client may make available to its employees, such as group health or life insurance, profit-sharing, or retirement benefits. The Contractor will be solely responsible for all tax returns and payments required to be filed with or made to any federal, state, or local tax authority with respect to the Contractor's performance of services and receipt of fees under this Agreement.
+                    The Contractor hereby agrees to furnish all labor, materials, equipment, and services necessary to complete the following work: ${data.project.description}. Said work shall be performed at the following location: ${data.project.location}. All work shall be executed in a professional, workmanlike manner in strict accordance with industry best practices, applicable building codes, municipal regulations, and manufacturer specifications. The Contractor warrants that all work will meet or exceed industry standards for quality and durability.
                 </p>
             </div>
 
             <div class="numbered-section">
-                <p><span class="section-number">2. SERVICES TO BE PERFORMED</span></p>
+                <p><span class="section-number">2. CONTRACT PRICE AND PAYMENT TERMS</span></p>
                 <p class="legal-text">
-                    The Contractor agrees to perform the services described in the Project Description section above. All services will be performed in a professional and workmanlike manner in accordance with industry standards and applicable building codes. The Contractor warrants that all work will be performed by properly licensed and insured personnel when required by law.
+                    The total contract price for all work, materials, and services described herein shall be <strong>$${data.financials.total.toLocaleString('en-US')} USD</strong>. Payment shall be made according to the following schedule: (a) Fifty percent (50%) of the total contract price is due and payable upon execution of this Agreement as a down payment, and (b) The remaining fifty percent (50%) balance is due and payable immediately upon substantial completion and Client's acceptance of the work. All payments shall be made in United States currency. Late payments shall accrue interest at the rate of one and one-half percent (1.5%) per month or the maximum rate permitted by law, whichever is less.
                 </p>
             </div>
 
             <div class="numbered-section">
-                <p><span class="section-number">3. COMPENSATION</span></p>
+                <p><span class="section-number">3. COMMENCEMENT AND COMPLETION</span></p>
                 <p class="legal-text">
-                    In consideration for the services to be performed by the Contractor, the Client agrees to pay the Contractor the total amount of $${data.financials.total.toLocaleString()} according to the payment schedule agreed upon by both parties. Payment terms include a deposit of 50% upon signing this agreement, with the balance due upon completion of work and client approval.
+                    The Contractor shall commence work within ten (10) business days following execution of this Agreement and receipt of the initial payment, weather and site conditions permitting. The Contractor shall proceed with due diligence and in a timely manner to achieve substantial completion. Time is of the essence in this Agreement. The Contractor shall provide the Client with reasonable advance notice of any circumstances that may delay completion, including but not limited to adverse weather conditions, permit delays, or unforeseen site conditions.
                 </p>
             </div>
 
             <div class="numbered-section">
-                <p><span class="section-number">4. MATERIALS AND EQUIPMENT</span></p>
+                <p><span class="section-number">4. INDEPENDENT CONTRACTOR STATUS</span></p>
                 <p class="legal-text">
-                    Unless otherwise specified, the Contractor will provide all materials, equipment, and supplies necessary to complete the work described herein. All materials will be new and of good quality, conforming to applicable industry standards. The Contractor warrants all materials against defects for a period of one (1) year from completion of work.
+                    The Contractor is and shall remain an independent contractor in the performance of all work under this Agreement. Nothing contained herein shall be construed to create an employer-employee, partnership, joint venture, or agency relationship between the parties. The Contractor shall be solely responsible for all federal, state, and local taxes, withholdings, unemployment insurance, workers' compensation, and other statutory obligations. The Contractor retains the exclusive right to control the manner, method, and means of performing the contracted services, subject to achieving the specified results.
                 </p>
             </div>
 
             <div class="numbered-section">
-                <p><span class="section-number">5. TIME OF PERFORMANCE</span></p>
+                <p><span class="section-number">5. MATERIALS, EQUIPMENT, AND WORKMANSHIP</span></p>
                 <p class="legal-text">
-                    Work will commence within a reasonable time after execution of this agreement and receipt of any required permits. The Contractor will use reasonable efforts to complete the work in a timely manner, weather and other conditions permitting. Time extensions may be granted for circumstances beyond the Contractor's reasonable control, including but not limited to weather delays, permit delays, or changes requested by the Client.
+                    Unless expressly specified otherwise in writing, the Contractor shall furnish and pay for all materials, equipment, tools, transportation, and incidental services necessary for the completion of the work. All materials shall be new, of first quality, and shall conform to applicable industry standards and manufacturer specifications. All equipment used shall be properly maintained and in safe working condition. The Contractor warrants that all work will be free from defects in materials and workmanship for a period of one (1) year from the date of completion.
                 </p>
             </div>
-        </div>
 
         <div class="page-break"></div>
-
-        <div class="content-section">
-            <div class="section-title">ADDITIONAL TERMS AND PROTECTIONS</div>
             
             <div class="numbered-section">
-                <p><span class="section-number">6. LIABILITY AND INSURANCE</span></p>
+                <p><span class="section-number">6. INSURANCE AND LIABILITY</span></p>
                 <p class="legal-text">
-                    The Contractor maintains general liability insurance in the amount of not less than $1,000,000 per occurrence and agrees to provide evidence of such coverage upon request. Each party agrees to indemnify and hold harmless the other party from any claims, damages, or expenses arising from their own negligent acts or omissions in connection with this agreement.
+                    The Contractor shall maintain, at its own expense, comprehensive general liability insurance with minimum coverage limits of One Million Dollars ($1,000,000) per occurrence and Two Million Dollars ($2,000,000) aggregate, naming the Client as an additional insured. The Contractor shall also maintain workers' compensation insurance as required by law. Evidence of such insurance coverage shall be provided to the Client upon request. Each party agrees to indemnify, defend, and hold harmless the other party from and against any and all claims, damages, losses, costs, and expenses (including reasonable attorney fees) arising from or relating to their own negligent acts, errors, or omissions in connection with this Agreement.
                 </p>
             </div>
 
             <div class="numbered-section">
-                <p><span class="section-number">7. CHANGE ORDERS</span></p>
+                <p><span class="section-number">7. CHANGE ORDERS AND MODIFICATIONS</span></p>
                 <p class="legal-text">
-                    Any changes to the scope of work described herein must be agreed to in writing by both parties before implementation. Change orders will include adjustments to contract price and completion time as applicable. No additional work will be performed without written authorization from the Client.
+                    No changes, modifications, or alterations to the scope of work, specifications, or contract terms shall be valid or binding unless executed in writing and signed by both parties. Any approved change order shall specify the nature of the change, adjustment to the contract price (if any), and any modification to the completion schedule. The Contractor shall not proceed with any additional work without a signed written change order. Verbal agreements or understandings shall not be enforceable.
                 </p>
             </div>
 
             <div class="numbered-section">
-                <p><span class="section-number">8. PERMITS AND COMPLIANCE</span></p>
+                <p><span class="section-number">8. PERMITS, LICENSES, AND CODE COMPLIANCE</span></p>
                 <p class="legal-text">
-                    The Contractor will obtain all necessary permits and approvals required for the work, unless specifically agreed otherwise in writing. All work will be performed in compliance with applicable building codes, regulations, and industry standards. Any permits obtained will be transferred to the Client upon completion of work.
+                    The Contractor shall obtain and pay for all permits, licenses, and approvals required by federal, state, and local authorities for the performance of the work, unless specifically agreed otherwise in writing. All work shall be performed in strict compliance with applicable building codes, zoning ordinances, environmental regulations, safety requirements, and industry standards. The Contractor shall schedule and coordinate all required inspections. Upon completion, all permits shall be properly closed out and documentation provided to the Client.
                 </p>
             </div>
 
             <div class="numbered-section">
-                <p><span class="section-number">9. WARRANTY</span></p>
+                <p><span class="section-number">9. WARRANTY AND REMEDIES</span></p>
                 <p class="legal-text">
-                    The Contractor warrants all work performed under this agreement against defects in workmanship for a period of one (1) year from completion. This warranty does not cover damage due to normal wear and tear, abuse, or failure to properly maintain the work. The Contractor's obligation under this warranty is limited to repair or replacement of defective work.
+                    The Contractor hereby warrants all work performed under this Agreement against defects in materials and workmanship for a period of twelve (12) months from the date of substantial completion. This warranty does not cover damage resulting from normal wear and tear, abuse, neglect, accident, or failure to properly maintain the work. Upon written notice of any warranty defect, the Contractor shall, at its option, repair or replace the defective work at no cost to the Client within thirty (30) days. This warranty is in addition to any manufacturer warranties that may apply to materials or equipment.
                 </p>
             </div>
 
             <div class="numbered-section">
-                <p><span class="section-number">10. TERMINATION</span></p>
+                <p><span class="section-number">10. DEFAULT AND TERMINATION</span></p>
                 <p class="legal-text">
-                    Either party may terminate this agreement upon written notice if the other party materially breaches the agreement and fails to cure such breach within ten (10) days after written notice. In the event of termination, the Contractor will be compensated for work satisfactorily completed prior to termination.
+                    Either party may terminate this Agreement upon the material breach of the other party, provided that the breaching party is given written notice of the breach and fails to cure such breach within ten (10) days after receipt of notice. In the event of termination, the Contractor shall be entitled to payment for all work satisfactorily completed prior to termination, less any damages sustained by the Client as a result of Contractor's breach. The Client may also terminate this Agreement for convenience upon thirty (30) days written notice, in which case the Contractor shall be compensated for all work completed and materials ordered prior to termination.
+                </p>
+            </div>
+
+            <div class="numbered-section">
+                <p><span class="section-number">11. DISPUTE RESOLUTION</span></p>
+                <p class="legal-text">
+                    Any disputes arising under this Agreement shall first be addressed through good faith negotiations between the parties. If such negotiations fail to resolve the dispute within thirty (30) days, the matter shall be submitted to binding arbitration administered by the American Arbitration Association under its Construction Industry Arbitration Rules. The arbitration shall be conducted in the county where the work is performed. The prevailing party in any arbitration or legal proceeding shall be entitled to recover reasonable attorney fees and costs from the non-prevailing party.
+                </p>
+            </div>
+
+            <div class="numbered-section">
+                <p><span class="section-number">12. SAFETY AND COMPLIANCE</span></p>
+                <p class="legal-text">
+                    The Contractor shall maintain a safe work environment and comply with all applicable Occupational Safety and Health Administration (OSHA) regulations and industry safety standards. The Contractor shall be solely responsible for the safety of its employees, subcontractors, and work site. All personnel shall use appropriate personal protective equipment and follow established safety protocols. The Contractor shall immediately report any workplace accidents or injuries to the Client and appropriate authorities.
                 </p>
             </div>
         </div>
@@ -340,7 +364,7 @@ class PremiumPdfService {
             <div class="section-title">PROJECT-SPECIFIC PROTECTION CLAUSES</div>
             ${data.protectionClauses.map((clause, index) => `
                 <div class="numbered-section">
-                    <p><span class="section-number">${index + 11}. ${clause.title.toUpperCase()}</span></p>
+                    <p><span class="section-number">${index + 13}. ${clause.title.toUpperCase()}</span></p>
                     <p class="legal-text">${clause.content}</p>
                 </div>
             `).join('')}
@@ -353,45 +377,62 @@ class PremiumPdfService {
             <div class="section-title">GENERAL PROVISIONS</div>
             
             <div class="numbered-section">
-                <p><span class="section-number">${data.protectionClauses ? data.protectionClauses.length + 11 : 11}. GOVERNING LAW</span></p>
+                <p><span class="section-number">${data.protectionClauses ? data.protectionClauses.length + 13 : 13}. GOVERNING LAW AND JURISDICTION</span></p>
                 <p class="legal-text">
-                    This Agreement shall be governed by and construed in accordance with the laws of the State of California, without regard to its conflict of laws principles. Any disputes arising under this Agreement shall be resolved in the courts of competent jurisdiction in the state where the work is performed.
+                    This Agreement shall be governed by and construed in accordance with the laws of the State of California, without regard to its conflict of laws principles. The parties hereby consent to the exclusive jurisdiction of the state and federal courts located in the county where the work is performed for the resolution of any disputes arising under this Agreement. This Agreement shall be binding upon and inure to the benefit of the parties' respective heirs, successors, and assigns.
                 </p>
             </div>
 
             <div class="numbered-section">
-                <p><span class="section-number">${data.protectionClauses ? data.protectionClauses.length + 12 : 12}. ENTIRE AGREEMENT</span></p>
+                <p><span class="section-number">${data.protectionClauses ? data.protectionClauses.length + 14 : 14}. ENTIRE AGREEMENT AND MODIFICATIONS</span></p>
                 <p class="legal-text">
-                    This Agreement constitutes the entire agreement between the parties and supersedes all prior negotiations, representations, or agreements relating to the subject matter hereof. This Agreement may not be amended except by written instrument signed by both parties.
+                    This Agreement constitutes the complete and exclusive statement of the agreement between the parties and supersedes all prior negotiations, representations, understandings, and agreements, whether written or oral, relating to the subject matter hereof. No amendment, modification, or waiver of any provision of this Agreement shall be effective unless set forth in a written document signed by both parties. No course of dealing or usage of trade shall be used to modify, interpret, supplement, or alter the terms of this Agreement.
                 </p>
             </div>
 
             <div class="numbered-section">
-                <p><span class="section-number">${data.protectionClauses ? data.protectionClauses.length + 13 : 13}. SEVERABILITY</span></p>
+                <p><span class="section-number">${data.protectionClauses ? data.protectionClauses.length + 15 : 15}. SEVERABILITY AND CONSTRUCTION</span></p>
                 <p class="legal-text">
-                    If any provision of this Agreement is held to be invalid or unenforceable, the remaining provisions shall continue in full force and effect. The invalid provision shall be replaced by a valid provision that most closely approximates the intent and economic effect of the invalid provision.
+                    If any provision of this Agreement is held to be invalid, illegal, or unenforceable by a court of competent jurisdiction, the remaining provisions shall continue in full force and effect. Any invalid provision shall be replaced by a valid provision that most closely approximates the intent and economic effect of the invalid provision. The headings used in this Agreement are for convenience only and shall not affect the interpretation of any provision. This Agreement has been negotiated by the parties and shall not be construed against either party as the drafter.
+                </p>
+            </div>
+
+            <div class="numbered-section">
+                <p><span class="section-number">${data.protectionClauses ? data.protectionClauses.length + 16 : 16}. NOTICES</span></p>
+                <p class="legal-text">
+                    All notices required or permitted under this Agreement shall be in writing and shall be deemed to have been duly given when personally delivered, or three (3) days after being sent by certified mail, return receipt requested, postage prepaid, to the addresses set forth above or to such other address as either party may designate by written notice to the other party.
                 </p>
             </div>
         </div>
 
         <div class="signature-section">
-            <div class="section-title">SIGNATURES</div>
+            <div class="section-title">EXECUTION</div>
+            <p class="legal-text" style="text-align: center; margin-bottom: 30px;">
+                <strong>IN WITNESS WHEREOF,</strong> the parties have executed this Independent Contractor Agreement as of the date first written above.
+            </p>
             
             <div class="signature-container">
                 <div class="signature-box">
-                    <div class="signature-title">CONTRACTOR:</div>
+                    <div class="signature-title">CONTRACTOR</div>
                     <div class="signature-line"></div>
-                    <p>${data.contractor.name}</p>
+                    <p><strong>${data.contractor.name}</strong></p>
+                    <p>Print Name</p>
+                    <br>
                     <p>Date: <span class="date-line"></span></p>
                 </div>
                 <div class="signature-box">
-                    <div class="signature-title">CLIENT:</div>
+                    <div class="signature-title">CLIENT</div>
                     <div class="signature-line"></div>
-                    <p>${data.client.name}</p>
+                    <p><strong>${data.client.name}</strong></p>
+                    <p>Print Name</p>
+                    <br>
                     <p>Date: <span class="date-line"></span></p>
                 </div>
             </div>
+        </div>
 
+        <div class="footer-discrete">
+            Powered by Mervin AI
         </div>
     </div>
 </body>
