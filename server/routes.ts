@@ -4444,10 +4444,11 @@ Output in English regardless of input language. Make it suitable for contracts a
       console.log('🎨 [PREMIUM] Using premium service with visual cards...');
       
       // Use premium service to generate PDF binary file with cards and visual design
-      const { premiumPdfService } = await import('./services/premiumPdfService');
+      const { default: PremiumPdfService } = await import('./services/premiumPdfService');
+      const premiumPdfService = PremiumPdfService.getInstance();
       
       // Generate actual PDF binary file (not HTML)
-      const pdfBuffer = await premiumPdfService.generatePDF(contractData);
+      const pdfBuffer = await premiumPdfService.generateProfessionalPDF(contractData);
       
       // Set proper headers for PDF download
       const filename = `Professional_Contract_${contractData.client.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
@@ -4466,8 +4467,9 @@ Output in English regardless of input language. Make it suitable for contracts a
       // Try fallback PDF generation without premium features
       try {
         console.log('🔄 [PREMIUM] Attempting fallback PDF generation...');
-        const { premiumPdfService } = await import('./services/premiumPdfService');
-        const html = premiumPdfService.generatePremiumContractHTML(contractData);
+        const { default: PremiumPdfService } = await import('./services/premiumPdfService');
+        const premiumPdfService = PremiumPdfService.getInstance();
+        const html = premiumPdfService.generateProfessionalLegalContractHTML(contractData);
         
         // Return HTML for now if PDF fails, but log the issue
         console.log('⚠️ [PREMIUM] PDF generation failed, returning HTML as fallback');
@@ -4492,7 +4494,8 @@ Output in English regardless of input language. Make it suitable for contracts a
     try {
       console.log('🎨 [API] Starting premium contract generation...');
       
-      const { premiumPdfService } = await import('./services/premiumPdfService');
+      const { default: PremiumPdfService } = await import('./services/premiumPdfService');
+      const premiumPdfService = PremiumPdfService.getInstance();
       
       const contractData = req.body;
       
@@ -4505,7 +4508,7 @@ Output in English regardless of input language. Make it suitable for contracts a
       }
       
       // Generate premium PDF
-      const pdfBuffer = await premiumPdfService.generatePDF(contractData);
+      const pdfBuffer = await premiumPdfService.generateProfessionalPDF(contractData);
       
       // Set headers for PDF download
       const filename = `Contract_${contractData.client.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
