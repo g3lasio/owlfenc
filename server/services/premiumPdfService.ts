@@ -425,7 +425,7 @@ class PremiumPdfService {
       const page = await browser.newPage();
       await page.setContent(html, { waitUntil: 'networkidle0' });
       
-      const pdfBuffer = await page.pdf({
+      const pdfBuffer = Buffer.from(await page.pdf({
         format: 'A4',
         printBackground: true,
         margin: {
@@ -441,7 +441,7 @@ class PremiumPdfService {
             Page <span class="pageNumber"></span> of <span class="totalPages"></span>
           </div>
         `
-      });
+      }));
 
       await browser.close();
       

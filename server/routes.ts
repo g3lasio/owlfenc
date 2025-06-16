@@ -2590,7 +2590,8 @@ Output in English regardless of input language. Make it suitable for contracts a
         console.log('🎨 [API] Detected contract data format - using premium service...');
         
         // Use premium service for contract data
-        const { premiumPdfService } = await import('./services/premiumPdfService');
+        const { default: PremiumPdfService } = await import('./services/premiumPdfService');
+        const premiumPdfService = PremiumPdfService.getInstance();
         
         const contractData = req.body;
         
