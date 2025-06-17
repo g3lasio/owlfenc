@@ -2573,7 +2573,50 @@ Output in English regardless of input language. Make it suitable for contracts a
         const { default: PremiumPdfService } = await import('./services/premiumPdfService');
         const premiumPdfService = PremiumPdfService.getInstance();
         
-        const contractData = req.body;
+        // Enhanced contract data structure to capture ALL frontend data
+        const contractData = {
+          // Basic client and contractor info (existing)
+          client: req.body.client,
+          contractor: req.body.contractor,
+          project: req.body.project,
+          financials: req.body.financials,
+          
+          // NEW: Enhanced frontend data capture
+          contractorInfo: req.body.contractorInfo || {},
+          clientInfo: req.body.clientInfo || {},
+          paymentTerms: req.body.paymentTerms || {},
+          totalCost: req.body.totalCost || req.body.financials?.total || 0,
+          timeline: req.body.timeline || {},
+          permits: req.body.permits || {},
+          warranties: req.body.warranties || {},
+          extraClauses: req.body.extraClauses || [],
+          consents: req.body.consents || {},
+          signatures: req.body.signatures || {},
+          confirmations: req.body.confirmations || {},
+          legalNotices: req.body.legalNotices || {},
+          selectedIntelligentClauses: req.body.selectedIntelligentClauses || [],
+          
+          // AI-generated content from frontend
+          extractedData: req.body.extractedData || {},
+          riskAnalysis: req.body.riskAnalysis || {},
+          protectiveRecommendations: req.body.protectiveRecommendations || [],
+          
+          // Additional frontend customizations
+          customTerms: req.body.customTerms || {},
+          specialProvisions: req.body.specialProvisions || [],
+          stateCompliance: req.body.stateCompliance || {},
+          
+          // Original raw data for debugging/fallback
+          originalRequest: req.body
+        };
+        
+        console.log('📋 [API] Enhanced contract data captured:', {
+          hasExtraClauses: contractData.extraClauses.length > 0,
+          hasIntelligentClauses: contractData.selectedIntelligentClauses.length > 0,
+          hasCustomTerms: Object.keys(contractData.customTerms).length > 0,
+          hasPaymentTerms: Object.keys(contractData.paymentTerms).length > 0,
+          hasWarranties: Object.keys(contractData.warranties).length > 0
+        });
         
         // Validate required data
         if (!contractData.client?.name || !contractData.contractor?.name) {
@@ -2583,7 +2626,7 @@ Output in English regardless of input language. Make it suitable for contracts a
           });
         }
         
-        // Generate premium PDF
+        // Generate premium PDF with enhanced data
         const pdfBuffer = await premiumPdfService.generateProfessionalPDF(contractData);
         
         // Set headers for PDF download
@@ -2593,7 +2636,7 @@ Output in English regardless of input language. Make it suitable for contracts a
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
         res.setHeader('Content-Length', pdfBuffer.length);
         
-        console.log(`✅ [API] Premium contract generated: ${pdfBuffer.length} bytes`);
+        console.log(`✅ [API] Enhanced contract generated: ${pdfBuffer.length} bytes`);
         return res.send(pdfBuffer);
         
       } else if (req.body.html && req.body.filename) {
@@ -4477,7 +4520,50 @@ Output in English regardless of input language. Make it suitable for contracts a
       const { default: PremiumPdfService } = await import('./services/premiumPdfService');
       const premiumPdfService = PremiumPdfService.getInstance();
       
-      const contractData = req.body;
+      // Enhanced contract data structure to capture ALL frontend data
+      const contractData = {
+        // Basic client and contractor info (existing)
+        client: req.body.client,
+        contractor: req.body.contractor,
+        project: req.body.project,
+        financials: req.body.financials,
+        
+        // NEW: Enhanced frontend data capture
+        contractorInfo: req.body.contractorInfo || {},
+        clientInfo: req.body.clientInfo || {},
+        paymentTerms: req.body.paymentTerms || {},
+        totalCost: req.body.totalCost || req.body.financials?.total || 0,
+        timeline: req.body.timeline || {},
+        permits: req.body.permits || {},
+        warranties: req.body.warranties || {},
+        extraClauses: req.body.extraClauses || [],
+        consents: req.body.consents || {},
+        signatures: req.body.signatures || {},
+        confirmations: req.body.confirmations || {},
+        legalNotices: req.body.legalNotices || {},
+        selectedIntelligentClauses: req.body.selectedIntelligentClauses || [],
+        
+        // AI-generated content from frontend
+        extractedData: req.body.extractedData || {},
+        riskAnalysis: req.body.riskAnalysis || {},
+        protectiveRecommendations: req.body.protectiveRecommendations || [],
+        
+        // Additional frontend customizations
+        customTerms: req.body.customTerms || {},
+        specialProvisions: req.body.specialProvisions || [],
+        stateCompliance: req.body.stateCompliance || {},
+        
+        // Original raw data for debugging/fallback
+        originalRequest: req.body
+      };
+      
+      console.log('📋 [API] Enhanced contract data captured:', {
+        hasExtraClauses: contractData.extraClauses.length > 0,
+        hasIntelligentClauses: contractData.selectedIntelligentClauses.length > 0,
+        hasCustomTerms: Object.keys(contractData.customTerms).length > 0,
+        hasPaymentTerms: Object.keys(contractData.paymentTerms).length > 0,
+        hasWarranties: Object.keys(contractData.warranties).length > 0
+      });
       
       // Validate required data
       if (!contractData.client?.name || !contractData.contractor?.name) {
@@ -4487,7 +4573,7 @@ Output in English regardless of input language. Make it suitable for contracts a
         });
       }
       
-      // Generate premium PDF
+      // Generate premium PDF with enhanced data
       const pdfBuffer = await premiumPdfService.generateProfessionalPDF(contractData);
       
       // Set headers for PDF download
@@ -4497,7 +4583,7 @@ Output in English regardless of input language. Make it suitable for contracts a
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
       res.setHeader('Content-Length', pdfBuffer.length);
       
-      console.log(`✅ [API] Premium contract generated: ${pdfBuffer.length} bytes`);
+      console.log(`✅ [API] Enhanced contract generated: ${pdfBuffer.length} bytes`);
       res.send(pdfBuffer);
       
     } catch (error: any) {
