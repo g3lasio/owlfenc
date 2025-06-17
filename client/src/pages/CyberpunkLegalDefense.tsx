@@ -454,7 +454,7 @@ export default function CyberpunkLegalDefense() {
         address: profile?.address || '',
         email: profile?.email || '',
         phone: profile?.phone || '',
-        license: profile?.licenseNumber || '',
+        license: (profile as any)?.licenseNumber || '',
         businessType: profile?.businessType || '',
         yearEstablished: profile?.yearEstablished || new Date().getFullYear(),
         insuranceAmount: profile?.insuranceAmount || 1000000,

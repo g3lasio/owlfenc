@@ -161,6 +161,14 @@ Changelog:
   * Professional bordered party information sections with clean legal text
   * Uniform footer with discrete "Powered by Mervin AI" branding
   * Contract now matches quality expectations of top-tier legal documents
+- June 17, 2025. Fixed frontend-backend synchronization for contract generation:
+  * Resolved data loss issue where user selections weren't reaching PDF generation
+  * Enhanced all contract endpoints to capture complete frontend form data
+  * Added comprehensive collectFormData function to gather all user inputs
+  * Updated /api/generate-pdf, /api/contracts/generate-pdf, and /api/anthropic/generate-defensive-contract
+  * Now captures smart clauses, payment terms, warranties, signatures, custom terms, and legal notices
+  * Verified synchronization with test showing all enhanced data properly flows to backend
+  * Contract PDFs now include all user-selected clauses and customizations
 ```
 
 ## User Preferences

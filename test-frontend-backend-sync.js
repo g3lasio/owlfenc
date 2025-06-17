@@ -5,7 +5,7 @@
  * to ensure ALL user selections and configurations are properly synchronized.
  */
 
-const axios = require('axios');
+import axios from 'axios';
 
 // Test data that simulates complete frontend form data
 const completeContractData = {
