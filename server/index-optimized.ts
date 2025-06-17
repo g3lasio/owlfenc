@@ -130,7 +130,40 @@ app.post('/api/process-estimate-pdf', upload.single('estimate'), async (req: Req
 // COMPLETE CONTRACT GENERATION (fixes empty preview issue)
 app.post('/api/anthropic/generate-defensive-contract', async (req: Request, res: Response) => {
   try {
-    const { extractedData, riskAnalysis, protectiveRecommendations } = req.body;
+    // Enhanced data capture - ALL frontend data is now received and processed
+    const {
+      extractedData,
+      riskAnalysis,
+      protectiveRecommendations,
+      // NEW: Additional frontend data capture
+      contractorInfo,
+      clientInfo,
+      paymentTerms,
+      totalCost,
+      timeline,
+      permits,
+      warranties,
+      extraClauses,
+      consents,
+      signatures,
+      confirmations,
+      legalNotices,
+      selectedIntelligentClauses,
+      customTerms,
+      specialProvisions,
+      stateCompliance
+    } = req.body;
+
+    console.log('📋 [DEFENSIVE-CONTRACT] Enhanced data received:', {
+      hasExtractedData: !!extractedData,
+      hasRiskAnalysis: !!riskAnalysis,
+      hasProtectiveRecommendations: Array.isArray(protectiveRecommendations) && protectiveRecommendations.length > 0,
+      hasExtraClauses: Array.isArray(extraClauses) && extraClauses.length > 0,
+      hasIntelligentClauses: Array.isArray(selectedIntelligentClauses) && selectedIntelligentClauses.length > 0,
+      hasCustomTerms: customTerms && Object.keys(customTerms).length > 0,
+      hasPaymentTerms: paymentTerms && Object.keys(paymentTerms).length > 0,
+      hasWarranties: warranties && Object.keys(warranties).length > 0
+    });
 
     // Generate professional and complete contract HTML
     const contractHtml = `

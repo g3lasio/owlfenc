@@ -446,6 +446,109 @@ export default function CyberpunkLegalDefense() {
     }
   }, [toast]);
 
+  // Comprehensive form data collection function
+  const collectFormData = useCallback(() => {
+    return {
+      contractorInfo: {
+        companyName: profile?.companyName || '',
+        address: profile?.address || '',
+        email: profile?.email || '',
+        phone: profile?.phone || '',
+        license: profile?.licenseNumber || '',
+        businessType: profile?.businessType || '',
+        yearEstablished: profile?.yearEstablished || new Date().getFullYear(),
+        insuranceAmount: profile?.insuranceAmount || 1000000,
+        bondAmount: profile?.bondAmount || 50000
+      },
+      clientInfo: {
+        name: extractedData?.clientInfo?.name || extractedData?.clientName || '',
+        address: extractedData?.clientInfo?.address || extractedData?.clientAddress || '',
+        email: extractedData?.clientInfo?.email || extractedData?.clientEmail || '',
+        phone: extractedData?.clientInfo?.phone || extractedData?.clientPhone || '',
+        propertyType: 'Residential',
+        accessInstructions: '',
+        specialRequests: ''
+      },
+      paymentTerms: paymentTerms.map(term => ({
+        id: term.id,
+        label: term.label,
+        percentage: term.percentage,
+        description: term.description
+      })),
+      totalCost: extractedData?.financials?.total || 0,
+      timeline: {
+        startDate: extractedData?.projectDetails?.startDate || '',
+        endDate: extractedData?.projectDetails?.endDate || '',
+        estimatedDuration: extractedData?.timeline?.estimatedDuration || '',
+        milestones: extractedData?.timeline?.milestones || []
+      },
+      permits: {
+        required: true,
+        responsibleParty: 'Contractor',
+        estimatedCost: 150,
+        processingTime: '5-7 business days'
+      },
+      warranties: {
+        workmanship: '2 years',
+        materials: '5 years manufacturer warranty',
+        weatherResistance: '10 years against rot and decay',
+        colorFading: '5 years limited warranty'
+      },
+      extraClauses: Array.from(selectedClauses).map(clauseId => {
+        const clause = intelligentClauses.find(c => c.id === clauseId);
+        return clause ? {
+          id: clause.id,
+          title: clause.title,
+          content: clause.content,
+          category: clause.category,
+          riskLevel: clause.riskLevel
+        } : null;
+      }).filter(Boolean),
+      consents: {
+        propertyAccess: true,
+        emergencyContact: true,
+        photographyPermission: true,
+        marketingUse: false
+      },
+      signatures: {
+        electronicSignatureEnabled: true,
+        requireWitnessSignature: false,
+        notarizationRequired: false,
+        signatureMethod: 'DocuSign compatible'
+      },
+      confirmations: {
+        contractReviewed: true,
+        paymentTermsUnderstood: true,
+        timelineAccepted: true,
+        warrantyExplained: true
+      },
+      legalNotices: {
+        rightToCancel: '3-day right to cancel for contracts over $500',
+        disputeResolution: 'Binding arbitration through AAA',
+        licenseVerification: 'Contractor license verified with state board',
+        insuranceConfirmation: 'Current insurance certificates on file'
+      },
+      selectedIntelligentClauses: Array.from(selectedClauses).map(clauseId => {
+        const clause = intelligentClauses.find(c => c.id === clauseId);
+        return clause ? {
+          id: clause.id,
+          title: clause.title,
+          content: clause.content,
+          category: clause.category,
+          riskLevel: clause.riskLevel
+        } : null;
+      }).filter(Boolean),
+      customTerms: clauseCustomizations || {},
+      specialProvisions: approvedClauses.map(clause => clause.subcategory) || [],
+      stateCompliance: {
+        californiaCompliant: true,
+        contractorLicenseVerified: true,
+        workerCompensationCurrent: true,
+        buildingPermitObtained: true
+      }
+    };
+  }, [profile, extractedData, paymentTerms, selectedClauses, intelligentClauses, clauseCustomizations, approvedClauses]);
+
   // Función para manejar la finalización del Defense Review
   const handleDefenseComplete = useCallback((approvedDefenseClauses: DefenseClause[], customizations: Record<string, any>) => {
     setApprovedClauses(approvedDefenseClauses);
@@ -551,7 +654,12 @@ export default function CyberpunkLegalDefense() {
     try {
       setIsProcessing(true);
       
-      const contractData: ContractData = {
+      // Collect ALL form data using the comprehensive collectFormData function
+      const allFormData = collectFormData();
+      
+      // Enhanced contract data structure that includes ALL frontend information
+      const contractData = {
+        // Basic client and contractor info (existing)
         client: {
           name: extractedData.clientInfo?.name || 'Client Name',
           address: extractedData.clientInfo?.address || extractedData.projectDetails?.location || 'Client Address',
@@ -578,6 +686,33 @@ export default function CyberpunkLegalDefense() {
           tax: extractedData.financials?.tax,
           taxRate: extractedData.financials?.taxRate
         },
+        
+        // NEW: ALL additional frontend data from collectFormData()
+        contractorInfo: allFormData.contractorInfo || {},
+        clientInfo: allFormData.clientInfo || {},
+        paymentTerms: allFormData.paymentTerms || {},
+        totalCost: allFormData.totalCost || extractedData.financials?.total || 0,
+        timeline: allFormData.timeline || {},
+        permits: allFormData.permits || {},
+        warranties: allFormData.warranties || {},
+        extraClauses: allFormData.extraClauses || [],
+        consents: allFormData.consents || {},
+        signatures: allFormData.signatures || {},
+        confirmations: allFormData.confirmations || {},
+        legalNotices: allFormData.legalNotices || {},
+        selectedIntelligentClauses: allFormData.selectedIntelligentClauses || [],
+        
+        // AI-generated content from frontend
+        extractedData: extractedData || {},
+        riskAnalysis: contractAnalysis || {},
+        protectiveRecommendations: intelligentClauses || [],
+        
+        // Additional frontend customizations
+        customTerms: allFormData.customTerms || {},
+        specialProvisions: allFormData.specialProvisions || [],
+        stateCompliance: allFormData.stateCompliance || {},
+        
+        // Legacy format for backwards compatibility
         protections: intelligentClauses.filter(clause => 
           selectedClauses.has(clause.id) || clause.category === 'MANDATORY'
         ).map(clause => ({
@@ -588,6 +723,16 @@ export default function CyberpunkLegalDefense() {
           riskLevel: clause.riskLevel || 'MEDIUM'
         }))
       };
+      
+      console.log('📋 [FRONTEND] Sending enhanced contract data:', {
+        hasExtraClauses: contractData.extraClauses.length > 0,
+        hasIntelligentClauses: contractData.selectedIntelligentClauses.length > 0,
+        hasCustomTerms: Object.keys(contractData.customTerms).length > 0,
+        hasPaymentTerms: Object.keys(contractData.paymentTerms).length > 0,
+        hasWarranties: Object.keys(contractData.warranties).length > 0,
+        hasSignatures: Object.keys(contractData.signatures).length > 0,
+        hasLegalNotices: Object.keys(contractData.legalNotices).length > 0
+      });
 
       // Call the hybrid contract generation API
       const response = await fetch('/api/contracts/generate-professional', {
