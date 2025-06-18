@@ -238,36 +238,41 @@ export default function Sidebar() {
             </div>
           </div>
         ) : (
-          // Vista colapsada - Solo íconos verticales con scroll interno
+          // Vista colapsada - Solo íconos verticales con tooltips mejorados
           <div className="flex-1 overflow-y-auto">
             <div className="flex flex-col p-1 space-y-0.5">
               {navigationGroups.flatMap(group => group.items)
                 .filter(item => item.path !== "/mervin" && item.id !== "mervin")
                 .map((item: NavigationItem) => (
-                  <Link
-                    key={item.id}
-                    href={item.path}
-                    className={`
-                      flex items-center justify-center w-14 h-10 rounded-md transition-all duration-200 mx-auto
-                      hover:bg-accent/50 hover:scale-105
-                      ${location === item.path 
-                        ? 'bg-primary/20 text-primary border border-primary/30' 
-                        : 'text-muted-foreground hover:text-primary'
-                      }
-                    `}
-                    title={t(item.label)}
-                  >
-                    {item.icon.startsWith('lucide-') ? (
-                      <>
-                        {item.icon === 'lucide-building' && <Building className="h-4 w-4" />}
-                        {item.icon === 'lucide-settings' && <Settings className="h-4 w-4" />}
-                        {item.icon === 'lucide-credit-card' && <CreditCard className="h-4 w-4" />}
-                        {item.icon === 'lucide-brain' && <BrainIcon className="h-4 w-4" />}
-                      </>
-                    ) : (
-                      <i className={`${item.icon} text-base`} />
-                    )}
-                  </Link>
+                  <Tooltip key={item.id}>
+                    <TooltipTrigger asChild>
+                      <Link
+                        href={item.path}
+                        className={`
+                          flex items-center justify-center w-14 h-10 rounded-md transition-all duration-200 mx-auto
+                          hover:bg-accent/50 hover:scale-105
+                          ${location === item.path 
+                            ? 'bg-primary/20 text-primary border border-primary/30' 
+                            : 'text-muted-foreground hover:text-primary'
+                          }
+                        `}
+                      >
+                        {item.icon.startsWith('lucide-') ? (
+                          <>
+                            {item.icon === 'lucide-building' && <Building className="h-4 w-4" />}
+                            {item.icon === 'lucide-settings' && <Settings className="h-4 w-4" />}
+                            {item.icon === 'lucide-credit-card' && <CreditCard className="h-4 w-4" />}
+                            {item.icon === 'lucide-brain' && <BrainIcon className="h-4 w-4" />}
+                          </>
+                        ) : (
+                          <i className={`${item.icon} text-base`} />
+                        )}
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="bg-background border border-border text-foreground shadow-lg">
+                      <p className="font-medium">{t(item.label)}</p>
+                    </TooltipContent>
+                  </Tooltip>
                 ))}
             </div>
           </div>
