@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { LogOut, User, CreditCard, Building, Settings, Brain as BrainIcon, ChevronDown, ChevronRight, ChevronLeft } from "lucide-react";
+import { LogOut, User, CreditCard, Building, Settings, Brain as BrainIcon, ChevronDown, ChevronRight, ChevronLeft, ArrowRightToLine, ArrowLeftToLine } from "lucide-react";
 import { navigationGroups, NavigationItem } from "@/config/navigation";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -104,13 +104,22 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
             variant="ghost"
             size="sm"
             onClick={toggleSidebar}
-            className="w-full flex items-center justify-center hover:bg-accent"
+            className="w-full flex items-center justify-center hover:bg-accent/70 hover:scale-110 transition-all duration-300 group"
+            style={{
+              background: 'linear-gradient(135deg, rgba(0,255,255,0.1), rgba(0,200,255,0.05))',
+              borderRadius: '12px',
+              border: '1px solid rgba(0,255,255,0.2)'
+            }}
           >
-            {isSidebarExpanded ? (
-              <ChevronLeft className="h-4 w-4" />
-            ) : (
-              <ChevronRight className="h-4 w-4" />
-            )}
+            <div 
+              className="transition-all duration-500 ease-in-out group-hover:text-cyan-400"
+              style={{
+                transform: isSidebarExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                filter: 'drop-shadow(0 0 4px rgba(0,255,255,0.3))'
+              }}
+            >
+              <ArrowRightToLine className="h-4 w-4" />
+            </div>
           </Button>
         </div>
 
