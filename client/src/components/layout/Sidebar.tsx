@@ -174,103 +174,65 @@ export default function Sidebar() {
 
   return (
     <aside className={`hidden md:flex flex-col bg-card h-screen overflow-hidden relative transition-all duration-300 ${isSidebarExpanded ? 'md:w-72 border-r border-border' : 'md:w-16'}`}>
-      {/* Solo mostrar bordes sci-fi cuando está expandido */}
-      {isSidebarExpanded && (
-        <>
-          {/* Advanced Sci-Fi Border System */}
-          <div className="sci-fi-sidebar-border">
-            <div className="dashed-sci-fi-line"></div>
-          </div>
-          
-          {/* Power Nodes */}
-          <div className="power-node-top"></div>
-          <div className="power-node-bottom"></div>
-          
-          {/* Corner Brackets */}
-          <div className="sci-fi-bracket-top"></div>
-          <div className="sci-fi-bracket-bottom"></div>
-        </>
-      )}
       
       {/* Todo el contenido en un contenedor con scroll */}
       <div className="flex flex-col h-full overflow-y-auto">
         
-        {/* Botón de toggle con flecha */}
-        <div className={`${isSidebarExpanded ? 'p-3 border-b border-border' : 'p-2 border-b border-border/30'}`}>
+        {/* Botón de toggle - Solo flecha */}
+        <div className={`${isSidebarExpanded ? 'p-3 border-b border-border' : 'p-2'}`}>
           <Button
             variant="ghost"
-            className={`w-full justify-center transition-all duration-200 ${
-              isSidebarExpanded 
-                ? 'text-xs font-semibold py-3 text-muted-foreground uppercase tracking-wider hover:bg-accent hover:text-cyan-400' 
-                : 'p-2 hover:bg-accent/50 rounded-md'
-            }`}
+            className="w-full justify-center p-2 hover:bg-accent/50 rounded-md transition-colors"
             onClick={toggleSidebar}
           >
             {isSidebarExpanded ? (
-              <span className="flex items-center justify-center w-full">
-                MENU
-                <span className="ml-2">
-                  <ChevronLeft className="h-4 w-4" />
-                </span>
-              </span>
+              <ChevronLeft className="h-5 w-5 text-muted-foreground hover:text-primary" />
             ) : (
-              <ChevronRight className="h-5 w-5 text-muted-foreground hover:text-primary transition-colors" />
+              <ChevronRight className="h-5 w-5 text-muted-foreground hover:text-primary" />
             )}
           </Button>
         </div>
 
         {/* Navegación principal */}
         {isSidebarExpanded ? (
-          // Vista expandida con menú completo
-          <AnimatePresence>
-            <motion.div 
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.4, ease: "easeInOut" }}
-              className="flex-1 px-3 pt-4 overflow-hidden"
-            >
-              {navigationGroups.map((group, index) => (
-                <div key={`group-${index}`}>
-                  {/* Sci-Fi Accordion Frame */}
-                  <div className="mb-6 sci-fi-frame sci-fi-corner-brackets arc-reactor-bg p-3">
-                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 text-center">
-                      {t(`navigation.${group.title}`)}
-                    </div>
-                    
-                    <div className="space-y-1">
-                      {/* Filtrar el elemento de Mervin AI si existe */}
-                      {group.items
-                        .filter(item => item.path !== "/mervin" && item.id !== "mervin")
-                        .map((item) => (
-                          <Link key={item.id} href={item.path}>
-                            <Button variant="ghost" className="w-full justify-start hover:bg-cyan-500/10 hover:text-cyan-400 transition-colors">
-                              <span className="flex items-center w-full">
-                                {item.icon.startsWith('lucide-') ? (
-                                  <>
-                                    {item.icon === 'lucide-user' && <User className="h-4 w-4 mr-3" />}
-                                    {item.icon === 'lucide-credit-card' && <CreditCard className="h-4 w-4 mr-3" />}
-                                    {item.icon === 'lucide-building' && <Building className="h-4 w-4 mr-3" />}
-                                    {item.icon === 'lucide-settings' && <Settings className="h-4 w-4 mr-3" />}
-                                    {item.icon === 'lucide-brain' && <BrainIcon className="h-4 w-4 mr-3" />}
-                                  </>
-                                ) : (
-                                  <i className={`${item.icon} mr-3 text-lg`}></i>
-                                )}
-                                <span className="text-sm">{t(item.label)}</span>
-                              </span>
-                            </Button>
-                          </Link>
-                        ))}
-                    </div>
-                  </div>
-                  {index < navigationGroups.length - 1 && index === 1 && (
-                    <div className="futuristic-divider power-pulse my-4"></div>
-                  )}
+          // Vista expandida - Diseño limpio y minimalista
+          <div className="flex-1 p-4 space-y-6 overflow-y-auto">
+            {navigationGroups.map((group, index) => (
+              <div key={`group-${index}`} className="space-y-2">
+                {/* Título simple de la sección */}
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2">
+                  {t(`navigation.${group.title}`)}
+                </h3>
+                
+                {/* Lista limpia de elementos */}
+                <div className="space-y-1">
+                  {group.items
+                    .filter(item => item.path !== "/mervin" && item.id !== "mervin")
+                    .map((item) => (
+                      <Link key={item.id} href={item.path}>
+                        <Button 
+                          variant="ghost" 
+                          className="w-full justify-start px-2 py-2 h-auto hover:bg-accent text-sm font-normal"
+                        >
+                          {item.icon.startsWith('lucide-') ? (
+                            <>
+                              {item.icon === 'lucide-user' && <User className="h-4 w-4 mr-3" />}
+                              {item.icon === 'lucide-credit-card' && <CreditCard className="h-4 w-4 mr-3" />}
+                              {item.icon === 'lucide-building' && <Building className="h-4 w-4 mr-3" />}
+                              {item.icon === 'lucide-settings' && <Settings className="h-4 w-4 mr-3" />}
+                              {item.icon === 'lucide-brain' && <BrainIcon className="h-4 w-4 mr-3" />}
+                            </>
+                          ) : (
+                            <i className={`${item.icon} mr-3 text-base`}></i>
+                          )}
+                          {t(item.label)}
+                        </Button>
+                      </Link>
+                    ))}
                 </div>
-              ))}
-            </motion.div>
-          </AnimatePresence>
+              </div>
+            ))}
+          </div>
         ) : (
           // Vista colapsada - Solo íconos verticales
           <div className="flex flex-col flex-1 p-2 space-y-1 overflow-y-auto">
