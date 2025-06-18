@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -26,7 +26,11 @@ interface Plan {
   name: string;
 }
 
-export default function Sidebar() {
+interface SidebarProps {
+  onWidthChange?: (width: number) => void;
+}
+
+export default function Sidebar({ onWidthChange }: SidebarProps) {
   const [location] = useLocation();
   const { currentUser, logout } = useAuth();
   const { toast } = useToast();
@@ -69,6 +73,12 @@ export default function Sidebar() {
   const toggleSidebar = () => {
     setSidebarExpanded(!isSidebarExpanded);
   };
+
+  // Comunicar cambios de ancho al componente padre
+  useEffect(() => {
+    const width = isSidebarExpanded ? 288 : 64;
+    onWidthChange?.(width);
+  }, [isSidebarExpanded, onWidthChange]);
 
   return (
     <TooltipProvider>

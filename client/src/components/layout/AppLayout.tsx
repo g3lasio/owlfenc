@@ -23,6 +23,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { currentUser } = useAuth();
   const [location] = useLocation();
+  const [sidebarWidth, setSidebarWidth] = useState(64);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(prevState => {
@@ -94,16 +95,23 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
   // Para el resto de las páginas (protegidas), mostrar el layout completo
   return (
-    <div className="flex h-screen w-screen overflow-hidden">
-      {/* Sidebar único con todas las funcionalidades - Solo en desktop */}
-      <div className="hidden md:block" style={{ height: '100vh', overflow: 'hidden' }}>
-        <Sidebar />
+    <div className="flex h-screen w-screen">
+      {/* Sidebar completamente independiente - Solo en desktop */}
+      <div 
+        className="hidden md:block fixed left-0 top-0 z-40" 
+        style={{ 
+          height: '100vh', 
+          overflow: 'hidden',
+          position: 'fixed'
+        }}
+      >
+        <Sidebar onWidthChange={setSidebarWidth} />
       </div>
 
-      {/* Contenido principal */}
-      <main className="flex-1 flex flex-col overflow-hidden">
+      {/* Contenido principal con margen dinámico para el sidebar */}
+      <main className="flex-1 flex flex-col h-screen" style={{ marginLeft: `${sidebarWidth}px` }}>
         <Header toggleMobileMenu={toggleMobileMenu} isMobileMenuOpen={isMobileMenuOpen} />
-        <div className="flex-1 w-full h-full relative overflow-y-auto page-scroll-container" style={{WebkitOverflowScrolling: 'touch'}}>
+        <div className="flex-1 overflow-y-auto" style={{WebkitOverflowScrolling: 'touch'}}>
           <Switch>
             <Route path="/settings/profile" component={Profile} />
             <Route path="*">{children}</Route>
