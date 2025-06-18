@@ -39,44 +39,15 @@ export default function Header({
 
   return (
     <header className="h-20 w-full flex items-center bg-card border-b border-border sticky top-0 z-50">
-      {/* Botón del menú */}
-      <div className="w-16 flex items-center justify-center">
-        <button
-          className="p-2 rounded-md hover:bg-primary/10 transition-all duration-300 z-50 relative md:hidden"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            handleMenuToggle();
-            console.log("Menu toggle clicked in Header");
-          }}
-          aria-label="Menu principal"
-          aria-expanded={isMobileMenuOpen}
-          type="button"
-        >
-          <i className="ri-menu-line text-2xl text-primary"></i>
-        </button>
-      </div>
-
       {/* Logo centrado */}
       <div className="flex-1 flex flex-col items-center justify-center">
         <Link href="/" className="flex flex-col items-center">
           <div className="h-10 flex items-center justify-center relative">
-            {/* Logo para móvil */}
+            {/* Imagen del logo */}
             <img
               src="https://i.postimg.cc/yYSwtxhq/White-logo-no-background.png" 
               alt="Logo"
-              className="h-10 w-auto object-contain md:hidden"
-              style={{ filter: 'brightness(1.1) contrast(1.1)' }}
-              onError={(e) => {
-                e.currentTarget.src = "/White-logo-no-background-new.png";
-              }}
-            />
-            
-            {/* Imagen del logo (oculta en móvil) */}
-            <img
-              src="https://i.postimg.cc/yYSwtxhq/White-logo-no-background.png" 
-              alt="Logo"
-              className="h-10 w-auto object-contain hidden md:block"
+              className="h-10 w-auto object-contain"
               style={{ filter: 'brightness(1.1) contrast(1.1)' }}
               onError={(e) => {
                 console.log("Error cargando logo en Header, usando fallback");
@@ -99,9 +70,6 @@ export default function Header({
           </p>
         </Link>
       </div>
-
-      {/* Espacio vacío en el lado derecho para mantener el balance */}
-      <div className="w-16"></div>
     </header>
   );
 }

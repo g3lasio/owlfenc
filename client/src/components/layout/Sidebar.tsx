@@ -133,7 +133,9 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                 height: '100%', 
                 overflowY: 'auto', 
                 overflowX: 'hidden',
-                padding: '12px',
+                paddingTop: '12px',
+                paddingLeft: '12px',
+                paddingRight: '12px',
                 paddingBottom: '80px' // Espacio para el footer
               }}
             >
@@ -181,11 +183,13 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                 height: '100%',
                 overflowY: 'auto', 
                 overflowX: 'hidden',
-                padding: '4px', 
+                paddingTop: '4px',
+                paddingLeft: '4px',
+                paddingRight: '4px',
+                paddingBottom: '80px', // Espacio para el footer
                 display: 'flex', 
                 flexDirection: 'column', 
-                gap: '2px',
-                paddingBottom: '80px' // Espacio para el footer
+                gap: '2px'
               }}
             >
               {navigationGroups.flatMap(group => group.items)
