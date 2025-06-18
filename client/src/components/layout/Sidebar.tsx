@@ -28,6 +28,7 @@ interface Plan {
 export default function Sidebar() {
   const { currentUser, logout } = useAuth();
   const { toast } = useToast();
+  const [location] = useLocation();
   const [loading, setLoading] = useState(false);
   const [isToolsExpanded, setIsToolsExpanded] = useState(false);
   const [isFeaturesExpanded, setIsFeaturesExpanded] = useState(false);
@@ -275,7 +276,7 @@ export default function Sidebar() {
           <div className="flex flex-col flex-1 p-2 space-y-1 overflow-y-auto">
             {navigationGroups.flatMap(group => group.items)
               .filter(item => item.path !== "/mervin" && item.id !== "mervin")
-              .map((item) => (
+              .map((item: NavigationItem) => (
                 <Link
                   key={item.id}
                   href={item.path}
