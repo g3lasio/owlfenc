@@ -34,7 +34,19 @@ export default function Home() {
       position: 'relative'
     }}>
       <Link href="/mervin">
-        <button style={{ position: 'relative' }}>
+        <button style={{ 
+          position: 'relative',
+          borderRadius: '50%',
+          border: 'none',
+          background: 'transparent',
+          cursor: 'pointer',
+          padding: 0,
+          width: '300px',
+          height: '300px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
           {/* Halo exterior con gradiente */}
           <div className="absolute inset-0 rounded-full blur-2xl opacity-60 bg-gradient-to-r from-cyan-300 via-cyan-500 to-blue-600 animate-pulse group-hover:opacity-80 transition-all duration-500"></div>
           
