@@ -111,7 +111,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       {/* Contenido principal con margen dinámico para el sidebar */}
       <main className="flex-1 flex flex-col h-screen" style={{ marginLeft: `${sidebarWidth}px` }}>
         <Header toggleMobileMenu={toggleMobileMenu} isMobileMenuOpen={isMobileMenuOpen} />
-        <div className="flex-1 overflow-y-auto" style={{WebkitOverflowScrolling: 'touch'}}>
+        <div className="flex-1 flex items-center justify-center" style={{ minHeight: 'calc(100vh - 64px)' }}>
           <Switch>
             <Route path="/settings/profile" component={Profile} />
             <Route path="*">{children}</Route>
