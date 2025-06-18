@@ -3,8 +3,8 @@ import { Link } from 'wouter';
 
 export default function PrivacyPolicy() {
   return (
-    <div className="min-h-screen overflow-y-auto bg-background py-8 px-4">
-      <div className="container mx-auto max-w-4xl">
+    <div className="w-full h-full overflow-y-auto bg-background">
+      <div className="container mx-auto max-w-4xl py-8 px-6">
         <div className="bg-card rounded-lg p-8 shadow-md">
           <h1 className="text-3xl font-bold mb-6 text-center text-primary">Privacy Policy</h1>
           

@@ -119,12 +119,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <Header toggleMobileMenu={toggleMobileMenu} isMobileMenuOpen={isMobileMenuOpen} />
         <div style={{ 
           flex: 1, 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center',
           overflow: 'auto',
-          height: 'calc(100vh - 64px)',
-          paddingBottom: '40px' // Espacio para el footer
+          height: 'calc(100vh - 104px)', // Altura ajustada para header (64px) + footer (40px)
+          paddingBottom: '20px'
         }}>
           <Switch>
             <Route path="/settings/profile" component={Profile} />
