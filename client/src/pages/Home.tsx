@@ -61,26 +61,46 @@ export default function Home() {
           justifyContent: 'center',
           animation: 'borderGlow 3s ease-in-out infinite, reactorPulse 2s ease-in-out infinite'
         }}>
-          {/* Halo exterior con gradiente */}
-          <div className="absolute inset-0 rounded-full blur-2xl opacity-60 bg-gradient-to-r from-cyan-300 via-cyan-500 to-blue-600 animate-pulse group-hover:opacity-80 transition-all duration-500"></div>
-          
-          {/* Anillo energético con efecto de rotación */}
-          <div className="absolute inset-0 border-2 border-cyan-400 rounded-full opacity-70 group-hover:opacity-90 group-hover:scale-110 transition-all duration-500"></div>
-          <div className="absolute inset-0 border-4 border-dashed border-cyan-500 rounded-full opacity-40 animate-spin-slow"></div>
-          
-          {/* Efecto de resplandor */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-40 h-40 md:w-48 md:h-48 lg:w-56 lg:h-56 xl:w-64 xl:h-64 rounded-full bg-gradient-to-r from-cyan-300/30 via-blue-400/20 to-cyan-200/10 animate-pulse"></div>
-          </div>
-          
           {/* Efecto de escaneo horizontal */}
-          <div className="absolute inset-0 overflow-hidden rounded-full">
-            <div className="h-1 bg-cyan-400/70 w-full absolute top-1/2 -translate-y-1/2 shadow-lg shadow-cyan-500/50 animate-scan-y"></div>
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            borderRadius: '50%',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              height: '2px',
+              background: 'rgba(0,255,255,0.7)',
+              width: '100%',
+              position: 'absolute',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              boxShadow: '0 0 10px rgba(0,255,255,0.5)'
+            }}></div>
           </div>
           
           {/* Efecto de escaneo vertical */}
-          <div className="absolute inset-0 overflow-hidden rounded-full">
-            <div className="w-1 bg-blue-400/70 h-full absolute left-1/2 -translate-x-1/2 shadow-lg shadow-blue-500/50 animate-scan-x"></div>
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            borderRadius: '50%',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              width: '2px',
+              background: 'rgba(0,150,255,0.7)',
+              height: '100%',
+              position: 'absolute',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              boxShadow: '0 0 10px rgba(0,150,255,0.5)'
+            }}></div>
           </div>
           
           {/* Contenedor principal */}
@@ -115,6 +135,16 @@ export default function Home() {
               ))}
             </div>
             
+            {/* Fondo circular oscuro para contraste del logo */}
+            <div style={{
+              position: 'absolute',
+              width: '140px',
+              height: '140px',
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(0,20,40,0.8) 0%, rgba(0,40,80,0.6) 50%, transparent 100%)',
+              zIndex: 5
+            }}></div>
+            
             {/* Imagen del logo */}
             <img 
               src="https://i.postimg.cc/FK6hvMbf/logo-mervin.png" 
@@ -125,7 +155,8 @@ export default function Home() {
                 height: '120px',
                 objectFit: 'contain',
                 zIndex: 10,
-                animation: 'logoGlow 2.5s ease-in-out infinite'
+                animation: 'logoGlow 2.5s ease-in-out infinite',
+                filter: 'brightness(1.2) contrast(1.3) saturate(1.1)'
               }}
             />
           </div>
