@@ -84,14 +84,17 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
     <TooltipProvider>
       <aside 
         className={`
-          hidden md:flex flex-col bg-card transition-all duration-300
-          ${isSidebarExpanded ? 'md:w-72 border-r border-border' : 'md:w-16'}
+          flex flex-col bg-card transition-all duration-300
+          ${isSidebarExpanded ? 'w-72 border-r border-border' : 'w-16'}
         `}
         style={{ 
           height: '100vh', 
           maxHeight: '100vh', 
           overflow: 'hidden',
-          position: 'relative',
+          position: 'fixed',
+          left: 0,
+          top: 0,
+          zIndex: 40,
           minHeight: '100vh'
         }}
       >
@@ -112,11 +115,28 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
           </Button>
         </div>
 
-        {/* Área de navegación - ocupa todo el espacio disponible */}
-        <div className="flex-1" style={{ minHeight: 0, overflow: 'hidden' }}>
+        {/* Área de navegación con scroll interno */}
+        <div 
+          className="flex-1" 
+          style={{ 
+            minHeight: 0, 
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column'
+          }}
+        >
           {isSidebarExpanded ? (
-            // Vista expandida
-            <div style={{ height: '100%', overflowY: 'auto', padding: '12px' }}>
+            // Vista expandida con scroll
+            <div 
+              className="custom-scroll"
+              style={{ 
+                height: '100%', 
+                overflowY: 'auto', 
+                overflowX: 'hidden',
+                padding: '12px',
+                paddingBottom: '80px' // Espacio para el footer
+              }}
+            >
               {navigationGroups.map((group, index) => (
                 <div key={`group-${index}`} style={{ marginBottom: '16px' }}>
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2 mb-2">
@@ -130,7 +150,9 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                         <Link key={item.id} href={item.path}>
                           <Button 
                             variant="ghost" 
-                            className="w-full justify-start px-2 py-1.5 h-auto hover:bg-accent text-sm font-normal"
+                            className={`w-full justify-start px-2 py-1.5 h-auto hover:bg-accent text-sm font-normal ${
+                              location === item.path ? 'bg-primary/20 text-primary' : ''
+                            }`}
                           >
                             {item.icon.startsWith('lucide-') ? (
                               <>
@@ -152,8 +174,20 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
               ))}
             </div>
           ) : (
-            // Vista colapsada
-            <div style={{ padding: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            // Vista colapsada con scroll
+            <div 
+              className="custom-scroll"
+              style={{ 
+                height: '100%',
+                overflowY: 'auto', 
+                overflowX: 'hidden',
+                padding: '4px', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: '2px',
+                paddingBottom: '80px' // Espacio para el footer
+              }}
+            >
               {navigationGroups.flatMap(group => group.items)
                 .filter(item => item.path !== "/mervin" && item.id !== "mervin")
                 .map((item: NavigationItem) => (
@@ -191,9 +225,12 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
           )}
         </div>
 
-        {/* Footer fijo */}
+        {/* Footer fijo - posicionado absolutamente */}
         {isSidebarExpanded && (
-          <div className="flex-shrink-0 p-2 border-t border-border bg-card">
+          <div 
+            className="absolute bottom-0 left-0 right-0 p-2 border-t border-border bg-card"
+            style={{ zIndex: 50 }}
+          >
             <div className="flex items-center justify-between space-x-2">
               <Button 
                 variant="ghost" 

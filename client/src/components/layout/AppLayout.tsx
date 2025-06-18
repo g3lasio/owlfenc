@@ -104,20 +104,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
       top: 0,
       left: 0
     }}>
-      {/* Sidebar completamente independiente - Solo en desktop */}
-      <div 
-        className="hidden md:block" 
-        style={{ 
-          height: '100vh', 
-          overflow: 'hidden',
-          position: 'fixed',
-          left: 0,
-          top: 0,
-          zIndex: 40
-        }}
-      >
-        <Sidebar onWidthChange={setSidebarWidth} />
-      </div>
+      {/* Sidebar siempre visible en todas las pantallas */}
+      <Sidebar onWidthChange={setSidebarWidth} />
 
       {/* Contenido principal con margen dinámico para el sidebar */}
       <main style={{ 
@@ -134,32 +122,36 @@ export default function AppLayout({ children }: AppLayoutProps) {
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'center',
-          overflow: 'hidden',
-          height: 'calc(100vh - 64px)'
+          overflow: 'auto',
+          height: 'calc(100vh - 64px)',
+          paddingBottom: '40px' // Espacio para el footer
         }}>
           <Switch>
             <Route path="/settings/profile" component={Profile} />
             <Route path="*">{children}</Route>
           </Switch>
-          
-          {/* Footer fijo global visible en todas las páginas */}
-          <div className="fixed bottom-0 left-0 right-0 py-2 px-4 bg-gray-900 border-t border-cyan-900/30 text-xs text-center text-cyan-500/50 z-10">
-            <div className="flex justify-center space-x-4">
-              <a href="#" className="hover:text-cyan-400">Política de Privacidad</a>
-              <span>|</span>
-              <a href="#" className="hover:text-cyan-400">Términos Legales</a>
-              <span>|</span>
-              <span>© 2025 Owl Fence</span>
-            </div>
+        </div>
+        
+        {/* Footer fijo en la parte inferior del contenido principal */}
+        <div 
+          className="py-2 px-4 bg-gray-900 border-t border-cyan-900/30 text-xs text-center text-cyan-500/50"
+          style={{
+            position: 'fixed',
+            bottom: 0,
+            left: `${sidebarWidth}px`,
+            right: 0,
+            zIndex: 10
+          }}
+        >
+          <div className="flex justify-center space-x-4">
+            <a href="#" className="hover:text-cyan-400">Política de Privacidad</a>
+            <span>|</span>
+            <a href="#" className="hover:text-cyan-400">Términos Legales</a>
+            <span>|</span>
+            <span>© 2025 Owl Fence</span>
           </div>
         </div>
       </main>
-
-      {/* Menú móvil (solo visible en mobile cuando se activa) */}
-      <MobileMenu 
-        isOpen={isMobileMenuOpen} 
-        onClose={() => setIsMobileMenuOpen(false)} 
-      />
     </div>
   );
 }
