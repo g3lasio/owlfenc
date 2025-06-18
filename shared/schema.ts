@@ -6,31 +6,31 @@ import { z } from 'zod';
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
   firebaseUid: varchar('firebase_uid', { length: 255 }).unique(),
-  username: varchar('username', { length: 255 }).notNull().unique(),
-  email: varchar('email', { length: 255 }).notNull().unique(),
-  passwordHash: varchar('password_hash', { length: 255 }).notNull(),
-  // Company/Contractor Information
-  companyName: varchar('company_name', { length: 255 }),
-  businessType: varchar('business_type', { length: 100 }), // 'painting', 'fencing', 'general_contractor', etc.
-  licenseNumber: varchar('license_number', { length: 100 }),
+  username: text('username').notNull().unique(),
+  password: text('password').notNull(),
+  company: text('company'),
+  ownerName: text('owner_name'),
+  role: text('role'),
+  email: text('email').notNull().unique(),
+  phone: text('phone'),
+  mobilePhone: text('mobile_phone'),
   address: text('address'),
-  phone: varchar('phone', { length: 50 }),
-  website: varchar('website', { length: 255 }),
-  // Branding
-  logoUrl: text('logo_url'),
-  primaryColor: varchar('primary_color', { length: 7 }), // hex color
-  secondaryColor: varchar('secondary_color', { length: 7 }),
-  // Location/Legal
-  state: varchar('state', { length: 50 }),
-  city: varchar('city', { length: 100 }),
-  zipCode: varchar('zip_code', { length: 20 }),
-  taxId: varchar('tax_id', { length: 50 }),
-  // Professional Details
-  yearsInBusiness: integer('years_in_business'),
-  specialties: jsonb('specialties'), // array of specialties
-  insuranceInfo: jsonb('insurance_info'),
+  city: text('city'),
+  state: text('state'),
+  zipCode: text('zip_code'),
+  license: text('license'),
+  insurancePolicy: text('insurance_policy'),
+  ein: text('ein'),
+  businessType: text('business_type'),
+  yearEstablished: text('year_established'),
+  website: text('website'),
+  description: text('description'),
+  specialties: jsonb('specialties'),
+  socialMedia: jsonb('social_media'),
+  documents: jsonb('documents'),
+  logo: text('logo'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  stripeConnectAccountId: text('stripe_connect_account_id'),
 });
 
 // Projects table

@@ -184,13 +184,13 @@ router.post('/generate', async (req, res) => {
         console.log('🔍 [PDFMonkey Estimates] Buscando usuario por Firebase UID:', estimateData.firebaseUid);
         const user = await storage.getUserByFirebaseUid(estimateData.firebaseUid);
         if (user) {
-          console.log('✅ [PDFMonkey Estimates] Usuario encontrado:', user.companyName || user.email);
+          console.log('✅ [PDFMonkey Estimates] Usuario encontrado:', user.company || user.email);
           contractorData = {
-            companyName: user.companyName || '',
+            companyName: user.company || '',
             address: user.address ? `${user.address}${user.city ? ', ' + user.city : ''}${user.state ? ', ' + user.state : ''}${user.zipCode ? ' ' + user.zipCode : ''}` : '',
             phone: user.phone || '',
             email: user.email || '',
-            license: user.licenseNumber || ''
+            license: user.license || ''
           };
         } else {
           console.log('❌ [PDFMonkey Estimates] Usuario no encontrado en base de datos');
