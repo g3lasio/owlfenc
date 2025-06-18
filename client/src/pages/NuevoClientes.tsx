@@ -768,7 +768,7 @@ export default function NuevoClientes() {
   return (
     <div className="flex-1 p-6 page-scroll-container" style={{WebkitOverflowScrolling: 'touch', height: '100%'}}>
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-        <h1 className="text-2xl font-bold">Clientes</h1>
+        <h1 className="text-2xl font-bold">Clients</h1>
         <div className="flex flex-wrap gap-2">
           {selectedClients.length > 0 && (
             <Button 
@@ -790,7 +790,7 @@ export default function NuevoClientes() {
           </Button>
           <Button onClick={openAddForm}>
             <UserPlus className="w-4 h-4 mr-2" />
-            Nuevo Cliente
+            New Client
           </Button>
         </div>
       </div>
@@ -1054,25 +1054,27 @@ export default function NuevoClientes() {
         </div>
       )}
 
-      {/* Diálogo para añadir cliente - Diseño mejorado */}
+      {/* Add New Client Dialog - Improved Design */}
       <Dialog open={showAddClientDialog} onOpenChange={setShowAddClientDialog}>
-        <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader className="pb-4 border-b">
-            <DialogTitle className="text-xl font-semibold">Añadir nuevo cliente</DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground">
-              Completa la información del cliente. Solo el nombre es obligatorio.
+        <DialogContent className="sm:max-w-[700px] max-h-[85vh] p-0 gap-0">
+          {/* Header */}
+          <div className="px-6 py-4 border-b bg-background">
+            <DialogTitle className="text-lg font-semibold">Add New Client</DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground mt-1">
+              Complete the client information. Only the name is required.
             </DialogDescription>
-          </DialogHeader>
+          </div>
 
-          <ScrollArea className="flex-1 pr-4">
+          {/* Content */}
+          <div className="px-6 py-4 max-h-[calc(85vh-140px)] overflow-y-auto">
             <Form {...clientForm}>
-              <form onSubmit={clientForm.handleSubmit(handleClientFormSubmit)} className="space-y-6 py-4">
-                {/* Información básica */}
+              <form onSubmit={clientForm.handleSubmit(handleClientFormSubmit)} className="space-y-6">
+                {/* Basic Information */}
                 <div className="space-y-4">
-                  <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
+                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                     <UserPlus className="h-4 w-4" />
-                    Información básica
-                  </h3>
+                    Basic Information
+                  </div>
                   
                   <FormField
                     control={clientForm.control}
@@ -1080,12 +1082,12 @@ export default function NuevoClientes() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-sm font-medium">
-                          Nombre <span className="text-red-500">*</span>
+                          Name <span className="text-red-500">*</span>
                         </FormLabel>
                         <FormControl>
                           <Input 
-                            placeholder="Nombre completo del cliente" 
-                            className="h-10 bg-background"
+                            placeholder="Client full name" 
+                            className="h-11"
                             {...field} 
                           />
                         </FormControl>
@@ -1106,9 +1108,9 @@ export default function NuevoClientes() {
                           </FormLabel>
                           <FormControl>
                             <Input 
-                              placeholder="correo@ejemplo.com" 
+                              placeholder="email@example.com" 
                               type="email"
-                              className="h-10 bg-background"
+                              className="h-11"
                               {...field} 
                             />
                           </FormControl>
@@ -1124,12 +1126,12 @@ export default function NuevoClientes() {
                         <FormItem>
                           <FormLabel className="text-sm font-medium flex items-center gap-2">
                             <Phone className="h-3 w-3" />
-                            Teléfono
+                            Phone
                           </FormLabel>
                           <FormControl>
                             <Input 
                               placeholder="(555) 123-4567" 
-                              className="h-10 bg-background"
+                              className="h-11"
                               {...field} 
                             />
                           </FormControl>
@@ -1140,24 +1142,24 @@ export default function NuevoClientes() {
                   </div>
                 </div>
 
-                {/* Información de dirección */}
-                <div className="space-y-4 pt-4 border-t">
-                  <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
+                {/* Address Information */}
+                <div className="space-y-4 pt-2 border-t">
+                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                     <MapPin className="h-4 w-4" />
-                    Dirección
-                  </h3>
+                    Address
+                  </div>
                   
                   <FormField
                     control={clientForm.control}
                     name="address"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium">Dirección completa</FormLabel>
+                        <FormLabel className="text-sm font-medium">Street Address</FormLabel>
                         <FormControl>
                           <AddressInput
                             value={field.value}
                             onChange={(value) => field.onChange(value)}
-                            placeholder="Calle, número, colonia..."
+                            placeholder="Street address, apartment, suite, etc."
                           />
                         </FormControl>
                         <FormMessage />
@@ -1171,11 +1173,11 @@ export default function NuevoClientes() {
                       name="city"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm font-medium">Ciudad</FormLabel>
+                          <FormLabel className="text-sm font-medium">City</FormLabel>
                           <FormControl>
                             <Input 
-                              placeholder="Ciudad" 
-                              className="h-10 bg-background"
+                              placeholder="City" 
+                              className="h-11"
                               {...field} 
                             />
                           </FormControl>
@@ -1189,11 +1191,11 @@ export default function NuevoClientes() {
                       name="state"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm font-medium">Estado</FormLabel>
+                          <FormLabel className="text-sm font-medium">State</FormLabel>
                           <FormControl>
                             <Input 
-                              placeholder="Estado" 
-                              className="h-10 bg-background"
+                              placeholder="State" 
+                              className="h-11"
                               {...field} 
                             />
                           </FormControl>
@@ -1207,11 +1209,11 @@ export default function NuevoClientes() {
                       name="zipCode"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm font-medium">Código Postal</FormLabel>
+                          <FormLabel className="text-sm font-medium">ZIP Code</FormLabel>
                           <FormControl>
                             <Input 
-                              placeholder="CP" 
-                              className="h-10 bg-background"
+                              placeholder="ZIP" 
+                              className="h-11"
                               {...field} 
                             />
                           </FormControl>
@@ -1222,20 +1224,20 @@ export default function NuevoClientes() {
                   </div>
                 </div>
 
-                {/* Información adicional (opcional) */}
-                <div className="space-y-4 pt-4 border-t">
-                  <h3 className="text-sm font-medium text-foreground">Información adicional (opcional)</h3>
+                {/* Additional Information */}
+                <div className="space-y-4 pt-2 border-t">
+                  <div className="text-sm font-medium text-foreground">Additional Information (Optional)</div>
                   
                   <FormField
                     control={clientForm.control}
                     name="source"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium">¿Cómo conoció este cliente?</FormLabel>
+                        <FormLabel className="text-sm font-medium">How did you meet this client?</FormLabel>
                         <FormControl>
                           <Input 
-                            placeholder="Referencia, Google, Facebook, etc." 
-                            className="h-10 bg-background"
+                            placeholder="Referral, Google, Facebook, etc." 
+                            className="h-11"
                             {...field} 
                           />
                         </FormControl>
@@ -1249,11 +1251,11 @@ export default function NuevoClientes() {
                     name="notes"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium">Notas</FormLabel>
+                        <FormLabel className="text-sm font-medium">Notes</FormLabel>
                         <FormControl>
                           <Textarea 
-                            placeholder="Información adicional sobre el cliente..."
-                            className="min-h-[80px] resize-none bg-background"
+                            placeholder="Additional information about the client..."
+                            className="min-h-[80px] resize-none"
                             {...field} 
                           />
                         </FormControl>
@@ -1264,10 +1266,10 @@ export default function NuevoClientes() {
                 </div>
               </form>
             </Form>
-          </ScrollArea>
+          </div>
 
-          {/* Footer fijo con botones */}
-          <div className="pt-4 border-t bg-background">
+          {/* Footer with Action Buttons */}
+          <div className="px-6 py-4 border-t bg-muted/20">
             <div className="flex justify-end gap-3">
               <Button 
                 type="button" 
@@ -1276,23 +1278,23 @@ export default function NuevoClientes() {
                   setShowAddClientDialog(false);
                   clientForm.reset();
                 }}
-                className="h-10 px-6"
+                className="h-11 px-6 font-medium"
               >
-                Cancelar
+                Cancel
               </Button>
               <Button 
                 type="submit" 
                 onClick={clientForm.handleSubmit(handleClientFormSubmit)}
                 disabled={createClientMutation.isPending}
-                className="h-10 px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+                className="h-11 px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-md"
               >
                 {createClientMutation.isPending ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent mr-2" />
-                    Guardando...
+                    Saving...
                   </>
                 ) : (
-                  "Guardar Cliente"
+                  "Save Client"
                 )}
               </Button>
             </div>
