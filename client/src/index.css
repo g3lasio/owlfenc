@@ -5,17 +5,17 @@
 @tailwind components;
 @tailwind utilities;
 
-/* BLOQUEO ABSOLUTO DE SCROLL - FUERA DE @layer PARA MÁXIMA PRIORIDAD */
+/* Layout principal sin bloqueo de scroll */
 * {
   box-sizing: border-box !important;
 }
 
 html, body {
-  overflow: hidden !important;
   height: 100vh !important;
   max-height: 100vh !important;
   margin: 0 !important;
   padding: 0 !important;
+  overflow: hidden !important; /* Solo bloquear en html/body para el layout principal */
 }
 
 #root {
@@ -31,14 +31,21 @@ aside {
   box-sizing: border-box !important;
 }
 
+/* Main permite scroll interno, pero no en el contenedor principal */
 main {
-  overflow: hidden !important;
   height: 100vh !important;
   max-height: 100vh !important;
+  overflow: hidden !important;
 }
 
-main * {
-  overflow: hidden !important;
+/* Permitir scroll en páginas específicas */
+.scrollable-page {
+  overflow-y: auto !important;
+  height: 100% !important;
+}
+
+.scrollable-page * {
+  overflow: visible !important;
 }
 
 .home-container {
