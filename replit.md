@@ -176,6 +176,13 @@ Changelog:
   * Enhanced EstimateData interface to include contractor fields (company, address, phone, email, license)
   * Updated both PDFMonkey template and Claude fallback to use authentic contractor data
   * PDFs now display correct contractor information matching user's profile settings
+- June 18, 2025. Implemented Firebase UID to PostgreSQL user mapping:
+  * Added firebase_uid column to users table for proper authentication mapping
+  * Created getUserByFirebaseUid method in DatabaseStorage for Firebase UID lookups
+  * Updated PDF generation to use Firebase UID instead of generic user IDs
+  * Implemented direct database query as fallback for reliable contractor data retrieval
+  * Verified system correctly maps Firebase authentication to contractor profiles
+  * Eliminated all fallback contractor data - system only uses authentic user information
 ```
 
 ## User Preferences

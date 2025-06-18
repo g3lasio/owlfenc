@@ -182,12 +182,19 @@ router.post('/generate', async (req, res) => {
     if (estimateData.firebaseUid) {
       try {
         console.log('🔍 [PDFMonkey Estimates] Buscando usuario por Firebase UID:', estimateData.firebaseUid);
-        const user = await storage.getUserByFirebaseUid(estimateData.firebaseUid);
+        
+        // Usar consulta directa a la base de datos como respaldo
+        const db = require('../db').db;
+        const [user] = await db.execute(
+          'SELECT * FROM users WHERE firebase_uid = $1',
+          [estimateData.firebaseUid]
+        );
+        
         if (user) {
           console.log('✅ [PDFMonkey Estimates] Usuario encontrado:', user.company || user.email);
           contractorData = {
             companyName: user.company || '',
-            address: user.address ? `${user.address}${user.city ? ', ' + user.city : ''}${user.state ? ', ' + user.state : ''}${user.zipCode ? ' ' + user.zipCode : ''}` : '',
+            address: user.address ? `${user.address}${user.city ? ', ' + user.city : ''}${user.state ? ', ' + user.state : ''}${user.zip_code ? ' ' + user.zip_code : ''}` : '',
             phone: user.phone || '',
             email: user.email || '',
             license: user.license || ''
