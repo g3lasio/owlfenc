@@ -175,10 +175,13 @@ export default function Sidebar() {
 
   return (
     <TooltipProvider>
-      <aside className={`hidden md:flex flex-col bg-card h-screen relative transition-all duration-300 ${isSidebarExpanded ? 'md:w-72 border-r border-border' : 'md:w-16'}`}>
+      <aside 
+        className={`hidden md:flex flex-col bg-card transition-all duration-300 ${isSidebarExpanded ? 'md:w-72 border-r border-border' : 'md:w-16'}`}
+        style={{ height: '100vh', maxHeight: '100vh', overflow: 'hidden' }}
+      >
       
-      {/* Todo el contenido en un contenedor flex */}
-      <div className="flex flex-col h-full">
+      {/* Contenedor principal */}
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         
         {/* Botón de toggle - Solo flecha */}
         <div className={`${isSidebarExpanded ? 'p-3 border-b border-border' : 'p-2'}`}>
