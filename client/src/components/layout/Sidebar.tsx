@@ -172,28 +172,37 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className={`hidden md:flex flex-col bg-card border-r border-border h-screen overflow-hidden relative transition-all duration-300 ${isSidebarExpanded ? 'md:w-72' : 'md:w-16'}`}>
-      {/* Advanced Sci-Fi Border System */}
-      <div className="sci-fi-sidebar-border">
-        <div className="dashed-sci-fi-line"></div>
-      </div>
-      
-      {/* Power Nodes */}
-      <div className="power-node-top"></div>
-      <div className="power-node-bottom"></div>
-      
-      {/* Corner Brackets */}
-      <div className="sci-fi-bracket-top"></div>
-      <div className="sci-fi-bracket-bottom"></div>
+    <aside className={`hidden md:flex flex-col bg-card h-screen overflow-hidden relative transition-all duration-300 ${isSidebarExpanded ? 'md:w-72 border-r border-border' : 'md:w-16'}`}>
+      {/* Solo mostrar bordes sci-fi cuando está expandido */}
+      {isSidebarExpanded && (
+        <>
+          {/* Advanced Sci-Fi Border System */}
+          <div className="sci-fi-sidebar-border">
+            <div className="dashed-sci-fi-line"></div>
+          </div>
+          
+          {/* Power Nodes */}
+          <div className="power-node-top"></div>
+          <div className="power-node-bottom"></div>
+          
+          {/* Corner Brackets */}
+          <div className="sci-fi-bracket-top"></div>
+          <div className="sci-fi-bracket-bottom"></div>
+        </>
+      )}
       
       {/* Todo el contenido en un contenedor con scroll */}
       <div className="flex flex-col h-full overflow-y-auto">
         
-        {/* Botón de toggle del sidebar */}
-        <div className="p-3 border-b border-border">
+        {/* Botón de toggle del sidebar - Siempre visible */}
+        <div className={`${isSidebarExpanded ? 'p-3 border-b border-border' : 'p-3'}`}>
           <Button
             variant="ghost"
-            className={`w-full justify-center text-xs font-semibold py-3 text-muted-foreground uppercase tracking-wider hover:bg-accent hover:text-cyan-400 transition-colors ${isSidebarExpanded ? '' : 'px-2'}`}
+            className={`w-full justify-center transition-all duration-200 ${
+              isSidebarExpanded 
+                ? 'text-xs font-semibold py-3 text-muted-foreground uppercase tracking-wider hover:bg-accent hover:text-cyan-400' 
+                : 'p-2 hover:bg-gray-800/50 rounded-md'
+            }`}
             onClick={toggleSidebar}
           >
             {isSidebarExpanded ? (
@@ -204,7 +213,7 @@ export default function Sidebar() {
                 </span>
               </span>
             ) : (
-              <i className="ri-menu-line text-lg"></i>
+              <i className="ri-menu-line text-lg text-gray-400 hover:text-cyan-400 transition-colors"></i>
             )}
           </Button>
         </div>
