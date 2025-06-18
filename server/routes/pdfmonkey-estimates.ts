@@ -113,6 +113,13 @@ DATOS DEL ESTIMADO:
 - Fecha: ${estimateData.date || currentDate}
 - Válido hasta: ${validUntilDate}
 
+CONTRATISTA:
+- Empresa: ${estimateData.contractorCompanyName || 'Owl Fenc'}
+- Dirección: ${estimateData.contractorAddress || '2901 Owens Court, Fairfield, California 94534'}
+- Teléfono: ${estimateData.contractorPhone || '202 549 3519'}
+- Email: ${estimateData.contractorEmail || 'info@chyrris.com'}
+- Licencia: ${estimateData.contractorLicense || ''}
+
 CLIENTE:
 - Nombre: ${estimateData.clientName || 'Cliente'}
 - Dirección: ${estimateData.clientAddress || ''}

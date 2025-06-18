@@ -209,7 +209,9 @@ export default function EstimatesDashboard() {
         taxPercentage: estimateData.taxPercentage || 0,
         total: estimateData.total || 0,
         projectDescription: estimateData.projectDescription || '',
-        notes: estimateData.notes || ''
+        notes: estimateData.notes || '',
+        // Add userId to fetch real contractor information
+        userId: currentUser?.uid ? 1 : undefined // For now using default user ID since we need Firebase to DB mapping
       };
       
       console.log('🐒 [PDFMonkey Integration] Datos mapeados para template específico');

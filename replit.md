@@ -169,6 +169,13 @@ Changelog:
   * Now captures smart clauses, payment terms, warranties, signatures, custom terms, and legal notices
   * Verified synchronization with test showing all enhanced data properly flows to backend
   * Contract PDFs now include all user-selected clauses and customizations
+- June 18, 2025. Fixed estimate PDF contractor information discrepancy:
+  * Resolved issue where PDF estimates showed hardcoded "Mervin Solutions Inc." instead of actual contractor profile
+  * Updated PDF generation endpoints to fetch real contractor data from user profiles
+  * Modified /api/pdfmonkey-estimates/generate to include contractor information from database
+  * Enhanced EstimateData interface to include contractor fields (company, address, phone, email, license)
+  * Updated both PDFMonkey template and Claude fallback to use authentic contractor data
+  * PDFs now display correct contractor information matching user's profile settings
 ```
 
 ## User Preferences
