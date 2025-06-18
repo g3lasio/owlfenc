@@ -172,7 +172,7 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="hidden md:flex md:w-72 flex-col bg-card border-r border-border h-screen overflow-hidden relative">
+    <aside className={`hidden md:flex flex-col bg-card border-r border-border h-screen overflow-hidden relative transition-all duration-300 ${isSidebarExpanded ? 'md:w-72' : 'md:w-16'}`}>
       {/* Advanced Sci-Fi Border System */}
       <div className="sci-fi-sidebar-border">
         <div className="dashed-sci-fi-line"></div>
@@ -193,19 +193,19 @@ export default function Sidebar() {
         <div className="p-3 border-b border-border">
           <Button
             variant="ghost"
-            className="w-full justify-center text-xs font-semibold py-3 text-muted-foreground uppercase tracking-wider hover:bg-accent hover:text-cyan-400 transition-colors"
+            className={`w-full justify-center text-xs font-semibold py-3 text-muted-foreground uppercase tracking-wider hover:bg-accent hover:text-cyan-400 transition-colors ${isSidebarExpanded ? '' : 'px-2'}`}
             onClick={toggleSidebar}
           >
-            <span className="flex items-center justify-center w-full">
-              MENU
-              <span className="ml-2">
-                {isSidebarExpanded ? (
+            {isSidebarExpanded ? (
+              <span className="flex items-center justify-center w-full">
+                MENU
+                <span className="ml-2">
                   <ChevronDown className="h-3 w-3" />
-                ) : (
-                  <ChevronRight className="h-3 w-3" />
-                )}
+                </span>
               </span>
-            </span>
+            ) : (
+              <i className="ri-menu-line text-lg"></i>
+            )}
           </Button>
         </div>
 
@@ -295,8 +295,9 @@ export default function Sidebar() {
           )}
         </AnimatePresence>
 
-        {/* Footer con soporte y cerrar sesión */}
-        <div className="p-4 border-t border-border mt-auto">
+        {/* Footer con soporte y cerrar sesión - Solo se muestra cuando está expandido */}
+        {isSidebarExpanded && (
+          <div className="p-4 border-t border-border mt-auto">
           <div className="rounded-md bg-primary/10 p-1.5 text-center mb-3" style={{ height: "auto", minHeight: "70px" }}>
             <p className="text-xs mb-1">{t('general.needHelp')}</p>
             <a 
@@ -331,7 +332,8 @@ export default function Sidebar() {
               <LanguageSwitch />
             </div>
           </div>
-        </div>
+          </div>
+        )}
       </div>
     </aside>
   );
