@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { LogOut, User, CreditCard, Building, Settings, Brain as BrainIcon, ChevronDown, ChevronRight, ChevronLeft, ArrowRightToLine, ArrowLeftToLine } from "lucide-react";
+import { LogOut, User, CreditCard, Building, Settings, Brain as BrainIcon, ChevronDown, ChevronRight, ChevronLeft, ArrowRightToLine, ArrowLeftToLine, ChevronsRight, ChevronsLeft } from "lucide-react";
 import { navigationGroups, NavigationItem } from "@/config/navigation";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -118,7 +118,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                 filter: 'drop-shadow(0 0 4px rgba(0,255,255,0.3))'
               }}
             >
-              <ArrowRightToLine className="h-4 w-4" />
+              <ChevronsRight className="h-5 w-5" />
             </div>
           </Button>
         </div>
