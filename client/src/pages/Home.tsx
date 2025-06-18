@@ -41,8 +41,8 @@ export default function Home() {
           background: 'transparent',
           cursor: 'pointer',
           padding: 0,
-          width: '300px',
-          height: '300px',
+          width: '200px',
+          height: '200px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center'
@@ -70,7 +70,18 @@ export default function Home() {
           </div>
           
           {/* Contenedor principal */}
-          <div className="relative flex items-center justify-center w-48 h-48 md:w-56 md:h-56 lg:w-64 lg:h-64 xl:w-72 xl:h-72 group-hover:scale-110 transition-transform duration-300">
+          <div style={{
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '180px',
+            height: '180px',
+            transform: 'scale(1)',
+            transition: 'transform 0.3s ease'
+          }} 
+          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}>
             {/* Partículas animadas alrededor del logo */}
             <div className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-full">
               {particles.map(particle => (
@@ -94,7 +105,14 @@ export default function Home() {
             <img 
               src="https://i.postimg.cc/FK6hvMbf/logo-mervin.png" 
               alt="Mervin AI" 
-              className="relative w-32 h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 xl:w-56 xl:h-56 object-contain z-10 filter drop-shadow-lg"
+              style={{
+                position: 'relative',
+                width: '120px',
+                height: '120px',
+                objectFit: 'contain',
+                zIndex: 10,
+                filter: 'drop-shadow(0 10px 15px rgba(0, 0, 0, 0.3))'
+              }}
             />
           </div>
           
