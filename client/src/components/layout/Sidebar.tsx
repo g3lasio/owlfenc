@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { LogOut, User, CreditCard, Building, Settings, Brain as BrainIcon, ChevronDown, ChevronRight, ChevronLeft } from "lucide-react";
 import { navigationGroups, NavigationItem } from "@/config/navigation";
 import { useTranslation } from "react-i18next";
@@ -173,7 +174,8 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className={`hidden md:flex flex-col bg-card h-screen overflow-hidden relative transition-all duration-300 ${isSidebarExpanded ? 'md:w-72 border-r border-border' : 'md:w-16'}`}>
+    <TooltipProvider>
+      <aside className={`hidden md:flex flex-col bg-card h-screen overflow-hidden relative transition-all duration-300 ${isSidebarExpanded ? 'md:w-72 border-r border-border' : 'md:w-16'}`}>
       
       {/* Todo el contenido en un contenedor */}
       <div className="flex flex-col h-full min-h-0">
@@ -271,9 +273,9 @@ export default function Sidebar() {
           </div>
         )}
 
-        {/* Footer simplificado - Solo se muestra cuando está expandido */}
+        {/* Footer simplificado - Siempre visible cuando expandido */}
         {isSidebarExpanded && (
-          <div className="p-2 border-t border-border mt-auto">
+          <div className="p-2 border-t border-border">
             {/* Botón de logout y switch de idioma en paralelo */}
             <div className="flex items-center justify-between space-x-2">
               {/* Botón de cerrar sesión */}
@@ -300,5 +302,6 @@ export default function Sidebar() {
         )}
       </div>
     </aside>
+    </TooltipProvider>
   );
 }
