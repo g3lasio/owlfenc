@@ -195,75 +195,79 @@ export default function Sidebar() {
 
         {/* Navegación principal */}
         {isSidebarExpanded ? (
-          // Vista expandida - Diseño limpio y minimalista
-          <div className="flex-1 p-3 space-y-4">
-            {navigationGroups.map((group, index) => (
-              <div key={`group-${index}`} className="space-y-1">
-                {/* Título simple de la sección */}
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2">
-                  {t(`navigation.${group.title}`)}
-                </h3>
-                
-                {/* Lista limpia de elementos */}
-                <div className="space-y-1">
-                  {group.items
-                    .filter(item => item.path !== "/mervin" && item.id !== "mervin")
-                    .map((item) => (
-                      <Link key={item.id} href={item.path}>
-                        <Button 
-                          variant="ghost" 
-                          className="w-full justify-start px-2 py-2 h-auto hover:bg-accent text-sm font-normal"
-                        >
-                          {item.icon.startsWith('lucide-') ? (
-                            <>
-                              {item.icon === 'lucide-user' && <User className="h-4 w-4 mr-3" />}
-                              {item.icon === 'lucide-credit-card' && <CreditCard className="h-4 w-4 mr-3" />}
-                              {item.icon === 'lucide-building' && <Building className="h-4 w-4 mr-3" />}
-                              {item.icon === 'lucide-settings' && <Settings className="h-4 w-4 mr-3" />}
-                              {item.icon === 'lucide-brain' && <BrainIcon className="h-4 w-4 mr-3" />}
-                            </>
-                          ) : (
-                            <i className={`${item.icon} mr-3 text-base`}></i>
-                          )}
-                          {t(item.label)}
-                        </Button>
-                      </Link>
-                    ))}
+          // Vista expandida - Diseño limpio con scroll interno
+          <div className="flex-1 overflow-y-auto">
+            <div className="p-3 space-y-4">
+              {navigationGroups.map((group, index) => (
+                <div key={`group-${index}`} className="space-y-1">
+                  {/* Título simple de la sección */}
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2">
+                    {t(`navigation.${group.title}`)}
+                  </h3>
+                  
+                  {/* Lista limpia de elementos */}
+                  <div className="space-y-1">
+                    {group.items
+                      .filter(item => item.path !== "/mervin" && item.id !== "mervin")
+                      .map((item) => (
+                        <Link key={item.id} href={item.path}>
+                          <Button 
+                            variant="ghost" 
+                            className="w-full justify-start px-2 py-2 h-auto hover:bg-accent text-sm font-normal"
+                          >
+                            {item.icon.startsWith('lucide-') ? (
+                              <>
+                                {item.icon === 'lucide-user' && <User className="h-4 w-4 mr-3" />}
+                                {item.icon === 'lucide-credit-card' && <CreditCard className="h-4 w-4 mr-3" />}
+                                {item.icon === 'lucide-building' && <Building className="h-4 w-4 mr-3" />}
+                                {item.icon === 'lucide-settings' && <Settings className="h-4 w-4 mr-3" />}
+                                {item.icon === 'lucide-brain' && <BrainIcon className="h-4 w-4 mr-3" />}
+                              </>
+                            ) : (
+                              <i className={`${item.icon} mr-3 text-base`}></i>
+                            )}
+                            {t(item.label)}
+                          </Button>
+                        </Link>
+                      ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         ) : (
-          // Vista colapsada - Solo íconos verticales
-          <div className="flex flex-col flex-1 p-2 space-y-1">
-            {navigationGroups.flatMap(group => group.items)
-              .filter(item => item.path !== "/mervin" && item.id !== "mervin")
-              .map((item: NavigationItem) => (
-                <Link
-                  key={item.id}
-                  href={item.path}
-                  className={`
-                    flex items-center justify-center w-12 h-12 rounded-lg transition-all duration-200 mx-auto
-                    hover:bg-accent/50 hover:scale-105
-                    ${location === item.path 
-                      ? 'bg-primary/20 text-primary border border-primary/30' 
-                      : 'text-muted-foreground hover:text-primary'
-                    }
-                  `}
-                  title={t(item.label)}
-                >
-                  {item.icon.startsWith('lucide-') ? (
-                    <>
-                      {item.icon === 'lucide-building' && <Building className="h-5 w-5" />}
-                      {item.icon === 'lucide-settings' && <Settings className="h-5 w-5" />}
-                      {item.icon === 'lucide-credit-card' && <CreditCard className="h-5 w-5" />}
-                      {item.icon === 'lucide-brain' && <BrainIcon className="h-5 w-5" />}
-                    </>
-                  ) : (
-                    <i className={`${item.icon} text-lg`} />
-                  )}
-                </Link>
-              ))}
+          // Vista colapsada - Solo íconos verticales con scroll interno
+          <div className="flex-1 overflow-y-auto">
+            <div className="flex flex-col p-1 space-y-0.5">
+              {navigationGroups.flatMap(group => group.items)
+                .filter(item => item.path !== "/mervin" && item.id !== "mervin")
+                .map((item: NavigationItem) => (
+                  <Link
+                    key={item.id}
+                    href={item.path}
+                    className={`
+                      flex items-center justify-center w-14 h-10 rounded-md transition-all duration-200 mx-auto
+                      hover:bg-accent/50 hover:scale-105
+                      ${location === item.path 
+                        ? 'bg-primary/20 text-primary border border-primary/30' 
+                        : 'text-muted-foreground hover:text-primary'
+                      }
+                    `}
+                    title={t(item.label)}
+                  >
+                    {item.icon.startsWith('lucide-') ? (
+                      <>
+                        {item.icon === 'lucide-building' && <Building className="h-4 w-4" />}
+                        {item.icon === 'lucide-settings' && <Settings className="h-4 w-4" />}
+                        {item.icon === 'lucide-credit-card' && <CreditCard className="h-4 w-4" />}
+                        {item.icon === 'lucide-brain' && <BrainIcon className="h-4 w-4" />}
+                      </>
+                    ) : (
+                      <i className={`${item.icon} text-base`} />
+                    )}
+                  </Link>
+                ))}
+            </div>
           </div>
         )}
 
