@@ -88,14 +88,13 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
           ${isSidebarExpanded ? 'w-72 border-r border-border' : 'w-16'}
         `}
         style={{ 
-          height: '100vh', 
-          maxHeight: '100vh', 
+          height: 'calc(100vh - 40px)', // Resta la altura del footer
+          maxHeight: 'calc(100vh - 40px)', 
           overflow: 'hidden',
           position: 'fixed',
           left: 0,
           top: 0,
-          zIndex: 40,
-          minHeight: '100vh'
+          zIndex: 40
         }}
       >
         
@@ -183,21 +182,21 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                 height: '100%',
                 overflowY: 'auto', 
                 overflowX: 'hidden',
-                paddingTop: '16px',
+                paddingTop: '12px',
                 paddingLeft: '8px',
                 paddingRight: '8px',
-                paddingBottom: '80px' // Espacio para el footer
+                paddingBottom: '20px' // Espacio reducido
               }}
             >
               {/* Agrupar iconos por sección con separadores visuales */}
               {navigationGroups.map((group, groupIndex) => (
-                <div key={`group-${groupIndex}`} style={{ marginBottom: '24px' }}>
+                <div key={`group-${groupIndex}`} style={{ marginBottom: '16px' }}>
                   {/* Separador visual sutil entre grupos */}
                   {groupIndex > 0 && (
                     <div style={{ 
                       height: '1px', 
-                      background: 'rgba(255,255,255,0.1)', 
-                      margin: '16px 8px',
+                      background: 'rgba(255,255,255,0.08)', 
+                      margin: '12px 6px',
                       borderRadius: '1px'
                     }}></div>
                   )}
@@ -205,7 +204,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                   <div style={{ 
                     display: 'flex', 
                     flexDirection: 'column', 
-                    gap: '12px' // Espaciado profesional entre iconos
+                    gap: '8px' // Espaciado reducido entre iconos
                   }}>
                     {group.items
                       .filter(item => item.path !== "/mervin" && item.id !== "mervin")
@@ -215,28 +214,27 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                             <Link
                               href={item.path}
                               className={`
-                                flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-300 mx-auto
-                                hover:bg-accent/60 hover:scale-110 hover:shadow-lg
+                                flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-200 mx-auto
+                                hover:bg-accent/50 hover:scale-105 hover:shadow-md
                                 ${location === item.path 
-                                  ? 'bg-primary/25 text-primary border border-primary/40 shadow-md scale-105' 
+                                  ? 'bg-primary/20 text-primary border border-primary/30 shadow-sm' 
                                   : 'text-muted-foreground hover:text-primary'
                                 }
                               `}
                               style={{
-                                minHeight: '48px',
-                                minWidth: '48px',
-                                backdropFilter: 'blur(8px)'
+                                minHeight: '40px',
+                                minWidth: '40px'
                               }}
                             >
                               {item.icon.startsWith('lucide-') ? (
                                 <>
-                                  {item.icon === 'lucide-building' && <Building className="h-5 w-5" />}
-                                  {item.icon === 'lucide-settings' && <Settings className="h-5 w-5" />}
-                                  {item.icon === 'lucide-credit-card' && <CreditCard className="h-5 w-5" />}
-                                  {item.icon === 'lucide-brain' && <BrainIcon className="h-5 w-5" />}
+                                  {item.icon === 'lucide-building' && <Building className="h-4 w-4" />}
+                                  {item.icon === 'lucide-settings' && <Settings className="h-4 w-4" />}
+                                  {item.icon === 'lucide-credit-card' && <CreditCard className="h-4 w-4" />}
+                                  {item.icon === 'lucide-brain' && <BrainIcon className="h-4 w-4" />}
                                 </>
                               ) : (
-                                <i className={`${item.icon} text-lg`} />
+                                <i className={`${item.icon} text-base`} />
                               )}
                             </Link>
                           </TooltipTrigger>
