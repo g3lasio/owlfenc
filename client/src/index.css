@@ -6,6 +6,18 @@
 @tailwind utilities;
 
 @layer utilities {
+  /* Forzar eliminación de scroll del sidebar */
+  aside {
+    height: 100vh !important;
+    max-height: 100vh !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+  
+  aside * {
+    box-sizing: border-box !important;
+  }
+
   .animate-ping {
     animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
   }

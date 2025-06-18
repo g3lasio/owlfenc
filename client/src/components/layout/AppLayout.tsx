@@ -96,7 +96,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   return (
     <div className="flex h-screen w-screen overflow-hidden">
       {/* Sidebar único con todas las funcionalidades - Solo en desktop */}
-      <div className="hidden md:block">
+      <div className="hidden md:block" style={{ height: '100vh', overflow: 'hidden' }}>
         <Sidebar />
       </div>
 

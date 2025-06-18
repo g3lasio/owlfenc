@@ -77,7 +77,13 @@ export default function Sidebar() {
           hidden md:flex flex-col bg-card transition-all duration-300
           ${isSidebarExpanded ? 'md:w-72 border-r border-border' : 'md:w-16'}
         `}
-        style={{ height: '100vh', maxHeight: '100vh', overflow: 'hidden' }}
+        style={{ 
+          height: '100vh', 
+          maxHeight: '100vh', 
+          overflow: 'hidden',
+          position: 'relative',
+          minHeight: '100vh'
+        }}
       >
         
         {/* Header con toggle */}
