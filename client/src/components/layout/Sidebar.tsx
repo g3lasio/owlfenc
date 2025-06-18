@@ -175,10 +175,10 @@ export default function Sidebar() {
 
   return (
     <TooltipProvider>
-      <aside className={`hidden md:flex flex-col bg-card h-screen overflow-hidden relative transition-all duration-300 ${isSidebarExpanded ? 'md:w-72 border-r border-border' : 'md:w-16'}`}>
+      <aside className={`hidden md:flex flex-col bg-card h-screen relative transition-all duration-300 ${isSidebarExpanded ? 'md:w-72 border-r border-border' : 'md:w-16'}`}>
       
-      {/* Todo el contenido en un contenedor */}
-      <div className="flex flex-col h-full min-h-0">
+      {/* Todo el contenido en un contenedor flex */}
+      <div className="flex flex-col h-full">
         
         {/* Botón de toggle - Solo flecha */}
         <div className={`${isSidebarExpanded ? 'p-3 border-b border-border' : 'p-2'}`}>
@@ -195,52 +195,52 @@ export default function Sidebar() {
           </Button>
         </div>
 
-        {/* Navegación principal - Sin scroll adicional */}
-        {isSidebarExpanded ? (
-          // Vista expandida - Contenido ajustado al espacio disponible
-          <div className="flex-1 min-h-0 overflow-y-auto">
-            <div className="p-3 space-y-3">
-              {navigationGroups.map((group, index) => (
-                <div key={`group-${index}`} className="space-y-1">
-                  {/* Título simple de la sección */}
-                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2">
-                    {t(`navigation.${group.title}`)}
-                  </h3>
-                  
-                  {/* Lista limpia de elementos */}
-                  <div className="space-y-1">
-                    {group.items
-                      .filter(item => item.path !== "/mervin" && item.id !== "mervin")
-                      .map((item) => (
-                        <Link key={item.id} href={item.path}>
-                          <Button 
-                            variant="ghost" 
-                            className="w-full justify-start px-2 py-1.5 h-auto hover:bg-accent text-sm font-normal"
-                          >
-                            {item.icon.startsWith('lucide-') ? (
-                              <>
-                                {item.icon === 'lucide-user' && <User className="h-4 w-4 mr-3" />}
-                                {item.icon === 'lucide-credit-card' && <CreditCard className="h-4 w-4 mr-3" />}
-                                {item.icon === 'lucide-building' && <Building className="h-4 w-4 mr-3" />}
-                                {item.icon === 'lucide-settings' && <Settings className="h-4 w-4 mr-3" />}
-                                {item.icon === 'lucide-brain' && <BrainIcon className="h-4 w-4 mr-3" />}
-                              </>
-                            ) : (
-                              <i className={`${item.icon} mr-3 text-base`}></i>
-                            )}
-                            {t(item.label)}
-                          </Button>
-                        </Link>
-                      ))}
+        {/* Navegación principal - Ocupa espacio disponible */}
+        <div className="flex-1 overflow-hidden">
+          {isSidebarExpanded ? (
+            // Vista expandida - Scroll solo si es necesario
+            <div className="h-full overflow-y-auto">
+              <div className="p-3 space-y-3">
+                {navigationGroups.map((group, index) => (
+                  <div key={`group-${index}`} className="space-y-1">
+                    {/* Título simple de la sección */}
+                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2">
+                      {t(`navigation.${group.title}`)}
+                    </h3>
+                    
+                    {/* Lista limpia de elementos */}
+                    <div className="space-y-1">
+                      {group.items
+                        .filter(item => item.path !== "/mervin" && item.id !== "mervin")
+                        .map((item) => (
+                          <Link key={item.id} href={item.path}>
+                            <Button 
+                              variant="ghost" 
+                              className="w-full justify-start px-2 py-1.5 h-auto hover:bg-accent text-sm font-normal"
+                            >
+                              {item.icon.startsWith('lucide-') ? (
+                                <>
+                                  {item.icon === 'lucide-user' && <User className="h-4 w-4 mr-3" />}
+                                  {item.icon === 'lucide-credit-card' && <CreditCard className="h-4 w-4 mr-3" />}
+                                  {item.icon === 'lucide-building' && <Building className="h-4 w-4 mr-3" />}
+                                  {item.icon === 'lucide-settings' && <Settings className="h-4 w-4 mr-3" />}
+                                  {item.icon === 'lucide-brain' && <BrainIcon className="h-4 w-4 mr-3" />}
+                                </>
+                              ) : (
+                                <i className={`${item.icon} mr-3 text-base`}></i>
+                              )}
+                              {t(item.label)}
+                            </Button>
+                          </Link>
+                        ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        ) : (
-          // Vista colapsada - Íconos compactos sin scroll adicional
-          <div className="flex-1 min-h-0">
-            <div className="flex flex-col p-1 space-y-0.5 h-full">
+          ) : (
+            // Vista colapsada - Íconos compactos
+            <div className="p-1 space-y-0.5">
               {navigationGroups.flatMap(group => group.items)
                 .filter(item => item.path !== "/mervin" && item.id !== "mervin")
                 .map((item: NavigationItem) => (
@@ -275,8 +275,8 @@ export default function Sidebar() {
                   </Tooltip>
                 ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Footer fijo - Siempre visible cuando expandido */}
         {isSidebarExpanded && (
