@@ -37,15 +37,29 @@ export default function Home() {
         <button style={{ 
           position: 'relative',
           borderRadius: '50%',
-          border: 'none',
-          background: 'transparent',
+          border: '2px solid transparent',
+          background: `
+            radial-gradient(circle at center, 
+              rgba(0,20,40,0.9) 0%, 
+              rgba(0,40,80,0.7) 30%, 
+              rgba(0,100,150,0.5) 70%, 
+              transparent 100%
+            ),
+            conic-gradient(from 0deg, 
+              rgba(0,255,255,0.8), 
+              rgba(0,150,255,0.6), 
+              rgba(100,200,255,0.4),
+              rgba(0,255,255,0.8)
+            )
+          `,
           cursor: 'pointer',
           padding: 0,
           width: '200px',
           height: '200px',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center'
+          justifyContent: 'center',
+          animation: 'borderGlow 3s ease-in-out infinite, reactorPulse 2s ease-in-out infinite'
         }}>
           {/* Halo exterior con gradiente */}
           <div className="absolute inset-0 rounded-full blur-2xl opacity-60 bg-gradient-to-r from-cyan-300 via-cyan-500 to-blue-600 animate-pulse group-hover:opacity-80 transition-all duration-500"></div>
@@ -111,7 +125,7 @@ export default function Home() {
                 height: '120px',
                 objectFit: 'contain',
                 zIndex: 10,
-                filter: 'drop-shadow(0 10px 15px rgba(0, 0, 0, 0.3))'
+                animation: 'logoGlow 2.5s ease-in-out infinite'
               }}
             />
           </div>
