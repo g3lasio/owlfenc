@@ -5,6 +5,7 @@
 
 import express from 'express';
 import axios from 'axios';
+import { storage } from '../storage';
 
 const router = express.Router();
 
@@ -16,6 +17,11 @@ interface EstimateData {
   clientAddress?: string;
   clientEmail?: string;
   clientPhone?: string;
+  contractorCompanyName?: string;
+  contractorAddress?: string;
+  contractorPhone?: string;
+  contractorEmail?: string;
+  contractorLicense?: string;
   items?: Array<{
     name: string;
     description: string;
@@ -35,6 +41,7 @@ interface EstimateData {
   total?: number;
   projectDescription?: string;
   notes?: string;
+  userId?: number;
 }
 
 /**
@@ -49,6 +56,13 @@ function mapEstimateDataToTemplate(data: EstimateData) {
     estimate_no: data.estimateNumber || `EST-${Date.now()}`,
     date: data.date || currentDate,
     valid_until: validUntilDate,
+    
+    // Contractor information
+    contractor_company: data.contractorCompanyName || '',
+    contractor_address: data.contractorAddress || '',
+    contractor_phone: data.contractorPhone || '',
+    contractor_email: data.contractorEmail || '',
+    contractor_license: data.contractorLicense || '',
     
     // Client information
     client: data.clientName || '',
@@ -156,15 +170,55 @@ router.post('/generate', async (req, res) => {
     const estimateData: EstimateData = req.body;
     const pdfMonkeyApiKey = process.env.PDFMONKEY_API_KEY;
     
+    // Obtener información del contratista desde la base de datos
+    let contractorData = null;
+    if (estimateData.userId) {
+      try {
+        const user = await storage.getUser(estimateData.userId);
+        if (user) {
+          contractorData = {
+            companyName: user.companyName || 'Owl Fenc',
+            address: `${user.address || '2901 Owens Court'}, ${user.city || 'Fairfield'}, ${user.state || 'California'} ${user.zipCode || '94534'}`,
+            phone: user.phone || '202 549 3519',
+            email: user.email || 'info@owlfenc.com',
+            license: user.licenseNumber || ''
+          };
+        }
+      } catch (error) {
+        console.log('⚠️ [PDFMonkey Estimates] Error obteniendo datos del usuario, usando datos por defecto');
+      }
+    }
+    
+    // Si no se pudo obtener datos del usuario, usar datos por defecto del perfil actual
+    if (!contractorData) {
+      contractorData = {
+        companyName: 'Owl Fenc',
+        address: '2901 Owens Court, Fairfield, California 94534',
+        phone: '202 549 3519',
+        email: 'info@chyrris.com',
+        license: ''
+      };
+    }
+    
+    // Combinar datos del estimado con información del contratista
+    const enrichedEstimateData = {
+      ...estimateData,
+      contractorCompanyName: contractorData.companyName,
+      contractorAddress: contractorData.address,
+      contractorPhone: contractorData.phone,
+      contractorEmail: contractorData.email,
+      contractorLicense: contractorData.license
+    };
+    
     if (!pdfMonkeyApiKey) {
       console.log('⚠️ [PDFMonkey Estimates] API key no encontrada, usando fallback...');
-      return await handleFallback(estimateData, res);
+      return await handleFallback(enrichedEstimateData, res);
     }
 
     // Paso 1: Intentar con PDFMonkey
     try {
       console.log('🐒 [PDFMonkey Estimates] Mapeando datos para template específico...');
-      const templateData = mapEstimateDataToTemplate(estimateData);
+      const templateData = mapEstimateDataToTemplate(enrichedEstimateData);
       
       console.log('🐒 [PDFMonkey Estimates] Datos mapeados:', JSON.stringify(templateData, null, 2));
 
