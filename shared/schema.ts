@@ -5,6 +5,7 @@ import { z } from 'zod';
 // Users table
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
+  firebaseUid: varchar('firebase_uid', { length: 255 }).unique(),
   username: varchar('username', { length: 255 }).notNull().unique(),
   email: varchar('email', { length: 255 }).notNull().unique(),
   passwordHash: varchar('password_hash', { length: 255 }).notNull(),

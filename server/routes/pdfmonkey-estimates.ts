@@ -41,7 +41,7 @@ interface EstimateData {
   total?: number;
   projectDescription?: string;
   notes?: string;
-  userId?: number;
+  firebaseUid?: string;
 }
 
 /**
@@ -177,34 +177,39 @@ router.post('/generate', async (req, res) => {
     const estimateData: EstimateData = req.body;
     const pdfMonkeyApiKey = process.env.PDFMONKEY_API_KEY;
     
-    // Obtener información del contratista desde la base de datos
+    // Obtener información del contratista usando Firebase UID - SIN FALLBACKS
     let contractorData = null;
-    if (estimateData.userId) {
+    if (estimateData.firebaseUid) {
       try {
-        const user = await storage.getUser(estimateData.userId);
+        console.log('🔍 [PDFMonkey Estimates] Buscando usuario por Firebase UID:', estimateData.firebaseUid);
+        const user = await storage.getUserByFirebaseUid(estimateData.firebaseUid);
         if (user) {
+          console.log('✅ [PDFMonkey Estimates] Usuario encontrado:', user.companyName || user.email);
           contractorData = {
-            companyName: user.companyName || 'Owl Fenc',
-            address: `${user.address || '2901 Owens Court'}, ${user.city || 'Fairfield'}, ${user.state || 'California'} ${user.zipCode || '94534'}`,
-            phone: user.phone || '202 549 3519',
-            email: user.email || 'info@owlfenc.com',
+            companyName: user.companyName || '',
+            address: user.address ? `${user.address}${user.city ? ', ' + user.city : ''}${user.state ? ', ' + user.state : ''}${user.zipCode ? ' ' + user.zipCode : ''}` : '',
+            phone: user.phone || '',
+            email: user.email || '',
             license: user.licenseNumber || ''
           };
+        } else {
+          console.log('❌ [PDFMonkey Estimates] Usuario no encontrado en base de datos');
         }
       } catch (error) {
-        console.log('⚠️ [PDFMonkey Estimates] Error obteniendo datos del usuario, usando datos por defecto');
+        console.log('⚠️ [PDFMonkey Estimates] Error obteniendo datos del usuario:', error);
+        return res.status(500).json({
+          success: false,
+          error: 'No se pudo obtener información del contratista'
+        });
       }
     }
     
-    // Si no se pudo obtener datos del usuario, usar datos por defecto del perfil actual
+    // Si no hay contractorData, es un error - no usar fallbacks
     if (!contractorData) {
-      contractorData = {
-        companyName: 'Owl Fenc',
-        address: '2901 Owens Court, Fairfield, California 94534',
-        phone: '202 549 3519',
-        email: 'info@chyrris.com',
-        license: ''
-      };
+      return res.status(400).json({
+        success: false,
+        error: 'Información del contratista requerida para generar PDF. El usuario debe completar su perfil.'
+      });
     }
     
     // Combinar datos del estimado con información del contratista

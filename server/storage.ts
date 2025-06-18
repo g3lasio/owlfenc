@@ -43,6 +43,7 @@ export interface IStorage {
   // User methods
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByFirebaseUid(firebaseUid: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, userData: Partial<User>): Promise<User>;
   updateStripeConnectAccountId(userId: number, accountId: string): Promise<User>;
@@ -350,6 +351,16 @@ export class StorageManager implements IStorage {
       () => this.primaryStorage.getUserByUsername(username),
       () => this.backupStorage!.getUserByUsername(username),
       `user_username_${username}`,
+      this.CACHE_TTL
+    );
+  }
+
+  async getUserByFirebaseUid(firebaseUid: string): Promise<User | undefined> {
+    return this.executeWithFailover<User | undefined>(
+      'getUserByFirebaseUid',
+      () => this.primaryStorage.getUserByFirebaseUid(firebaseUid),
+      () => this.backupStorage!.getUserByFirebaseUid(firebaseUid),
+      `user_firebase_${firebaseUid}`,
       this.CACHE_TTL
     );
   }
