@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { LogOut, User, CreditCard, Building, Settings, Brain as BrainIcon, ChevronDown, ChevronRight } from "lucide-react";
+import { LogOut, User, CreditCard, Building, Settings, Brain as BrainIcon, ChevronDown, ChevronRight, ChevronLeft } from "lucide-react";
 import { navigationGroups, NavigationItem } from "@/config/navigation";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -194,14 +194,14 @@ export default function Sidebar() {
       {/* Todo el contenido en un contenedor con scroll */}
       <div className="flex flex-col h-full overflow-y-auto">
         
-        {/* Botón de toggle del sidebar - Siempre visible */}
-        <div className={`${isSidebarExpanded ? 'p-3 border-b border-border' : 'p-3'}`}>
+        {/* Botón de toggle con flecha */}
+        <div className={`${isSidebarExpanded ? 'p-3 border-b border-border' : 'p-2 border-b border-border/30'}`}>
           <Button
             variant="ghost"
             className={`w-full justify-center transition-all duration-200 ${
               isSidebarExpanded 
                 ? 'text-xs font-semibold py-3 text-muted-foreground uppercase tracking-wider hover:bg-accent hover:text-cyan-400' 
-                : 'p-2 hover:bg-gray-800/50 rounded-md'
+                : 'p-2 hover:bg-accent/50 rounded-md'
             }`}
             onClick={toggleSidebar}
           >
@@ -209,18 +209,19 @@ export default function Sidebar() {
               <span className="flex items-center justify-center w-full">
                 MENU
                 <span className="ml-2">
-                  <ChevronDown className="h-3 w-3" />
+                  <ChevronLeft className="h-4 w-4" />
                 </span>
               </span>
             ) : (
-              <i className="ri-menu-line text-lg text-gray-400 hover:text-cyan-400 transition-colors"></i>
+              <ChevronRight className="h-5 w-5 text-muted-foreground hover:text-primary transition-colors" />
             )}
           </Button>
         </div>
 
-        {/* Navegación principal - Solo se muestra cuando el sidebar está expandido */}
-        <AnimatePresence>
-          {isSidebarExpanded && (
+        {/* Navegación principal */}
+        {isSidebarExpanded ? (
+          // Vista expandida con menú completo
+          <AnimatePresence>
             <motion.div 
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
@@ -228,81 +229,80 @@ export default function Sidebar() {
               transition={{ duration: 0.4, ease: "easeInOut" }}
               className="flex-1 px-3 pt-4 overflow-hidden"
             >
-              {navigationGroups.map((group, index) => {
-                const isExpanded = group.title === "tools" ? isToolsExpanded :
-                                 group.title === "features" ? isFeaturesExpanded :
-                                 group.title === "account" ? isAccountExpanded : true;
-                
-                const setExpanded = group.title === "tools" ? setIsToolsExpanded :
-                                  group.title === "features" ? setIsFeaturesExpanded :
-                                  group.title === "account" ? setIsAccountExpanded : () => {};
-
-                return (
-                  <div key={`group-${index}`}>
-                    {/* Sci-Fi Accordion Frame */}
-                    <div className="mb-6 sci-fi-frame sci-fi-corner-brackets arc-reactor-bg p-3">
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-center text-xs font-semibold py-3 text-muted-foreground uppercase tracking-wider hover:bg-accent hover:text-cyan-400 transition-colors"
-                        onClick={() => setExpanded(!isExpanded)}
-                      >
-                        <span className="flex items-center justify-center w-full">
-                          {t(`navigation.${group.title}`)}
-                          <span className="ml-2">
-                            {isExpanded ? (
-                              <ChevronDown className="h-3 w-3" />
-                            ) : (
-                              <ChevronRight className="h-3 w-3" />
-                            )}
-                          </span>
-                        </span>
-                      </Button>
-                      
-                      <AnimatePresence>
-                        {isExpanded && (
-                          <motion.div 
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: "auto" }}
-                            exit={{ opacity: 0, height: 0 }}
-                            transition={{ duration: 0.6, ease: "easeInOut" }}
-                            className="space-y-1 mt-3 overflow-hidden"
-                          >
-                            {/* Filtrar el elemento de Mervin AI si existe */}
-                            {group.items
-                              .filter(item => item.path !== "/mervin" && item.id !== "mervin")
-                              .map((item) => (
-                                <Link key={item.id} href={item.path}>
-                                  <Button variant="ghost" className="w-full justify-center hover:bg-cyan-500/10 hover:text-cyan-400 transition-colors">
-                                    <span className="flex items-center justify-center w-full">
-                                      {item.icon.startsWith('lucide-') ? (
-                                        <>
-                                          {item.icon === 'lucide-user' && <User className="h-4 w-4 mr-2" />}
-                                          {item.icon === 'lucide-credit-card' && <CreditCard className="h-4 w-4 mr-2" />}
-                                          {item.icon === 'lucide-building' && <Building className="h-4 w-4 mr-2" />}
-                                          {item.icon === 'lucide-settings' && <Settings className="h-4 w-4 mr-2" />}
-                                          {item.icon === 'lucide-brain' && <BrainIcon className="h-4 w-4 mr-2" />}
-                                        </>
-                                      ) : (
-                                        <i className={`${item.icon} mr-2 text-lg`}></i>
-                                      )}
-                                      {t(item.label)}
-                                    </span>
-                                  </Button>
-                                </Link>
-                              ))}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+              {navigationGroups.map((group, index) => (
+                <div key={`group-${index}`}>
+                  {/* Sci-Fi Accordion Frame */}
+                  <div className="mb-6 sci-fi-frame sci-fi-corner-brackets arc-reactor-bg p-3">
+                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 text-center">
+                      {t(`navigation.${group.title}`)}
                     </div>
-                    {index < navigationGroups.length - 1 && index === 1 && (
-                      <div className="futuristic-divider power-pulse my-4"></div>
-                    )}
+                    
+                    <div className="space-y-1">
+                      {/* Filtrar el elemento de Mervin AI si existe */}
+                      {group.items
+                        .filter(item => item.path !== "/mervin" && item.id !== "mervin")
+                        .map((item) => (
+                          <Link key={item.id} href={item.path}>
+                            <Button variant="ghost" className="w-full justify-start hover:bg-cyan-500/10 hover:text-cyan-400 transition-colors">
+                              <span className="flex items-center w-full">
+                                {item.icon.startsWith('lucide-') ? (
+                                  <>
+                                    {item.icon === 'lucide-user' && <User className="h-4 w-4 mr-3" />}
+                                    {item.icon === 'lucide-credit-card' && <CreditCard className="h-4 w-4 mr-3" />}
+                                    {item.icon === 'lucide-building' && <Building className="h-4 w-4 mr-3" />}
+                                    {item.icon === 'lucide-settings' && <Settings className="h-4 w-4 mr-3" />}
+                                    {item.icon === 'lucide-brain' && <BrainIcon className="h-4 w-4 mr-3" />}
+                                  </>
+                                ) : (
+                                  <i className={`${item.icon} mr-3 text-lg`}></i>
+                                )}
+                                <span className="text-sm">{t(item.label)}</span>
+                              </span>
+                            </Button>
+                          </Link>
+                        ))}
+                    </div>
                   </div>
-                );
-              })}
+                  {index < navigationGroups.length - 1 && index === 1 && (
+                    <div className="futuristic-divider power-pulse my-4"></div>
+                  )}
+                </div>
+              ))}
             </motion.div>
-          )}
-        </AnimatePresence>
+          </AnimatePresence>
+        ) : (
+          // Vista colapsada - Solo íconos verticales
+          <div className="flex flex-col flex-1 p-2 space-y-1 overflow-y-auto">
+            {navigationGroups.flatMap(group => group.items)
+              .filter(item => item.path !== "/mervin" && item.id !== "mervin")
+              .map((item) => (
+                <Link
+                  key={item.id}
+                  href={item.path}
+                  className={`
+                    flex items-center justify-center w-12 h-12 rounded-lg transition-all duration-200 mx-auto
+                    hover:bg-accent/50 hover:scale-105
+                    ${location === item.path 
+                      ? 'bg-primary/20 text-primary border border-primary/30' 
+                      : 'text-muted-foreground hover:text-primary'
+                    }
+                  `}
+                  title={t(item.label)}
+                >
+                  {item.icon.startsWith('lucide-') ? (
+                    <>
+                      {item.icon === 'lucide-building' && <Building className="h-5 w-5" />}
+                      {item.icon === 'lucide-settings' && <Settings className="h-5 w-5" />}
+                      {item.icon === 'lucide-credit-card' && <CreditCard className="h-5 w-5" />}
+                      {item.icon === 'lucide-brain' && <BrainIcon className="h-5 w-5" />}
+                    </>
+                  ) : (
+                    <i className={`${item.icon} text-lg`} />
+                  )}
+                </Link>
+              ))}
+          </div>
+        )}
 
         {/* Footer con soporte y cerrar sesión - Solo se muestra cuando está expandido */}
         {isSidebarExpanded && (
