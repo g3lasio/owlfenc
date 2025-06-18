@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import Header from "./Header";
 import MobileMenu from "./MobileMenu";
-import Sidebar from "./SidebarFixed";
+import Sidebar from "./Sidebar";
 import { Route, Switch, useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 
