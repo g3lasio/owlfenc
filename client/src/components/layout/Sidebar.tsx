@@ -195,11 +195,11 @@ export default function Sidebar() {
           </Button>
         </div>
 
-        {/* Navegación principal */}
+        {/* Navegación principal - Sin scroll adicional */}
         {isSidebarExpanded ? (
-          // Vista expandida - Diseño limpio con scroll interno
-          <div className="flex-1 overflow-y-auto">
-            <div className="p-3 space-y-4">
+          // Vista expandida - Contenido ajustado al espacio disponible
+          <div className="flex-1 min-h-0 overflow-y-auto">
+            <div className="p-3 space-y-3">
               {navigationGroups.map((group, index) => (
                 <div key={`group-${index}`} className="space-y-1">
                   {/* Título simple de la sección */}
@@ -215,7 +215,7 @@ export default function Sidebar() {
                         <Link key={item.id} href={item.path}>
                           <Button 
                             variant="ghost" 
-                            className="w-full justify-start px-2 py-2 h-auto hover:bg-accent text-sm font-normal"
+                            className="w-full justify-start px-2 py-1.5 h-auto hover:bg-accent text-sm font-normal"
                           >
                             {item.icon.startsWith('lucide-') ? (
                               <>
@@ -238,9 +238,9 @@ export default function Sidebar() {
             </div>
           </div>
         ) : (
-          // Vista colapsada - Solo íconos verticales con tooltips mejorados
-          <div className="flex-1 overflow-y-auto">
-            <div className="flex flex-col p-1 space-y-0.5">
+          // Vista colapsada - Íconos compactos sin scroll adicional
+          <div className="flex-1 min-h-0">
+            <div className="flex flex-col p-1 space-y-0.5 h-full">
               {navigationGroups.flatMap(group => group.items)
                 .filter(item => item.path !== "/mervin" && item.id !== "mervin")
                 .map((item: NavigationItem) => (
@@ -249,7 +249,7 @@ export default function Sidebar() {
                       <Link
                         href={item.path}
                         className={`
-                          flex items-center justify-center w-14 h-10 rounded-md transition-all duration-200 mx-auto
+                          flex items-center justify-center w-14 h-9 rounded-md transition-all duration-200 mx-auto
                           hover:bg-accent/50 hover:scale-105
                           ${location === item.path 
                             ? 'bg-primary/20 text-primary border border-primary/30' 
@@ -278,22 +278,22 @@ export default function Sidebar() {
           </div>
         )}
 
-        {/* Footer simplificado - Siempre visible cuando expandido */}
+        {/* Footer fijo - Siempre visible cuando expandido */}
         {isSidebarExpanded && (
-          <div className="p-2 border-t border-border">
+          <div className="flex-shrink-0 p-2 border-t border-border bg-card">
             {/* Botón de logout y switch de idioma en paralelo */}
             <div className="flex items-center justify-between space-x-2">
               {/* Botón de cerrar sesión */}
               <Button 
                 variant="ghost" 
-                className="flex-1 justify-start text-destructive hover:bg-destructive/10 hover:text-destructive text-sm font-normal"
+                className="flex-1 justify-start text-destructive hover:bg-destructive/10 hover:text-destructive text-xs font-normal h-8"
                 onClick={handleLogout}
                 disabled={loading}
               >
                 {loading ? (
                   <i className="ri-loader-2-line animate-spin mr-2"></i>
                 ) : (
-                  <LogOut className="h-4 w-4 mr-2" />
+                  <LogOut className="h-3 w-3 mr-2" />
                 )}
                 {t('general.logout')}
               </Button>
