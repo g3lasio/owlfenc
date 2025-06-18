@@ -26,6 +26,38 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   const { t } = useTranslation(); // Añadimos soporte para traducciones
   const { language } = useLanguage(); // Obtenemos el idioma actual del contexto
 
+  // Función para expandir secuencialmente los menús al abrir el sidebar
+  const expandMenusSequentially = () => {
+    // Expandir Tools inmediatamente
+    setIsToolsExpanded(true);
+    
+    // Expandir Features después de 300ms
+    setTimeout(() => {
+      setIsFeaturesExpanded(true);
+    }, 300);
+    
+    // Expandir Account después de 600ms
+    setTimeout(() => {
+      setIsAccountExpanded(true);
+    }, 600);
+  };
+
+  // Función para contraer secuencialmente los menús al cerrar el sidebar
+  const collapseMenusSequentially = () => {
+    // Contraer Account primero
+    setIsAccountExpanded(false);
+    
+    // Contraer Features después de 200ms
+    setTimeout(() => {
+      setIsFeaturesExpanded(false);
+    }, 200);
+    
+    // Contraer Tools después de 400ms
+    setTimeout(() => {
+      setIsToolsExpanded(false);
+    }, 400);
+  };
+
   // Manejar cierre de sesión
   const handleLogout = async () => {
     try {
@@ -51,6 +83,14 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   useEffect(() => {
     console.log("Menu state changed:", isOpen);
     document.body.style.overflow = isOpen ? "hidden" : "auto";
+    
+    if (isOpen) {
+      // Expandir menús secuencialmente cuando se abre el sidebar
+      expandMenusSequentially();
+    } else {
+      // Contraer menús secuencialmente cuando se cierra el sidebar
+      collapseMenusSequentially();
+    }
   }, [isOpen]);
 
   useEffect(() => {
