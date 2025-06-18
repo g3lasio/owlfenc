@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Header from "./Header";
 import MobileMenu from "./MobileMenu";
 import Sidebar from "./Sidebar";
-import { Route, Switch, useLocation } from "wouter";
+import { Route, Switch, useLocation, Link } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface AppLayoutProps {
@@ -144,9 +144,13 @@ export default function AppLayout({ children }: AppLayoutProps) {
           }}
         >
           <div className="flex justify-center space-x-4">
-            <a href="#" className="hover:text-cyan-400">Política de Privacidad</a>
+            <Link to="/privacy-policy" className="hover:text-cyan-400 cursor-pointer transition-colors">
+              Política de Privacidad
+            </Link>
             <span>|</span>
-            <a href="#" className="hover:text-cyan-400">Términos Legales</a>
+            <Link to="/legal-policy" className="hover:text-cyan-400 cursor-pointer transition-colors">
+              Términos Legales
+            </Link>
             <span>|</span>
             <span>© 2025 Owl Fence</span>
           </div>
