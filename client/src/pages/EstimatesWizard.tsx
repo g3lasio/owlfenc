@@ -2528,7 +2528,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
   console.log(estimate);
   const handleDownload = async () => {
-    try {
+    try { 
       const payload = {
         company_logo_url: "https://yourdomain.com/logo.png",
         company_name: "Mervin Solutions Inc.",
