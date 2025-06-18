@@ -56,9 +56,9 @@ interface Client {
   zipCode?: string | null;
   notes?: string | null;
   source?: string | null;
-  tags?: string[];
-  classification?: string;
-  lastContact?: Date;
+  tags?: string[] | null;
+  classification?: string | null | undefined;
+  lastContact?: Date | null | undefined;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -103,7 +103,7 @@ const csvImportSchema = z.object({
 export default function NuevoClientes() {
   const { profile } = useProfile();
   // ID por defecto para pruebas, si no hay perfil disponible
-  const userId = profile?.id || 1;
+  const userId = profile?.id?.toString() || "1";
   const queryClient = useQueryClient();
   const { toast } = useToast();
   
