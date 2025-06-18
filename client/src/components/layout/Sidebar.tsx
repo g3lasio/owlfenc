@@ -209,81 +209,91 @@ export default function Sidebar() {
           </Button>
         </div>
 
-        {/* Navegación principal - Generada dinámicamente desde la configuración */}
-        <div className="flex-1 px-3 pt-4">
-          {navigationGroups.map((group, index) => {
-            const isExpanded = group.title === "tools" ? isToolsExpanded :
-                             group.title === "features" ? isFeaturesExpanded :
-                             group.title === "account" ? isAccountExpanded : true;
-            
-            const setExpanded = group.title === "tools" ? setIsToolsExpanded :
-                              group.title === "features" ? setIsFeaturesExpanded :
-                              group.title === "account" ? setIsAccountExpanded : () => {};
+        {/* Navegación principal - Solo se muestra cuando el sidebar está expandido */}
+        <AnimatePresence>
+          {isSidebarExpanded && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.4, ease: "easeInOut" }}
+              className="flex-1 px-3 pt-4 overflow-hidden"
+            >
+              {navigationGroups.map((group, index) => {
+                const isExpanded = group.title === "tools" ? isToolsExpanded :
+                                 group.title === "features" ? isFeaturesExpanded :
+                                 group.title === "account" ? isAccountExpanded : true;
+                
+                const setExpanded = group.title === "tools" ? setIsToolsExpanded :
+                                  group.title === "features" ? setIsFeaturesExpanded :
+                                  group.title === "account" ? setIsAccountExpanded : () => {};
 
-            return (
-              <div key={`group-${index}`}>
-                {/* Sci-Fi Accordion Frame */}
-                <div className="mb-6 sci-fi-frame sci-fi-corner-brackets arc-reactor-bg p-3">
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-center text-xs font-semibold py-3 text-muted-foreground uppercase tracking-wider hover:bg-accent hover:text-cyan-400 transition-colors"
-                    onClick={() => setExpanded(!isExpanded)}
-                  >
-                    <span className="flex items-center justify-center w-full">
-                      {t(`navigation.${group.title}`)}
-                      <span className="ml-2">
-                        {isExpanded ? (
-                          <ChevronDown className="h-3 w-3" />
-                        ) : (
-                          <ChevronRight className="h-3 w-3" />
-                        )}
-                      </span>
-                    </span>
-                  </Button>
-                  
-                  <AnimatePresence>
-                    {isExpanded && (
-                      <motion.div 
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.6, ease: "easeInOut" }}
-                        className="space-y-1 mt-3 overflow-hidden"
+                return (
+                  <div key={`group-${index}`}>
+                    {/* Sci-Fi Accordion Frame */}
+                    <div className="mb-6 sci-fi-frame sci-fi-corner-brackets arc-reactor-bg p-3">
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-center text-xs font-semibold py-3 text-muted-foreground uppercase tracking-wider hover:bg-accent hover:text-cyan-400 transition-colors"
+                        onClick={() => setExpanded(!isExpanded)}
                       >
-                        {/* Filtrar el elemento de Mervin AI si existe */}
-                        {group.items
-                          .filter(item => item.path !== "/mervin" && item.id !== "mervin")
-                          .map((item) => (
-                            <Link key={item.id} href={item.path}>
-                              <Button variant="ghost" className="w-full justify-center hover:bg-cyan-500/10 hover:text-cyan-400 transition-colors">
-                                <span className="flex items-center justify-center w-full">
-                                  {item.icon.startsWith('lucide-') ? (
-                                    <>
-                                      {item.icon === 'lucide-user' && <User className="h-4 w-4 mr-2" />}
-                                      {item.icon === 'lucide-credit-card' && <CreditCard className="h-4 w-4 mr-2" />}
-                                      {item.icon === 'lucide-building' && <Building className="h-4 w-4 mr-2" />}
-                                      {item.icon === 'lucide-settings' && <Settings className="h-4 w-4 mr-2" />}
-                                      {item.icon === 'lucide-brain' && <BrainIcon className="h-4 w-4 mr-2" />}
-                                    </>
-                                  ) : (
-                                    <i className={`${item.icon} mr-2 text-lg`}></i>
-                                  )}
-                                  {t(item.label)}
-                                </span>
-                              </Button>
-                            </Link>
-                          ))}
-                      </motion.div>
+                        <span className="flex items-center justify-center w-full">
+                          {t(`navigation.${group.title}`)}
+                          <span className="ml-2">
+                            {isExpanded ? (
+                              <ChevronDown className="h-3 w-3" />
+                            ) : (
+                              <ChevronRight className="h-3 w-3" />
+                            )}
+                          </span>
+                        </span>
+                      </Button>
+                      
+                      <AnimatePresence>
+                        {isExpanded && (
+                          <motion.div 
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.6, ease: "easeInOut" }}
+                            className="space-y-1 mt-3 overflow-hidden"
+                          >
+                            {/* Filtrar el elemento de Mervin AI si existe */}
+                            {group.items
+                              .filter(item => item.path !== "/mervin" && item.id !== "mervin")
+                              .map((item) => (
+                                <Link key={item.id} href={item.path}>
+                                  <Button variant="ghost" className="w-full justify-center hover:bg-cyan-500/10 hover:text-cyan-400 transition-colors">
+                                    <span className="flex items-center justify-center w-full">
+                                      {item.icon.startsWith('lucide-') ? (
+                                        <>
+                                          {item.icon === 'lucide-user' && <User className="h-4 w-4 mr-2" />}
+                                          {item.icon === 'lucide-credit-card' && <CreditCard className="h-4 w-4 mr-2" />}
+                                          {item.icon === 'lucide-building' && <Building className="h-4 w-4 mr-2" />}
+                                          {item.icon === 'lucide-settings' && <Settings className="h-4 w-4 mr-2" />}
+                                          {item.icon === 'lucide-brain' && <BrainIcon className="h-4 w-4 mr-2" />}
+                                        </>
+                                      ) : (
+                                        <i className={`${item.icon} mr-2 text-lg`}></i>
+                                      )}
+                                      {t(item.label)}
+                                    </span>
+                                  </Button>
+                                </Link>
+                              ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                    {index < navigationGroups.length - 1 && index === 1 && (
+                      <div className="futuristic-divider power-pulse my-4"></div>
                     )}
-                  </AnimatePresence>
-                </div>
-                {index < navigationGroups.length - 1 && index === 1 && (
-                  <div className="futuristic-divider power-pulse my-4"></div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                  </div>
+                );
+              })}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Footer con soporte y cerrar sesión */}
         <div className="p-4 border-t border-border mt-auto">
