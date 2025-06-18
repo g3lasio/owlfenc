@@ -140,16 +140,16 @@ export default function AppLayout({ children }: AppLayoutProps) {
             zIndex: 10
           }}
         >
-          <div className="flex justify-center space-x-4">
+          <div className="flex justify-center items-center space-x-4">
             <Link to="/privacy-policy" className="hover:text-cyan-400 cursor-pointer transition-colors">
-              Política de Privacidad
+              Privacy Policy
             </Link>
             <span>|</span>
             <Link to="/legal-policy" className="hover:text-cyan-400 cursor-pointer transition-colors">
-              Términos Legales
+              Terms of Service
             </Link>
             <span>|</span>
-            <span>© 2025 Owl Fence</span>
+            <span className="font-medium">© 2025 Owl Fence</span>
           </div>
         </div>
       </main>
