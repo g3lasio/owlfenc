@@ -37,129 +37,40 @@ export default function Home() {
         <button style={{ 
           position: 'relative',
           borderRadius: '50%',
-          border: '2px solid transparent',
-          background: `
-            radial-gradient(circle at center, 
-              rgba(0,20,40,0.9) 0%, 
-              rgba(0,40,80,0.7) 30%, 
-              rgba(0,100,150,0.5) 70%, 
-              transparent 100%
-            ),
-            conic-gradient(from 0deg, 
-              rgba(0,255,255,0.8), 
-              rgba(0,150,255,0.6), 
-              rgba(100,200,255,0.4),
-              rgba(0,255,255,0.8)
-            )
-          `,
+          border: 'none',
+          background: 'transparent',
           cursor: 'pointer',
           padding: 0,
           width: '200px',
           height: '200px',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
-          animation: 'borderGlow 3s ease-in-out infinite, reactorPulse 2s ease-in-out infinite'
+          justifyContent: 'center'
         }}>
-          {/* Efecto de escaneo horizontal */}
+          
+          {/* Resplandor circular futurista */}
           <div style={{
             position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
+            width: '100%',
+            height: '100%',
             borderRadius: '50%',
-            overflow: 'hidden'
-          }}>
-            <div style={{
-              height: '2px',
-              background: 'rgba(0,255,255,0.7)',
-              width: '100%',
-              position: 'absolute',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              boxShadow: '0 0 10px rgba(0,255,255,0.5)'
-            }}></div>
-          </div>
+            background: 'radial-gradient(circle, transparent 40%, rgba(0,255,255,0.1) 60%, rgba(0,255,255,0.3) 80%, rgba(0,255,255,0.1) 100%)',
+            animation: 'borderGlow 3s ease-in-out infinite'
+          }}></div>
           
-          {/* Efecto de escaneo vertical */}
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            borderRadius: '50%',
-            overflow: 'hidden'
-          }}>
-            <div style={{
-              width: '2px',
-              background: 'rgba(0,150,255,0.7)',
-              height: '100%',
-              position: 'absolute',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              boxShadow: '0 0 10px rgba(0,150,255,0.5)'
-            }}></div>
-          </div>
-          
-          {/* Contenedor principal */}
-          <div style={{
-            position: 'relative',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '180px',
-            height: '180px',
-            transform: 'scale(1)',
-            transition: 'transform 0.3s ease'
-          }} 
-          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}>
-            {/* Partículas animadas alrededor del logo */}
-            <div className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-full">
-              {particles.map(particle => (
-                <div 
-                  key={particle.id}
-                  className="absolute rounded-full bg-cyan-400"
-                  style={{
-                    width: `${particle.size}px`,
-                    height: `${particle.size}px`,
-                    left: `calc(50% + ${particle.x}px)`,
-                    top: `calc(50% + ${particle.y}px)`,
-                    opacity: particle.opacity,
-                    animation: `floatParticle ${particle.speed}s infinite alternate ease-in-out`,
-                    animationDelay: `${particle.delay}s`
-                  }}
-                />
-              ))}
-            </div>
-            
-            {/* Fondo circular oscuro para contraste del logo */}
-            <div style={{
-              position: 'absolute',
-              width: '140px',
-              height: '140px',
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(0,20,40,0.8) 0%, rgba(0,40,80,0.6) 50%, transparent 100%)',
-              zIndex: 5
-            }}></div>
-            
-            {/* Imagen del logo */}
-            <img 
-              src="https://i.postimg.cc/FK6hvMbf/logo-mervin.png" 
-              alt="Mervin AI" 
-              style={{
-                position: 'relative',
-                width: '120px',
-                height: '120px',
-                objectFit: 'contain',
-                zIndex: 10,
-                animation: 'logoGlow 2.5s ease-in-out infinite',
-                filter: 'brightness(1.2) contrast(1.3) saturate(1.1)'
-              }}
-            />
-          </div>
+          {/* Imagen del logo con pulsaciones */}
+          <img 
+            src="https://i.postimg.cc/FK6hvMbf/logo-mervin.png" 
+            alt="Mervin AI" 
+            style={{
+              position: 'relative',
+              width: '120px',
+              height: '120px',
+              objectFit: 'contain',
+              zIndex: 10,
+              animation: 'logoGlow 2.5s ease-in-out infinite'
+            }}
+          />
           
           {/* Texto de Mervin AI con efecto de aparición */}
           <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 text-lg md:text-xl font-quantico whitespace-nowrap tracking-wider z-10">
