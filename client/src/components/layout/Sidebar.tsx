@@ -175,8 +175,8 @@ export default function Sidebar() {
   return (
     <aside className={`hidden md:flex flex-col bg-card h-screen overflow-hidden relative transition-all duration-300 ${isSidebarExpanded ? 'md:w-72 border-r border-border' : 'md:w-16'}`}>
       
-      {/* Todo el contenido en un contenedor con scroll */}
-      <div className="flex flex-col h-full overflow-y-auto">
+      {/* Todo el contenido en un contenedor */}
+      <div className="flex flex-col h-full">
         
         {/* Botón de toggle - Solo flecha */}
         <div className={`${isSidebarExpanded ? 'p-3 border-b border-border' : 'p-2'}`}>
@@ -235,7 +235,7 @@ export default function Sidebar() {
           </div>
         ) : (
           // Vista colapsada - Solo íconos verticales
-          <div className="flex flex-col flex-1 p-2 space-y-1 overflow-y-auto">
+          <div className="flex flex-col flex-1 p-2 space-y-1">
             {navigationGroups.flatMap(group => group.items)
               .filter(item => item.path !== "/mervin" && item.id !== "mervin")
               .map((item: NavigationItem) => (
@@ -269,25 +269,28 @@ export default function Sidebar() {
 
         {/* Footer simplificado - Solo se muestra cuando está expandido */}
         {isSidebarExpanded && (
-          <div className="p-3 border-t border-border mt-auto space-y-2">
-            {/* Botón de cerrar sesión */}
-            <Button 
-              variant="ghost" 
-              className="w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive text-sm font-normal"
-              onClick={handleLogout}
-              disabled={loading}
-            >
-              {loading ? (
-                <i className="ri-loader-2-line animate-spin mr-2"></i>
-              ) : (
-                <LogOut className="h-4 w-4 mr-2" />
-              )}
-              {t('general.logout')}
-            </Button>
-            
-            {/* Switch de idioma */}
-            <div className="flex justify-center">
-              <LanguageSwitch />
+          <div className="p-3 border-t border-border mt-auto">
+            {/* Botón de logout y switch de idioma en paralelo */}
+            <div className="flex items-center justify-between space-x-2">
+              {/* Botón de cerrar sesión */}
+              <Button 
+                variant="ghost" 
+                className="flex-1 justify-start text-destructive hover:bg-destructive/10 hover:text-destructive text-sm font-normal"
+                onClick={handleLogout}
+                disabled={loading}
+              >
+                {loading ? (
+                  <i className="ri-loader-2-line animate-spin mr-2"></i>
+                ) : (
+                  <LogOut className="h-4 w-4 mr-2" />
+                )}
+                {t('general.logout')}
+              </Button>
+              
+              {/* Switch de idioma */}
+              <div className="flex-shrink-0">
+                <LanguageSwitch />
+              </div>
             </div>
           </div>
         )}
