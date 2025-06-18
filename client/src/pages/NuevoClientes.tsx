@@ -1054,21 +1054,21 @@ export default function NuevoClientes() {
         </div>
       )}
 
-      {/* Add New Client Dialog - Improved Design */}
+      {/* Add New Client Dialog - Fixed Scrolling */}
       <Dialog open={showAddClientDialog} onOpenChange={setShowAddClientDialog}>
-        <DialogContent className="sm:max-w-[700px] max-h-[85vh] p-0 gap-0">
-          {/* Header */}
-          <div className="px-6 py-4 border-b bg-background">
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col p-0 gap-0">
+          {/* Header - Fixed */}
+          <div className="px-6 py-4 border-b bg-background shrink-0">
             <DialogTitle className="text-lg font-semibold">Add New Client</DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground mt-1">
               Complete the client information. Only the name is required.
             </DialogDescription>
           </div>
 
-          {/* Content */}
-          <div className="px-6 py-4 max-h-[calc(85vh-140px)] overflow-y-auto">
+          {/* Scrollable Content */}
+          <ScrollArea className="flex-1 px-6 py-4">
             <Form {...clientForm}>
-              <form onSubmit={clientForm.handleSubmit(handleClientFormSubmit)} className="space-y-6">
+              <form onSubmit={clientForm.handleSubmit(handleClientFormSubmit)} className="space-y-6 pr-3">
                 {/* Basic Information */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-sm font-medium text-foreground">
@@ -1143,7 +1143,7 @@ export default function NuevoClientes() {
                 </div>
 
                 {/* Address Information */}
-                <div className="space-y-4 pt-2 border-t">
+                <div className="space-y-4 pt-4 border-t">
                   <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                     <MapPin className="h-4 w-4" />
                     Address
@@ -1225,7 +1225,7 @@ export default function NuevoClientes() {
                 </div>
 
                 {/* Additional Information */}
-                <div className="space-y-4 pt-2 border-t">
+                <div className="space-y-4 pt-4 border-t pb-4">
                   <div className="text-sm font-medium text-foreground">Additional Information (Optional)</div>
                   
                   <FormField
@@ -1266,10 +1266,10 @@ export default function NuevoClientes() {
                 </div>
               </form>
             </Form>
-          </div>
+          </ScrollArea>
 
-          {/* Footer with Action Buttons */}
-          <div className="px-6 py-4 border-t bg-muted/20">
+          {/* Footer with Action Buttons - Fixed */}
+          <div className="px-6 py-4 border-t bg-muted/20 shrink-0">
             <div className="flex justify-end gap-3">
               <Button 
                 type="button" 
