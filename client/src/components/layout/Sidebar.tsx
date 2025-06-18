@@ -176,7 +176,7 @@ export default function Sidebar() {
     <aside className={`hidden md:flex flex-col bg-card h-screen overflow-hidden relative transition-all duration-300 ${isSidebarExpanded ? 'md:w-72 border-r border-border' : 'md:w-16'}`}>
       
       {/* Todo el contenido en un contenedor */}
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full min-h-0">
         
         {/* Botón de toggle - Solo flecha */}
         <div className={`${isSidebarExpanded ? 'p-3 border-b border-border' : 'p-2'}`}>
@@ -196,9 +196,9 @@ export default function Sidebar() {
         {/* Navegación principal */}
         {isSidebarExpanded ? (
           // Vista expandida - Diseño limpio y minimalista
-          <div className="flex-1 p-4 space-y-6 overflow-y-auto">
+          <div className="flex-1 p-3 space-y-4">
             {navigationGroups.map((group, index) => (
-              <div key={`group-${index}`} className="space-y-2">
+              <div key={`group-${index}`} className="space-y-1">
                 {/* Título simple de la sección */}
                 <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2">
                   {t(`navigation.${group.title}`)}
@@ -269,7 +269,7 @@ export default function Sidebar() {
 
         {/* Footer simplificado - Solo se muestra cuando está expandido */}
         {isSidebarExpanded && (
-          <div className="p-3 border-t border-border mt-auto">
+          <div className="p-2 border-t border-border mt-auto">
             {/* Botón de logout y switch de idioma en paralelo */}
             <div className="flex items-center justify-between space-x-2">
               {/* Botón de cerrar sesión */}
