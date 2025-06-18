@@ -140,7 +140,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
             >
               {navigationGroups.map((group, index) => (
                 <div key={`group-${index}`} style={{ marginBottom: '16px' }}>
-                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2 mb-2">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider px-2 mb-2 text-center" style={{ color: '#00ffff' }}>
                     {t(`navigation.${group.title}`)}
                   </h3>
                   
