@@ -5,37 +5,54 @@
 @tailwind components;
 @tailwind utilities;
 
+/* BLOQUEO ABSOLUTO DE SCROLL - FUERA DE @layer PARA MÁXIMA PRIORIDAD */
+* {
+  box-sizing: border-box !important;
+}
+
+html, body {
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+#root {
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+}
+
+aside {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+main {
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+}
+
+main * {
+  overflow: hidden !important;
+}
+
+.home-container {
+  overflow: hidden !important;
+  height: 100% !important;
+  max-height: 100% !important;
+}
+
+/* Eliminar cualquier scroll de elementos flex */
+.flex, .flex-1, .flex-col {
+  overflow: hidden !important;
+}
+
 @layer utilities {
-  /* Forzar eliminación de scroll del sidebar */
-  aside {
-    height: 100vh !important;
-    max-height: 100vh !important;
-    overflow: hidden !important;
-    box-sizing: border-box !important;
-  }
-  
-  aside * {
-    box-sizing: border-box !important;
-  }
-
-  /* Bloquear completamente el scroll del contenido principal */
-  main {
-    overflow: hidden !important;
-    height: 100vh !important;
-    max-height: 100vh !important;
-  }
-
-  /* Eliminar scroll de cualquier contenido dentro del main */
-  main > div {
-    overflow: hidden !important;
-  }
-
-  /* Prevenir scroll en la página Home */
-  .home-container {
-    overflow: hidden !important;
-    height: 100% !important;
-    max-height: 100% !important;
-  }
 
   .animate-ping {
     animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;

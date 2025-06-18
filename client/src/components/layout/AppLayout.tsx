@@ -95,23 +95,48 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
   // Para el resto de las páginas (protegidas), mostrar el layout completo
   return (
-    <div className="flex h-screen w-screen">
+    <div style={{ 
+      display: 'flex', 
+      height: '100vh', 
+      width: '100vw', 
+      overflow: 'hidden',
+      position: 'fixed',
+      top: 0,
+      left: 0
+    }}>
       {/* Sidebar completamente independiente - Solo en desktop */}
       <div 
-        className="hidden md:block fixed left-0 top-0 z-40" 
+        className="hidden md:block" 
         style={{ 
           height: '100vh', 
           overflow: 'hidden',
-          position: 'fixed'
+          position: 'fixed',
+          left: 0,
+          top: 0,
+          zIndex: 40
         }}
       >
         <Sidebar onWidthChange={setSidebarWidth} />
       </div>
 
       {/* Contenido principal con margen dinámico para el sidebar */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden" style={{ marginLeft: `${sidebarWidth}px` }}>
+      <main style={{ 
+        flex: 1, 
+        display: 'flex', 
+        flexDirection: 'column',
+        height: '100vh', 
+        overflow: 'hidden',
+        marginLeft: `${sidebarWidth}px`
+      }}>
         <Header toggleMobileMenu={toggleMobileMenu} isMobileMenuOpen={isMobileMenuOpen} />
-        <div className="flex-1 flex items-center justify-center overflow-hidden" style={{ height: 'calc(100vh - 64px)' }}>
+        <div style={{ 
+          flex: 1, 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          overflow: 'hidden',
+          height: 'calc(100vh - 64px)'
+        }}>
           <Switch>
             <Route path="/settings/profile" component={Profile} />
             <Route path="*">{children}</Route>

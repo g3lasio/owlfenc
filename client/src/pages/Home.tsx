@@ -24,9 +24,17 @@ export default function Home() {
   const mervinBlue = "#29ABE2"; // Color cyan del logo de Mervin
 
   return (
-    <div className="home-container w-full h-full flex items-center justify-center">
+    <div style={{ 
+      width: '100%', 
+      height: '100%', 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center',
+      overflow: 'hidden',
+      position: 'relative'
+    }}>
       <Link href="/mervin">
-        <button className="relative group">
+        <button style={{ position: 'relative' }}>
           {/* Halo exterior con gradiente */}
           <div className="absolute inset-0 rounded-full blur-2xl opacity-60 bg-gradient-to-r from-cyan-300 via-cyan-500 to-blue-600 animate-pulse group-hover:opacity-80 transition-all duration-500"></div>
           
