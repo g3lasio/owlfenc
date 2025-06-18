@@ -28,18 +28,20 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
 
   // Función para expandir secuencialmente los menús al abrir el sidebar
   const expandMenusSequentially = () => {
-    // Expandir Tools inmediatamente
-    setIsToolsExpanded(true);
+    // Expandir Tools después de 500ms
+    setTimeout(() => {
+      setIsToolsExpanded(true);
+    }, 500);
     
-    // Expandir Features después de 300ms
+    // Expandir Features después de 1000ms
     setTimeout(() => {
       setIsFeaturesExpanded(true);
-    }, 300);
+    }, 1000);
     
-    // Expandir Account después de 600ms
+    // Expandir Account después de 1500ms
     setTimeout(() => {
       setIsAccountExpanded(true);
-    }, 600);
+    }, 1500);
   };
 
   // Función para contraer secuencialmente los menús al cerrar el sidebar
@@ -47,15 +49,15 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
     // Contraer Account primero
     setIsAccountExpanded(false);
     
-    // Contraer Features después de 200ms
+    // Contraer Features después de 400ms
     setTimeout(() => {
       setIsFeaturesExpanded(false);
-    }, 200);
+    }, 400);
     
-    // Contraer Tools después de 400ms
+    // Contraer Tools después de 800ms
     setTimeout(() => {
       setIsToolsExpanded(false);
-    }, 400);
+    }, 800);
   };
 
   // Manejar cierre de sesión
@@ -235,7 +237,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: "auto" }}
                           exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.3 }}
+                          transition={{ duration: 0.6, ease: "easeInOut" }}
                           className="space-y-1.5 mt-3 overflow-hidden"
                         >
                           {group.items.map((item, itemIndex) => 

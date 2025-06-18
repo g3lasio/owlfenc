@@ -29,10 +29,56 @@ export default function Sidebar() {
   const { currentUser, logout } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [isToolsExpanded, setIsToolsExpanded] = useState(true);
-  const [isFeaturesExpanded, setIsFeaturesExpanded] = useState(true);
+  const [isToolsExpanded, setIsToolsExpanded] = useState(false);
+  const [isFeaturesExpanded, setIsFeaturesExpanded] = useState(false);
   const [isAccountExpanded, setIsAccountExpanded] = useState(false);
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const { t } = useTranslation();
+
+  // Función para expandir secuencialmente los menús
+  const expandMenusSequentially = () => {
+    // Expandir Tools después de 500ms
+    setTimeout(() => {
+      setIsToolsExpanded(true);
+    }, 500);
+    
+    // Expandir Features después de 1000ms
+    setTimeout(() => {
+      setIsFeaturesExpanded(true);
+    }, 1000);
+    
+    // Expandir Account después de 1500ms
+    setTimeout(() => {
+      setIsAccountExpanded(true);
+    }, 1500);
+  };
+
+  // Función para contraer secuencialmente los menús
+  const collapseMenusSequentially = () => {
+    // Contraer Account primero
+    setIsAccountExpanded(false);
+    
+    // Contraer Features después de 400ms
+    setTimeout(() => {
+      setIsFeaturesExpanded(false);
+    }, 400);
+    
+    // Contraer Tools después de 800ms
+    setTimeout(() => {
+      setIsToolsExpanded(false);
+    }, 800);
+  };
+
+  // Función para alternar el estado del sidebar
+  const toggleSidebar = () => {
+    if (isSidebarExpanded) {
+      collapseMenusSequentially();
+      setIsSidebarExpanded(false);
+    } else {
+      setIsSidebarExpanded(true);
+      expandMenusSequentially();
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -142,7 +188,26 @@ export default function Sidebar() {
       
       {/* Todo el contenido en un contenedor con scroll */}
       <div className="flex flex-col h-full overflow-y-auto">
-
+        
+        {/* Botón de toggle del sidebar */}
+        <div className="p-3 border-b border-border">
+          <Button
+            variant="ghost"
+            className="w-full justify-center text-xs font-semibold py-3 text-muted-foreground uppercase tracking-wider hover:bg-accent hover:text-cyan-400 transition-colors"
+            onClick={toggleSidebar}
+          >
+            <span className="flex items-center justify-center w-full">
+              MENU
+              <span className="ml-2">
+                {isSidebarExpanded ? (
+                  <ChevronDown className="h-3 w-3" />
+                ) : (
+                  <ChevronRight className="h-3 w-3" />
+                )}
+              </span>
+            </span>
+          </Button>
+        </div>
 
         {/* Navegación principal - Generada dinámicamente desde la configuración */}
         <div className="flex-1 px-3 pt-4">
@@ -182,7 +247,7 @@ export default function Sidebar() {
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.3 }}
+                        transition={{ duration: 0.6, ease: "easeInOut" }}
                         className="space-y-1 mt-3 overflow-hidden"
                       >
                         {/* Filtrar el elemento de Mervin AI si existe */}
