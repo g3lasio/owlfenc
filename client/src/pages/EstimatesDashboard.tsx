@@ -195,7 +195,7 @@ export default function EstimatesDashboard() {
         clientAddress: estimateData.clientAddress || '',
         clientEmail: estimateData.clientEmail || '',
         clientPhone: estimateData.clientPhone || '',
-        items: (estimateData.items || []).map(item => ({
+        items: (estimateData.items || []).map((item: any) => ({
           name: item.name,
           description: item.description,
           quantity: item.quantity,
@@ -210,8 +210,8 @@ export default function EstimatesDashboard() {
         total: estimateData.total || 0,
         projectDescription: estimateData.projectDescription || '',
         notes: estimateData.notes || '',
-        // Add userId to fetch real contractor information
-        userId: currentUser?.uid ? 1 : undefined // For now using default user ID since we need Firebase to DB mapping
+        // Add Firebase UID to fetch real contractor information
+        firebaseUid: currentUser?.uid
       };
       
       console.log('🐒 [PDFMonkey Integration] Datos mapeados para template específico');

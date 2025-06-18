@@ -492,7 +492,7 @@ function generateBasicFallbackHTML(estimateData: EstimateData): string {
                     <td>${item.quantity}</td>
                     <td>${item.unit}</td>
                     <td>$${(item.unitPrice / 100).toFixed(2)}</td>
-                    <td>$${(item.totalPrice / 100).toFixed(2)}</td>
+                    <td>$${((item.totalPrice || (item.quantity * item.unitPrice)) / 100).toFixed(2)}</td>
                 </tr>
             `).join('')}
         </tbody>
