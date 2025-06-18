@@ -267,26 +267,13 @@ export default function Sidebar() {
           </div>
         )}
 
-        {/* Footer con soporte y cerrar sesión - Solo se muestra cuando está expandido */}
+        {/* Footer simplificado - Solo se muestra cuando está expandido */}
         {isSidebarExpanded && (
-          <div className="p-4 border-t border-border mt-auto">
-          <div className="rounded-md bg-primary/10 p-1.5 text-center mb-3" style={{ height: "auto", minHeight: "70px" }}>
-            <p className="text-xs mb-1">{t('general.needHelp')}</p>
-            <a 
-              href="mailto:mervin@owlfenc.com"
-              className="inline-flex items-center justify-center py-1 px-2 w-full bg-card text-sm border border-border rounded-md hover:bg-accent"
-            >
-              <i className="ri-mail-line mr-1"></i>
-              {t('general.support')}
-            </a>
-          </div>
-          
-          {/* Contenedor para botón de cerrar sesión y switch de idioma */}
-          <div className="flex items-center justify-between space-x-2 mb-3">
+          <div className="p-3 border-t border-border mt-auto space-y-2">
             {/* Botón de cerrar sesión */}
             <Button 
               variant="ghost" 
-              className="flex-1 flex items-center justify-center text-destructive hover:bg-destructive/10 hover:text-destructive"
+              className="w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive text-sm font-normal"
               onClick={handleLogout}
               disabled={loading}
             >
@@ -298,12 +285,10 @@ export default function Sidebar() {
               {t('general.logout')}
             </Button>
             
-            {/* Switch de idioma simplificado con destello */}
-            <div className="flex-shrink-0 relative transform hover:scale-105 transition-transform">
-              <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-500 rounded-full opacity-70"></div>
+            {/* Switch de idioma */}
+            <div className="flex justify-center">
               <LanguageSwitch />
             </div>
-          </div>
           </div>
         )}
       </div>
