@@ -176,55 +176,78 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
               ))}
             </div>
           ) : (
-            // Vista colapsada con scroll
+            // Vista colapsada con scroll y espaciado profesional
             <div 
               className="custom-scroll"
               style={{ 
                 height: '100%',
                 overflowY: 'auto', 
                 overflowX: 'hidden',
-                paddingTop: '4px',
-                paddingLeft: '4px',
-                paddingRight: '4px',
-                paddingBottom: '80px', // Espacio para el footer
-                display: 'flex', 
-                flexDirection: 'column', 
-                gap: '2px'
+                paddingTop: '16px',
+                paddingLeft: '8px',
+                paddingRight: '8px',
+                paddingBottom: '80px' // Espacio para el footer
               }}
             >
-              {navigationGroups.flatMap(group => group.items)
-                .filter(item => item.path !== "/mervin" && item.id !== "mervin")
-                .map((item: NavigationItem) => (
-                  <Tooltip key={item.id}>
-                    <TooltipTrigger asChild>
-                      <Link
-                        href={item.path}
-                        className={`
-                          flex items-center justify-center w-14 h-9 rounded-md transition-all duration-200 mx-auto
-                          hover:bg-accent/50 hover:scale-105
-                          ${location === item.path 
-                            ? 'bg-primary/20 text-primary border border-primary/30' 
-                            : 'text-muted-foreground hover:text-primary'
-                          }
-                        `}
-                      >
-                        {item.icon.startsWith('lucide-') ? (
-                          <>
-                            {item.icon === 'lucide-building' && <Building className="h-4 w-4" />}
-                            {item.icon === 'lucide-settings' && <Settings className="h-4 w-4" />}
-                            {item.icon === 'lucide-credit-card' && <CreditCard className="h-4 w-4" />}
-                            {item.icon === 'lucide-brain' && <BrainIcon className="h-4 w-4" />}
-                          </>
-                        ) : (
-                          <i className={`${item.icon} text-base`} />
-                        )}
-                      </Link>
-                    </TooltipTrigger>
-                    <TooltipContent side="right" className="bg-background border border-border text-foreground shadow-lg">
-                      <p className="font-medium">{t(item.label)}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                ))}
+              {/* Agrupar iconos por sección con separadores visuales */}
+              {navigationGroups.map((group, groupIndex) => (
+                <div key={`group-${groupIndex}`} style={{ marginBottom: '24px' }}>
+                  {/* Separador visual sutil entre grupos */}
+                  {groupIndex > 0 && (
+                    <div style={{ 
+                      height: '1px', 
+                      background: 'rgba(255,255,255,0.1)', 
+                      margin: '16px 8px',
+                      borderRadius: '1px'
+                    }}></div>
+                  )}
+                  
+                  <div style={{ 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    gap: '12px' // Espaciado profesional entre iconos
+                  }}>
+                    {group.items
+                      .filter(item => item.path !== "/mervin" && item.id !== "mervin")
+                      .map((item: NavigationItem) => (
+                        <Tooltip key={item.id}>
+                          <TooltipTrigger asChild>
+                            <Link
+                              href={item.path}
+                              className={`
+                                flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-300 mx-auto
+                                hover:bg-accent/60 hover:scale-110 hover:shadow-lg
+                                ${location === item.path 
+                                  ? 'bg-primary/25 text-primary border border-primary/40 shadow-md scale-105' 
+                                  : 'text-muted-foreground hover:text-primary'
+                                }
+                              `}
+                              style={{
+                                minHeight: '48px',
+                                minWidth: '48px',
+                                backdropFilter: 'blur(8px)'
+                              }}
+                            >
+                              {item.icon.startsWith('lucide-') ? (
+                                <>
+                                  {item.icon === 'lucide-building' && <Building className="h-5 w-5" />}
+                                  {item.icon === 'lucide-settings' && <Settings className="h-5 w-5" />}
+                                  {item.icon === 'lucide-credit-card' && <CreditCard className="h-5 w-5" />}
+                                  {item.icon === 'lucide-brain' && <BrainIcon className="h-5 w-5" />}
+                                </>
+                              ) : (
+                                <i className={`${item.icon} text-lg`} />
+                              )}
+                            </Link>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="bg-background border border-border text-foreground shadow-xl">
+                            <p className="font-medium">{t(item.label)}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      ))}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
