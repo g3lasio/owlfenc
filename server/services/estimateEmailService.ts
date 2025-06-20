@@ -464,13 +464,30 @@ export class EstimateEmailService {
 
         /* Logo display styles */
         .contractor-logo {
-          max-width: 120px;
-          max-height: 80px;
+          max-width: 150px;
+          max-height: 100px;
           width: auto;
           height: auto;
           margin-bottom: 15px;
-          border-radius: 6px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          border-radius: 8px;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+          background: white;
+          padding: 8px;
+          object-fit: contain;
+        }
+        
+        .logo-placeholder {
+          max-width: 150px;
+          height: 80px;
+          margin: 0 auto 15px auto;
+          background: rgba(255,255,255,0.1);
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 2px dashed rgba(255,255,255,0.3);
+          color: rgba(255,255,255,0.7);
+          font-size: 12px;
         }
 
         .btn-submit {
@@ -566,10 +583,16 @@ export class EstimateEmailService {
               <img src="${data.contractor.logo}" 
                    alt="${data.contractor.companyName} Logo" 
                    class="contractor-logo"
-                   style="max-width: 120px; max-height: 80px; width: auto; height: auto; margin-bottom: 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: block; margin-left: auto; margin-right: auto;"
-                   onerror="this.style.display='none';">
+                   style="max-width: 150px; max-height: 100px; width: auto; height: auto; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.15); display: block; margin-left: auto; margin-right: auto; background: white; padding: 8px;"
+                   onerror="this.style.display='none'; console.log('Logo failed to load:', '${data.contractor.logo}');">
             </div>
-          ` : ''}
+          ` : `
+            <div style="margin-bottom: 20px;">
+              <div style="max-width: 150px; height: 80px; margin: 0 auto; background: rgba(255,255,255,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 2px dashed rgba(255,255,255,0.3);">
+                <span style="color: rgba(255,255,255,0.7); font-size: 12px;">Company Logo</span>
+              </div>
+            </div>
+          `}
           <div class="company-name">${data.contractor.companyName}</div>
           <div class="estimate-title">Professional Estimate</div>
         </div>

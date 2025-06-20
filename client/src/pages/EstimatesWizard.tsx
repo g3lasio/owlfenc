@@ -2651,14 +2651,17 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           phone: estimate.client?.phone || "555-0000",
         },
         contractor: {
-          companyName: userProfile?.company || "Owl Fence",
-          name: userProfile?.name || userProfile?.company || "Owl Fence",
-          email: userProfile?.email || "info@owlfenc.com",
-          phone: userProfile?.phone || "202-549-3519",
-          address: userProfile?.address || "2901 Owens Court",
-          city: userProfile?.city || "Fairfield",
-          state: userProfile?.state || "California",
-          zipCode: userProfile?.zipCode || "94534",
+          companyName: profile?.companyName || profile?.company || "Company Name",
+          name: profile?.name || profile?.companyName || profile?.company || "Contractor Name",
+          email: profile?.email || "contractor@company.com",
+          phone: profile?.phone || profile?.mobilePhone || "Phone Number",
+          address: profile?.address || "Company Address",
+          city: profile?.city || "City",
+          state: profile?.state || "State",
+          zipCode: profile?.zipCode || "ZIP",
+          website: profile?.website || "",
+          license: profile?.license || "",
+          logo: profile?.logo || null, // Dynamic logo from user profile
         },
         project: {
           type: estimate.projectType || "Fence Installation",
@@ -3939,12 +3942,12 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         </h4>
                         <div className="text-sm text-gray-300">
                           {/* Company Logo */}
-                          {profile?.logo && (
+                          {profile?.logo ? (
                             <div className="mb-3">
                               <img
                                 src={profile.logo}
-                                alt={`${profile.companyName || "Company"} Logo`}
-                                className="h-12 w-auto object-contain bg-white rounded p-1"
+                                alt={`${profile.companyName || profile.company || "Company"} Logo`}
+                                className="h-12 w-auto max-w-24 object-contain bg-white rounded p-1 border border-gray-600"
                                 onError={(e) => {
                                   console.warn(
                                     "Logo failed to load:",
@@ -3953,6 +3956,12 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                                   e.currentTarget.style.display = "none";
                                 }}
                               />
+                            </div>
+                          ) : (
+                            <div className="mb-3">
+                              <div className="h-12 w-24 bg-gray-700 border border-gray-600 rounded p-1 flex items-center justify-center">
+                                <span className="text-xs text-gray-400">Logo</span>
+                              </div>
                             </div>
                           )}
                           <p className="font-medium">
