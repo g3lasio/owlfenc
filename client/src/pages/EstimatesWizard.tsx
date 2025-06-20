@@ -2761,7 +2761,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         client_name: estimate.client.name,
         client_email: estimate.client.email || "",
         client_phone: estimate.client.phone,
-        client_address: `${estimate.client.address}, ${estimate.client.city}, ${estimate.client.state} ${estimate.client.zipcode}, ${estimate.client.country}`,
+        client_address: estimate.client?.address ? `${estimate.client.address}${estimate.client.city ? ', ' + estimate.client.city : ''}${estimate.client.state ? ', ' + estimate.client.state : ''}${estimate.client.zipCode ? ' ' + estimate.client.zipCode : ''}` : "Client Address",
         lineItems: estimate.items.map((item) => ({
           name: item.name,
           description: item.description,
@@ -2771,6 +2771,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         })),
         grand_total: `$${Number(estimate.total).toFixed(2)}`,
         scope_of_work: estimate.projectDetails,
+        firebaseUid: currentUser.uid,
       };
       const res = await axios.post("/api/estimate-basic-pdf", payload);
       const downloadUrl = res.data.data.download_url;
