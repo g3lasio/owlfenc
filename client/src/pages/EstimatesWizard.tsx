@@ -5304,37 +5304,50 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   {emailData.message}
                 </div>
 
-                {/* Estimate Summary */}
+                {/* Professional Estimate Preview */}
                 <div className="border-t pt-3 sm:pt-4 mt-4 sm:mt-6">
-                  <h3 className="text-sm sm:text-lg font-bold text-blue-600 mb-2 sm:mb-3">
-                    Estimate Summary
+                  <h3 className="text-sm sm:text-lg font-bold text-blue-600 mb-2 sm:mb-3 flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Professional Estimate Preview
                   </h3>
-                  <div className="bg-blue-50 p-3 sm:p-4 rounded-lg border border-blue-200">
-                    <div className="space-y-2 sm:grid sm:grid-cols-2 sm:gap-3 sm:space-y-0 text-xs sm:text-sm">
-                      <div className="flex flex-col sm:block">
-                        <span className="font-medium">Client:</span>
-                        <span className="text-gray-700">
-                          {estimate.client?.name}
-                        </span>
+                  
+                  {previewHtml ? (
+                    <div className="border-2 border-blue-200 rounded-lg overflow-hidden">
+                      <div className="bg-blue-50 p-2 text-xs text-blue-700 font-medium flex items-center gap-2">
+                        <Eye className="h-3 w-3" />
+                        Attached Estimate Document - HTML Preview
                       </div>
-                      <div className="flex flex-col sm:block">
-                        <span className="font-medium">Project:</span>
-                        <span className="text-gray-700">
-                          {estimate.projectDetails || "Construction project"}
-                        </span>
-                      </div>
-                      <div className="flex flex-col sm:block">
-                        <span className="font-medium">Items:</span>
-                        <span className="text-gray-700">
-                          {estimate.items.length} line items
-                        </span>
-                      </div>
-                      <div className="flex flex-col sm:block text-sm sm:text-lg font-bold text-blue-600 bg-blue-100 p-2 rounded">
-                        <span className="font-medium">Total:</span>
-                        <span className="text-lg sm:text-xl">
-                          ${estimate.total.toLocaleString()}
-                        </span>
-                      </div>
+                      <iframe
+                        srcDoc={previewHtml}
+                        className="w-full h-96 border-0"
+                        title="Professional Estimate Preview"
+                        style={{ minHeight: '400px' }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 text-center">
+                      <div className="text-blue-600 font-medium mb-2">Generating estimate preview...</div>
+                      <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Quick Summary */}
+                <div className="bg-gray-50 p-3 sm:p-4 rounded-lg border border-gray-200">
+                  <div className="text-xs sm:text-sm text-gray-600 space-y-1">
+                    <div className="flex justify-between">
+                      <span>Client:</span>
+                      <span className="font-medium text-gray-800">{estimate.client?.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Items:</span>
+                      <span className="font-medium text-gray-800">{estimate.items.length} line items</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-1 mt-1">
+                      <span className="font-medium">Total Amount:</span>
+                      <span className="font-bold text-blue-600 text-sm sm:text-base">
+                        ${estimate.total.toLocaleString()}
+                      </span>
                     </div>
                   </div>
                 </div>
