@@ -3241,50 +3241,183 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                 </div>
               </CardTitle>
             </CardHeader>
-                        {isAIProcessing ? (
-                          <>
-                            <div className="flex items-center gap-2">
-                              <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
-                              <span className="text-emerald-400 font-mono">
-                                {aiProgress}%
-                              </span>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <Search className="h-4 w-4 text-emerald-400" />
-                            <span>DEEPSEARCH MATERIALS</span>
-                            <ChevronDown
-                              className={`h-3 w-3 text-emerald-400 transition-transform duration-300 ${showDeepsearchDialog ? "rotate-180" : ""}`}
-                            />
-                          </>
-                        )}
-                      </div>
-                    </button>
+            <CardContent className="space-y-4">
+              {/* Clean AI Search Button */}
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-medium text-gray-700">AI Materials Search</div>
+                <div className="relative">
+                  <button
+                    disabled={
+                      !estimate.projectDetails.trim() ||
+                      estimate.projectDetails.length < 3 ||
+                      isAIProcessing
+                    }
+                    className="px-3 py-2 text-sm bg-purple-800 border border-purple-400/30 rounded-lg hover:border-purple-400/60 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-white"
+                    onClick={() => setShowNewDeepsearchDialog(!showNewDeepsearchDialog)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Search className="h-4 w-4 text-purple-400" />
+                      <span>AI SEARCH</span>
+                      <ChevronDown
+                        className={`h-3 w-3 text-purple-400 transition-transform ${showNewDeepsearchDialog ? "rotate-180" : ""}`}
+                      />
+                    </div>
+                  </button>
 
-                    {/* Dropdown del nuevo Deepsearch Materials */}
-                    {showDeepsearchDialog && !isAIProcessing && (
-                      <div className="absolute top-full mt-2 left-0 right-0 sm:left-0 sm:right-auto z-[60] sm:min-w-[300px]">
-                        <div className="bg-gradient-to-b from-emerald-900/95 via-emerald-800/98 to-emerald-900/95 backdrop-blur-xl border border-emerald-400/30 rounded-xl shadow-2xl shadow-emerald-400/10 overflow-hidden">
-                          {/* Header */}
-                          <div className="border-b border-emerald-400/20 p-4">
-                            <div className="text-xs font-mono text-emerald-400 mb-1 tracking-wider">
-                              SELECT DEEPSEARCH TYPE
+                  {/* Modal Dropdown */}
+                  {showNewDeepsearchDialog && !isAIProcessing && (
+                    <>
+                      <div 
+                        className="fixed inset-0 z-[998]"
+                        onClick={() => setShowNewDeepsearchDialog(false)}
+                      />
+                      
+                      <div className="fixed inset-0 z-[999] flex items-start justify-center pt-20">
+                        <div 
+                          className="bg-purple-900/95 backdrop-blur-xl border border-purple-400/30 rounded-xl shadow-2xl max-w-sm w-full mx-4"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="border-b border-purple-400/20 p-4">
+                            <div className="text-xs font-mono text-purple-400 mb-1 tracking-wider">
+                              SELECT AI SEARCH TYPE
                             </div>
-                            <div className="h-px bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent" />
                           </div>
 
                           <div className="p-3 space-y-2">
-                            {/* Only Materials */}
                             <button
-                              onClick={(e) => {
-                                e.stopPropagation();
+                              onClick={() => {
                                 setDeepsearchMode("materials");
-                                setShowDeepsearchDialog(false);
+                                setShowNewDeepsearchDialog(false);
                                 handleSmartSearch();
                               }}
-                              className="group w-full p-3 rounded-lg transition-all duration-300 border border-blue-400/20 bg-gradient-to-r from-blue-500/5 to-blue-600/5 hover:border-blue-400/50 hover:bg-gradient-to-r hover:from-blue-500/15 hover:to-blue-600/15 hover:shadow-lg hover:shadow-blue-400/20"
+                              className="group w-full p-3 rounded-lg border border-blue-400/20 bg-blue-500/5 hover:border-blue-400/50 hover:bg-blue-500/15 transition-all"
                             >
+                              <div className="flex items-center gap-3">
+                                <Package className="h-5 w-5 text-blue-400" />
+                                <div className="flex-1 text-left">
+                                  <div className="text-sm font-medium text-white">ONLY MATERIALS</div>
+                                  <div className="text-xs text-slate-400">Materials database only</div>
+                                </div>
+                                <ChevronRight className="h-4 w-4 text-blue-400" />
+                              </div>
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                setDeepsearchMode("labor");
+                                setShowNewDeepsearchDialog(false);
+                                handleSmartSearch();
+                              }}
+                              className="group w-full p-3 rounded-lg border border-orange-400/20 bg-orange-500/5 hover:border-orange-400/50 hover:bg-orange-500/15 transition-all"
+                            >
+                              <div className="flex items-center gap-3">
+                                <Wrench className="h-5 w-5 text-orange-400" />
+                                <div className="flex-1 text-left">
+                                  <div className="text-sm font-medium text-white">LABOR COSTS</div>
+                                  <div className="text-xs text-slate-400">Labor service items</div>
+                                </div>
+                                <ChevronRight className="h-4 w-4 text-orange-400" />
+                              </div>
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                setDeepsearchMode("full");
+                                setShowNewDeepsearchDialog(false);
+                                handleSmartSearch();
+                              }}
+                              className="group w-full p-3 rounded-lg border border-emerald-400/40 bg-emerald-500/10 hover:border-emerald-400/70 hover:bg-emerald-500/20 transition-all ring-1 ring-emerald-400/20"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="w-5 h-5 rounded-full border-2 border-emerald-400 relative">
+                                  <div className="absolute inset-1 rounded-full bg-emerald-400/40" />
+                                </div>
+                                <div className="flex-1 text-left">
+                                  <div className="text-sm font-medium text-white">FULL COSTS</div>
+                                  <div className="text-xs text-slate-400">Complete analysis</div>
+                                  <div className="text-xs text-emerald-400/80">★ RECOMMENDED</div>
+                                </div>
+                                <ChevronRight className="h-4 w-4 text-emerald-400" />
+                              </div>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Project Details Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Project Details</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* Project details content will continue normally here */}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Materials List - Continue with normal component flow */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Materials & Items</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {estimate.items.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    No materials added yet. Use AI Search to find materials.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {estimate.items.map((item, index) => (
+                      <div key={index} className="p-4 border rounded-lg">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="font-medium">{item.name}</div>
+                            <div className="text-sm text-gray-600">{item.description}</div>
+                            <div className="text-sm">
+                              Qty: {item.quantity} {item.unit} × ${item.price} = ${item.total}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Summary Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Estimate Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex justify-between">
+                  <span>Subtotal:</span>
+                  <span>${estimate.subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Tax ({(estimate.taxRate * 100).toFixed(1)}%):</span>
+                  <span>${estimate.tax.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between font-bold text-lg">
+                  <span>Total:</span>
+                  <span>${estimate.total.toFixed(2)}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      );
                               <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-400/20 to-blue-600/20 border border-blue-400/30 flex items-center justify-center">
                                   <Package className="h-5 w-5 text-blue-400" />
