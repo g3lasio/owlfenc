@@ -3238,28 +3238,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       />
                     )}
                   </div>
-
-                  {/* Deepsearch Materials - Nuevo Botón Funcional */}
-                  <div className="relative z-50">
-                    <button
-                      disabled={
-                        !estimate.projectDetails.trim() ||
-                        estimate.projectDetails.length < 3 ||
-                        isAIProcessing
-                      }
-                      className={`
-                        relative overflow-hidden px-3 sm:px-4 py-2 w-full sm:min-w-[200px] text-sm font-medium transition-all duration-300
-                        bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-900
-                        border border-emerald-400/30 rounded-lg
-                        hover:border-emerald-400/60 hover:shadow-lg hover:shadow-emerald-400/20
-                        disabled:opacity-50 disabled:cursor-not-allowed
-                        group z-50
-                      `}
-                      onClick={handleDeepsearchToggle}
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/10 via-green-400/5 to-emerald-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                      <div className="relative flex items-center gap-2 text-white">
+                </div>
+              </CardTitle>
+            </CardHeader>
                         {isAIProcessing ? (
                           <>
                             <div className="flex items-center gap-2">
