@@ -283,27 +283,50 @@ ALL TEXT MUST BE IN ENGLISH ONLY.
     };
 
     try {
-      // Generar labor si se solicita
+      // PERFORMANCE OPTIMIZATION: Run both operations in parallel instead of sequential
+      const promises: Promise<any>[] = [];
+
+      // Prepare labor analysis promise
       if (includeLabor) {
-        console.log('🔧 Generando análisis de labor...');
-        const laborResult = await this.analyzeLaborRequirements(projectDescription, location, projectType);
-        results.labor = await this.generateCompatibleLaborList(projectDescription, location, projectType);
-        results.totalLaborCost = laborResult.totalLaborCost;
+        console.log('🔧 Starting parallel labor analysis...');
+        promises.push(
+          this.generateCompatibleLaborList(projectDescription, location, projectType)
+            .then(laborItems => {
+              results.labor = laborItems;
+              results.totalLaborCost = laborItems.reduce((sum: number, item: any) => 
+                sum + (item.totalPrice || item.totalCost || 0), 0);
+              console.log('🔧 Labor analysis completed in parallel:', laborItems.length, 'items');
+              return { type: 'labor', data: laborItems };
+            })
+        );
       }
 
-      // Generar materiales si se solicita (usando el servicio existente)
+      // Prepare materials analysis promise
       if (includeMaterials) {
-        console.log('📦 Generando análisis de materiales...');
-        // Importar el servicio de materiales existente
-        const { deepSearchService } = await import('./deepSearchService');
-        const materialsResult = await deepSearchService.generateCompatibleMaterialsList(projectDescription, location);
-        results.materials = materialsResult;
-        results.totalMaterialsCost = materialsResult.reduce((sum: number, item: any) => sum + (item.total || 0), 0);
+        console.log('📦 Starting parallel materials analysis...');
+        promises.push(
+          import('./deepSearchService').then(({ deepSearchService }) =>
+            deepSearchService.generateCompatibleMaterialsList(projectDescription, location)
+              .then(materialsResult => {
+                results.materials = materialsResult;
+                results.totalMaterialsCost = materialsResult.reduce((sum: number, item: any) => 
+                  sum + (item.total || 0), 0);
+                console.log('📦 Materials analysis completed in parallel:', materialsResult.length, 'items');
+                return { type: 'materials', data: materialsResult };
+              })
+          )
+        );
+      }
+
+      // Wait for all parallel operations to complete
+      if (promises.length > 0) {
+        console.log('⚡ Waiting for', promises.length, 'parallel operations to complete...');
+        await Promise.all(promises);
       }
 
       results.grandTotal = results.totalMaterialsCost + results.totalLaborCost;
 
-      console.log('✅ Estimado combinado generado:', {
+      console.log('✅ OPTIMIZED Combined estimate generated:', {
         materialsCount: results.materials.length,
         laborCount: results.labor.length,
         totalMaterialsCost: results.totalMaterialsCost,
@@ -314,7 +337,7 @@ ALL TEXT MUST BE IN ENGLISH ONLY.
       return results;
 
     } catch (error) {
-      console.error('❌ Error generando estimado combinado:', error);
+      console.error('❌ Error generating optimized combined estimate:', error);
       throw error;
     }
   }

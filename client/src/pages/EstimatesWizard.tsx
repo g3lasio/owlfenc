@@ -592,10 +592,18 @@ export default function EstimatesWizardFixed() {
 
       console.log("🔍 NEW DEEPSEARCH - Using endpoint:", endpoint);
 
-      // Simular progreso
+      // Enhanced progress simulation with realistic timing for combined analysis
       const progressInterval = setInterval(() => {
-        setAiProgress((prev) => Math.min(prev + Math.random() * 15, 85));
-      }, 500);
+        setAiProgress((prev) => {
+          if (searchType === "full") {
+            // Slower, more realistic progress for combined analysis
+            return Math.min(prev + Math.random() * 8 + 2, 75);
+          } else {
+            // Faster progress for single-type analysis
+            return Math.min(prev + Math.random() * 12 + 3, 80);
+          }
+        });
+      }, 800);
 
       console.log("🔍 NEW DEEPSEARCH - Making request to:", endpoint);
       const response = await fetch(endpoint, {
@@ -603,7 +611,13 @@ export default function EstimatesWizardFixed() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ projectDescription: description }),
+        body: JSON.stringify({ 
+          projectDescription: description,
+          includeMaterials: searchType === "materials" || searchType === "full",
+          includeLabor: searchType === "labor" || searchType === "full",
+          location: estimate.client?.address || "Estados Unidos",
+          projectType: "construction"
+        }),
       });
 
       clearInterval(progressInterval);
@@ -636,12 +650,48 @@ export default function EstimatesWizardFixed() {
       } else if (searchType === "labor" && data.items) {
         console.log("🔍 NEW DEEPSEARCH - Using data.items:", data.items);
         items = data.items;
-      } else if (searchType === "full" && (data.materials || data.items)) {
-        console.log("🔍 NEW DEEPSEARCH - Combining materials and labor");
-        const materials = data.materials || [];
-        const laborItems = data.items || [];
-        items = [...materials, ...laborItems];
-        console.log("🔍 NEW DEEPSEARCH - Combined items:", items);
+      } else if (searchType === "full") {
+        console.log("🔍 NEW DEEPSEARCH - FULL COSTS - Processing combined response");
+        // For combined endpoint, handle both materials and labor separately
+        const materialItems = [];
+        const laborItems = [];
+        
+        // Process materials
+        if (data.materials && Array.isArray(data.materials)) {
+          console.log("🔍 Found materials:", data.materials.length);
+          data.materials.forEach((material: any) => {
+            materialItems.push({
+              id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+              materialId: material.id || Date.now().toString(),
+              name: material.name || "Unknown Material",
+              description: material.description || "",
+              quantity: material.quantity || 1,
+              price: material.price || material.unitPrice || 0,
+              unit: material.unit || "each",
+              total: (material.quantity || 1) * (material.price || material.unitPrice || 0),
+            });
+          });
+        }
+        
+        // Process labor services
+        if (data.labor && Array.isArray(data.labor)) {
+          console.log("🔍 Found labor services:", data.labor.length);
+          data.labor.forEach((service: any) => {
+            laborItems.push({
+              id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+              materialId: service.id || Date.now().toString(),
+              name: service.name || "Unknown Service",
+              description: service.description || "",
+              quantity: service.quantity || 1,
+              price: service.unitPrice || service.totalPrice || service.totalCost || 0,
+              unit: service.unit || "service",
+              total: service.totalCost || service.totalPrice || ((service.quantity || 1) * (service.unitPrice || 0)),
+            });
+          });
+        }
+        
+        items = [...materialItems, ...laborItems];
+        console.log("🔍 NEW DEEPSEARCH - FULL COSTS - Total items:", items.length, "Materials:", materialItems.length, "Labor:", laborItems.length);
       } else if (data.items) {
         console.log("🔍 NEW DEEPSEARCH - Fallback to data.items:", data.items);
         items = data.items;
@@ -650,7 +700,7 @@ export default function EstimatesWizardFixed() {
       console.log("🔍 NEW DEEPSEARCH - Final items to process:", items);
 
       if (items && items.length > 0) {
-        const newItems = items.map((item: any) => {
+        const newItems = searchType === "full" ? items : items.map((item: any) => {
           console.log("🔍 NEW DEEPSEARCH - Processing item:", item);
           return {
             id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
@@ -674,8 +724,10 @@ export default function EstimatesWizardFixed() {
         setAiProgress(100);
 
         toast({
-          title: "AI Search Completed",
-          description: `Successfully found and added ${newItems.length} ${successMessage} to your estimate`,
+          title: `${searchType === "full" ? "Full Costs Analysis" : "AI Search"} Completed`,
+          description: searchType === "full" 
+            ? `Added ${newItems.length} items (materials + labor) with complete cost analysis`
+            : `Successfully found and added ${newItems.length} ${successMessage} to your estimate`,
         });
 
         // Mostrar mensaje de Mervin
@@ -3435,9 +3487,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setDeepsearchMode("full");
                                 setShowDeepsearchDialog(false);
-                                handleSmartSearch();
+                                handleNewDeepsearch("full");
                               }}
                               className="group w-full p-3 rounded-lg transition-all duration-300 border border-emerald-400/40 bg-gradient-to-r from-emerald-500/10 to-green-600/10 hover:border-emerald-400/70 hover:bg-gradient-to-r hover:from-emerald-500/20 hover:to-green-600/20 hover:shadow-lg hover:shadow-emerald-400/25 ring-1 ring-emerald-400/20"
                             >
@@ -3498,7 +3549,11 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         </span>
                       </div>
                       <span className="text-xs text-slate-400 font-mono">
-                        Neural processing...
+                        {aiProgress < 20 ? "Initializing AI analysis..." :
+                         aiProgress < 40 ? "Processing project requirements..." :
+                         aiProgress < 60 ? "Generating materials list..." :
+                         aiProgress < 80 ? "Calculating labor costs..." :
+                         "Finalizing estimates..."}
                       </span>
                     </div>
                   )}
