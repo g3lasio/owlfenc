@@ -47,7 +47,32 @@ interface EstimateData {
 /**
  * Mapea los datos del estimado a los campos específicos del template PDFMonkey
  */
-function mapEstimateDataToTemplate(data: EstimateData) {
+async function mapEstimateDataToTemplate(data: EstimateData) {
+  // Get contractor data from Firebase UID if available
+  let contractorData = null;
+  if (data.firebaseUid) {
+    try {
+      const { eq } = await import('drizzle-orm');
+      const userResult = await storage.db.select().from(storage.schema.users).where(eq(storage.schema.users.firebaseUid, data.firebaseUid));
+      if (userResult.length > 0) {
+        const user = userResult[0];
+        contractorData = {
+          contractorCompanyName: user.company || "Company Name",
+          contractorAddress: user.address ? `${user.address}${user.city ? ', ' + user.city : ''}${user.state ? ', ' + user.state : ''}${user.zipCode ? ' ' + user.zipCode : ''}` : "Company Address",
+          contractorEmail: user.email || "",
+          contractorPhone: user.phone || "",
+          contractorLicense: user.licenseNumber || "",
+          contractorLogo: user.logo || ""
+        };
+        console.log('✅ [Estimate PDF] Contractor data fetched with logo:', !!user.logo);
+      }
+    } catch (error) {
+      console.log('❌ [Estimate PDF] Error fetching contractor data:', error);
+    }
+  }
+
+  // Use contractor data from database if available
+  const finalData = { ...data, ...contractorData };
   const currentDate = new Date().toLocaleDateString('en-US');
   const validUntilDate = data.validUntil || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US');
 
@@ -65,13 +90,13 @@ function mapEstimateDataToTemplate(data: EstimateData) {
     contractor_license: data.contractorLicense || '',
     
     // Client information
-    client: data.clientName || '',
-    address: data.clientAddress || '',
-    email: data.clientEmail || '',
-    phone: data.clientPhone || '',
+    client: finalData.clientName || '',
+    address: finalData.clientAddress || '',
+    email: finalData.clientEmail || '',
+    phone: finalData.clientPhone || '',
     
     // Items array for table
-    items: (data.items || []).map(item => ({
+    items: (finalData.items || []).map(item => ({
       item: item.name,
       description: item.description,
       qty: item.quantity.toString(),
@@ -81,15 +106,15 @@ function mapEstimateDataToTemplate(data: EstimateData) {
     })),
     
     // Totals
-    subtotal: `$${(data.subtotal || 0).toFixed(2)}`,
-    discount: `$${(data.discount || 0).toFixed(2)}`,
-    tax_percentage: `${data.taxRate || data.taxPercentage || 0}%`,
-    tax: `$${(data.tax || 0).toFixed(2)}`,
-    total: `$${(data.total || 0).toFixed(2)}`,
+    subtotal: `$${(finalData.subtotal || 0).toFixed(2)}`,
+    discount: `$${(finalData.discount || 0).toFixed(2)}`,
+    tax_percentage: `${finalData.taxRate || finalData.taxPercentage || 0}%`,
+    tax: `$${(finalData.tax || 0).toFixed(2)}`,
+    total: `$${(finalData.total || 0).toFixed(2)}`,
     
     // Project description
-    project_description: data.projectDescription || '',
-    notes: data.notes || ''
+    project_description: finalData.projectDescription || '',
+    notes: finalData.notes || ''
   };
 }
 
