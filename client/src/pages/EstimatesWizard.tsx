@@ -3299,8 +3299,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                     )}
                   </div>
 
-                  {/* Deepsearch Materials - Nuevo Botón Funcional */}
-                  <div className="relative z-50">
+                  {/* Deepsearch Materials - Nuevo Botón Funcional - HIDDEN */}
+                  <div className="relative z-50 hidden">
                     <button
                       disabled={
                         !estimate.projectDetails.trim() ||
