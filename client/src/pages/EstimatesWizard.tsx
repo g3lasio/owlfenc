@@ -536,6 +536,39 @@ export default function EstimatesWizardFixed() {
     loadContractorProfile();
   }, [currentUser]);
 
+  // Diagnostic function for SMART SEARCH button when in step 2
+  useEffect(() => {
+    if (currentStep === 2) {
+      const diagnosticTimer = setTimeout(() => {
+        const smartSearchButton = document.getElementById('smart-search-button');
+        
+        console.log("🔍 SMART SEARCH Button Diagnostic (Step 2):");
+        console.log("Button found:", smartSearchButton);
+        console.log("Current step:", currentStep);
+        console.log("Project details:", estimate.projectDetails);
+        console.log("Project details length:", estimate.projectDetails.trim().length);
+        
+        if (smartSearchButton) {
+          const styles = window.getComputedStyle(smartSearchButton);
+          console.log("Button styles:", {
+            display: styles.display,
+            visibility: styles.visibility,
+            opacity: styles.opacity,
+            pointerEvents: styles.pointerEvents,
+            zIndex: styles.zIndex,
+            disabled: (smartSearchButton as HTMLButtonElement).disabled
+          });
+          
+          console.log("Button rect:", smartSearchButton.getBoundingClientRect());
+        } else {
+          console.log("❌ SMART SEARCH button not found in step 2");
+        }
+      }, 1000);
+
+      return () => clearTimeout(diagnosticTimer);
+    }
+  }, [currentStep, estimate.projectDetails]);
+
   // Check for edit parameter and load project data
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -2967,6 +3000,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   {/* Smart Search IA - Interfaz Futurista Tony Stark */}
                   <div className="relative">
                     <button
+                      id="smart-search-button"
+                      data-testid="smart-search-button"
                       disabled={
                         !estimate.projectDetails.trim() ||
                         estimate.projectDetails.trim().length < 3 ||
@@ -2980,9 +3015,14 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         disabled:opacity-50 disabled:cursor-not-allowed
                         group
                       `}
-                      onClick={() =>
-                        setShowSmartSearchDialog(!showSmartSearchDialog)
-                      }
+                      onClick={(e) => {
+                        console.log("🔍 SMART SEARCH button clicked!", e);
+                        console.log("Current showSmartSearchDialog:", showSmartSearchDialog);
+                        console.log("Button disabled?", e.currentTarget.disabled);
+                        console.log("Project details:", estimate.projectDetails);
+                        console.log("Project details length:", estimate.projectDetails.trim().length);
+                        setShowSmartSearchDialog(!showSmartSearchDialog);
+                      }}
                     >
                       {/* Efecto de luz de fondo */}
                       <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/10 via-blue-400/5 to-cyan-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
