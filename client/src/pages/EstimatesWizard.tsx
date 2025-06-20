@@ -3126,7 +3126,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   Add Materials ({estimate.items.length})
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2">
-                  {/* NUEVO BOTÓN MATERIALS AI SEARCH - Completamente independiente */}
+                  {/* HUD-STYLE MATERIALS AI SEARCH - Compact Futuristic Design */}
                   <div className="relative z-40">
                     <button
                       disabled={
@@ -3135,13 +3135,16 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         isAIProcessing
                       }
                       className={`
-                        relative overflow-hidden px-3 sm:px-4 py-2 w-full sm:min-w-[200px] text-sm font-medium transition-all duration-300
-                        bg-gradient-to-r from-purple-900 via-purple-800 to-purple-900
-                        border border-purple-400/30 rounded-lg
-                        hover:border-purple-400/60 hover:shadow-lg hover:shadow-purple-400/20
+                        relative overflow-hidden px-3 py-1.5 text-xs font-mono transition-all duration-300
+                        bg-black/40 backdrop-blur-sm
+                        border border-cyan-400/20
                         disabled:opacity-50 disabled:cursor-not-allowed
                         group z-40
+                        hover:border-cyan-400/60 hover:shadow-lg hover:shadow-cyan-400/20
                       `}
+                      style={{
+                        clipPath: "polygon(8px 0%, 100% 0%, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0% 100%, 0% 8px)"
+                      }}
                       onClick={() => {
                         console.log(
                           "🔍 MATERIALS AI SEARCH clicked - current state:",
@@ -3158,46 +3161,68 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         });
                       }}
                     >
-                      <div className="absolute inset-0 bg-gradient-to-r from-purple-400/10 via-purple-400/5 to-purple-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      {/* Corner Brackets */}
+                      <div className="absolute top-0 left-0 w-2 h-2 border-l border-t border-cyan-400/60"></div>
+                      <div className="absolute top-0 right-0 w-2 h-2 border-r border-t border-cyan-400/60"></div>
+                      <div className="absolute bottom-0 left-0 w-2 h-2 border-l border-b border-cyan-400/60"></div>
+                      <div className="absolute bottom-0 right-0 w-2 h-2 border-r border-b border-cyan-400/60"></div>
+                      
+                      {/* Scanning Lines */}
+                      <div className="absolute inset-0 overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent animate-pulse"></div>
+                        <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent animate-pulse" style={{animationDelay: "0.5s"}}></div>
+                      </div>
+                      
+                      {/* Holographic Border Glow */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/5 via-blue-400/10 to-cyan-400/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-                      <div className="relative flex items-center gap-2 text-white">
+                      <div className="relative flex items-center gap-1.5 text-cyan-100">
                         {isAIProcessing ? (
                           <>
-                            <div className="flex items-center gap-2">
-                              <div className="w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
-                              <span className="text-purple-400 font-mono">
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-3 h-3 border border-cyan-400 border-t-transparent rounded-full animate-spin" />
+                              <span className="text-cyan-400 font-mono text-xs">
                                 {aiProgress}%
                               </span>
                             </div>
                           </>
                         ) : (
                           <>
-                            <Search className="h-4 w-4 text-purple-400" />
-                            <span>MATERIALS AI SEARCH</span>
+                            <Search className="h-3 w-3 text-cyan-400" />
+                            <span className="text-xs tracking-wide">AI.SEARCH</span>
                             <ChevronDown
-                              className={`h-3 w-3 text-purple-400 transition-transform duration-300 ${showNewDeepsearchDialog ? "rotate-180" : ""}`}
+                              className={`h-2.5 w-2.5 text-cyan-400 transition-transform duration-300 ${showNewDeepsearchDialog ? "rotate-180" : ""}`}
                             />
                           </>
                         )}
                       </div>
                     </button>
 
-                    {/* Dropdown del nuevo botón independiente - POSICIONAMIENTO FIJO */}
+                    {/* HUD-Style Dropdown - Compact Futuristic Design */}
                     {showNewDeepsearchDialog && !isAIProcessing && (
                       <div
                         className="fixed inset-0 z-[9999] flex items-start justify-center pt-20"
                         onClick={() => setShowNewDeepsearchDialog(false)}
                       >
                         <div
-                          className="bg-gradient-to-b from-purple-900/95 via-purple-800/98 to-purple-900/95 backdrop-blur-xl border border-purple-400/30 rounded-xl shadow-2xl shadow-purple-400/10 overflow-hidden max-w-md w-full mx-4"
+                          className="bg-black/80 backdrop-blur-xl border border-cyan-400/30 overflow-hidden max-w-sm w-full mx-4 relative"
+                          style={{
+                            clipPath: "polygon(12px 0%, 100% 0%, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0% 100%, 0% 12px)"
+                          }}
                           onClick={(e) => e.stopPropagation()}
                         >
+                          {/* Corner Brackets for Dialog */}
+                          <div className="absolute top-0 left-0 w-3 h-3 border-l-2 border-t-2 border-cyan-400/80"></div>
+                          <div className="absolute top-0 right-0 w-3 h-3 border-r-2 border-t-2 border-cyan-400/80"></div>
+                          <div className="absolute bottom-0 left-0 w-3 h-3 border-l-2 border-b-2 border-cyan-400/80"></div>
+                          <div className="absolute bottom-0 right-0 w-3 h-3 border-r-2 border-b-2 border-cyan-400/80"></div>
+                          
                           {/* Header */}
-                          <div className="border-b border-purple-400/20 p-4">
-                            <div className="text-xs font-mono text-purple-400 mb-1 tracking-wider">
-                              SELECT AI SEARCH TYPE
+                          <div className="border-b border-cyan-400/20 p-3">
+                            <div className="text-xs font-mono text-cyan-400 mb-1 tracking-wider">
+                              SELECT.SEARCH.TYPE
                             </div>
-                            <div className="h-px bg-gradient-to-r from-transparent via-purple-400/60 to-transparent" />
+                            <div className="h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
                           </div>
 
                           <div className="p-3 space-y-2">
