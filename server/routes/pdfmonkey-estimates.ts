@@ -93,6 +93,7 @@ async function mapEstimateDataToTemplate(data: EstimateData) {
     contractor_phone: finalData.contractorPhone || '',
     contractor_email: finalData.contractorEmail || '',
     contractor_license: finalData.contractorLicense || '',
+    contractor_logo: finalData.contractorLogo || '',
     
     // Client information
     client: finalData.clientName || '',
