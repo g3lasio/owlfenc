@@ -543,19 +543,25 @@ export default function EstimatesWizardFixed() {
   const handleDeepsearchToggle = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setShowDeepsearchDialog(prev => !prev);
+    setShowDeepsearchDialog((prev) => !prev);
   };
 
   // Nuevo handler para MATERIALS AI SEARCH - Con debugging detallado
-  const handleNewDeepsearch = async (searchType: "materials" | "labor" | "full") => {
+  const handleNewDeepsearch = async (
+    searchType: "materials" | "labor" | "full",
+  ) => {
     console.log("🔍 NEW DEEPSEARCH - Starting with type:", searchType);
     const description = estimate.projectDetails.trim();
-    console.log("🔍 NEW DEEPSEARCH - Description:", description.substring(0, 100) + "...");
+    console.log(
+      "🔍 NEW DEEPSEARCH - Description:",
+      description.substring(0, 100) + "...",
+    );
 
     if (!description || description.length < 3) {
       toast({
         title: "Description Required",
-        description: "Please describe your project with at least 3 characters to use AI Search",
+        description:
+          "Please describe your project with at least 3 characters to use AI Search",
         variant: "destructive",
       });
       return;
@@ -607,7 +613,9 @@ export default function EstimatesWizardFixed() {
       if (!response.ok) {
         const errorText = await response.text();
         console.error("🔍 NEW DEEPSEARCH - Response error:", errorText);
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+        throw new Error(
+          `HTTP error! status: ${response.status}, message: ${errorText}`,
+        );
       }
 
       const data = await response.json();
@@ -615,12 +623,15 @@ export default function EstimatesWizardFixed() {
       console.log("🔍 NEW DEEPSEARCH - Data.success:", data.success);
       console.log("🔍 NEW DEEPSEARCH - Data.items:", data.items);
       console.log("🔍 NEW DEEPSEARCH - Items length:", data.items?.length);
-      
+
       // Verificar diferentes estructuras de respuesta según el endpoint
       let items = [];
-      
+
       if (searchType === "materials" && data.materials) {
-        console.log("🔍 NEW DEEPSEARCH - Using data.materials:", data.materials);
+        console.log(
+          "🔍 NEW DEEPSEARCH - Using data.materials:",
+          data.materials,
+        );
         items = data.materials;
       } else if (searchType === "labor" && data.items) {
         console.log("🔍 NEW DEEPSEARCH - Using data.items:", data.items);
@@ -637,7 +648,7 @@ export default function EstimatesWizardFixed() {
       }
 
       console.log("🔍 NEW DEEPSEARCH - Final items to process:", items);
-      
+
       if (items && items.length > 0) {
         const newItems = items.map((item: any) => {
           console.log("🔍 NEW DEEPSEARCH - Processing item:", item);
@@ -678,7 +689,8 @@ export default function EstimatesWizardFixed() {
       console.error("🔍 NEW DEEPSEARCH - Error details:", error);
       toast({
         title: "AI Search Failed",
-        description: "Unable to process your request. Please try again or add materials manually.",
+        description:
+          "Unable to process your request. Please try again or add materials manually.",
         variant: "destructive",
       });
     } finally {
@@ -2679,14 +2691,13 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
   console.log(estimate);
   const handleDownload = async () => {
-    try { 
+    try {
       const payload = {
-        company_logo_url: "https://yourdomain.com/logo.png",
-        company_name: "Mervin Solutions Inc.",
-        company_address:
-          "1234 Market Street, Suite 100, San Francisco, CA 94103",
-        company_email: "contact@mervin.ai",
-        company_phone: "+1 (555) 123-4567",
+        company_logo_url: "",
+        company_name: estimate.client.name,
+        company_address: `${estimate.client.address}, ${estimate.client.city}, ${estimate.client.state} ${estimate.client.zipcode}, ${estimate.client.country}`,
+        company_email: estimate.client.email || "",
+        company_phone: estimate.client.phone,
         estimate_date: new Date().toISOString().split("T")[0], // today's date
         estimate_number: "EST-" + Date.now(), // simple unique number
         valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
@@ -3132,9 +3143,17 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         group z-40
                       `}
                       onClick={() => {
-                        console.log("🔍 MATERIALS AI SEARCH clicked - current state:", showNewDeepsearchDialog);
-                        setShowNewDeepsearchDialog(prev => {
-                          console.log("🔍 Setting new state from", prev, "to", !prev);
+                        console.log(
+                          "🔍 MATERIALS AI SEARCH clicked - current state:",
+                          showNewDeepsearchDialog,
+                        );
+                        setShowNewDeepsearchDialog((prev) => {
+                          console.log(
+                            "🔍 Setting new state from",
+                            prev,
+                            "to",
+                            !prev,
+                          );
                           return !prev;
                         });
                       }}
@@ -3165,11 +3184,11 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
                     {/* Dropdown del nuevo botón independiente - POSICIONAMIENTO FIJO */}
                     {showNewDeepsearchDialog && !isAIProcessing && (
-                      <div 
+                      <div
                         className="fixed inset-0 z-[9999] flex items-start justify-center pt-20"
                         onClick={() => setShowNewDeepsearchDialog(false)}
                       >
-                        <div 
+                        <div
                           className="bg-gradient-to-b from-purple-900/95 via-purple-800/98 to-purple-900/95 backdrop-blur-xl border border-purple-400/30 rounded-xl shadow-2xl shadow-purple-400/10 overflow-hidden max-w-md w-full mx-4"
                           onClick={(e) => e.stopPropagation()}
                         >
