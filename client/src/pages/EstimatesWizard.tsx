@@ -2748,11 +2748,11 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
   const handleDownload = async () => {
     try {
       const payload = {
-        company_logo_url: "",
-        company_name: estimate.client.name,
-        company_address: `${estimate.client.address}, ${estimate.client.city}, ${estimate.client.state} ${estimate.client.zipcode}, ${estimate.client.country}`,
-        company_email: estimate.client.email || "",
-        company_phone: estimate.client.phone,
+        company_logo_url: profile?.logo || "",
+        company_name: profile?.company || "Company Name",
+        company_address: profile?.address ? `${profile.address}${profile.city ? ', ' + profile.city : ''}${profile.state ? ', ' + profile.state : ''}${profile.zipCode ? ' ' + profile.zipCode : ''}` : "Company Address",
+        company_email: profile?.email || currentUser?.email || "",
+        company_phone: profile?.phone || "",
         estimate_date: new Date().toISOString().split("T")[0], // today's date
         estimate_number: "EST-" + Date.now(), // simple unique number
         valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
