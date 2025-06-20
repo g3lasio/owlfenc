@@ -29,35 +29,36 @@ export class SmartMaterialCacheService {
   
   /**
    * Busca listas de materiales existentes antes de generar nuevas
+   * SISTEMA GLOBAL: Busca en todas las regiones para máxima reutilización
    */
   async searchExistingMaterials(criteria: CacheSearchCriteria): Promise<CacheSearchResult> {
     try {
-      console.log('🔍 SmartCache: Buscando materiales existentes...', criteria);
+      console.log('🔍 SmartCache GLOBAL: Buscando materiales existentes...', criteria);
 
-      // 1. Búsqueda exacta por tipo de proyecto y región
-      const exactMatch = await this.findExactMatch(criteria);
-      if (exactMatch.found) {
-        console.log('✅ SmartCache: Coincidencia exacta encontrada');
-        await this.updateUsageStats(exactMatch.data!.id);
-        return exactMatch;
+      // 1. BÚSQUEDA REGIONAL EXACTA (prioridad alta)
+      const regionalMatch = await this.findRegionalMatch(criteria);
+      if (regionalMatch.found) {
+        console.log('✅ SmartCache: Coincidencia regional encontrada');
+        await this.updateUsageStats(regionalMatch.data!.id);
+        return regionalMatch;
       }
 
-      // 2. Búsqueda por similitud semántica
-      const similarMatch = await this.findSimilarProject(criteria);
-      if (similarMatch.found) {
-        console.log('✅ SmartCache: Proyecto similar encontrado');
-        await this.updateUsageStats(similarMatch.data!.id);
-        return similarMatch;
+      // 2. BÚSQUEDA GLOBAL POR SIMILITUD (cualquier región)
+      const globalMatch = await this.findGlobalSimilarProject(criteria);
+      if (globalMatch.found) {
+        console.log('✅ SmartCache: Proyecto global similar encontrado');
+        await this.updateUsageStats(globalMatch.data!.id);
+        return globalMatch;
       }
 
-      // 3. Búsqueda en templates predefinidos
+      // 3. BÚSQUEDA EN TEMPLATES UNIVERSALES
       const templateMatch = await this.findProjectTemplate(criteria);
       if (templateMatch.found) {
-        console.log('✅ SmartCache: Template encontrado');
+        console.log('✅ SmartCache: Template universal encontrado');
         return templateMatch;
       }
 
-      console.log('❌ SmartCache: No se encontraron materiales existentes');
+      console.log('❌ SmartCache: Generando nueva lista (contribuirá al sistema global)');
       return { found: false, source: 'none' };
 
     } catch (error) {
@@ -67,7 +68,8 @@ export class SmartMaterialCacheService {
   }
 
   /**
-   * Guarda una nueva lista de materiales en el cache
+   * Guarda una nueva lista de materiales en el cache GLOBAL
+   * Cada nueva lista contribuye al conocimiento colectivo
    */
   async saveMaterialsList(
     projectType: string,
@@ -76,9 +78,17 @@ export class SmartMaterialCacheService {
     result: DeepSearchResult
   ): Promise<void> {
     try {
-      console.log('💾 SmartCache: Guardando nueva lista de materiales...');
+      console.log('💾 SmartCache GLOBAL: Contribuyendo nueva lista al sistema...');
 
       const id = `smart_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      // Verificar si ya existe algo muy similar para evitar duplicados exactos
+      const existing = await this.checkForDuplicates(projectType, description, region);
+      if (existing) {
+        console.log('🔄 SmartCache: Actualizando lista existente en lugar de crear duplicado');
+        await this.updateExistingList(existing.id, result);
+        return;
+      }
 
       await db.insert(smartMaterialLists).values({
         id,
@@ -96,7 +106,8 @@ export class SmartMaterialCacheService {
         usageCount: 1
       });
 
-      console.log('✅ SmartCache: Lista guardada con ID:', id);
+      console.log('✅ SmartCache GLOBAL: Nueva contribución guardada con ID:', id);
+      console.log('🌍 Esta lista ahora está disponible para todos los usuarios del sistema');
 
     } catch (error) {
       console.error('❌ SmartCache Save Error:', error);
@@ -105,9 +116,69 @@ export class SmartMaterialCacheService {
   }
 
   /**
-   * Encuentra coincidencias exactas
+   * Verifica duplicados para evitar redundancia en el sistema global
    */
-  private async findExactMatch(criteria: CacheSearchCriteria): Promise<CacheSearchResult> {
+  private async checkForDuplicates(projectType: string, description: string, region: string): Promise<any> {
+    try {
+      const results = await db
+        .select()
+        .from(smartMaterialLists)
+        .where(
+          and(
+            eq(smartMaterialLists.projectType, this.normalizeProjectType(projectType)),
+            eq(smartMaterialLists.region, this.normalizeRegion(region))
+          )
+        )
+        .limit(5);
+
+      for (const result of results) {
+        const similarity = this.calculateSimilarity(description, result.projectDescription);
+        if (similarity > 0.95) { // 95% de similitud = muy probable duplicado
+          return result;
+        }
+      }
+
+      return null;
+
+    } catch (error) {
+      console.error('❌ Duplicate check error:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Actualiza una lista existente con nuevos datos (mejora continua)
+   */
+  private async updateExistingList(id: string, newResult: DeepSearchResult): Promise<void> {
+    try {
+      await db
+        .update(smartMaterialLists)
+        .set({
+          materialsList: newResult.materials,
+          laborCosts: newResult.laborCosts,
+          additionalCosts: newResult.additionalCosts,
+          totalMaterialsCost: newResult.totalMaterialsCost.toString(),
+          totalLaborCost: newResult.totalLaborCost.toString(),
+          totalAdditionalCost: newResult.totalAdditionalCost.toString(),
+          grandTotal: newResult.grandTotal.toString(),
+          confidence: Math.max(parseFloat(newResult.confidence.toString()), 0.1).toString(),
+          usageCount: sql`${smartMaterialLists.usageCount} + 1`,
+          lastUsed: new Date(),
+          updatedAt: new Date()
+        })
+        .where(eq(smartMaterialLists.id, id));
+
+      console.log('✅ Lista existente actualizada con mejoras');
+
+    } catch (error) {
+      console.error('❌ Update existing list error:', error);
+    }
+  }
+
+  /**
+   * Encuentra coincidencias regionales exactas
+   */
+  private async findRegionalMatch(criteria: CacheSearchCriteria): Promise<CacheSearchResult> {
     try {
       const results = await db
         .select()
@@ -118,7 +189,7 @@ export class SmartMaterialCacheService {
             eq(smartMaterialLists.region, this.normalizeRegion(criteria.region))
           )
         )
-        .orderBy(desc(smartMaterialLists.lastUsed))
+        .orderBy(desc(smartMaterialLists.usageCount), desc(smartMaterialLists.lastUsed))
         .limit(1);
 
       if (results.length > 0) {
@@ -135,7 +206,51 @@ export class SmartMaterialCacheService {
       return { found: false, source: 'none' };
 
     } catch (error) {
-      console.error('❌ Exact match search error:', error);
+      console.error('❌ Regional match search error:', error);
+      return { found: false, source: 'none' };
+    }
+  }
+
+  /**
+   * Búsqueda GLOBAL: Encuentra proyectos similares en CUALQUIER región
+   * Esta es la clave del sistema colaborativo
+   */
+  private async findGlobalSimilarProject(criteria: CacheSearchCriteria): Promise<CacheSearchResult> {
+    try {
+      if (!criteria.description) {
+        return { found: false, source: 'none' };
+      }
+
+      // Buscar por tipo de proyecto en TODAS las regiones
+      const results = await db
+        .select()
+        .from(smartMaterialLists)
+        .where(eq(smartMaterialLists.projectType, this.normalizeProjectType(criteria.projectType)))
+        .orderBy(desc(smartMaterialLists.usageCount), desc(smartMaterialLists.confidence))
+        .limit(10); // Analizar los 10 más populares
+
+      // Calcular similitud semántica con todos los resultados
+      for (const result of results) {
+        const similarity = this.calculateSimilarity(criteria.description, result.projectDescription);
+        const threshold = criteria.similarityThreshold || 0.65; // Umbral más bajo para global
+
+        if (similarity >= threshold) {
+          console.log(`🌍 Global Match encontrado - Similitud: ${(similarity*100).toFixed(1)}% | Región original: ${result.region}`);
+          
+          return {
+            found: true,
+            data: this.convertToDeepSearchResult(result),
+            similarity,
+            source: 'similar_project',
+            adaptationNeeded: result.region !== this.normalizeRegion(criteria.region) || similarity < 0.85
+          };
+        }
+      }
+
+      return { found: false, source: 'none' };
+
+    } catch (error) {
+      console.error('❌ Global similar project search error:', error);
       return { found: false, source: 'none' };
     }
   }
@@ -356,26 +471,106 @@ export class SmartMaterialCacheService {
   }
 
   /**
-   * Obtiene estadísticas del cache
+   * Obtiene estadísticas del cache GLOBAL con métricas de colaboración
    */
   async getCacheStats(): Promise<any> {
     try {
-      const stats = await db
+      // Estadísticas por tipo de proyecto
+      const projectStats = await db
+        .select({
+          projectType: smartMaterialLists.projectType,
+          totalProjects: sql<number>`count(*)`,
+          totalUsage: sql<number>`sum(${smartMaterialLists.usageCount})`,
+          avgConfidence: sql<number>`avg(${smartMaterialLists.confidence})`,
+          regionsCovered: sql<number>`count(DISTINCT ${smartMaterialLists.region})`
+        })
+        .from(smartMaterialLists)
+        .groupBy(smartMaterialLists.projectType);
+
+      // Estadísticas globales del sistema
+      const globalStats = await db
+        .select({
+          totalLists: sql<number>`count(*)`,
+          totalReuses: sql<number>`sum(${smartMaterialLists.usageCount})`,
+          uniqueRegions: sql<number>`count(DISTINCT ${smartMaterialLists.region})`,
+          uniqueProjectTypes: sql<number>`count(DISTINCT ${smartMaterialLists.projectType})`,
+          avgGlobalConfidence: sql<number>`avg(${smartMaterialLists.confidence})`,
+          savedGenerations: sql<number>`sum(${smartMaterialLists.usageCount}) - count(*)`
+        })
+        .from(smartMaterialLists);
+
+      // Top proyectos más reutilizados (líderes de eficiencia)
+      const topReused = await db
         .select({
           projectType: smartMaterialLists.projectType,
           region: smartMaterialLists.region,
-          count: sql<number>`count(*)`,
-          totalUsage: sql<number>`sum(${smartMaterialLists.usageCount})`,
-          avgConfidence: sql<number>`avg(${smartMaterialLists.confidence})`
+          usageCount: smartMaterialLists.usageCount,
+          confidence: smartMaterialLists.confidence,
+          projectDescription: sql<string>`LEFT(${smartMaterialLists.projectDescription}, 100)`
         })
         .from(smartMaterialLists)
-        .groupBy(smartMaterialLists.projectType, smartMaterialLists.region);
+        .orderBy(desc(smartMaterialLists.usageCount))
+        .limit(10);
 
-      return stats;
+      return {
+        global: globalStats[0],
+        byProjectType: projectStats,
+        topReused,
+        collaborativeMetrics: {
+          reuseRate: globalStats[0]?.savedGenerations || 0,
+          crossRegionalProjects: projectStats.filter(p => p.regionsCovered > 1).length,
+          averageRegionsPerProject: projectStats.reduce((sum, p) => sum + p.regionsCovered, 0) / projectStats.length
+        }
+      };
 
     } catch (error) {
       console.error('❌ Cache stats error:', error);
-      return [];
+      return { global: {}, byProjectType: [], topReused: [], collaborativeMetrics: {} };
+    }
+  }
+
+  /**
+   * Obtiene insights de mejora continua del sistema
+   */
+  async getSystemInsights(): Promise<any> {
+    try {
+      // Proyectos que más han evolucionado
+      const evolvingProjects = await db
+        .select({
+          projectType: smartMaterialLists.projectType,
+          evolution: sql<number>`${smartMaterialLists.usageCount} * ${smartMaterialLists.confidence}`,
+          lastImprovement: smartMaterialLists.updatedAt,
+          regionsCovered: sql<number>`count(DISTINCT ${smartMaterialLists.region}) OVER (PARTITION BY ${smartMaterialLists.projectType})`
+        })
+        .from(smartMaterialLists)
+        .orderBy(sql`${smartMaterialLists.usageCount} * ${smartMaterialLists.confidence} DESC`)
+        .limit(5);
+
+      // Gaps de conocimiento (tipos de proyecto con pocas contribuciones)
+      const knowledgeGaps = await db
+        .select({
+          projectType: smartMaterialLists.projectType,
+          contributionCount: sql<number>`count(*)`,
+          lastContribution: sql<string>`max(${smartMaterialLists.createdAt})`
+        })
+        .from(smartMaterialLists)
+        .groupBy(smartMaterialLists.projectType)
+        .having(sql`count(*) < 3`)
+        .orderBy(sql`count(*) ASC`);
+
+      return {
+        topEvolvingProjects: evolvingProjects,
+        knowledgeGaps,
+        systemHealth: {
+          avgProjectsPerType: 0, // Se calcularía
+          crossRegionCollaboration: 0,
+          recentActivity: 0
+        }
+      };
+
+    } catch (error) {
+      console.error('❌ System insights error:', error);
+      return { topEvolvingProjects: [], knowledgeGaps: [], systemHealth: {} };
     }
   }
 }

@@ -131,12 +131,17 @@ export class DeepSearchService {
         totalCost: enrichedResult.grandTotal 
       });
 
-      // 3. GUARDAR EN CACHE - Para reutilización futura
+      // 3. CONTRIBUIR AL SISTEMA GLOBAL - Para beneficio de toda la comunidad
       await smartMaterialCacheService.saveMaterialsList(
         projectType,
         projectDescription,
         region,
         enrichedResult
+      );
+
+      // Agregar marca de contribución al sistema
+      enrichedResult.recommendations.push(
+        '🌍 Esta lista ha sido contribuida al sistema global de DeepSearch para beneficiar a toda la comunidad'
       );
 
       return enrichedResult;
