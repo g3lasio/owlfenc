@@ -3122,18 +3122,22 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       </div>
                     </button>
 
-                    {/* Dropdown del nuevo botón independiente - VERSIÓN DEBUGGING */}
+                    {/* Dropdown del nuevo botón independiente - POSICIONAMIENTO FIJO */}
                     {showNewDeepsearchDialog && !isAIProcessing && (
-                      <div className="absolute top-full mt-2 left-0 w-80 z-[999] bg-red-500 border-4 border-yellow-400 p-4">
-                        <div className="text-white text-lg font-bold">
-                          DEBUG: DROPDOWN IS VISIBLE - State: {showNewDeepsearchDialog ? 'TRUE' : 'FALSE'}
-                        </div>
-                        <div className="bg-purple-900 border border-purple-400 rounded-lg p-4 mt-2">
+                      <div 
+                        className="fixed inset-0 z-[9999] flex items-start justify-center pt-20"
+                        onClick={() => setShowNewDeepsearchDialog(false)}
+                      >
+                        <div 
+                          className="bg-gradient-to-b from-purple-900/95 via-purple-800/98 to-purple-900/95 backdrop-blur-xl border border-purple-400/30 rounded-xl shadow-2xl shadow-purple-400/10 overflow-hidden max-w-md w-full mx-4"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           {/* Header */}
-                          <div className="border-b border-purple-400/20 p-2">
+                          <div className="border-b border-purple-400/20 p-4">
                             <div className="text-xs font-mono text-purple-400 mb-1 tracking-wider">
                               SELECT AI SEARCH TYPE
                             </div>
+                            <div className="h-px bg-gradient-to-r from-transparent via-purple-400/60 to-transparent" />
                           </div>
 
                           <div className="p-3 space-y-2">
