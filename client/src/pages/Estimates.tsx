@@ -502,23 +502,26 @@ export default function Estimates() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-3 sm:p-4 lg:p-6 space-y-4 lg:space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Crear Estimado</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold">Crear Estimado</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">
             Crea estimados profesionales de forma rápida y sencilla
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
             onClick={generatePreview}
             disabled={!estimate.client || estimate.items.length === 0}
+            size="sm"
+            className="flex-1 sm:flex-none"
           >
             <Eye className="h-4 w-4 mr-2" />
-            Vista Previa
+            <span className="hidden sm:inline">Vista Previa</span>
+            <span className="sm:hidden">Vista</span>
           </Button>
           <Button
             variant="outline"
@@ -526,6 +529,8 @@ export default function Estimates() {
             disabled={
               isSaving || !estimate.client || estimate.items.length === 0
             }
+            size="sm"
+            className="flex-1 sm:flex-none"
           >
             <Save className="h-4 w-4 mr-2" />
             {isSaving ? "Guardando..." : "Guardar"}
@@ -537,6 +542,8 @@ export default function Estimates() {
               !estimate.client?.email ||
               estimate.items.length === 0
             }
+            size="sm"
+            className="flex-1 sm:flex-none"
           >
             <Send className="h-4 w-4 mr-2" />
             {isSending ? "Enviando..." : "Enviar"}
@@ -544,46 +551,56 @@ export default function Estimates() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 lg:gap-6">
         {/* Left Column - Client & Notes */}
-        <div className="space-y-6">
+        <div className="space-y-4 lg:space-y-6">
           {/* Client Selection */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <User className="h-4 w-4" />
                 Cliente
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-0">
               {estimate.client ? (
-                <div className="space-y-2">
-                  <div className="p-3 bg-muted rounded-lg">
-                    <h4 className="font-medium">{estimate.client.name}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {estimate.client.email}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {estimate.client.phone}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {estimate.client.address}
-                    </p>
+                <div className="space-y-3">
+                  <div className="p-3 bg-muted/50 rounded-lg border">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-medium text-sm sm:text-base truncate">{estimate.client.name}</h4>
+                        {estimate.client.email && (
+                          <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                            {estimate.client.email}
+                          </p>
+                        )}
+                        {estimate.client.phone && (
+                          <p className="text-xs sm:text-sm text-muted-foreground">
+                            {estimate.client.phone}
+                          </p>
+                        )}
+                        {estimate.client.address && (
+                          <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                            {estimate.client.address}
+                          </p>
+                        )}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          setEstimate((prev) => ({
+                            ...prev,
+                            client: null,
+                            clientId: "",
+                          }))
+                        }
+                        className="h-8 w-8 p-0 shrink-0"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setEstimate((prev) => ({
-                        ...prev,
-                        client: null,
-                        clientId: "",
-                      }))
-                    }
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Cambiar Cliente
-                  </Button>
                 </div>
               ) : (
                 <Dialog
@@ -591,17 +608,17 @@ export default function Estimates() {
                   onOpenChange={setShowClientDialog}
                 >
                   <DialogTrigger asChild>
-                    <Button className="w-full">
+                    <Button className="w-full" size="sm">
                       <Users className="h-4 w-4 mr-2" />
                       Seleccionar Cliente
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-2xl">
-                    <DialogHeader>
+                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+                    <DialogHeader className="shrink-0">
                       <DialogTitle>Seleccionar Cliente</DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-4">
-                      <div className="relative">
+                    <div className="flex-1 flex flex-col space-y-4 overflow-hidden">
+                      <div className="relative shrink-0">
                         <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                         <Input
                           placeholder="Buscar por nombre, email o teléfono..."
@@ -610,13 +627,13 @@ export default function Estimates() {
                           className="pl-10"
                         />
                       </div>
-                      <div className="max-h-96 overflow-y-auto space-y-2">
+                      <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
                         {isLoadingClients ? (
-                          <p className="text-center py-4 text-muted-foreground">
+                          <p className="text-center py-8 text-muted-foreground">
                             Cargando clientes...
                           </p>
                         ) : filteredClients.length === 0 ? (
-                          <p className="text-center py-4 text-muted-foreground">
+                          <p className="text-center py-8 text-muted-foreground">
                             {clientSearch
                               ? "No se encontraron clientes"
                               : "No hay clientes disponibles"}
@@ -625,16 +642,20 @@ export default function Estimates() {
                           filteredClients.map((client) => (
                             <div
                               key={client.id}
-                              className="p-3 border rounded-lg cursor-pointer hover:bg-muted"
+                              className="p-3 border rounded-lg cursor-pointer hover:bg-muted transition-colors"
                               onClick={() => selectClient(client)}
                             >
-                              <h4 className="font-medium">{client.name}</h4>
-                              <p className="text-sm text-muted-foreground">
-                                {client.email}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                {client.phone}
-                              </p>
+                              <h4 className="font-medium text-sm sm:text-base truncate">{client.name}</h4>
+                              {client.email && (
+                                <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                                  {client.email}
+                                </p>
+                              )}
+                              {client.phone && (
+                                <p className="text-xs sm:text-sm text-muted-foreground">
+                                  {client.phone}
+                                </p>
+                              )}
                             </div>
                           ))
                         )}
@@ -648,45 +669,46 @@ export default function Estimates() {
 
           {/* Project Notes */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <FileText className="h-4 w-4" />
                 Notas del Proyecto
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-0">
               <Textarea
                 placeholder="Descripción detallada del proyecto, notas especiales, condiciones, etc."
                 value={estimate.notes}
                 onChange={(e) =>
                   setEstimate((prev) => ({ ...prev, notes: e.target.value }))
                 }
-                rows={6}
-                className="resize-none"
+                rows={4}
+                className="resize-none text-sm"
               />
             </CardContent>
           </Card>
         </div>
 
         {/* Right Column - Materials & Items */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="xl:col-span-2 space-y-4 lg:space-y-6">
           {/* Materials Section */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <Package className="h-5 w-5" />
-                  Materiales ({estimate.items.length})
+                  <Package className="h-4 w-4" />
+                  <span className="text-lg">Materiales ({estimate.items.length})</span>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Dialog
                     open={showMaterialDialog}
                     onOpenChange={setShowMaterialDialog}
                   >
                     <DialogTrigger asChild>
-                      <Button size="sm">
+                      <Button size="sm" className="flex-1 sm:flex-none">
                         <Plus className="h-4 w-4 mr-2" />
-                        Agregar Material
+                        <span className="hidden sm:inline">Agregar Material</span>
+                        <span className="sm:hidden">Agregar</span>
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-4xl">
@@ -869,50 +891,54 @@ export default function Estimates() {
                       </div>
                     </DialogContent>
                   </Dialog>
-                  <Button variant="outline" size="sm" onClick={addCustomItem}>
+                  <Button variant="outline" size="sm" onClick={addCustomItem} className="flex-1 sm:flex-none">
                     <Plus className="h-4 w-4 mr-2" />
-                    Artículo Personalizado
+                    <span className="hidden sm:inline">Artículo Personalizado</span>
+                    <span className="sm:hidden">Personalizado</span>
                   </Button>
                 </div>
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-0">
               {estimate.items.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No hay materiales agregados aún.</p>
-                  <p className="text-sm">
+                <div className="text-center py-6 lg:py-8 text-muted-foreground">
+                  <Package className="h-10 w-10 lg:h-12 lg:w-12 mx-auto mb-3 lg:mb-4 opacity-50" />
+                  <p className="text-sm lg:text-base">No hay materiales agregados aún.</p>
+                  <p className="text-xs lg:text-sm mt-1">
                     Haz clic en "Agregar Material" para comenzar.
                   </p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3 lg:space-y-4">
                   {estimate.items.map((item, index) => (
-                    <div key={item.id} className="border rounded-lg p-4">
+                    <div key={item.id} className="border rounded-lg p-3 lg:p-4">
                       <div className="flex justify-between items-start mb-3">
-                        <h4 className="font-medium">Artículo {index + 1}</h4>
+                        <h4 className="font-medium text-sm lg:text-base">Artículo {index + 1}</h4>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => removeItem(item.id)}
-                          className="text-destructive hover:text-destructive"
+                          className="text-destructive hover:text-destructive h-8 w-8 p-0"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                        <div className="md:col-span-2">
-                          <Label htmlFor={`name-${item.id}`}>Nombre</Label>
-                          <Input
-                            id={`name-${item.id}`}
-                            value={item.name}
-                            onChange={(e) =>
-                              updateCustomItem(item.id, "name", e.target.value)
-                            }
-                            placeholder="Nombre del artículo"
-                          />
-                          <div className="mt-2">
-                            <Label htmlFor={`description-${item.id}`}>
+                      <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-4 lg:gap-3">
+                        <div className="lg:col-span-2 space-y-3">
+                          <div>
+                            <Label htmlFor={`name-${item.id}`} className="text-xs lg:text-sm">Nombre</Label>
+                            <Input
+                              id={`name-${item.id}`}
+                              value={item.name}
+                              onChange={(e) =>
+                                updateCustomItem(item.id, "name", e.target.value)
+                              }
+                              placeholder="Nombre del artículo"
+                              className="text-sm"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor={`description-${item.id}`} className="text-xs lg:text-sm">
                               Descripción
                             </Label>
                             <Input
@@ -926,28 +952,32 @@ export default function Estimates() {
                                 )
                               }
                               placeholder="Descripción del artículo"
+                              className="text-sm"
                             />
                           </div>
                         </div>
-                        <div>
-                          <Label htmlFor={`quantity-${item.id}`}>
-                            Cantidad
-                          </Label>
-                          <Input
-                            id={`quantity-${item.id}`}
-                            type="number"
-                            min="0.01"
-                            step="0.01"
-                            value={item.quantity}
-                            onChange={(e) =>
-                              updateItemQuantity(
-                                item.id,
-                                parseFloat(e.target.value) || 0,
-                              )
-                            }
-                          />
-                          <div className="mt-2">
-                            <Label htmlFor={`unit-${item.id}`}>Unidad</Label>
+                        <div className="grid grid-cols-2 gap-3 lg:grid-cols-1 lg:gap-3">
+                          <div>
+                            <Label htmlFor={`quantity-${item.id}`} className="text-xs lg:text-sm">
+                              Cantidad
+                            </Label>
+                            <Input
+                              id={`quantity-${item.id}`}
+                              type="number"
+                              min="0.01"
+                              step="0.01"
+                              value={item.quantity}
+                              onChange={(e) =>
+                                updateItemQuantity(
+                                  item.id,
+                                  parseFloat(e.target.value) || 0,
+                                )
+                              }
+                              className="text-sm"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor={`unit-${item.id}`} className="text-xs lg:text-sm">Unidad</Label>
                             <Input
                               id={`unit-${item.id}`}
                               value={item.unit}
@@ -959,29 +989,33 @@ export default function Estimates() {
                                 )
                               }
                               placeholder="unidad"
+                              className="text-sm"
                             />
                           </div>
                         </div>
-                        <div>
-                          <Label htmlFor={`price-${item.id}`}>
-                            Precio Unitario
-                          </Label>
-                          <Input
-                            id={`price-${item.id}`}
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={item.price}
-                            onChange={(e) =>
-                              updateItemPrice(
-                                item.id,
-                                parseFloat(e.target.value) || 0,
-                              )
-                            }
-                          />
-                          <div className="mt-2 p-2 bg-muted rounded text-center">
-                            <p className="text-sm font-medium">Total</p>
-                            <p className="text-lg font-bold">
+                        <div className="space-y-3">
+                          <div>
+                            <Label htmlFor={`price-${item.id}`} className="text-xs lg:text-sm">
+                              Precio Unitario
+                            </Label>
+                            <Input
+                              id={`price-${item.id}`}
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={item.price}
+                              onChange={(e) =>
+                                updateItemPrice(
+                                  item.id,
+                                  parseFloat(e.target.value) || 0,
+                                )
+                              }
+                              className="text-sm"
+                            />
+                          </div>
+                          <div className="p-2 bg-muted/50 rounded text-center border">
+                            <p className="text-xs font-medium text-muted-foreground">Total</p>
+                            <p className="text-base lg:text-lg font-bold">
                               ${item.total.toFixed(2)}
                             </p>
                           </div>
