@@ -2634,6 +2634,19 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       const templateData = convertEstimateDataToTemplate(estimate, companyData);
       const unifiedHtml = generateUnifiedEstimateHTML(templateData);
 
+      console.log('🔍 [DEBUG-FRONTEND] Profile data antes de enviar:', {
+        company: profile?.company,
+        email: profile?.email,
+        phone: profile?.phone,
+        address: profile?.address,
+        city: profile?.city,
+        state: profile?.state,
+        zipCode: profile?.zipCode,
+        logo: profile?.logo,
+        logoLength: profile?.logo?.length || 0,
+        currentUserUid: currentUser?.uid
+      });
+
       // Preparar datos para PDF Monkey con validación completa
       const estimateData = {
         estimateNumber: estimate.estimateNumber || `EST-${Date.now()}`,
@@ -2641,28 +2654,24 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         validUntil: new Date(
           Date.now() + 30 * 24 * 60 * 60 * 1000,
         ).toLocaleDateString(),
-        client: {
-          name: estimate.client?.name || "Cliente Sin Nombre",
-          email: estimate.client?.email || "cliente@ejemplo.com",
-          address:
-            estimate.client?.address ||
-            estimate.client?.fullAddress ||
-            "Dirección no especificada",
-          phone: estimate.client?.phone || "555-0000",
-        },
-        contractor: {
-          companyName: profile?.companyName || profile?.company || "Company Name",
-          name: profile?.name || profile?.companyName || profile?.company || "Contractor Name",
-          email: profile?.email || "contractor@company.com",
-          phone: profile?.phone || profile?.mobilePhone || "Phone Number",
-          address: profile?.address || "Company Address",
-          city: profile?.city || "City",
-          state: profile?.state || "State",
-          zipCode: profile?.zipCode || "ZIP",
-          website: profile?.website || "",
-          license: profile?.license || "",
-          logo: profile?.logo || null, // Dynamic logo from user profile
-        },
+        firebaseUid: currentUser?.uid, // ← CRÍTICO: Agregar FirebaseUID
+        clientName: estimate.client?.name || "Cliente Sin Nombre",
+        clientEmail: estimate.client?.email || "cliente@ejemplo.com",
+        clientAddress:
+          estimate.client?.address ||
+          estimate.client?.fullAddress ||
+          "Dirección no especificada",
+        clientPhone: estimate.client?.phone || "555-0000",
+        // Datos del contractor que se enviarán al backend para sobreescribir
+        contractorCompanyName: profile?.company || "", // ← CORREGIDO: usar 'company'
+        contractorEmail: profile?.email || "",
+        contractorPhone: profile?.phone || "",
+        contractorAddress: profile?.address || "",
+        contractorCity: profile?.city || "",
+        contractorState: profile?.state || "",
+        contractorZipCode: profile?.zipCode || "",
+        contractorLicense: profile?.license || "",
+        contractorLogo: profile?.logo || "", // ← CORREGIDO: enviar logo del profile
         project: {
           type: estimate.projectType || "Fence Installation",
           description:

@@ -22,6 +22,10 @@ interface EstimateData {
   contractorPhone?: string;
   contractorEmail?: string;
   contractorLicense?: string;
+  contractorLogo?: string; // ← AGREGADO: logo del contractor
+  contractorCity?: string;
+  contractorState?: string;
+  contractorZipCode?: string;
   items?: Array<{
     name: string;
     description: string;
@@ -48,14 +52,45 @@ interface EstimateData {
  * Mapea los datos del estimado a los campos específicos del template PDFMonkey
  */
 async function mapEstimateDataToTemplate(data: EstimateData) {
+  console.log('🔍 [DEBUG-PDF] === INICIO DE MAPEO DE DATOS ===');
+  console.log('🔍 [DEBUG-PDF] Data recibida:', {
+    hasFirebaseUid: !!data.firebaseUid,
+    firebaseUid: data.firebaseUid,
+    contractorCompanyNameInData: data.contractorCompanyName,
+    contractorLogo: data.contractorLogo,
+    dataKeys: Object.keys(data)
+  });
+
   // Get contractor data from Firebase UID if available
   let contractorData = null;
   if (data.firebaseUid) {
     try {
+      console.log('🔍 [DEBUG-PDF] Buscando usuario en DB con UID:', data.firebaseUid);
       const { eq } = await import('drizzle-orm');
       const userResult = await storage.db.select().from(storage.schema.users).where(eq(storage.schema.users.firebaseUid, data.firebaseUid));
+      
+      console.log('🔍 [DEBUG-PDF] Resultado de búsqueda DB:', {
+        resultLength: userResult.length,
+        foundUser: userResult.length > 0
+      });
+
       if (userResult.length > 0) {
         const user = userResult[0];
+        console.log('🔍 [DEBUG-PDF] Usuario encontrado en DB:', {
+          id: user.id,
+          email: user.email,
+          company: user.company,
+          hasLogo: !!user.logo,
+          logoLength: user.logo?.length || 0,
+          logoPreview: user.logo?.substring(0, 50) + '...',
+          address: user.address,
+          city: user.city,
+          state: user.state,
+          zipCode: user.zipCode,
+          phone: user.phone,
+          licenseNumber: user.licenseNumber
+        });
+
         contractorData = {
           contractorCompanyName: user.company || "Owl Fence Company",
           contractorAddress: user.address ? `${user.address}${user.city ? ', ' + user.city : ''}${user.state ? ', ' + user.state : ''}${user.zipCode ? ' ' + user.zipCode : ''}` : "2901 Owens Court, Fairfield, California 94534",
@@ -64,16 +99,23 @@ async function mapEstimateDataToTemplate(data: EstimateData) {
           contractorLicense: user.licenseNumber || "",
           contractorLogo: user.logo || ""
         };
-        console.log('✅ [Estimate PDF] Using contractor data:', {
-          company: contractorData.contractorCompanyName,
-          hasLogo: !!contractorData.contractorLogo,
-          logoLength: contractorData.contractorLogo?.length || 0
+        
+        console.log('🔍 [DEBUG-PDF] ContractorData creado:', {
+          contractorCompanyName: contractorData.contractorCompanyName,
+          contractorEmail: contractorData.contractorEmail,
+          contractorPhone: contractorData.contractorPhone,
+          contractorAddress: contractorData.contractorAddress,
+          hasContractorLogo: !!contractorData.contractorLogo,
+          contractorLogoLength: contractorData.contractorLogo?.length || 0
         });
-        console.log('✅ [Estimate PDF] Contractor data fetched with logo:', !!user.logo);
+      } else {
+        console.log('❌ [DEBUG-PDF] No se encontró usuario en DB para UID:', data.firebaseUid);
       }
     } catch (error) {
-      console.log('❌ [Estimate PDF] Error fetching contractor data:', error);
+      console.log('❌ [DEBUG-PDF] Error al buscar datos del contractor:', error);
     }
+  } else {
+    console.log('❌ [DEBUG-PDF] No hay firebaseUid en los datos recibidos');
   }
 
   // Use contractor data from database if available
@@ -122,6 +164,19 @@ async function mapEstimateDataToTemplate(data: EstimateData) {
     project_description: finalData.projectDescription || '',
     notes: finalData.notes || ''
   };
+
+  console.log('🔍 [DEBUG-PDF] Template data final para PDFMonkey:', {
+    contractor_company: templateData.contractor_company,
+    contractor_address: templateData.contractor_address,
+    contractor_phone: templateData.contractor_phone,
+    contractor_email: templateData.contractor_email,
+    contractor_license: templateData.contractor_license,
+    hasContractorLogo: !!templateData.contractor_logo,
+    contractorLogoLength: templateData.contractor_logo?.length || 0
+  });
+  console.log('🔍 [DEBUG-PDF] === FIN DE MAPEO DE DATOS ===');
+
+  return templateData;
 }
 
 /**
@@ -203,7 +258,18 @@ Responde ÚNICAMENTE con el código HTML completo, sin explicaciones adicionales
 // POST /api/pdfmonkey-estimates/generate - Genera PDF con PDFMonkey usando template específico
 router.post('/generate', async (req, res) => {
   try {
-    console.log('🚀 [PDFMonkey Estimates] Iniciando generación con template específico...');
+    console.log('🚀 [DEBUG-PDF-ENDPOINT] === INICIO ENDPOINT /generate ===');
+    console.log('🚀 [DEBUG-PDF-ENDPOINT] Datos recibidos del frontend:', {
+      bodyKeys: Object.keys(req.body),
+      hasFirebaseUid: !!req.body.firebaseUid,
+      firebaseUid: req.body.firebaseUid,
+      contractorCompanyName: req.body.contractorCompanyName,
+      contractorLogo: req.body.contractorLogo,
+      contractorPhone: req.body.contractorPhone,
+      contractorEmail: req.body.contractorEmail,
+      contractorAddress: req.body.contractorAddress,
+      bodySize: JSON.stringify(req.body).length
+    });
     
     const estimateData: EstimateData = req.body;
     const pdfMonkeyApiKey = process.env.PDFMONKEY_API_KEY;
@@ -223,13 +289,25 @@ router.post('/generate', async (req, res) => {
         const user = result[0];
         
         if (user) {
-          console.log('✅ [PDFMonkey Estimates] Usuario encontrado:', user.company || user.email);
+          console.log('✅ [DEBUG-PDF-ENDPOINT] Usuario encontrado en DB:', {
+            company: user.company,
+            email: user.email,
+            phone: user.phone,
+            address: user.address,
+            city: user.city,
+            state: user.state,
+            zipCode: user.zipCode,
+            hasLogo: !!user.logo,
+            logoLength: user.logo?.length || 0
+          });
+          
           contractorData = {
             companyName: user.company || '',
-            address: user.address ? `${user.address}${user.city ? ', ' + user.city : ''}${user.state ? ', ' + user.state : ''}${user.zip_code ? ' ' + user.zip_code : ''}` : '',
+            address: user.address ? `${user.address}${user.city ? ', ' + user.city : ''}${user.state ? ', ' + user.state : ''}${user.zipCode ? ' ' + user.zipCode : ''}` : '',
             phone: user.phone || '',
             email: user.email || '',
-            license: user.license || ''
+            license: user.license || '',
+            logo: user.logo || '' // ← CRÍTICO: incluir logo de la DB
           };
         } else {
           console.log('❌ [PDFMonkey Estimates] Usuario no encontrado en base de datos');
@@ -258,8 +336,18 @@ router.post('/generate', async (req, res) => {
       contractorAddress: contractorData.address,
       contractorPhone: contractorData.phone,
       contractorEmail: contractorData.email,
-      contractorLicense: contractorData.license
+      contractorLicense: contractorData.license,
+      contractorLogo: contractorData.logo // ← CRÍTICO: agregar logo
     };
+    
+    console.log('🔍 [DEBUG-PDF-ENDPOINT] Datos enriquecidos finales:', {
+      contractorCompanyName: enrichedEstimateData.contractorCompanyName,
+      contractorLogo: enrichedEstimateData.contractorLogo,
+      contractorPhone: enrichedEstimateData.contractorPhone,
+      contractorEmail: enrichedEstimateData.contractorEmail,
+      hasLogo: !!enrichedEstimateData.contractorLogo,
+      logoLength: enrichedEstimateData.contractorLogo?.length || 0
+    });
     
     if (!pdfMonkeyApiKey) {
       console.log('⚠️ [PDFMonkey Estimates] API key no encontrada, usando fallback...');
@@ -268,8 +356,16 @@ router.post('/generate', async (req, res) => {
 
     // Paso 1: Intentar con PDFMonkey
     try {
-      console.log('🐒 [PDFMonkey Estimates] Mapeando datos para template específico...');
-      const templateData = mapEstimateDataToTemplate(enrichedEstimateData);
+      console.log('🐒 [DEBUG-PDF-ENDPOINT] Enviando a mapEstimateDataToTemplate...');
+      console.log('🐒 [DEBUG-PDF-ENDPOINT] EnrichedEstimateData antes del mapeo:', {
+        contractorCompanyName: enrichedEstimateData.contractorCompanyName,
+        contractorLogo: enrichedEstimateData.contractorLogo,
+        contractorPhone: enrichedEstimateData.contractorPhone,
+        contractorEmail: enrichedEstimateData.contractorEmail,
+        contractorAddress: enrichedEstimateData.contractorAddress,
+        firebaseUid: enrichedEstimateData.firebaseUid
+      });
+      const templateData = await mapEstimateDataToTemplate(enrichedEstimateData);
       
       console.log('🐒 [PDFMonkey Estimates] Datos mapeados:', JSON.stringify(templateData, null, 2));
 
