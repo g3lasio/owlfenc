@@ -174,12 +174,11 @@ export default function EstimatesWizardFixed() {
   const [showPreview, setShowPreview] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
 
-  // Smart Search states with debug
-  const [showSmartSearchDialog, setShowSmartSearchDialog] = useState(false);
-  const [debugDropdownState, setDebugDropdownState] = useState(false);
-  const [smartSearchMode, setSmartSearchMode] = useState<
-    "materials" | "labor" | "both"
-  >("both");
+  // Deepsearch Materials states
+  const [showDeepsearchDialog, setShowDeepsearchDialog] = useState(false);
+  const [deepsearchMode, setDeepsearchMode] = useState<
+    "materials" | "labor" | "full"
+  >("materials");
   const [isAIProcessing, setIsAIProcessing] = useState(false);
   const [showMervinWorking, setShowMervinWorking] = useState(false);
   const [aiProgress, setAiProgress] = useState(0);
@@ -263,7 +262,7 @@ export default function EstimatesWizardFixed() {
       let endpoint = "";
       let successMessage = "";
 
-      switch (smartSearchMode) {
+      switch (deepsearchMode) {
         case "materials":
           endpoint = "/api/deepsearch/materials-only";
           successMessage = "materials";
@@ -272,7 +271,7 @@ export default function EstimatesWizardFixed() {
           endpoint = "/api/labor-deepsearch/generate-items";
           successMessage = "labor services";
           break;
-        case "both":
+        case "full":
           endpoint = "/api/labor-deepsearch/combined";
           successMessage = "materials and labor";
           break;
@@ -485,7 +484,7 @@ export default function EstimatesWizardFixed() {
         }));
 
         setAiProgress(100);
-        setShowSmartSearchDialog(false);
+        setShowDeepsearchDialog(false);
 
         // Mostrar mensaje de Mervin
         setShowMervinMessage(true);
@@ -537,22 +536,11 @@ export default function EstimatesWizardFixed() {
     loadContractorProfile();
   }, [currentUser]);
 
-  // Handle SMART SEARCH button functionality with robust state management
-  const handleSmartSearchToggle = (e: React.MouseEvent) => {
+  // Handle Deepsearch Materials button functionality
+  const handleDeepsearchToggle = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log("SMART SEARCH toggled - current state:", showSmartSearchDialog);
-    const newState = !showSmartSearchDialog;
-    console.log("Setting new state to:", newState);
-    
-    // Multiple state updates to ensure UI refresh
-    setShowSmartSearchDialog(newState);
-    setDebugDropdownState(newState);
-    
-    // Force component refresh with React batch update bypass
-    requestAnimationFrame(() => {
-      setShowSmartSearchDialog(newState);
-    });
+    setShowDeepsearchDialog(prev => !prev);
   };
 
   // Check for edit parameter and load project data
@@ -2983,46 +2971,42 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   Add Materials ({estimate.items.length})
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2">
-                  {/* Smart Search IA - Interfaz Futurista Tony Stark */}
+                  {/* Deepsearch Materials - Nuevo Botón Funcional */}
                   <div className="relative z-50">
                     <button
-                      id="smart-search-button"
-                      data-testid="smart-search-button"
                       disabled={
                         !estimate.projectDetails.trim() ||
-                        estimate.projectDetails.trim().length < 3 ||
+                        estimate.projectDetails.length < 3 ||
                         isAIProcessing
                       }
                       className={`
-                        relative overflow-hidden px-3 sm:px-4 py-2 w-full sm:min-w-[160px] text-sm font-medium transition-all duration-300
-                        bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900
-                        border border-cyan-400/30 rounded-lg
-                        hover:border-cyan-400/60 hover:shadow-lg hover:shadow-cyan-400/20
+                        relative overflow-hidden px-3 sm:px-4 py-2 w-full sm:min-w-[200px] text-sm font-medium transition-all duration-300
+                        bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-900
+                        border border-emerald-400/30 rounded-lg
+                        hover:border-emerald-400/60 hover:shadow-lg hover:shadow-emerald-400/20
                         disabled:opacity-50 disabled:cursor-not-allowed
                         group z-50
                       `}
-                      onMouseDown={handleSmartSearchToggle}
-                      onClick={handleSmartSearchToggle}
+                      onClick={handleDeepsearchToggle}
                     >
-                      {/* Efecto de luz de fondo */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/10 via-blue-400/5 to-cyan-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/10 via-green-400/5 to-emerald-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
                       <div className="relative flex items-center gap-2 text-white">
                         {isAIProcessing ? (
                           <>
                             <div className="flex items-center gap-2">
-                              <div className="w-4 h-4 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
-                              <span className="text-cyan-400 font-mono">
+                              <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                              <span className="text-emerald-400 font-mono">
                                 {aiProgress}%
                               </span>
                             </div>
                           </>
                         ) : (
                           <>
-                            <Brain className="h-4 w-4 text-cyan-400" />
-                            <span>SMART SEARCH</span>
+                            <Search className="h-4 w-4 text-emerald-400" />
+                            <span>DEEPSEARCH MATERIALS</span>
                             <ChevronDown
-                              className={`h-3 w-3 text-cyan-400 transition-transform duration-300 ${showSmartSearchDialog ? "rotate-180" : ""}`}
+                              className={`h-3 w-3 text-emerald-400 transition-transform duration-300 ${showDeepsearchDialog ? "rotate-180" : ""}`}
                             />
                           </>
                         )}
