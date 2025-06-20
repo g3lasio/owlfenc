@@ -2884,9 +2884,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       <>
                         <Brain className="h-4 w-4 mr-2" />
                         <span className="hidden sm:inline">
-                          Mejorar enhance with Mervin AI
+                          Enhance with Mervin AI
                         </span>
-                        <span className="sm:hidden">Mejorar Mervin AI</span>
+                        <span className="sm:hidden">Mervin AI</span>
                       </>
                     )}
                   </Button>
