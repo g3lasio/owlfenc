@@ -1025,18 +1025,18 @@ export default function Estimates() {
                   ))}
 
                   {/* Totals */}
-                  <div className="border-t pt-4 space-y-2">
-                    <div className="flex justify-between text-sm">
+                  <div className="border-t pt-3 lg:pt-4 space-y-2 bg-muted/30 -mx-3 lg:-mx-4 px-3 lg:px-4 pb-2">
+                    <div className="flex justify-between text-sm lg:text-base">
                       <span>Subtotal:</span>
-                      <span>${estimate.subtotal.toFixed(2)}</span>
+                      <span className="font-medium">${estimate.subtotal.toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between text-sm lg:text-base">
                       <span>IVA (16%):</span>
-                      <span>${estimate.tax.toFixed(2)}</span>
+                      <span className="font-medium">${estimate.tax.toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between text-lg font-bold border-t pt-2">
+                    <div className="flex justify-between text-base lg:text-lg font-bold border-t pt-2 border-border">
                       <span>Total:</span>
-                      <span>${estimate.total.toFixed(2)}</span>
+                      <span className="text-primary">${estimate.total.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
