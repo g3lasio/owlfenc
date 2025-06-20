@@ -3122,23 +3122,31 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                     }
                     className="min-h-[120px] text-sm"
                   />
-                  {/* Indicador inteligente para Smart Search */}
+                </div>
+                
+                {/* Indicador inteligente para Smart Search - Fuera del área de escritura */}
+                <div className="flex items-center justify-between mt-2">
                   <div
-                    className={`absolute bottom-2 right-2 text-xs px-2 py-1 rounded ${
+                    className={`text-xs px-3 py-1.5 rounded-full transition-all duration-300 ${
                       estimate.projectDetails.trim().length < 10
-                        ? "bg-orange-100 text-orange-700 border border-orange-300"
+                        ? "bg-orange-50 text-orange-700 border border-orange-200"
                         : evaluateProjectDescription(estimate.projectDetails)
                               .isDetailed
-                          ? "bg-green-100 text-green-700 border border-green-300"
-                          : "bg-yellow-100 text-yellow-700 border border-yellow-300"
+                          ? "bg-green-50 text-green-700 border border-green-200"
+                          : "bg-yellow-50 text-yellow-700 border border-yellow-200"
                     }`}
                   >
                     {estimate.projectDetails.trim().length < 10
-                      ? `${10 - estimate.projectDetails.trim().length} chars más para Smart Search`
+                      ? `${10 - estimate.projectDetails.trim().length} caracteres más para Smart Search`
                       : evaluateProjectDescription(estimate.projectDetails)
                             .isDetailed
                         ? "✓ Smart Search disponible"
                         : "⚠️ Añade más detalles para Smart Search"}
+                  </div>
+                  
+                  {/* Contador de caracteres */}
+                  <div className="text-xs text-slate-400">
+                    {estimate.projectDetails.length} caracteres
                   </div>
                 </div>
                 {/* Mensaje de ayuda dinámico */}
