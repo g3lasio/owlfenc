@@ -3011,7 +3011,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
                     {/* Dropdown Futurista Holográfico */}
                     {showSmartSearchDialog && !isAIProcessing && (
-                      <div className="absolute top-full mt-2 left-0 right-0 sm:left-0 sm:right-auto z-20 sm:min-w-[320px]">
+                      <div className="absolute top-full mt-2 left-0 right-0 sm:left-0 sm:right-auto z-30 sm:min-w-[320px]">
                         {/* Panel Holográfico Principal */}
                         <div
                           className="
@@ -3031,7 +3031,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                           <div className="p-3 space-y-2">
                             {/* Inventory Quantum */}
                             <button
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                console.log("🔍 Inventory Quantum clicked");
                                 setSmartSearchMode("materials");
                                 setShowSmartSearchDialog(false);
                                 handleSmartSearch();
@@ -3069,7 +3071,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
                             {/* Labor DeepSearch */}
                             <button
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                console.log("🔧 Labor DeepSearch clicked");
                                 setSmartSearchMode("labor");
                                 setShowSmartSearchDialog(false);
                                 handleSmartSearch();
@@ -3108,7 +3112,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
                             {/* Project Synapse - Recomendado */}
                             <button
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                console.log("🚀 Project Synapse clicked");
                                 setSmartSearchMode("both");
                                 setShowSmartSearchDialog(false);
                                 handleSmartSearch();
@@ -3165,7 +3171,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                     {/* Overlay para cerrar el dropdown */}
                     {showSmartSearchDialog && !isAIProcessing && (
                       <div
-                        className="fixed inset-0 z-10"
+                        className="fixed inset-0 z-20"
                         onClick={() => setShowSmartSearchDialog(false)}
                       />
                     )}
