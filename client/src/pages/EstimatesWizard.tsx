@@ -183,6 +183,9 @@ export default function EstimatesWizardFixed() {
   const [showMervinWorking, setShowMervinWorking] = useState(false);
   const [aiProgress, setAiProgress] = useState(0);
 
+  // Nuevo botón MATERIALS AI SEARCH - Estado independiente
+  const [showNewDeepsearchDialog, setShowNewDeepsearchDialog] = useState(false);
+
   // New client form
   const [newClient, setNewClient] = useState({
     name: "",
@@ -541,6 +544,106 @@ export default function EstimatesWizardFixed() {
     e.preventDefault();
     e.stopPropagation();
     setShowDeepsearchDialog(prev => !prev);
+  };
+
+  // Nuevo handler para MATERIALS AI SEARCH - Completamente independiente
+  const handleNewDeepsearch = async (searchType: "materials" | "labor" | "full") => {
+    const description = estimate.projectDetails.trim();
+
+    if (!description || description.length < 3) {
+      toast({
+        title: "Description Required",
+        description: "Please describe your project with at least 3 characters to use AI Search",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setShowNewDeepsearchDialog(false);
+    setIsAIProcessing(true);
+    setAiProgress(0);
+
+    try {
+      let endpoint = "";
+      let successMessage = "";
+
+      switch (searchType) {
+        case "materials":
+          endpoint = "/api/deepsearch/materials-only";
+          successMessage = "materials";
+          break;
+        case "labor":
+          endpoint = "/api/labor-deepsearch/generate-items";
+          successMessage = "labor services";
+          break;
+        case "full":
+          endpoint = "/api/labor-deepsearch/combined";
+          successMessage = "materials and labor";
+          break;
+      }
+
+      // Simular progreso
+      const progressInterval = setInterval(() => {
+        setAiProgress((prev) => Math.min(prev + Math.random() * 15, 85));
+      }, 500);
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ projectDescription: description }),
+      });
+
+      clearInterval(progressInterval);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.success && data.items && data.items.length > 0) {
+        const newItems = data.items.map((item: any) => ({
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          materialId: item.id || Date.now().toString(),
+          name: item.name || item.material || "Unknown Item",
+          description: item.description || item.details || "",
+          quantity: item.quantity || 1,
+          price: item.price || item.unitPrice || 0,
+          unit: item.unit || "each",
+          total: (item.quantity || 1) * (item.price || item.unitPrice || 0),
+        }));
+
+        setEstimate((prev) => ({
+          ...prev,
+          items: [...prev.items, ...newItems],
+        }));
+
+        setAiProgress(100);
+
+        toast({
+          title: "AI Search Completed",
+          description: `Successfully found and added ${newItems.length} ${successMessage} to your estimate`,
+        });
+
+        // Mostrar mensaje de Mervin
+        setShowMervinMessage(true);
+        setTimeout(() => setShowMervinMessage(false), 3000);
+      } else {
+        throw new Error("No items found in the response");
+      }
+    } catch (error) {
+      console.error("AI Search error:", error);
+      toast({
+        title: "AI Search Failed",
+        description: "Unable to process your request. Please try again or add materials manually.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAIProcessing(false);
+      setAiProgress(0);
+    }
   };
 
   // Check for edit parameter and load project data
@@ -2971,6 +3074,159 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   Add Materials ({estimate.items.length})
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2">
+                  {/* NUEVO BOTÓN MATERIALS AI SEARCH - Completamente independiente */}
+                  <div className="relative z-40">
+                    <button
+                      disabled={
+                        !estimate.projectDetails.trim() ||
+                        estimate.projectDetails.length < 3 ||
+                        isAIProcessing
+                      }
+                      className={`
+                        relative overflow-hidden px-3 sm:px-4 py-2 w-full sm:min-w-[200px] text-sm font-medium transition-all duration-300
+                        bg-gradient-to-r from-purple-900 via-purple-800 to-purple-900
+                        border border-purple-400/30 rounded-lg
+                        hover:border-purple-400/60 hover:shadow-lg hover:shadow-purple-400/20
+                        disabled:opacity-50 disabled:cursor-not-allowed
+                        group z-40
+                      `}
+                      onClick={() => setShowNewDeepsearchDialog(prev => !prev)}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-purple-400/10 via-purple-400/5 to-purple-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                      <div className="relative flex items-center gap-2 text-white">
+                        {isAIProcessing ? (
+                          <>
+                            <div className="flex items-center gap-2">
+                              <div className="w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+                              <span className="text-purple-400 font-mono">
+                                {aiProgress}%
+                              </span>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <Search className="h-4 w-4 text-purple-400" />
+                            <span>MATERIALS AI SEARCH</span>
+                            <ChevronDown
+                              className={`h-3 w-3 text-purple-400 transition-transform duration-300 ${showNewDeepsearchDialog ? "rotate-180" : ""}`}
+                            />
+                          </>
+                        )}
+                      </div>
+                    </button>
+
+                    {/* Dropdown del nuevo botón independiente */}
+                    {showNewDeepsearchDialog && !isAIProcessing && (
+                      <div className="absolute top-full mt-2 left-0 right-0 sm:left-0 sm:right-auto z-[70] sm:min-w-[300px]">
+                        <div className="bg-gradient-to-b from-purple-900/95 via-purple-800/98 to-purple-900/95 backdrop-blur-xl border border-purple-400/30 rounded-xl shadow-2xl shadow-purple-400/10 overflow-hidden">
+                          {/* Header */}
+                          <div className="border-b border-purple-400/20 p-4">
+                            <div className="text-xs font-mono text-purple-400 mb-1 tracking-wider">
+                              SELECT AI SEARCH TYPE
+                            </div>
+                            <div className="h-px bg-gradient-to-r from-transparent via-purple-400/60 to-transparent" />
+                          </div>
+
+                          <div className="p-3 space-y-2">
+                            {/* Only Materials */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleNewDeepsearch("materials");
+                              }}
+                              className="group w-full p-3 rounded-lg transition-all duration-300 border border-blue-400/20 bg-gradient-to-r from-blue-500/5 to-blue-600/5 hover:border-blue-400/50 hover:bg-gradient-to-r hover:from-blue-500/15 hover:to-blue-600/15 hover:shadow-lg hover:shadow-blue-400/20"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-400/20 to-blue-600/20 border border-blue-400/30 flex items-center justify-center">
+                                  <Package className="h-5 w-5 text-blue-400" />
+                                </div>
+                                <div className="flex-1 text-left">
+                                  <div className="text-sm font-medium text-white group-hover:text-blue-400 transition-colors">
+                                    ONLY MATERIALS
+                                  </div>
+                                  <div className="text-xs text-slate-400 font-mono">
+                                    Search materials database only
+                                  </div>
+                                </div>
+                                <ChevronRight className="h-4 w-4 text-blue-400 group-hover:translate-x-1 transition-transform" />
+                              </div>
+                            </button>
+
+                            {/* Labor Costs */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleNewDeepsearch("labor");
+                              }}
+                              className="group w-full p-3 rounded-lg transition-all duration-300 border border-orange-400/20 bg-gradient-to-r from-orange-500/5 to-amber-600/5 hover:border-orange-400/50 hover:bg-gradient-to-r hover:from-orange-500/15 hover:to-amber-600/15 hover:shadow-lg hover:shadow-orange-400/20"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-400/20 to-amber-600/20 border border-orange-400/30 flex items-center justify-center">
+                                  <Wrench className="h-5 w-5 text-orange-400" />
+                                </div>
+                                <div className="flex-1 text-left">
+                                  <div className="text-sm font-medium text-white group-hover:text-orange-400 transition-colors">
+                                    LABOR COSTS
+                                  </div>
+                                  <div className="text-xs text-slate-400 font-mono">
+                                    Generate labor service items
+                                  </div>
+                                </div>
+                                <ChevronRight className="h-4 w-4 text-orange-400 group-hover:translate-x-1 transition-transform" />
+                              </div>
+                            </button>
+
+                            {/* Full Costs - Recommended */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleNewDeepsearch("full");
+                              }}
+                              className="group w-full p-3 rounded-lg transition-all duration-300 border border-emerald-400/40 bg-gradient-to-r from-emerald-500/10 to-green-600/10 hover:border-emerald-400/70 hover:bg-gradient-to-r hover:from-emerald-500/20 hover:to-green-600/20 hover:shadow-lg hover:shadow-emerald-400/25 ring-1 ring-emerald-400/20"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-400/20 to-green-600/20 border border-emerald-400/40 flex items-center justify-center">
+                                  <div className="w-5 h-5 rounded-full border-2 border-emerald-400 relative">
+                                    <div className="absolute inset-1 rounded-full bg-emerald-400/30" />
+                                    <div className="absolute inset-2 rounded-full bg-emerald-400 animate-pulse" />
+                                  </div>
+                                </div>
+                                <div className="flex-1 text-left">
+                                  <div className="flex items-center gap-2">
+                                    <div className="text-sm font-medium text-white group-hover:text-emerald-400 transition-colors">
+                                      FULL COSTS
+                                    </div>
+                                    <div className="px-2 py-0.5 bg-emerald-400/20 border border-emerald-400/40 rounded text-xs text-emerald-400 font-mono">
+                                      RECOMMENDED
+                                    </div>
+                                  </div>
+                                  <div className="text-xs text-slate-400 font-mono">
+                                    Materials + labor complete analysis
+                                  </div>
+                                </div>
+                                <ChevronRight className="h-4 w-4 text-emerald-400 group-hover:translate-x-1 transition-transform" />
+                              </div>
+                            </button>
+                          </div>
+
+                          {/* Footer */}
+                          <div className="border-t border-purple-400/20 p-2">
+                            <div className="h-px bg-gradient-to-r from-transparent via-purple-400/40 to-transparent" />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Overlay para cerrar el dropdown */}
+                    {showNewDeepsearchDialog && !isAIProcessing && (
+                      <div
+                        className="fixed inset-0 z-30"
+                        onClick={() => setShowNewDeepsearchDialog(false)}
+                      />
+                    )}
+                  </div>
+
                   {/* Deepsearch Materials - Nuevo Botón Funcional */}
                   <div className="relative z-50">
                     <button
