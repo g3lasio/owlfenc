@@ -57,13 +57,18 @@ async function mapEstimateDataToTemplate(data: EstimateData) {
       if (userResult.length > 0) {
         const user = userResult[0];
         contractorData = {
-          contractorCompanyName: user.company || "Company Name",
-          contractorAddress: user.address ? `${user.address}${user.city ? ', ' + user.city : ''}${user.state ? ', ' + user.state : ''}${user.zipCode ? ' ' + user.zipCode : ''}` : "Company Address",
-          contractorEmail: user.email || "",
-          contractorPhone: user.phone || "",
+          contractorCompanyName: user.company || "Owl Fence Company",
+          contractorAddress: user.address ? `${user.address}${user.city ? ', ' + user.city : ''}${user.state ? ', ' + user.state : ''}${user.zipCode ? ' ' + user.zipCode : ''}` : "2901 Owens Court, Fairfield, California 94534",
+          contractorEmail: user.email || "info@chyrris.com",
+          contractorPhone: user.phone || "202 549 3519",
           contractorLicense: user.licenseNumber || "",
           contractorLogo: user.logo || ""
         };
+        console.log('✅ [Estimate PDF] Using contractor data:', {
+          company: contractorData.contractorCompanyName,
+          hasLogo: !!contractorData.contractorLogo,
+          logoLength: contractorData.contractorLogo?.length || 0
+        });
         console.log('✅ [Estimate PDF] Contractor data fetched with logo:', !!user.logo);
       }
     } catch (error) {
@@ -82,12 +87,12 @@ async function mapEstimateDataToTemplate(data: EstimateData) {
     date: data.date || currentDate,
     valid_until: validUntilDate,
     
-    // Contractor information
-    contractor_company: data.contractorCompanyName || '',
-    contractor_address: data.contractorAddress || '',
-    contractor_phone: data.contractorPhone || '',
-    contractor_email: data.contractorEmail || '',
-    contractor_license: data.contractorLicense || '',
+    // Contractor information - using database data
+    contractor_company: finalData.contractorCompanyName || '',
+    contractor_address: finalData.contractorAddress || '',
+    contractor_phone: finalData.contractorPhone || '',
+    contractor_email: finalData.contractorEmail || '',
+    contractor_license: finalData.contractorLicense || '',
     
     // Client information
     client: finalData.clientName || '',
