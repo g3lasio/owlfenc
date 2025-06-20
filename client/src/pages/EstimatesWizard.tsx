@@ -232,11 +232,11 @@ export default function EstimatesWizardFixed() {
   const handleSmartSearch = async () => {
     const description = estimate.projectDetails.trim();
 
-    if (!description || description.length < 10) {
+    if (!description || description.length < 3) {
       toast({
         title: "Description Required",
         description:
-          "Please describe your project with at least 10 characters to use Smart Search AI",
+          "Please describe your project with at least 3 characters to use Smart Search AI",
         variant: "destructive",
       });
       return;
@@ -2969,7 +2969,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                     <button
                       disabled={
                         !estimate.projectDetails.trim() ||
-                        estimate.projectDetails.trim().length < 10 ||
+                        estimate.projectDetails.trim().length < 3 ||
                         isAIProcessing
                       }
                       className={`
