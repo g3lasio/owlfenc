@@ -3125,7 +3125,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   <Package className="h-5 w-5" />
                   Add Materials ({estimate.items.length})
                 </div>
-                <div className="flex flex-col sm:flex-row gap-2">
+                <div className="flex flex-col sm:flex-row gap-3 justify-center sm:justify-end">
                   {/* HUD-STYLE MATERIALS AI SEARCH - Compact Futuristic Design */}
                   <div className="relative z-40">
                     <button
@@ -3135,11 +3135,11 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         isAIProcessing
                       }
                       className={`
-                        relative overflow-hidden px-3 py-1.5 text-xs font-mono transition-all duration-300
+                        relative overflow-hidden px-4 py-2 text-sm font-mono transition-all duration-300
                         bg-black/40 backdrop-blur-sm
                         border border-cyan-400/20
                         disabled:opacity-50 disabled:cursor-not-allowed
-                        group z-40
+                        group z-40 w-full sm:w-auto
                         hover:border-cyan-400/60 hover:shadow-lg hover:shadow-cyan-400/20
                       `}
                       style={{
@@ -3188,10 +3188,10 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                           </>
                         ) : (
                           <>
-                            <Search className="h-3 w-3 text-cyan-400" />
-                            <span className="text-xs tracking-wide">AI.SEARCH</span>
+                            <Search className="h-4 w-4 text-cyan-400" />
+                            <span className="text-sm tracking-wide">DeepSearch Material</span>
                             <ChevronDown
-                              className={`h-2.5 w-2.5 text-cyan-400 transition-transform duration-300 ${showNewDeepsearchDialog ? "rotate-180" : ""}`}
+                              className={`h-3 w-3 text-cyan-400 transition-transform duration-300 ${showNewDeepsearchDialog ? "rotate-180" : ""}`}
                             />
                           </>
                         )}
@@ -3508,11 +3508,23 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   onOpenChange={setShowMaterialDialog}
                 >
                   <DialogTrigger asChild>
-                    <Button size="sm" className="w-full sm:w-auto">
-                      <Plus className="h-4 w-4 mr-2" />
-                      <span className="hidden sm:inline">Add Material</span>
-                      <span className="sm:hidden">Add</span>
-                    </Button>
+                    <button
+                      className={`
+                        relative overflow-hidden px-4 py-2 text-sm font-medium transition-all duration-300
+                        bg-gradient-to-r from-teal-900 via-teal-800 to-teal-900
+                        border border-teal-400/30 rounded-lg
+                        hover:border-teal-400/60 hover:shadow-lg hover:shadow-teal-400/20
+                        group w-full sm:w-auto
+                      `}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-teal-400/10 via-teal-400/5 to-teal-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      
+                      <div className="relative flex items-center gap-2 text-white justify-center">
+                        <Plus className="h-4 w-4 text-teal-400" />
+                        <span className="hidden sm:inline">Add Material</span>
+                        <span className="sm:hidden">Add</span>
+                      </div>
+                    </button>
                   </DialogTrigger>
                   <DialogContent className="max-w-4xl">
                     <DialogHeader>
