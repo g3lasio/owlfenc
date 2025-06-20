@@ -196,21 +196,49 @@ export default function Profile() {
     }));
   };
 
-  // Esta función simula la subida de un archivo
-  // En una aplicación real, usarías una API para subir el archivo
+  // Función para convertir archivos a Base64 (especialmente logos)
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>, type: string) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Simulamos la subida creando una URL para previsualizar
-    const fileUrl = URL.createObjectURL(file);
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: "Archivo muy grande",
+        description: "El archivo debe ser menor a 2MB",
+        variant: "destructive",
+      });
+      return;
+    }
 
     if (type === 'logo') {
-      setCompanyInfo(prev => ({
-        ...prev,
-        logo: fileUrl
-      }));
+      // Convertir logo a Base64 para almacenamiento en base de datos
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64Result = e.target?.result as string;
+        
+        setCompanyInfo(prev => ({
+          ...prev,
+          logo: base64Result
+        }));
+        
+        toast({
+          title: "Logo procesado",
+          description: `${file.name} convertido a Base64 para almacenamiento seguro`,
+        });
+      };
+      
+      reader.onerror = () => {
+        toast({
+          title: "Error",
+          description: "No se pudo procesar la imagen",
+          variant: "destructive",
+        });
+      };
+      
+      reader.readAsDataURL(file);
     } else {
+      // Para otros documentos, usar URL temporal
+      const fileUrl = URL.createObjectURL(file);
       setCompanyInfo(prev => ({
         ...prev,
         documents: {
@@ -218,12 +246,12 @@ export default function Profile() {
           [type]: fileUrl
         }
       }));
+      
+      toast({
+        title: "Archivo cargado",
+        description: `${file.name} ha sido cargado correctamente.`,
+      });
     }
-
-    toast({
-      title: "Archivo cargado",
-      description: `${file.name} ha sido cargado correctamente.`,
-    });
   };
 
   const handleSave = async () => {
