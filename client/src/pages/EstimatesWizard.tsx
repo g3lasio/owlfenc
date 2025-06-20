@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/use-profile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -536,62 +536,13 @@ export default function EstimatesWizardFixed() {
     loadContractorProfile();
   }, [currentUser]);
 
-  // Advanced diagnostic function for SMART SEARCH button
-  useEffect(() => {
-    if (currentStep === 2) {
-      const diagnosticTimer = setTimeout(() => {
-        const smartSearchButton = document.getElementById('smart-search-button');
-        
-        console.log("🔍 SMART SEARCH Button Deep Diagnostic:");
-        console.log("Button found:", smartSearchButton);
-        console.log("Current showSmartSearchDialog state:", showSmartSearchDialog);
-        console.log("Current step:", currentStep);
-        
-        if (smartSearchButton) {
-          const rect = smartSearchButton.getBoundingClientRect();
-          const styles = window.getComputedStyle(smartSearchButton);
-          
-          // Check for overlapping elements
-          const elementAtCenter = document.elementFromPoint(
-            rect.left + rect.width / 2, 
-            rect.top + rect.height / 2
-          );
-          
-          console.log("Element at button center:", elementAtCenter);
-          console.log("Is button the top element?", elementAtCenter === smartSearchButton);
-          
-          // Check parent containers
-          let parent = smartSearchButton.parentElement;
-          let parentChain = [];
-          while (parent && parentChain.length < 5) {
-            const parentStyles = window.getComputedStyle(parent);
-            parentChain.push({
-              tagName: parent.tagName,
-              className: parent.className,
-              pointerEvents: parentStyles.pointerEvents,
-              overflow: parentStyles.overflow,
-              zIndex: parentStyles.zIndex
-            });
-            parent = parent.parentElement;
-          }
-          console.log("Parent chain:", parentChain);
-          
-          // Check for event listener conflicts
-          const events = ['click', 'mousedown', 'mouseup'];
-          events.forEach(eventType => {
-            const hasListener = smartSearchButton.onclick || 
-                               smartSearchButton.addEventListener;
-            console.log(`${eventType} listener present:`, hasListener);
-          });
-          
-        } else {
-          console.log("❌ SMART SEARCH button not found in step 2");
-        }
-      }, 1000);
-
-      return () => clearTimeout(diagnosticTimer);
-    }
-  }, [currentStep, showSmartSearchDialog]);
+  // Handle SMART SEARCH button functionality
+  const handleSmartSearchToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log("SMART SEARCH toggled");
+    setShowSmartSearchDialog(prev => !prev);
+  };
 
   // Check for edit parameter and load project data
   useEffect(() => {
@@ -3022,7 +2973,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2">
                   {/* Smart Search IA - Interfaz Futurista Tony Stark */}
-                  <div className="relative">
+                  <div className="relative z-50">
                     <button
                       id="smart-search-button"
                       data-testid="smart-search-button"
@@ -3037,29 +2988,10 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         border border-cyan-400/30 rounded-lg
                         hover:border-cyan-400/60 hover:shadow-lg hover:shadow-cyan-400/20
                         disabled:opacity-50 disabled:cursor-not-allowed
-                        group
+                        group z-50
                       `}
-                      onClick={(e) => {
-                        console.log("🔍 SMART SEARCH button clicked!", e);
-                        console.log("Current showSmartSearchDialog:", showSmartSearchDialog);
-                        console.log("Button disabled?", e.currentTarget.disabled);
-                        console.log("Project details:", estimate.projectDetails);
-                        console.log("Project details length:", estimate.projectDetails.trim().length);
-                        console.log("Event propagation stopped?", e.defaultPrevented);
-                        console.log("Event target:", e.target);
-                        console.log("Event currentTarget:", e.currentTarget);
-                        console.log("About to call setShowSmartSearchDialog...");
-                        console.log("Previous showSmartSearchDialog:", showSmartSearchDialog);
-                        const newValue = !showSmartSearchDialog;
-                        console.log("New value will be:", newValue);
-                        setShowSmartSearchDialog(newValue);
-                        console.log("setShowSmartSearchDialog called with:", newValue);
-                        
-                        // Test if state actually changes
-                        setTimeout(() => {
-                          console.log("State after 100ms:", showSmartSearchDialog);
-                        }, 100);
-                      }}
+                      onMouseDown={handleSmartSearchToggle}
+                      onClick={handleSmartSearchToggle}
                     >
                       {/* Efecto de luz de fondo */}
                       <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/10 via-blue-400/5 to-cyan-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -3088,7 +3020,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
                     {/* Dropdown Futurista Holográfico */}
                     {showSmartSearchDialog && !isAIProcessing && (
-                      <div className="absolute top-full mt-2 left-0 right-0 sm:left-0 sm:right-auto z-30 sm:min-w-[320px]">
+                      <div className="absolute top-full mt-2 left-0 right-0 sm:left-0 sm:right-auto z-[60] sm:min-w-[320px]">
                         {/* Panel Holográfico Principal */}
                         <div
                           className="
