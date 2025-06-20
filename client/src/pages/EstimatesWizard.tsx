@@ -3013,170 +3013,119 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       </div>
                     </button>
 
-                    {/* Dropdown Futurista Holográfico - Multiple state checks for robustness */}
-                    {(showSmartSearchDialog || debugDropdownState) && !isAIProcessing && (
-                      <div className="absolute top-full mt-2 left-0 right-0 sm:left-0 sm:right-auto z-[60] sm:min-w-[320px]">
-                        {/* Panel Holográfico Principal */}
-                        <div
-                          className="
-                          bg-gradient-to-b from-slate-900/95 via-slate-800/98 to-slate-900/95 
-                          backdrop-blur-xl border border-cyan-400/30 rounded-xl shadow-2xl shadow-cyan-400/10
-                          overflow-hidden
-                        "
-                        >
-                          {/* Header con línea neon */}
-                          <div className="border-b border-cyan-400/20 p-4">
-                            <div className="text-xs font-mono text-cyan-400 mb-1 tracking-wider">
-                              SELECT ANALYSIS TYPE - State: {showSmartSearchDialog ? 'OPEN' : 'CLOSED'} | Debug: {debugDropdownState ? 'OPEN' : 'CLOSED'}
+                    {/* Dropdown del nuevo Deepsearch Materials */}
+                    {showDeepsearchDialog && !isAIProcessing && (
+                      <div className="absolute top-full mt-2 left-0 right-0 sm:left-0 sm:right-auto z-[60] sm:min-w-[300px]">
+                        <div className="bg-gradient-to-b from-emerald-900/95 via-emerald-800/98 to-emerald-900/95 backdrop-blur-xl border border-emerald-400/30 rounded-xl shadow-2xl shadow-emerald-400/10 overflow-hidden">
+                          {/* Header */}
+                          <div className="border-b border-emerald-400/20 p-4">
+                            <div className="text-xs font-mono text-emerald-400 mb-1 tracking-wider">
+                              SELECT DEEPSEARCH TYPE
                             </div>
-                            <div className="h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
+                            <div className="h-px bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent" />
                           </div>
 
                           <div className="p-3 space-y-2">
-                            {/* Inventory Quantum */}
+                            {/* Only Materials */}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                console.log("🔍 Inventory Quantum clicked");
-                                setSmartSearchMode("materials");
-                                setShowSmartSearchDialog(false);
+                                setDeepsearchMode("materials");
+                                setShowDeepsearchDialog(false);
                                 handleSmartSearch();
                               }}
-                              className="
-                                group w-full p-3 rounded-lg transition-all duration-300
-                                border border-blue-400/20 bg-gradient-to-r from-blue-500/5 to-blue-600/5
-                                hover:border-blue-400/50 hover:bg-gradient-to-r hover:from-blue-500/15 hover:to-blue-600/15
-                                hover:shadow-lg hover:shadow-blue-400/20
-                              "
+                              className="group w-full p-3 rounded-lg transition-all duration-300 border border-blue-400/20 bg-gradient-to-r from-blue-500/5 to-blue-600/5 hover:border-blue-400/50 hover:bg-gradient-to-r hover:from-blue-500/15 hover:to-blue-600/15 hover:shadow-lg hover:shadow-blue-400/20"
                             >
                               <div className="flex items-center gap-3">
-                                {/* Icono Futurista */}
                                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-400/20 to-blue-600/20 border border-blue-400/30 flex items-center justify-center">
-                                  <div className="w-5 h-5 border-2 border-blue-400 rounded-sm relative">
-                                    <div className="absolute inset-1 border border-blue-400/50" />
-                                  </div>
+                                  <Package className="h-5 w-5 text-blue-400" />
                                 </div>
-
                                 <div className="flex-1 text-left">
                                   <div className="text-sm font-medium text-white group-hover:text-blue-400 transition-colors">
-                                    INVENTORY QUANTUM
+                                    ONLY MATERIALS
                                   </div>
                                   <div className="text-xs text-slate-400 font-mono">
-                                    Materials matrix with pricing vectors
+                                    Search materials database only
                                   </div>
                                 </div>
-
-                                {/* Flecha animada */}
-                                <div className="text-blue-400 group-hover:translate-x-1 transition-transform">
-                                  <ChevronRight className="h-4 w-4" />
-                                </div>
+                                <ChevronRight className="h-4 w-4 text-blue-400 group-hover:translate-x-1 transition-transform" />
                               </div>
                             </button>
 
-                            {/* Labor DeepSearch */}
+                            {/* Labor Costs */}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                console.log("🔧 Labor DeepSearch clicked");
-                                setSmartSearchMode("labor");
-                                setShowSmartSearchDialog(false);
+                                setDeepsearchMode("labor");
+                                setShowDeepsearchDialog(false);
                                 handleSmartSearch();
                               }}
-                              className="
-                                group w-full p-3 rounded-lg transition-all duration-300
-                                border border-orange-400/20 bg-gradient-to-r from-orange-500/5 to-amber-600/5
-                                hover:border-orange-400/50 hover:bg-gradient-to-r hover:from-orange-500/15 hover:to-amber-600/15
-                                hover:shadow-lg hover:shadow-orange-400/20
-                              "
+                              className="group w-full p-3 rounded-lg transition-all duration-300 border border-orange-400/20 bg-gradient-to-r from-orange-500/5 to-amber-600/5 hover:border-orange-400/50 hover:bg-gradient-to-r hover:from-orange-500/15 hover:to-amber-600/15 hover:shadow-lg hover:shadow-orange-400/20"
                             >
                               <div className="flex items-center gap-3">
-                                {/* Icono Futurista */}
                                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-400/20 to-amber-600/20 border border-orange-400/30 flex items-center justify-center">
-                                  <div className="relative">
-                                    <Wrench className="h-5 w-5 text-orange-400" />
-                                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-orange-400 rounded-full animate-pulse" />
-                                  </div>
+                                  <Wrench className="h-5 w-5 text-orange-400" />
                                 </div>
-
                                 <div className="flex-1 text-left">
                                   <div className="text-sm font-medium text-white group-hover:text-orange-400 transition-colors">
-                                    LABOR DEEPSEARCH
+                                    LABOR COSTS
                                   </div>
                                   <div className="text-xs text-slate-400 font-mono">
-                                    Service algorithms & workforce optimization
+                                    Generate labor service items
                                   </div>
                                 </div>
-
-                                {/* Flecha animada */}
-                                <div className="text-orange-400 group-hover:translate-x-1 transition-transform">
-                                  <ChevronRight className="h-4 w-4" />
-                                </div>
+                                <ChevronRight className="h-4 w-4 text-orange-400 group-hover:translate-x-1 transition-transform" />
                               </div>
                             </button>
 
-                            {/* Project Synapse - Recomendado */}
+                            {/* Full Costs - Recommended */}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                console.log("🚀 Project Synapse clicked");
-                                setSmartSearchMode("both");
-                                setShowSmartSearchDialog(false);
+                                setDeepsearchMode("full");
+                                setShowDeepsearchDialog(false);
                                 handleSmartSearch();
                               }}
-                              className="
-                                group w-full p-3 rounded-lg transition-all duration-300
-                                border border-green-400/40 bg-gradient-to-r from-green-500/10 to-emerald-600/10
-                                hover:border-green-400/70 hover:bg-gradient-to-r hover:from-green-500/20 hover:to-emerald-600/20
-                                hover:shadow-lg hover:shadow-green-400/25
-                                ring-1 ring-green-400/20
-                              "
+                              className="group w-full p-3 rounded-lg transition-all duration-300 border border-emerald-400/40 bg-gradient-to-r from-emerald-500/10 to-green-600/10 hover:border-emerald-400/70 hover:bg-gradient-to-r hover:from-emerald-500/20 hover:to-green-600/20 hover:shadow-lg hover:shadow-emerald-400/25 ring-1 ring-emerald-400/20"
                             >
                               <div className="flex items-center gap-3">
-                                {/* Icono Futurista con efecto especial */}
-                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-400/20 to-emerald-600/20 border border-green-400/40 flex items-center justify-center relative">
-                                  <div className="relative">
-                                    <div className="w-5 h-5 rounded-full border-2 border-green-400 relative">
-                                      <div className="absolute inset-1 rounded-full bg-green-400/30" />
-                                      <div className="absolute inset-2 rounded-full bg-green-400 animate-pulse" />
-                                    </div>
+                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-400/20 to-green-600/20 border border-emerald-400/40 flex items-center justify-center">
+                                  <div className="w-5 h-5 rounded-full border-2 border-emerald-400 relative">
+                                    <div className="absolute inset-1 rounded-full bg-emerald-400/30" />
+                                    <div className="absolute inset-2 rounded-full bg-emerald-400 animate-pulse" />
                                   </div>
                                 </div>
-
                                 <div className="flex-1 text-left">
                                   <div className="flex items-center gap-2">
-                                    <div className="text-sm font-medium text-white group-hover:text-green-400 transition-colors">
-                                      PROJECT SYNAPSE
+                                    <div className="text-sm font-medium text-white group-hover:text-emerald-400 transition-colors">
+                                      FULL COSTS
                                     </div>
-                                    <div className="px-2 py-0.5 bg-green-400/20 border border-green-400/40 rounded text-xs text-green-400 font-mono">
-                                      OPTIMAL
+                                    <div className="px-2 py-0.5 bg-emerald-400/20 border border-emerald-400/40 rounded text-xs text-emerald-400 font-mono">
+                                      RECOMMENDED
                                     </div>
                                   </div>
                                   <div className="text-xs text-slate-400 font-mono">
-                                    Complete neural network analysis
+                                    Materials + labor complete analysis
                                   </div>
                                 </div>
-
-                                {/* Flecha animada con brillo */}
-                                <div className="text-green-400 group-hover:translate-x-1 transition-transform">
-                                  <ChevronRight className="h-4 w-4" />
-                                </div>
+                                <ChevronRight className="h-4 w-4 text-emerald-400 group-hover:translate-x-1 transition-transform" />
                               </div>
                             </button>
                           </div>
 
-                          {/* Footer con línea neon */}
-                          <div className="border-t border-cyan-400/20 p-2">
-                            <div className="h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent" />
+                          {/* Footer */}
+                          <div className="border-t border-emerald-400/20 p-2">
+                            <div className="h-px bg-gradient-to-r from-transparent via-emerald-400/40 to-transparent" />
                           </div>
                         </div>
                       </div>
                     )}
 
                     {/* Overlay para cerrar el dropdown */}
-                    {showSmartSearchDialog && !isAIProcessing && (
+                    {showDeepsearchDialog && !isAIProcessing && (
                       <div
                         className="fixed inset-0 z-20"
-                        onClick={() => setShowSmartSearchDialog(false)}
+                        onClick={() => setShowDeepsearchDialog(false)}
                       />
                     )}
                   </div>
