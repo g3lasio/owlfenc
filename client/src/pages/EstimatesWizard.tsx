@@ -3090,7 +3090,13 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         disabled:opacity-50 disabled:cursor-not-allowed
                         group z-40
                       `}
-                      onClick={() => setShowNewDeepsearchDialog(prev => !prev)}
+                      onClick={() => {
+                        console.log("🔍 MATERIALS AI SEARCH clicked - current state:", showNewDeepsearchDialog);
+                        setShowNewDeepsearchDialog(prev => {
+                          console.log("🔍 Setting new state from", prev, "to", !prev);
+                          return !prev;
+                        });
+                      }}
                     >
                       <div className="absolute inset-0 bg-gradient-to-r from-purple-400/10 via-purple-400/5 to-purple-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
@@ -3116,16 +3122,18 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       </div>
                     </button>
 
-                    {/* Dropdown del nuevo botón independiente */}
+                    {/* Dropdown del nuevo botón independiente - VERSIÓN DEBUGGING */}
                     {showNewDeepsearchDialog && !isAIProcessing && (
-                      <div className="absolute top-full mt-2 left-0 right-0 sm:left-0 sm:right-auto z-[70] sm:min-w-[300px]">
-                        <div className="bg-gradient-to-b from-purple-900/95 via-purple-800/98 to-purple-900/95 backdrop-blur-xl border border-purple-400/30 rounded-xl shadow-2xl shadow-purple-400/10 overflow-hidden">
+                      <div className="absolute top-full mt-2 left-0 w-80 z-[999] bg-red-500 border-4 border-yellow-400 p-4">
+                        <div className="text-white text-lg font-bold">
+                          DEBUG: DROPDOWN IS VISIBLE - State: {showNewDeepsearchDialog ? 'TRUE' : 'FALSE'}
+                        </div>
+                        <div className="bg-purple-900 border border-purple-400 rounded-lg p-4 mt-2">
                           {/* Header */}
-                          <div className="border-b border-purple-400/20 p-4">
+                          <div className="border-b border-purple-400/20 p-2">
                             <div className="text-xs font-mono text-purple-400 mb-1 tracking-wider">
                               SELECT AI SEARCH TYPE
                             </div>
-                            <div className="h-px bg-gradient-to-r from-transparent via-purple-400/60 to-transparent" />
                           </div>
 
                           <div className="p-3 space-y-2">
