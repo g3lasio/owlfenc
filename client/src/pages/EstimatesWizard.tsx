@@ -3120,7 +3120,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         projectDetails: e.target.value,
                       }))
                     }
-                    className="min-h-[120px] text-sm"
+                    className="min-h-[120px] max-h-[300px] text-sm resize-none overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100"
                   />
                 </div>
                 
