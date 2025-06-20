@@ -1490,8 +1490,8 @@ export default function EstimatesWizardFixed() {
         companyZip: profile?.zipCode || "",
         companyPhone: profile?.phone || "",
         companyEmail: profile?.email || currentUser?.email || "",
-        companyLicense: profile?.licenseNumber || "",
-        companyLogo: profile?.logoUrl || "/owl-logo.png",
+        companyLicense: profile?.license || "",
+        companyLogo: profile?.logo || null,
       };
 
       const estimateData = {

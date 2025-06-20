@@ -25,7 +25,7 @@ export interface EstimateData {
     zipCode: string;
     license?: string;
     insurancePolicy?: string;
-    logo?: string;
+    logo?: string | null;
     website?: string;
   };
   project: {
