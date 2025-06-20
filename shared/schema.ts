@@ -191,6 +191,39 @@ export const propertySearchHistory = pgTable('property_search_history', {
   searchDate: timestamp('search_date').defaultNow().notNull(),
 });
 
+// Smart Material Lists Cache - Para almacenar listas generadas por DeepSearch
+export const smartMaterialLists = pgTable('smart_material_lists', {
+  id: text('id').primaryKey(),
+  projectType: varchar('project_type', { length: 100 }).notNull(),
+  projectDescription: text('project_description').notNull(),
+  region: varchar('region', { length: 100 }).notNull(),
+  materialsList: jsonb('materials_list').notNull(),
+  laborCosts: jsonb('labor_costs'),
+  additionalCosts: jsonb('additional_costs'),
+  totalMaterialsCost: decimal('total_materials_cost', { precision: 10, scale: 2 }),
+  totalLaborCost: decimal('total_labor_cost', { precision: 10, scale: 2 }),
+  totalAdditionalCost: decimal('total_additional_cost', { precision: 10, scale: 2 }),
+  grandTotal: decimal('grand_total', { precision: 10, scale: 2 }),
+  confidence: decimal('confidence', { precision: 3, scale: 2 }),
+  usageCount: integer('usage_count').notNull().default(1),
+  lastUsed: timestamp('last_used').defaultNow().notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Project Templates Cache - Para patrones de proyectos comunes
+export const projectTemplates = pgTable('project_templates', {
+  id: text('id').primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
+  projectType: varchar('project_type', { length: 100 }).notNull(),
+  description: text('description'),
+  templateData: jsonb('template_data').notNull(),
+  isActive: boolean('is_active').notNull().default(true),
+  usageCount: integer('usage_count').notNull().default(0),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
 // Contracts table for generated contracts
 export const contracts = pgTable('contracts', {
   id: serial('id').primaryKey(),
@@ -378,6 +411,12 @@ export type ProjectPayment = typeof projectPayments.$inferSelect;
 export type InsertProjectPayment = z.infer<typeof insertProjectPaymentSchema>;
 export type Material = typeof materials.$inferSelect;
 export type InsertMaterial = z.infer<typeof insertMaterialSchema>;
+
+export type SmartMaterialList = typeof smartMaterialLists.$inferSelect;
+export type InsertSmartMaterialList = typeof smartMaterialLists.$inferInsert;
+
+export type ProjectTemplate = typeof projectTemplates.$inferSelect;
+export type InsertProjectTemplate = typeof projectTemplates.$inferInsert;
 export type PromptTemplate = typeof promptTemplates.$inferSelect;
 export type InsertPromptTemplate = z.infer<typeof insertPromptTemplateSchema>;
 export type PermitSearchHistory = typeof permitSearchHistory.$inferSelect;

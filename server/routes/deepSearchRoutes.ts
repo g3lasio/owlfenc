@@ -8,6 +8,7 @@
 import { Express, Request, Response } from 'express';
 import { z } from 'zod';
 import { deepSearchService } from '../services/deepSearchService';
+import { smartMaterialCacheService } from '../services/smartMaterialCacheService';
 
 // Esquemas de validación
 const ProjectAnalysisSchema = z.object({

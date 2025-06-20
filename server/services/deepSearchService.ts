@@ -12,6 +12,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import { smartMaterialCacheService } from './smartMaterialCacheService';
 
 // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
 const anthropic = new Anthropic({
@@ -67,11 +68,37 @@ export class DeepSearchService {
 
   /**
    * Analiza una descripción de proyecto y genera una lista completa de materiales
+   * Ahora con sistema inteligente de cache y reutilización
    */
   async analyzeProject(projectDescription: string, location?: string): Promise<DeepSearchResult> {
     try {
       console.log('🔍 DeepSearch: Analizando proyecto...', { projectDescription, location });
 
+      // 1. BUSCAR EN CACHE PRIMERO - Verificar existencia previa
+      const projectType = this.extractProjectType(projectDescription);
+      const region = location || 'default';
+
+      const cacheResult = await smartMaterialCacheService.searchExistingMaterials({
+        projectType,
+        region,
+        description: projectDescription,
+        similarityThreshold: 0.75
+      });
+
+      if (cacheResult.found && cacheResult.data) {
+        console.log(`✅ DeepSearch: Reutilizando datos existentes (${cacheResult.source})`);
+        
+        // Aplicar adaptaciones si es necesario
+        if (cacheResult.adaptationNeeded) {
+          return await this.adaptExistingMaterials(cacheResult.data, projectDescription, location);
+        }
+        
+        return cacheResult.data;
+      }
+
+      // 2. GENERAR NUEVA LISTA - Solo si no existe previamente
+      console.log('🤖 DeepSearch: Generando nueva lista con IA...');
+      
       // Generar el prompt estructurado para Claude
       const analysisPrompt = this.buildAnalysisPrompt(projectDescription, location);
 
@@ -103,6 +130,14 @@ export class DeepSearchService {
         materialCount: enrichedResult.materials.length,
         totalCost: enrichedResult.grandTotal 
       });
+
+      // 3. GUARDAR EN CACHE - Para reutilización futura
+      await smartMaterialCacheService.saveMaterialsList(
+        projectType,
+        projectDescription,
+        region,
+        enrichedResult
+      );
 
       return enrichedResult;
 
@@ -369,6 +404,72 @@ ALL TEXT MUST BE IN ENGLISH ONLY.
       supplier: material.supplier,
       specifications: material.specifications
     }));
+  }
+
+  /**
+   * Extrae el tipo de proyecto de la descripción
+   */
+  private extractProjectType(description: string): string {
+    const text = description.toLowerCase();
+    
+    const projectTypes = [
+      { keywords: ['fence', 'fencing', 'chain link', 'privacy fence'], type: 'fencing' },
+      { keywords: ['roof', 'roofing', 'shingle', 'tile'], type: 'roofing' },
+      { keywords: ['deck', 'decking', 'patio', 'deck board'], type: 'decking' },
+      { keywords: ['floor', 'flooring', 'hardwood', 'laminate'], type: 'flooring' },
+      { keywords: ['siding', 'exterior wall', 'vinyl siding'], type: 'siding' },
+      { keywords: ['drywall', 'sheetrock', 'interior wall'], type: 'drywall' },
+      { keywords: ['paint', 'painting', 'primer'], type: 'painting' }
+    ];
+
+    for (const project of projectTypes) {
+      if (project.keywords.some(keyword => text.includes(keyword))) {
+        return project.type;
+      }
+    }
+
+    return 'general_construction';
+  }
+
+  /**
+   * Adapta materiales existentes para un nuevo proyecto similar
+   */
+  private async adaptExistingMaterials(
+    existingResult: DeepSearchResult, 
+    newDescription: string, 
+    location?: string
+  ): Promise<DeepSearchResult> {
+    try {
+      console.log('🔄 DeepSearch: Adaptando materiales existentes...');
+
+      // Aplicar ajustes menores basados en diferencias
+      const adaptedResult = { ...existingResult };
+      
+      // Aplicar ajustes regionales si la ubicación es diferente
+      if (location) {
+        const regionalAdjusted = this.applyRegionalAdjustments(adaptedResult, location);
+        adaptedResult.materials = regionalAdjusted.materials;
+        adaptedResult.laborCosts = regionalAdjusted.laborCosts;
+      }
+
+      // Actualizar scope con nueva descripción
+      adaptedResult.projectScope = newDescription;
+      adaptedResult.recommendations.push('Lista adaptada de proyecto similar');
+      adaptedResult.confidence = Math.max(0.7, adaptedResult.confidence - 0.1);
+
+      // Recalcular totales
+      adaptedResult.totalMaterialsCost = adaptedResult.materials.reduce((sum, item) => sum + item.totalPrice, 0);
+      adaptedResult.totalLaborCost = adaptedResult.laborCosts.reduce((sum, item) => sum + item.total, 0);
+      adaptedResult.totalAdditionalCost = adaptedResult.additionalCosts.reduce((sum, item) => sum + item.cost, 0);
+      adaptedResult.grandTotal = adaptedResult.totalMaterialsCost + adaptedResult.totalLaborCost + adaptedResult.totalAdditionalCost;
+
+      return adaptedResult;
+
+    } catch (error) {
+      console.error('❌ Adaptation error:', error);
+      // Si falla la adaptación, usar datos originales
+      return existingResult;
+    }
   }
 }
 
