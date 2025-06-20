@@ -174,8 +174,9 @@ export default function EstimatesWizardFixed() {
   const [showPreview, setShowPreview] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
 
-  // Smart Search states
+  // Smart Search states with debug
   const [showSmartSearchDialog, setShowSmartSearchDialog] = useState(false);
+  const [debugDropdownState, setDebugDropdownState] = useState(false);
   const [smartSearchMode, setSmartSearchMode] = useState<
     "materials" | "labor" | "both"
   >("both");
@@ -536,12 +537,22 @@ export default function EstimatesWizardFixed() {
     loadContractorProfile();
   }, [currentUser]);
 
-  // Handle SMART SEARCH button functionality
+  // Handle SMART SEARCH button functionality with robust state management
   const handleSmartSearchToggle = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log("SMART SEARCH toggled");
-    setShowSmartSearchDialog(prev => !prev);
+    console.log("SMART SEARCH toggled - current state:", showSmartSearchDialog);
+    const newState = !showSmartSearchDialog;
+    console.log("Setting new state to:", newState);
+    
+    // Multiple state updates to ensure UI refresh
+    setShowSmartSearchDialog(newState);
+    setDebugDropdownState(newState);
+    
+    // Force component refresh with React batch update bypass
+    requestAnimationFrame(() => {
+      setShowSmartSearchDialog(newState);
+    });
   };
 
   // Check for edit parameter and load project data
@@ -3018,8 +3029,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       </div>
                     </button>
 
-                    {/* Dropdown Futurista Holográfico */}
-                    {showSmartSearchDialog && !isAIProcessing && (
+                    {/* Dropdown Futurista Holográfico - Multiple state checks for robustness */}
+                    {(showSmartSearchDialog || debugDropdownState) && !isAIProcessing && (
                       <div className="absolute top-full mt-2 left-0 right-0 sm:left-0 sm:right-auto z-[60] sm:min-w-[320px]">
                         {/* Panel Holográfico Principal */}
                         <div
@@ -3032,7 +3043,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                           {/* Header con línea neon */}
                           <div className="border-b border-cyan-400/20 p-4">
                             <div className="text-xs font-mono text-cyan-400 mb-1 tracking-wider">
-                              SELECT ANALYSIS TYPE
+                              SELECT ANALYSIS TYPE - State: {showSmartSearchDialog ? 'OPEN' : 'CLOSED'} | Debug: {debugDropdownState ? 'OPEN' : 'CLOSED'}
                             </div>
                             <div className="h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
                           </div>
