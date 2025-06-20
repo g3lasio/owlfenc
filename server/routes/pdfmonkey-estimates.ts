@@ -52,6 +52,14 @@ interface EstimateData {
  * Mapea los datos del estimado a los campos específicos del template PDFMonkey
  */
 async function mapEstimateDataToTemplate(data: EstimateData) {
+  console.log('🔍 [DEBUG-TEMPLATE-MAP] Datos recibidos para mapeo:', {
+    contractorCompanyName: data.contractorCompanyName,
+    contractorLogo: data.contractorLogo,
+    contractorPhone: data.contractorPhone,
+    contractorEmail: data.contractorEmail,
+    hasLogo: !!data.contractorLogo,
+    logoLength: data.contractorLogo?.length || 0
+  });
   console.log('🔍 [DEBUG-PDF] === INICIO DE MAPEO DE DATOS ===');
   console.log('🔍 [DEBUG-PDF] Data recibida:', {
     hasFirebaseUid: !!data.firebaseUid,

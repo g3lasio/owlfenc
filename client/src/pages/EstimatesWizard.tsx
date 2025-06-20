@@ -2706,9 +2706,16 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         notes: estimate.notes || "Estimado generado por Owl Fence",
       };
 
-      console.log("📤 Enviando datos a PDF Monkey:", estimateData);
+      console.log('🔍 [DEBUG-FRONTEND] Enviando datos al backend:', {
+        firebaseUid: estimateData.firebaseUid,
+        contractorCompanyName: estimateData.contractorCompanyName,
+        contractorLogo: estimateData.contractorLogo,
+        contractorEmail: estimateData.contractorEmail,
+        contractorPhone: estimateData.contractorPhone,
+        estimateDataKeys: Object.keys(estimateData)
+      });
 
-      const response = await fetch("/api/pdf-monkey/estimate-basic", {
+      const response = await fetch("/api/pdfmonkey-estimates/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(estimateData),
