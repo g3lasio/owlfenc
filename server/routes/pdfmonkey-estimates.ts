@@ -183,12 +183,13 @@ router.post('/generate', async (req, res) => {
       try {
         console.log('🔍 [PDFMonkey Estimates] Buscando usuario por Firebase UID:', estimateData.firebaseUid);
         
-        // Usar consulta directa a la base de datos como respaldo
-        const db = require('../db').db;
-        const [user] = await db.execute(
-          'SELECT * FROM users WHERE firebase_uid = $1',
-          [estimateData.firebaseUid]
-        );
+        // Usar Drizzle ORM para consultar usuario
+        const { db } = require('../db');
+        const { users } = require('../../shared/schema');
+        const { eq } = require('drizzle-orm');
+        
+        const result = await db.select().from(users).where(eq(users.firebaseUid, estimateData.firebaseUid));
+        const user = result[0];
         
         if (user) {
           console.log('✅ [PDFMonkey Estimates] Usuario encontrado:', user.company || user.email);
@@ -323,7 +324,7 @@ router.post('/generate', async (req, res) => {
     } catch (pdfMonkeyError) {
       console.log('⚠️ [PDFMonkey Estimates] PDFMonkey falló, activando fallback de Claude...');
       console.error('🐒 [PDFMonkey Estimates] Error:', pdfMonkeyError);
-      return await handleFallback(estimateData, res);
+      return await handleFallback(enrichedEstimateData, res);
     }
 
   } catch (error) {
