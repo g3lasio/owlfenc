@@ -536,30 +536,54 @@ export default function EstimatesWizardFixed() {
     loadContractorProfile();
   }, [currentUser]);
 
-  // Diagnostic function for SMART SEARCH button when in step 2
+  // Advanced diagnostic function for SMART SEARCH button
   useEffect(() => {
     if (currentStep === 2) {
       const diagnosticTimer = setTimeout(() => {
         const smartSearchButton = document.getElementById('smart-search-button');
         
-        console.log("🔍 SMART SEARCH Button Diagnostic (Step 2):");
+        console.log("🔍 SMART SEARCH Button Deep Diagnostic:");
         console.log("Button found:", smartSearchButton);
+        console.log("Current showSmartSearchDialog state:", showSmartSearchDialog);
         console.log("Current step:", currentStep);
-        console.log("Project details:", estimate.projectDetails);
-        console.log("Project details length:", estimate.projectDetails.trim().length);
         
         if (smartSearchButton) {
+          const rect = smartSearchButton.getBoundingClientRect();
           const styles = window.getComputedStyle(smartSearchButton);
-          console.log("Button styles:", {
-            display: styles.display,
-            visibility: styles.visibility,
-            opacity: styles.opacity,
-            pointerEvents: styles.pointerEvents,
-            zIndex: styles.zIndex,
-            disabled: (smartSearchButton as HTMLButtonElement).disabled
+          
+          // Check for overlapping elements
+          const elementAtCenter = document.elementFromPoint(
+            rect.left + rect.width / 2, 
+            rect.top + rect.height / 2
+          );
+          
+          console.log("Element at button center:", elementAtCenter);
+          console.log("Is button the top element?", elementAtCenter === smartSearchButton);
+          
+          // Check parent containers
+          let parent = smartSearchButton.parentElement;
+          let parentChain = [];
+          while (parent && parentChain.length < 5) {
+            const parentStyles = window.getComputedStyle(parent);
+            parentChain.push({
+              tagName: parent.tagName,
+              className: parent.className,
+              pointerEvents: parentStyles.pointerEvents,
+              overflow: parentStyles.overflow,
+              zIndex: parentStyles.zIndex
+            });
+            parent = parent.parentElement;
+          }
+          console.log("Parent chain:", parentChain);
+          
+          // Check for event listener conflicts
+          const events = ['click', 'mousedown', 'mouseup'];
+          events.forEach(eventType => {
+            const hasListener = smartSearchButton.onclick || 
+                               smartSearchButton.addEventListener;
+            console.log(`${eventType} listener present:`, hasListener);
           });
           
-          console.log("Button rect:", smartSearchButton.getBoundingClientRect());
         } else {
           console.log("❌ SMART SEARCH button not found in step 2");
         }
@@ -567,7 +591,7 @@ export default function EstimatesWizardFixed() {
 
       return () => clearTimeout(diagnosticTimer);
     }
-  }, [currentStep, estimate.projectDetails]);
+  }, [currentStep, showSmartSearchDialog]);
 
   // Check for edit parameter and load project data
   useEffect(() => {
@@ -3021,7 +3045,20 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         console.log("Button disabled?", e.currentTarget.disabled);
                         console.log("Project details:", estimate.projectDetails);
                         console.log("Project details length:", estimate.projectDetails.trim().length);
-                        setShowSmartSearchDialog(!showSmartSearchDialog);
+                        console.log("Event propagation stopped?", e.defaultPrevented);
+                        console.log("Event target:", e.target);
+                        console.log("Event currentTarget:", e.currentTarget);
+                        console.log("About to call setShowSmartSearchDialog...");
+                        console.log("Previous showSmartSearchDialog:", showSmartSearchDialog);
+                        const newValue = !showSmartSearchDialog;
+                        console.log("New value will be:", newValue);
+                        setShowSmartSearchDialog(newValue);
+                        console.log("setShowSmartSearchDialog called with:", newValue);
+                        
+                        // Test if state actually changes
+                        setTimeout(() => {
+                          console.log("State after 100ms:", showSmartSearchDialog);
+                        }, 100);
                       }}
                     >
                       {/* Efecto de luz de fondo */}
