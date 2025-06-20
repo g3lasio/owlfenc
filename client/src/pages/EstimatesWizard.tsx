@@ -26,7 +26,7 @@ const MaterialsAISearchButton = ({
 }) => {
   const [showDropdown, setShowDropdown] = useState(false);
 
-  const isDisabled = !projectDetails.trim() || projectDetails.length < 3 || isAIProcessing;
+  const isDisabled = !projectDetails?.trim() || (projectDetails?.length || 0) < 3 || isAIProcessing;
 
   return (
     <div className="relative">
