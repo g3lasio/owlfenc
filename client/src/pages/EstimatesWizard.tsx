@@ -546,9 +546,11 @@ export default function EstimatesWizardFixed() {
     setShowDeepsearchDialog(prev => !prev);
   };
 
-  // Nuevo handler para MATERIALS AI SEARCH - Completamente independiente
+  // Nuevo handler para MATERIALS AI SEARCH - Con debugging detallado
   const handleNewDeepsearch = async (searchType: "materials" | "labor" | "full") => {
+    console.log("🔍 NEW DEEPSEARCH - Starting with type:", searchType);
     const description = estimate.projectDetails.trim();
+    console.log("🔍 NEW DEEPSEARCH - Description:", description.substring(0, 100) + "...");
 
     if (!description || description.length < 3) {
       toast({
@@ -582,11 +584,14 @@ export default function EstimatesWizardFixed() {
           break;
       }
 
+      console.log("🔍 NEW DEEPSEARCH - Using endpoint:", endpoint);
+
       // Simular progreso
       const progressInterval = setInterval(() => {
         setAiProgress((prev) => Math.min(prev + Math.random() * 15, 85));
       }, 500);
 
+      console.log("🔍 NEW DEEPSEARCH - Making request to:", endpoint);
       const response = await fetch(endpoint, {
         method: "POST",
         headers: {
@@ -596,24 +601,59 @@ export default function EstimatesWizardFixed() {
       });
 
       clearInterval(progressInterval);
+      console.log("🔍 NEW DEEPSEARCH - Response status:", response.status);
+      console.log("🔍 NEW DEEPSEARCH - Response ok:", response.ok);
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error("🔍 NEW DEEPSEARCH - Response error:", errorText);
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
       }
 
       const data = await response.json();
+      console.log("🔍 NEW DEEPSEARCH - Response data:", data);
+      console.log("🔍 NEW DEEPSEARCH - Data.success:", data.success);
+      console.log("🔍 NEW DEEPSEARCH - Data.items:", data.items);
+      console.log("🔍 NEW DEEPSEARCH - Items length:", data.items?.length);
       
-      if (data.success && data.items && data.items.length > 0) {
-        const newItems = data.items.map((item: any) => ({
-          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-          materialId: item.id || Date.now().toString(),
-          name: item.name || item.material || "Unknown Item",
-          description: item.description || item.details || "",
-          quantity: item.quantity || 1,
-          price: item.price || item.unitPrice || 0,
-          unit: item.unit || "each",
-          total: (item.quantity || 1) * (item.price || item.unitPrice || 0),
-        }));
+      // Verificar diferentes estructuras de respuesta según el endpoint
+      let items = [];
+      
+      if (searchType === "materials" && data.materials) {
+        console.log("🔍 NEW DEEPSEARCH - Using data.materials:", data.materials);
+        items = data.materials;
+      } else if (searchType === "labor" && data.items) {
+        console.log("🔍 NEW DEEPSEARCH - Using data.items:", data.items);
+        items = data.items;
+      } else if (searchType === "full" && (data.materials || data.items)) {
+        console.log("🔍 NEW DEEPSEARCH - Combining materials and labor");
+        const materials = data.materials || [];
+        const laborItems = data.items || [];
+        items = [...materials, ...laborItems];
+        console.log("🔍 NEW DEEPSEARCH - Combined items:", items);
+      } else if (data.items) {
+        console.log("🔍 NEW DEEPSEARCH - Fallback to data.items:", data.items);
+        items = data.items;
+      }
+
+      console.log("🔍 NEW DEEPSEARCH - Final items to process:", items);
+      
+      if (items && items.length > 0) {
+        const newItems = items.map((item: any) => {
+          console.log("🔍 NEW DEEPSEARCH - Processing item:", item);
+          return {
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+            materialId: item.id || Date.now().toString(),
+            name: item.name || item.material || "Unknown Item",
+            description: item.description || item.details || "",
+            quantity: item.quantity || 1,
+            price: item.price || item.unitPrice || 0,
+            unit: item.unit || "each",
+            total: (item.quantity || 1) * (item.price || item.unitPrice || 0),
+          };
+        });
+
+        console.log("🔍 NEW DEEPSEARCH - New items created:", newItems);
 
         setEstimate((prev) => ({
           ...prev,
@@ -631,10 +671,11 @@ export default function EstimatesWizardFixed() {
         setShowMervinMessage(true);
         setTimeout(() => setShowMervinMessage(false), 3000);
       } else {
+        console.error("🔍 NEW DEEPSEARCH - No items found in response:", data);
         throw new Error("No items found in the response");
       }
     } catch (error) {
-      console.error("AI Search error:", error);
+      console.error("🔍 NEW DEEPSEARCH - Error details:", error);
       toast({
         title: "AI Search Failed",
         description: "Unable to process your request. Please try again or add materials manually.",
