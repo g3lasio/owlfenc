@@ -713,7 +713,7 @@ function Projects() {
           </div>
         ) : viewMode === "grid" ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredProjects.map((project) => (
+            {filteredProjects.map((project) => (
             <Card key={project.id} className="overflow-hidden">
               <CardHeader className="pb-2">
                 <div className="flex justify-between items-start">
@@ -812,10 +812,10 @@ function Projects() {
                 </div>
               </CardContent>
             </Card>
-        ))}
-        </div>
-      ) : (
-        <div className="overflow-x-auto border rounded-lg">
+            ))}
+          </div>
+        ) : (
+          <div className="overflow-x-auto border rounded-lg">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-muted">
               <tr>
@@ -903,7 +903,7 @@ function Projects() {
               ))}
             </tbody>
           </table>
-        </div>
+          </div>
         )}
       </div>
       
@@ -977,8 +977,9 @@ function Projects() {
                   </div>
                   
                   {/* Mobile Details Section */}
-                  <div className="cyber-container-mobile">
-                    <h3 className="text-cyan-300 font-semibold mb-3 flex items-center font-mono">
+                  <div className="bg-gray-800/40 border border-cyan-400/20 rounded-lg p-4 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent"></div>
+                    <h3 className="text-cyan-300 font-semibold mb-4 flex items-center font-mono">
                       <i className="ri-file-list-3-line mr-2"></i>
                       DETALLES DEL PROYECTO
                     </h3>
@@ -990,19 +991,24 @@ function Projects() {
                 </div>
 
                 {/* Desktop Layout: Two Columns */}
-                <div className="hidden lg:grid lg:grid-cols-2 gap-6 p-6">
+                <div className="hidden lg:grid lg:grid-cols-2 gap-6 p-6 h-full">
                   {/* Left Column - Progress & System Status */}
-                  <div className="space-y-6">
+                  <div className="space-y-6 overflow-auto">
                     {/* System Status */}
-                    <div className="cyber-container">
-                      <div className="cyber-header">
+                    <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg relative overflow-hidden shadow-[0_0_20px_rgba(6,182,212,0.1)]">
+                      <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-cyan-400"></div>
+                      <div className="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-cyan-400"></div>
+                      
+                      <div className="p-4 border-b border-cyan-400/20 bg-gradient-to-r from-gray-800/50 to-gray-900/50 relative">
+                        <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
                         <h3 className="text-cyan-300 font-semibold flex items-center font-mono">
                           <i className="ri-dashboard-3-line mr-2"></i>
                           ESTADO DEL SISTEMA
                         </h3>
                       </div>
+                      
                       <div className="p-4 space-y-3">
-                        <div className="cyber-stat-card">
+                        <div className="bg-gray-700/50 border border-cyan-400/20 rounded-md p-3 relative overflow-hidden hover:border-cyan-400/40 transition-colors">
                           <div className="flex items-center justify-between">
                             <div>
                               <div className="text-cyan-400 text-xs mb-1 font-mono">PROYECTO ID</div>
@@ -1012,7 +1018,17 @@ function Projects() {
                           </div>
                         </div>
                         
-                        <div className="cyber-stat-card">
+                        <div className="bg-gray-700/50 border border-cyan-400/20 rounded-md p-3 relative overflow-hidden hover:border-cyan-400/40 transition-colors">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-cyan-400 text-xs mb-1 font-mono">ESTADO ACTUAL</div>
+                              <div className="text-green-400 font-semibold">{getStatusLabel(selectedProject.status)}</div>
+                            </div>
+                            <i className="ri-checkbox-circle-line text-green-400 text-lg"></i>
+                          </div>
+                        </div>
+                        
+                        <div className="bg-gray-700/50 border border-cyan-400/20 rounded-md p-3 relative overflow-hidden hover:border-cyan-400/40 transition-colors">
                           <div className="flex items-center justify-between">
                             <div>
                               <div className="text-cyan-400 text-xs mb-1 font-mono">PRECIO TOTAL</div>
@@ -1029,13 +1045,18 @@ function Projects() {
                     </div>
 
                     {/* Progress Section */}
-                    <div className="cyber-container">
-                      <div className="cyber-header">
+                    <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg relative overflow-hidden shadow-[0_0_20px_rgba(6,182,212,0.1)]">
+                      <div className="absolute bottom-0 left-0 w-4 h-4 border-l-2 border-b-2 border-cyan-400"></div>
+                      <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-cyan-400"></div>
+                      
+                      <div className="p-4 border-b border-cyan-400/20 bg-gradient-to-r from-gray-800/50 to-gray-900/50 relative">
+                        <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
                         <h3 className="text-cyan-300 font-semibold flex items-center font-mono">
                           <i className="ri-route-line mr-2"></i>
                           PROGRESO DEL PROYECTO
                         </h3>
                       </div>
+                      
                       <div className="p-4">
                         <ProjectProgress 
                           projectId={selectedProject.id} 
@@ -1047,14 +1068,21 @@ function Projects() {
                   </div>
 
                   {/* Right Column - Project Details */}
-                  <div className="cyber-container">
-                    <div className="cyber-header">
+                  <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg relative overflow-hidden shadow-[0_0_20px_rgba(6,182,212,0.1)]">
+                    <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-cyan-400"></div>
+                    <div className="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-cyan-400"></div>
+                    <div className="absolute bottom-0 left-0 w-4 h-4 border-l-2 border-b-2 border-cyan-400"></div>
+                    <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-cyan-400"></div>
+                    
+                    <div className="p-4 border-b border-cyan-400/20 bg-gradient-to-r from-gray-800/50 to-gray-900/50 relative">
+                      <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
                       <h3 className="text-cyan-300 font-semibold flex items-center font-mono">
                         <i className="ri-file-list-3-line mr-2"></i>
                         DETALLES DEL PROYECTO
                       </h3>
                     </div>
-                    <div className="p-4">
+                    
+                    <div className="p-4 overflow-auto">
                       <ProjectDetails 
                         project={selectedProject} 
                         onUpdate={handleProjectUpdate} 
