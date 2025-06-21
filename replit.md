@@ -210,6 +210,13 @@ Changelog:
   * System now searches globally first before generating new lists with AI
   * Each contractor contribution benefits the entire global community
   * Added performance tracking with usage analytics and confidence scoring
+- June 21, 2025. Fixed PDF contractor data showing "Company Name" placeholder:
+  * Identified root cause: EstimatesWizard had two different PDF generation functions
+  * Corrected handleDownload function to use proper /api/pdfmonkey-estimates/generate endpoint
+  * Updated data mapping to use real contractor profile information from database
+  * Eliminated hardcoded fallback "Company Name" text in PDF generation
+  * PDFs now display authentic contractor company names and logos from user profiles
+  * Preserved all existing functionality while fixing data accuracy issue
 ```
 
 ## User Preferences
