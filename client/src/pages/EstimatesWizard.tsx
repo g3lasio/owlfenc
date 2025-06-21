@@ -519,7 +519,7 @@ export default function EstimatesWizardFixed() {
     sendCopy: true,
   });
   const [editableCompany, setEditableCompany] = useState({
-    companyName: "",
+    company: "",
     address: "",
     city: "",
     state: "",
@@ -803,7 +803,7 @@ export default function EstimatesWizardFixed() {
   useEffect(() => {
     if (contractor) {
       setEditableCompany({
-        companyName: contractor.companyName || contractor.name || "",
+        company: contractor.company || contractor.name || "",
         address: contractor.address || "",
         city: contractor.city || "",
         state: contractor.state || "",
@@ -1483,7 +1483,7 @@ export default function EstimatesWizardFixed() {
 
       // Get contractor data from profile
       const contractorData = {
-        companyName: profile?.companyName || "Your Company",
+        company: profile?.company || "Your Company",
         companyAddress: profile?.address || "",
         companyCity: profile?.city || "",
         companyState: profile?.state || "",
@@ -1519,7 +1519,7 @@ export default function EstimatesWizardFixed() {
         clientZipCode: estimate.client.zipCode || "",
 
         // Complete contractor information
-        contractorCompanyName: contractorData.companyName,
+        contractorCompanyName: contractorData.company,
         contractorAddress: contractorData.companyAddress,
         contractorCity: contractorData.companyCity,
         contractorState: contractorData.companyState,
@@ -2068,7 +2068,7 @@ export default function EstimatesWizardFixed() {
         <!-- Footer -->
         <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #e5e7eb; text-align: center; color: #666; font-size: 0.9em;">
           <p style="margin: 10px 0;"><strong>This estimate is valid for 30 days from the date shown above.</strong></p>
-          <p style="margin: 10px 0;">Thank you for considering ${profile?.companyName || "our company"} for your project!</p>
+          <p style="margin: 10px 0;">Thank you for considering ${profile?.company || "our company"} for your project!</p>
           ${profile?.insurancePolicy ? `<p style="margin: 5px 0;">Fully Insured - Policy #: ${profile.insurancePolicy}</p>` : ""}
         </div>
       </div>
@@ -2168,7 +2168,7 @@ export default function EstimatesWizardFixed() {
 
         // ===== CONTRACT INFORMATION - Información del contratista =====
         contractInformation: {
-          companyName: contractorInfo.companyName || "Owl Fence",
+          companyName: contractorInfo.company || "Owl Fence",
           companyAddress: contractorInfo.address || "",
           companyCity: contractorInfo.city || "",
           companyState: contractorInfo.state || "",
@@ -2257,7 +2257,7 @@ export default function EstimatesWizardFixed() {
         clientName: estimate.client.name || "",
         clientEmail: estimate.client.email || "",
         clientPhone: estimate.client.phone || "",
-        contractorCompanyName: contractorInfo.companyName || "Owl Fence",
+        contractorCompanyName: contractorInfo.company || "Owl Fence",
         subtotal: Math.round(estimate.subtotal * 100),
         total: Math.round(estimate.total * 100),
         items: estimate.items.map((item, index) => ({
@@ -2401,7 +2401,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       return;
     }
 
-    if (!profile?.email || !profile?.companyName) {
+    if (!profile?.email || !profile?.company) {
       toast({
         title: "Profile Required",
         description:
@@ -2444,8 +2444,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           phone: estimate.client.phone,
         },
         contractor: {
-          companyName: profile.companyName,
-          name: profile.displayName || profile.companyName,
+          companyName: profile.company,
+          name: profile.displayName || profile.company,
           email: profile.email,
           phone: profile.phone || "No especificado",
           address: profile.address || "No especificada",
@@ -2499,8 +2499,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           clientEmail: emailData.toEmail,
           clientName: estimate.client.name,
           contractorEmail: profile.email,
-          contractorName: profile.displayName || profile.companyName,
-          contractorCompany: profile.companyName,
+          contractorName: profile.displayName || profile.company,
+          contractorCompany: profile.company,
           estimateData: estimateData,
           customMessage: emailData.message,
           sendCopy: true,
@@ -3983,7 +3983,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                             <div className="mb-3">
                               <img
                                 src={profile.logo}
-                                alt={`${profile.companyName || profile.company || "Company"} Logo`}
+                                alt={`${profile.company || "Company"} Logo`}
                                 className="h-12 w-auto max-w-24 object-contain bg-white rounded p-1 border border-gray-600"
                                 onError={(e) => {
                                   console.warn(
