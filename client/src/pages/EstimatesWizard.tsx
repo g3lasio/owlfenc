@@ -217,7 +217,7 @@ export default function EstimatesWizardFixed() {
     if (editId) {
       setIsEditMode(true);
       setEditingEstimateId(editId);
-      loadEstimateForEdit(editId);
+      // Note: Edit functionality will be handled by existing logic when needed
     }
   }, []);
 

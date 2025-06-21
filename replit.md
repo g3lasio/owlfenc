@@ -275,6 +275,13 @@ Changelog:
   * Added project status update functionality with real Firebase integration
   * Enhanced all buttons with proper hover states and working click handlers
   * Integrated toast notifications for user feedback on all interactions
+- June 21, 2025. Fixed estimate edit functionality to match Projects page exactly:
+  * Copied exact handleEditEstimate function from Projects.tsx: window.location.href = `/estimates?edit=${projectId}`
+  * Removed complex loadEstimateForEdit function that caused cost calculation errors
+  * Eliminated automatic cents-to-dollars conversion that was altering original amounts
+  * Fixed "loadEstimateForEdit is not defined" error in useEffect
+  * Edit button now redirects directly without modifying data, preserving original costs
+  * System now properly loads estimates with authentic client data and correct cost calculations
 ```
 
 ## User Preferences
