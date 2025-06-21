@@ -488,6 +488,28 @@ function generateInvoicePdfWithJsPDF(estimateData: any, contractorData: any): js
     pdf.text(`Website: ${contractorData.website}`, 20, 56);
   }
   
+  // LOGO SECTION - Center
+  if (contractorData?.logo) {
+    try {
+      // Add logo image in center (Base64 format)
+      pdf.addImage(contractorData.logo, 'JPEG', 90, 25, 30, 25);
+    } catch (error) {
+      console.warn('Could not add logo to PDF:', error);
+      // Fallback text if logo fails
+      pdf.setFontSize(10);
+      pdf.setTextColor(0, 255, 255);
+      pdf.text('[LOGO]', 105, 40, { align: 'center' });
+    }
+  } else {
+    // Placeholder for logo
+    pdf.setDrawColor(0, 255, 255);
+    pdf.setLineWidth(1);
+    pdf.rect(90, 25, 30, 25);
+    pdf.setFontSize(8);
+    pdf.setTextColor(0, 255, 255);
+    pdf.text('LOGO', 105, 40, { align: 'center' });
+  }
+  
   // INVOICE Title - Right side with cyan accent
   pdf.setFontSize(28);
   pdf.setFont('helvetica', 'bold');
@@ -611,32 +633,47 @@ function generateInvoicePdfWithJsPDF(estimateData: any, contractorData: any): js
     yPos += rowHeight;
   });
   
-  // SUMMARY SECTION - Elegant totals
+  // SUMMARY SECTION - Elegant totals with correct calculations
   yPos += 10;
   const summaryStartX = 130;
   
-  // Summary box with cyan border
+  // Calculate totals properly
+  const subtotal = estimateData.subtotal || estimateData.total || 0;
+  const taxRate = estimateData.taxRate || 0;
+  const discountAmount = estimateData.discountAmount || 0;
+  const tax = estimateData.tax || (subtotal * taxRate / 100);
+  const finalTotal = subtotal + tax - discountAmount;
+  
+  // Summary box with cyan border - make it taller for all fields
   pdf.setDrawColor(0, 255, 255);
   pdf.setLineWidth(1);
-  pdf.rect(summaryStartX, yPos - 5, 60, 25);
+  pdf.rect(summaryStartX, yPos - 5, 60, 35);
   
   pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
-  const total = estimateData.total || 0;
   
+  // Subtotal
   pdf.text('Subtotal:', summaryStartX + 5, yPos);
-  pdf.text(`$${total.toFixed(2)}`, summaryStartX + 45, yPos);
+  pdf.text(`$${subtotal.toFixed(2)}`, summaryStartX + 45, yPos);
   yPos += 6;
   
-  pdf.text('Tax:', summaryStartX + 5, yPos);
-  pdf.text('$0.00', summaryStartX + 45, yPos);
+  // Discounts (if any)
+  if (discountAmount > 0) {
+    pdf.text('Discounts:', summaryStartX + 5, yPos);
+    pdf.text(`-$${discountAmount.toFixed(2)}`, summaryStartX + 40, yPos);
+    yPos += 6;
+  }
+  
+  // Tax
+  pdf.text(`Tax (${taxRate}%):`, summaryStartX + 5, yPos);
+  pdf.text(`$${tax.toFixed(2)}`, summaryStartX + 45, yPos);
   yPos += 8;
   
   // Total with emphasis
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(11);
   pdf.text('TOTAL:', summaryStartX + 5, yPos);
-  pdf.text(`$${total.toFixed(2)}`, summaryStartX + 35, yPos);
+  pdf.text(`$${finalTotal.toFixed(2)}`, summaryStartX + 30, yPos);
   
   // THANK YOU SECTION - Cyberpunk style
   yPos += 25;
@@ -668,20 +705,68 @@ function generateInvoicePdfWithJsPDF(estimateData: any, contractorData: any): js
   pdf.setTextColor(0, 255, 255);
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(8);
-  const thankYouText1 = 'We sincerely appreciate your business and the trust you have placed in us.';
-  const thankYouText2 = 'It is our privilege to serve you, and we look forward to future collaboration.';
+  const thankYouText1 = 'Thank you for your trust in our services. We are committed to delivering excellence';
+  const thankYouText2 = 'and look forward to partnering on future projects.';
   
   pdf.text(thankYouText1, 105, yPos + 8, { align: 'center' });
   pdf.text(thankYouText2, 105, yPos + 14, { align: 'center' });
   
-  // TERMS AND CONDITIONS
-  yPos += 35;
+  // NOTES & LEGAL CLAUSES SECTION
+  yPos += 30;
+  pdf.setFontSize(11);
+  pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(0, 0, 0);
-  pdf.setFont('helvetica', 'normal');
+  pdf.text('Notes & Legal Clauses', 20, yPos);
+  
+  // Notes underline with cyan
+  pdf.setDrawColor(0, 255, 255);
+  pdf.setLineWidth(1);
+  pdf.line(20, yPos + 2, 85, yPos + 2);
+  
+  yPos += 8;
   pdf.setFontSize(7);
-  pdf.text('Payment Terms: Payment is due within 30 days of invoice date.', 20, yPos);
-  pdf.text('Late payments may be subject to interest charges.', 20, yPos + 4);
-  pdf.text('This invoice constitutes a binding fiscal instrument evidencing the obligation of payment.', 20, yPos + 8);
+  pdf.setFont('helvetica', 'normal');
+  
+  // Legal clauses as bullet points
+  const legalClauses = [
+    '• This invoice is a legal document evidencing the obligation of payment.',
+    '• Late fees of 1.5% monthly apply to overdue balances.',
+    '• Disputes must be notified in writing within 5 days.',
+    '• Governing law: jurisdiction of the Contractor.'
+  ];
+  
+  legalClauses.forEach((clause) => {
+    pdf.text(clause, 22, yPos);
+    yPos += 5;
+  });
+  
+  // TERMS & CONDITIONS SECTION
+  yPos += 5;
+  pdf.setFontSize(11);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('Terms & Conditions', 20, yPos);
+  
+  // Terms underline with cyan
+  pdf.setDrawColor(0, 255, 255);
+  pdf.setLineWidth(1);
+  pdf.line(20, yPos + 2, 75, yPos + 2);
+  
+  yPos += 8;
+  pdf.setFontSize(7);
+  pdf.setFont('helvetica', 'normal');
+  
+  // Terms as bullet points
+  const terms = [
+    '• Payment due within 30 days of invoice date; failure permits suspension of services.',
+    '• Contractor retains security interest in materials until full payment.',
+    '• Client inspection period: 10 days post-completion, services deemed accepted after.',
+    '• Modifications require written agreement by both parties.'
+  ];
+  
+  terms.forEach((term) => {
+    pdf.text(term, 22, yPos);
+    yPos += 5;
+  });
   
   // FOOTER - Estilo cyberpunk elegante
   const footerY = 275;

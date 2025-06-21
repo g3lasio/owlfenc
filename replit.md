@@ -282,6 +282,10 @@ Changelog:
   * Added professional corner decorations and structured layout matching HTML template
   * Maintained legal document standards while incorporating modern visual design elements
   * Fixed PDF generation logic to ensure consistent PDF output without HTML fallback corruption
+  * Integrated contractor logo display in center of header section
+  * Corrected total calculations to include proper tax rates, discounts, and final amounts
+  * Added comprehensive Notes & Legal Clauses and Terms & Conditions sections
+  * Enhanced thank you message to match user's professional template content
 ```
 
 ## User Preferences
