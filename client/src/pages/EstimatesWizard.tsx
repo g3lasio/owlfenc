@@ -140,6 +140,8 @@ export default function EstimatesWizardFixed() {
   console.log(currentUser);
 
   const [currentStep, setCurrentStep] = useState(0);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingEstimateId, setEditingEstimateId] = useState<string | null>(null);
   const [estimate, setEstimate] = useState<EstimateData>({
     client: null,
     items: [],
@@ -206,6 +208,18 @@ export default function EstimatesWizardFixed() {
   const [savedEstimates, setSavedEstimates] = useState<any[]>([]);
   const [isLoadingEstimates, setIsLoadingEstimates] = useState(false);
   const [showCompanyEditDialog, setShowCompanyEditDialog] = useState(false);
+
+  // Check for edit mode on component mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const editId = urlParams.get('edit');
+    
+    if (editId) {
+      setIsEditMode(true);
+      setEditingEstimateId(editId);
+      loadEstimateForEdit(editId);
+    }
+  }, []);
 
   // Email dialog states
   const [showEmailDialog, setShowEmailDialog] = useState(false);
@@ -941,6 +955,7 @@ export default function EstimatesWizardFixed() {
               projectType: data.projectType || "fence",
               projectId: doc.id,
               pdfUrl: data.pdfUrl || null,
+              originalData: data, // Store original data for editing
             };
           });
 
@@ -980,6 +995,7 @@ export default function EstimatesWizardFixed() {
             projectType: data.projectType || data.fenceType || "fence",
             projectId: data.projectId || doc.id,
             pdfUrl: data.pdfUrl || null,
+            originalData: data, // Store original data for editing
           };
         });
 
@@ -1030,6 +1046,155 @@ export default function EstimatesWizardFixed() {
       });
     } finally {
       setIsLoadingEstimates(false);
+    }
+  }
+
+  // Function to load a specific estimate for editing
+  const loadEstimateForEdit = async (estimateId: string) => {
+    if (!currentUser?.uid) return;
+
+    try {
+      console.log(`🔄 Cargando estimado para editar: ${estimateId}`);
+      
+      // Import Firebase functions
+      const { doc, getDoc } = await import("firebase/firestore");
+      const { db } = await import("../lib/firebase");
+
+      let estimateData = null;
+
+      // Try loading from projects collection first
+      try {
+        const projectRef = doc(db, "projects", estimateId);
+        const projectSnap = await getDoc(projectRef);
+        
+        if (projectSnap.exists()) {
+          estimateData = projectSnap.data();
+          console.log("📊 Estimado cargado desde proyectos");
+        }
+      } catch (projectError) {
+        console.warn("No se pudo cargar desde proyectos:", projectError);
+      }
+
+      // Try loading from estimates collection if not found in projects
+      if (!estimateData) {
+        try {
+          const estimateRef = doc(db, "estimates", estimateId);
+          const estimateSnap = await getDoc(estimateRef);
+          
+          if (estimateSnap.exists()) {
+            estimateData = estimateSnap.data();
+            console.log("📋 Estimado cargado desde estimados");
+          }
+        } catch (estimateError) {
+          console.warn("No se pudo cargar desde estimados:", estimateError);
+        }
+      }
+
+      if (!estimateData) {
+        toast({
+          title: "Estimado no encontrado",
+          description: "No se pudo encontrar el estimado para editar.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Parse and populate the estimate data
+      let clientData: Client | null = null;
+      
+      // Extract client information from different possible structures
+      if (estimateData.clientInformation) {
+        clientData = {
+          id: estimateData.clientInformation.id || estimateId,
+          clientId: estimateData.clientInformation.id || estimateId,
+          name: estimateData.clientInformation.name || "",
+          email: estimateData.clientInformation.email || "",
+          phone: estimateData.clientInformation.phone || "",
+          address: estimateData.clientInformation.address || "",
+          city: estimateData.clientInformation.city || "",
+          state: estimateData.clientInformation.state || "",
+          zipCode: estimateData.clientInformation.zipCode || "",
+        };
+      } else if (estimateData.clientName) {
+        clientData = {
+          id: estimateId,
+          clientId: estimateId,
+          name: estimateData.clientName || "",
+          email: estimateData.clientEmail || "",
+          phone: estimateData.clientPhone || "",
+          address: estimateData.clientAddress || "",
+          city: "",
+          state: "",
+          zipCode: "",
+        };
+      }
+
+      // Extract items from different possible structures
+      let estimateItems: EstimateItem[] = [];
+      
+      if (estimateData.projectTotalCosts?.materialCosts?.items) {
+        estimateItems = estimateData.projectTotalCosts.materialCosts.items.map((item: any, index: number) => ({
+          id: `item-${index}`,
+          materialId: item.materialId || "",
+          name: item.name || "",
+          description: item.description || "",
+          quantity: item.quantity || 0,
+          price: item.unitPrice ? (item.unitPrice / 100) : (item.price || 0),
+          unit: item.unit || "unidad",
+          total: item.totalPrice ? (item.totalPrice / 100) : (item.total || 0),
+        }));
+      } else if (estimateData.items) {
+        estimateItems = estimateData.items.map((item: any, index: number) => ({
+          id: `item-${index}`,
+          materialId: item.materialId || "",
+          name: item.name || "",
+          description: item.description || "",
+          quantity: item.quantity || 0,
+          price: item.unitPrice ? (item.unitPrice / 100) : (item.price || 0),
+          unit: item.unit || "unidad",
+          total: item.totalPrice ? (item.totalPrice / 100) : (item.total || 0),
+        }));
+      }
+
+      // Calculate totals
+      const subtotal = estimateItems.reduce((sum, item) => sum + item.total, 0);
+      const taxRate = estimateData.projectTotalCosts?.additionalCosts?.taxRate || estimateData.taxRate || 10;
+      const tax = subtotal * (taxRate / 100);
+      const total = subtotal + tax;
+
+      // Update the estimate state
+      setEstimate({
+        client: clientData,
+        items: estimateItems,
+        projectDetails: estimateData.projectDetails?.description || estimateData.projectDescription || "",
+        subtotal,
+        tax,
+        total,
+        taxRate,
+        discountType: estimateData.projectTotalCosts?.additionalCosts?.discountType || "percentage",
+        discountValue: estimateData.projectTotalCosts?.additionalCosts?.discountValue || 0,
+        discountAmount: estimateData.projectTotalCosts?.additionalCosts?.discountAmount ? 
+          (estimateData.projectTotalCosts.additionalCosts.discountAmount / 100) : 0,
+        discountName: estimateData.discountName || "",
+      });
+
+      // Navigate to materials step (step 2)
+      setCurrentStep(2);
+
+      toast({
+        title: "Estimado cargado",
+        description: "El estimado se ha cargado para edición. Revisa los materiales en el paso 3.",
+        duration: 4000,
+      });
+
+      console.log("✅ Estimado cargado exitosamente para edición");
+    } catch (error) {
+      console.error("❌ Error cargando estimado para editar:", error);
+      toast({
+        title: "Error al cargar estimado",
+        description: "No se pudo cargar el estimado para edición. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -4255,23 +4420,58 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <div className="min-w-0 flex-1">
             <h1 className="text-2xl sm:text-3xl font-bold mb-2 truncate">
-              Crear Nuevo Estimado
+              {isEditMode ? "Editar Estimado" : "Crear Nuevo Estimado"}
             </h1>
             <p className="text-muted-foreground text-sm sm:text-base">
-              Sigue los pasos para crear un estimado profesional para tu cliente
+              {isEditMode 
+                ? "Edita tu estimado existente y guarda los cambios"
+                : "Sigue los pasos para crear un estimado profesional para tu cliente"
+              }
             </p>
           </div>
-          <Button
-            variant="outline"
-            onClick={() => {
-              setShowEstimatesHistory(true);
-              loadSavedEstimates();
-            }}
-            className="border-blue-300 text-blue-600 hover:bg-blue-50 w-full sm:w-auto shrink-0"
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Mis </span>Estimados
-          </Button>
+          <div className="flex gap-2">
+            {isEditMode && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  // Exit edit mode and reset
+                  setIsEditMode(false);
+                  setEditingEstimateId(null);
+                  setCurrentStep(0);
+                  setEstimate({
+                    client: null,
+                    items: [],
+                    projectDetails: "",
+                    subtotal: 0,
+                    tax: 0,
+                    total: 0,
+                    taxRate: 10,
+                    discountType: "percentage",
+                    discountValue: 0,
+                    discountAmount: 0,
+                    discountName: "",
+                  });
+                  // Clear URL parameters
+                  window.history.replaceState({}, document.title, window.location.pathname);
+                }}
+                className="border-gray-300 text-gray-600 hover:bg-gray-50"
+              >
+                <X className="h-4 w-4 mr-2" />
+                Cancelar Edición
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowEstimatesHistory(true);
+                loadSavedEstimates();
+              }}
+              className="border-blue-300 text-blue-600 hover:bg-blue-50 w-full sm:w-auto shrink-0"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Mis </span>Estimados
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -4756,11 +4956,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                              toast({
-                                title: "Función próximamente",
-                                description:
-                                  "Pronto podrás editar estimados guardados",
-                              });
+                              // Close the dialog and load estimate for editing
+                              setShowEstimatesHistory(false);
+                              loadEstimateForEdit(estimate.id);
                             }}
                             className="h-8 px-2"
                           >
@@ -4788,7 +4986,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
             <Button
               onClick={() => {
                 setShowEstimatesHistory(false);
-                // Resetear formulario para crear nuevo estimado
+                // Reset form for new estimate and clear edit mode
+                setIsEditMode(false);
+                setEditingEstimateId(null);
                 setCurrentStep(0);
                 setEstimate({
                   client: null,
@@ -4803,6 +5003,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   discountAmount: 0,
                   discountName: "",
                 });
+                // Clear URL parameters
+                window.history.replaceState({}, document.title, window.location.pathname);
               }}
             >
               <Plus className="h-4 w-4 mr-2" />
