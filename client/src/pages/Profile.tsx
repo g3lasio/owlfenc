@@ -38,7 +38,7 @@ type CompanyInfoType = UserProfile;
 export default function Profile() {
   const { profile, isLoading: isLoadingProfile, error: profileError, updateProfile } = useProfile();
   const [companyInfo, setCompanyInfo] = useState<CompanyInfoType>(profile || {
-    companyName: "",
+    company: "",
     ownerName: "",
     role: "",
     email: "",
@@ -291,7 +291,7 @@ export default function Profile() {
         // Si no está disponible, hacemos la petición directamente
         // (solo si no estamos en modo desarrollo)
         if (!isDevMode) {
-          const response = await fetch("/api/user-profile", {
+          const response = await fetch("/api/profile", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -417,7 +417,7 @@ export default function Profile() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           email: companyInfo.email,
-          name: companyInfo.companyName || companyInfo.ownerName || 'Contractor'
+          name: companyInfo.company || companyInfo.ownerName || 'Contractor'
         })
       });
       
@@ -544,11 +544,11 @@ export default function Profile() {
                 <h3 className="text-lg font-medium mb-4">Company Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="companyName">Company Name</Label>
+                    <Label htmlFor="company">Company Name</Label>
                     <Input
-                      id="companyName"
-                      name="companyName"
-                      value={companyInfo.companyName}
+                      id="company"
+                      name="company"
+                      value={companyInfo.company}
                       onChange={handleChange}
                       placeholder="Your Company Inc."
                     />
