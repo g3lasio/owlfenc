@@ -3647,6 +3647,42 @@ Output in English regardless of input language. Make it suitable for contracts a
     }
   });
 
+  // Profile endpoint used by frontend
+  app.get("/api/profile", async (req: Request, res: Response) => {
+    try {
+      // Return profile data for development
+      const profileData = {
+        id: "dev-user-123",
+        company: "Los primos", // Using correct field name
+        ownerName: "Gelasio Sanchez",
+        role: "Owner",
+        email: "truthbackpack@gmail.com",
+        phone: "(555) 123-4567",
+        mobilePhone: "",
+        address: "2901 Owens Court",
+        city: "Fairfield",
+        state: "California",
+        zipCode: "94534",
+        license: "C-13 #123456",
+        insurancePolicy: "ABC-123456",
+        ein: "12-3456789",
+        businessType: "LLC",
+        yearEstablished: "2020",
+        website: "owlfenc.com",
+        description: "Professional fencing contractor",
+        specialties: ["Residential Fencing", "Commercial Fencing"],
+        socialMedia: {},
+        documents: {},
+        logo: ""
+      };
+      
+      res.json(profileData);
+    } catch (error) {
+      console.error("Error loading profile:", error);
+      res.status(500).json({ error: "Error loading profile" });
+    }
+  });
+
   app.get("/api/user-profile", async (req: Request, res: Response) => {
     try {
       // Obtener el usuario autenticado desde Firebase

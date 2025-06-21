@@ -2757,14 +2757,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
   console.log(estimate);
   const handleDownload = async () => {
     try {
-      // DEBUG: Agregar logs para diagnosticar el problema
-      console.log("🔍 [DEBUG-PDF] Profile data:", profile);
-      console.log("🔍 [DEBUG-PDF] Profile company:", profile?.company);
-      console.log("🔍 [DEBUG-PDF] Profile keys:", profile ? Object.keys(profile) : "No profile");
-      
       // Validar que el perfil del contractor esté completo
       if (!profile?.company) {
-        console.log("❌ [DEBUG-PDF] Validation failed - no company name");
         toast({
           title: "❌ Perfil Incompleto",
           description: "Debes completar el nombre de tu empresa en tu perfil antes de generar PDFs.",
@@ -2772,8 +2766,6 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         });
         return;
       }
-      
-      console.log("✅ [DEBUG-PDF] Validation passed - company name found:", profile.company);
 
       const payload = {
         company_logo_url: profile.logo || "",
@@ -4467,14 +4459,14 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="companyName">Nombre de la Empresa</Label>
+                <Label htmlFor="company">Nombre de la Empresa</Label>
                 <Input
-                  id="companyName"
-                  value={editableCompany.companyName}
+                  id="company"
+                  value={editableCompany.company}
                   onChange={(e) =>
                     setEditableCompany((prev) => ({
                       ...prev,
-                      companyName: e.target.value,
+                      company: e.target.value,
                     }))
                   }
                   placeholder="Nombre de tu empresa"
