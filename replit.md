@@ -222,4 +222,5 @@ Changelog:
 ## User Preferences
 ```
 Preferred communication style: Simple, everyday language.
+Critical Business Rule: This is multi-tenant contractor software - NEVER use Owl Fence or any specific company name as fallback data. Each contractor must have their own company information. PDFs must only show authentic contractor data or require profile completion.
 ```

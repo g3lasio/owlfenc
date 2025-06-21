@@ -102,11 +102,20 @@ async function mapEstimateDataToTemplate(data: EstimateData) {
           licenseNumber: user.licenseNumber
         });
 
+        // Validar que el usuario tenga datos mínimos requeridos
+        if (!user.company) {
+          console.log('❌ [PDF] Usuario sin nombre de empresa');
+          return res.status(400).json({
+            success: false,
+            error: 'Debe completar el nombre de su empresa en su perfil para generar PDFs.'
+          });
+        }
+
         contractorData = {
-          contractorCompanyName: user.company || "Owl Fence Company",
-          contractorAddress: user.address ? `${user.address}${user.city ? ', ' + user.city : ''}${user.state ? ', ' + user.state : ''}${user.zipCode ? ' ' + user.zipCode : ''}` : "2901 Owens Court, Fairfield, California 94534",
-          contractorEmail: user.email || "info@chyrris.com",
-          contractorPhone: user.phone || "202 549 3519",
+          contractorCompanyName: user.company,
+          contractorAddress: user.address ? `${user.address}${user.city ? ', ' + user.city : ''}${user.state ? ', ' + user.state : ''}${user.zipCode ? ' ' + user.zipCode : ''}` : "",
+          contractorEmail: user.email || "",
+          contractorPhone: user.phone || "",
           contractorLicense: user.licenseNumber || "",
           contractorLogo: user.logo || ""
         };

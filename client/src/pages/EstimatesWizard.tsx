@@ -2763,12 +2763,22 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
   console.log(estimate);
   const handleDownload = async () => {
     try {
+      // Validar que el perfil del contractor esté completo
+      if (!profile?.company) {
+        toast({
+          title: "❌ Perfil Incompleto",
+          description: "Debes completar el nombre de tu empresa en tu perfil antes de generar PDFs.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const payload = {
-        company_logo_url: profile?.logo || "",
-        company_name: profile?.company || "Owl Fence Company",
-        company_address: profile?.address ? `${profile.address}${profile.city ? ', ' + profile.city : ''}${profile.state ? ', ' + profile.state : ''}${profile.zipCode ? ' ' + profile.zipCode : ''}` : "Company Address",
-        company_email: profile?.email || currentUser?.email || "",
-        company_phone: profile?.phone || "",
+        company_logo_url: profile.logo || "",
+        company_name: profile.company,
+        company_address: profile.address ? `${profile.address}${profile.city ? ', ' + profile.city : ''}${profile.state ? ', ' + profile.state : ''}${profile.zipCode ? ' ' + profile.zipCode : ''}` : "",
+        company_email: profile.email || currentUser?.email || "",
+        company_phone: profile.phone || "",
         estimate_date: new Date().toISOString().split("T")[0],
         estimate_number: "EST-" + Date.now(),
         valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
