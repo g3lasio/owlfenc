@@ -1922,34 +1922,29 @@ export default function EstimatesWizardFixed() {
 
   // Generate estimate preview with validation and authority
   const generateEstimatePreview = () => {
-    // Validación de datos críticos y generación de alertas usando profile en lugar de contractor
+    // USAR EXACTAMENTE LOS MISMOS CAMPOS QUE EL PDF
+    // Validación usando profile.company (no companyName)
     const missingData = [];
     if (!estimate.client) missingData.push("Cliente");
     if (estimate.items.length === 0) missingData.push("Materiales");
     if (!estimate.projectDetails || estimate.projectDetails.trim() === "")
       missingData.push("Detalles del proyecto");
-    if (!profile?.companyName) missingData.push("Nombre de empresa");
-    if (!profile?.address || !profile?.phone || !profile?.email)
-      missingData.push("Información de contacto de empresa");
+    if (!profile?.company) missingData.push("Nombre de empresa");
 
-    // Si hay datos críticos faltantes, mostrar el template con alertas
+    // Si falta información crítica, mostrar alerta
     if (missingData.length > 0) {
       const alertHtml = `
         <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #fff; border: 3px solid #f59e0b;">
           <div style="background: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
-            <h3 style="color: #92400e; margin: 0 0 10px 0; display: flex; align-items: center;">
-              ⚠️ Estimado Incompleto - Información Faltante
+            <h3 style="color: #92400e; margin: 0 0 10px 0;">
+              ⚠️ Preview Incompleto - Información Faltante
             </h3>
-            <p style="color: #92400e; margin: 10px 0;">El preview muestra "${estimate.projectDetails.replace(/\n/g, "<br>")}" por ejemplo</p>
-            <p style="color: #92400e; margin: 10px 0;">Controles compactos y oscuros como solicitaste</p>
-            <p style="color: #92400e; margin: 10px 0;">Reset button incluye el nuevo campo</p>
-            <p style="color: #92400e; margin: 10px 0;">¿Podrías probar ahora el preview agregando un nombre al descuento (como "Military" o "Senior") para ver que funciona</p>
-            <p style="color: #92400e; margin: 10px 0;">Para generar un estimado profesional completo, necesitas completar:</p>
+            <p style="color: #92400e; margin: 10px 0;">Para generar un preview completo del PDF, necesitas completar:</p>
             <ul style="color: #92400e; margin: 10px 0; padding-left: 20px;">
               ${missingData.map((item) => `<li style="margin: 5px 0;">${item}</li>`).join("")}
             </ul>
             <p style="color: #92400e; margin: 10px 0; font-weight: bold;">
-              ¿Podrías ajustar estos datos para que el estimado sea completo?
+              Completa tu perfil para ver el preview exacto del PDF.
             </p>
           </div>
           ${generateBasicPreview()}
@@ -1976,10 +1971,9 @@ export default function EstimatesWizardFixed() {
             `
                 : ""
             }
-            <h2 style="margin: 0; color: #2563eb; font-size: 1.5em;">${profile?.companyName || "Your Company"}</h2>
+            <h2 style="margin: 0; color: #2563eb; font-size: 1.5em;">${profile?.company || ""}</h2>
             <p style="margin: 5px 0; color: #666;">
-              ${profile?.address || ""}<br>
-              ${profile?.city ? `${profile.city}, ` : ""}${profile?.state || ""} ${profile?.zipCode || ""}<br>
+              ${profile?.address ? `${profile.address}${profile.city ? ', ' + profile.city : ''}${profile.state ? ', ' + profile.state : ''}${profile.zipCode ? ' ' + profile.zipCode : ''}` : ""}<br>
               ${profile?.phone || ""}<br>
               ${profile?.email || ""}
             </p>
@@ -2095,7 +2089,7 @@ export default function EstimatesWizardFixed() {
         
         <div style="border: 2px dashed #d1d5db; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
           <h3 style="color: #6b7280;">Company Information</h3>
-          <p style="color: #6b7280;">${contractor?.companyName || "[Company name required]"}</p>
+          <p style="color: #6b7280;">${profile?.company || "[Complete su perfil - nombre de empresa requerido]"}</p>
         </div>
         
         <div style="border: 2px dashed #d1d5db; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
@@ -2130,7 +2124,7 @@ export default function EstimatesWizardFixed() {
       // 🚀 DATOS COMPLETOS PARA TRANSFERENCIA AL DASHBOARD
       // Obtener información completa del contratista desde el perfil del usuario
       const contractorInfo = {
-        companyName: profile?.companyName || "Sin nombre de empresa",
+        companyName: profile?.company || "Sin nombre de empresa",
         name: profile?.ownerName || profile?.displayName || "Sin nombre",
         email: profile?.email || currentUser?.email || "Sin email",
         phone: profile?.phone || "Sin teléfono",
@@ -2322,7 +2316,7 @@ export default function EstimatesWizardFixed() {
     if (showEmailDialog && estimate.client) {
       setEmailData({
         toEmail: estimate.client.email || "",
-        subject: `🏗️ Your Professional Estimate is Ready - ${profile?.companyName || profile?.name || "Your Company"}`,
+        subject: `🏗️ Your Professional Estimate is Ready - ${profile?.company || profile?.name || "Your Company"}`,
         message: `Dear ${estimate.client.name},
 
 I hope this message finds you well!
@@ -2352,7 +2346,7 @@ We are completely at your disposal to clarify any questions or make adjustments 
 Ready to transform your vision into reality? Contact us today!
 
 Best regards,
-${profile?.companyName || profile?.name || "Your Company"}
+${profile?.company || profile?.name || "Your Company"}
 📞 ${profile?.phone || "Phone Number"}
 📧 ${profile?.email || "Email Address"}
 ${profile?.website ? `🌐 ${profile.website}` : ""}
