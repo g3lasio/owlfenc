@@ -216,14 +216,23 @@ export default function Profile() {
       reader.onload = (e) => {
         const base64Result = e.target?.result as string;
         
-        setCompanyInfo(prev => ({
-          ...prev,
+        const updatedInfo = {
+          ...companyInfo,
           logo: base64Result
-        }));
+        };
+        
+        setCompanyInfo(updatedInfo);
+        
+        // Guardar inmediatamente en localStorage
+        const userId = currentUser?.uid || 'dev-user-123';
+        const profileKey = `userProfile_${userId}`;
+        localStorage.setItem(profileKey, JSON.stringify(updatedInfo));
+        
+        console.log('🖼️ Logo guardado en Base64:', base64Result.substring(0, 50) + '...');
         
         toast({
-          title: "Logo procesado",
-          description: `${file.name} convertido a Base64 para almacenamiento seguro`,
+          title: "Logo guardado",
+          description: `${file.name} convertido a Base64 y guardado correctamente`,
         });
       };
       

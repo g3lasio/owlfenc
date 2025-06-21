@@ -3650,18 +3650,18 @@ Output in English regardless of input language. Make it suitable for contracts a
   // Profile endpoint used by frontend
   app.get("/api/profile", async (req: Request, res: Response) => {
     try {
-      // Return profile data for development
-      const profileData = {
+      // Try to get saved profile data first, then fallback to defaults
+      let profileData = {
         id: "dev-user-123",
-        company: "Los primos", // Using correct field name
-        ownerName: "Gelasio Sanchez",
+        company: "Los primos",
+        ownerName: "Gelasio Sanchez", 
         role: "Owner",
         email: "truthbackpack@gmail.com",
         phone: "(555) 123-4567",
         mobilePhone: "",
         address: "2901 Owens Court",
         city: "Fairfield",
-        state: "California",
+        state: "California", 
         zipCode: "94534",
         license: "C-13 #123456",
         insurancePolicy: "ABC-123456",
@@ -3676,6 +3676,17 @@ Output in English regardless of input language. Make it suitable for contracts a
         logo: ""
       };
       
+      // Check if we have stored profile data with logo
+      try {
+        const storedData = global.profileStorage || {};
+        if (storedData.company || storedData.logo) {
+          profileData = { ...profileData, ...storedData };
+          console.log('📋 Profile loaded with stored data, logo length:', storedData.logo?.length || 0);
+        }
+      } catch (err) {
+        console.warn('Could not load stored profile data:', err);
+      }
+      
       res.json(profileData);
     } catch (error) {
       console.error("Error loading profile:", error);
@@ -3686,15 +3697,18 @@ Output in English regardless of input language. Make it suitable for contracts a
   // POST endpoint for profile updates
   app.post("/api/profile", async (req: Request, res: Response) => {
     try {
-      console.log('📝 [POST /api/profile] Datos recibidos:', req.body);
+      console.log('📝 [POST /api/profile] Datos recibidos, logo length:', req.body.logo?.length || 0);
       
-      // For development, simply echo back the received data
-      const profileData = {
+      // Store profile data in memory for development
+      global.profileStorage = {
+        ...(global.profileStorage || {}),
         ...req.body,
         updatedAt: new Date().toISOString()
       };
       
-      console.log('✅ [POST /api/profile] Perfil actualizado:', profileData);
+      const profileData = global.profileStorage;
+      
+      console.log('✅ [POST /api/profile] Perfil guardado, logo length:', profileData.logo?.length || 0);
       
       res.json({
         success: true,
