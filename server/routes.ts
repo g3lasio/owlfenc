@@ -1277,7 +1277,7 @@ Output in English regardless of input language. Make it suitable for contracts a
   // Registrar rutas específicas de PDF de facturas antes que otras rutas
   try {
     const invoicePdfModule = await import('./routes/invoice-pdf-routes');
-    const invoicePdfRoutes = invoicePdfModule.default;
+    const invoicePdfRoutes = invoicePdfModule.default || invoicePdfModule.invoicePdfRoutes;
     
     if (!invoicePdfRoutes) {
       throw new Error('Invoice PDF routes module did not export default router');
