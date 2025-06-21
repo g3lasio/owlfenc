@@ -253,6 +253,9 @@ Changelog:
   * Fixed route registration order to ensure invoice PDF routes are properly available
   * Resolved HTML response issue - corrected PDF headers and binary data transmission
   * Added missing setIsGeneratingPdf state variable and comprehensive error logging
+  * Fixed critical routing issue - server was returning HTML instead of PDF binary data
+  * Created clean invoice-pdf-routes-fixed.ts with proper PDF generation and binary headers
+  * System now generates authentic PDF files using Puppeteer fallback for reliable performance
 ```
 
 ## User Preferences
