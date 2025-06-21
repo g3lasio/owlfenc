@@ -31,6 +31,8 @@ export const users = pgTable('users', {
   logo: text('logo'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   stripeConnectAccountId: text('stripe_connect_account_id'),
+  defaultPaymentTerms: integer('default_payment_terms').default(30), // días para pago
+  invoiceMessageTemplate: text('invoice_message_template'),
 });
 
 // Projects table
@@ -64,6 +66,12 @@ export const projects = pgTable('projects', {
   internalNotes: text('internal_notes'),
   paymentStatus: text('payment_status'),
   paymentDetails: jsonb('payment_details'),
+  invoiceGenerated: boolean('invoice_generated').default(false),
+  invoiceNumber: varchar('invoice_number', { length: 50 }),
+  invoiceHtml: text('invoice_html'),
+  invoiceDueDate: timestamp('invoice_due_date'),
+  invoiceStatus: varchar('invoice_status', { length: 50 }), // 'pending', 'sent', 'paid', 'overdue'
+  lastReminderSent: timestamp('last_reminder_sent'),
   projectType: text('project_type'),
   projectSubtype: text('project_subtype'),
   projectCategory: text('project_category'),
