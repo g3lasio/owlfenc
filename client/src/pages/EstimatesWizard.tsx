@@ -5103,7 +5103,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
       {/* Enhanced Email Dialog */}
       <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
-        <DialogContent className="w-[96vw] max-w-md mx-auto h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogContent className="w-[95vw] max-w-2xl mx-auto max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
           <DialogHeader className="px-4 py-3 border-b bg-white flex-shrink-0">
             <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
               <Mail className="h-5 w-5 text-blue-600" />
@@ -5114,7 +5114,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-gray-50">
+          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-gray-50 min-h-0">
             {/* Client Information */}
             {estimate.client && (
               <div className="bg-white rounded-lg border p-3">
@@ -5298,7 +5298,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
       {/* Email Preview Dialog */}
       <Dialog open={showEmailPreview} onOpenChange={setShowEmailPreview}>
-        <DialogContent className="w-[98vw] sm:w-[95vw] max-w-4xl h-[98vh] sm:h-[95vh] flex flex-col bg-gradient-to-br from-gray-900 via-black to-gray-900 border border-cyan-500/30 p-3 sm:p-6">
+        <DialogContent className="w-[95vw] max-w-4xl h-[90vh] flex flex-col bg-gradient-to-br from-gray-900 via-black to-gray-900 border border-cyan-500/30 p-4 overflow-hidden">
           <DialogHeader className="space-y-2 sm:space-y-3 flex-shrink-0 pb-2 sm:pb-4">
             <DialogTitle className="text-lg sm:text-xl font-bold text-cyan-300 flex items-center gap-2">
               <Eye className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -5309,7 +5309,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
             </div>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto space-y-4 sm:space-y-6 py-2 sm:py-4 min-h-0">
+          <div className="flex-1 overflow-y-auto space-y-4 py-4 min-h-0 pr-2">
             {/* Email Headers Preview */}
             <div className="bg-gray-800/50 rounded-lg p-3 sm:p-4 border border-cyan-500/20">
               <div className="space-y-2 text-xs sm:text-sm">
@@ -5335,16 +5335,16 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
             </div>
 
             {/* Email Content Preview */}
-            <div className="bg-white rounded-lg p-3 sm:p-6 text-black">
-              <div className="space-y-3 sm:space-y-4">
+            <div className="bg-white rounded-lg p-4 text-black max-h-[60vh] overflow-y-auto">
+              <div className="space-y-4">
                 {/* Message Preview */}
-                <div className="whitespace-pre-wrap text-gray-800 text-xs sm:text-sm leading-relaxed">
+                <div className="whitespace-pre-wrap text-gray-800 text-sm leading-relaxed">
                   {emailData.message}
                 </div>
 
                 {/* Professional Estimate Preview */}
-                <div className="border-t pt-3 sm:pt-4 mt-4 sm:mt-6">
-                  <h3 className="text-sm sm:text-lg font-bold text-blue-600 mb-2 sm:mb-3 flex items-center gap-2">
+                <div className="border-t pt-4 mt-6">
+                  <h3 className="text-lg font-bold text-blue-600 mb-3 flex items-center gap-2">
                     <FileText className="h-4 w-4" />
                     Professional Estimate Preview
                   </h3>
