@@ -471,7 +471,7 @@ function processTemplate(html: string, data: any): string {
 }
 
 /**
- * Genera PDF usando jsPDF con datos estructurados
+ * Genera PDF usando jsPDF con estilo cyberpunk elegante
  */
 function generateInvoicePdfWithJsPDF(estimateData: any, contractorData: any): jsPDF {
   const pdf = new jsPDF();
@@ -479,121 +479,245 @@ function generateInvoicePdfWithJsPDF(estimateData: any, contractorData: any): js
   // Configuración de fuentes y colores
   pdf.setFont('helvetica');
   
-  // Header - Company Info
-  pdf.setFontSize(20);
+  // HEADER SECTION - Estilo profesional con bordes elegantes
+  // Borde superior decorativo cyan
+  pdf.setDrawColor(0, 255, 255); // Cyan
+  pdf.setLineWidth(2);
+  pdf.line(15, 15, 195, 15);
+  
+  // Company Info - Left side
+  pdf.setFontSize(18);
   pdf.setTextColor(0, 0, 0);
-  pdf.text(contractorData?.company || 'Your Company', 20, 25);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text(contractorData?.company || 'Your Company', 20, 30);
   
-  pdf.setFontSize(10);
-  pdf.text(contractorData?.address || 'Company Address', 20, 35);
-  pdf.text(`Phone: ${contractorData?.phone || '(555) 123-4567'}`, 20, 42);
-  pdf.text(`Email: ${contractorData?.email || 'info@company.com'}`, 20, 49);
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text(contractorData?.address || 'Company Address', 20, 38);
+  pdf.text(`Phone: ${contractorData?.phone || '(555) 123-4567'}`, 20, 44);
+  pdf.text(`Email: ${contractorData?.email || 'info@company.com'}`, 20, 50);
+  if (contractorData?.website) {
+    pdf.text(`Website: ${contractorData.website}`, 20, 56);
+  }
   
-  // Invoice Title and Info
-  pdf.setFontSize(24);
-  pdf.text('INVOICE', 150, 25);
+  // INVOICE Title - Right side with cyan accent
+  pdf.setFontSize(28);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(0, 0, 0);
+  pdf.text('INVOICE', 150, 30);
   
-  pdf.setFontSize(10);
+  // Invoice details with cyan accents
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'normal');
   const invoiceNumber = `INV-${Date.now()}`;
   const invoiceDate = new Date().toLocaleDateString();
   const dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString();
   
-  pdf.text(`Invoice #: ${invoiceNumber}`, 150, 35);
-  pdf.text(`Date: ${invoiceDate}`, 150, 42);
-  pdf.text(`Due Date: ${dueDate}`, 150, 49);
+  pdf.text(`Invoice #: ${invoiceNumber}`, 150, 40);
+  pdf.text(`Invoice Date: ${invoiceDate}`, 150, 46);
+  pdf.text(`Due Date: ${dueDate}`, 150, 52);
   
-  // Client Info
+  // Header separator line
+  pdf.setDrawColor(200, 200, 200);
+  pdf.setLineWidth(0.5);
+  pdf.line(20, 65, 190, 65);
+  
+  // BILL TO SECTION
+  let yPos = 80;
   pdf.setFontSize(12);
-  pdf.text('Bill To:', 20, 70);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(0, 0, 0);
+  pdf.text('Bill To', 20, yPos);
+  
+  // Bill To border with cyan accent
+  pdf.setDrawColor(0, 255, 255);
+  pdf.setLineWidth(1);
+  pdf.line(20, yPos + 2, 35, yPos + 2);
+  
+  yPos += 10;
   pdf.setFontSize(10);
-  pdf.text(estimateData.client?.name || 'Client Name', 20, 80);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text(estimateData.client?.name || 'Client Name', 20, yPos);
   if (estimateData.client?.email) {
-    pdf.text(estimateData.client.email, 20, 87);
+    yPos += 6;
+    pdf.text(estimateData.client.email, 20, yPos);
   }
   if (estimateData.client?.phone) {
-    pdf.text(estimateData.client.phone, 20, 94);
+    yPos += 6;
+    pdf.text(estimateData.client.phone, 20, yPos);
   }
   
-  // Items Table
-  let yPos = 110;
+  // ITEMS TABLE - Estilo elegante con bordes cyan
+  yPos = 120;
   pdf.setFontSize(12);
-  pdf.text('Items', 20, yPos);
-  yPos += 10;
-  
-  // Table headers
-  pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
-  pdf.text('Description', 20, yPos);
-  pdf.text('Qty', 120, yPos);
-  pdf.text('Unit Price', 140, yPos);
-  pdf.text('Total', 170, yPos);
+  pdf.text('Items', 20, yPos);
   
-  // Table line
-  pdf.line(20, yPos + 2, 190, yPos + 2);
-  yPos += 8;
+  // Items underline with cyan
+  pdf.setDrawColor(0, 255, 255);
+  pdf.setLineWidth(1);
+  pdf.line(20, yPos + 2, 35, yPos + 2);
   
-  // Table content
+  yPos += 15;
+  
+  // TABLE HEADERS with cyan background
+  const tableStartY = yPos;
+  const rowHeight = 8;
+  const colWidths = [90, 20, 30, 30]; // Description, Qty, Unit Price, Total
+  const colPositions = [20, 110, 130, 160];
+  
+  // Header background - cyan accent
+  pdf.setFillColor(0, 255, 255, 0.2); // Cyan with transparency effect
+  pdf.rect(20, yPos - 3, 170, rowHeight, 'F');
+  
+  // Header borders
+  pdf.setDrawColor(0, 255, 255);
+  pdf.setLineWidth(1);
+  pdf.rect(20, yPos - 3, 170, rowHeight);
+  
+  // Header text
+  pdf.setTextColor(0, 0, 0);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(9);
+  pdf.text('Item Description', colPositions[0] + 2, yPos + 2);
+  pdf.text('Qty', colPositions[1] + 2, yPos + 2);
+  pdf.text('Unit Price', colPositions[2] + 2, yPos + 2);
+  pdf.text('Total', colPositions[3] + 2, yPos + 2);
+  
+  yPos += rowHeight;
+  
+  // TABLE CONTENT with elegant borders
   pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(8);
   const items = estimateData.items || [];
-  items.forEach((item: any) => {
+  
+  items.forEach((item: any, index: number) => {
     const description = item.name || item.description || 'Service Item';
     const quantity = item.quantity || 1;
     const price = item.price || 0;
     const total = item.total || price;
     
-    // Truncate long descriptions
-    const maxDescLength = 45;
+    // Alternate row background for elegance
+    if (index % 2 === 1) {
+      pdf.setFillColor(245, 245, 245);
+      pdf.rect(20, yPos - 3, 170, rowHeight, 'F');
+    }
+    
+    // Row borders
+    pdf.setDrawColor(200, 200, 200);
+    pdf.setLineWidth(0.5);
+    pdf.rect(20, yPos - 3, 170, rowHeight);
+    
+    // Truncate long descriptions elegantly
+    const maxDescLength = 42;
     const truncatedDesc = description.length > maxDescLength 
       ? description.substring(0, maxDescLength) + '...'
       : description;
     
-    pdf.text(truncatedDesc, 20, yPos);
-    pdf.text(quantity.toString(), 120, yPos);
-    pdf.text(`$${price.toFixed(2)}`, 140, yPos);
-    pdf.text(`$${total.toFixed(2)}`, 170, yPos);
-    yPos += 7;
+    pdf.setTextColor(0, 0, 0);
+    pdf.text(truncatedDesc, colPositions[0] + 2, yPos + 2);
+    pdf.text(quantity.toString(), colPositions[1] + 8, yPos + 2);
+    pdf.text(`$${price.toFixed(2)}`, colPositions[2] + 8, yPos + 2);
+    pdf.text(`$${total.toFixed(2)}`, colPositions[3] + 8, yPos + 2);
+    
+    yPos += rowHeight;
   });
   
-  // Total section
+  // SUMMARY SECTION - Elegant totals
   yPos += 10;
-  pdf.line(140, yPos, 190, yPos);
-  yPos += 8;
+  const summaryStartX = 130;
   
-  const total = estimateData.total || 0;
-  pdf.text('Subtotal:', 140, yPos);
-  pdf.text(`$${total.toFixed(2)}`, 170, yPos);
-  yPos += 7;
-  
-  pdf.text('Tax:', 140, yPos);
-  pdf.text('$0.00', 170, yPos);
-  yPos += 7;
-  
-  pdf.setFont('helvetica', 'bold');
-  pdf.text('TOTAL:', 140, yPos);
-  pdf.text(`$${total.toFixed(2)}`, 170, yPos);
-  
-  // Thank you section with cyan color
-  yPos += 20;
-  pdf.setFillColor(0, 255, 255); // Cyan background
-  pdf.setTextColor(0, 0, 0);
-  pdf.rect(20, yPos, 170, 15, 'F');
+  // Summary box with cyan border
+  pdf.setDrawColor(0, 255, 255);
+  pdf.setLineWidth(1);
+  pdf.rect(summaryStartX, yPos - 5, 60, 25);
   
   pdf.setFontSize(9);
-  pdf.text('We sincerely appreciate your business and the trust you have placed in us.', 25, yPos + 5);
-  pdf.text('It is our privilege to serve you, and we look forward to future collaboration.', 25, yPos + 10);
+  pdf.setFont('helvetica', 'normal');
+  const total = estimateData.total || 0;
   
-  // Terms and conditions
+  pdf.text('Subtotal:', summaryStartX + 5, yPos);
+  pdf.text(`$${total.toFixed(2)}`, summaryStartX + 45, yPos);
+  yPos += 6;
+  
+  pdf.text('Tax:', summaryStartX + 5, yPos);
+  pdf.text('$0.00', summaryStartX + 45, yPos);
+  yPos += 8;
+  
+  // Total with emphasis
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(11);
+  pdf.text('TOTAL:', summaryStartX + 5, yPos);
+  pdf.text(`$${total.toFixed(2)}`, summaryStartX + 35, yPos);
+  
+  // THANK YOU SECTION - Cyberpunk style
   yPos += 25;
-  pdf.setTextColor(0, 0, 0);
-  pdf.setFontSize(8);
-  pdf.text('Payment Terms: Payment is due within 30 days of invoice date.', 20, yPos);
-  pdf.text('Late payments may be subject to interest charges.', 20, yPos + 5);
   
-  // Footer
-  yPos = 280;
+  // Cyber-style thank you box with dark background and cyan border
+  pdf.setFillColor(17, 17, 17); // Dark background (#111)
+  pdf.setDrawColor(0, 255, 255);
+  pdf.setLineWidth(2);
+  pdf.rect(20, yPos, 170, 20, 'FD');
+  
+  // Corner decorations
+  const cornerSize = 6;
+  pdf.setDrawColor(0, 255, 255);
+  pdf.setLineWidth(2);
+  // Top-left corner
+  pdf.line(20, yPos, 20 + cornerSize, yPos);
+  pdf.line(20, yPos, 20, yPos + cornerSize);
+  // Top-right corner
+  pdf.line(190 - cornerSize, yPos, 190, yPos);
+  pdf.line(190, yPos, 190, yPos + cornerSize);
+  // Bottom-left corner
+  pdf.line(20, yPos + 20 - cornerSize, 20, yPos + 20);
+  pdf.line(20, yPos + 20, 20 + cornerSize, yPos + 20);
+  // Bottom-right corner
+  pdf.line(190, yPos + 20 - cornerSize, 190, yPos + 20);
+  pdf.line(190 - cornerSize, yPos + 20, 190, yPos + 20);
+  
+  // Thank you text in cyan (simulating Quantico font style)
+  pdf.setTextColor(0, 255, 255);
+  pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(8);
+  const thankYouText1 = 'We sincerely appreciate your business and the trust you have placed in us.';
+  const thankYouText2 = 'It is our privilege to serve you, and we look forward to future collaboration.';
+  
+  pdf.text(thankYouText1, 105, yPos + 8, { align: 'center' });
+  pdf.text(thankYouText2, 105, yPos + 14, { align: 'center' });
+  
+  // TERMS AND CONDITIONS
+  yPos += 35;
+  pdf.setTextColor(0, 0, 0);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(7);
+  pdf.text('Payment Terms: Payment is due within 30 days of invoice date.', 20, yPos);
+  pdf.text('Late payments may be subject to interest charges.', 20, yPos + 4);
+  pdf.text('This invoice constitutes a binding fiscal instrument evidencing the obligation of payment.', 20, yPos + 8);
+  
+  // FOOTER - Estilo cyberpunk elegante
+  const footerY = 275;
+  
+  // Gradient line effect (simulated with multiple thin lines)
+  pdf.setDrawColor(0, 255, 255);
+  for (let i = 0; i < 5; i++) {
+    const alpha = (5 - i) / 5;
+    pdf.setLineWidth(0.5);
+    pdf.line(30 + i * 5, footerY, 180 - i * 5, footerY);
+  }
+  
+  // Arrow decoration in the center
+  const arrowCenterX = 105;
+  pdf.setFillColor(0, 255, 255);
+  // Triangle arrow pointing down
+  pdf.triangle(arrowCenterX - 3, footerY - 8, arrowCenterX + 3, footerY - 8, arrowCenterX, footerY - 2, 'F');
+  
+  // Footer text
+  yPos = footerY + 8;
   pdf.setTextColor(100, 100, 100);
-  pdf.text('Powered by Mervin AI', 85, yPos);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(8);
+  pdf.text('Powered by Mervin AI', 105, yPos, { align: 'center' });
   
   return pdf;
 }
