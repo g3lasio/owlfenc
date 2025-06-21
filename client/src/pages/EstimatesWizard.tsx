@@ -940,19 +940,48 @@ export default function EstimatesWizardFixed() {
           })
           .map((doc) => {
             const data = doc.data();
+            
+            // Better data extraction with multiple fallback paths
+            const clientName = data.clientInformation?.name || 
+                             data.clientName || 
+                             data.client?.name || 
+                             "Cliente sin nombre";
+            
+            const clientEmail = data.clientInformation?.email || 
+                              data.clientEmail || 
+                              data.client?.email || 
+                              "";
+            
+            // Better total calculation with multiple paths
+            const totalValue = data.projectTotalCosts?.totalSummary?.finalTotal ||
+                             data.projectTotalCosts?.total ||
+                             data.total ||
+                             data.estimateAmount ||
+                             0;
+            
+            // Convert from cents to dollars if the value seems to be in cents
+            const displayTotal = totalValue > 10000 ? totalValue / 100 : totalValue;
+            
+            const projectTitle = data.projectDetails?.name ||
+                               data.projectName ||
+                               data.title ||
+                               `Estimado para ${clientName}`;
+            
             return {
               id: doc.id,
               estimateNumber: data.estimateNumber || `EST-${doc.id.slice(-6)}`,
-              title: data.projectName || "Estimado sin título",
-              clientName: data.clientInformation?.name || "Cliente sin nombre",
-              clientEmail: data.clientInformation?.email || "",
-              total: data.projectTotalCosts?.total || 0,
+              title: projectTitle,
+              clientName: clientName,
+              clientEmail: clientEmail,
+              total: displayTotal,
               status: data.status || "estimate",
               estimateDate: data.createdAt
                 ? data.createdAt.toDate?.() || new Date(data.createdAt)
                 : new Date(),
-              items: data.projectTotalCosts?.materialCosts?.items || [],
-              projectType: data.projectType || "fence",
+              items: data.projectTotalCosts?.materialCosts?.items || 
+                    data.items || 
+                    [],
+              projectType: data.projectType || data.projectDetails?.type || "fence",
               projectId: doc.id,
               pdfUrl: data.pdfUrl || null,
               originalData: data, // Store original data for editing
@@ -980,19 +1009,48 @@ export default function EstimatesWizardFixed() {
         const estimatesSnapshot = await getDocs(estimatesQuery);
         const firebaseEstimates = estimatesSnapshot.docs.map((doc) => {
           const data = doc.data();
+          
+          // Better data extraction for estimates collection
+          const clientName = data.clientInformation?.name || 
+                           data.clientName || 
+                           data.client?.name || 
+                           "Cliente sin nombre";
+          
+          const clientEmail = data.clientInformation?.email || 
+                            data.clientEmail || 
+                            data.client?.email || 
+                            "";
+          
+          // Better total calculation
+          const totalValue = data.projectTotalCosts?.totalSummary?.finalTotal ||
+                           data.projectTotalCosts?.total ||
+                           data.total ||
+                           data.estimateAmount ||
+                           0;
+          
+          // Convert from cents to dollars if needed
+          const displayTotal = totalValue > 10000 ? totalValue / 100 : totalValue;
+          
+          const projectTitle = data.projectDetails?.name ||
+                             data.title ||
+                             data.projectName ||
+                             `Estimado para ${clientName}`;
+          
           return {
             id: doc.id,
             estimateNumber: data.estimateNumber || `EST-${doc.id.slice(-6)}`,
-            title: data.title || data.projectName || "Estimado sin título",
-            clientName: data.clientName || "Cliente sin nombre",
-            clientEmail: data.clientEmail || "",
-            total: data.total || data.estimateAmount || 0,
+            title: projectTitle,
+            clientName: clientName,
+            clientEmail: clientEmail,
+            total: displayTotal,
             status: data.status || "draft",
             estimateDate: data.createdAt
               ? data.createdAt.toDate?.() || new Date(data.createdAt)
               : new Date(),
-            items: data.items || [],
-            projectType: data.projectType || data.fenceType || "fence",
+            items: data.projectTotalCosts?.materialCosts?.items || 
+                  data.items || 
+                  [],
+            projectType: data.projectType || data.projectDetails?.type || data.fenceType || "fence",
             projectId: data.projectId || doc.id,
             pdfUrl: data.pdfUrl || null,
             originalData: data, // Store original data for editing
@@ -1027,6 +1085,21 @@ export default function EstimatesWizardFixed() {
       console.log(
         `✅ Total: ${uniqueEstimates.length} estimados únicos cargados`,
       );
+      
+      // Debug: Log the first few estimates to see their data structure
+      if (uniqueEstimates.length > 0) {
+        console.log("📋 Muestra de estimados cargados:", uniqueEstimates.slice(0, 3).map(est => ({
+          estimateNumber: est.estimateNumber,
+          clientName: est.clientName,
+          total: est.total,
+          title: est.title,
+          rawData: est.originalData ? {
+            clientInfo: est.originalData.clientInformation,
+            totalCosts: est.originalData.projectTotalCosts,
+            directTotal: est.originalData.total
+          } : null
+        })));
+      }
 
       if (uniqueEstimates.length === 0) {
         toast({
