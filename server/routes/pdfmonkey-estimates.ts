@@ -352,7 +352,7 @@ router.post('/generate', async (req, res) => {
     // Combinar datos del estimado con información del contratista
     const enrichedEstimateData = {
       ...estimateData,
-      contractorCompanyName: contractorData.companyName,
+      contractorCompanyName: contractorData.company || contractorData.companyName, // usar 'company' field
       contractorAddress: contractorData.address,
       contractorPhone: contractorData.phone,
       contractorEmail: contractorData.email,

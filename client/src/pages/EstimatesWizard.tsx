@@ -1964,13 +1964,7 @@ export default function EstimatesWizardFixed() {
         <!-- Header with Company Info and Logo -->
         <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px;">
           <div style="flex: 1;">
-            ${
-              profile?.logo
-                ? `
-              <img src="${profile.logo}" alt="Company Logo" style="max-width: 120px; max-height: 80px; margin-bottom: 10px;" />
-            `
-                : ""
-            }
+            ${profile?.logo ? `<img src="${profile.logo}" alt="Company Logo" style="max-width: 120px; max-height: 80px; margin-bottom: 10px;" />` : `<div style="width: 120px; height: 80px; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; color: #666; font-size: 14px;">Logo</div>`}
             <h2 style="margin: 0; color: #2563eb; font-size: 1.5em;">${profile?.company || ""}</h2>
             <p style="margin: 5px 0; color: #666;">
               ${profile?.address ? `${profile.address}${profile.city ? ', ' + profile.city : ''}${profile.state ? ', ' + profile.state : ''}${profile.zipCode ? ' ' + profile.zipCode : ''}` : ""}<br>
@@ -4848,11 +4842,17 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                 {/* Header with Company Logo and Info */}
                 <div className="flex justify-between items-start mb-8">
                   <div className="flex items-center gap-4">
-                    <img
-                      src={mervinLogoUrl}
-                      alt="Company Logo"
-                      className="h-16 w-16 object-contain"
-                    />
+                    {profile?.logo ? (
+                      <img
+                        src={profile.logo}
+                        alt="Company Logo"
+                        className="h-16 w-16 object-contain"
+                      />
+                    ) : (
+                      <div className="h-16 w-16 border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-500 text-xs">
+                        Logo
+                      </div>
+                    )}
                     <div>
                       <h1 className="text-2xl font-bold text-blue-900">
                         {profile?.company || "Your Company"}
