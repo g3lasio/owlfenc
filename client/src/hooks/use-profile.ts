@@ -8,7 +8,7 @@ export interface UserProfile {
   id?: string;
   userId?: string;
   profilePhoto?: string;
-  companyName: string;
+  company: string;
   ownerName: string;
   role: string;
   email: string;
@@ -81,7 +81,7 @@ export function useProfile() {
       
       // Si no hay datos en localStorage o Firebase, intentar API del servidor
       try {
-        const response = await fetch("/api/user-profile", {
+        const response = await fetch("/api/profile", {
           method: "GET",
           credentials: "include"
         });
@@ -97,7 +97,7 @@ export function useProfile() {
         // Si todo falla y estamos en modo desarrollo, devolver un perfil vacío
         if (isDevMode) {
           const emptyProfile = {
-            companyName: "",
+            company: "",
             ownerName: "",
             role: "",
             email: currentUser?.email || "",
@@ -173,7 +173,7 @@ export function useProfile() {
       
       // También intentar guardar en la API
       try {
-        const response = await fetch("/api/user-profile", {
+        const response = await fetch("/api/profile", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
