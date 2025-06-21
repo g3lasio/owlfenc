@@ -6,6 +6,7 @@ import express from 'express';
 import { z } from 'zod';
 import { storage } from '../storage';
 import { invoicePdfService, InvoicePdfService } from '../services/invoicePdfService';
+import { PuppeteerInvoicePdfService } from '../services/puppeteerInvoicePdfService';
 
 const router = express.Router();
 
@@ -102,8 +103,25 @@ router.post('/generate', async (req, res) => {
       company: invoiceData.company.name
     });
 
-    // Generar PDF usando PDFMonkey
-    const pdfBuffer = await invoicePdfService.generateInvoicePdf(invoiceData);
+    // Intentar PDFMonkey primero, con respaldo rápido de Puppeteer
+    let pdfBuffer: Buffer;
+    try {
+      console.log('🐒 [INVOICE-PDF] Attempting PDFMonkey generation...');
+      
+      // Promise con timeout para PDFMonkey
+      const pdfMonkeyPromise = invoicePdfService.generateInvoicePdf(invoiceData);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('PDFMonkey timeout')), 15000)
+      );
+      
+      pdfBuffer = await Promise.race([pdfMonkeyPromise, timeoutPromise]) as Buffer;
+      console.log('✅ [INVOICE-PDF] PDFMonkey generation successful');
+      
+    } catch (error: any) {
+      console.log('⚠️ [INVOICE-PDF] PDFMonkey failed/timeout, using Puppeteer fallback...');
+      pdfBuffer = await PuppeteerInvoicePdfService.generateInvoicePdf(invoiceData);
+      console.log('✅ [INVOICE-PDF] Puppeteer fallback successful');
+    }
 
     // Configurar headers para descarga
     const filename = `Invoice-${invoiceData.invoice.number}.pdf`;

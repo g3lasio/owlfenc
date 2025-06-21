@@ -251,6 +251,8 @@ Changelog:
   * Mapped invoice template structure from HTML to PDFMonkey data format
   * System converts estimates to professional invoices with unique numbers, due dates, and legal terms
   * Fixed route registration order to ensure invoice PDF routes are properly available
+  * Resolved HTML response issue - corrected PDF headers and binary data transmission
+  * Added missing setIsGeneratingPdf state variable and comprehensive error logging
 ```
 
 ## User Preferences
