@@ -5114,7 +5114,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-gray-50 min-h-0">
+          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-gray-50 min-h-0 max-h-[calc(90vh-200px)]">
             {/* Client Information */}
             {estimate.client && (
               <div className="bg-white rounded-lg border p-3">
@@ -5220,11 +5220,11 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   setEmailData((prev) => ({ ...prev, message: e.target.value }))
                 }
                 placeholder="Dear [Client Name], I hope this message finds you well. Please find attached our professional estimate for your project..."
-                rows={4}
-                className="w-full resize-none text-sm"
+                rows={6}
+                className="w-full resize-none text-sm min-h-[120px]"
               />
               <p className="text-xs text-gray-500 mt-1">
-                This message will be included in the email
+                This message will be included in the email body
               </p>
             </div>
 
@@ -5234,7 +5234,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                 <Eye className="h-4 w-4 text-blue-600" />
                 Email Preview
               </h4>
-              <div className="bg-gray-50 rounded p-3 text-xs space-y-2">
+              <div className="bg-gray-50 rounded p-3 text-xs space-y-2 max-h-40 overflow-y-auto">
                 <div>
                   <strong>To:</strong> {emailData.toEmail || "client@email.com"}
                 </div>
@@ -5246,11 +5246,11 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   {emailData.subject || "Professional Estimate"}
                 </div>
                 <div className="pt-2 border-t">
-                  <div className="text-gray-600 line-clamp-3">
+                  <div className="text-gray-600 whitespace-pre-wrap break-words">
                     {emailData.message || "Your message will appear here..."}
                   </div>
                 </div>
-                <div className="text-blue-600 text-xs">
+                <div className="text-blue-600 text-xs border-t pt-2">
                   📎 Professional estimate attached
                 </div>
                 {emailData.sendCopy && (
@@ -5262,7 +5262,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
             </div>
           </div>
 
-          <div className="px-4 py-3 bg-white border-t flex gap-3 flex-shrink-0">
+          <div className="px-4 py-3 bg-white border-t flex gap-3 flex-shrink-0 sticky bottom-0">
             <Button
               variant="outline"
               onClick={() => setShowEmailDialog(false)}
