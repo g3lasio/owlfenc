@@ -46,6 +46,7 @@ import contractRoutes from './routes/contractRoutes';
 
 // 🛡️ LEGAL DEFENSE SYSTEM - Advanced OCR & Project Management
 import legalDefenseRoutes from './routes/legal-defense';
+import legalDefenseUnifiedRoutes from './routes/legal-defense-unified';
 import emailContractRoutes from './routes/email-contract';
 import contractManagementRoutes from './routes/contract-management';
 
@@ -70,7 +71,9 @@ console.log('🐒 [PDFMONKEY] Template específico de estimados registrado en /a
 
 // 🤖 Registrar sistema inteligente de contratos
 app.use('/api/anthropic', anthropicContractRoutes);
-app.use('/api/legal-defense', legalDefenseRoutes);
+app.use('/api/legal-defense', legalDefenseUnifiedRoutes); // Use unified routes
+app.use('/api/legal-defense-legacy', legalDefenseRoutes); // Keep legacy for compatibility
+console.log('🛡️ [LEGAL-DEFENSE] Sistema unificado de contratos registrado en /api/legal-defense/generate-contract');
 console.log('🤖 [ANTHROPIC] Sistema inteligente de contratos registrado en /api/anthropic/generate-contract');
 
 // 🔧 Registrar rutas principales (incluye AI enhancement y DeepSearch)

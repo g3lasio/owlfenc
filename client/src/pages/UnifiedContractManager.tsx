@@ -38,11 +38,17 @@ const UnifiedContractManager: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<WorkflowStep>('upload');
   const [processingStatus, setProcessingStatus] = useState<ProcessingStatus | null>(null);
   
-  // Data state
+  // Data state with persistence
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [ocrResult, setOcrResult] = useState<OCRResult | null>(null);
-  const [contractData, setContractData] = useState<Partial<ContractData>>({});
-  const [generatedContract, setGeneratedContract] = useState<GeneratedContract | null>(null);
+  const [contractData, setContractData] = useState<Partial<ContractData>>(() => {
+    const saved = sessionStorage.getItem('contract-session-data');
+    return saved ? JSON.parse(saved) : {};
+  });
+  const [generatedContract, setGeneratedContract] = useState<GeneratedContract | null>(() => {
+    const saved = sessionStorage.getItem('contract-session-generated');
+    return saved ? JSON.parse(saved) : null;
+  });
 
   // Load projects for conversion to contracts
   const { data: availableProjects = [] } = useQuery({
@@ -54,15 +60,16 @@ const UnifiedContractManager: React.FC = () => {
     }
   });
 
-  // Contract generation mutation
+  // Optimized contract generation mutation with unified endpoint
   const generateContractMutation = useMutation({
     mutationFn: async (data: ContractData) => {
-      const response = await fetch('/api/anthropic/generate-defensive-contract', {
+      const response = await fetch('/api/legal-defense/generate-contract', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contractData: data,
-          protectionLevel: 'standard'
+          protectionLevel: 'standard',
+          enableOptimizations: true
         })
       });
 
@@ -76,6 +83,11 @@ const UnifiedContractManager: React.FC = () => {
       if (result.success) {
         setGeneratedContract(result.contract);
         setCurrentStep('preview');
+        
+        // Persistir contrato generado
+        sessionStorage.setItem('contract-session-generated', JSON.stringify(result.contract));
+        sessionStorage.setItem('contract-session-step', 'preview');
+        
         toast({
           title: "Contrato generado exitosamente",
           description: "Revise el contrato antes de aprobar"
@@ -116,25 +128,31 @@ const UnifiedContractManager: React.FC = () => {
         setOcrResult(result);
         setContractData(result.extractedData);
         
-        // PASO CRÍTICO: Validar datos inmediatamente después del OCR
-        setCurrentStep('data-validation');
+        // PASO CRÍTICO: Validar datos y persistir inmediatamente
+        const extractedData = result.extractedData;
+        setContractData(extractedData);
+        
+        // Persistir datos en sesión
+        sessionStorage.setItem('contract-session-data', JSON.stringify(extractedData));
+        sessionStorage.setItem('contract-session-step', 'data-validation');
         
         // Verificar si faltan datos críticos
-        const missingFields = unifiedContractManager.detectMissingFields(result.extractedData);
+        const missingFields = unifiedContractManager.detectMissingFields(extractedData);
         
         if (missingFields.length > 0) {
           setCurrentStep('missing-data');
+          sessionStorage.setItem('contract-session-step', 'missing-data');
           toast({
             title: "Datos incompletos detectados",
             description: `Se requieren ${missingFields.length} campos adicionales para generar un contrato robusto`,
             variant: "destructive"
           });
         } else {
+          setCurrentStep('data-validation');
           toast({
             title: "Documento procesado completamente",
             description: `Datos extraídos con ${result.confidence}% de confianza - Listos para generar contrato`
           });
-          setCurrentStep('data-validation');
         }
       } else {
         throw new Error('OCR processing failed');

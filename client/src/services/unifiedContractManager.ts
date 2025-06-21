@@ -28,7 +28,7 @@ export class UnifiedContractManager {
 
       this.updateProgress('ocr', 30, 'Enviando documento para análisis...');
 
-      const response = await fetch('/api/pdf-contract-processor/pdf-to-contract', {
+      const response = await fetch('/api/legal-defense/extract-and-process', {
         method: 'POST',
         body: formData
       });
