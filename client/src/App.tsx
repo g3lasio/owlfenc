@@ -29,6 +29,7 @@ import Subscription from "@/pages/Subscription";
 import Billing from "./pages/Billing";
 import History from "@/pages/History";
 import ProjectPayments from "@/pages/ProjectPayments";
+import Invoices from "@/pages/Invoices";
 
 import EstimatesDashboard from "@/pages/EstimatesDashboard";
 import EstimateGenerator from "@/pages/EstimateGenerator";
@@ -110,6 +111,9 @@ function Router() {
       </Route>
       <Route path="/project-payments">
         {() => <ProtectedRoute component={ProjectPayments} />}
+      </Route>
+      <Route path="/invoices">
+        {() => <ProtectedRoute component={Invoices} />}
       </Route>
 
       <Route path="/clients" component={() => <ProtectedRoute component={NuevoClientes} />} />

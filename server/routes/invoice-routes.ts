@@ -198,17 +198,60 @@ router.post('/send-reminder/:projectId', async (req, res) => {
  * Función auxiliar para generar PDF usando servicios existentes
  */
 async function generateInvoicePdf(html: string, invoiceNumber: string): Promise<Buffer> {
-  // Aquí integraremos con PDFMonkey o Puppeteer existente
-  // Por ahora, placeholder que retorna el HTML
-  throw new Error('PDF generation to be implemented');
+  // Usar el servicio PDF existente del sistema
+  const puppeteer = await import('puppeteer');
+  
+  const browser = await puppeteer.default.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
+  });
+  
+  const page = await browser.newPage();
+  await page.setContent(html, { waitUntil: 'networkidle0' });
+  
+  const pdfBuffer = await page.pdf({
+    format: 'A4',
+    printBackground: true,
+    margin: {
+      top: '20mm',
+      right: '20mm',
+      bottom: '20mm',
+      left: '20mm'
+    }
+  });
+  
+  await browser.close();
+  return pdfBuffer;
 }
 
 /**
  * Función auxiliar para enviar recordatorios por email
  */
 async function sendInvoiceReminder(project: any): Promise<void> {
-  // Aquí integraremos con Resend/SendGrid existente
-  throw new Error('Email reminder to be implemented');
+  // Usar el servicio de email existente
+  const { sendEmail } = await import('../services/emailService');
+  
+  const subject = `Recordatorio de Pago - Factura ${project.invoiceNumber}`;
+  const message = `
+    Estimado ${project.clientName},
+    
+    Le recordamos que tiene una factura pendiente de pago.
+    
+    Número de factura: ${project.invoiceNumber}
+    Monto: $${(project.totalPrice / 100).toFixed(2)}
+    Fecha de vencimiento: ${new Date(project.invoiceDueDate).toLocaleDateString('es-ES')}
+    
+    Por favor, realice el pago a la brevedad posible.
+    
+    Saludos cordiales,
+    ${project.contractorName || 'Su Contractor'}
+  `;
+  
+  await sendEmail({
+    to: project.clientEmail,
+    subject: subject,
+    html: message.replace(/\n/g, '<br>')
+  });
 }
 
 export default router;
