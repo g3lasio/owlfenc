@@ -104,11 +104,14 @@ export class InvoicePdfService {
    * Espera a que el PDF esté listo y lo descarga
    */
   private async pollForCompletion(documentId: string): Promise<Buffer> {
-    const maxAttempts = 30; // 30 seconds max
+    const maxAttempts = 60; // 60 seconds max for invoice generation
     let attempts = 0;
 
     while (attempts < maxAttempts) {
       try {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        attempts++;
+        
         const statusResponse = await axios.get(
           `${PDFMONKEY_API_URL}/${documentId}`,
           {
