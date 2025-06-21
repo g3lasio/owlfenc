@@ -953,14 +953,21 @@ export default function EstimatesWizardFixed() {
                               "";
             
             // Better total calculation with multiple paths
-            const totalValue = data.projectTotalCosts?.totalSummary?.finalTotal ||
-                             data.projectTotalCosts?.total ||
-                             data.total ||
-                             data.estimateAmount ||
-                             0;
+            let totalValue = data.projectTotalCosts?.totalSummary?.finalTotal ||
+                           data.projectTotalCosts?.total ||
+                           data.total ||
+                           data.estimateAmount ||
+                           0;
             
-            // Convert from cents to dollars if the value seems to be in cents
-            const displayTotal = totalValue > 10000 ? totalValue / 100 : totalValue;
+            // Smart conversion: only convert from cents if the value is clearly in cents
+            // Values in cents are typically stored as integers above 1000 (i.e., $10.00 = 1000 cents)
+            let displayTotal = totalValue;
+            
+            // Check if this is stored in cents format (integer values > 1000 typically indicate cents)
+            if (data.projectTotalCosts?.totalSummary?.finalTotalCents || 
+                data.total > 1000 && Number.isInteger(totalValue)) {
+              displayTotal = totalValue / 100;
+            }
             
             const projectTitle = data.projectDetails?.name ||
                                data.projectName ||
@@ -1022,14 +1029,20 @@ export default function EstimatesWizardFixed() {
                             "";
           
           // Better total calculation
-          const totalValue = data.projectTotalCosts?.totalSummary?.finalTotal ||
-                           data.projectTotalCosts?.total ||
-                           data.total ||
-                           data.estimateAmount ||
-                           0;
+          let totalValue = data.projectTotalCosts?.totalSummary?.finalTotal ||
+                         data.projectTotalCosts?.total ||
+                         data.total ||
+                         data.estimateAmount ||
+                         0;
           
-          // Convert from cents to dollars if needed
-          const displayTotal = totalValue > 10000 ? totalValue / 100 : totalValue;
+          // Smart conversion: only convert from cents if clearly in cents format
+          let displayTotal = totalValue;
+          
+          // Check if this is stored in cents format
+          if (data.projectTotalCosts?.totalSummary?.finalTotalCents || 
+              data.total > 1000 && Number.isInteger(totalValue)) {
+            displayTotal = totalValue / 100;
+          }
           
           const projectTitle = data.projectDetails?.name ||
                              data.title ||
@@ -1096,7 +1109,9 @@ export default function EstimatesWizardFixed() {
           rawData: est.originalData ? {
             clientInfo: est.originalData.clientInformation,
             totalCosts: est.originalData.projectTotalCosts,
-            directTotal: est.originalData.total
+            directTotal: est.originalData.total,
+            totalSummary: est.originalData.projectTotalCosts?.totalSummary,
+            hasCentsField: !!est.originalData.projectTotalCosts?.totalSummary?.finalTotalCents
           } : null
         })));
       }
