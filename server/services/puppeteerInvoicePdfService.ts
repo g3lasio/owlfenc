@@ -244,7 +244,7 @@ export class PuppeteerInvoicePdfService {
                 <div class="section-title">BILL TO:</div>
                 <div>
                     <strong>${client.name}</strong><br>
-                    ${client.address || ''}<br>
+                    ${client.address && client.address !== 'Address not provided' ? client.address + '<br>' : ''}
                     ${client.contact || ''}
                 </div>
             </div>
