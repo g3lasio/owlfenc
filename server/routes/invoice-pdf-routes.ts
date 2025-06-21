@@ -1,16 +1,13 @@
 /**
- * Rutas específicas para la generación de PDFs de facturas
+ * Rutas corregidas para la generación de PDFs de facturas
  */
 
 import express from 'express';
-import { z } from 'zod';
 import { storage } from '../storage';
 import { invoicePdfService, InvoicePdfService } from '../services/invoicePdfService';
 import { PuppeteerInvoicePdfService } from '../services/puppeteerInvoicePdfService';
 
 const router = express.Router();
-
-console.log('🧾 [INVOICE-PDF-ROUTES] Module loaded');
 
 /**
  * POST /api/invoice-pdf/generate
@@ -24,22 +21,23 @@ router.post('/generate', async (req, res) => {
     // Set longer timeout for PDF generation
     req.setTimeout(120000); // 2 minutes timeout
     
-    // Simplify validation - make most fields optional to handle real data
-    const validatedData = {
-      estimateData: req.body.estimateData,
-      contractorData: req.body.contractorData || {}
-    };
+    // Extract data directly without complex validation
+    const { estimateData, contractorData } = req.body;
     
-    const { estimateData, contractorData } = validatedData;
+    if (!estimateData || !estimateData.client || !estimateData.client.name) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required estimate data'
+      });
+    }
 
     console.log('📋 [INVOICE-PDF] Processing data for client:', estimateData.client.name);
 
     // Obtener datos del contratista si no se proporcionan
-    let contractor = contractorData;
-    if (!contractor || !contractor.company) {
+    let contractor = contractorData || {};
+    if (!contractor.company) {
       try {
-        // Intentar obtener datos del usuario actual desde la base de datos
-        const userProfile = await storage.getUser(1); // Placeholder user ID
+        const userProfile = await storage.getUser(1);
         if (userProfile) {
           contractor = {
             company: userProfile.company || 'Your Company',
@@ -71,115 +69,57 @@ router.post('/generate', async (req, res) => {
       company: invoiceData.company.name
     });
 
-    // Intentar PDFMonkey primero, con respaldo rápido de Puppeteer
-    let pdfBuffer: Buffer;
-    try {
-      console.log('🐒 [INVOICE-PDF] Attempting PDFMonkey generation...');
-      
-      // Promise con timeout para PDFMonkey
-      const pdfMonkeyPromise = invoicePdfService.generateInvoicePdf(invoiceData);
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('PDFMonkey timeout')), 15000)
-      );
-      
-      pdfBuffer = await Promise.race([pdfMonkeyPromise, timeoutPromise]) as Buffer;
-      console.log('✅ [INVOICE-PDF] PDFMonkey generation successful');
-      
-    } catch (error: any) {
-      console.log('⚠️ [INVOICE-PDF] PDFMonkey failed/timeout, using Puppeteer fallback...');
-      pdfBuffer = await PuppeteerInvoicePdfService.generateInvoicePdf(invoiceData);
-      console.log('✅ [INVOICE-PDF] Puppeteer fallback successful');
-    }
+    // Usar Puppeteer directamente para respuesta rápida
+    console.log('🚀 [INVOICE-PDF] Using Puppeteer for fast generation...');
+    const pdfBuffer = await PuppeteerInvoicePdfService.generateInvoicePdf(invoiceData);
 
-    // Configurar headers para descarga
+    // Configurar headers para descarga de PDF binario
     const filename = `Invoice-${invoiceData.invoice.number}.pdf`;
     
     console.log(`✅ [INVOICE-PDF] Generated successfully: ${filename} (${pdfBuffer.length} bytes)`);
-    console.log(`🧾 [INVOICE-PDF] Sending PDF with proper headers...`);
     
-    // Set proper PDF headers
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.setHeader('Content-Length', pdfBuffer.length.toString());
     
-    // Send binary PDF data
-    res.end(pdfBuffer, 'binary');
+    return res.end(pdfBuffer, 'binary');
 
   } catch (error: any) {
     console.error('❌ [INVOICE-PDF] Error:', error.message);
-    console.error('❌ [INVOICE-PDF] Stack:', error.stack);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Failed to generate invoice PDF',
-      details: error.message,
-      stack: error.stack
+      details: error.message
     });
   }
 });
 
 /**
  * POST /api/invoice-pdf/preview
- * Genera vista previa de los datos que se enviarán a PDFMonkey
+ * Genera vista previa de los datos de factura
  */
 router.post('/preview', async (req, res) => {
   try {
-    const schema = z.object({
-      estimateData: z.object({
-        client: z.object({
-          name: z.string(),
-          email: z.string().optional(),
-          phone: z.string().optional(),
-          address: z.string().optional(),
-          city: z.string().optional(),
-          state: z.string().optional(),
-          zipCode: z.string().optional()
-        }),
-        items: z.array(z.object({
-          name: z.string().optional(),
-          description: z.string().optional(),
-          quantity: z.number().optional(),
-          price: z.number().optional(),
-          total: z.number().optional()
-        }))
-      }),
-      contractorData: z.object({
-        company: z.string().optional(),
-        name: z.string().optional(),
-        address: z.string().optional(),
-        city: z.string().optional(),
-        state: z.string().optional(),
-        zipCode: z.string().optional(),
-        phone: z.string().optional(),
-        email: z.string().optional(),
-        website: z.string().optional(),
-        logo: z.string().optional()
-      }).optional()
-    });
-
-    const { estimateData, contractorData } = schema.parse(req.body);
-
-    // Convertir a formato de factura
+    const { estimateData, contractorData } = req.body;
+    
     const invoiceData = InvoicePdfService.convertEstimateToInvoiceData(
       estimateData,
-      contractorData
+      contractorData || {}
     );
-
+    
     res.json({
       success: true,
-      invoiceData,
-      templateId: '078756DF-77FD-445F-BB68-D46077101677'
+      data: invoiceData
     });
-
+    
   } catch (error: any) {
-    console.error('Error generating invoice preview:', error.message);
+    console.error('❌ [INVOICE-PDF] Preview error:', error.message);
     res.status(500).json({
       success: false,
-      error: 'Failed to generate invoice preview',
+      error: 'Failed to generate preview',
       details: error.message
     });
   }
 });
 
-export default router;
-
-console.log('🧾 [INVOICE-PDF-ROUTES] Router exported successfully');
+export { router as invoicePdfRoutes };
