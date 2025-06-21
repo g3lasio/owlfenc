@@ -1278,6 +1278,10 @@ Output in English regardless of input language. Make it suitable for contracts a
   const invoiceRoutes = await import('./routes/invoice-routes');
   app.use('/api/invoices', invoiceRoutes.default);
 
+  // Registrar rutas específicas de PDF de facturas
+  const invoicePdfRoutes = await import('./routes/invoice-pdf-routes');
+  app.use('/api/invoice-pdf', invoicePdfRoutes.default);
+
   // Registrar la nueva API REST de estimados renovada
   app.use("/api/estimates", estimatesRoutes);
 

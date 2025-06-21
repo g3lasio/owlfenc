@@ -2799,6 +2799,95 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     }
   };
 
+  const handleGenerateInvoice = async () => {
+    if (!estimate.client) {
+      toast({
+        title: "Error",
+        description: "Necesitas completar la información del cliente",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!estimate.items || estimate.items.length === 0) {
+      toast({
+        title: "Error",
+        description: "Necesitas agregar al menos un item al estimado",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsGeneratingPdf(true);
+
+      const estimateData = {
+        client: estimate.client,
+        items: estimate.items,
+        subtotal: estimate.subtotal,
+        tax: estimate.tax,
+        total: estimate.total,
+      };
+
+      console.log("🧾 Generating invoice for:", {
+        client: estimate.client.name,
+        itemsCount: estimate.items.length,
+        total: estimate.total,
+      });
+
+      const response = await fetch("/api/invoice-pdf/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          estimateData,
+          contractorData: {
+            company: profile?.company,
+            name: profile?.name || profile?.company,
+            address: profile?.address,
+            city: profile?.city,
+            state: profile?.state,
+            zipCode: profile?.zipCode,
+            phone: profile?.phone,
+            email: profile?.email,
+            website: profile?.website,
+            logo: profile?.logo,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.details || errorData.error || "Error generando factura");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `factura-${estimate.client.name.replace(/\s+/g, "-")}-${new Date().toISOString().split("T")[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "✅ Factura Generada",
+        description: "La factura ha sido descargada exitosamente",
+      });
+    } catch (error: any) {
+      console.error("Error generando factura:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Error generando la factura",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
   // Render current step
   const renderCurrentStep = () => {
     switch (currentStep) {
@@ -4214,11 +4303,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                     {estimate.client && (
                       <div className="mt-3 pt-3 border-t border-gray-700">
                         <Button
-                          onClick={() => {
-                            // TODO: Implementar generación de factura
-                            console.log('Generating invoice for estimate:', estimate);
-                          }}
-                          className="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-quantico font-semibold py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+                          onClick={handleGenerateInvoice}
+                          disabled={!estimate.client || estimate.items.length === 0}
+                          className="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-quantico font-semibold py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                           style={{ fontFamily: 'Quantico, monospace' }}
                         >
                           <FileText className="h-4 w-4" />
