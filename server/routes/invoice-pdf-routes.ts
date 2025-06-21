@@ -6,8 +6,7 @@ import express from 'express';
 import { storage } from '../storage';
 import * as fs from 'fs';
 import * as path from 'path';
-// @ts-ignore
-import * as htmlPdf from 'html-pdf';
+import { jsPDF } from 'jspdf';
 
 const router = express.Router();
 
@@ -63,42 +62,33 @@ router.post('/generate', async (req, res) => {
     console.log('🚀 [INVOICE-PDF] Using HTML template for PDF generation...');
     const pdfBuffer = await generateInvoicePdfFromTemplate(estimateData, contractor);
 
-    // Verificar si se quiere PDF o HTML
-    const wantsPdf = req.query.format === 'pdf';
+    // Siempre generar PDF por defecto
+    const wantsPdf = req.query.format !== 'html';
     
     if (wantsPdf) {
-      // Generar PDF usando html-pdf
-      const invoiceNumber = `INV-${Date.now()}`;
-      const filename = `Invoice-${estimateData.client.name.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
-      
-      const options = {
-        format: 'A4',
-        border: {
-          top: '0.5in',
-          right: '0.5in',
-          bottom: '0.5in',
-          left: '0.5in'
-        }
-      };
-      
-      htmlPdf.create(pdfBuffer.toString('utf8'), options).toBuffer((err: any, buffer: Buffer) => {
-        if (err) {
-          console.error('❌ [INVOICE-PDF] Error generating PDF:', err);
-          return res.status(500).json({
-            success: false,
-            error: 'Failed to generate PDF',
-            details: err.message
-          });
-        }
+      try {
+        // Generar PDF usando jsPDF directamente
+        const invoiceNumber = `INV-${Date.now()}`;
+        const filename = `Invoice-${estimateData.client.name.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
         
-        console.log(`✅ [INVOICE-PDF] Generated PDF successfully: ${filename} (${buffer.length} bytes)`);
+        const pdf = generateInvoicePdfWithJsPDF(estimateData, contractor);
+        const pdfBuffer = Buffer.from(pdf.output('arraybuffer'));
+        
+        console.log(`✅ [INVOICE-PDF] Generated PDF successfully: ${filename} (${pdfBuffer.length} bytes)`);
         
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-        res.setHeader('Content-Length', buffer.length.toString());
+        res.setHeader('Content-Length', pdfBuffer.length.toString());
         
-        return res.end(buffer, 'binary');
-      });
+        return res.end(pdfBuffer, 'binary');
+      } catch (error: any) {
+        console.error('❌ [INVOICE-PDF] Error generating PDF:', error);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to generate PDF',
+          details: error.message
+        });
+      }
     } else {
       // Servir como HTML para preview
       const invoiceNumber = `INV-${Date.now()}`;
@@ -478,6 +468,134 @@ function processTemplate(html: string, data: any): string {
   html = html.replace(/\{\{itemsRows\}\}/g, itemsRows);
   
   return html;
+}
+
+/**
+ * Genera PDF usando jsPDF con datos estructurados
+ */
+function generateInvoicePdfWithJsPDF(estimateData: any, contractorData: any): jsPDF {
+  const pdf = new jsPDF();
+  
+  // Configuración de fuentes y colores
+  pdf.setFont('helvetica');
+  
+  // Header - Company Info
+  pdf.setFontSize(20);
+  pdf.setTextColor(0, 0, 0);
+  pdf.text(contractorData?.company || 'Your Company', 20, 25);
+  
+  pdf.setFontSize(10);
+  pdf.text(contractorData?.address || 'Company Address', 20, 35);
+  pdf.text(`Phone: ${contractorData?.phone || '(555) 123-4567'}`, 20, 42);
+  pdf.text(`Email: ${contractorData?.email || 'info@company.com'}`, 20, 49);
+  
+  // Invoice Title and Info
+  pdf.setFontSize(24);
+  pdf.text('INVOICE', 150, 25);
+  
+  pdf.setFontSize(10);
+  const invoiceNumber = `INV-${Date.now()}`;
+  const invoiceDate = new Date().toLocaleDateString();
+  const dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString();
+  
+  pdf.text(`Invoice #: ${invoiceNumber}`, 150, 35);
+  pdf.text(`Date: ${invoiceDate}`, 150, 42);
+  pdf.text(`Due Date: ${dueDate}`, 150, 49);
+  
+  // Client Info
+  pdf.setFontSize(12);
+  pdf.text('Bill To:', 20, 70);
+  pdf.setFontSize(10);
+  pdf.text(estimateData.client?.name || 'Client Name', 20, 80);
+  if (estimateData.client?.email) {
+    pdf.text(estimateData.client.email, 20, 87);
+  }
+  if (estimateData.client?.phone) {
+    pdf.text(estimateData.client.phone, 20, 94);
+  }
+  
+  // Items Table
+  let yPos = 110;
+  pdf.setFontSize(12);
+  pdf.text('Items', 20, yPos);
+  yPos += 10;
+  
+  // Table headers
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('Description', 20, yPos);
+  pdf.text('Qty', 120, yPos);
+  pdf.text('Unit Price', 140, yPos);
+  pdf.text('Total', 170, yPos);
+  
+  // Table line
+  pdf.line(20, yPos + 2, 190, yPos + 2);
+  yPos += 8;
+  
+  // Table content
+  pdf.setFont('helvetica', 'normal');
+  const items = estimateData.items || [];
+  items.forEach((item: any) => {
+    const description = item.name || item.description || 'Service Item';
+    const quantity = item.quantity || 1;
+    const price = item.price || 0;
+    const total = item.total || price;
+    
+    // Truncate long descriptions
+    const maxDescLength = 45;
+    const truncatedDesc = description.length > maxDescLength 
+      ? description.substring(0, maxDescLength) + '...'
+      : description;
+    
+    pdf.text(truncatedDesc, 20, yPos);
+    pdf.text(quantity.toString(), 120, yPos);
+    pdf.text(`$${price.toFixed(2)}`, 140, yPos);
+    pdf.text(`$${total.toFixed(2)}`, 170, yPos);
+    yPos += 7;
+  });
+  
+  // Total section
+  yPos += 10;
+  pdf.line(140, yPos, 190, yPos);
+  yPos += 8;
+  
+  const total = estimateData.total || 0;
+  pdf.text('Subtotal:', 140, yPos);
+  pdf.text(`$${total.toFixed(2)}`, 170, yPos);
+  yPos += 7;
+  
+  pdf.text('Tax:', 140, yPos);
+  pdf.text('$0.00', 170, yPos);
+  yPos += 7;
+  
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('TOTAL:', 140, yPos);
+  pdf.text(`$${total.toFixed(2)}`, 170, yPos);
+  
+  // Thank you section with cyan color
+  yPos += 20;
+  pdf.setFillColor(0, 255, 255); // Cyan background
+  pdf.setTextColor(0, 0, 0);
+  pdf.rect(20, yPos, 170, 15, 'F');
+  
+  pdf.setFontSize(9);
+  pdf.text('We sincerely appreciate your business and the trust you have placed in us.', 25, yPos + 5);
+  pdf.text('It is our privilege to serve you, and we look forward to future collaboration.', 25, yPos + 10);
+  
+  // Terms and conditions
+  yPos += 25;
+  pdf.setTextColor(0, 0, 0);
+  pdf.setFontSize(8);
+  pdf.text('Payment Terms: Payment is due within 30 days of invoice date.', 20, yPos);
+  pdf.text('Late payments may be subject to interest charges.', 20, yPos + 5);
+  
+  // Footer
+  yPos = 280;
+  pdf.setFontSize(8);
+  pdf.setTextColor(100, 100, 100);
+  pdf.text('Powered by Mervin AI', 85, yPos);
+  
+  return pdf;
 }
 
 export default router;

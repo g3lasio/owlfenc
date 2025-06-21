@@ -2863,7 +2863,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         }
       });
 
-      const response = await fetch("/api/invoice-pdf/generate?format=pdf", {
+      const response = await fetch("/api/invoice-pdf/generate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
