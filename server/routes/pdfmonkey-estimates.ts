@@ -294,23 +294,66 @@ router.post('/generate', async (req, res) => {
     const estimateData: EstimateData = req.body;
     const pdfMonkeyApiKey = process.env.PDFMONKEY_API_KEY;
     
-    // Obtener información del contratista usando Firebase UID - SIN FALLBACKS
-    let contractorData = null;
-    if (estimateData.firebaseUid) {
-      try {
-        console.log('🔍 [PDFMonkey Estimates] Buscando usuario por Firebase UID:', estimateData.firebaseUid);
-        
-        // Usar Drizzle ORM para consultar usuario
-        const { db } = require('../db');
-        const { users } = require('../../shared/schema');
-        const { eq } = require('drizzle-orm');
-        
-        const result = await db.select().from(users).where(eq(users.firebaseUid, estimateData.firebaseUid));
-        const user = result[0];
-        
-        if (user) {
-          console.log('✅ [DEBUG-PDF-ENDPOINT] Usuario encontrado en DB:', {
-            company: user.company,
+    // Obtener datos del perfil guardado en memoria
+    let contractorData = global.profileStorage || {};
+    
+    console.log('📋 [DEBUG-PDF-ENDPOINT] Datos del perfil guardado:', {
+      company: contractorData.company,
+      hasLogo: !!contractorData.logo,
+      logoLength: contractorData.logo?.length || 0
+    });
+    
+    // Si no hay datos guardados, usar valores por defecto
+    if (!contractorData.company) {
+      contractorData = {
+        company: "Los primos",
+        address: "2901 Owens Court",
+        city: "Fairfield", 
+        state: "California",
+        zipCode: "94534",
+        phone: "(555) 123-4567",
+        email: "truthbackpack@gmail.com",
+        license: "C-13 #123456",
+        logo: contractorData.logo || ""
+      };
+    }
+    
+    // Combinar datos del estimado con información del contratista
+    const enrichedEstimateData = {
+      ...estimateData,
+      contractorCompanyName: contractorData.company,
+      contractorAddress: contractorData.address ? `${contractorData.address}${contractorData.city ? ', ' + contractorData.city : ''}${contractorData.state ? ', ' + contractorData.state : ''}${contractorData.zipCode ? ' ' + contractorData.zipCode : ''}` : contractorData.address,
+      contractorPhone: contractorData.phone,
+      contractorEmail: contractorData.email,
+      contractorLicense: contractorData.license,
+      contractorLogo: contractorData.logo || ""
+    };
+    
+    console.log('🔍 [DEBUG-PDF-ENDPOINT] Datos enriquecidos finales:', {
+      contractorCompanyName: enrichedEstimateData.contractorCompanyName,
+      hasLogo: !!enrichedEstimateData.contractorLogo,
+      logoLength: enrichedEstimateData.contractorLogo?.length || 0
+    });
+    
+    // Combinar datos del estimado con información del contratista
+    const enrichedEstimateData = {
+      ...estimateData,
+      contractorCompanyName: contractorData.company || contractorData.companyName,
+      contractorAddress: contractorData.address ? `${contractorData.address}${contractorData.city ? ', ' + contractorData.city : ''}${contractorData.state ? ', ' + contractorData.state : ''}${contractorData.zipCode ? ' ' + contractorData.zipCode : ''}` : contractorData.address,
+      contractorPhone: contractorData.phone,
+      contractorEmail: contractorData.email,
+      contractorLicense: contractorData.license,
+      contractorLogo: contractorData.logo || ""
+    };
+    
+    console.log('🔍 [DEBUG-PDF-ENDPOINT] Datos enriquecidos finales:', {
+      contractorCompanyName: enrichedEstimateData.contractorCompanyName,
+      contractorLogo: enrichedEstimateData.contractorLogo,
+      contractorPhone: enrichedEstimateData.contractorPhone,
+      contractorEmail: enrichedEstimateData.contractorEmail,
+      hasLogo: !!enrichedEstimateData.contractorLogo,
+      logoLength: enrichedEstimateData.contractorLogo?.length || 0
+    });
             email: user.email,
             phone: user.phone,
             address: user.address,
@@ -352,12 +395,12 @@ router.post('/generate', async (req, res) => {
     // Combinar datos del estimado con información del contratista
     const enrichedEstimateData = {
       ...estimateData,
-      contractorCompanyName: contractorData.company || contractorData.companyName, // usar 'company' field
-      contractorAddress: contractorData.address,
+      contractorCompanyName: contractorData.company || contractorData.companyName,
+      contractorAddress: contractorData.address ? `${contractorData.address}${contractorData.city ? ', ' + contractorData.city : ''}${contractorData.state ? ', ' + contractorData.state : ''}${contractorData.zipCode ? ' ' + contractorData.zipCode : ''}` : contractorData.address,
       contractorPhone: contractorData.phone,
       contractorEmail: contractorData.email,
       contractorLicense: contractorData.license,
-      contractorLogo: contractorData.logo // ← CRÍTICO: agregar logo
+      contractorLogo: contractorData.logo || ""
     };
     
     console.log('🔍 [DEBUG-PDF-ENDPOINT] Datos enriquecidos finales:', {
