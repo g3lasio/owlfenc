@@ -252,6 +252,13 @@ Changelog:
   * Created complete frontend interface with project selection, configuration, and management
   * Integrated with existing PDF generation and email services for seamless workflow
   * Added invoice navigation menu item and proper routing for /invoices page
+- June 21, 2025. Fixed Projects page scrolling and project completion functionality:
+  * Corrected JSX structure issues preventing proper page rendering
+  * Implemented proper flex layout for Projects page with scrollable content area
+  * Added "Completar" button for marking projects as completed with Firebase integration
+  * Enhanced ProjectProgress component with better height management and cyberpunk styling
+  * Fixed content overflow issues in dashboard dialog with proper flex containers
+  * Improved responsive design for both grid and table view modes
 ```
 
 ## User Preferences

@@ -56,32 +56,32 @@ export default function ProjectProgress({ projectId, currentProgress, onProgress
   };
 
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <h3 className="font-medium text-lg mb-4">Progreso del Proyecto</h3>
+    <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg overflow-hidden">
+      <div className="p-4">
+        <h3 className="font-medium text-lg mb-4 text-white">Progreso del Proyecto</h3>
         
         {/* Progress Track */}
         <div className="relative mb-6">
-          <div className="h-2 bg-slate-200 rounded-full">
+          <div className="h-2 bg-gray-600 rounded-full">
             <div 
-              className="h-2 bg-primary rounded-full transition-all duration-300" 
+              className="h-2 bg-cyan-400 rounded-full transition-all duration-300" 
               style={{ 
                 width: `${currentStageIndex >= 0 ? (currentStageIndex / (progressStages.length - 1)) * 100 : 0}%` 
               }}
             ></div>
           </div>
           <div className="flex justify-between mt-2">
-            <span className="text-xs">Inicio</span>
-            <span className="text-xs">Completado</span>
+            <span className="text-xs text-gray-400">Inicio</span>
+            <span className="text-xs text-gray-400">Completado</span>
           </div>
         </div>
         
         {/* Current Stage */}
         <div className="mb-4">
           <div className="flex items-center mb-2">
-            <span className="font-medium mr-2">Estado actual:</span>
+            <span className="font-medium mr-2 text-gray-300">Estado actual:</span>
             {currentProgress && (
-              <Badge className={`${progressStages.find(stage => stage.key === currentProgress)?.color} text-white`}>
+              <Badge className={`${progressStages.find(stage => stage.key === currentProgress)?.color} text-white bg-opacity-80`}>
                 <i className={`${progressStages.find(stage => stage.key === currentProgress)?.icon} mr-1`}></i>
                 {progressStages.find(stage => stage.key === currentProgress)?.label}
               </Badge>
@@ -90,16 +90,16 @@ export default function ProjectProgress({ projectId, currentProgress, onProgress
         </div>
         
         {/* Progress Timeline */}
-        <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
+        <div className="space-y-3 overflow-visible pr-2">
           {progressStages.map((stage, index) => (
-            <div key={stage.key} className="flex items-center justify-between">
-              <div className="flex items-center">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${
+            <div key={stage.key} className="flex items-center justify-between py-2">
+              <div className="flex items-center flex-1 min-w-0">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 flex-shrink-0 ${
                   index <= currentStageIndex ? stage.color : 'bg-slate-200'
                 } text-white`}>
                   <i className={stage.icon}></i>
                 </div>
-                <span className={index <= currentStageIndex ? 'font-medium' : 'text-slate-500'}>
+                <span className={`${index <= currentStageIndex ? 'font-medium' : 'text-slate-500'} truncate`}>
                   {stage.label}
                 </span>
               </div>
@@ -110,6 +110,7 @@ export default function ProjectProgress({ projectId, currentProgress, onProgress
                   size="sm" 
                   disabled={isUpdating}
                   onClick={() => handleProgressUpdate(stage.key)}
+                  className="ml-2 flex-shrink-0"
                 >
                   {index < currentStageIndex ? 'Retroceder' : 'Avanzar'}
                 </Button>
@@ -117,7 +118,7 @@ export default function ProjectProgress({ projectId, currentProgress, onProgress
             </div>
           ))}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

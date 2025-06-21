@@ -698,13 +698,13 @@ function Projects() {
               </DialogHeader>
               
               <div className="flex-1 overflow-auto bg-gray-900 relative p-6">
-                <div className="grid lg:grid-cols-2 gap-6 h-full">
+                <div className="grid lg:grid-cols-2 gap-6 min-h-full">
                   <div className="space-y-6">
-                    <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg relative overflow-hidden shadow-[0_0_20px_rgba(6,182,212,0.1)]">
+                    <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg relative overflow-hidden shadow-[0_0_20px_rgba(6,182,212,0.1)] flex flex-col">
                       <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-cyan-400"></div>
                       <div className="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-cyan-400"></div>
                       
-                      <div className="p-4 border-b border-cyan-400/20 bg-gradient-to-r from-gray-800/50 to-gray-900/50 relative">
+                      <div className="p-4 border-b border-cyan-400/20 bg-gradient-to-r from-gray-800/50 to-gray-900/50 relative flex-shrink-0">
                         <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
                         <h3 className="text-cyan-300 font-semibold flex items-center font-mono">
                           <i className="ri-route-line mr-2"></i>
@@ -712,7 +712,7 @@ function Projects() {
                         </h3>
                       </div>
                       
-                      <div className="p-4">
+                      <div className="p-4 flex-1 overflow-auto">
                         <ProjectProgress 
                           projectId={selectedProject.id} 
                           currentProgress={selectedProject.projectProgress || "estimate_created"} 
@@ -722,13 +722,13 @@ function Projects() {
                     </div>
                   </div>
 
-                  <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg relative overflow-hidden shadow-[0_0_20px_rgba(6,182,212,0.1)]">
+                  <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg relative overflow-hidden shadow-[0_0_20px_rgba(6,182,212,0.1)] flex flex-col">
                     <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-cyan-400"></div>
                     <div className="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-cyan-400"></div>
                     <div className="absolute bottom-0 left-0 w-4 h-4 border-l-2 border-b-2 border-cyan-400"></div>
                     <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-cyan-400"></div>
                     
-                    <div className="p-4 border-b border-cyan-400/20 bg-gradient-to-r from-gray-800/50 to-gray-900/50 relative">
+                    <div className="p-4 border-b border-cyan-400/20 bg-gradient-to-r from-gray-800/50 to-gray-900/50 relative flex-shrink-0">
                       <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
                       <h3 className="text-cyan-300 font-semibold flex items-center font-mono">
                         <i className="ri-file-list-3-line mr-2"></i>
@@ -736,7 +736,7 @@ function Projects() {
                       </h3>
                     </div>
                     
-                    <div className="p-4 overflow-auto">
+                    <div className="p-4 flex-1 overflow-auto">
                       <ProjectDetails 
                         project={selectedProject} 
                         onUpdate={handleProjectUpdate} 
