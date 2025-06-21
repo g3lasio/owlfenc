@@ -243,15 +243,13 @@ Changelog:
   * Simplified data structure to match exactly what working PDF generator expects
   * Removed complex nested data causing API mismatches and replaced with clean format
   * Frontend now generates same perfect PDFs that backend was already producing successfully
-- June 21, 2025. Implemented complete Invoice System for project billing:
-  * Added professional invoice generation for completed projects with legal document formatting
-  * Created specialized invoice template distinct from estimates (no project description, includes payment breakdown)
-  * Implemented configurable payment terms (3, 10, 20, 30+ days) and due date calculations
-  * Added automated email reminder system for overdue invoices with 24-hour cooldowns
-  * Enhanced database schema with invoice tracking fields (invoiceGenerated, invoiceNumber, invoiceStatus, invoiceDueDate)
-  * Created complete frontend interface with project selection, configuration, and management
-  * Integrated with existing PDF generation and email services for seamless workflow
-  * Added invoice navigation menu item and proper routing for /invoices page
+- June 21, 2025. Implemented integrated Invoice Generation system:
+  * Replaced client email display with "Generate as Invoice" button in EstimatesWizard preview
+  * Added cyan-colored button with Quantico font and FileText icon for invoice generation
+  * Prepared foundation for specialized invoice PDF template (distinct from estimates)
+  * Removed separate invoice navigation - integrated into existing estimate workflow
+  * Invoice generation will use same data as estimates but with different PDF formatting
+  * Awaiting PDFMonkey template ID for backend invoice PDF service configuration
 ```
 
 ## User Preferences

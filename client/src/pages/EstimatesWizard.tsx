@@ -4210,31 +4210,20 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       </Button>
                     </div>
 
-                    {/* Info de email del cliente */}
+                    {/* Botón Generate as Invoice */}
                     {estimate.client && (
                       <div className="mt-3 pt-3 border-t border-gray-700">
-                        <div className="text-xs text-gray-400">
-                          {estimate.client.email ? (
-                            emailVerified ? (
-                              <span className="text-green-400">
-                                ✓ Email: {estimate.client.email}
-                              </span>
-                            ) : (
-                              <div className="mt-2">
-                                <EmailVerification
-                                  showAsDialog={false}
-                                  onVerificationComplete={() =>
-                                    setEmailVerified(true)
-                                  }
-                                />
-                              </div>
-                            )
-                          ) : (
-                            <span className="text-amber-400">
-                              ⚠ Cliente sin email registrado
-                            </span>
-                          )}
-                        </div>
+                        <Button
+                          onClick={() => {
+                            // TODO: Implementar generación de factura
+                            console.log('Generating invoice for estimate:', estimate);
+                          }}
+                          className="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-quantico font-semibold py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+                          style={{ fontFamily: 'Quantico, monospace' }}
+                        >
+                          <FileText className="h-4 w-4" />
+                          Generate as Invoice
+                        </Button>
                       </div>
                     )}
                   </CardContent>
