@@ -18,8 +18,6 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ProjectProgress from "@/components/projects/ProjectProgress";
 import ProjectDetails from "@/components/projects/ProjectDetails";
-import ProjectDocuments from "@/components/projects/ProjectDocuments";
-import ProjectDescription from "@/components/projects/ProjectDescription";
 
 interface Project {
   id: string;
@@ -699,82 +697,210 @@ function Projects() {
                 </DialogTitle>
               </DialogHeader>
               
-              <div className="flex-1 overflow-auto bg-gray-900 relative p-6">
-                <div className="grid lg:grid-cols-3 gap-6 min-h-full">
-                  {/* Left Column - Progress */}
-                  <div className="space-y-6">
-                    <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg relative overflow-hidden shadow-[0_0_20px_rgba(6,182,212,0.1)] flex flex-col">
-                      <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-cyan-400"></div>
-                      <div className="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-cyan-400"></div>
-                      
-                      <div className="p-4 border-b border-cyan-400/20 bg-gradient-to-r from-gray-800/50 to-gray-900/50 relative flex-shrink-0">
-                        <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
-                        <h3 className="text-cyan-300 font-semibold flex items-center font-mono">
-                          <i className="ri-route-line mr-2"></i>
-                          PROGRESO DEL PROYECTO
-                        </h3>
+              <div className="flex-1 overflow-auto bg-gray-900 relative">
+                {/* Header con información básica del proyecto */}
+                <div className="p-6 border-b border-cyan-400/20 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-gray-800/40 border border-cyan-400/20 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <i className="ri-user-line text-cyan-400"></i>
+                        <span className="text-cyan-300 font-medium">Cliente</span>
                       </div>
-                      
-                      <div className="p-4 flex-1 overflow-auto">
-                        <ProjectProgress 
-                          projectId={selectedProject.id} 
-                          currentProgress={selectedProject.projectProgress || "estimate_created"} 
-                          onProgressUpdate={handleProgressUpdate} 
-                        />
+                      <p className="text-white">{selectedProject.clientName}</p>
+                      <p className="text-gray-400 text-sm">{selectedProject.address}</p>
+                    </div>
+                    
+                    <div className="bg-gray-800/40 border border-cyan-400/20 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <i className="ri-hammer-line text-cyan-400"></i>
+                        <span className="text-cyan-300 font-medium">Proyecto</span>
                       </div>
+                      <p className="text-white">{selectedProject.projectType || 'General'}</p>
+                      <p className="text-gray-400 text-sm">{selectedProject.projectSubtype || selectedProject.fenceType || 'No especificado'}</p>
+                    </div>
+                    
+                    <div className="bg-gray-800/40 border border-cyan-400/20 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <i className="ri-money-dollar-circle-line text-cyan-400"></i>
+                        <span className="text-cyan-300 font-medium">Valor</span>
+                      </div>
+                      <p className="text-white">
+                        {selectedProject.totalPrice 
+                          ? `$${(selectedProject.totalPrice / 100).toLocaleString()}` 
+                          : 'No definido'}
+                      </p>
+                      <p className="text-gray-400 text-sm">
+                        Estado: {selectedProject.status === 'completed' ? 'Completado' : 'En proceso'}
+                      </p>
                     </div>
                   </div>
+                </div>
 
-                  {/* Middle Column - Project Description & Changes */}
-                  <div className="space-y-6">
-                    <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg relative overflow-hidden shadow-[0_0_20px_rgba(6,182,212,0.1)] flex flex-col">
-                      <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-cyan-400"></div>
-                      <div className="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-cyan-400"></div>
-                      <div className="absolute bottom-0 left-0 w-4 h-4 border-l-2 border-b-2 border-cyan-400"></div>
-                      <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-cyan-400"></div>
-                      
-                      <div className="p-4 flex-1 overflow-auto">
-                        <ProjectDescription 
-                          projectId={selectedProject.id}
-                          description={selectedProject.projectDescription}
-                          scope={selectedProject.projectScope}
-                          onDescriptionUpdate={(description) => handleProjectUpdate({
-                            ...selectedProject,
-                            projectDescription: description
-                          })}
-                          onScopeUpdate={(scope) => handleProjectUpdate({
-                            ...selectedProject,
-                            projectScope: scope
-                          })}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right Column - Documents & Details */}
-                  <div className="space-y-6">
-                    <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg relative overflow-hidden shadow-[0_0_20px_rgba(6,182,212,0.1)] flex flex-col">
-                      <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-cyan-400"></div>
-                      <div className="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-cyan-400"></div>
-                      <div className="absolute bottom-0 left-0 w-4 h-4 border-l-2 border-b-2 border-cyan-400"></div>
-                      <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-cyan-400"></div>
-                      
-                      <div className="p-4 flex-1 overflow-auto">
-                        <div className="space-y-6">
-                          <ProjectDocuments 
-                            projectId={selectedProject.id}
+                {/* Contenido principal del dashboard */}
+                <div className="p-6">
+                  <div className="grid lg:grid-cols-2 gap-6">
+                    {/* Columna izquierda: Progreso y Detalles */}
+                    <div className="space-y-6">
+                      {/* Progreso del Proyecto */}
+                      <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg">
+                        <div className="p-4 border-b border-cyan-400/20">
+                          <h3 className="text-cyan-300 font-semibold flex items-center">
+                            <i className="ri-route-line mr-2"></i>
+                            Progreso del Proyecto
+                          </h3>
+                        </div>
+                        <div className="p-4">
+                          <ProjectProgress 
+                            projectId={selectedProject.id} 
+                            currentProgress={selectedProject.projectProgress || "estimate_created"} 
+                            onProgressUpdate={handleProgressUpdate} 
                           />
-                          
-                          <div className="border-t border-cyan-400/20 pt-6">
-                            <h3 className="text-cyan-300 font-semibold flex items-center font-mono mb-4">
-                              <i className="ri-information-line mr-2"></i>
-                              INFORMACIÓN DEL PROYECTO
-                            </h3>
-                            <ProjectDetails 
-                              project={selectedProject} 
-                              onUpdate={handleProjectUpdate} 
-                            />
+                        </div>
+                      </div>
+
+                      {/* Información del Proyecto */}
+                      <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg">
+                        <div className="p-4 border-b border-cyan-400/20">
+                          <h3 className="text-cyan-300 font-semibold flex items-center">
+                            <i className="ri-information-line mr-2"></i>
+                            Detalles del Proyecto
+                          </h3>
+                        </div>
+                        <div className="p-4 max-h-96 overflow-y-auto">
+                          <ProjectDetails 
+                            project={selectedProject} 
+                            onUpdate={handleProjectUpdate} 
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Columna derecha: Descripción y Documentos */}
+                    <div className="space-y-6">
+                      {/* Descripción del Proyecto */}
+                      <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg">
+                        <div className="p-4 border-b border-cyan-400/20">
+                          <h3 className="text-cyan-300 font-semibold flex items-center">
+                            <i className="ri-file-text-line mr-2"></i>
+                            Descripción y Cambios
+                          </h3>
+                        </div>
+                        <div className="p-4 max-h-96 overflow-y-auto">
+                          <div className="space-y-4">
+                            <div>
+                              <label className="text-sm font-medium text-gray-300 mb-2 block">
+                                Descripción del Proyecto
+                              </label>
+                              <p className="text-gray-200 text-sm bg-gray-700/50 p-3 rounded">
+                                {selectedProject.projectDescription || 'No se ha proporcionado una descripción del proyecto.'}
+                              </p>
+                            </div>
+                            
+                            <div>
+                              <label className="text-sm font-medium text-gray-300 mb-2 block">
+                                Alcance del Trabajo
+                              </label>
+                              <p className="text-gray-200 text-sm bg-gray-700/50 p-3 rounded">
+                                {selectedProject.projectScope || 'No se ha definido el alcance específico del trabajo.'}
+                              </p>
+                            </div>
+
+                            {/* Cambios recientes simulados */}
+                            <div>
+                              <label className="text-sm font-medium text-gray-300 mb-2 block">
+                                Cambios Recientes
+                              </label>
+                              <div className="space-y-2">
+                                <div className="bg-gray-700/50 p-3 rounded border-l-4 border-yellow-500">
+                                  <div className="flex justify-between items-start mb-1">
+                                    <span className="text-sm font-medium text-white">Cambio de altura</span>
+                                    <Badge className="bg-yellow-500 text-white text-xs">Pendiente</Badge>
+                                  </div>
+                                  <p className="text-xs text-gray-300">Cliente solicita aumentar altura de 6ft a 8ft</p>
+                                </div>
+                              </div>
+                            </div>
                           </div>
+                        </div>
+                      </div>
+
+                      {/* Documentos del Proyecto */}
+                      <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg">
+                        <div className="p-4 border-b border-cyan-400/20">
+                          <h3 className="text-cyan-300 font-semibold flex items-center">
+                            <i className="ri-folder-line mr-2"></i>
+                            Documentos
+                          </h3>
+                        </div>
+                        <div className="p-4">
+                          <div className="grid grid-cols-2 gap-3 mb-4">
+                            <div className="bg-gray-700/50 p-3 rounded text-center">
+                              <i className="ri-calculator-line text-blue-400 text-xl mb-1"></i>
+                              <p className="text-xs text-gray-300">Estimados</p>
+                              <p className="text-lg font-bold text-blue-400">1</p>
+                            </div>
+                            <div className="bg-gray-700/50 p-3 rounded text-center">
+                              <i className="ri-file-text-line text-green-400 text-xl mb-1"></i>
+                              <p className="text-xs text-gray-300">Contratos</p>
+                              <p className="text-lg font-bold text-green-400">1</p>
+                            </div>
+                            <div className="bg-gray-700/50 p-3 rounded text-center">
+                              <i className="ri-shield-check-line text-yellow-400 text-xl mb-1"></i>
+                              <p className="text-xs text-gray-300">Permisos</p>
+                              <p className="text-lg font-bold text-yellow-400">1</p>
+                            </div>
+                            <div className="bg-gray-700/50 p-3 rounded text-center">
+                              <i className="ri-bill-line text-purple-400 text-xl mb-1"></i>
+                              <p className="text-xs text-gray-300">Facturas</p>
+                              <p className="text-lg font-bold text-purple-400">0</p>
+                            </div>
+                          </div>
+
+                          {/* Lista de documentos */}
+                          <div className="space-y-2 max-h-48 overflow-y-auto">
+                            <div className="bg-gray-700/50 p-3 rounded flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <i className="ri-calculator-line text-blue-400"></i>
+                                <div>
+                                  <p className="text-sm text-white">Estimado Inicial</p>
+                                  <p className="text-xs text-gray-400">Creado: {formatDate(selectedProject.createdAt)}</p>
+                                </div>
+                              </div>
+                              <div className="flex gap-1">
+                                <Button size="sm" variant="outline" className="text-xs px-2 py-1">
+                                  <i className="ri-eye-line"></i>
+                                </Button>
+                                <Button size="sm" variant="outline" className="text-xs px-2 py-1">
+                                  <i className="ri-download-line"></i>
+                                </Button>
+                              </div>
+                            </div>
+
+                            {selectedProject.contractHtml && (
+                              <div className="bg-gray-700/50 p-3 rounded flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <i className="ri-file-text-line text-green-400"></i>
+                                  <div>
+                                    <p className="text-sm text-white">Contrato de Servicio</p>
+                                    <p className="text-xs text-gray-400">Estado: Activo</p>
+                                  </div>
+                                </div>
+                                <div className="flex gap-1">
+                                  <Button size="sm" variant="outline" className="text-xs px-2 py-1">
+                                    <i className="ri-eye-line"></i>
+                                  </Button>
+                                  <Button size="sm" variant="outline" className="text-xs px-2 py-1">
+                                    <i className="ri-download-line"></i>
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          <Button className="w-full mt-4 bg-cyan-600 hover:bg-cyan-700" size="sm">
+                            <i className="ri-add-line mr-1"></i>
+                            Agregar Documento
+                          </Button>
                         </div>
                       </div>
                     </div>
