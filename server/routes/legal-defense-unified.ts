@@ -6,7 +6,6 @@
 import { Router } from 'express';
 import multer from 'multer';
 import { HybridContractGenerator } from '../services/hybridContractGenerator';
-import { anthropicContractService } from '../../client/src/services/anthropicContractService';
 
 const router = Router();
 

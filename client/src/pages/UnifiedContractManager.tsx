@@ -130,7 +130,6 @@ const UnifiedContractManager: React.FC = () => {
         
         // PASO CRÍTICO: Validar datos y persistir inmediatamente
         const extractedData = result.extractedData;
-        setContractData(extractedData);
         
         // Persistir datos en sesión
         sessionStorage.setItem('contract-session-data', JSON.stringify(extractedData));
