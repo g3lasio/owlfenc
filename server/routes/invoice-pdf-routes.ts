@@ -81,25 +81,23 @@ router.post('/generate', async (req, res) => {
         }
       };
       
-      return new Promise((resolve, reject) => {
-        htmlPdf.create(pdfBuffer.toString('utf8'), options).toBuffer((err: any, buffer: Buffer) => {
-          if (err) {
-            console.error('❌ [INVOICE-PDF] Error generating PDF:', err);
-            return res.status(500).json({
-              success: false,
-              error: 'Failed to generate PDF',
-              details: err.message
-            });
-          }
-          
-          console.log(`✅ [INVOICE-PDF] Generated PDF successfully: ${filename} (${buffer.length} bytes)`);
-          
-          res.setHeader('Content-Type', 'application/pdf');
-          res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-          res.setHeader('Content-Length', buffer.length.toString());
-          
-          return res.end(buffer, 'binary');
-        });
+      htmlPdf.create(pdfBuffer.toString('utf8'), options).toBuffer((err: any, buffer: Buffer) => {
+        if (err) {
+          console.error('❌ [INVOICE-PDF] Error generating PDF:', err);
+          return res.status(500).json({
+            success: false,
+            error: 'Failed to generate PDF',
+            details: err.message
+          });
+        }
+        
+        console.log(`✅ [INVOICE-PDF] Generated PDF successfully: ${filename} (${buffer.length} bytes)`);
+        
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.setHeader('Content-Length', buffer.length.toString());
+        
+        return res.end(buffer, 'binary');
       });
     } else {
       // Servir como HTML para preview
