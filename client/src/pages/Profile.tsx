@@ -36,6 +36,7 @@ import { UserProfile } from "@/hooks/use-profile";
 type CompanyInfoType = UserProfile;
 
 export default function Profile() {
+  const { toast } = useToast();
   const { profile, isLoading: isLoadingProfile, error: profileError, updateProfile } = useProfile();
   const [companyInfo, setCompanyInfo] = useState<CompanyInfoType>(profile || {
     company: "",
@@ -66,7 +67,6 @@ export default function Profile() {
   const [activeDocumentSection, setActiveDocumentSection] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
-  const { toast } = useToast();
 
   // Email verification state
   const [emailVerificationStatus, setEmailVerificationStatus] = useState<'unverified' | 'pending' | 'verified' | 'checking'>('unverified');
@@ -94,9 +94,8 @@ export default function Profile() {
     try {
       console.log('🔄 Cargando perfil de empresa...');
       
-      // Obtener el ID del usuario autenticado
-      const { currentUser } = useAuth();
-      const userId = currentUser?.uid || 'dev-user-123';
+      // Usar ID fijo para desarrollo
+      const userId = 'dev-user-123';
       console.log(`👤 Usuario actual: ${userId}`);
       
       // Usar clave específica por usuario para localStorage
@@ -223,12 +222,23 @@ export default function Profile() {
         
         setCompanyInfo(updatedInfo);
         
-        // Guardar inmediatamente en localStorage
-        const userId = currentUser?.uid || 'dev-user-123';
+        // Guardar inmediatamente en localStorage y servidor  
+        const userId = 'dev-user-123';
         const profileKey = `userProfile_${userId}`;
         localStorage.setItem(profileKey, JSON.stringify(updatedInfo));
         
-        console.log('🖼️ Logo guardado en Base64:', base64Result.substring(0, 50) + '...');
+        // También guardar en servidor inmediatamente
+        fetch('/api/profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatedInfo)
+        }).then(response => {
+          if (response.ok) {
+            console.log('✅ Logo guardado en servidor y localStorage');
+          }
+        }).catch(error => {
+          console.warn('⚠️ Error guardando en servidor:', error);
+        });
         
         toast({
           title: "Logo guardado",
@@ -268,8 +278,8 @@ export default function Profile() {
     try {
       console.log('💾 Guardando perfil de empresa...');
       
-      // Obtener el ID del usuario autenticado
-      const userId = currentUser?.uid || 'dev-user-123';
+      // Usar ID fijo para desarrollo
+      const userId = 'dev-user-123';
       console.log(`👤 Guardando para usuario: ${userId}`);
       
       // Asegurarnos de que cualquier valor undefined se convierta en cadena vacía
