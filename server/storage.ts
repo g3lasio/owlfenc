@@ -812,6 +812,17 @@ export class StorageManager implements IStorage {
       this.CACHE_TTL
     );
   }
+
+  // Get project by ID (for StorageManager)
+  async getProjectById(id: number): Promise<Project | null> {
+    return this.executeWithFailover<Project | null>(
+      'getProjectById',
+      () => this.primaryStorage.getProjectById(id),
+      () => this.backupStorage?.getProjectById(id),
+      `project_${id}`,
+      this.CACHE_TTL
+    );
+  }
   
   async getProjectPaymentsByUserId(userId: number): Promise<ProjectPayment[]> {
     return this.executeWithFailover<ProjectPayment[]>(

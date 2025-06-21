@@ -44,9 +44,11 @@ const InvoiceSettings: React.FC = () => {
       return response;
     },
     enabled: !!currentUser,
-    onSuccess: (data: UserProfile) => {
-      setPaymentTerms(data.defaultPaymentTerms || 30);
-      setMessageTemplate(data.invoiceMessageTemplate || '');
+    onSettled: (data: UserProfile) => {
+      if (data) {
+        setPaymentTerms(data.defaultPaymentTerms || 30);
+        setMessageTemplate(data.invoiceMessageTemplate || '');
+      }
     }
   });
 
