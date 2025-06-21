@@ -2124,7 +2124,7 @@ export default function EstimatesWizardFixed() {
       // 🚀 DATOS COMPLETOS PARA TRANSFERENCIA AL DASHBOARD
       // Obtener información completa del contratista desde el perfil del usuario
       const contractorInfo = {
-        companyName: profile?.company || "Sin nombre de empresa",
+        company: profile?.company || "Sin nombre de empresa",
         name: profile?.ownerName || profile?.displayName || "Sin nombre",
         email: profile?.email || currentUser?.email || "Sin email",
         phone: profile?.phone || "Sin teléfono",
@@ -4002,7 +4002,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                             </div>
                           )}
                           <p className="font-medium">
-                            {profile?.companyName || "Sin nombre de empresa"}
+                            {profile?.company || "Sin nombre de empresa"}
                           </p>
                           <p className="text-xs text-gray-400">
                             {profile?.address || "Sin dirección"}
@@ -4631,8 +4631,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                 // Actualizar la información del contratista temporalmente para esta sesión
                 const updatedContractor = {
                   ...contractor,
-                  companyName: editableCompany.companyName,
-                  name: editableCompany.companyName,
+                  company: editableCompany.company,
+                  name: editableCompany.company,
                   address: editableCompany.address,
                   city: editableCompany.city,
                   state: editableCompany.state,
@@ -4863,7 +4863,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                     />
                     <div>
                       <h1 className="text-2xl font-bold text-blue-900">
-                        {profile?.companyName || "Your Company"}
+                        {profile?.company || "Your Company"}
                       </h1>
                       <p className="text-gray-600">
                         {profile?.address || "Company Address"}
@@ -5063,7 +5063,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                 <div className="text-center pt-6 border-t border-gray-300">
                   <p className="text-gray-600">
                     Thank you for choosing{" "}
-                    {profile?.companyName || "our services"}!
+                    {profile?.company || "our services"}!
                   </p>
                   <p className="text-sm text-gray-500 mt-2">
                     For questions about this estimate, please contact us at{" "}
@@ -5402,7 +5402,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                 <div className="border-t pt-3 sm:pt-4 mt-4 sm:mt-6 text-gray-600">
                   <div className="text-xs sm:text-sm space-y-1">
                     <div className="font-bold text-blue-600 text-sm sm:text-base">
-                      {profile?.companyName || profile?.name || "Your Company"}
+                      {profile?.company || profile?.name || "Your Company"}
                     </div>
                     {profile?.phone && (
                       <div className="flex items-center gap-1">
