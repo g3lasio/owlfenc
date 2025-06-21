@@ -237,6 +237,12 @@ Changelog:
   * Added persistent session state management preventing data loss between workflow steps
   * Created unified legal-defense-unified.ts router with optimized contract generation pipeline
   * Enhanced error handling and performance monitoring for 95%+ success rate target
+- June 21, 2025. Fixed frontend-backend disconnection in contract generation:
+  * Identified that CyberpunkLegalDefense frontend was calling wrong endpoint (/api/contracts/generate-professional)
+  * Connected frontend directly to working /api/generate-pdf endpoint that produces perfect PDFs
+  * Simplified data structure to match exactly what working PDF generator expects
+  * Removed complex nested data causing API mismatches and replaced with clean format
+  * Frontend now generates same perfect PDFs that backend was already producing successfully
 ```
 
 ## User Preferences
