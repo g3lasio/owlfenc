@@ -959,15 +959,8 @@ export default function EstimatesWizardFixed() {
                            data.estimateAmount ||
                            0;
             
-            // Smart conversion: only convert from cents if the value is clearly in cents
-            // Values in cents are typically stored as integers above 1000 (i.e., $10.00 = 1000 cents)
-            let displayTotal = totalValue;
-            
-            // Check if this is stored in cents format (integer values > 1000 typically indicate cents)
-            if (data.projectTotalCosts?.totalSummary?.finalTotalCents || 
-                data.total > 1000 && Number.isInteger(totalValue)) {
-              displayTotal = totalValue / 100;
-            }
+            // No conversion - keep original values as they are stored
+            const displayTotal = totalValue;
             
             const projectTitle = data.projectDetails?.name ||
                                data.projectName ||
@@ -1035,14 +1028,8 @@ export default function EstimatesWizardFixed() {
                          data.estimateAmount ||
                          0;
           
-          // Smart conversion: only convert from cents if clearly in cents format
-          let displayTotal = totalValue;
-          
-          // Check if this is stored in cents format
-          if (data.projectTotalCosts?.totalSummary?.finalTotalCents || 
-              data.total > 1000 && Number.isInteger(totalValue)) {
-            displayTotal = totalValue / 100;
-          }
+          // No conversion - keep original values as they are stored
+          const displayTotal = totalValue;
           
           const projectTitle = data.projectDetails?.name ||
                              data.title ||
@@ -1137,153 +1124,9 @@ export default function EstimatesWizardFixed() {
     }
   }
 
-  // Function to load a specific estimate for editing
-  const loadEstimateForEdit = async (estimateId: string) => {
-    if (!currentUser?.uid) return;
-
-    try {
-      console.log(`🔄 Cargando estimado para editar: ${estimateId}`);
-      
-      // Import Firebase functions
-      const { doc, getDoc } = await import("firebase/firestore");
-      const { db } = await import("../lib/firebase");
-
-      let estimateData = null;
-
-      // Try loading from projects collection first
-      try {
-        const projectRef = doc(db, "projects", estimateId);
-        const projectSnap = await getDoc(projectRef);
-        
-        if (projectSnap.exists()) {
-          estimateData = projectSnap.data();
-          console.log("📊 Estimado cargado desde proyectos");
-        }
-      } catch (projectError) {
-        console.warn("No se pudo cargar desde proyectos:", projectError);
-      }
-
-      // Try loading from estimates collection if not found in projects
-      if (!estimateData) {
-        try {
-          const estimateRef = doc(db, "estimates", estimateId);
-          const estimateSnap = await getDoc(estimateRef);
-          
-          if (estimateSnap.exists()) {
-            estimateData = estimateSnap.data();
-            console.log("📋 Estimado cargado desde estimados");
-          }
-        } catch (estimateError) {
-          console.warn("No se pudo cargar desde estimados:", estimateError);
-        }
-      }
-
-      if (!estimateData) {
-        toast({
-          title: "Estimado no encontrado",
-          description: "No se pudo encontrar el estimado para editar.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Parse and populate the estimate data
-      let clientData: Client | null = null;
-      
-      // Extract client information from different possible structures
-      if (estimateData.clientInformation) {
-        clientData = {
-          id: estimateData.clientInformation.id || estimateId,
-          clientId: estimateData.clientInformation.id || estimateId,
-          name: estimateData.clientInformation.name || "",
-          email: estimateData.clientInformation.email || "",
-          phone: estimateData.clientInformation.phone || "",
-          address: estimateData.clientInformation.address || "",
-          city: estimateData.clientInformation.city || "",
-          state: estimateData.clientInformation.state || "",
-          zipCode: estimateData.clientInformation.zipCode || "",
-        };
-      } else if (estimateData.clientName) {
-        clientData = {
-          id: estimateId,
-          clientId: estimateId,
-          name: estimateData.clientName || "",
-          email: estimateData.clientEmail || "",
-          phone: estimateData.clientPhone || "",
-          address: estimateData.clientAddress || "",
-          city: "",
-          state: "",
-          zipCode: "",
-        };
-      }
-
-      // Extract items from different possible structures
-      let estimateItems: EstimateItem[] = [];
-      
-      if (estimateData.projectTotalCosts?.materialCosts?.items) {
-        estimateItems = estimateData.projectTotalCosts.materialCosts.items.map((item: any, index: number) => ({
-          id: `item-${index}`,
-          materialId: item.materialId || "",
-          name: item.name || "",
-          description: item.description || "",
-          quantity: item.quantity || 0,
-          price: item.unitPrice ? (item.unitPrice / 100) : (item.price || 0),
-          unit: item.unit || "unidad",
-          total: item.totalPrice ? (item.totalPrice / 100) : (item.total || 0),
-        }));
-      } else if (estimateData.items) {
-        estimateItems = estimateData.items.map((item: any, index: number) => ({
-          id: `item-${index}`,
-          materialId: item.materialId || "",
-          name: item.name || "",
-          description: item.description || "",
-          quantity: item.quantity || 0,
-          price: item.unitPrice ? (item.unitPrice / 100) : (item.price || 0),
-          unit: item.unit || "unidad",
-          total: item.totalPrice ? (item.totalPrice / 100) : (item.total || 0),
-        }));
-      }
-
-      // Calculate totals
-      const subtotal = estimateItems.reduce((sum, item) => sum + item.total, 0);
-      const taxRate = estimateData.projectTotalCosts?.additionalCosts?.taxRate || estimateData.taxRate || 10;
-      const tax = subtotal * (taxRate / 100);
-      const total = subtotal + tax;
-
-      // Update the estimate state
-      setEstimate({
-        client: clientData,
-        items: estimateItems,
-        projectDetails: estimateData.projectDetails?.description || estimateData.projectDescription || "",
-        subtotal,
-        tax,
-        total,
-        taxRate,
-        discountType: estimateData.projectTotalCosts?.additionalCosts?.discountType || "percentage",
-        discountValue: estimateData.projectTotalCosts?.additionalCosts?.discountValue || 0,
-        discountAmount: estimateData.projectTotalCosts?.additionalCosts?.discountAmount ? 
-          (estimateData.projectTotalCosts.additionalCosts.discountAmount / 100) : 0,
-        discountName: estimateData.discountName || "",
-      });
-
-      // Navigate to materials step (step 2)
-      setCurrentStep(2);
-
-      toast({
-        title: "Estimado cargado",
-        description: "El estimado se ha cargado para edición. Revisa los materiales en el paso 3.",
-        duration: 4000,
-      });
-
-      console.log("✅ Estimado cargado exitosamente para edición");
-    } catch (error) {
-      console.error("❌ Error cargando estimado para editar:", error);
-      toast({
-        title: "Error al cargar estimado",
-        description: "No se pudo cargar el estimado para edición. Inténtalo de nuevo.",
-        variant: "destructive",
-      });
-    }
+  // Simple edit function that matches Projects.tsx exactly
+  const handleEditEstimate = (projectId: string) => {
+    window.location.href = `/estimates?edit=${projectId}`;
   };
 
   // AI Enhancement Function - Using new Mervin Working Effect
@@ -5044,9 +4887,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                              // Close the dialog and load estimate for editing
+                              // Close the dialog and navigate to edit estimate exactly like Projects page
                               setShowEstimatesHistory(false);
-                              loadEstimateForEdit(estimate.id);
+                              window.location.href = `/estimates?edit=${estimate.id}`;
                             }}
                             className="h-8 px-2"
                           >
