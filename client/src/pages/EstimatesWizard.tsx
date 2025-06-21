@@ -173,7 +173,6 @@ export default function EstimatesWizardFixed() {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
-  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   // Deepsearch Materials states
   const [showDeepsearchDialog, setShowDeepsearchDialog] = useState(false);
@@ -2800,150 +2799,6 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     }
   };
 
-  const handleGenerateInvoice = async () => {
-    if (!estimate.client) {
-      toast({
-        title: "Error",
-        description: "Necesitas completar la información del cliente",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!estimate.items || estimate.items.length === 0) {
-      toast({
-        title: "Error",
-        description: "Necesitas agregar al menos un item al estimado",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setIsGeneratingPdf(true);
-
-      const estimateData = {
-        client: estimate.client,
-        items: estimate.items,
-        subtotal: estimate.subtotal,
-        tax: estimate.tax,
-        total: estimate.total,
-      };
-
-      console.log("🧾 Generating invoice for:", {
-        client: estimate.client.name,
-        itemsCount: estimate.items.length,
-        total: estimate.total,
-      });
-
-      console.log("🧾 [INVOICE-FRONTEND] Starting invoice generation...");
-      console.log("🧾 [INVOICE-FRONTEND] Estimate data:", {
-        client: estimateData.client.name,
-        itemsCount: estimateData.items.length,
-        total: estimateData.total
-      });
-      console.log("🧾 [INVOICE-FRONTEND] Contractor data:", {
-        company: profile?.company,
-        phone: profile?.phone,
-        email: profile?.email
-      });
-      console.log("🧾 [INVOICE-FRONTEND] Full request payload:", {
-        estimateData,
-        contractorData: {
-          company: profile?.company,
-          name: profile?.name || profile?.company,
-          address: profile?.address,
-          city: profile?.city,
-          state: profile?.state,
-          zipCode: profile?.zipCode,
-          phone: profile?.phone,
-          email: profile?.email,
-          website: profile?.website,
-          logo: profile?.logo,
-        }
-      });
-
-      const response = await fetch("/api/invoice-pdf/generate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          estimateData,
-          contractorData: {
-            company: profile?.company,
-            name: profile?.name || profile?.company,
-            address: profile?.address,
-            city: profile?.city,
-            state: profile?.state,
-            zipCode: profile?.zipCode,
-            phone: profile?.phone,
-            email: profile?.email,
-            website: profile?.website,
-            logo: profile?.logo,
-          },
-        }),
-      });
-
-      console.log("🧾 [INVOICE-FRONTEND] Response status:", response.status, response.statusText);
-      console.log("🧾 [INVOICE-FRONTEND] Response headers:", Object.fromEntries(response.headers.entries()));
-
-      if (!response.ok) {
-        console.error("🧾 [INVOICE-FRONTEND] Response not OK, reading error...");
-        const errorText = await response.text();
-        console.error("🧾 [INVOICE-FRONTEND] Error response:", errorText);
-        
-        let errorData;
-        try {
-          errorData = JSON.parse(errorText);
-        } catch (e) {
-          throw new Error(`Server error (${response.status}): ${errorText}`);
-        }
-        
-        throw new Error(errorData.details || errorData.error || "Error generando factura");
-      }
-
-      console.log("🧾 [INVOICE-FRONTEND] Processing PDF response...");
-      const blob = await response.blob();
-      console.log("🧾 [INVOICE-FRONTEND] Blob size:", blob.size, "bytes, type:", blob.type);
-      
-      if (blob.size === 0) {
-        throw new Error("Received empty PDF response");
-      }
-      
-      const url = window.URL.createObjectURL(blob);
-      const filename = `factura-${estimate.client.name.replace(/\s+/g, "-")}-${new Date().toISOString().split("T")[0]}.pdf`;
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-      
-      console.log("🧾 [INVOICE-FRONTEND] PDF downloaded successfully:", filename);
-
-      toast({
-        title: "✅ Factura Generada",
-        description: "La factura PDF ha sido descargada exitosamente con tu template personalizado.",
-      });
-    } catch (error: any) {
-      console.error("🧾 [INVOICE-FRONTEND] Error details:", {
-        message: error.message,
-        stack: error.stack,
-        error: error
-      });
-      toast({
-        title: "Error generando factura",
-        description: error.message || "Error desconocido al generar la factura",
-        variant: "destructive",
-      });
-    } finally {
-      console.log("🧾 [INVOICE-FRONTEND] Cleaning up...");
-      setIsGeneratingPdf(false);
-    }
-  };
-
   // Render current step
   const renderCurrentStep = () => {
     switch (currentStep) {
@@ -4355,18 +4210,31 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       </Button>
                     </div>
 
-                    {/* Botón Generate as Invoice */}
+                    {/* Info de email del cliente */}
                     {estimate.client && (
                       <div className="mt-3 pt-3 border-t border-gray-700">
-                        <Button
-                          onClick={handleGenerateInvoice}
-                          disabled={!estimate.client || estimate.items.length === 0}
-                          className="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-quantico font-semibold py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                          style={{ fontFamily: 'Quantico, monospace' }}
-                        >
-                          <FileText className="h-4 w-4" />
-                          Generate as Invoice
-                        </Button>
+                        <div className="text-xs text-gray-400">
+                          {estimate.client.email ? (
+                            emailVerified ? (
+                              <span className="text-green-400">
+                                ✓ Email: {estimate.client.email}
+                              </span>
+                            ) : (
+                              <div className="mt-2">
+                                <EmailVerification
+                                  showAsDialog={false}
+                                  onVerificationComplete={() =>
+                                    setEmailVerified(true)
+                                  }
+                                />
+                              </div>
+                            )
+                          ) : (
+                            <span className="text-amber-400">
+                              ⚠ Cliente sin email registrado
+                            </span>
+                          )}
+                        </div>
                       </div>
                     )}
                   </CardContent>

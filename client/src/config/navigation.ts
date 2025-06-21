@@ -78,7 +78,12 @@ export const navigationGroups: NavigationGroup[] = [
         path: "/project-payments",
         icon: "ri-money-dollar-circle-line"
       },
-
+      {
+        id: "invoices",
+        label: "navigation.invoices",
+        path: "/invoices",
+        icon: "ri-file-text-line"
+      },
 
       {
         id: "permit-advisor",

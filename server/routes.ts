@@ -1274,26 +1274,9 @@ Output in English regardless of input language. Make it suitable for contracts a
   registerPropertyRoutes(app);
   setupTemplatesRoutes(app);
 
-  // Registrar rutas limpias de PDF de facturas
-  try {
-    const invoicePdfModule = await import('./routes/invoice-pdf-routes-clean');
-    const invoicePdfRoutes = invoicePdfModule.default;
-    
-    app.use('/api/invoice-pdf', invoicePdfRoutes);
-    console.log('🧾 [ROUTES] Clean Invoice PDF routes registered at /api/invoice-pdf');
-    
-  } catch (error) {
-    console.error('❌ [ROUTES] Failed to register clean invoice PDF routes:', error);
-  }
-
   // Registrar rutas de facturación
-  try {
-    const invoiceRoutes = await import('./routes/invoice-routes');
-    app.use('/api/invoices', invoiceRoutes.default);
-    console.log('🧾 [ROUTES] Invoice routes registered at /api/invoices');
-  } catch (error) {
-    console.error('❌ [ROUTES] Failed to register invoice routes:', error);
-  }
+  const invoiceRoutes = await import('./routes/invoice-routes');
+  app.use('/api/invoices', invoiceRoutes.default);
 
   // Registrar la nueva API REST de estimados renovada
   app.use("/api/estimates", estimatesRoutes);
