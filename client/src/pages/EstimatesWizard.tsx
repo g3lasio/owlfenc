@@ -2863,7 +2863,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         }
       });
 
-      const response = await fetch("/api/invoice-pdf/generate", {
+      const response = await fetch("/api/invoice-pdf/generate?format=pdf", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2925,7 +2925,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
       toast({
         title: "✅ Factura Generada",
-        description: "La factura ha sido descargada exitosamente",
+        description: "La factura PDF ha sido descargada exitosamente con tu template personalizado.",
       });
     } catch (error: any) {
       console.error("🧾 [INVOICE-FRONTEND] Error details:", {

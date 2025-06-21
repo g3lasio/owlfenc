@@ -6,6 +6,8 @@ import express from 'express';
 import { storage } from '../storage';
 import * as fs from 'fs';
 import * as path from 'path';
+// @ts-ignore
+import * as htmlPdf from 'html-pdf';
 
 const router = express.Router();
 
@@ -61,16 +63,55 @@ router.post('/generate', async (req, res) => {
     console.log('🚀 [INVOICE-PDF] Using HTML template for PDF generation...');
     const pdfBuffer = await generateInvoicePdfFromTemplate(estimateData, contractor);
 
-    // Por ahora servir como HTML para verificar el template
-    const invoiceNumber = `INV-${Date.now()}`;
-    const filename = `Invoice-${estimateData.client.name.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.html`;
+    // Verificar si se quiere PDF o HTML
+    const wantsPdf = req.query.format === 'pdf';
     
-    console.log(`✅ [INVOICE-PDF] Generated HTML successfully: ${filename} (${pdfBuffer.length} bytes)`);
-    
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    
-    return res.send(pdfBuffer.toString('utf8'));
+    if (wantsPdf) {
+      // Generar PDF usando html-pdf
+      const invoiceNumber = `INV-${Date.now()}`;
+      const filename = `Invoice-${estimateData.client.name.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
+      
+      const options = {
+        format: 'A4',
+        border: {
+          top: '0.5in',
+          right: '0.5in',
+          bottom: '0.5in',
+          left: '0.5in'
+        }
+      };
+      
+      return new Promise((resolve, reject) => {
+        htmlPdf.create(pdfBuffer.toString('utf8'), options).toBuffer((err: any, buffer: Buffer) => {
+          if (err) {
+            console.error('❌ [INVOICE-PDF] Error generating PDF:', err);
+            return res.status(500).json({
+              success: false,
+              error: 'Failed to generate PDF',
+              details: err.message
+            });
+          }
+          
+          console.log(`✅ [INVOICE-PDF] Generated PDF successfully: ${filename} (${buffer.length} bytes)`);
+          
+          res.setHeader('Content-Type', 'application/pdf');
+          res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+          res.setHeader('Content-Length', buffer.length.toString());
+          
+          return res.end(buffer, 'binary');
+        });
+      });
+    } else {
+      // Servir como HTML para preview
+      const invoiceNumber = `INV-${Date.now()}`;
+      const filename = `Invoice-${estimateData.client.name.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.html`;
+      
+      console.log(`✅ [INVOICE-PDF] Generated HTML successfully: ${filename} (${pdfBuffer.length} bytes)`);
+      
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      
+      return res.send(pdfBuffer.toString('utf8'));
+    }
 
   } catch (error: any) {
     console.error('❌ [INVOICE-PDF] Error:', error.message);
