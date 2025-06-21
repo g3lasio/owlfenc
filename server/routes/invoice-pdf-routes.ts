@@ -18,6 +18,10 @@ console.log('🧾 [INVOICE-PDF-ROUTES] Module loaded');
 router.post('/generate', async (req, res) => {
   try {
     console.log('🧾 [INVOICE-PDF] Starting invoice generation...');
+    console.log('🧾 [INVOICE-PDF] Request body keys:', Object.keys(req.body));
+    
+    // Set longer timeout for PDF generation
+    req.setTimeout(120000); // 2 minutes timeout
     
     const schema = z.object({
       estimateData: z.object({

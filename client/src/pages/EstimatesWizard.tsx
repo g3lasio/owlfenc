@@ -173,6 +173,7 @@ export default function EstimatesWizardFixed() {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   // Deepsearch Materials states
   const [showDeepsearchDialog, setShowDeepsearchDialog] = useState(false);
@@ -2835,16 +2836,30 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         total: estimate.total,
       });
 
-      console.log("🧾 Sending invoice request with data:", {
-        estimateData: {
-          client: estimateData.client.name,
-          itemsCount: estimateData.items.length,
-          total: estimateData.total
-        },
+      console.log("🧾 [INVOICE-FRONTEND] Starting invoice generation...");
+      console.log("🧾 [INVOICE-FRONTEND] Estimate data:", {
+        client: estimateData.client.name,
+        itemsCount: estimateData.items.length,
+        total: estimateData.total
+      });
+      console.log("🧾 [INVOICE-FRONTEND] Contractor data:", {
+        company: profile?.company,
+        phone: profile?.phone,
+        email: profile?.email
+      });
+      console.log("🧾 [INVOICE-FRONTEND] Full request payload:", {
+        estimateData,
         contractorData: {
           company: profile?.company,
+          name: profile?.name || profile?.company,
+          address: profile?.address,
+          city: profile?.city,
+          state: profile?.state,
+          zipCode: profile?.zipCode,
           phone: profile?.phone,
-          email: profile?.email
+          email: profile?.email,
+          website: profile?.website,
+          logo: profile?.logo,
         }
       });
 
@@ -2870,35 +2885,61 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         }),
       });
 
-      console.log("🧾 Invoice response status:", response.status, response.statusText);
+      console.log("🧾 [INVOICE-FRONTEND] Response status:", response.status, response.statusText);
+      console.log("🧾 [INVOICE-FRONTEND] Response headers:", Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
-        const errorData = await response.json();
+        console.error("🧾 [INVOICE-FRONTEND] Response not OK, reading error...");
+        const errorText = await response.text();
+        console.error("🧾 [INVOICE-FRONTEND] Error response:", errorText);
+        
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch (e) {
+          throw new Error(`Server error (${response.status}): ${errorText}`);
+        }
+        
         throw new Error(errorData.details || errorData.error || "Error generando factura");
       }
 
+      console.log("🧾 [INVOICE-FRONTEND] Processing PDF response...");
       const blob = await response.blob();
+      console.log("🧾 [INVOICE-FRONTEND] Blob size:", blob.size, "bytes, type:", blob.type);
+      
+      if (blob.size === 0) {
+        throw new Error("Received empty PDF response");
+      }
+      
       const url = window.URL.createObjectURL(blob);
+      const filename = `factura-${estimate.client.name.replace(/\s+/g, "-")}-${new Date().toISOString().split("T")[0]}.pdf`;
       const a = document.createElement("a");
       a.href = url;
-      a.download = `factura-${estimate.client.name.replace(/\s+/g, "-")}-${new Date().toISOString().split("T")[0]}.pdf`;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
+      
+      console.log("🧾 [INVOICE-FRONTEND] PDF downloaded successfully:", filename);
 
       toast({
         title: "✅ Factura Generada",
         description: "La factura ha sido descargada exitosamente",
       });
     } catch (error: any) {
-      console.error("Error generando factura:", error);
+      console.error("🧾 [INVOICE-FRONTEND] Error details:", {
+        message: error.message,
+        stack: error.stack,
+        error: error
+      });
       toast({
-        title: "Error",
-        description: error.message || "Error generando la factura",
+        title: "Error generando factura",
+        description: error.message || "Error desconocido al generar la factura",
         variant: "destructive",
       });
     } finally {
+      console.log("🧾 [INVOICE-FRONTEND] Cleaning up...");
       setIsGeneratingPdf(false);
     }
   };
