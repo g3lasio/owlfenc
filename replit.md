@@ -217,6 +217,13 @@ Changelog:
   * Eliminated hardcoded fallback "Company Name" text in PDF generation
   * PDFs now display authentic contractor company names and logos from user profiles
   * Preserved all existing functionality while fixing data accuracy issue
+- June 21, 2025. Fixed critical Profile data persistence issue:
+  * Resolved localStorage key conflicts between Profile.tsx (userProfile_${userId}) and useProfile (userProfile)
+  * Added missing POST /api/profile endpoint to match frontend expectations
+  * Unified all localStorage operations to use user-specific keys: userProfile_${userId}
+  * Fixed data synchronization chain from Profile page through useProfile hook to server
+  * Eliminated data loss issue where profile information wasn't persisting between sessions
+  * Now profile data correctly saves and loads consistently across all components
 ```
 
 ## User Preferences

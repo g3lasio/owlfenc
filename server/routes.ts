@@ -3683,6 +3683,33 @@ Output in English regardless of input language. Make it suitable for contracts a
     }
   });
 
+  // POST endpoint for profile updates
+  app.post("/api/profile", async (req: Request, res: Response) => {
+    try {
+      console.log('📝 [POST /api/profile] Datos recibidos:', req.body);
+      
+      // For development, simply echo back the received data
+      const profileData = {
+        ...req.body,
+        updatedAt: new Date().toISOString()
+      };
+      
+      console.log('✅ [POST /api/profile] Perfil actualizado:', profileData);
+      
+      res.json({
+        success: true,
+        message: "Perfil actualizado correctamente",
+        data: profileData
+      });
+    } catch (error) {
+      console.error("❌ [POST /api/profile] Error:", error);
+      res.status(500).json({ 
+        success: false, 
+        error: "Error updating profile" 
+      });
+    }
+  });
+
   app.get("/api/user-profile", async (req: Request, res: Response) => {
     try {
       // Obtener el usuario autenticado desde Firebase

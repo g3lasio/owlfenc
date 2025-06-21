@@ -284,26 +284,28 @@ export default function Profile() {
       localStorage.setItem(profileKey, JSON.stringify(safeCompanyInfo));
       console.log(`✅ Perfil guardado en localStorage con clave: ${profileKey}`, safeCompanyInfo);
       
-      // Primero intentamos usar la función del hook
+      // Usar la función updateProfile del hook para consistencia
       if (updateProfile) {
+        console.log('🔄 Usando updateProfile del hook...');
         await updateProfile(companyInfo);
       } else {
-        // Si no está disponible, hacemos la petición directamente
-        // (solo si no estamos en modo desarrollo)
-        if (!isDevMode) {
-          const response = await fetch("/api/profile", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            credentials: "include",
-            body: JSON.stringify(companyInfo),
-          });
-          
-          if (!response.ok) {
-            throw new Error(`Error ${response.status}: ${response.statusText}`);
-          }
+        console.log('🔄 Hook no disponible, guardando directamente...');
+        // Fallback directo a la API
+        const response = await fetch("/api/profile", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify(companyInfo),
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
         }
+        
+        const result = await response.json();
+        console.log('✅ Respuesta del servidor:', result);
       }
       
       toast({
