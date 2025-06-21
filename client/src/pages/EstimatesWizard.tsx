@@ -2835,6 +2835,19 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         total: estimate.total,
       });
 
+      console.log("🧾 Sending invoice request with data:", {
+        estimateData: {
+          client: estimateData.client.name,
+          itemsCount: estimateData.items.length,
+          total: estimateData.total
+        },
+        contractorData: {
+          company: profile?.company,
+          phone: profile?.phone,
+          email: profile?.email
+        }
+      });
+
       const response = await fetch("/api/invoice-pdf/generate", {
         method: "POST",
         headers: {
@@ -2856,6 +2869,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           },
         }),
       });
+
+      console.log("🧾 Invoice response status:", response.status, response.statusText);
 
       if (!response.ok) {
         const errorData = await response.json();

@@ -243,13 +243,14 @@ Changelog:
   * Simplified data structure to match exactly what working PDF generator expects
   * Removed complex nested data causing API mismatches and replaced with clean format
   * Frontend now generates same perfect PDFs that backend was already producing successfully
-- June 21, 2025. Implemented integrated Invoice Generation system:
-  * Replaced client email display with "Generate as Invoice" button in EstimatesWizard preview
-  * Added cyan-colored button with Quantico font and FileText icon for invoice generation
-  * Prepared foundation for specialized invoice PDF template (distinct from estimates)
-  * Removed separate invoice navigation - integrated into existing estimate workflow
-  * Invoice generation will use same data as estimates but with different PDF formatting
-  * Awaiting PDFMonkey template ID for backend invoice PDF service configuration
+- June 21, 2025. Completed integrated Invoice Generation system:
+  * Created specialized InvoicePdfService using PDFMonkey template ID: 078756DF-77FD-445F-BB68-D46077101677
+  * Implemented /api/invoice-pdf/generate and /api/invoice-pdf/preview endpoints
+  * Integrated "Generate as Invoice" button in EstimatesWizard with cyan design and Quantico font
+  * Added handleGenerateInvoice function to EstimatesWizard component
+  * Mapped invoice template structure from HTML to PDFMonkey data format
+  * System converts estimates to professional invoices with unique numbers, due dates, and legal terms
+  * Fixed route registration order to ensure invoice PDF routes are properly available
 ```
 
 ## User Preferences
