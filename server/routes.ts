@@ -1274,15 +1274,34 @@ Output in English regardless of input language. Make it suitable for contracts a
   registerPropertyRoutes(app);
   setupTemplatesRoutes(app);
 
-  // Registrar rutas específicas de PDF de facturas PRIMERO
-  const invoicePdfRoutes = await import('./routes/invoice-pdf-routes');
-  app.use('/api/invoice-pdf', invoicePdfRoutes.default);
-  console.log('🧾 [ROUTES] Invoice PDF routes registered at /api/invoice-pdf');
+  // Registrar rutas específicas de PDF de facturas antes que otras rutas
+  try {
+    const invoicePdfModule = await import('./routes/invoice-pdf-routes');
+    const invoicePdfRoutes = invoicePdfModule.default;
+    
+    if (!invoicePdfRoutes) {
+      throw new Error('Invoice PDF routes module did not export default router');
+    }
+    
+    app.use('/api/invoice-pdf', invoicePdfRoutes);
+    console.log('🧾 [ROUTES] Invoice PDF routes registered successfully at /api/invoice-pdf');
+    
+    // Test route registration
+    const routerStack = invoicePdfRoutes.stack || [];
+    console.log('🧾 [ROUTES] Invoice PDF routes loaded:', routerStack.map(r => r.route?.path || 'unknown').join(', '));
+    
+  } catch (error) {
+    console.error('❌ [ROUTES] Failed to register invoice PDF routes:', error);
+  }
 
   // Registrar rutas de facturación
-  const invoiceRoutes = await import('./routes/invoice-routes');
-  app.use('/api/invoices', invoiceRoutes.default);
-  console.log('🧾 [ROUTES] Invoice routes registered at /api/invoices');
+  try {
+    const invoiceRoutes = await import('./routes/invoice-routes');
+    app.use('/api/invoices', invoiceRoutes.default);
+    console.log('🧾 [ROUTES] Invoice routes registered at /api/invoices');
+  } catch (error) {
+    console.error('❌ [ROUTES] Failed to register invoice routes:', error);
+  }
 
   // Registrar la nueva API REST de estimados renovada
   app.use("/api/estimates", estimatesRoutes);

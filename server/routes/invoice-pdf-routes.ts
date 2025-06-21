@@ -107,12 +107,17 @@ router.post('/generate', async (req, res) => {
 
     // Configurar headers para descarga
     const filename = `Invoice-${invoiceData.invoice.number}.pdf`;
+    
+    console.log(`✅ [INVOICE-PDF] Generated successfully: ${filename} (${pdfBuffer.length} bytes)`);
+    console.log(`🧾 [INVOICE-PDF] Sending PDF with proper headers...`);
+    
+    // Set proper PDF headers
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.setHeader('Content-Length', pdfBuffer.length);
-
-    console.log(`✅ [INVOICE-PDF] Generated successfully: ${filename} (${pdfBuffer.length} bytes)`);
-    res.send(pdfBuffer);
+    res.setHeader('Content-Length', pdfBuffer.length.toString());
+    
+    // Send binary PDF data
+    res.end(pdfBuffer, 'binary');
 
   } catch (error: any) {
     console.error('❌ [INVOICE-PDF] Error:', error.message);
@@ -190,3 +195,5 @@ router.post('/preview', async (req, res) => {
 });
 
 export default router;
+
+console.log('🧾 [INVOICE-PDF-ROUTES] Router exported successfully');
