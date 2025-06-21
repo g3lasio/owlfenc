@@ -112,43 +112,9 @@ router.post('/preview', async (req, res) => {
   }
 });
 
-/**
- * Genera un PDF de factura usando el template HTML proporcionado
- */
-async function generateInvoicePdfFromTemplate(estimateData: any, contractorData: any): Promise<Buffer> {
-  try {
-    // Usar el template HTML exacto que proporcionaste
-    const templatePath = path.join(process.cwd(), 'attached_assets', 'invoice_template_1_html (2)_1750532077989.html');
-    let htmlTemplate = '';
-    
-    // Si el template existe, usarlo; si no, usar el template embebido
-    if (fs.existsSync(templatePath)) {
-      htmlTemplate = fs.readFileSync(templatePath, 'utf8');
-    } else {
-      htmlTemplate = getEmbeddedInvoiceTemplate();
-    }
-    
-    // Preparar datos para el template
-    const templateData = prepareTemplateData(estimateData, contractorData);
-    
-    // Reemplazar variables en el template
-    const processedHTML = processTemplate(htmlTemplate, templateData);
-    
-    // Para desarrollo, simplemente retornar el HTML como bytes
-    // En producción esto se convertiría a PDF real
-    return Buffer.from(processedHTML, 'utf8');
-    
-  } catch (error: any) {
-    console.error('❌ [INVOICE-PDF] Template error:', error.message);
-    throw new Error(`Failed to generate invoice from template: ${error.message}`);
-  }
-}
+// Función eliminada - causaba corrupción de PDF
 
-/**
- * Retorna el template HTML embebido basado en tu diseño
- */
-function getEmbeddedInvoiceTemplate(): string {
-  return `<!DOCTYPE html>
+// Template HTML eliminado - causaba corrupción de PDF
 <html lang="en">
 <head>
   <meta charset="UTF-8">

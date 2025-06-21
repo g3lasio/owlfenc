@@ -290,6 +290,8 @@ Changelog:
   * System now maintains all visual improvements while ensuring consistent PDF output
   * FINAL FIX: Eliminated all problematic template code causing PDF corruption
   * Clean jsPDF implementation with all requested features: logo, calculations, notes, terms
+  * SYSTEM REPAIR: Removed HTML-returning functions that corrupted both invoice and estimate PDFs
+  * Both invoice and estimate PDF generation now working with authentic binary PDF output
 ```
 
 ## User Preferences
