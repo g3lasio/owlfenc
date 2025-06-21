@@ -18,6 +18,8 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ProjectProgress from "@/components/projects/ProjectProgress";
 import ProjectDetails from "@/components/projects/ProjectDetails";
+import ProjectDocuments from "@/components/projects/ProjectDocuments";
+import ProjectDescription from "@/components/projects/ProjectDescription";
 
 interface Project {
   id: string;
@@ -698,7 +700,8 @@ function Projects() {
               </DialogHeader>
               
               <div className="flex-1 overflow-auto bg-gray-900 relative p-6">
-                <div className="grid lg:grid-cols-2 gap-6 min-h-full">
+                <div className="grid lg:grid-cols-3 gap-6 min-h-full">
+                  {/* Left Column - Progress */}
                   <div className="space-y-6">
                     <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg relative overflow-hidden shadow-[0_0_20px_rgba(6,182,212,0.1)] flex flex-col">
                       <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-cyan-400"></div>
@@ -722,25 +725,58 @@ function Projects() {
                     </div>
                   </div>
 
-                  <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg relative overflow-hidden shadow-[0_0_20px_rgba(6,182,212,0.1)] flex flex-col">
-                    <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-cyan-400"></div>
-                    <div className="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-cyan-400"></div>
-                    <div className="absolute bottom-0 left-0 w-4 h-4 border-l-2 border-b-2 border-cyan-400"></div>
-                    <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-cyan-400"></div>
-                    
-                    <div className="p-4 border-b border-cyan-400/20 bg-gradient-to-r from-gray-800/50 to-gray-900/50 relative flex-shrink-0">
-                      <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
-                      <h3 className="text-cyan-300 font-semibold flex items-center font-mono">
-                        <i className="ri-file-list-3-line mr-2"></i>
-                        DETALLES DEL PROYECTO
-                      </h3>
+                  {/* Middle Column - Project Description & Changes */}
+                  <div className="space-y-6">
+                    <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg relative overflow-hidden shadow-[0_0_20px_rgba(6,182,212,0.1)] flex flex-col">
+                      <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-cyan-400"></div>
+                      <div className="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-cyan-400"></div>
+                      <div className="absolute bottom-0 left-0 w-4 h-4 border-l-2 border-b-2 border-cyan-400"></div>
+                      <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-cyan-400"></div>
+                      
+                      <div className="p-4 flex-1 overflow-auto">
+                        <ProjectDescription 
+                          projectId={selectedProject.id}
+                          description={selectedProject.projectDescription}
+                          scope={selectedProject.projectScope}
+                          onDescriptionUpdate={(description) => handleProjectUpdate({
+                            ...selectedProject,
+                            projectDescription: description
+                          })}
+                          onScopeUpdate={(scope) => handleProjectUpdate({
+                            ...selectedProject,
+                            projectScope: scope
+                          })}
+                        />
+                      </div>
                     </div>
-                    
-                    <div className="p-4 flex-1 overflow-auto">
-                      <ProjectDetails 
-                        project={selectedProject} 
-                        onUpdate={handleProjectUpdate} 
-                      />
+                  </div>
+
+                  {/* Right Column - Documents & Details */}
+                  <div className="space-y-6">
+                    <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg relative overflow-hidden shadow-[0_0_20px_rgba(6,182,212,0.1)] flex flex-col">
+                      <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-cyan-400"></div>
+                      <div className="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-cyan-400"></div>
+                      <div className="absolute bottom-0 left-0 w-4 h-4 border-l-2 border-b-2 border-cyan-400"></div>
+                      <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-cyan-400"></div>
+                      
+                      <div className="p-4 flex-1 overflow-auto">
+                        <div className="space-y-6">
+                          <ProjectDocuments 
+                            projectId={selectedProject.id}
+                          />
+                          
+                          <div className="border-t border-cyan-400/20 pt-6">
+                            <h3 className="text-cyan-300 font-semibold flex items-center font-mono mb-4">
+                              <i className="ri-information-line mr-2"></i>
+                              INFORMACIÓN DEL PROYECTO
+                            </h3>
+                            <ProjectDetails 
+                              project={selectedProject} 
+                              onUpdate={handleProjectUpdate} 
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
