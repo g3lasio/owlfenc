@@ -58,15 +58,10 @@ router.post('/generate', async (req, res) => {
       }
     }
 
-    // Usar template HTML para generar PDF
-    console.log('🚀 [INVOICE-PDF] Using HTML template for PDF generation...');
-    const pdfBuffer = await generateInvoicePdfFromTemplate(estimateData, contractor);
-
-    // Generar PDF directamente con jsPDF - SIN cambiar la lógica original
+    // Generar PDF con jsPDF directamente
     const invoiceNumber = `INV-${Date.now()}`;
     const filename = `Invoice-${estimateData.client.name.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
     
-    // Generar PDF con estilos mejorados
     const pdf = generateInvoicePdfWithJsPDF(estimateData, contractor);
     const pdfBuffer = Buffer.from(pdf.output('arraybuffer'));
     
