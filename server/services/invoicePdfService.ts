@@ -40,6 +40,7 @@ export class InvoicePdfService {
 
   constructor() {
     this.apiKey = process.env.PDFMONKEY_API_KEY || '';
+    console.log('🔑 [INVOICE-PDF] API Key status:', this.apiKey ? 'Found' : 'Not found');
     if (!this.apiKey) {
       console.warn('PDFMonkey API key not configured for invoice service');
     }

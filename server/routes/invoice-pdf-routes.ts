@@ -9,6 +9,8 @@ import { invoicePdfService, InvoicePdfService } from '../services/invoicePdfServ
 
 const router = express.Router();
 
+console.log('🧾 [INVOICE-PDF-ROUTES] Module loaded');
+
 /**
  * POST /api/invoice-pdf/generate
  * Genera un PDF de factura a partir de datos de estimado
@@ -110,10 +112,12 @@ router.post('/generate', async (req, res) => {
 
   } catch (error: any) {
     console.error('❌ [INVOICE-PDF] Error:', error.message);
+    console.error('❌ [INVOICE-PDF] Stack:', error.stack);
     res.status(500).json({
       success: false,
       error: 'Failed to generate invoice PDF',
-      details: error.message
+      details: error.message,
+      stack: error.stack
     });
   }
 });
