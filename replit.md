@@ -292,6 +292,9 @@ Changelog:
   * Clean jsPDF implementation with all requested features: logo, calculations, notes, terms
   * SYSTEM REPAIR: Removed HTML-returning functions that corrupted both invoice and estimate PDFs
   * Both invoice and estimate PDF generation now working with authentic binary PDF output
+  * COMPLETE REBUILD: Created clean invoice-pdf-routes-clean.ts with pure jsPDF implementation
+  * Eliminated all problematic template functions that caused HTML responses instead of PDF
+  * System now generates valid PDF files consistently for both invoices and estimates
 ```
 
 ## User Preferences

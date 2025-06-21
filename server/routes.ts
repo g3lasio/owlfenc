@@ -1274,24 +1274,16 @@ Output in English regardless of input language. Make it suitable for contracts a
   registerPropertyRoutes(app);
   setupTemplatesRoutes(app);
 
-  // Registrar rutas específicas de PDF de facturas antes que otras rutas
+  // Registrar rutas limpias de PDF de facturas
   try {
-    const invoicePdfModule = await import('./routes/invoice-pdf-routes');
-    const invoicePdfRoutes = invoicePdfModule.default || invoicePdfModule.invoicePdfRoutes;
-    
-    if (!invoicePdfRoutes) {
-      throw new Error('Invoice PDF routes module did not export default router');
-    }
+    const invoicePdfModule = await import('./routes/invoice-pdf-routes-clean');
+    const invoicePdfRoutes = invoicePdfModule.default;
     
     app.use('/api/invoice-pdf', invoicePdfRoutes);
-    console.log('🧾 [ROUTES] Invoice PDF routes registered successfully at /api/invoice-pdf');
-    
-    // Test route registration
-    const routerStack = invoicePdfRoutes.stack || [];
-    console.log('🧾 [ROUTES] Invoice PDF routes loaded:', routerStack.map(r => r.route?.path || 'unknown').join(', '));
+    console.log('🧾 [ROUTES] Clean Invoice PDF routes registered at /api/invoice-pdf');
     
   } catch (error) {
-    console.error('❌ [ROUTES] Failed to register invoice PDF routes:', error);
+    console.error('❌ [ROUTES] Failed to register clean invoice PDF routes:', error);
   }
 
   // Registrar rutas de facturación
