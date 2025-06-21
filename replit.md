@@ -281,6 +281,7 @@ Changelog:
   * Enhanced footer with gradient line effects and arrow decorations
   * Added professional corner decorations and structured layout matching HTML template
   * Maintained legal document standards while incorporating modern visual design elements
+  * Fixed PDF generation logic to ensure consistent PDF output without HTML fallback corruption
 ```
 
 ## User Preferences
