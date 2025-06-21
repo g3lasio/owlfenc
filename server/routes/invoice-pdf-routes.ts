@@ -62,31 +62,21 @@ router.post('/generate', async (req, res) => {
     console.log('🚀 [INVOICE-PDF] Using HTML template for PDF generation...');
     const pdfBuffer = await generateInvoicePdfFromTemplate(estimateData, contractor);
 
-    // Usar template HTML para generar PDF con jsPDF
-    try {
-      const invoiceNumber = `INV-${Date.now()}`;
-      const filename = `Invoice-${estimateData.client.name.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
-      
-      // Generar PDF con estilos mejorados
-      const pdf = generateInvoicePdfWithJsPDF(estimateData, contractor);
-      const pdfBuffer = Buffer.from(pdf.output('arraybuffer'));
-      
-      console.log(`✅ [INVOICE-PDF] Generated PDF successfully: ${filename} (${pdfBuffer.length} bytes)`);
-      
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-      res.setHeader('Content-Length', pdfBuffer.length.toString());
-      
-      return res.end(pdfBuffer, 'binary');
-    } catch (error: any) {
-      console.error('❌ [INVOICE-PDF] Error generating PDF:', error);
-      
-      // Fallback to HTML if PDF generation fails
-      console.log(`⚠️ [INVOICE-PDF] Falling back to HTML template for ${estimateData.client.name}`);
-      
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      return res.send(pdfBuffer.toString('utf8'));
-    }
+    // Generar PDF directamente con jsPDF - SIN cambiar la lógica original
+    const invoiceNumber = `INV-${Date.now()}`;
+    const filename = `Invoice-${estimateData.client.name.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
+    
+    // Generar PDF con estilos mejorados
+    const pdf = generateInvoicePdfWithJsPDF(estimateData, contractor);
+    const pdfBuffer = Buffer.from(pdf.output('arraybuffer'));
+    
+    console.log(`✅ [INVOICE-PDF] Generated PDF successfully: ${filename} (${pdfBuffer.length} bytes)`);
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', pdfBuffer.length.toString());
+    
+    return res.end(pdfBuffer, 'binary');
 
 
   } catch (error: any) {

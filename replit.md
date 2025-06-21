@@ -286,6 +286,8 @@ Changelog:
   * Corrected total calculations to include proper tax rates, discounts, and final amounts
   * Added comprehensive Notes & Legal Clauses and Terms & Conditions sections
   * Enhanced thank you message to match user's professional template content
+  * CRITICAL FIX: Restored original PDF generation logic to prevent HTML corruption
+  * System now maintains all visual improvements while ensuring consistent PDF output
 ```
 
 ## User Preferences
