@@ -74,8 +74,11 @@ async function mapEstimateDataToTemplate(data: EstimateData) {
   if (data.firebaseUid) {
     try {
       console.log('🔍 [DEBUG-PDF] Buscando usuario en DB con UID:', data.firebaseUid);
-      const { eq } = await import('drizzle-orm');
-      const userResult = await storage.db.select().from(storage.schema.users).where(eq(storage.schema.users.firebaseUid, data.firebaseUid));
+      const { db } = require('../db');
+      const { users } = require('../../shared/schema');
+      const { eq } = require('drizzle-orm');
+      
+      const userResult = await db.select().from(users).where(eq(users.firebaseUid, data.firebaseUid));
       
       console.log('🔍 [DEBUG-PDF] Resultado de búsqueda DB:', {
         resultLength: userResult.length,

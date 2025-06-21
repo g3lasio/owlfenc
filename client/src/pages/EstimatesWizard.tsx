@@ -2763,51 +2763,38 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
   console.log(estimate);
   const handleDownload = async () => {
     try {
-      // USAR EL ENDPOINT CORREGIDO CON DATOS REALES
-      const estimateData = {
-        estimateNumber: `EST-${Date.now()}`,
-        date: new Date().toLocaleDateString(),
-        validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-        firebaseUid: currentUser?.uid,
-        clientName: estimate.client?.name || "Cliente",
-        clientEmail: estimate.client?.email || "",
-        clientPhone: estimate.client?.phone || "",
-        clientAddress: estimate.client?.address || "",
-        contractorCompanyName: profile?.company || "",
-        contractorEmail: profile?.email || "",
-        contractorPhone: profile?.phone || "",
-        contractorAddress: profile?.address || "",
-        contractorLogo: profile?.logo || "",
-        items: estimate.items.map((item) => ({
+      const payload = {
+        company_logo_url: profile?.logo || "",
+        company_name: profile?.company || "Owl Fence Company",
+        company_address: profile?.address ? `${profile.address}${profile.city ? ', ' + profile.city : ''}${profile.state ? ', ' + profile.state : ''}${profile.zipCode ? ' ' + profile.zipCode : ''}` : "Company Address",
+        company_email: profile?.email || currentUser?.email || "",
+        company_phone: profile?.phone || "",
+        estimate_date: new Date().toISOString().split("T")[0],
+        estimate_number: "EST-" + Date.now(),
+        valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .split("T")[0],
+        client_name: estimate.client?.name || "",
+        client_email: estimate.client?.email || "",
+        client_phone: estimate.client?.phone || "",
+        client_address: estimate.client?.address ? `${estimate.client.address}${estimate.client.city ? ', ' + estimate.client.city : ''}${estimate.client.state ? ', ' + estimate.client.state : ''}${estimate.client.zipCode ? ' ' + estimate.client.zipCode : ''}` : "Client Address",
+        lineItems: estimate.items.map((item) => ({
           name: item.name,
           description: item.description,
           quantity: item.quantity,
-          unit: item.unit,
-          unitPrice: item.price,
-          total: item.total,
+          unit_price: `$${Number(item.price).toFixed(2)}`,
+          total: `$${Number(item.total).toFixed(2)}`,
         })),
-        subtotal: estimate.subtotal || 0,
-        tax: estimate.tax || 0,
-        taxRate: estimate.taxRate || 0,
-        total: estimate.total || 0,
-        projectDescription: estimate.projectDetails || "",
+        grand_total: `$${Number(estimate.total).toFixed(2)}`,
+        scope_of_work: estimate.projectDetails,
+        firebaseUid: currentUser?.uid,
       };
-      
-      const res = await fetch("/api/pdfmonkey-estimates/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(estimateData),
-      });
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
-      
-      const result = await res.json();
-      if (result.success && result.downloadUrl) {
-        window.open(result.downloadUrl, "_blank");
+      const res = await axios.post("/api/estimate-basic-pdf", payload);
+      const downloadUrl = res.data.data.download_url;
+      if (downloadUrl) {
+        window.open(downloadUrl, "_blank");
       } else {
-        console.error("Download URL not found in response:", result);
-        throw new Error(result.error || "No se pudo generar el PDF");
+        console.error("Download URL not found in response.");
       }
     } catch (error) {
       console.error(error);
