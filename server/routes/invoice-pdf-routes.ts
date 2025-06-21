@@ -29,10 +29,8 @@ router.post('/generate', async (req, res) => {
       estimateData: req.body.estimateData,
       contractorData: req.body.contractorData || {}
     };
-      invoiceNumber: z.string().optional()
-    });
-
-    const { estimateData, contractorData, invoiceNumber } = schema.parse(req.body);
+    
+    const { estimateData, contractorData } = validatedData;
 
     console.log('📋 [INVOICE-PDF] Processing data for client:', estimateData.client.name);
 
@@ -64,8 +62,7 @@ router.post('/generate', async (req, res) => {
     // Convertir datos de estimado a formato de factura
     const invoiceData = InvoicePdfService.convertEstimateToInvoiceData(
       estimateData,
-      contractor,
-      invoiceNumber
+      contractor
     );
 
     console.log('🔄 [INVOICE-PDF] Converted to invoice format:', {
