@@ -520,6 +520,50 @@ function Projects() {
     // Update the project in the projects list
     handleProjectUpdate(updatedProject);
   };
+
+  // Handle marking project as completed
+  const handleMarkAsCompleted = async (projectId: string) => {
+    try {
+      const project = projects.find(p => p.id === projectId);
+      if (!project) return;
+
+      const updatedProject = {
+        ...project,
+        status: 'completed',
+        projectProgress: 'completed',
+        completedDate: new Date()
+      };
+
+      // Update in Firebase
+      await updateProject(projectId, {
+        status: 'completed',
+        projectProgress: 'completed',
+        completedDate: new Date()
+      });
+
+      // Update local state
+      const updatedProjects = projects.map(p => 
+        p.id === projectId ? updatedProject : p
+      );
+      
+      setProjects(updatedProjects);
+      setFilteredProjects(
+        filteredProjects.map(p => p.id === projectId ? updatedProject : p)
+      );
+
+      toast({
+        title: "Proyecto completado",
+        description: `El proyecto de ${project.clientName} ha sido marcado como completado.`,
+      });
+    } catch (error) {
+      console.error("Error marking project as completed:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo marcar el proyecto como completado."
+      });
+    }
+  };
   
   if (isLoading) {
     return (
@@ -576,8 +620,9 @@ function Projects() {
   }
   
   return (
-    <div className="flex-1 p-6 page-scroll-container" style={{WebkitOverflowScrolling: 'touch'}}>
-      <div className="flex justify-between items-center mb-6">
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-shrink-0 p-6 pb-2">
+        <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Proyectos</h1>
         <div className="flex space-x-2">
           <Button variant="outline" onClick={() => setViewMode("grid")} className={viewMode === "grid" ? "bg-muted" : ""}>
@@ -587,10 +632,9 @@ function Projects() {
             <i className="ri-list-check"></i>
           </Button>
         </div>
-      </div>
-      
-      {/* Search and Filter Controls */}
-      <div className="mb-6 space-y-4">
+        
+        {/* Search and Filter Controls */}
+        <div className="mb-4 space-y-4">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1">
             <Input
@@ -641,32 +685,34 @@ function Projects() {
           )}
         </div>
         
-        {/* Status Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="w-full md:w-auto flex flex-wrap">
-            <TabsTrigger value="all">Todos</TabsTrigger>
-            {projectStatuses.map(status => (
-              <TabsTrigger key={status} value={status}>
-                {getStatusLabel(status)}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
-      </div>
-      
-      {/* Results Count */}
-      <div className="mb-4 text-sm text-muted-foreground">
-        {filteredProjects.length} {filteredProjects.length === 1 ? 'proyecto encontrado' : 'proyectos encontrados'}
-      </div>
-      
-      {/* Projects Grid or List View */}
-      {filteredProjects.length === 0 ? (
-        <div className="text-center py-10 border rounded-lg">
-          <i className="ri-search-line text-3xl mb-2 text-muted-foreground"></i>
-          <p className="text-muted-foreground">No se encontraron proyectos con los filtros actuales</p>
+          {/* Status Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="w-full md:w-auto flex flex-wrap">
+              <TabsTrigger value="all">Todos</TabsTrigger>
+              {projectStatuses.map(status => (
+                <TabsTrigger key={status} value={status}>
+                  {getStatusLabel(status)}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+          
+          {/* Results Count */}
+          <div className="text-sm text-muted-foreground">
+            {filteredProjects.length} {filteredProjects.length === 1 ? 'proyecto encontrado' : 'proyectos encontrados'}
+          </div>
         </div>
-      ) : viewMode === "grid" ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      </div>
+      
+      {/* Scrollable Content Area */}
+      <div className="flex-1 overflow-y-auto px-6 pb-6">
+        {filteredProjects.length === 0 ? (
+          <div className="text-center py-12 bg-muted/20 rounded-lg">
+            <i className="ri-search-line text-3xl mb-2 text-muted-foreground"></i>
+            <p className="text-muted-foreground">No se encontraron proyectos con los filtros actuales</p>
+          </div>
+        ) : viewMode === "grid" ? (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredProjects.map((project) => (
             <Card key={project.id} className="overflow-hidden">
               <CardHeader className="pb-2">
@@ -734,22 +780,35 @@ function Projects() {
                   </Badge>
                 </div>
                 
-                <div className="flex justify-end mt-4 space-x-2">
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => handleEditEstimate(project.id)}
-                    className="text-blue-600 border-blue-600 hover:bg-blue-50"
-                  >
-                    <i className="ri-edit-line mr-1"></i> Editar
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => handleViewProject(project.id)}
-                  >
-                    <i className="ri-dashboard-line mr-1"></i> Dashboard
-                  </Button>
+                <div className="flex justify-between mt-4">
+                  <div className="flex space-x-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => handleEditEstimate(project.id)}
+                      className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                    >
+                      <i className="ri-edit-line mr-1"></i> Editar
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => handleViewProject(project.id)}
+                    >
+                      <i className="ri-dashboard-line mr-1"></i> Dashboard
+                    </Button>
+                  </div>
+                  {project.status !== 'completed' && (
+                    <Button 
+                      size="sm"
+                      variant="default"
+                      onClick={() => handleMarkAsCompleted(project.id)}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      <i className="ri-checkbox-circle-line mr-1"></i>
+                      Completar
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -827,6 +886,17 @@ function Projects() {
                       >
                         <i className="ri-dashboard-line mr-1"></i> Dashboard
                       </Button>
+                      {project.status !== 'completed' && (
+                        <Button 
+                          size="sm"
+                          variant="default"
+                          onClick={() => handleMarkAsCompleted(project.id)}
+                          className="text-xs px-2 py-1 h-auto bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          <i className="ri-checkbox-circle-line mr-1"></i>
+                          Completar
+                        </Button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -834,7 +904,8 @@ function Projects() {
             </tbody>
           </table>
         </div>
-      )}
+        )}
+      </div>
       
       {/* Project Details Dialog */}
       {isDialogOpen && selectedProject && (
