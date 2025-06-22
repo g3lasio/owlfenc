@@ -50,17 +50,32 @@ main {
   max-height: 95vh !important;
 }
 
-.dialog-content-scrollable * {
+.dialog-content-scrollable > * {
   overflow: visible !important;
+}
+
+.dialog-content-scrollable .flex-1 {
+  overflow-y: auto !important;
 }
 
 /* Contenedores flexibles permiten overflow cuando es necesario */
 .flex-scroll {
-  overflow-y: auto;
+  overflow-y: auto !important;
+  flex: 1 !important;
 }
 
 .flex-scroll-x {
-  overflow-x: auto;
+  overflow-x: auto !important;
+}
+
+/* Forzar scroll en elementos internos de dialogs */
+.project-dashboard-content {
+  overflow-y: auto !important;
+  max-height: calc(95vh - 120px) !important;
+}
+
+.project-dashboard-content > * {
+  overflow: visible !important;
 }
 
 /* Animaciones para el reactor de Iron Man */

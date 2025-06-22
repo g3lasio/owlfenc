@@ -666,8 +666,8 @@ function Projects() {
       {/* Project Details Dialog */}
       {isDialogOpen && selectedProject && (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="p-0 max-w-7xl w-[98vw] h-[98vh] max-h-[98vh] overflow-hidden bg-gray-900 border-cyan-400/30 shadow-[0_0_50px_rgba(6,182,212,0.3)]">
-            <div className="flex flex-col h-full relative overflow-hidden">
+          <DialogContent className="p-0 max-w-7xl w-[98vw] h-[98vh] max-h-[98vh] bg-gray-900 border-cyan-400/30 shadow-[0_0_50px_rgba(6,182,212,0.3)] dialog-content-scrollable">
+            <div className="flex flex-col h-full relative">
               <DialogHeader className="flex-shrink-0 p-4 md:p-6 border-b border-cyan-400/30 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 relative">
                 <div className="absolute top-0 left-0 w-6 h-6 border-l-2 border-t-2 border-cyan-400"></div>
                 <div className="absolute top-0 right-0 w-6 h-6 border-r-2 border-t-2 border-cyan-400"></div>
@@ -698,7 +698,7 @@ function Projects() {
                 </DialogTitle>
               </DialogHeader>
               
-              <div className="flex-1 flex flex-col bg-gray-900 relative h-full max-h-screen">
+              <div className="flex-1 flex flex-col bg-gray-900 relative">
                 {/* Header con información básica del proyecto */}
                 <div className="flex-shrink-0 p-4 sm:p-6 border-b border-cyan-400/20 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
@@ -766,7 +766,7 @@ function Projects() {
                 </div>
 
                 {/* Contenido principal del dashboard con scroll */}
-                <div className="flex-1 flex-scroll p-4 sm:p-6">
+                <div className="flex-1 project-dashboard-content p-4 sm:p-6">
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
                     {/* Columna izquierda: Progreso y Detalles */}
                     <div className="space-y-4 sm:space-y-6">
