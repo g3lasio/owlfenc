@@ -130,6 +130,21 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
     setEditMode(prev => ({ ...prev, [field]: false }));
   };
 
+  const getPermitStatusBadge = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return <Badge className="bg-green-600">Approved</Badge>;
+      case 'pending':
+        return <Badge className="bg-yellow-600">Pending</Badge>;
+      case 'rejected':
+        return <Badge className="bg-red-600">Rejected</Badge>;
+      case 'not_required':
+        return <Badge className="bg-gray-600">Not Required</Badge>;
+      default:
+        return <Badge className="bg-gray-600">{status}</Badge>;
+    }
+  };
+
   const formatDate = (date: any) => {
     if (!date) return 'No establecida';
 
