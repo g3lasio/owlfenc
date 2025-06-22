@@ -244,7 +244,7 @@ export class PuppeteerPdfService {
     html = this.processConditional(html, 'company.phone', !!data.company?.phone);
     html = this.processConditional(html, 'company.email', !!data.company?.email);
     html = this.processConditional(html, 'company.website', !!data.company?.website);
-    html = this.processConditional(html, 'company.logo', !!data.company?.logo);
+    html = this.processConditional(html, 'company.logo', !!(data.company?.logo && data.company.logo.trim() !== ''));
     
     // Estimate conditionals
     html = this.processConditional(html, 'estimate.number', !!data.estimate.number);
