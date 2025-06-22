@@ -804,8 +804,8 @@ function Projects() {
                       </div>
                     </div>
 
-                    {/* Columna derecha: Descripción y Documentos */}
-                    <div className="space-y-6">
+                    {/* Columna derecha: Documentos del Proyecto */}
+                    <div className="space-y-4 sm:space-y-6">
                       {/* Descripción del Proyecto */}
                       <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg">
                         <div className="p-4 border-b border-cyan-400/20">
