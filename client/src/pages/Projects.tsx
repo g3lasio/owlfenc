@@ -16,7 +16,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import ProjectProgress from "@/components/projects/ProjectProgress";
+import InteractiveProgressLine from "@/components/projects/InteractiveProgressLine";
 import ProjectDetails from "@/components/projects/ProjectDetails";
 import ProjectDocuments from "@/components/projects/ProjectDocuments";
 
@@ -713,7 +713,7 @@ function Projects() {
                           </h3>
                         </div>
                         <div className="p-3 sm:p-4">
-                          <ProjectProgress 
+                          <InteractiveProgressLine 
                             projectId={selectedProject.id} 
                             currentProgress={selectedProject.projectProgress || "estimate_created"} 
                             onProgressUpdate={handleProgressUpdate} 
