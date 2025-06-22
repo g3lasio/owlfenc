@@ -347,9 +347,22 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
           </Card>
         </TabsContent>
 
+        {/* DOCUMENTS SECTION */}
+        <TabsContent value="documents">
+          <Card>
+            <CardHeader>
+              <CardTitle>Project Documentation</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <ProjectDocuments 
+                projectId={project.id} 
+                projectName={project.clientName}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-
-        {/* SECCIÓN DE PAGOS */}
+        {/* PAYMENT SECTION */}
         <TabsContent value="payment">
           <Card>
             <CardHeader>
