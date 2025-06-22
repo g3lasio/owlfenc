@@ -4618,14 +4618,16 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       </Button>
 
                       <Button
-                        onClick={openEmailCompose}
-                        disabled={!estimate.client?.email}
+                        onClick={handleDownload}
+                        disabled={
+                          !estimate.client || estimate.items.length === 0
+                        }
                         size="sm"
-                        className="bg-purple-600 hover:bg-purple-700 text-white text-xs"
+                        className="bg-green-600 hover:bg-green-700 text-white text-xs"
                       >
-                        <Mail className="h-3 w-3 mr-1" />
-                        <span className="hidden sm:inline">Enviar Email</span>
-                        <span className="sm:hidden">Email</span>
+                        <Download className="h-3 w-3 mr-1" />
+                        <span className="hidden sm:inline">Generate as Estimate</span>
+                        <span className="sm:hidden">Estimate</span>
                       </Button>
 
                       <Button
@@ -4646,16 +4648,14 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       </Button>
 
                       <Button
-                        onClick={handleDownload}
-                        disabled={
-                          !estimate.client || estimate.items.length === 0
-                        }
+                        onClick={openEmailCompose}
+                        disabled={!estimate.client?.email}
                         size="sm"
-                        className="bg-green-600 hover:bg-green-700 text-white text-xs"
+                        className="bg-purple-600 hover:bg-purple-700 text-white text-xs"
                       >
-                        <Download className="h-3 w-3 mr-1" />
-                        <span className="hidden sm:inline">PDF</span>
-                        <span className="sm:hidden">PDF</span>
+                        <Mail className="h-3 w-3 mr-1" />
+                        <span className="hidden sm:inline">Enviar Email</span>
+                        <span className="sm:hidden">Email</span>
                       </Button>
                     </div>
                   </CardContent>
