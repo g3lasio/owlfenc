@@ -5301,22 +5301,12 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
                   console.log('Generating invoice PDF with payload:', invoicePayload);
 
-                  // Create form submission for robust invoice PDF download
-                  const form = document.createElement('form');
-                  form.method = 'POST';
-                  form.action = '/api/invoice-pdf';
-                  form.target = '_blank';
-                  form.style.display = 'none';
+                  // Use GET endpoint with URL parameter for reliable PDF download
+                  const encodedData = encodeURIComponent(JSON.stringify(invoicePayload));
+                  const downloadUrl = `/api/invoice-pdf-download?data=${encodedData}`;
                   
-                  const input = document.createElement('input');
-                  input.type = 'hidden';
-                  input.name = 'data';
-                  input.value = JSON.stringify(invoicePayload);
-                  form.appendChild(input);
-                  
-                  document.body.appendChild(form);
-                  form.submit();
-                  document.body.removeChild(form);
+                  // Open download in new tab/window
+                  window.open(downloadUrl, '_blank');
 
                   console.log('✅ Invoice PDF download initiated successfully');
 
