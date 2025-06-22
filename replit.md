@@ -291,6 +291,9 @@ Changelog:
   * Fixed data structure mismatch by accessing originalData field instead of estimateData
   * Enhanced data extraction to handle multiple storage formats (clientInformation, projectTotalCosts, etc.)
   * System now correctly maps stored Firebase data to PDF generation payload format
+  * Added tax and discount line items to PDF payload (subtotal, discount_amount, tax_amount with labels)
+  * Updated both preview and saved estimate PDF generation to include financial breakdown fields
+  * Enhanced payload logging to track tax/discount data being sent to PDFMonkey template
 ```
 
 ## User Preferences

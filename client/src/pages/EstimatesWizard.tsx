@@ -2879,6 +2879,11 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           unit_price: `$${Number(item.price).toFixed(2)}`,
           total: `$${Number(item.total).toFixed(2)}`,
         })),
+        subtotal: `$${Number(estimate.subtotal).toFixed(2)}`,
+        discount_amount: estimate.discountAmount > 0 ? `$${Number(estimate.discountAmount).toFixed(2)}` : null,
+        discount_label: estimate.discountAmount > 0 ? `Descuento (${estimate.discountValue}${estimate.discountType === 'percentage' ? '%' : ''})` : null,
+        tax_amount: estimate.tax > 0 ? `$${Number(estimate.tax).toFixed(2)}` : null,
+        tax_label: estimate.tax > 0 ? `Impuesto (${estimate.taxRate}%)` : null,
         grand_total: `$${Number(estimate.total).toFixed(2)}`,
         scope_of_work: estimate.projectDetails,
         firebaseUid: currentUser?.uid,
@@ -4906,6 +4911,13 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                                             estimate.items ||
                                             [];
 
+                                // Extract financial data for tax and discount calculations
+                                const totalCosts = estimateData.projectTotalCosts?.totalSummary;
+                                const subtotal = totalCosts?.subtotal || estimateData.subtotal || estimate.subtotal || 0;
+                                const discountAmount = totalCosts?.discountAmount || estimateData.discountAmount || estimate.discountAmount || 0;
+                                const taxAmount = totalCosts?.tax || estimateData.tax || estimate.tax || 0;
+                                const finalTotal = totalCosts?.finalTotal || estimateData.total || estimate.total || 0;
+
                                 const payload = {
                                   company_logo_url: profile.logo || "",
                                   company_name: profile.company,
@@ -4930,7 +4942,12 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                                     unit_price: `$${Number(item.price || item.unitPrice || 0).toFixed(2)}`,
                                     total: `$${Number(item.total || item.totalPrice || (item.quantity * item.price) || 0).toFixed(2)}`,
                                   })),
-                                  grand_total: `$${Number(estimate.total / 100).toFixed(2)}`,
+                                  subtotal: `$${Number(subtotal / 100).toFixed(2)}`,
+                                  discount_amount: discountAmount > 0 ? `$${Number(discountAmount / 100).toFixed(2)}` : null,
+                                  discount_label: discountAmount > 0 ? `Descuento (${Math.round((discountAmount / subtotal) * 100)}%)` : null,
+                                  tax_amount: taxAmount > 0 ? `$${Number(taxAmount / 100).toFixed(2)}` : null,
+                                  tax_label: taxAmount > 0 ? `Impuesto (${Math.round((taxAmount / (subtotal - discountAmount)) * 100)}%)` : null,
+                                  grand_total: `$${Number(finalTotal / 100).toFixed(2)}`,
                                   scope_of_work: estimateData.projectDetails?.description || 
                                                estimateData.projectDescription || 
                                                estimateData.projectScope ||
@@ -4938,6 +4955,15 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                                                "",
                                   firebaseUid: currentUser?.uid,
                                 };
+
+                                console.log("📊 Payload enviado a PDF:", {
+                                  subtotal: payload.subtotal,
+                                  discount_amount: payload.discount_amount,
+                                  discount_label: payload.discount_label,
+                                  tax_amount: payload.tax_amount,
+                                  tax_label: payload.tax_label,
+                                  grand_total: payload.grand_total
+                                });
 
                                 const res = await axios.post("/api/estimate-basic-pdf", payload);
                                 const downloadUrl = res.data.data.download_url;
