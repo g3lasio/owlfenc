@@ -4866,14 +4866,78 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => {
-                              if (estimate.pdfUrl) {
-                                window.open(estimate.pdfUrl, "_blank");
-                              } else {
+                            onClick={async () => {
+                              try {
+                                // Validar que el perfil del contractor esté completo
+                                if (!profile?.company) {
+                                  toast({
+                                    title: "❌ Perfil Incompleto",
+                                    description: "Debes completar el nombre de tu empresa en tu perfil antes de generar PDFs.",
+                                    variant: "destructive",
+                                  });
+                                  return;
+                                }
+
+                                // Parse stored estimate data
+                                const estimateData = estimate.estimateData ? JSON.parse(estimate.estimateData) : null;
+                                
+                                if (!estimateData) {
+                                  toast({
+                                    title: "Error de datos",
+                                    description: "No se pudieron cargar los datos del estimado",
+                                    variant: "destructive",
+                                  });
+                                  return;
+                                }
+
+                                const payload = {
+                                  company_logo_url: profile.logo || "",
+                                  company_name: profile.company,
+                                  company_address: profile.address ? `${profile.address}${profile.city ? ', ' + profile.city : ''}${profile.state ? ', ' + profile.state : ''}${profile.zipCode ? ' ' + profile.zipCode : ''}` : "",
+                                  company_email: profile.email || currentUser?.email || "",
+                                  company_phone: profile.phone || "",
+                                  estimate_date: estimate.estimateDate || new Date().toISOString().split("T")[0],
+                                  estimate_number: estimate.estimateNumber || "EST-" + Date.now(),
+                                  valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+                                    .toISOString()
+                                    .split("T")[0],
+                                  client_name: estimate.clientName || "",
+                                  client_email: estimateData.client?.email || "",
+                                  client_phone: estimateData.client?.phone || "",
+                                  client_address: estimateData.client?.address ? `${estimateData.client.address}${estimateData.client.city ? ', ' + estimateData.client.city : ''}${estimateData.client.state ? ', ' + estimateData.client.state : ''}${estimateData.client.zipCode ? ' ' + estimateData.client.zipCode : ''}` : "Client Address",
+                                  lineItems: estimateData.items?.map((item: any) => ({
+                                    name: item.name,
+                                    description: item.description,
+                                    quantity: item.quantity,
+                                    unit_price: `$${Number(item.price).toFixed(2)}`,
+                                    total: `$${Number(item.total).toFixed(2)}`,
+                                  })) || [],
+                                  grand_total: `$${Number(estimate.total / 100).toFixed(2)}`,
+                                  scope_of_work: estimate.projectDetails || estimateData.projectDetails || "",
+                                  firebaseUid: currentUser?.uid,
+                                };
+
+                                const res = await axios.post("/api/estimate-basic-pdf", payload);
+                                const downloadUrl = res.data.data.download_url;
+                                
+                                if (downloadUrl) {
+                                  window.open(downloadUrl, "_blank");
+                                  toast({
+                                    title: "✅ PDF Generado",
+                                    description: "El PDF se ha generado y descargado correctamente",
+                                  });
+                                } else {
+                                  toast({
+                                    title: "Error",
+                                    description: "No se pudo obtener la URL de descarga del PDF",
+                                    variant: "destructive",
+                                  });
+                                }
+                              } catch (error) {
+                                console.error("Error generating PDF:", error);
                                 toast({
-                                  title: "PDF no disponible",
-                                  description:
-                                    "Este estimado no tiene PDF generado",
+                                  title: "❌ Error al generar PDF",
+                                  description: "No se pudo generar el PDF. Inténtalo de nuevo.",
                                   variant: "destructive",
                                 });
                               }

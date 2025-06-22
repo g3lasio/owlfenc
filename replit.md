@@ -282,6 +282,12 @@ Changelog:
   * Fixed "loadEstimateForEdit is not defined" error in useEffect
   * Edit button now redirects directly without modifying data, preserving original costs
   * System now properly loads estimates with authentic client data and correct cost calculations
+- June 22, 2025. Implemented PDF generation for "Mis Estimados" section:
+  * Replicated exact handleDownload function from preview step for PDF button in saved estimates
+  * Added complete data validation and profile verification before PDF generation
+  * Integrated with /api/estimate-basic-pdf endpoint using stored estimate data
+  * PDF button now generates fresh PDFs on-demand instead of relying on stored URLs
+  * Implemented proper error handling and success notifications for PDF generation workflow
 ```
 
 ## User Preferences
