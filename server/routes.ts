@@ -1589,8 +1589,8 @@ Output in English regardless of input language. Make it suitable for contracts a
       res.setHeader('Content-Length', pdfBuffer.length);
       res.setHeader('Cache-Control', 'no-cache');
       
-      // Send PDF buffer
-      res.send(pdfBuffer);
+      // Send PDF buffer as binary data
+      res.end(pdfBuffer, 'binary');
       
       console.log('✅ Professional PDF generated and sent successfully');
       
