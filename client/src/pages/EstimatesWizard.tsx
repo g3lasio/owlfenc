@@ -2927,6 +2927,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       console.log('📤 Sending payload to PDF service:', payload);
       
       // Use fetch instead of axios for better compatibility
+      console.log('🔄 Starting PDF generation request...');
       const response = await fetch('/api/estimate-puppeteer-pdf', {
         method: 'POST',
         headers: {
@@ -2935,12 +2936,36 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         body: JSON.stringify(payload),
       });
 
+      console.log('📡 Response received:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+
       if (!response.ok) {
-        throw new Error(`PDF generation failed: ${response.status}`);
+        const errorText = await response.text();
+        console.error('❌ Server error response:', errorText);
+        throw new Error(`PDF generation failed: ${response.status} - ${errorText}`);
       }
 
-      // Convert response to blob for download
-      const pdfBlob = await response.blob();
+      // Handle binary PDF response
+      console.log('📄 Processing binary PDF response...');
+      const arrayBuffer = await response.arrayBuffer();
+      console.log('📦 ArrayBuffer received:', {
+        size: arrayBuffer.byteLength,
+        isValid: arrayBuffer.byteLength > 0
+      });
+
+      if (arrayBuffer.byteLength === 0) {
+        throw new Error('Received empty PDF buffer from server');
+      }
+
+      // Convert to blob and download
+      const pdfBlob = new Blob([arrayBuffer], { type: 'application/pdf' });
+      console.log('📋 PDF Blob created:', {
+        size: pdfBlob.size,
+        type: pdfBlob.type
+      });
       
       // Create download link
       const url = window.URL.createObjectURL(pdfBlob);
@@ -2952,6 +2977,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
+      
+      console.log('💾 PDF download triggered successfully');
       
       // Auto-save to Firebase Documents
       try {

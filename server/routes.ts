@@ -1798,7 +1798,9 @@ Output in English regardless of input language. Make it suitable for contracts a
       }, null, 2));
 
       // Generate PDF using Puppeteer service
+      console.log('🎯 Calling puppeteerPdfService.generatePdf...');
       const pdfBuffer = await puppeteerPdfService.generatePdf(estimateData);
+      console.log('✅ PDF generation completed');
       
       // Validate PDF buffer
       console.log('🔍 PDF Buffer validation:', {
@@ -1807,6 +1809,10 @@ Output in English regardless of input language. Make it suitable for contracts a
         firstBytes: pdfBuffer.subarray(0, 8).toString('hex'),
         isPDF: pdfBuffer.subarray(0, 4).toString() === '%PDF'
       });
+
+      if (!Buffer.isBuffer(pdfBuffer) || pdfBuffer.length === 0) {
+        throw new Error('Invalid PDF buffer generated');
+      }
 
       // Auto-save document to Firebase for project management
       try {

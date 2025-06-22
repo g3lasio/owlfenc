@@ -69,6 +69,14 @@ export class PuppeteerPdfService {
    */
   async generatePdf(data: EstimateData): Promise<Buffer> {
     console.log('🔄 Starting PDF generation with Puppeteer...');
+    console.log('📊 Input data structure:', {
+      hasCompany: !!data.company,
+      hasEstimate: !!data.estimate,
+      hasClient: !!data.client,
+      companyName: data.company?.name,
+      clientName: data.client?.name,
+      itemsCount: data.estimate?.items?.length
+    });
     
     let browser;
     try {
@@ -78,6 +86,7 @@ export class PuppeteerPdfService {
       console.log('🔍 Using Chromium executable:', executablePath);
 
       // Launch browser
+      console.log('🚀 Launching Puppeteer browser...');
       browser = await puppeteer.launch({
         headless: true,
         executablePath,
@@ -105,8 +114,10 @@ export class PuppeteerPdfService {
       });
 
       // Generate HTML from template
+      console.log('🎨 Generating HTML content from template...');
       const html = await this.renderTemplate(data);
-      console.log('📝 Generated HTML length:', html.length);
+      console.log('✅ HTML content processed successfully');
+      console.log('📄 HTML content generated, length:', html.length);
       console.log('📋 Template data being used:', {
         companyName: data.company?.name || 'NO_COMPANY',
         clientName: data.client?.name || 'NO_CLIENT', 
@@ -114,6 +125,11 @@ export class PuppeteerPdfService {
         subtotal: data.estimate?.subtotal || 'NO_SUBTOTAL',
         total: data.estimate?.total || 'NO_TOTAL'
       });
+
+      // Validate HTML content
+      if (!html || html.length < 100) {
+        throw new Error('Generated HTML is too short or empty');
+      }
       
       // Set content and wait for fonts/images to load
       await page.setContent(html, {
