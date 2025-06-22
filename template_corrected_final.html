@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Estimate</title>
+  <style>
+    @page { 
+      margin: 1.5in 1in; 
+      size: letter; 
+    }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0; padding: 0;
+      background-color: #fff; color: #333;
+      max-width: 100%; overflow-wrap: break-word;
+    }
+    .estimate-container {
+      position: relative; max-width: 100%; margin: 0 auto;
+      background: #fff; padding: 15px; box-sizing: border-box;
+    }
+    .watermark {
+      position: absolute; top:50%; left:50%; width:300px; height:300px;
+      background: url('https://i.postimg.cc/G3ZFZTjy/logo-mervin.png') no-repeat center center;
+      background-size: contain; opacity: 0.03;
+      transform: translate(-50%, -50%);
+      pointer-events: none; z-index: 0;
+    }
+    .header {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 25px;
+      position: relative; z-index:1;
+    }
+    .company-details { 
+      flex:1; text-align:left; line-height:1.5; 
+      font-size: 0.95em;
+    }
+    .company-details .name { 
+      font-weight:bold; font-size: 1.1em; 
+      margin-bottom: 8px; display: block;
+    }
+    .company-details strong { font-weight:bold; }
+    .company-logo { 
+      flex:0 0 140px; text-align:center; 
+      margin: 0 15px;
+    }
+    .company-logo img {
+      max-height: 90px; 
+      max-width: 130px; 
+      border: 2px solid rgba(0,0,0,0.1);
+      padding: 6px; 
+      box-sizing: border-box;
+      object-fit: contain;
+      display: block;
+      margin: 0 auto;
+    }
+    .estimate-info { 
+      flex:1; text-align:right; line-height:1.5; 
+      font-size: 0.95em;
+    }
+    .section { 
+      margin-bottom: 25px; 
+      position: relative; 
+      z-index: 1; 
+      page-break-inside: avoid;
+    }
+    .section h2 {
+      font-size:1.3em; margin-bottom:12px;
+      border-bottom:2px solid #00FFB8; padding-bottom:6px;
+      color:#333; font-weight:bold;
+    }
+    .client-info { text-align:right; }
+    .client-info pre {
+      margin:0; font-family:inherit; line-height:1.6; color:#333;
+      font-size: 0.95em;
+    }
+    .project-details { text-align:center; }
+    .project-details pre {
+      white-space:pre-wrap; word-wrap:break-word; max-width:100%;
+      overflow:hidden; font-family:inherit; line-height:1.5;
+      display:inline-block; text-align:left; font-size: 0.9em;
+      background: #f9f9f9; padding: 15px; border-radius: 5px;
+      border-left: 4px solid #00FFB8;
+    }
+    
+    /* Tabla de Items - Estilos corregidos */
+    table {
+      width: 100%; 
+      table-layout: fixed; 
+      border-collapse: collapse; 
+      margin-bottom: 20px;
+      font-size: 0.85em;
+    }
+    th, td {
+      border: 1px solid #bbb; 
+      padding: 8px 6px; 
+      text-align: center; 
+      color: #333;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      vertical-align: top;
+    }
+    thead th {
+      background-color: #00FFB8; 
+      color: #000; 
+      font-weight: bold;
+      font-size: 0.9em;
+    }
+    th:nth-child(1), td:nth-child(1) { width: 16%; } /* Item */
+    th:nth-child(2), td:nth-child(2) { width: 42%; text-align: left; } /* Description */
+    th:nth-child(3), td:nth-child(3) { width: 10%; } /* Qty */
+    th:nth-child(4), td:nth-child(4) { width: 16%; } /* Unit Price */
+    th:nth-child(5), td:nth-child(5) { width: 16%; } /* Total */
+    
+    .summary { 
+      text-align: right; 
+      margin-top: 15px;
+      background: #f8f8f8;
+      padding: 15px;
+      border-radius: 5px;
+      border: 1px solid #ddd;
+    }
+    .summary p { 
+      margin: 6px 0; 
+      font-size: 0.95em;
+      display: flex;
+      justify-content: space-between;
+      max-width: 300px;
+      margin-left: auto;
+    }
+    .summary p strong { font-weight: bold; font-size: 1.1em; }
+    .summary p:last-child {
+      border-top: 2px solid #00FFB8;
+      padding-top: 8px;
+      margin-top: 10px;
+    }
+    
+    .thank-you {
+      position: relative; 
+      padding: 18px; 
+      margin: 25px auto;
+      max-width: 550px; 
+      background-color: #111; 
+      color: #0ff;
+      font-family: Arial, sans-serif; 
+      font-style: italic;
+      border-radius: 8px; 
+      border: 3px solid rgba(0,255,255,0.5);
+      text-align: center; 
+      box-shadow: 0 0 12px rgba(0,255,255,0.4);
+      z-index: 1;
+      font-size: 0.95em;
+    }
+    
+    .notes ul {
+      text-align: left;
+      max-width: 100%;
+      font-size: 0.9em;
+      line-height: 1.5;
+    }
+    .notes li {
+      margin-bottom: 8px;
+    }
+    
+    .footer { 
+      text-align: center; 
+      margin: 25px 0 15px 0; 
+      font-size: 0.85em; 
+      color: #666; 
+      position: relative; 
+      z-index: 1; 
+    }
+    .footer:before {
+      content: ''; 
+      display: block; 
+      width: 60%; 
+      height: 3px;
+      background: linear-gradient(90deg, transparent, #00FFB8, transparent);
+      margin: 0 auto 10px auto; 
+      position: relative; 
+      z-index: 1;
+    }
+    a { color: #007BFF; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="estimate-container">
+    <div class="watermark"></div>
+    <div class="header">
+      <div class="company-details">
+        <div class="name">{{company.name}}</div>
+        {{#if company.address}}<strong>Address:</strong> {{company.address}}<br>{{/if}}
+        {{#if company.phone}}<strong>Phone:</strong> {{company.phone}}<br>{{/if}}
+        {{#if company.email}}<strong>Email:</strong> <a href="mailto:{{company.email}}">{{company.email}}</a><br>{{/if}}
+        {{#if company.website}}<strong>Website:</strong> <a href="{{company.website}}">{{company.website}}</a>{{/if}}
+      </div>
+      <div class="company-logo">
+        {{#if company.logo}}
+          <img src="{{company.logo}}" alt="Company Logo">
+        {{else}}
+          <div style="border: 2px dashed #ccc; padding: 20px; text-align: center; color: #999;">
+            Company Logo
+          </div>
+        {{/if}}
+      </div>
+      <div class="estimate-info">
+        <strong>ESTIMATE</strong><br>
+        {{#if estimate.number}}Estimate #: {{estimate.number}}<br>{{/if}}
+        {{#if estimate.date}}Estimate Date: {{estimate.date}}<br>{{/if}}
+        {{#if estimate.valid_until}}Valid Until: {{estimate.valid_until}}{{/if}}
+      </div>
+    </div>
+    
+    <div class="section client-info">
+      <h2>Client Information</h2>
+      <pre>{{client.name}}
+{{#if client.phone}}<strong>Client Phone:</strong> {{client.phone}}{{/if}}
+{{#if client.email}}<strong>Client Email:</strong> {{client.email}}{{/if}}
+{{#if client.address}}<strong>Client Address:</strong> {{client.address}}{{/if}}</pre>
+    </div>
+    
+    {{#if estimate.project_description}}
+    <div class="section project-details">
+      <h2>Project Details</h2>
+      <pre>{{estimate.project_description}}</pre>
+    </div>
+    {{/if}}
+    
+    <div class="section items">
+      <h2>Items</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Description</th>
+            <th>Qty</th>
+            <th>Unit Price</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each estimate.items}}
+            <tr>
+              <td>{{this.code}}</td>
+              <td>{{this.description}}</td>
+              <td>{{this.qty}}</td>
+              <td>{{this.unit_price}}</td>
+              <td>{{this.total}}</td>
+            </tr>
+          {{else}}
+            <tr>
+              <td colspan="5" style="text-align:center;font-style:italic;color:#666;padding:20px;">No items available</td>
+            </tr>
+          {{/each}}
+        </tbody>
+      </table>
+      
+      <div class="summary">
+        {{#if estimate.subtotal}}<p><span>Subtotal:</span> <span>{{estimate.subtotal}}</span></p>{{/if}}
+        {{#if estimate.discounts}}<p><span>Discounts:</span> <span>{{estimate.discounts}}</span></p>{{/if}}
+        {{#if estimate.tax_amount}}<p><span>Tax {{#if estimate.tax_rate}}({{estimate.tax_rate}}%){{/if}}:</span> <span>{{estimate.tax_amount}}</span></p>{{/if}}
+        {{#if estimate.total}}<p><strong><span>Total Estimate:</span> <span>{{estimate.total}}</span></strong></p>{{/if}}
+      </div>
+    </div>
+    
+    <div class="thank-you">
+      Thank you for your trust in our services. We are committed to delivering excellence and look forward to partnering on future projects.
+    </div>
+    
+    <div class="section notes">
+      <h2>Notes & Terms</h2>
+      <ul>
+        <li>This estimate is valid for 30 days from the issue date. Prices may change after this period due to fluctuations in materials, labor, or market conditions.</li>
+        <li>Project execution, specific terms, and additional conditions will be detailed in the formal contract to be signed by both parties.</li>
+        <li>For questions, please contact us directly.</li>
+      </ul>
+    </div>
+    
+    <div class="footer">
+      <div>Powered by Mervin AI</div>
+    </div>
+  </div>
+</body>
+</html>
