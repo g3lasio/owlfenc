@@ -288,6 +288,9 @@ Changelog:
   * Integrated with /api/estimate-basic-pdf endpoint using stored estimate data
   * PDF button now generates fresh PDFs on-demand instead of relying on stored URLs
   * Implemented proper error handling and success notifications for PDF generation workflow
+  * Fixed data structure mismatch by accessing originalData field instead of estimateData
+  * Enhanced data extraction to handle multiple storage formats (clientInformation, projectTotalCosts, etc.)
+  * System now correctly maps stored Firebase data to PDF generation payload format
 ```
 
 ## User Preferences

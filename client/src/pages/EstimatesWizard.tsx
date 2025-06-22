@@ -4878,8 +4878,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                                   return;
                                 }
 
-                                // Parse stored estimate data
-                                const estimateData = estimate.estimateData ? JSON.parse(estimate.estimateData) : null;
+                                // Get stored estimate data from originalData field
+                                const estimateData = estimate.originalData;
                                 
                                 if (!estimateData) {
                                   toast({
@@ -4889,6 +4889,22 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                                   });
                                   return;
                                 }
+
+                                // Extract client information from different possible locations
+                                const clientInfo = estimateData.clientInformation || 
+                                                 estimateData.client || 
+                                                 {
+                                                   name: estimate.clientName,
+                                                   email: estimate.clientEmail || "",
+                                                   phone: "",
+                                                   address: ""
+                                                 };
+
+                                // Extract items from different possible locations
+                                const items = estimateData.projectTotalCosts?.materialCosts?.items ||
+                                            estimateData.items ||
+                                            estimate.items ||
+                                            [];
 
                                 const payload = {
                                   company_logo_url: profile.logo || "",
@@ -4901,19 +4917,25 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                                   valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
                                     .toISOString()
                                     .split("T")[0],
-                                  client_name: estimate.clientName || "",
-                                  client_email: estimateData.client?.email || "",
-                                  client_phone: estimateData.client?.phone || "",
-                                  client_address: estimateData.client?.address ? `${estimateData.client.address}${estimateData.client.city ? ', ' + estimateData.client.city : ''}${estimateData.client.state ? ', ' + estimateData.client.state : ''}${estimateData.client.zipCode ? ' ' + estimateData.client.zipCode : ''}` : "Client Address",
-                                  lineItems: estimateData.items?.map((item: any) => ({
-                                    name: item.name,
-                                    description: item.description,
-                                    quantity: item.quantity,
-                                    unit_price: `$${Number(item.price).toFixed(2)}`,
-                                    total: `$${Number(item.total).toFixed(2)}`,
-                                  })) || [],
+                                  client_name: clientInfo.name || estimate.clientName || "",
+                                  client_email: clientInfo.email || estimate.clientEmail || "",
+                                  client_phone: clientInfo.phone || "",
+                                  client_address: clientInfo.address ? 
+                                    `${clientInfo.address}${clientInfo.city ? ', ' + clientInfo.city : ''}${clientInfo.state ? ', ' + clientInfo.state : ''}${clientInfo.zipCode ? ' ' + clientInfo.zipCode : ''}` : 
+                                    "Client Address",
+                                  lineItems: items.map((item: any) => ({
+                                    name: item.name || item.material || "Item",
+                                    description: item.description || "",
+                                    quantity: item.quantity || 1,
+                                    unit_price: `$${Number(item.price || item.unitPrice || 0).toFixed(2)}`,
+                                    total: `$${Number(item.total || item.totalPrice || (item.quantity * item.price) || 0).toFixed(2)}`,
+                                  })),
                                   grand_total: `$${Number(estimate.total / 100).toFixed(2)}`,
-                                  scope_of_work: estimate.projectDetails || estimateData.projectDetails || "",
+                                  scope_of_work: estimateData.projectDetails?.description || 
+                                               estimateData.projectDescription || 
+                                               estimateData.projectScope ||
+                                               estimate.projectDetails || 
+                                               "",
                                   firebaseUid: currentUser?.uid,
                                 };
 
