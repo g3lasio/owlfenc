@@ -2870,7 +2870,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           number: "EST-" + Date.now(),
           date: new Date().toLocaleDateString(),
           valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-          project_description: estimate.projectDetails || "",
+          project_description: (estimate.projectDetails || "").substring(0, 500),
           items: estimate.items.map((item) => ({
             code: item.name,
             description: item.description,
@@ -4935,11 +4935,11 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                                     number: estimate.estimateNumber || "EST-" + Date.now(),
                                     date: new Date().toLocaleDateString(),
                                     valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-                                    project_description: estimateData.projectDetails?.description || 
+                                    project_description: (estimateData.projectDetails?.description || 
                                                        estimateData.projectDescription || 
                                                        estimateData.projectScope ||
                                                        estimate.projectDetails || 
-                                                       "",
+                                                       "").substring(0, 500),
                                     items: items.map((item: any) => ({
                                       code: item.name || item.material || "Item",
                                       description: item.description || "",
@@ -4964,13 +4964,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                                   firebaseUid: currentUser?.uid,
                                 };
 
-                                console.log("📊 Payload enviado a PDF:", {
-                                  subtotal: payload.estimate.subtotal,
-                                  discounts: payload.estimate.discounts,
-                                  tax_rate: payload.estimate.tax_rate,
-                                  tax_amount: payload.estimate.tax_amount,
-                                  total: payload.estimate.total
-                                });
+                                console.log("📊 Full Payload enviado a PDF:", JSON.stringify(payload, null, 2));
+                                console.log("📊 Items being sent:", payload.estimate.items);
 
                                 const res = await axios.post("/api/estimate-basic-pdf", payload);
                                 const downloadUrl = res.data.data.download_url;
