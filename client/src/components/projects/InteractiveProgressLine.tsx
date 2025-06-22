@@ -18,12 +18,12 @@ interface InteractiveProgressLineProps {
 
 const PROGRESS_STEPS: ProgressStep[] = [
   { id: "estimate_created", name: "Estimado", icon: "ri-calculator-line", position: 0, completed: false },
-  { id: "client_contacted", name: "Contacto", icon: "ri-phone-line", position: 16.67, completed: false },
+  { id: "declined", name: "Declinado", icon: "ri-thumb-down-line", position: 16.67, completed: false },
   { id: "approved", name: "Aprobado", icon: "ri-check-line", position: 33.33, completed: false },
   { id: "contract_signed", name: "Contrato", icon: "ri-file-text-line", position: 50, completed: false },
   { id: "work_started", name: "Iniciado", icon: "ri-hammer-line", position: 66.67, completed: false },
-  { id: "work_completed", name: "Finalizado", icon: "ri-flag-line", position: 83.33, completed: false },
-  { id: "payment_received", name: "Pagado", icon: "ri-money-dollar-circle-line", position: 100, completed: false }
+  { id: "payment_received", name: "Pagado", icon: "ri-money-dollar-circle-line", position: 83.33, completed: false },
+  { id: "work_completed", name: "Finalizado", icon: "ri-flag-line", position: 100, completed: false }
 ];
 
 export default function InteractiveProgressLine({ projectId, currentProgress, onProgressUpdate }: InteractiveProgressLineProps) {
@@ -71,14 +71,15 @@ export default function InteractiveProgressLine({ projectId, currentProgress, on
     }
   };
 
-  // Manejar arrastre
-  const handleMouseDown = (stepId: string) => {
-    setDraggedStep(stepId);
+  // Manejar arrastre del botón deslizador
+  const handleSliderMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
     setIsDragging(true);
+    setDraggedStep(currentProgress);
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || !draggedStep || !progressLineRef.current) return;
+    if (!isDragging || !progressLineRef.current) return;
     
     const rect = progressLineRef.current.getBoundingClientRect();
     const percentage = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
@@ -88,9 +89,7 @@ export default function InteractiveProgressLine({ projectId, currentProgress, on
       Math.abs(step.position - percentage) < Math.abs(closest.position - percentage) ? step : closest
     );
     
-    if (closestStep.id !== draggedStep) {
-      setDraggedStep(closestStep.id);
-    }
+    setDraggedStep(closestStep.id);
   };
 
   const handleMouseUp = async () => {
@@ -103,6 +102,12 @@ export default function InteractiveProgressLine({ projectId, currentProgress, on
     }
     
     setDraggedStep(null);
+  };
+
+  // Manejar arrastre de banderitas individuales
+  const handleFlagMouseDown = (stepId: string) => {
+    setDraggedStep(stepId);
+    setIsDragging(true);
   };
 
   return (
@@ -120,11 +125,34 @@ export default function InteractiveProgressLine({ projectId, currentProgress, on
         
         {/* Barra de progreso completado */}
         <div 
-          className="absolute top-0 left-0 h-full bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 rounded-full transition-all duration-500 ease-out shadow-lg"
-          style={{ width: `${getCurrentProgressPercentage()}%` }}
+          className={`absolute top-0 left-0 h-full rounded-full transition-all duration-500 ease-out shadow-lg ${
+            draggedStep === 'declined' || currentProgress === 'declined' 
+              ? 'bg-gradient-to-r from-red-500 via-red-600 to-red-700' 
+              : 'bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600'
+          }`}
+          style={{ width: `${draggedStep ? PROGRESS_STEPS.find(s => s.id === draggedStep)?.position || 0 : getCurrentProgressPercentage()}%` }}
         >
           {/* Efecto de brillo animado */}
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse rounded-full"></div>
+        </div>
+
+        {/* Botón deslizador arrastrable */}
+        <div 
+          className="absolute top-1/2 transform -translate-y-1/2 cursor-grab active:cursor-grabbing z-10 transition-all duration-300"
+          style={{ left: `${draggedStep ? PROGRESS_STEPS.find(s => s.id === draggedStep)?.position || 0 : getCurrentProgressPercentage()}%` }}
+          onMouseDown={handleSliderMouseDown}
+        >
+          <div className={`
+            w-6 h-6 rounded-full border-2 bg-white shadow-lg transition-all duration-300 flex items-center justify-center
+            ${isDragging ? 'scale-125 border-yellow-400 shadow-yellow-400/50' : 'border-cyan-400 hover:border-yellow-400 hover:scale-110'}
+            ${draggedStep === 'declined' || currentProgress === 'declined' ? 'border-red-500 bg-red-100' : ''}
+          `}>
+            <div className={`
+              w-2 h-2 rounded-full transition-colors duration-300
+              ${isDragging ? 'bg-yellow-400' : 'bg-cyan-400'}
+              ${draggedStep === 'declined' || currentProgress === 'declined' ? 'bg-red-500' : ''}
+            `}></div>
+          </div>
         </div>
 
         {/* Efectos de luz en los extremos */}
@@ -139,7 +167,7 @@ export default function InteractiveProgressLine({ projectId, currentProgress, on
             key={step.id}
             className="absolute transform -translate-x-1/2 cursor-pointer group"
             style={{ left: `${step.position}%` }}
-            onMouseDown={() => handleMouseDown(step.id)}
+            onMouseDown={() => handleFlagMouseDown(step.id)}
             onClick={() => handleStepClick(step.id)}
           >
             {/* Banderita */}
@@ -152,16 +180,20 @@ export default function InteractiveProgressLine({ projectId, currentProgress, on
               {/* Asta de la bandera */}
               <div className={`
                 w-0.5 h-8 mx-auto mb-1 transition-colors duration-300
-                ${step.completed ? 'bg-cyan-400' : 'bg-gray-600'}
-                ${currentProgress === step.id ? 'bg-yellow-400' : ''}
+                ${step.id === 'declined' && (step.completed || currentProgress === 'declined' || draggedStep === 'declined') 
+                  ? 'bg-red-500' 
+                  : step.completed ? 'bg-cyan-400' : 'bg-gray-600'}
+                ${currentProgress === step.id && step.id !== 'declined' ? 'bg-yellow-400' : ''}
               `}></div>
               
               {/* Bandera con icono */}
               <div className={`
                 relative w-8 h-6 rounded-sm transition-all duration-300 flex items-center justify-center text-xs
-                ${step.completed ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-400/30' : 'bg-gray-700 text-gray-400'}
-                ${currentProgress === step.id ? 'bg-gradient-to-r from-yellow-500 to-orange-600 text-white shadow-lg shadow-yellow-400/30' : ''}
-                ${draggedStep === step.id ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white' : ''}
+                ${step.id === 'declined' && (step.completed || currentProgress === 'declined' || draggedStep === 'declined') 
+                  ? 'bg-gradient-to-r from-red-500 to-red-700 text-white shadow-lg shadow-red-400/30' 
+                  : step.completed ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-400/30' : 'bg-gray-700 text-gray-400'}
+                ${currentProgress === step.id && step.id !== 'declined' ? 'bg-gradient-to-r from-yellow-500 to-orange-600 text-white shadow-lg shadow-yellow-400/30' : ''}
+                ${draggedStep === step.id && step.id !== 'declined' ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white' : ''}
               `}>
                 <i className={step.icon}></i>
                 
@@ -206,7 +238,7 @@ export default function InteractiveProgressLine({ projectId, currentProgress, on
 
       {/* Instrucciones sutiles */}
       <div className="mt-3 text-center text-xs text-gray-500">
-        Haz clic o arrastra las banderitas para actualizar el progreso
+        Arrastra el botón deslizador o haz clic en las banderitas para actualizar el progreso
       </div>
     </div>
   );

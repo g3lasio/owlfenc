@@ -292,14 +292,14 @@ Changelog:
   * Enhanced ProjectProgress component with better height management and cyberpunk styling
   * Fixed content overflow issues in dashboard dialog with proper flex containers
   * Improved responsive design for both grid and table view modes
-- June 22, 2025. Redesigned project progress with interactive draggable timeline:
-  * Created InteractiveProgressLine component with draggable flag-based progress tracking
-  * Replaced list-based progress display with compact futuristic timeline design
-  * Implemented 7-step project workflow with visual flag indicators and gradients
-  * Added drag-and-drop functionality for intuitive progress updates
-  * Enhanced with cyberpunk styling: glowing effects, animated progress bar, and tooltips
-  * Eliminated bulky content below progress line for clean, compact interface
-  * Progress updates via click or drag with real-time Firebase synchronization
+- June 22, 2025. Enhanced interactive timeline with improved workflow and draggable slider:
+  * Replaced "Contacto" step with "Declinado" (red styling for rejected projects)
+  * Reordered workflow: Estimado → Declinado → Aprobado → Contrato → Iniciado → Pagado → Finalizado
+  * Added dedicated draggable slider button for precise progress control
+  * Implemented color-coded progress: cyan/blue for normal flow, red for declined projects
+  * Enhanced drag functionality: both slider button and individual flags are draggable
+  * Special styling for declined state with red gradients and appropriate iconography
+  * Maintains all cyberpunk visual effects while improving workflow accuracy
 - June 21, 2025. Implemented complete functional dashboard with interactive elements:
   * Made all dashboard elements clickable and functional with proper navigation
   * Added real document viewing and downloading capabilities for estimates and contracts
