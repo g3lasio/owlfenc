@@ -292,14 +292,15 @@ Changelog:
   * Enhanced ProjectProgress component with better height management and cyberpunk styling
   * Fixed content overflow issues in dashboard dialog with proper flex containers
   * Improved responsive design for both grid and table view modes
-- June 22, 2025. Enhanced interactive timeline with improved workflow and draggable slider:
-  * Replaced "Contacto" step with "Declinado" (red styling for rejected projects)
-  * Reordered workflow: Estimado → Declinado → Aprobado → Contrato → Iniciado → Pagado → Finalizado
-  * Added dedicated draggable slider button for precise progress control
-  * Implemented color-coded progress: cyan/blue for normal flow, red for declined projects
-  * Enhanced drag functionality: both slider button and individual flags are draggable
-  * Special styling for declined state with red gradients and appropriate iconography
-  * Maintains all cyberpunk visual effects while improving workflow accuracy
+- June 22, 2025. Unified project documentation system with file upload capability:
+  * Eliminated duplicate document interfaces - consolidated into single ProjectDocuments component
+  * Converted all interface text to English for consistency
+  * Added file upload functionality for external documents (permits, insurance docs, videos, images)
+  * Enhanced document categorization: Estimates, Contracts, Invoices, and Attachments
+  * Implemented drag-and-drop file upload with 10MB size limit and multiple format support
+  * Auto-collection of PDFs from estimate, contract, and invoice generation pages
+  * Added visual document type indicators with color-coded icons and badges
+  * Enhanced document management with view, download, and delete capabilities
 - June 21, 2025. Implemented complete functional dashboard with interactive elements:
   * Made all dashboard elements clickable and functional with proper navigation
   * Added real document viewing and downloading capabilities for estimates and contracts
