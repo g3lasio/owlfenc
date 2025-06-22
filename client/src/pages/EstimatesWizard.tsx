@@ -1883,6 +1883,7 @@ export default function EstimatesWizardFixed() {
     };
     
     setEstimate((prev) => ({ ...prev, client: enhancedClient }));
+    setIsEditingClient(false); // Close editing mode when new client is selected
     toast({
       title: "Client Selected",
       description: `${client.name} has been added to the estimate`,
@@ -4308,24 +4309,171 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
                       {/* Cliente */}
                       <div className="space-y-2">
-                        <h4 className="text-xs font-medium text-cyan-400 mb-2">
-                          CLIENTE
-                        </h4>
-                        <div className="text-sm text-gray-300">
-                          <p className="font-medium">{estimate.client?.name}</p>
-                          <p className="text-xs text-gray-400">
-                            {estimate.client?.address && estimate.client.address.trim() !== '' ? 
-                              `${estimate.client.address}${estimate.client.city ? ', ' + estimate.client.city : ''}${estimate.client.state ? ', ' + estimate.client.state : ''}${estimate.client.zipcode || estimate.client.zipCode ? ' ' + (estimate.client.zipcode || estimate.client.zipCode) : ''}` : 
-                              'Complete address in Client step'
-                            }
-                          </p>
-                          <p className="text-xs text-cyan-400">
-                            {estimate.client?.phone || 'Add phone in Client step'}
-                          </p>
-                          <p className="text-xs text-cyan-400">
-                            {estimate.client?.email || 'Add email in Client step'}
-                          </p>
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs font-medium text-cyan-400 mb-2">
+                            CLIENTE
+                          </h4>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setIsEditingClient(!isEditingClient)}
+                            className="h-6 px-2 text-xs text-cyan-400 hover:text-cyan-300"
+                          >
+                            {isEditingClient ? 'Guardar' : 'Editar'}
+                          </Button>
                         </div>
+                        
+                        {isEditingClient ? (
+                          <div className="space-y-2 bg-gray-800/50 p-3 rounded border">
+                            {/* Editable Client Name */}
+                            <div>
+                              <Label htmlFor="edit-client-name" className="text-xs text-gray-400">Nombre</Label>
+                              <Input
+                                id="edit-client-name"
+                                value={estimate.client?.name || ''}
+                                onChange={(e) => setEstimate(prev => ({
+                                  ...prev,
+                                  client: { ...prev.client!, name: e.target.value }
+                                }))}
+                                placeholder="Nombre del cliente"
+                                className="h-7 text-xs bg-gray-900/50 border-gray-600"
+                              />
+                            </div>
+                            
+                            {/* Editable Address */}
+                            <div>
+                              <Label htmlFor="edit-client-address" className="text-xs text-gray-400">Dirección</Label>
+                              <Input
+                                id="edit-client-address"
+                                value={estimate.client?.address || ''}
+                                onChange={(e) => setEstimate(prev => ({
+                                  ...prev,
+                                  client: { ...prev.client!, address: e.target.value }
+                                }))}
+                                placeholder="Dirección completa"
+                                className="h-7 text-xs bg-gray-900/50 border-gray-600"
+                              />
+                            </div>
+                            
+                            {/* City and State */}
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <Label htmlFor="edit-client-city" className="text-xs text-gray-400">Ciudad</Label>
+                                <Input
+                                  id="edit-client-city"
+                                  value={estimate.client?.city || ''}
+                                  onChange={(e) => setEstimate(prev => ({
+                                    ...prev,
+                                    client: { ...prev.client!, city: e.target.value }
+                                  }))}
+                                  placeholder="Ciudad"
+                                  className="h-7 text-xs bg-gray-900/50 border-gray-600"
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="edit-client-state" className="text-xs text-gray-400">Estado</Label>
+                                <Input
+                                  id="edit-client-state"
+                                  value={estimate.client?.state || ''}
+                                  onChange={(e) => setEstimate(prev => ({
+                                    ...prev,
+                                    client: { ...prev.client!, state: e.target.value }
+                                  }))}
+                                  placeholder="Estado"
+                                  className="h-7 text-xs bg-gray-900/50 border-gray-600"
+                                />
+                              </div>
+                            </div>
+                            
+                            {/* ZIP Code */}
+                            <div>
+                              <Label htmlFor="edit-client-zip" className="text-xs text-gray-400">Código Postal</Label>
+                              <Input
+                                id="edit-client-zip"
+                                value={estimate.client?.zipCode || estimate.client?.zipcode || ''}
+                                onChange={(e) => setEstimate(prev => ({
+                                  ...prev,
+                                  client: { ...prev.client!, zipCode: e.target.value }
+                                }))}
+                                placeholder="Código postal"
+                                className="h-7 text-xs bg-gray-900/50 border-gray-600"
+                              />
+                            </div>
+                            
+                            {/* Phone */}
+                            <div>
+                              <Label htmlFor="edit-client-phone" className="text-xs text-gray-400">Teléfono</Label>
+                              <Input
+                                id="edit-client-phone"
+                                value={estimate.client?.phone || ''}
+                                onChange={(e) => setEstimate(prev => ({
+                                  ...prev,
+                                  client: { ...prev.client!, phone: e.target.value }
+                                }))}
+                                placeholder="Teléfono"
+                                className="h-7 text-xs bg-gray-900/50 border-gray-600"
+                              />
+                            </div>
+                            
+                            {/* Email */}
+                            <div>
+                              <Label htmlFor="edit-client-email" className="text-xs text-gray-400">Email</Label>
+                              <Input
+                                id="edit-client-email"
+                                value={estimate.client?.email || ''}
+                                onChange={(e) => setEstimate(prev => ({
+                                  ...prev,
+                                  client: { ...prev.client!, email: e.target.value }
+                                }))}
+                                placeholder="Email"
+                                className="h-7 text-xs bg-gray-900/50 border-gray-600"
+                              />
+                            </div>
+                            
+                            {/* Quick Fill for Turner Group */}
+                            {estimate.client?.name === "Turner Group Construction" && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setEstimate(prev => ({
+                                    ...prev,
+                                    client: { 
+                                      ...prev.client!, 
+                                      address: "8055 Collins Dr", 
+                                      city: "Oakland", 
+                                      state: "CA", 
+                                      zipCode: "94621" 
+                                    }
+                                  }));
+                                  toast({
+                                    title: "Address completed",
+                                    description: "Turner Group Construction address filled"
+                                  });
+                                }}
+                                className="w-full text-xs h-7"
+                              >
+                                Complete Turner Group Address
+                              </Button>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-sm text-gray-300">
+                            <p className="font-medium">{estimate.client?.name}</p>
+                            <p className="text-xs text-gray-400">
+                              {estimate.client?.address && estimate.client.address.trim() !== '' ? 
+                                `${estimate.client.address}${estimate.client.city ? ', ' + estimate.client.city : ''}${estimate.client.state ? ', ' + estimate.client.state : ''}${estimate.client.zipcode || estimate.client.zipCode ? ' ' + (estimate.client.zipcode || estimate.client.zipCode) : ''}` : 
+                                'Complete address in Client step'
+                              }
+                            </p>
+                            <p className="text-xs text-cyan-400">
+                              {estimate.client?.phone || 'Add phone in Client step'}
+                            </p>
+                            <p className="text-xs text-cyan-400">
+                              {estimate.client?.email || 'Add email in Client step'}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
 
