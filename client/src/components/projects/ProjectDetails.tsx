@@ -121,17 +121,16 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
     <div className="h-full flex flex-col">
       <Tabs defaultValue="client" className="flex flex-col h-full">
         <TabsList className="mb-4 w-full flex flex-wrap sticky top-0 z-10 bg-background">
-          <TabsTrigger value="client" className="flex-1">Cliente</TabsTrigger>
-          <TabsTrigger value="project" className="flex-1">Proyecto</TabsTrigger>
-          <TabsTrigger value="documents" className="flex-1">Documentos</TabsTrigger>
-          <TabsTrigger value="payment" className="flex-1">Pagos</TabsTrigger>
+          <TabsTrigger value="client" className="flex-1">Client</TabsTrigger>
+          <TabsTrigger value="project" className="flex-1">Project</TabsTrigger>
+          <TabsTrigger value="payment" className="flex-1">Payment</TabsTrigger>
         </TabsList>
 
         {/* SECCIÓN DE CLIENTE */}
         <TabsContent value="client">
           <Card>
             <CardHeader>
-              <CardTitle>Información del Cliente</CardTitle>
+              <CardTitle>Client Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -165,14 +164,14 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
                     <div className="relative">
                       <Textarea 
                         readOnly
-                        value={project.clientNotes || 'Sin notas. Haga clic para agregar.'}
+                        value={project.clientNotes || 'No notes. Click to add.'}
                         className="cursor-pointer h-28 resize-none"
                       />
                       <Button 
                         size="sm" 
                         className="absolute top-2 right-2" 
                         variant="ghost"
-                        aria-label="Editar notas del cliente"
+                        aria-label="Edit client notes"
                       >
                         <i className="ri-edit-line"></i>
                       </Button>
@@ -180,11 +179,11 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
                   </DialogTrigger>
                   <DialogContent className="flex flex-col p-0">
                     <DialogHeader className="sticky top-0 z-10 bg-background flex-shrink-0 p-4 md:p-6 border-b">
-                      <DialogTitle>Editar Notas del Cliente</DialogTitle>
+                      <DialogTitle>Edit Client Notes</DialogTitle>
                     </DialogHeader>
                     <div className="dialog-scroll-container p-4 md:p-6">
                       <Textarea 
-                        placeholder="Ingrese notas sobre el cliente aquí..."
+                        placeholder="Enter client notes here..."
                         className="min-h-[150px] resize-none w-full" 
                         value={editableNotes.clientNotes}
                         onChange={(e) => setEditableNotes({...editableNotes, clientNotes: e.target.value})}
@@ -209,7 +208,7 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
         <TabsContent value="project">
           <Card>
             <CardHeader>
-              <CardTitle>Detalles del Proyecto</CardTitle>
+              <CardTitle>Project Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -258,24 +257,24 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
                 </div>
 
                 <div>
-                  <h3 className="font-medium">Altura</h3>
-                  <p>{project.height || 'No especificada'} {project.height ? 'ft' : ''}</p>
+                  <h3 className="font-medium">Height</h3>
+                  <p>{project.height || 'Not specified'} {project.height ? 'ft' : ''}</p>
                 </div>
 
                 <div>
-                  <h3 className="font-medium">Longitud</h3>
-                  <p>{project.length || 'No especificada'} {project.length ? 'ft' : ''}</p>
+                  <h3 className="font-medium">Length</h3>
+                  <p>{project.length || 'Not specified'} {project.length ? 'ft' : ''}</p>
                 </div>
 
                 <div>
-                  <h3 className="font-medium">ID del Proyecto</h3>
+                  <h3 className="font-medium">Project ID</h3>
                   <p className="text-sm">{project.projectId}</p>
                 </div>
               </div>
 
               {project.gates && project.gates.length > 0 && (
                 <div>
-                  <h3 className="font-medium">Puertas</h3>
+                  <h3 className="font-medium">Gates</h3>
                   <ul className="list-disc list-inside">
                     {project.gates.map((gate: any, index: number) => (
                       <li key={index}>
@@ -289,31 +288,31 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
 
               {project.permitStatus && (
                 <div>
-                  <h3 className="font-medium">Estado del Permiso</h3>
+                  <h3 className="font-medium">Permit Status</h3>
                   <p>{getPermitStatusBadge(project.permitStatus)}</p>
                 </div>
               )}
 
               <div>
-                <h3 className="font-medium">Fecha Programada</h3>
+                <h3 className="font-medium">Scheduled Date</h3>
                 <p>{formatDate(project.scheduledDate)}</p>
               </div>
 
               <div>
-                <h3 className="font-medium">Notas Internas</h3>
+                <h3 className="font-medium">Internal Notes</h3>
                 <Dialog>
                   <DialogTrigger asChild>
                     <div className="relative">
                       <Textarea 
                         readOnly
-                        value={project.internalNotes || 'Sin notas. Haga clic para agregar.'}
+                        value={project.internalNotes || 'No notes. Click to add.'}
                         className="cursor-pointer h-28 resize-none"
                       />
                       <Button 
                         size="sm" 
                         className="absolute top-2 right-2" 
                         variant="ghost"
-                        aria-label="Editar notas internas"
+                        aria-label="Edit internal notes"
                       >
                         <i className="ri-edit-line"></i>
                       </Button>
@@ -321,11 +320,11 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
                   </DialogTrigger>
                   <DialogContent className="flex flex-col p-0">
                     <DialogHeader className="sticky top-0 z-10 bg-background flex-shrink-0 p-4 md:p-6 border-b">
-                      <DialogTitle>Editar Notas Internas</DialogTitle>
+                      <DialogTitle>Edit Internal Notes</DialogTitle>
                     </DialogHeader>
                     <div className="dialog-scroll-container p-4 md:p-6">
                       <Textarea 
-                        placeholder="Ingrese notas internas aquí..."
+                        placeholder="Enter internal notes here..."
                         className="min-h-[150px] resize-none w-full" 
                         value={editableNotes.internalNotes}
                         onChange={(e) => setEditableNotes({...editableNotes, internalNotes: e.target.value})}
@@ -346,79 +345,22 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
           </Card>
         </TabsContent>
 
-        {/* SECCIÓN DE DOCUMENTOS */}
-        <TabsContent value="documents">
-          <Card>
-            <CardHeader>
-              <CardTitle>Documentos del Proyecto</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <h3 className="font-medium mb-2">Presupuesto</h3>
-                {project.estimateHtml ? (
-                  <Button variant="outline">
-                    <i className="ri-file-text-line mr-2"></i>
-                    Ver Presupuesto
-                  </Button>
-                ) : (
-                  <p className="text-muted-foreground">No hay presupuesto disponible</p>
-                )}
-              </div>
 
-              <div>
-                <h3 className="font-medium mb-2">Contrato</h3>
-                {project.contractHtml ? (
-                  <Button variant="outline">
-                    <i className="ri-file-text-line mr-2"></i>
-                    Ver Contrato
-                  </Button>
-                ) : (
-                  <p className="text-muted-foreground">No hay contrato disponible</p>
-                )}
-              </div>
-
-              <div>
-                <h3 className="font-medium mb-2">Documentos Adjuntos</h3>
-                {project.attachments && Object.keys(project.attachments).length > 0 ? (
-                  <ul className="space-y-2">
-                    {Object.entries(project.attachments).map(([key, url]: [string, any]) => (
-                      <li key={key} className="flex items-center">
-                        <i className="ri-file-line mr-2"></i>
-                        <a href={url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                          {key}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-muted-foreground">No hay documentos adjuntos</p>
-                )}
-              </div>
-
-              <div className="flex justify-end">
-                <Button>
-                  <i className="ri-upload-line mr-2"></i>
-                  Adjuntar Documento
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         {/* SECCIÓN DE PAGOS */}
         <TabsContent value="payment">
           <Card>
             <CardHeader>
-              <CardTitle>Información de Pago</CardTitle>
+              <CardTitle>Payment Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-medium">Precio Total</h3>
+                  <h3 className="font-medium">Total Price</h3>
                   <p className="text-xl font-bold">{formatCurrency(project.totalPrice || 0)}</p>
                 </div>
                 <div>
-                  <h3 className="font-medium">Estado de Pago</h3>
+                  <h3 className="font-medium">Payment Status</h3>
                   <div className="mt-1">
                     {getPaymentStatusBadge(project.paymentStatus || 'pending')}
                   </div>
@@ -426,15 +368,15 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
               </div>
 
               <div>
-                <h3 className="font-medium mb-2">Historial de Pagos</h3>
+                <h3 className="font-medium mb-2">Payment History</h3>
                 {project.paymentDetails && project.paymentDetails.history && project.paymentDetails.history.length > 0 ? (
                   <div className="border rounded-md">
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead>
                         <tr>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monto</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Método</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200">
@@ -449,18 +391,18 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
                     </table>
                   </div>
                 ) : (
-                  <p className="text-muted-foreground">No hay historial de pagos</p>
+                  <p className="text-muted-foreground">No payment history</p>
                 )}
               </div>
 
               <div className="flex justify-end space-x-2">
                 <Button variant="outline">
                   <i className="ri-money-dollar-circle-line mr-2"></i>
-                  Registrar Pago
+                  Record Payment
                 </Button>
                 <Button>
                   <i className="ri-bill-line mr-2"></i>
-                  Generar Factura
+                  Generate Invoice
                 </Button>
               </div>
             </CardContent>

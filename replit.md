@@ -292,15 +292,14 @@ Changelog:
   * Enhanced ProjectProgress component with better height management and cyberpunk styling
   * Fixed content overflow issues in dashboard dialog with proper flex containers
   * Improved responsive design for both grid and table view modes
-- June 22, 2025. Unified project documentation system with file upload capability:
-  * Eliminated duplicate document interfaces - consolidated into single ProjectDocuments component
-  * Converted all interface text to English for consistency
-  * Added file upload functionality for external documents (permits, insurance docs, videos, images)
-  * Enhanced document categorization: Estimates, Contracts, Invoices, and Attachments
-  * Implemented drag-and-drop file upload with 10MB size limit and multiple format support
-  * Auto-collection of PDFs from estimate, contract, and invoice generation pages
-  * Added visual document type indicators with color-coded icons and badges
-  * Enhanced document management with view, download, and delete capabilities
+- June 22, 2025. Streamlined project interface with unified documentation system:
+  * Removed duplicate Documents tab from ProjectDetails component
+  * Consolidated all document management into single ProjectDocuments system
+  * Converted ProjectDetails interface to English for consistency
+  * Simplified project details to focus on Client, Project, and Payment information
+  * Enhanced unified documentation system with comprehensive file management
+  * All project documents now managed through single interface with upload capability
+  * Removed redundant document viewing options from project details tabs
 - June 21, 2025. Implemented complete functional dashboard with interactive elements:
   * Made all dashboard elements clickable and functional with proper navigation
   * Added real document viewing and downloading capabilities for estimates and contracts
