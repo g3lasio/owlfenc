@@ -5,37 +5,37 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Layout principal sin bloqueo de scroll */
+/* Layout principal optimizado para permitir scroll interno */
 * {
-  box-sizing: border-box !important;
+  box-sizing: border-box;
 }
 
 html, body {
-  height: 100vh !important;
-  max-height: 100vh !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  overflow: hidden !important; /* Solo bloquear en html/body para el layout principal */
+  height: 100vh;
+  max-height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* Solo bloquear scroll en el documento principal */
 }
 
 #root {
-  overflow: hidden !important;
-  height: 100vh !important;
-  max-height: 100vh !important;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden; /* Mantener control de layout principal */
 }
 
+/* Sidebar sin restricciones de overflow */
 aside {
-  height: 100vh !important;
-  max-height: 100vh !important;
-  overflow: hidden !important;
-  box-sizing: border-box !important;
+  height: 100vh;
+  max-height: 100vh;
+  box-sizing: border-box;
 }
 
-/* Main permite scroll interno, pero no en el contenedor principal */
+/* Main area permite scroll interno cuando es necesario */
 main {
-  height: 100vh !important;
-  max-height: 100vh !important;
-  overflow: hidden !important;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden; /* Solo en el contenedor principal */
 }
 
 /* Permitir scroll en páginas específicas */
@@ -44,19 +44,23 @@ main {
   height: 100% !important;
 }
 
-.scrollable-page * {
+/* Elementos específicos que necesitan scroll */
+.dialog-content-scrollable {
+  overflow-y: auto !important;
+  max-height: 95vh !important;
+}
+
+.dialog-content-scrollable * {
   overflow: visible !important;
 }
 
-.home-container {
-  overflow: hidden !important;
-  height: 100% !important;
-  max-height: 100% !important;
+/* Contenedores flexibles permiten overflow cuando es necesario */
+.flex-scroll {
+  overflow-y: auto;
 }
 
-/* Eliminar cualquier scroll de elementos flex */
-.flex, .flex-1, .flex-col {
-  overflow: hidden !important;
+.flex-scroll-x {
+  overflow-x: auto;
 }
 
 /* Animaciones para el reactor de Iron Man */

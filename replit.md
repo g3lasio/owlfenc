@@ -277,6 +277,14 @@ Changelog:
   * Implemented responsive design optimized for mobile devices with collapsible content areas
   * Created unified document viewing and downloading system accessible from project dashboard
   * All generated PDFs now automatically save to Firebase and are immediately available in project documents
+- June 22, 2025. Fixed critical global CSS overflow issues blocking scroll functionality:
+  * Identified and corrected aggressive overflow: hidden !important rules in index.css affecting all flex elements
+  * Replaced global overflow restrictions with targeted classes for specific scroll areas
+  * Added .dialog-content-scrollable and .flex-scroll classes for controlled scroll behavior
+  * Updated Projects dashboard dialog to use proper scroll classes enabling content visibility
+  * Fixed AppLayout overflow management to allow internal component scrolling
+  * Resolved mobile touch scroll issues by removing blanket overflow restrictions
+  * System now properly displays all dashboard content with functional scrolling on all devices
 - June 21, 2025. Fixed Projects page scrolling and project completion functionality:
   * Corrected JSX structure issues preventing proper page rendering
   * Implemented proper flex layout for Projects page with scrollable content area
