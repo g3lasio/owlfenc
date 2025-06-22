@@ -2925,25 +2925,34 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       };
       
       console.log('📤 Sending payload to PDF service:', payload);
-      // Use new Puppeteer PDF service (local, no external dependency)
-      const response = await axios.post("/api/estimate-puppeteer-pdf", payload, {
-        responseType: 'arraybuffer'
+      
+      // Robust PDF download using fetch API
+      const response = await fetch("/api/estimate-puppeteer-pdf", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
       });
       
       console.log('📨 Response received:', {
         status: response.status,
-        headers: response.headers,
-        dataType: typeof response.data,
-        dataSize: response.data?.byteLength || 'unknown'
+        statusText: response.statusText,
+        contentType: response.headers.get('content-type'),
+        contentLength: response.headers.get('content-length')
       });
       
-      // Validate the response
-      if (!response.data || response.data.byteLength === 0) {
-        throw new Error('Received empty PDF data from server');
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`PDF generation failed: ${response.status} ${response.statusText} - ${errorText}`);
       }
       
-      // Create blob from arraybuffer
-      const pdfBlob = new Blob([response.data], { type: 'application/pdf' });
+      // Get PDF as blob
+      const pdfBlob = await response.blob();
+      
+      if (pdfBlob.size === 0) {
+        throw new Error('Received empty PDF from server');
+      }
       console.log('📄 Created PDF blob:', {
         size: pdfBlob.size,
         type: pdfBlob.type
@@ -2951,7 +2960,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       
       // Auto-save to Firebase if document metadata is available in headers
       try {
-        const documentData = response.headers['x-document-data'];
+        const documentData = response.headers.get('x-document-data');
         if (documentData) {
           const docPayload = JSON.parse(documentData);
           console.log('📄 Auto-saving estimate document to Firebase...');
@@ -5284,29 +5293,37 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
                   console.log('Generating invoice PDF with payload:', invoicePayload);
 
-                  // Call invoice PDF service
-                  const response = await axios.post("/api/invoice-pdf", invoicePayload, {
-                    responseType: 'arraybuffer'
+                  // Call invoice PDF service using robust fetch API
+                  const response = await fetch("/api/invoice-pdf", {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(invoicePayload)
                   });
 
                   console.log('📨 Invoice response received:', {
                     status: response.status,
-                    headers: response.headers,
-                    dataType: typeof response.data,
-                    dataSize: response.data?.byteLength || 'unknown'
+                    statusText: response.statusText,
+                    contentType: response.headers.get('content-type'),
+                    contentLength: response.headers.get('content-length')
                   });
                   
-                  // Validate the response
-                  if (!response.data || response.data.byteLength === 0) {
-                    throw new Error('Received empty PDF data from server');
+                  if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Invoice PDF generation failed: ${response.status} ${response.statusText} - ${errorText}`);
                   }
 
-                  // Create blob from arraybuffer
-                  const blob = new Blob([response.data], { type: 'application/pdf' });
+                  // Get PDF as blob
+                  const blob = await response.blob();
+                  
+                  if (blob.size === 0) {
+                    throw new Error('Received empty invoice PDF from server');
+                  }
 
                   // Auto-save to Firebase if document metadata is available in headers
                   try {
-                    const documentData = response.headers['x-document-data'];
+                    const documentData = response.headers.get('x-document-data');
                     if (documentData) {
                       const docPayload = JSON.parse(documentData);
                       console.log('📄 Auto-saving invoice document to Firebase...');

@@ -1448,6 +1448,15 @@ Output in English regardless of input language. Make it suitable for contracts a
 
   // 🧾 NEW: Professional Invoice PDF Generation
   app.post("/api/invoice-pdf", async (req: Request, res: Response) => {
+    // Handle both JSON and form data
+    let invoiceData;
+    if (req.body.data) {
+      // Form submission
+      invoiceData = JSON.parse(req.body.data);
+    } else {
+      // Direct JSON
+      invoiceData = req.body;
+    }
     console.log('🎯 Professional Invoice PDF generation started');
     
     try {
@@ -1586,6 +1595,15 @@ Output in English regardless of input language. Make it suitable for contracts a
 
   // 🚀 NEW: Professional Puppeteer PDF Generation (replaces PDFMonkey)
   app.post("/api/estimate-puppeteer-pdf", async (req: Request, res: Response) => {
+    // Handle both JSON and form data
+    let estimateData;
+    if (req.body.data) {
+      // Form submission
+      estimateData = JSON.parse(req.body.data);
+    } else {
+      // Direct JSON
+      estimateData = req.body;
+    }
     console.log('🎯 Professional PDF generation with Puppeteer started');
     
     try {
