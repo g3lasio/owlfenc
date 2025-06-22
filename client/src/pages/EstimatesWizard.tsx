@@ -2926,46 +2926,45 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       
       console.log('📤 Sending payload to PDF service:', payload);
       
-      // Use fetch instead of axios for better compatibility
+      // Use XMLHttpRequest for reliable binary data handling
       console.log('🔄 Starting PDF generation request...');
-      const response = await fetch('/api/estimate-puppeteer-pdf', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
+      
+      const pdfBlob = await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/api/estimate-puppeteer-pdf', true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.responseType = 'blob';
+        
+        xhr.onload = function() {
+          console.log('📡 Response received:', {
+            status: xhr.status,
+            statusText: xhr.statusText,
+            responseSize: xhr.response?.size || 0
+          });
+          
+          if (xhr.status === 200) {
+            resolve(xhr.response);
+          } else {
+            reject(new Error(`PDF generation failed: ${xhr.status}`));
+          }
+        };
+        
+        xhr.onerror = function() {
+          reject(new Error('Network error during PDF generation'));
+        };
+        
+        xhr.send(JSON.stringify(payload));
       });
 
-      console.log('📡 Response received:', {
-        status: response.status,
-        statusText: response.statusText,
-        headers: Object.fromEntries(response.headers.entries())
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Server error response:', errorText);
-        throw new Error(`PDF generation failed: ${response.status} - ${errorText}`);
-      }
-
-      // Handle binary PDF response
-      console.log('📄 Processing binary PDF response...');
-      const arrayBuffer = await response.arrayBuffer();
-      console.log('📦 ArrayBuffer received:', {
-        size: arrayBuffer.byteLength,
-        isValid: arrayBuffer.byteLength > 0
-      });
-
-      if (arrayBuffer.byteLength === 0) {
-        throw new Error('Received empty PDF buffer from server');
-      }
-
-      // Convert to blob and download
-      const pdfBlob = new Blob([arrayBuffer], { type: 'application/pdf' });
-      console.log('📋 PDF Blob created:', {
+      console.log('📦 PDF blob received:', {
         size: pdfBlob.size,
         type: pdfBlob.type
       });
+
+      // Validate blob size
+      if (pdfBlob.size === 0) {
+        throw new Error('Received empty PDF from server');
+      }
       
       // Create download link
       const url = window.URL.createObjectURL(pdfBlob);
