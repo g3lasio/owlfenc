@@ -527,49 +527,31 @@
                 <div class="company-section">
                     <h1 class="company-name">{{company.name}}</h1>
                     <div class="company-details">
-                        {{#if company.address}}
                         <div><strong>Address:</strong> {{company.address}}</div>
-                        {{/if}}
-                        {{#if company.phone}}
                         <div><strong>Phone:</strong> {{company.phone}}</div>
-                        {{/if}}
-                        {{#if company.email}}
                         <div><strong>Email:</strong> {{company.email}}</div>
-                        {{/if}}
-                        {{#if company.website}}
                         <div><strong>Website:</strong> {{company.website}}</div>
-                        {{/if}}
                     </div>
                 </div>
                 
                 <div class="logo-section">
-                    {{#if company.logo}}
-                        <img src="{{company.logo}}" alt="Company Logo" class="company-logo">
-                    {{else}}
-                        <div class="logo-placeholder">
-                            Company Logo
-                        </div>
-                    {{/if}}
+                    <div class="logo-placeholder">
+                        Company Logo
+                    </div>
                 </div>
                 
                 <div class="estimate-section">
-                    <h2 class="estimate-title">Estimate</h2>
+                    <h2 class="estimate-title">ESTIMATE</h2>
                     <div class="estimate-meta">
-                        {{#if estimate.number}}
                         <div class="estimate-meta-item">
                             <strong>Estimate #:</strong> {{estimate.number}}
                         </div>
-                        {{/if}}
-                        {{#if estimate.date}}
                         <div class="estimate-meta-item">
                             <strong>Date:</strong> {{estimate.date}}
                         </div>
-                        {{/if}}
-                        {{#if estimate.valid_until}}
                         <div class="estimate-meta-item">
                             <strong>Valid Until:</strong> {{estimate.valid_until}}
                         </div>
-                        {{/if}}
                     </div>
                 </div>
             </div>

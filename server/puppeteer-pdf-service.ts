@@ -282,6 +282,9 @@ export class PuppeteerPdfService {
       html = html.replace(ifRegex, '');
     }
     
+    // Clean up any remaining orphaned {{/if}} tags
+    html = html.replace(/\{\{\/if\}\}/g, '');
+    
     return html;
   }
 
