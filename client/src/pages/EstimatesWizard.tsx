@@ -2926,14 +2926,69 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       
       console.log('📤 Sending payload to PDF service:', payload);
       
-      // Use GET endpoint with URL parameter for reliable PDF download
-      const encodedData = encodeURIComponent(JSON.stringify(payload));
-      const downloadUrl = `/api/estimate-pdf-download?data=${encodedData}`;
+      // Direct blob download like before - no URLs
+      const response = await fetch("/api/estimate-puppeteer-pdf", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
       
-      // Open download in new tab/window
-      window.open(downloadUrl, '_blank');
+      if (!response.ok) {
+        throw new Error(`PDF generation failed: ${response.status}`);
+      }
       
-      console.log('✅ Estimate PDF download initiated successfully');
+      // Get PDF as blob for automatic download
+      const pdfBlob = await response.blob();
+      
+      // Automatic download like before
+      const url = window.URL.createObjectURL(pdfBlob);
+      const a = document.createElement("a");
+      a.style.display = "none";
+      a.href = url;
+      a.download = `estimate-${estimate.client?.name || "client"}-${Date.now()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      // Auto-save to Firebase Documents like before
+      try {
+        const { saveProjectDocument } = await import('@/lib/projectDocuments');
+        
+        // Convert blob to base64 for Firebase storage
+        const reader = new FileReader();
+        const base64Promise = new Promise((resolve) => {
+          reader.onload = () => resolve(reader.result);
+          reader.readAsDataURL(pdfBlob);
+        });
+        const base64Data = await base64Promise;
+        
+        await saveProjectDocument({
+          projectId: estimate.client?.id || `temp-${Date.now()}`,
+          userId: currentUser?.uid || 'unknown',
+          documentType: 'estimate',
+          documentName: `Estimate for ${estimate.client?.name || 'Client'}`,
+          fileName: `estimate-${Date.now()}.pdf`,
+          fileSize: pdfBlob.size,
+          mimeType: 'application/pdf',
+          documentData: base64Data as string,
+          documentNumber: `EST-${Date.now()}`,
+          status: 'generated',
+          metadata: {
+            clientName: estimate.client?.name,
+            total: estimate.total,
+            items: estimate.items?.length || 0
+          }
+        });
+        
+        console.log('✅ PDF auto-saved to Firebase Documents');
+      } catch (docError) {
+        console.warn('⚠️ Failed to auto-save to Firebase:', docError);
+      }
+      
+      console.log('✅ PDF downloaded automatically');
       
       toast({
         title: "✅ PDF Generated",
@@ -5229,14 +5284,68 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
                   console.log('Generating invoice PDF with payload:', invoicePayload);
 
-                  // Use GET endpoint with URL parameter for reliable PDF download
-                  const encodedData = encodeURIComponent(JSON.stringify(invoicePayload));
-                  const downloadUrl = `/api/invoice-pdf-download?data=${encodedData}`;
+                  // Direct blob download like before - no URLs
+                  const response = await fetch("/api/invoice-pdf", {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(invoicePayload)
+                  });
                   
-                  // Open download in new tab/window
-                  window.open(downloadUrl, '_blank');
+                  if (!response.ok) {
+                    throw new Error(`Invoice PDF generation failed: ${response.status}`);
+                  }
 
-                  console.log('✅ Invoice PDF download initiated successfully');
+                  // Get PDF as blob for automatic download
+                  const blob = await response.blob();
+                  
+                  // Automatic download like before
+                  const url = window.URL.createObjectURL(blob);
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.download = `invoice-${Date.now()}.pdf`;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  window.URL.revokeObjectURL(url);
+                  
+                  // Auto-save to Firebase Documents like before
+                  try {
+                    const { saveProjectDocument } = await import('@/lib/projectDocuments');
+                    
+                    // Convert blob to base64 for Firebase storage
+                    const reader = new FileReader();
+                    const base64Promise = new Promise((resolve) => {
+                      reader.onload = () => resolve(reader.result);
+                      reader.readAsDataURL(blob);
+                    });
+                    const base64Data = await base64Promise;
+                    
+                    await saveProjectDocument({
+                      projectId: estimate.client?.id || `temp-${Date.now()}`,
+                      userId: currentUser?.uid || 'unknown',
+                      documentType: 'invoice',
+                      documentName: `Invoice for ${estimate.client?.name || 'Client'}`,
+                      fileName: `invoice-${Date.now()}.pdf`,
+                      fileSize: blob.size,
+                      mimeType: 'application/pdf',
+                      documentData: base64Data as string,
+                      documentNumber: `INV-${Date.now()}`,
+                      status: 'generated',
+                      metadata: {
+                        clientName: estimate.client?.name,
+                        total: estimate.total,
+                        items: estimate.items?.length || 0
+                      }
+                    });
+                    
+                    console.log('✅ Invoice auto-saved to Firebase Documents');
+                  } catch (docError) {
+                    console.warn('⚠️ Failed to auto-save invoice to Firebase:', docError);
+                  }
+
+                  console.log('✅ Invoice PDF downloaded automatically');
 
                   // Close dialog and show success message
                   setShowInvoiceDialog(false);
