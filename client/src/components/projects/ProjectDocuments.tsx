@@ -170,52 +170,61 @@ export default function ProjectDocuments({ projectId, projectName }: ProjectDocu
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileText className="h-5 w-5" />
-          Documentos del Proyecto
-          {projectName && <span className="text-sm text-muted-foreground">- {projectName}</span>}
-        </CardTitle>
-        <CardDescription>
-          Total: {summary.total} documentos | 
-          {summary.estimates > 0 && ` ${summary.estimates} estimados`}
-          {summary.invoices > 0 && ` ${summary.invoices} facturas`}
-          {summary.contracts > 0 && ` ${summary.contracts} contratos`}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="all">
-              Todos ({summary.total})
-            </TabsTrigger>
-            <TabsTrigger value="estimate">
-              Estimados ({summary.estimates})
-            </TabsTrigger>
-            <TabsTrigger value="invoice">
-              Facturas ({summary.invoices})
-            </TabsTrigger>
-            <TabsTrigger value="contract">
-              Contratos ({summary.contracts})
-            </TabsTrigger>
-          </TabsList>
+    <div className="w-full">
+      <div className="mb-4">
+        <div className="flex items-center gap-2 mb-2">
+          <FileText className="h-4 w-4 text-cyan-400" />
+          <span className="text-cyan-300 font-medium text-sm">
+            Documentos
+            {projectName && <span className="text-gray-400 font-normal"> - {projectName}</span>}
+          </span>
+        </div>
+        <p className="text-xs text-gray-400">
+          Total: {summary.total} documentos
+          {summary.estimates > 0 && ` | ${summary.estimates} estimados`}
+          {summary.invoices > 0 && ` | ${summary.invoices} facturas`}
+          {summary.contracts > 0 && ` | ${summary.contracts} contratos`}
+        </p>
+      </div>
 
-          <TabsContent value="all" className="mt-4">
-            <DocumentsList documents={filterDocuments()} onDownload={handleDownload} onView={handleView} />
-          </TabsContent>
-          <TabsContent value="estimate" className="mt-4">
-            <DocumentsList documents={filterDocuments('estimate')} onDownload={handleDownload} onView={handleView} />
-          </TabsContent>
-          <TabsContent value="invoice" className="mt-4">
-            <DocumentsList documents={filterDocuments('invoice')} onDownload={handleDownload} onView={handleView} />
-          </TabsContent>
-          <TabsContent value="contract" className="mt-4">
-            <DocumentsList documents={filterDocuments('contract')} onDownload={handleDownload} onView={handleView} />
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 bg-gray-800/50 border-cyan-400/20">
+          <TabsTrigger value="all" className="text-xs sm:text-sm data-[state=active]:bg-cyan-400/20 data-[state=active]:text-cyan-300">
+            <span className="hidden sm:inline">Todos</span>
+            <span className="sm:hidden">All</span>
+            <span className="ml-1">({summary.total})</span>
+          </TabsTrigger>
+          <TabsTrigger value="estimate" className="text-xs sm:text-sm data-[state=active]:bg-cyan-400/20 data-[state=active]:text-cyan-300">
+            <span className="hidden sm:inline">Estimados</span>
+            <span className="sm:hidden">Est</span>
+            <span className="ml-1">({summary.estimates})</span>
+          </TabsTrigger>
+          <TabsTrigger value="invoice" className="text-xs sm:text-sm data-[state=active]:bg-cyan-400/20 data-[state=active]:text-cyan-300">
+            <span className="hidden sm:inline">Facturas</span>
+            <span className="sm:hidden">Inv</span>
+            <span className="ml-1">({summary.invoices})</span>
+          </TabsTrigger>
+          <TabsTrigger value="contract" className="text-xs sm:text-sm data-[state=active]:bg-cyan-400/20 data-[state=active]:text-cyan-300">
+            <span className="hidden sm:inline">Contratos</span>
+            <span className="sm:hidden">Con</span>
+            <span className="ml-1">({summary.contracts})</span>
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="all" className="mt-3">
+          <DocumentsList documents={filterDocuments()} onDownload={handleDownload} onView={handleView} />
+        </TabsContent>
+        <TabsContent value="estimate" className="mt-3">
+          <DocumentsList documents={filterDocuments('estimate')} onDownload={handleDownload} onView={handleView} />
+        </TabsContent>
+        <TabsContent value="invoice" className="mt-3">
+          <DocumentsList documents={filterDocuments('invoice')} onDownload={handleDownload} onView={handleView} />
+        </TabsContent>
+        <TabsContent value="contract" className="mt-3">
+          <DocumentsList documents={filterDocuments('contract')} onDownload={handleDownload} onView={handleView} />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 
   function DocumentsList({ 
@@ -237,36 +246,38 @@ export default function ProjectDocuments({ projectId, projectName }: ProjectDocu
     }
 
     return (
-      <div className="space-y-3">
+      <div className="space-y-2 max-h-64 sm:max-h-80 overflow-y-auto">
         {documents.map((document) => (
           <div 
             key={document.id} 
-            className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+            className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 bg-gray-800/40 border border-cyan-400/20 rounded-lg hover:bg-cyan-400/10 transition-colors"
           >
-            <div className="flex items-center space-x-4 flex-1">
-              <div className="text-2xl">
+            <div className="flex items-center space-x-3 flex-1 min-w-0">
+              <div className="text-lg sm:text-xl flex-shrink-0">
                 {getDocumentTypeIcon(document.documentType)}
               </div>
               
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h4 className="font-medium truncate">{document.documentName}</h4>
-                  <Badge className={getStatusColor(document.status)}>
-                    {getStatusLabel(document.status)}
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">
-                    {getDocumentTypeLabel(document.documentType)}
-                  </span>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
+                  <h4 className="font-medium text-sm text-gray-200 truncate">{document.documentName}</h4>
+                  <div className="flex gap-2 flex-wrap">
+                    <Badge className={`${getStatusColor(document.status)} text-xs`}>
+                      {getStatusLabel(document.status)}
+                    </Badge>
+                    <span className="text-xs text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded">
+                      {getDocumentTypeLabel(document.documentType)}
+                    </span>
+                  </div>
                 </div>
                 
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-gray-400">
                   <span className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
                     {formatDate(document.generatedAt)}
                   </span>
                   <span>{formatFileSize(document.fileSize)}</span>
                   {document.documentNumber && (
-                    <span>#{document.documentNumber}</span>
+                    <span className="hidden sm:inline">#{document.documentNumber}</span>
                   )}
                   {document.metadata?.totalAmount && (
                     <span className="flex items-center gap-1">
@@ -275,33 +286,33 @@ export default function ProjectDocuments({ projectId, projectName }: ProjectDocu
                     </span>
                   )}
                   {document.metadata?.clientName && (
-                    <span className="flex items-center gap-1">
-                      <User className="h-3 w-3" />
-                      {document.metadata.clientName}
+                    <span className="flex items-center gap-1 truncate max-w-32">
+                      <User className="h-3 w-3 flex-shrink-0" />
+                      <span className="truncate">{document.metadata.clientName}</span>
                     </span>
                   )}
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={() => onView(document)}
-                className="flex items-center gap-1"
+                className="flex items-center gap-1 bg-gray-700/50 border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/20 text-xs px-2 py-1"
               >
-                <Eye className="h-4 w-4" />
-                Ver
+                <Eye className="h-3 w-3" />
+                <span className="hidden sm:inline">Ver</span>
               </Button>
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={() => onDownload(document)}
-                className="flex items-center gap-1"
+                className="flex items-center gap-1 bg-gray-700/50 border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/20 text-xs px-2 py-1"
               >
-                <Download className="h-4 w-4" />
-                Descargar
+                <Download className="h-3 w-3" />
+                <span className="hidden sm:inline">Descargar</span>
               </Button>
             </div>
           </div>

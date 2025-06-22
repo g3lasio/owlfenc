@@ -698,12 +698,12 @@ function Projects() {
                 </DialogTitle>
               </DialogHeader>
               
-              <div className="flex-1 overflow-auto bg-gray-900 relative">
+              <div className="flex-1 flex flex-col bg-gray-900 relative h-full max-h-screen">
                 {/* Header con información básica del proyecto */}
-                <div className="p-6 border-b border-cyan-400/20 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="flex-shrink-0 p-4 sm:p-6 border-b border-cyan-400/20 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                     <div 
-                      className="bg-gray-800/40 border border-cyan-400/20 rounded-lg p-4 cursor-pointer hover:bg-cyan-400/10 transition-colors"
+                      className="bg-gray-800/40 border border-cyan-400/20 rounded-lg p-3 sm:p-4 cursor-pointer hover:bg-cyan-400/10 transition-colors"
                       onClick={() => {
                         toast({
                           title: "Información del Cliente",
@@ -713,14 +713,14 @@ function Projects() {
                     >
                       <div className="flex items-center gap-2 mb-2">
                         <i className="ri-user-line text-cyan-400"></i>
-                        <span className="text-cyan-300 font-medium">Cliente</span>
+                        <span className="text-cyan-300 font-medium text-sm sm:text-base">Cliente</span>
                       </div>
-                      <p className="text-white">{selectedProject.clientName}</p>
-                      <p className="text-gray-400 text-sm">{selectedProject.address}</p>
+                      <p className="text-white text-sm sm:text-base truncate">{selectedProject.clientName}</p>
+                      <p className="text-gray-400 text-xs sm:text-sm truncate">{selectedProject.address}</p>
                     </div>
                     
                     <div 
-                      className="bg-gray-800/40 border border-cyan-400/20 rounded-lg p-4 cursor-pointer hover:bg-cyan-400/10 transition-colors"
+                      className="bg-gray-800/40 border border-cyan-400/20 rounded-lg p-3 sm:p-4 cursor-pointer hover:bg-cyan-400/10 transition-colors"
                       onClick={() => {
                         const projectInfo = `Tipo: ${selectedProject.projectType || 'General'}\nSubtipo: ${selectedProject.projectSubtype || selectedProject.fenceType || 'No especificado'}`;
                         toast({
@@ -731,14 +731,14 @@ function Projects() {
                     >
                       <div className="flex items-center gap-2 mb-2">
                         <i className="ri-hammer-line text-cyan-400"></i>
-                        <span className="text-cyan-300 font-medium">Proyecto</span>
+                        <span className="text-cyan-300 font-medium text-sm sm:text-base">Proyecto</span>
                       </div>
-                      <p className="text-white">{selectedProject.projectType || 'General'}</p>
-                      <p className="text-gray-400 text-sm">{selectedProject.projectSubtype || selectedProject.fenceType || 'No especificado'}</p>
+                      <p className="text-white text-sm sm:text-base truncate">{selectedProject.projectType || 'General'}</p>
+                      <p className="text-gray-400 text-xs sm:text-sm truncate">{selectedProject.projectSubtype || selectedProject.fenceType || 'No especificado'}</p>
                     </div>
                     
                     <div 
-                      className="bg-gray-800/40 border border-cyan-400/20 rounded-lg p-4 cursor-pointer hover:bg-cyan-400/10 transition-colors"
+                      className="bg-gray-800/40 border border-cyan-400/20 rounded-lg p-3 sm:p-4 cursor-pointer hover:bg-cyan-400/10 transition-colors"
                       onClick={() => {
                         const priceInfo = selectedProject.totalPrice 
                           ? `Valor total: $${(selectedProject.totalPrice / 100).toLocaleString()}\nEstado: ${selectedProject.status === 'completed' ? 'Completado' : 'En proceso'}`
@@ -751,34 +751,34 @@ function Projects() {
                     >
                       <div className="flex items-center gap-2 mb-2">
                         <i className="ri-money-dollar-circle-line text-cyan-400"></i>
-                        <span className="text-cyan-300 font-medium">Valor</span>
+                        <span className="text-cyan-300 font-medium text-sm sm:text-base">Valor</span>
                       </div>
-                      <p className="text-white">
+                      <p className="text-white text-sm sm:text-base">
                         {selectedProject.totalPrice 
                           ? `$${(selectedProject.totalPrice / 100).toLocaleString()}` 
                           : 'No definido'}
                       </p>
-                      <p className="text-gray-400 text-sm">
+                      <p className="text-gray-400 text-xs sm:text-sm">
                         Estado: {selectedProject.status === 'completed' ? 'Completado' : 'En proceso'}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Contenido principal del dashboard */}
-                <div className="p-6">
-                  <div className="grid lg:grid-cols-2 gap-6">
+                {/* Contenido principal del dashboard con scroll */}
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
                     {/* Columna izquierda: Progreso y Detalles */}
-                    <div className="space-y-6">
+                    <div className="space-y-4 sm:space-y-6">
                       {/* Progreso del Proyecto */}
                       <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg">
-                        <div className="p-4 border-b border-cyan-400/20">
-                          <h3 className="text-cyan-300 font-semibold flex items-center">
+                        <div className="p-3 sm:p-4 border-b border-cyan-400/20">
+                          <h3 className="text-cyan-300 font-semibold flex items-center text-sm sm:text-base">
                             <i className="ri-route-line mr-2"></i>
                             Progreso del Proyecto
                           </h3>
                         </div>
-                        <div className="p-4">
+                        <div className="p-3 sm:p-4">
                           <ProjectProgress 
                             projectId={selectedProject.id} 
                             currentProgress={selectedProject.projectProgress || "estimate_created"} 
@@ -789,13 +789,13 @@ function Projects() {
 
                       {/* Información del Proyecto */}
                       <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg">
-                        <div className="p-4 border-b border-cyan-400/20">
-                          <h3 className="text-cyan-300 font-semibold flex items-center">
+                        <div className="p-3 sm:p-4 border-b border-cyan-400/20">
+                          <h3 className="text-cyan-300 font-semibold flex items-center text-sm sm:text-base">
                             <i className="ri-information-line mr-2"></i>
                             Detalles del Proyecto
                           </h3>
                         </div>
-                        <div className="p-4 max-h-96 overflow-y-auto">
+                        <div className="p-3 sm:p-4 max-h-64 sm:max-h-96 overflow-y-auto">
                           <ProjectDetails 
                             project={selectedProject} 
                             onUpdate={handleProjectUpdate} 
