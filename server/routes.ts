@@ -48,6 +48,7 @@ import anthropicRoutes from "./routes/anthropic";
 import paymentRoutes from "./routes/payment-routes"; // Import payment routes
 import contractorPaymentRoutes from "./routes/contractor-payment-routes"; // Import contractor payment routes
 import estimatesRoutes from "./routes/estimates"; // Import new estimates routes
+import { invoicePdfService } from './invoice-pdf-service';
 import { puppeteerPdfService } from "./puppeteer-pdf-service";
 import estimatesSimpleRoutes from "./routes/estimates-simple"; // Import simple estimates routes
 import { setupTemplatesRoutes } from "./routes/templates";
@@ -1444,6 +1445,99 @@ Output in English regardless of input language. Make it suitable for contracts a
 
     throw new Error("Timed out waiting for PDF to be ready.");
   };
+
+  // 🧾 NEW: Professional Invoice PDF Generation
+  app.post("/api/invoice-pdf", async (req: Request, res: Response) => {
+    console.log('🎯 Professional Invoice PDF generation started');
+    
+    try {
+      // Initialize Invoice PDF service
+      await invoicePdfService.initialize();
+      
+      // Extract and validate data from request
+      const requestData = req.body;
+      console.log('🔍 Invoice request data:', JSON.stringify(requestData, null, 2));
+      
+      // Handle contractor profile data
+      const profile = requestData.profile || {};
+      const estimate = requestData.estimate || {};
+      const invoiceConfig = requestData.invoiceConfig || {};
+      
+      // Calculate due date based on payment status
+      const dueDate = invoiceConfig.totalAmountPaid 
+        ? new Date().toLocaleDateString() // Already paid
+        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(); // 30 days from now
+      
+      // Prepare invoice data structure
+      const invoiceData = {
+        company: {
+          name: profile.company || 'Your Company',
+          address: profile.address || 'Company Address',
+          phone: profile.phone || 'Phone Number',
+          email: profile.email || 'Email Address',
+          website: profile.website || 'Website',
+          logo: profile.logo || ''
+        },
+        invoice: {
+          number: `INV-${Date.now()}`,
+          date: new Date().toLocaleDateString(),
+          due_date: dueDate,
+          items: estimate.items?.map(item => ({
+            code: item.name || 'Item',
+            description: item.description || '',
+            qty: item.quantity || 1,
+            unit_price: `$${Number(item.price || 0).toFixed(2)}`,
+            total: `$${Number(item.total || 0).toFixed(2)}`
+          })) || [],
+          subtotal: `$${Number(estimate.subtotal || 0).toFixed(2)}`,
+          discounts: estimate.discountAmount > 0 ? `-$${Number(estimate.discountAmount || 0).toFixed(2)}` : '$0.00',
+          tax_rate: estimate.taxRate || 0,
+          tax_amount: `$${Number(estimate.tax || 0).toFixed(2)}`,
+          total: `$${Number(estimate.total || 0).toFixed(2)}`
+        },
+        client: {
+          name: estimate.client?.name || 'Client Name',
+          email: estimate.client?.email || '',
+          phone: estimate.client?.phone || '',
+          address: estimate.client?.address || 'Client Address',
+          contact: `${estimate.client?.phone || 'Phone'}\n${estimate.client?.email || 'Email'}`
+        },
+        invoiceConfig
+      };
+      
+      console.log('📊 Processed invoice data:', JSON.stringify(invoiceData, null, 2));
+      
+      // Generate PDF using Invoice service
+      const pdfBuffer = await invoicePdfService.generatePdf(invoiceData);
+      
+      // Validate PDF buffer
+      console.log('🔍 PDF Buffer validation:', {
+        isBuffer: Buffer.isBuffer(pdfBuffer),
+        length: pdfBuffer.length,
+        firstBytes: pdfBuffer.subarray(0, 8).toString('hex'),
+        isPDF: pdfBuffer.subarray(0, 4).toString() === '%PDF'
+      });
+      
+      // Set response headers for PDF download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="invoice-${invoiceData.invoice.number}.pdf"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      res.setHeader('Cache-Control', 'no-cache');
+      
+      // Send PDF buffer as binary data
+      res.end(pdfBuffer, 'binary');
+      
+      console.log('✅ Professional Invoice PDF generated and sent successfully');
+      
+    } catch (error) {
+      console.error('❌ Error generating Invoice PDF:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to generate Invoice PDF',
+        details: error.message
+      });
+    }
+  });
 
   // 🚀 NEW: Professional Puppeteer PDF Generation (replaces PDFMonkey)
   app.post("/api/estimate-puppeteer-pdf", async (req: Request, res: Response) => {

@@ -4880,7 +4880,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
               Cancel
             </Button>
             <Button
-              onClick={() => {
+              onClick={async () => {
                 // Validate required fields
                 if (invoiceConfig.projectCompleted === null || invoiceConfig.totalAmountPaid === null) {
                   toast({
@@ -4900,15 +4900,78 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   return;
                 }
 
-                // Generate invoice with configuration
-                const invoiceData = {
-                  ...estimate,
-                  invoiceConfig,
-                  type: "invoice"
-                };
+                // Validate contractor profile
+                if (!profile?.company) {
+                  toast({
+                    title: "Profile Incomplete",
+                    description: "Complete your company name in your profile before generating invoices.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
 
-                // Navigate to invoice generation
-                window.location.href = `/invoices?fromEstimate=${btoa(JSON.stringify(invoiceData))}`;
+                try {
+                  // Prepare invoice data payload
+                  const invoicePayload = {
+                    profile: {
+                      company: profile.company,
+                      address: profile.address ? `${profile.address}${profile.city ? ', ' + profile.city : ''}${profile.state ? ', ' + profile.state : ''}${profile.zipCode ? ' ' + profile.zipCode : ''}` : "",
+                      phone: profile.phone || "",
+                      email: profile.email || currentUser?.email || "",
+                      website: profile.website || "",
+                      logo: profile.logo || ""
+                    },
+                    estimate: {
+                      client: estimate.client,
+                      items: estimate.items,
+                      subtotal: estimate.subtotal,
+                      discountAmount: estimate.discountAmount,
+                      taxRate: estimate.taxRate,
+                      tax: estimate.tax,
+                      total: estimate.total
+                    },
+                    invoiceConfig
+                  };
+
+                  console.log('Generating invoice PDF with payload:', invoicePayload);
+
+                  // Call invoice PDF service
+                  const response = await axios.post("/api/invoice-pdf", invoicePayload, {
+                    responseType: 'blob'
+                  });
+
+                  // Create download link
+                  const blob = new Blob([response.data], { type: 'application/pdf' });
+                  const url = window.URL.createObjectURL(blob);
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.download = `invoice-${Date.now()}.pdf`;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  window.URL.revokeObjectURL(url);
+
+                  // Close dialog and show success message
+                  setShowInvoiceDialog(false);
+                  setInvoiceConfig({
+                    projectCompleted: null,
+                    downPaymentAmount: "",
+                    totalAmountPaid: null,
+                  });
+
+                  toast({
+                    title: "Invoice Generated",
+                    description: "Your professional invoice has been generated and downloaded successfully.",
+                  });
+
+                } catch (error) {
+                  console.error("Error generating invoice:", error);
+                  toast({
+                    title: "Generation Failed",
+                    description: "Could not generate invoice. Please try again.",
+                    variant: "destructive",
+                  });
+                }
               }}
               className="bg-orange-600 hover:bg-orange-700"
             >
