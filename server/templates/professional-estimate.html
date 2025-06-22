@@ -20,7 +20,7 @@
         
         body {
             font-family: 'Inter', 'Arial', sans-serif;
-            font-size: 11px;
+            font-size: 13px;
             line-height: 1.4;
             color: #2c3e50;
             background: #ffffff;
@@ -67,7 +67,7 @@
         }
         
         .company-details {
-            font-size: 11px;
+            font-size: 13px;
             line-height: 1.6;
             color: #4a5568;
         }
@@ -136,7 +136,7 @@
         
         .estimate-meta-item {
             margin-bottom: 8px;
-            font-size: 11px;
+            font-size: 13px;
         }
         
         .estimate-meta-item:last-child {
@@ -186,7 +186,7 @@
         
         .client-info-item {
             margin-bottom: 6px;
-            font-size: 11px;
+            font-size: 13px;
             color: #4a5568;
         }
         
@@ -272,7 +272,7 @@
         
         .items-table tbody td {
             padding: 14px 12px;
-            font-size: 10px;
+            font-size: 12px;
             color: #4a5568;
             vertical-align: top;
             border-right: 1px solid #f1f5f9;
@@ -288,13 +288,13 @@
         .item-code {
             font-weight: 600;
             color: #2d3748;
-            font-size: 10px;
+            font-size: 12px;
         }
         
         .item-description {
             color: #4a5568;
             line-height: 1.4;
-            font-size: 9px;
+            font-size: 11px;
         }
         
         .item-quantity {
@@ -562,21 +562,15 @@
             <h3 class="section-header">Client Information</h3>
             <div class="client-details">
                 <div class="client-name">{{client.name}}</div>
-                {{#if client.phone}}
                 <div class="client-info-item">
                     <strong>Phone:</strong> {{client.phone}}
                 </div>
-                {{/if}}
-                {{#if client.email}}
                 <div class="client-info-item">
                     <strong>Email:</strong> {{client.email}}
                 </div>
-                {{/if}}
-                {{#if client.address}}
                 <div class="client-info-item">
                     <strong>Address:</strong> {{client.address}}
                 </div>
-                {{/if}}
             </div>
         </section>
 
