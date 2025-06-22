@@ -2926,21 +2926,27 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       
       console.log('📤 Sending payload to PDF service:', payload);
       
-      // Direct blob download like before - no URLs
-      const response = await fetch("/api/estimate-puppeteer-pdf", {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload)
+      // Use XMLHttpRequest for robust binary PDF download
+      const pdfBlob = await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/api/estimate-puppeteer-pdf', true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.responseType = 'blob';
+        
+        xhr.onload = function() {
+          if (xhr.status === 200) {
+            resolve(xhr.response);
+          } else {
+            reject(new Error(`PDF generation failed: ${xhr.status}`));
+          }
+        };
+        
+        xhr.onerror = function() {
+          reject(new Error('Network error during PDF generation'));
+        };
+        
+        xhr.send(JSON.stringify(payload));
       });
-      
-      if (!response.ok) {
-        throw new Error(`PDF generation failed: ${response.status}`);
-      }
-      
-      // Get PDF as blob for automatic download
-      const pdfBlob = await response.blob();
       
       // Automatic download like before
       const url = window.URL.createObjectURL(pdfBlob);
@@ -5284,21 +5290,27 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
                   console.log('Generating invoice PDF with payload:', invoicePayload);
 
-                  // Direct blob download like before - no URLs
-                  const response = await fetch("/api/invoice-pdf", {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(invoicePayload)
+                  // Use XMLHttpRequest for robust binary PDF download
+                  const blob = await new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', '/api/invoice-pdf', true);
+                    xhr.setRequestHeader('Content-Type', 'application/json');
+                    xhr.responseType = 'blob';
+                    
+                    xhr.onload = function() {
+                      if (xhr.status === 200) {
+                        resolve(xhr.response);
+                      } else {
+                        reject(new Error(`Invoice PDF generation failed: ${xhr.status}`));
+                      }
+                    };
+                    
+                    xhr.onerror = function() {
+                      reject(new Error('Network error during invoice PDF generation'));
+                    };
+                    
+                    xhr.send(JSON.stringify(invoicePayload));
                   });
-                  
-                  if (!response.ok) {
-                    throw new Error(`Invoice PDF generation failed: ${response.status}`);
-                  }
-
-                  // Get PDF as blob for automatic download
-                  const blob = await response.blob();
                   
                   // Automatic download like before
                   const url = window.URL.createObjectURL(blob);
