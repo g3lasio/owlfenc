@@ -2926,86 +2926,14 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       
       console.log('📤 Sending payload to PDF service:', payload);
       
-      // Create form submission for robust PDF download - eliminates network errors
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = '/api/estimate-puppeteer-pdf';
-      form.target = '_blank';
-      form.style.display = 'none';
+      // Use GET endpoint with URL parameter for reliable PDF download
+      const encodedData = encodeURIComponent(JSON.stringify(payload));
+      const downloadUrl = `/api/estimate-pdf-download?data=${encodedData}`;
       
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = 'data';
-      input.value = JSON.stringify(payload);
-      form.appendChild(input);
+      // Open download in new tab/window
+      window.open(downloadUrl, '_blank');
       
-      document.body.appendChild(form);
-      form.submit();
-      document.body.removeChild(form);
-      
-      console.log('📨 Response received:', {
-        status: response.status,
-        statusText: response.statusText,
-        contentType: response.headers.get('content-type'),
-        contentLength: response.headers.get('content-length')
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`PDF generation failed: ${response.status} ${response.statusText} - ${errorText}`);
-      }
-      
-      // Get PDF as blob
-      const pdfBlob = await response.blob();
-      
-      if (pdfBlob.size === 0) {
-        throw new Error('Received empty PDF from server');
-      }
-      console.log('📄 Created PDF blob:', {
-        size: pdfBlob.size,
-        type: pdfBlob.type
-      });
-      
-      // Auto-save to Firebase if document metadata is available in headers
-      try {
-        const documentData = response.headers.get('x-document-data');
-        if (documentData) {
-          const docPayload = JSON.parse(documentData);
-          console.log('📄 Auto-saving estimate document to Firebase...');
-          
-          // Import Firebase document service
-          const { saveProjectDocument } = await import('@/lib/projectDocuments');
-          
-          await saveProjectDocument({
-            projectId: docPayload.projectId,
-            userId: currentUser?.uid || 'unknown',
-            documentType: 'estimate',
-            documentName: docPayload.documentName,
-            fileName: docPayload.fileName,
-            fileSize: pdfBlob.size,
-            mimeType: 'application/pdf',
-            documentData: docPayload.pdfData,
-            documentNumber: docPayload.documentNumber,
-            status: 'generated',
-            metadata: docPayload.metadata
-          });
-          
-          console.log('✅ Estimate document saved to Firebase');
-        }
-      } catch (docError) {
-        console.warn('⚠️ Failed to auto-save document to Firebase:', docError);
-      }
-      
-      const downloadUrl = window.URL.createObjectURL(pdfBlob);
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = `estimate-${Date.now()}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(downloadUrl);
-      
-      console.log('📥 PDF download triggered successfully');
+      console.log('✅ Estimate PDF download initiated successfully');
       
       toast({
         title: "✅ PDF Generated",
