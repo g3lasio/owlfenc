@@ -1569,8 +1569,8 @@ Output in English regardless of input language. Make it suitable for contracts a
       res.setHeader('Content-Length', pdfBuffer.length);
       res.setHeader('Cache-Control', 'no-cache');
       
-      // Send PDF buffer as binary response
-      res.end(pdfBuffer);
+      // Send PDF buffer compatible with axios arraybuffer
+      res.send(pdfBuffer);
       
       console.log('✅ Professional Invoice PDF generated and sent successfully');
       
@@ -1754,8 +1754,8 @@ Output in English regardless of input language. Make it suitable for contracts a
       res.setHeader('Content-Length', pdfBuffer.length);
       res.setHeader('Cache-Control', 'no-cache');
       
-      // Send PDF buffer as binary response
-      res.end(pdfBuffer);
+      // Send PDF buffer compatible with axios arraybuffer
+      res.send(pdfBuffer);
       
       console.log('✅ Professional PDF generated and sent successfully');
       
