@@ -125,33 +125,30 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 5000;
-  const server = app.listen(port, "0.0.0.0", async () => {
-    log(`serving on port ${port}`);
-    console.log('✅ OPTIMIZED CONTRACT GENERATOR READY!');
-    console.log('📊 Fixed: Analysis time 5+ min → 2 seconds');
-    console.log('🎯 Fixed: Data accuracy OWL FENC LLC, $6,679.30');
-    console.log('📄 Fixed: Complete professional contract preview');
-  });
-  
-  // Setup Vite middleware after server starts
+  // Setup Vite middleware first, before starting server
   try {
+    const server = await new Promise<any>((resolve) => {
+      const httpServer = app.listen(5000, "0.0.0.0", () => {
+        log('Server started on port 5000');
+        resolve(httpServer);
+      });
+    });
+    
+    // Setup Vite development server
     await setupVite(app, server);
+    
+    console.log('✅ OPTIMIZED CONTRACT GENERATOR READY!');
+    console.log('📊 Puppeteer PDF Service: Local generation without external dependencies');
+    console.log('🎯 Professional template with modern design and print optimization');
+    console.log('📄 Frontend properly served via Vite development server');
+    
   } catch (error) {
-    console.error('Vite setup error:', error instanceof Error ? error.message : String(error));
-    // Fallback to static serving if Vite fails
-    serveStatic(app);
+    console.error('Server setup error:', error instanceof Error ? error.message : String(error));
+    // Fallback: start basic server without Vite
+    const server = app.listen(5001, "0.0.0.0", () => {
+      log('Fallback server started on port 5001');
+    });
   }
   
-  server.on('error', (e: any) => {
-    if (e.code === 'EADDRINUSE') {
-      log(`Port ${port} busy, trying backup port...`);
-      app.listen(port + 1, "0.0.0.0", () => {
-        log(`serving on backup port 5001`);
-      });
-    }
-  });
+
 })();
