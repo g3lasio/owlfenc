@@ -48,6 +48,7 @@ import anthropicRoutes from "./routes/anthropic";
 import paymentRoutes from "./routes/payment-routes"; // Import payment routes
 import contractorPaymentRoutes from "./routes/contractor-payment-routes"; // Import contractor payment routes
 import estimatesRoutes from "./routes/estimates"; // Import new estimates routes
+import { puppeteerPdfService } from "./puppeteer-pdf-service";
 import estimatesSimpleRoutes from "./routes/estimates-simple"; // Import simple estimates routes
 import { setupTemplatesRoutes } from "./routes/templates";
 import { aiEnhancementRoutes } from "./routes/aiEnhancementRoutes"; // Import new AI enhancement routes
@@ -1444,7 +1445,124 @@ Output in English regardless of input language. Make it suitable for contracts a
     throw new Error("Timed out waiting for PDF to be ready.");
   };
 
-  // 🧾 Estimate - BASIC with proper data mapping
+  // 🚀 NEW: Professional Puppeteer PDF Generation (replaces PDFMonkey)
+  app.post("/api/estimate-puppeteer-pdf", async (req: Request, res: Response) => {
+    console.log('🎯 Professional PDF generation with Puppeteer started');
+    
+    try {
+      // Initialize Puppeteer service if not already done
+      await puppeteerPdfService.initialize();
+      
+      // Extract and validate data from request
+      const { user, client, items, projectTotalCosts, originalData } = req.body;
+      
+      console.log('📊 Data received:', {
+        hasUser: !!user,
+        hasClient: !!client,
+        itemsCount: items?.length || 0,
+        hasCosts: !!projectTotalCosts
+      });
+
+      // Get contractor profile data
+      let contractorData = {};
+      try {
+        if (user?.[0]?.uid) {
+          const profile = await storage.getUserByFirebaseUid(user[0].uid);
+          if (profile) {
+            contractorData = {
+              name: profile.company || profile.displayName || 'OWL FENC',
+              address: profile.address || '2901 Owens Court, Fairfield, California 94534',
+              phone: profile.phone || '(555) 123-4567',
+              email: profile.email || 'truthbackpack@gmail.com',
+              website: profile.website || 'https://owlfenc.com/',
+              logo: profile.logoBase64 || ''
+            };
+          }
+        }
+      } catch (profileError) {
+        console.warn('Warning: Could not fetch contractor profile:', profileError);
+        // Use fallback contractor data
+        contractorData = {
+          name: 'OWL FENC',
+          address: '2901 Owens Court, Fairfield, California 94534',
+          phone: '(555) 123-4567',
+          email: 'truthbackpack@gmail.com',
+          website: 'https://owlfenc.com/',
+          logo: ''
+        };
+      }
+
+      // Process items data
+      let processedItems = [];
+      if (items && Array.isArray(items)) {
+        processedItems = items.map((item, index) => ({
+          code: item.name || item.materialId || `Item ${index + 1}`,
+          description: item.description || 'No description available',
+          qty: item.quantity || item.qty || 1,
+          unit_price: `$${(item.price || 0).toFixed(2)}`,
+          total: `$${(item.total || (item.price * item.quantity) || 0).toFixed(2)}`
+        }));
+      }
+
+      // Calculate financial summary
+      const subtotal = projectTotalCosts?.subtotal || 0;
+      const discount = projectTotalCosts?.discount || 0;
+      const taxRate = projectTotalCosts?.taxRate || 10;
+      const taxAmount = projectTotalCosts?.tax || 0;
+      const total = projectTotalCosts?.total || subtotal;
+
+      // Structure data for Puppeteer service
+      const estimateData = {
+        company: contractorData,
+        estimate: {
+          number: `EST-${Date.now()}`,
+          date: new Date().toLocaleDateString(),
+          valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+          project_description: originalData?.projectDescription || 
+                              client?.notes || 
+                              'Construction project as specified',
+          items: processedItems,
+          subtotal: `$${subtotal.toFixed(2)}`,
+          discounts: discount > 0 ? `-$${discount.toFixed(2)}` : '$0.00',
+          tax_rate: taxRate,
+          tax_amount: `$${taxAmount.toFixed(2)}`,
+          total: `$${total.toFixed(2)}`
+        },
+        client: {
+          name: client?.name || client?.clientName || 'Valued Client',
+          email: client?.email || '',
+          phone: client?.phone || '',
+          address: client?.address || 
+                  [client?.city, client?.state, client?.zipCode].filter(Boolean).join(', ') || ''
+        }
+      };
+
+      console.log('🎨 Generating PDF with professional template...');
+      
+      // Generate PDF using Puppeteer service
+      const pdfBuffer = await puppeteerPdfService.generatePdf(estimateData);
+      
+      // Set response headers for PDF download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="estimate-${Date.now()}.pdf"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      
+      // Send PDF buffer
+      res.send(pdfBuffer);
+      
+      console.log('✅ Professional PDF generated and sent successfully');
+      
+    } catch (error) {
+      console.error('❌ Error generating PDF with Puppeteer:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to generate PDF',
+        details: error.message
+      });
+    }
+  });
+
+  // 🧾 Estimate - BASIC with proper data mapping (keeping for backward compatibility)
   app.post("/api/estimate-basic-pdf", async (req: Request, res: Response) => {
     try {
       const contract = req.body;

@@ -282,24 +282,20 @@ Changelog:
   * Fixed "loadEstimateForEdit is not defined" error in useEffect
   * Edit button now redirects directly without modifying data, preserving original costs
   * System now properly loads estimates with authentic client data and correct cost calculations
-- June 22, 2025. Implemented PDF generation for "Mis Estimados" section:
-  * Replicated exact handleDownload function from preview step for PDF button in saved estimates
-  * Added complete data validation and profile verification before PDF generation
-  * Integrated with /api/estimate-basic-pdf endpoint using stored estimate data
-  * PDF button now generates fresh PDFs on-demand instead of relying on stored URLs
-  * Implemented proper error handling and success notifications for PDF generation workflow
-  * Fixed data structure mismatch by accessing originalData field instead of estimateData
-  * Enhanced data extraction to handle multiple storage formats (clientInformation, projectTotalCosts, etc.)
-  * System now correctly maps stored Firebase data to PDF generation payload format
-  * Added tax and discount line items to PDF payload (subtotal, discount_amount, tax_amount with labels)
-  * Updated both preview and saved estimate PDF generation to include financial breakdown fields
-  * Enhanced payload logging to track tax/discount data being sent to PDFMonkey template
-  * Switched to new PDFMonkey template (ID: D49152DA-BC69-4FFD-B6A3-3F7F4EA7E8B6) with proper tax/discount support
-  * Restructured payload format to match new template structure (company, estimate, client objects)
-  * Updated both handleDownload functions to use consistent data mapping with new template format
-  * Fixed critical data mapping issues in PDF generation: properly structured items array and truncated project descriptions
-  * Added robust server-side data validation and mapping to ensure template compatibility
-  * Implemented fallback values for all required fields to prevent empty sections in PDF output
+- June 22, 2025. Implemented professional Puppeteer PDF generation system (replacing PDFMonkey):
+  * Created complete PuppeteerPdfService with professional template rendering engine
+  * Eliminated external PDFMonkey dependency for faster, more reliable PDF generation
+  * Built custom Handlebars-style template processor with conditional blocks and loops
+  * Implemented professional 833-line HTML template with modern design and proper print margins
+  * Added comprehensive data validation and contractor profile integration
+  * Created new /api/estimate-puppeteer-pdf endpoint with full data mapping
+  * Updated EstimatesWizard frontend to use local PDF service with blob download handling
+  * System now generates high-quality PDFs locally without external service dependencies
+  * Professional template includes: gradient headers, modern typography, responsive tables, cyberpunk thank-you section
+  * Optimized for print with 0.75in margins, proper page breaks, and color-adjusted elements
+  * Enhanced with Inter font family, structured layouts, and professional business styling
+  * Template supports all estimate data: items, pricing, contractor branding, client info, terms
+  * Implemented automatic template creation and initialization on service startup
 ```
 
 ## User Preferences

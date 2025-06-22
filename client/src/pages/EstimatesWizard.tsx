@@ -2892,13 +2892,26 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         },
         firebaseUid: currentUser?.uid,
       };
-      const res = await axios.post("/api/estimate-basic-pdf", payload);
-      const downloadUrl = res.data.data.download_url;
-      if (downloadUrl) {
-        window.open(downloadUrl, "_blank");
-      } else {
-        console.error("Download URL not found in response.");
-      }
+      // Use new Puppeteer PDF service (local, no external dependency)
+      const response = await axios.post("/api/estimate-puppeteer-pdf", payload, {
+        responseType: 'blob' // Important for PDF download
+      });
+      
+      // Create blob URL and trigger download
+      const pdfBlob = new Blob([response.data], { type: 'application/pdf' });
+      const downloadUrl = window.URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `estimate-${Date.now()}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast({
+        title: "✅ PDF Generated",
+        description: "Professional estimate PDF downloaded successfully",
+      });
     } catch (error) {
       console.error(error);
     }
