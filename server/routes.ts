@@ -1447,14 +1447,47 @@ Output in English regardless of input language. Make it suitable for contracts a
   };
 
   // 🧾 NEW: Professional Invoice PDF Generation
+  // GET endpoint for clean invoice PDF downloads
+  app.get("/api/invoice-pdf-download", async (req: Request, res: Response) => {
+    try {
+      console.log('🎯 GET Invoice PDF download started');
+      
+      const encodedData = req.query.data as string;
+      if (!encodedData) {
+        return res.status(400).json({ error: 'Missing data parameter' });
+      }
+      
+      const invoiceData = JSON.parse(decodeURIComponent(encodedData));
+      console.log('📊 Processing invoice data for PDF generation...');
+      
+      const pdfService = new PuppeteerPdfService();
+      const pdfBuffer = await pdfService.generateInvoicePdf(invoiceData);
+      
+      console.log('✅ Invoice PDF generated successfully, buffer size:', pdfBuffer.length);
+      
+      const filename = `invoice-${Date.now()}.pdf`;
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      
+      res.end(pdfBuffer, 'binary');
+      console.log('📥 Invoice PDF sent to client successfully');
+      
+    } catch (error) {
+      console.error('❌ Error generating Invoice PDF:', error);
+      res.status(500).json({ 
+        error: 'Failed to generate Invoice PDF', 
+        details: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  });
+
   app.post("/api/invoice-pdf", async (req: Request, res: Response) => {
-    // Handle both JSON and form data
     let invoiceData;
     if (req.body.data) {
-      // Form submission
       invoiceData = JSON.parse(req.body.data);
     } else {
-      // Direct JSON
       invoiceData = req.body;
     }
     console.log('🎯 Professional Invoice PDF generation started');
@@ -1594,14 +1627,47 @@ Output in English regardless of input language. Make it suitable for contracts a
   });
 
   // 🚀 NEW: Professional Puppeteer PDF Generation (replaces PDFMonkey)
+  // GET endpoint for clean PDF downloads
+  app.get("/api/estimate-pdf-download", async (req: Request, res: Response) => {
+    try {
+      console.log('🎯 GET PDF download started');
+      
+      const encodedData = req.query.data as string;
+      if (!encodedData) {
+        return res.status(400).json({ error: 'Missing data parameter' });
+      }
+      
+      const estimateData = JSON.parse(decodeURIComponent(encodedData));
+      console.log('📊 Processing estimate data for PDF generation...');
+      
+      const pdfService = new PuppeteerPdfService();
+      const pdfBuffer = await pdfService.generateEstimatePdf(estimateData);
+      
+      console.log('✅ PDF generated successfully, buffer size:', pdfBuffer.length);
+      
+      const filename = `estimate-${Date.now()}.pdf`;
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      
+      res.end(pdfBuffer, 'binary');
+      console.log('📥 PDF sent to client successfully');
+      
+    } catch (error) {
+      console.error('❌ Error generating PDF:', error);
+      res.status(500).json({ 
+        error: 'Failed to generate PDF', 
+        details: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  });
+
   app.post("/api/estimate-puppeteer-pdf", async (req: Request, res: Response) => {
-    // Handle both JSON and form data
     let estimateData;
     if (req.body.data) {
-      // Form submission
       estimateData = JSON.parse(req.body.data);
     } else {
-      // Direct JSON
       estimateData = req.body;
     }
     console.log('🎯 Professional PDF generation with Puppeteer started');
