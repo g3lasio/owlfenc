@@ -216,7 +216,7 @@ export class InvoicePdfService {
       // Generate totals summary section
       const totalsSummaryHtml = `
         <div class="section totals-summary">
-          <h2>Resumen de Totales</h2>
+          <h2>Totals Summary</h2>
           <table class="summary-table">
             <tr>
               <td><strong>Subtotal:</strong></td>
@@ -224,12 +224,12 @@ export class InvoicePdfService {
             </tr>
             ${discountAmount > 0 ? `
             <tr>
-              <td style="color: #10b981;"><strong>Descuento:</strong></td>
+              <td style="color: #10b981;"><strong>Discount:</strong></td>
               <td style="color: #10b981;"><strong>-$${discountAmount.toFixed(2)}</strong></td>
             </tr>
             ` : ''}
             <tr>
-              <td><strong>Impuesto (${data.invoice.tax_rate || 0}%):</strong></td>
+              <td><strong>Tax (${data.invoice.tax_rate || 0}%):</strong></td>
               <td><strong>$${taxAmount.toFixed(2)}</strong></td>
             </tr>
             <tr style="border-top: 2px solid #333; font-size: 1.2em;">
@@ -237,11 +237,11 @@ export class InvoicePdfService {
               <td style="color: #2563eb;"><strong>$${totalAmount.toFixed(2)}</strong></td>
             </tr>
             <tr>
-              <td><strong>Cantidad Pagada:</strong></td>
+              <td><strong>Amount Paid:</strong></td>
               <td style="color: #10b981;"><strong>$${amountPaid.toFixed(2)}</strong></td>
             </tr>
             <tr style="border-top: 1px solid #ccc; font-size: 1.1em;">
-              <td><strong>Balance Restante:</strong></td>
+              <td><strong>Balance Due:</strong></td>
               <td style="color: ${balance > 0 ? '#dc2626' : '#10b981'};"><strong>$${balance.toFixed(2)}</strong></td>
             </tr>
           </table>
