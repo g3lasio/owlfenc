@@ -305,6 +305,7 @@ Changelog:
   * Template supports all estimate data: items, pricing, contractor branding, client info, terms
   * Final result: Perfect PDF generation with no artifacts, proper logo display, and optimal layout
   * FINAL LOGO FIX: When no contractor logo exists, logo section is completely hidden - no placeholder text or broken images
+  * FONT SIZE OPTIMIZATION: Increased all fonts to proper readable sizes - body text 12pt, headers 18pt, subtitles 14pt for professional readability
 ```
 
 ## User Preferences
