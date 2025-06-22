@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ProjectProgress from "@/components/projects/ProjectProgress";
 import ProjectDetails from "@/components/projects/ProjectDetails";
+import ProjectDocuments from "@/components/projects/ProjectDocuments";
 
 interface Project {
   id: string;

@@ -27,6 +27,8 @@ import {
   InsertPromptTemplate,
   PermitSearchHistory,
   InsertPermitSearchHistory,
+  ProjectDocument,
+  InsertProjectDocument,
   users,
   projects,
   templates,
@@ -40,7 +42,8 @@ import {
   materials,
   promptTemplates,
   permitSearchHistory,
-  propertySearchHistory
+  propertySearchHistory,
+  projectDocuments
 } from "@shared/schema";
 
 import { db } from './db';
