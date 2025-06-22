@@ -252,6 +252,12 @@ Changelog:
   * Created complete frontend interface with project selection, configuration, and management
   * Integrated with existing PDF generation and email services for seamless workflow
   * Added invoice navigation menu item and proper routing for /invoices page
+- June 22, 2025. Fixed critical PDF generation system network errors:
+   * Resolved "Failed to fetch" errors in estimate and invoice PDF generation
+   * Replaced unreliable axios/fetch calls with robust form submission method
+   * Eliminated all network compatibility issues between frontend and backend
+   * PDFs now download directly from server using HTML form submission
+   * System generates PDFs without any network errors or browser compatibility issues
 - June 22, 2025. Enhanced Invoice System with comprehensive totals summary:
   * Added complete totals breakdown section including subtotal, discount, taxes, amount paid, and balance
   * Implemented intelligent payment calculation based on project completion status and payment configuration
