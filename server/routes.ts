@@ -1449,7 +1449,7 @@ Output in English regardless of input language. Make it suitable for contracts a
     try {
       const contract = req.body;
       const API_KEY = process.env.PDFMONKEY_API_KEY;
-      const TEMPLATE_ID = "DF24FD81-01C5-4054-BDCF-19ED1DFCD763";
+      const TEMPLATE_ID = "D49152DA-BC69-4FFD-B6A3-3F7F4EA7E8B6";
 
       if (!API_KEY) throw new Error("PDFMONKEY_API_KEY is not defined");
 

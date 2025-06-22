@@ -2858,34 +2858,38 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       }
 
       const payload = {
-        company_logo_url: profile.logo || "",
-        company_name: profile.company,
-        company_address: profile.address ? `${profile.address}${profile.city ? ', ' + profile.city : ''}${profile.state ? ', ' + profile.state : ''}${profile.zipCode ? ' ' + profile.zipCode : ''}` : "",
-        company_email: profile.email || currentUser?.email || "",
-        company_phone: profile.phone || "",
-        estimate_date: new Date().toISOString().split("T")[0],
-        estimate_number: "EST-" + Date.now(),
-        valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split("T")[0],
-        client_name: estimate.client?.name || "",
-        client_email: estimate.client?.email || "",
-        client_phone: estimate.client?.phone || "",
-        client_address: estimate.client?.address ? `${estimate.client.address}${estimate.client.city ? ', ' + estimate.client.city : ''}${estimate.client.state ? ', ' + estimate.client.state : ''}${estimate.client.zipCode ? ' ' + estimate.client.zipCode : ''}` : "Client Address",
-        lineItems: estimate.items.map((item) => ({
-          name: item.name,
-          description: item.description,
-          quantity: item.quantity,
-          unit_price: `$${Number(item.price).toFixed(2)}`,
-          total: `$${Number(item.total).toFixed(2)}`,
-        })),
-        subtotal: `$${Number(estimate.subtotal).toFixed(2)}`,
-        discount_amount: estimate.discountAmount > 0 ? `$${Number(estimate.discountAmount).toFixed(2)}` : null,
-        discount_label: estimate.discountAmount > 0 ? `Descuento (${estimate.discountValue}${estimate.discountType === 'percentage' ? '%' : ''})` : null,
-        tax_amount: estimate.tax > 0 ? `$${Number(estimate.tax).toFixed(2)}` : null,
-        tax_label: estimate.tax > 0 ? `Impuesto (${estimate.taxRate}%)` : null,
-        grand_total: `$${Number(estimate.total).toFixed(2)}`,
-        scope_of_work: estimate.projectDetails,
+        company: {
+          name: profile.company,
+          address: profile.address ? `${profile.address}${profile.city ? ', ' + profile.city : ''}${profile.state ? ', ' + profile.state : ''}${profile.zipCode ? ' ' + profile.zipCode : ''}` : "",
+          phone: profile.phone || "",
+          email: profile.email || currentUser?.email || "",
+          website: profile.website || "",
+          logo: profile.logo || ""
+        },
+        estimate: {
+          number: "EST-" + Date.now(),
+          date: new Date().toLocaleDateString(),
+          valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+          project_description: estimate.projectDetails || "",
+          items: estimate.items.map((item) => ({
+            code: item.name,
+            description: item.description,
+            qty: item.quantity,
+            unit_price: `$${Number(item.price).toFixed(2)}`,
+            total: `$${Number(item.total).toFixed(2)}`,
+          })),
+          subtotal: `$${Number(estimate.subtotal).toFixed(2)}`,
+          discounts: estimate.discountAmount > 0 ? `-$${Number(estimate.discountAmount).toFixed(2)}` : "$0.00",
+          tax_rate: estimate.taxRate || 0,
+          tax_amount: estimate.tax > 0 ? `$${Number(estimate.tax).toFixed(2)}` : "$0.00",
+          total: `$${Number(estimate.total).toFixed(2)}`
+        },
+        client: {
+          name: estimate.client?.name || "",
+          email: estimate.client?.email || "",
+          phone: estimate.client?.phone || "",
+          address: estimate.client?.address ? `${estimate.client.address}${estimate.client.city ? ', ' + estimate.client.city : ''}${estimate.client.state ? ', ' + estimate.client.state : ''}${estimate.client.zipCode ? ' ' + estimate.client.zipCode : ''}` : ""
+        },
         firebaseUid: currentUser?.uid,
       };
       const res = await axios.post("/api/estimate-basic-pdf", payload);
@@ -4919,50 +4923,53 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                                 const finalTotal = totalCosts?.finalTotal || estimateData.total || estimate.total || 0;
 
                                 const payload = {
-                                  company_logo_url: profile.logo || "",
-                                  company_name: profile.company,
-                                  company_address: profile.address ? `${profile.address}${profile.city ? ', ' + profile.city : ''}${profile.state ? ', ' + profile.state : ''}${profile.zipCode ? ' ' + profile.zipCode : ''}` : "",
-                                  company_email: profile.email || currentUser?.email || "",
-                                  company_phone: profile.phone || "",
-                                  estimate_date: estimate.estimateDate || new Date().toISOString().split("T")[0],
-                                  estimate_number: estimate.estimateNumber || "EST-" + Date.now(),
-                                  valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-                                    .toISOString()
-                                    .split("T")[0],
-                                  client_name: clientInfo.name || estimate.clientName || "",
-                                  client_email: clientInfo.email || estimate.clientEmail || "",
-                                  client_phone: clientInfo.phone || "",
-                                  client_address: clientInfo.address ? 
-                                    `${clientInfo.address}${clientInfo.city ? ', ' + clientInfo.city : ''}${clientInfo.state ? ', ' + clientInfo.state : ''}${clientInfo.zipCode ? ' ' + clientInfo.zipCode : ''}` : 
-                                    "Client Address",
-                                  lineItems: items.map((item: any) => ({
-                                    name: item.name || item.material || "Item",
-                                    description: item.description || "",
-                                    quantity: item.quantity || 1,
-                                    unit_price: `$${Number(item.price || item.unitPrice || 0).toFixed(2)}`,
-                                    total: `$${Number(item.total || item.totalPrice || (item.quantity * item.price) || 0).toFixed(2)}`,
-                                  })),
-                                  subtotal: `$${Number(subtotal / 100).toFixed(2)}`,
-                                  discount_amount: discountAmount > 0 ? `$${Number(discountAmount / 100).toFixed(2)}` : null,
-                                  discount_label: discountAmount > 0 ? `Descuento (${Math.round((discountAmount / subtotal) * 100)}%)` : null,
-                                  tax_amount: taxAmount > 0 ? `$${Number(taxAmount / 100).toFixed(2)}` : null,
-                                  tax_label: taxAmount > 0 ? `Impuesto (${Math.round((taxAmount / (subtotal - discountAmount)) * 100)}%)` : null,
-                                  grand_total: `$${Number(finalTotal / 100).toFixed(2)}`,
-                                  scope_of_work: estimateData.projectDetails?.description || 
-                                               estimateData.projectDescription || 
-                                               estimateData.projectScope ||
-                                               estimate.projectDetails || 
-                                               "",
+                                  company: {
+                                    name: profile.company,
+                                    address: profile.address ? `${profile.address}${profile.city ? ', ' + profile.city : ''}${profile.state ? ', ' + profile.state : ''}${profile.zipCode ? ' ' + profile.zipCode : ''}` : "",
+                                    phone: profile.phone || "",
+                                    email: profile.email || currentUser?.email || "",
+                                    website: profile.website || "",
+                                    logo: profile.logo || ""
+                                  },
+                                  estimate: {
+                                    number: estimate.estimateNumber || "EST-" + Date.now(),
+                                    date: new Date().toLocaleDateString(),
+                                    valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+                                    project_description: estimateData.projectDetails?.description || 
+                                                       estimateData.projectDescription || 
+                                                       estimateData.projectScope ||
+                                                       estimate.projectDetails || 
+                                                       "",
+                                    items: items.map((item: any) => ({
+                                      code: item.name || item.material || "Item",
+                                      description: item.description || "",
+                                      qty: item.quantity || 1,
+                                      unit_price: `$${Number(item.price || item.unitPrice || 0).toFixed(2)}`,
+                                      total: `$${Number(item.total || item.totalPrice || (item.quantity * item.price) || 0).toFixed(2)}`,
+                                    })),
+                                    subtotal: `$${Number(subtotal / 100).toFixed(2)}`,
+                                    discounts: discountAmount > 0 ? `-$${Number(discountAmount / 100).toFixed(2)}` : "$0.00",
+                                    tax_rate: Math.round((taxAmount / (subtotal - discountAmount)) * 100) || 0,
+                                    tax_amount: taxAmount > 0 ? `$${Number(taxAmount / 100).toFixed(2)}` : "$0.00",
+                                    total: `$${Number(finalTotal / 100).toFixed(2)}`
+                                  },
+                                  client: {
+                                    name: clientInfo.name || estimate.clientName || "",
+                                    email: clientInfo.email || estimate.clientEmail || "",
+                                    phone: clientInfo.phone || "",
+                                    address: clientInfo.address ? 
+                                      `${clientInfo.address}${clientInfo.city ? ', ' + clientInfo.city : ''}${clientInfo.state ? ', ' + clientInfo.state : ''}${clientInfo.zipCode ? ' ' + clientInfo.zipCode : ''}` : 
+                                      ""
+                                  },
                                   firebaseUid: currentUser?.uid,
                                 };
 
                                 console.log("📊 Payload enviado a PDF:", {
-                                  subtotal: payload.subtotal,
-                                  discount_amount: payload.discount_amount,
-                                  discount_label: payload.discount_label,
-                                  tax_amount: payload.tax_amount,
-                                  tax_label: payload.tax_label,
-                                  grand_total: payload.grand_total
+                                  subtotal: payload.estimate.subtotal,
+                                  discounts: payload.estimate.discounts,
+                                  tax_rate: payload.estimate.tax_rate,
+                                  tax_amount: payload.estimate.tax_amount,
+                                  total: payload.estimate.total
                                 });
 
                                 const res = await axios.post("/api/estimate-basic-pdf", payload);

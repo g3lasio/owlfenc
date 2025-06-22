@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Estimate</title>
+  <style>
+      .watermark {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 400px;
+          height: 400px;
+          background: url('https://i.postimg.cc/G3ZFZTjy/logo-mervin.png') no-repeat center center;
+          background-size: contain;
+          opacity: 0.05;
+          transform: translate(-50%, -50%);
+          pointer-events: none;
+          z-index: 0;
+      }
+    @import url('https://fonts.googleapis.com/css2?family=Quantico&display=swap');
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f9f9f9;
+      color: #333;
+    }
+    .estimate-container {
+      position: relative;
+      max-width: 800px;
+      margin: auto;
+      background: #fff;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-radius: 8px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 2px solid #eee;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+    .company-details {
+      flex: 1;
+      text-align: left;
+      line-height: 1.4;
+    }
+    .company-logo {
+      flex: 1;
+      text-align: center;
+    }
+    .company-logo img {
+      max-height: 60px;
+    }
+    .estimate-info {
+      flex: 1;
+      text-align: right;
+      line-height: 1.4;
+    }
+    .section { margin-bottom: 20px; }
+    .section h2 {
+      font-size: 1.2em;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 5px;
+      color: #333;
+      font-weight: bold;
+    }
+    .client-info {
+      text-align: right;
+    }
+    .client-info pre {
+      margin: 0;
+      font-family: inherit;
+      line-height: 1.5;
+      color: #333;
+    }
+    .project-details {
+      text-align: center;
+    }
+    .project-details pre {
+      margin: 0;
+      font-family: inherit;
+      line-height: 1.5;
+      color: #333;
+      display: inline-block;
+      text-align: left;
+      max-width: 100%;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    table th, table td {
+      border: 2px solid #bbb;
+      padding: 8px;
+      text-align: center;
+      color: #333;
+    }
+    table thead th {
+      background-color: #00FFB8;
+      color: #000;
+      font-weight: bold;
+    }
+    .summary-table, .summary-table th, .summary-table td {
+      border: none;
+      padding: 6px 8px;
+      text-align: right;
+      color: #333;
+    }
+    .summary-table tr:last-child td {
+      font-weight: bold;
+      font-size: 1.1em;
+    }
+    .thank-you {
+      position: relative;
+      padding: 20px;
+      margin-bottom: 20px;
+      background-color: #111;
+      color: #0ff;
+      font-family: 'Quantico', sans-serif;
+      font-style: italic;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 4px solid rgba(0,255,255,0.5);
+      text-align: center;
+      box-shadow: 0 0 15px rgba(0,255,255,0.6);
+    }
+    .thank-you:before, .thank-you:after {
+      content: '';
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      border: 4px solid #0ff;
+      box-sizing: border-box;
+    }
+    .thank-you:before { top: 0; left: 0; border-right: none; border-bottom: none; }
+    .thank-you:after  { bottom: 0; right: 0; border-left: none; border-top: none; }
+    .thank-you:before, .thank-you:after { animation: scan 3s infinite; }
+    @keyframes scan { 0%{opacity:0.2}50%{opacity:1}100%{opacity:0.2} }
+    .footer { text-align: center; margin: 20px 0; font-size: 0.9em; color: #666; }
+    .footer:before {
+      content: '';
+      display: block;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(90deg, transparent, #0ff, transparent);
+      margin-bottom: 8px;
+    }
+    a { color: #007BFF; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="estimate-container">
+      <div class="watermark"></div>
+    <div class="header">
+      <div class="company-details">
+        <strong>{{company.name}}</strong><br>
+        {{company.address}}<br>
+        Phone: {{company.phone}}<br>
+        Email: <a href="mailto:{{company.email}}">{{company.email}}</a><br>
+        Website: <a href="{{company.website}}">{{company.website}}</a>
+      </div>
+      <div class="company-logo">
+        <img src="{{company.logo}}" alt="Company Logo">
+      </div>
+      <div class="estimate-info">
+        <strong>ESTIMATE</strong><br>
+        Estimate #: {{estimate.number}}<br>
+        Estimate Date: {{estimate.date}}<br>
+        Valid Until: {{estimate.valid_until}}
+      </div>
+    </div>
+
+    <div class="section client-info">
+      <h2>Client Information</h2>
+      <pre>{{client.name}}
+Client Phone: {{client.phone}}
+Client Email: {{client.email}}
+Client Address: {{client.address}}</pre>
+    </div>  
+
+    <div class="section project-details">
+      <h2>Project Details</h2>
+      <pre>{{estimate.project_description}}</pre>
+    </div>
+
+    <div class="section items">
+      <h2>Items</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Description</th>
+            <th>Qty</th>
+            <th>Unit Price</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each estimate.items}}
+            <tr>
+              <td>{{code}}</td>
+              <td>{{description}}</td>
+              <td>{{qty}}</td>
+              <td>{{unit_price}}</td>
+              <td>{{total}}</td>
+            </tr>
+          {{/each}}
+        </tbody>
+      </table>
+
+      <div class="summary">
+        <table class="summary-table">
+          <tbody>
+            <tr><td>Subtotal:</td><td>{{estimate.subtotal}}</td></tr>
+            <tr><td>Discounts:</td><td>{{estimate.discounts}}</td></tr>
+            <tr><td>Tax ({{estimate.tax_rate}}%):</td><td>{{estimate.tax_amount}}</td></tr>
+            <tr><td>Total Estimate:</td><td>{{estimate.total}}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="thank-you">
+      Thank you for considering our proposal. We look forward to the chance to work together and deliver outstanding results.
+    </div>
+
+    <div class="section notes center">
+      <h2>Notes & Terms</h2>
+      <ul>
+        <li>This estimate is valid for 30 days from the issue date. Prices may change after this period due to fluctuations in materials, labor, or market conditions.</li>
+        <li>Project execution, specific terms, and additional conditions will be detailed in the formal contract to be signed by both parties.</li>
+        <li>For questions, please contact us directly.</li>
+      </ul>
+    </div>
+
+    <div class="footer">
+      Powered by Mervin AI
+    </div>
+  </div>
+</body>
+</html>

@@ -294,6 +294,9 @@ Changelog:
   * Added tax and discount line items to PDF payload (subtotal, discount_amount, tax_amount with labels)
   * Updated both preview and saved estimate PDF generation to include financial breakdown fields
   * Enhanced payload logging to track tax/discount data being sent to PDFMonkey template
+  * Switched to new PDFMonkey template (ID: D49152DA-BC69-4FFD-B6A3-3F7F4EA7E8B6) with proper tax/discount support
+  * Restructured payload format to match new template structure (company, estimate, client objects)
+  * Updated both handleDownload functions to use consistent data mapping with new template format
 ```
 
 ## User Preferences
