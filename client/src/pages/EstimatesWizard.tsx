@@ -2925,87 +2925,47 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       };
       
       console.log('📤 Sending payload to PDF service:', payload);
-      
-      // Use XMLHttpRequest for reliable binary data handling
-      console.log('🔄 Starting PDF generation request...');
-      
-      const response = await fetch('/api/estimate-puppeteer-pdf', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
+      // Use new Puppeteer PDF service (local, no external dependency)
+      const response = await axios.post("/api/estimate-puppeteer-pdf", payload, {
+        responseType: 'blob' // Important for PDF download
       });
-
-      if (!response.ok) {
-        throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+      
+      console.log('📨 Response received:', {
+        status: response.status,
+        headers: response.headers,
+        dataType: typeof response.data,
+        dataSize: response.data?.size || 'unknown'
+      });
+      
+      // Validate the blob
+      if (!response.data || response.data.size === 0) {
+        throw new Error('Received empty PDF data from server');
       }
-
-      const pdfBlob = await response.blob();
-
-      console.log('📦 PDF blob received:', {
+      
+      // Create blob URL and trigger download
+      const pdfBlob = new Blob([response.data], { type: 'application/pdf' });
+      console.log('📄 Created PDF blob:', {
         size: pdfBlob.size,
         type: pdfBlob.type
       });
-
-      // Validate blob size
-      if (pdfBlob.size === 0) {
-        throw new Error('Received empty PDF from server');
-      }
       
-      // Create download link
-      const url = window.URL.createObjectURL(pdfBlob);
-      const a = document.createElement("a");
-      a.style.display = "none";
-      a.href = url;
-      a.download = `estimate-${estimate.client?.name || "client"}-${Date.now()}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      const downloadUrl = window.URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `estimate-${Date.now()}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
       
-      console.log('💾 PDF download triggered successfully');
-      
-      // Auto-save to Firebase Documents
-      try {
-        const { saveProjectDocument } = await import('@/lib/projectDocuments');
-        
-        await saveProjectDocument({
-          projectId: estimate.client?.id || `temp-${Date.now()}`,
-          userId: currentUser?.uid || 'unknown',
-          documentType: 'estimate',
-          documentName: `Estimate for ${estimate.client?.name || 'Client'}`,
-          fileName: `estimate-${Date.now()}.pdf`,
-          fileSize: 0, // Will be updated when PDF is generated
-          mimeType: 'application/pdf',
-          documentData: '', // Will be populated by server
-          documentNumber: `EST-${Date.now()}`,
-          status: 'generated',
-          metadata: {
-            clientName: estimate.client?.name,
-            total: estimate.total,
-            items: estimate.items?.length || 0
-          }
-        });
-        
-        console.log('✅ PDF auto-saved to Firebase Documents');
-      } catch (docError) {
-        console.warn('⚠️ Failed to auto-save to Firebase:', docError);
-      }
-      
-      console.log('✅ PDF generation initiated');
+      console.log('📥 PDF download triggered successfully');
       
       toast({
         title: "✅ PDF Generated",
-        description: "Professional estimate PDF download started",
+        description: "Professional estimate PDF downloaded successfully",
       });
     } catch (error) {
       console.error(error);
-      toast({
-        title: "❌ Error",
-        description: "Failed to generate PDF",
-        variant: "destructive",
-      });
     }
   };
 
@@ -5294,29 +5254,13 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
                   console.log('Generating invoice PDF with payload:', invoicePayload);
 
-                  // Use XMLHttpRequest for robust binary PDF download
-                  const blob = await new Promise((resolve, reject) => {
-                    const xhr = new XMLHttpRequest();
-                    xhr.open('POST', '/api/invoice-pdf', true);
-                    xhr.setRequestHeader('Content-Type', 'application/json');
-                    xhr.responseType = 'blob';
-                    
-                    xhr.onload = function() {
-                      if (xhr.status === 200) {
-                        resolve(xhr.response);
-                      } else {
-                        reject(new Error(`Invoice PDF generation failed: ${xhr.status}`));
-                      }
-                    };
-                    
-                    xhr.onerror = function() {
-                      reject(new Error('Network error during invoice PDF generation'));
-                    };
-                    
-                    xhr.send(JSON.stringify(invoicePayload));
+                  // Call invoice PDF service
+                  const response = await axios.post("/api/invoice-pdf", invoicePayload, {
+                    responseType: 'blob'
                   });
-                  
-                  // Automatic download like before
+
+                  // Create download link
+                  const blob = new Blob([response.data], { type: 'application/pdf' });
                   const url = window.URL.createObjectURL(blob);
                   const link = document.createElement('a');
                   link.href = url;
@@ -5325,43 +5269,6 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   link.click();
                   document.body.removeChild(link);
                   window.URL.revokeObjectURL(url);
-                  
-                  // Auto-save to Firebase Documents like before
-                  try {
-                    const { saveProjectDocument } = await import('@/lib/projectDocuments');
-                    
-                    // Convert blob to base64 for Firebase storage
-                    const reader = new FileReader();
-                    const base64Promise = new Promise((resolve) => {
-                      reader.onload = () => resolve(reader.result);
-                      reader.readAsDataURL(blob);
-                    });
-                    const base64Data = await base64Promise;
-                    
-                    await saveProjectDocument({
-                      projectId: estimate.client?.id || `temp-${Date.now()}`,
-                      userId: currentUser?.uid || 'unknown',
-                      documentType: 'invoice',
-                      documentName: `Invoice for ${estimate.client?.name || 'Client'}`,
-                      fileName: `invoice-${Date.now()}.pdf`,
-                      fileSize: blob.size,
-                      mimeType: 'application/pdf',
-                      documentData: base64Data as string,
-                      documentNumber: `INV-${Date.now()}`,
-                      status: 'generated',
-                      metadata: {
-                        clientName: estimate.client?.name,
-                        total: estimate.total,
-                        items: estimate.items?.length || 0
-                      }
-                    });
-                    
-                    console.log('✅ Invoice auto-saved to Firebase Documents');
-                  } catch (docError) {
-                    console.warn('⚠️ Failed to auto-save invoice to Firebase:', docError);
-                  }
-
-                  console.log('✅ Invoice PDF downloaded automatically');
 
                   // Close dialog and show success message
                   setShowInvoiceDialog(false);
@@ -5373,7 +5280,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
                   toast({
                     title: "Invoice Generated",
-                    description: "Your professional invoice has been generated, downloaded and saved successfully.",
+                    description: "Your professional invoice has been generated and downloaded successfully.",
                   });
 
                 } catch (error) {

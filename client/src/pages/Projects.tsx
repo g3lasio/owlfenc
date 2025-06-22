@@ -709,7 +709,7 @@ function Projects() {
                         <div className="p-3 sm:p-4 border-b border-cyan-400/20">
                           <h3 className="text-cyan-300 font-semibold flex items-center text-sm sm:text-base">
                             <i className="ri-route-line mr-2"></i>
-                            Project Progress
+                            Progreso del Proyecto
                           </h3>
                         </div>
                         <div className="p-3 sm:p-4">
@@ -726,7 +726,7 @@ function Projects() {
                         <div className="p-3 sm:p-4 border-b border-cyan-400/20">
                           <h3 className="text-cyan-300 font-semibold flex items-center text-sm sm:text-base">
                             <i className="ri-information-line mr-2"></i>
-                            Project Information
+                            Detalles del Proyecto
                           </h3>
                         </div>
                         <div className="p-3 sm:p-4 max-h-64 sm:max-h-96 overflow-y-auto">
@@ -740,7 +740,159 @@ function Projects() {
 
                     {/* Columna derecha: Documentos del Proyecto */}
                     <div className="space-y-4 sm:space-y-6">
+                      {/* Descripción del Proyecto */}
+                      <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg">
+                        <div className="p-4 border-b border-cyan-400/20">
+                          <h3 className="text-cyan-300 font-semibold flex items-center">
+                            <i className="ri-file-text-line mr-2"></i>
+                            Descripción y Cambios
+                          </h3>
+                        </div>
+                        <div className="p-4 max-h-96 overflow-y-auto">
+                          <div className="space-y-4">
+                            <div>
+                              <label className="text-sm font-medium text-gray-300 mb-2 block">
+                                Descripción del Proyecto
+                              </label>
+                              <p className="text-gray-200 text-sm bg-gray-700/50 p-3 rounded">
+                                {selectedProject.projectDescription || 'No se ha proporcionado una descripción del proyecto.'}
+                              </p>
+                            </div>
+                            
+                            <div>
+                              <label className="text-sm font-medium text-gray-300 mb-2 block">
+                                Alcance del Trabajo
+                              </label>
+                              <p className="text-gray-200 text-sm bg-gray-700/50 p-3 rounded">
+                                {selectedProject.projectScope || 'No se ha definido el alcance específico del trabajo.'}
+                              </p>
+                            </div>
 
+                            {/* Notas y cambios del proyecto */}
+                            <div>
+                              <label className="text-sm font-medium text-gray-300 mb-2 block">
+                                Notas del Cliente
+                              </label>
+                              <div className="bg-gray-700/50 p-3 rounded">
+                                <p className="text-sm text-gray-200">
+                                  {selectedProject.clientNotes || 'No hay notas del cliente.'}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="text-sm font-medium text-gray-300 mb-2 block">
+                                Notas Internas
+                              </label>
+                              <div className="bg-gray-700/50 p-3 rounded">
+                                <p className="text-sm text-gray-200">
+                                  {selectedProject.internalNotes || 'No hay notas internas.'}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Estado del proyecto actualizable */}
+                            <div>
+                              <label className="text-sm font-medium text-gray-300 mb-2 block">
+                                Estado del Proyecto
+                              </label>
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant={selectedProject.status === 'approved' ? 'default' : 'outline'}
+                                  className={selectedProject.status === 'approved' ? 'bg-green-600' : ''}
+                                  onClick={async () => {
+                                    try {
+                                      await updateProject(selectedProject.id, { status: 'approved' });
+                                      handleProjectUpdate({ ...selectedProject, status: 'approved' });
+                                      toast({
+                                        title: "Estado actualizado",
+                                        description: "Proyecto marcado como aprobado."
+                                      });
+                                    } catch (error) {
+                                      toast({
+                                        variant: "destructive",
+                                        title: "Error",
+                                        description: "No se pudo actualizar el estado."
+                                      });
+                                    }
+                                  }}
+                                >
+                                  Aprobado
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant={selectedProject.status === 'completed' ? 'default' : 'outline'}
+                                  className={selectedProject.status === 'completed' ? 'bg-purple-600' : ''}
+                                  onClick={() => handleMarkAsCompleted(selectedProject.id)}
+                                >
+                                  Completado
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Sistema de Gestión de Documentos con Firebase */}
+                      <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg">
+                        <div className="p-3 sm:p-4 border-b border-cyan-400/20">
+                          <h3 className="text-cyan-300 font-semibold flex items-center text-sm sm:text-base">
+                            <i className="ri-folder-open-line mr-2"></i>
+                            Gestión de Documentos
+                          </h3>
+                        </div>
+                        <div className="p-3 sm:p-4">
+                          <ProjectDocuments 
+                            projectId={selectedProject.id} 
+                            projectName={selectedProject.clientName}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Accesos Rápidos */}
+                      <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg">
+                        <div className="p-3 sm:p-4 border-b border-cyan-400/20">
+                          <h3 className="text-cyan-300 font-semibold flex items-center text-sm sm:text-base">
+                            <i className="ri-add-circle-line mr-2"></i>
+                            Acciones Rápidas
+                          </h3>
+                        </div>
+                        <div className="p-3 sm:p-4 space-y-2">
+                          <Button 
+                            variant="outline" 
+                            className="w-full justify-start bg-gray-900/30 border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/10 text-xs sm:text-sm"
+                            onClick={() => {
+                              window.location.href = `/estimates?edit=${selectedProject.id}`;
+                            }}
+                          >
+                            <i className="ri-calculator-line mr-2"></i>
+                            {selectedProject.estimateHtml ? 'Editar Estimado' : 'Crear Estimado'}
+                          </Button>
+                          
+                          <Button 
+                            variant="outline" 
+                            className="w-full justify-start bg-gray-900/30 border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/10 text-xs sm:text-sm"
+                            onClick={() => {
+                              window.location.href = `/cyberpunk-contract-generator?projectId=${selectedProject.id}`;
+                            }}
+                          >
+                            <i className="ri-file-text-line mr-2"></i>
+                            {selectedProject.contractHtml ? 'Ver Contrato' : 'Generar Contrato'}
+                          </Button>
+                          
+                          <Button 
+                            variant="outline" 
+                            className="w-full justify-start bg-gray-900/30 border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/10 text-xs sm:text-sm"
+                            onClick={() => {
+                              window.location.href = `/invoices?projectId=${selectedProject.id}`;
+                            }}
+                          >
+                            <i className="ri-bill-line mr-2"></i>
+                            Generar Factura
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

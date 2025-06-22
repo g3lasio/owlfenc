@@ -1447,49 +1447,7 @@ Output in English regardless of input language. Make it suitable for contracts a
   };
 
   // 🧾 NEW: Professional Invoice PDF Generation
-  // GET endpoint for clean invoice PDF downloads
-  app.get("/api/invoice-pdf-download", async (req: Request, res: Response) => {
-    try {
-      console.log('🎯 GET Invoice PDF download started');
-      
-      const encodedData = req.query.data as string;
-      if (!encodedData) {
-        return res.status(400).json({ error: 'Missing data parameter' });
-      }
-      
-      const invoiceData = JSON.parse(decodeURIComponent(encodedData));
-      console.log('📊 Processing invoice data for PDF generation...');
-      
-      const pdfService = new PuppeteerPdfService();
-      const pdfBuffer = await pdfService.generateInvoicePdf(invoiceData);
-      
-      console.log('✅ Invoice PDF generated successfully, buffer size:', pdfBuffer.length);
-      
-      const filename = `invoice-${Date.now()}.pdf`;
-      
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-      res.setHeader('Content-Length', pdfBuffer.length);
-      
-      res.end(pdfBuffer, 'binary');
-      console.log('📥 Invoice PDF sent to client successfully');
-      
-    } catch (error) {
-      console.error('❌ Error generating Invoice PDF:', error);
-      res.status(500).json({ 
-        error: 'Failed to generate Invoice PDF', 
-        details: error instanceof Error ? error.message : 'Unknown error' 
-      });
-    }
-  });
-
   app.post("/api/invoice-pdf", async (req: Request, res: Response) => {
-    let invoiceData;
-    if (req.body.data) {
-      invoiceData = JSON.parse(req.body.data);
-    } else {
-      invoiceData = req.body;
-    }
     console.log('🎯 Professional Invoice PDF generation started');
     
     try {
@@ -1580,6 +1538,12 @@ Output in English regardless of input language. Make it suitable for contracts a
         isPDF: pdfBuffer.subarray(0, 4).toString() === '%PDF'
       });
       
+      // Set response headers for PDF download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="invoice-${invoiceData.invoice.number}.pdf"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      res.setHeader('Cache-Control', 'no-cache');
+      
       // Auto-save invoice document to Firebase
       try {
         const base64Data = pdfBuffer.toString('base64');
@@ -1605,14 +1569,8 @@ Output in English regardless of input language. Make it suitable for contracts a
         console.warn('⚠️ Failed to prepare invoice document for storage:', docError);
       }
 
-      // Set response headers for PDF download
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="invoice-${invoiceData.invoice.number}.pdf"`);
-      res.setHeader('Content-Length', pdfBuffer.length);
-      res.setHeader('Cache-Control', 'no-cache');
-      
-      // Send PDF buffer compatible with axios arraybuffer
-      res.send(pdfBuffer);
+      // Send PDF buffer as binary data
+      res.end(pdfBuffer, 'binary');
       
       console.log('✅ Professional Invoice PDF generated and sent successfully');
       
@@ -1627,60 +1585,16 @@ Output in English regardless of input language. Make it suitable for contracts a
   });
 
   // 🚀 NEW: Professional Puppeteer PDF Generation (replaces PDFMonkey)
-  // GET endpoint for clean PDF downloads
-  app.get("/api/estimate-pdf-download", async (req: Request, res: Response) => {
-    try {
-      console.log('🎯 GET PDF download started');
-      
-      const encodedData = req.query.data as string;
-      if (!encodedData) {
-        return res.status(400).json({ error: 'Missing data parameter' });
-      }
-      
-      const estimateData = JSON.parse(decodeURIComponent(encodedData));
-      console.log('📊 Processing estimate data for PDF generation...');
-      
-      const pdfService = new PuppeteerPdfService();
-      const pdfBuffer = await pdfService.generateEstimatePdf(estimateData);
-      
-      console.log('✅ PDF generated successfully, buffer size:', pdfBuffer.length);
-      
-      const filename = `estimate-${Date.now()}.pdf`;
-      
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-      res.setHeader('Content-Length', pdfBuffer.length);
-      
-      res.end(pdfBuffer, 'binary');
-      console.log('📥 PDF sent to client successfully');
-      
-    } catch (error) {
-      console.error('❌ Error generating PDF:', error);
-      res.status(500).json({ 
-        error: 'Failed to generate PDF', 
-        details: error instanceof Error ? error.message : 'Unknown error' 
-      });
-    }
-  });
-
   app.post("/api/estimate-puppeteer-pdf", async (req: Request, res: Response) => {
     console.log('🎯 Professional PDF generation with Puppeteer started');
     
     try {
-      // Handle form submission data (like invoices that work correctly)
-      let requestData;
-      if (req.body.data) {
-        // Form submission format
-        requestData = JSON.parse(req.body.data);
-      } else {
-        // Direct JSON format
-        requestData = req.body;
-      }
-      
-      console.log('🔍 Raw request data:', JSON.stringify(requestData, null, 2));
-      
-      // Initialize Puppeteer service
+      // Initialize Puppeteer service if not already done
       await puppeteerPdfService.initialize();
+      
+      // Extract and validate data from request
+      const requestData = req.body;
+      console.log('🔍 Raw request data:', JSON.stringify(requestData, null, 2));
       
       // Handle different data structures from frontend
       const user = requestData.user || [];
@@ -1798,9 +1712,7 @@ Output in English regardless of input language. Make it suitable for contracts a
       }, null, 2));
 
       // Generate PDF using Puppeteer service
-      console.log('🎯 Calling puppeteerPdfService.generatePdf...');
       const pdfBuffer = await puppeteerPdfService.generatePdf(estimateData);
-      console.log('✅ PDF generation completed');
       
       // Validate PDF buffer
       console.log('🔍 PDF Buffer validation:', {
@@ -1809,11 +1721,6 @@ Output in English regardless of input language. Make it suitable for contracts a
         firstBytes: pdfBuffer.subarray(0, 8).toString('hex'),
         isPDF: pdfBuffer.subarray(0, 4).toString() === '%PDF'
       });
-
-      // Remove invalid buffer check - the service is working correctly
-      if (pdfBuffer.length === 0) {
-        throw new Error('Empty PDF buffer generated');
-      }
 
       // Auto-save document to Firebase for project management
       try {
@@ -1845,11 +1752,12 @@ Output in English regardless of input language. Make it suitable for contracts a
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="estimate-${Date.now()}.pdf"`);
       res.setHeader('Content-Length', pdfBuffer.length);
+      res.setHeader('Cache-Control', 'no-cache');
       
       // Send PDF buffer as binary data
-      res.end(pdfBuffer);
+      res.end(pdfBuffer, 'binary');
       
-      console.log('✅ Professional Estimate PDF generated and sent successfully');
+      console.log('✅ Professional PDF generated and sent successfully');
       
     } catch (error) {
       console.error('❌ Error generating PDF with Puppeteer:', error);
