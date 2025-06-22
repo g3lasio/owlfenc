@@ -240,11 +240,11 @@ export class PuppeteerPdfService {
    */
   private handleConditionals(html: string, data: EstimateData): string {
     // Company conditionals
-    html = this.processConditional(html, 'company.address', !!data.company.address);
-    html = this.processConditional(html, 'company.phone', !!data.company.phone);
-    html = this.processConditional(html, 'company.email', !!data.company.email);
-    html = this.processConditional(html, 'company.website', !!data.company.website);
-    html = this.processConditional(html, 'company.logo', !!data.company.logo);
+    html = this.processConditional(html, 'company.address', !!data.company?.address);
+    html = this.processConditional(html, 'company.phone', !!data.company?.phone);
+    html = this.processConditional(html, 'company.email', !!data.company?.email);
+    html = this.processConditional(html, 'company.website', !!data.company?.website);
+    html = this.processConditional(html, 'company.logo', !!data.company?.logo);
     
     // Estimate conditionals
     html = this.processConditional(html, 'estimate.number', !!data.estimate.number);

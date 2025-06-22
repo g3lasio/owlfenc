@@ -293,11 +293,13 @@ Changelog:
   * Updated EstimatesWizard frontend to use local PDF service with blob download handling
   * CRITICAL FIX: Changed res.send() to res.end(buffer, 'binary') to properly send PDF binary data
   * Added comprehensive logging system to track PDF generation from data to final download
+  * Fixed template conditional processing to eliminate {{/if}} artifacts in generated PDFs
+  * Enhanced estimate header with prominent "ESTIMATE" title, estimate number, date, and validity period
   * System now generates high-quality PDFs locally in 3-4 seconds without external dependencies
   * Professional template includes: gradient headers, modern typography, responsive tables, cyberpunk styling
   * Optimized for print with 0.75in margins, proper page breaks, and color-adjusted elements
   * Template supports all estimate data: 21+ items, pricing, contractor branding, client info, terms
-  * Verified with Scott Benty Sr estimate: 195KB PDF with complete data (company: OWL FENC, total: $13,815.85)
+  * Verified with multiple test cases: PDF generation working with proper estimate header display
 ```
 
 ## User Preferences
