@@ -297,6 +297,9 @@ Changelog:
   * Switched to new PDFMonkey template (ID: D49152DA-BC69-4FFD-B6A3-3F7F4EA7E8B6) with proper tax/discount support
   * Restructured payload format to match new template structure (company, estimate, client objects)
   * Updated both handleDownload functions to use consistent data mapping with new template format
+  * Fixed critical data mapping issues in PDF generation: properly structured items array and truncated project descriptions
+  * Added robust server-side data validation and mapping to ensure template compatibility
+  * Implemented fallback values for all required fields to prevent empty sections in PDF output
 ```
 
 ## User Preferences

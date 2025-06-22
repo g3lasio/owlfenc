@@ -1444,7 +1444,7 @@ Output in English regardless of input language. Make it suitable for contracts a
     throw new Error("Timed out waiting for PDF to be ready.");
   };
 
-  // 🧾 Estimate - BASIC
+  // 🧾 Estimate - BASIC with proper data mapping
   app.post("/api/estimate-basic-pdf", async (req: Request, res: Response) => {
     try {
       const contract = req.body;
@@ -1453,19 +1453,54 @@ Output in English regardless of input language. Make it suitable for contracts a
 
       if (!API_KEY) throw new Error("PDFMONKEY_API_KEY is not defined");
 
-      // Debug: Log the incoming data structure
-      console.log("📋 PDF Data received:", JSON.stringify(contract, null, 2));
-      console.log("📋 Items array:", contract.estimate?.items);
+      // Restructure data to match template expectations exactly
+      const mappedData = {
+        company: {
+          name: contract.company?.name || "Company Name",
+          address: contract.company?.address || "",
+          phone: contract.company?.phone || "",
+          email: contract.company?.email || "",
+          website: contract.company?.website || "",
+          logo: contract.company?.logo || ""
+        },
+        estimate: {
+          number: contract.estimate?.number || "EST-001",
+          date: contract.estimate?.date || new Date().toLocaleDateString(),
+          valid_until: contract.estimate?.valid_until || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+          project_description: contract.estimate?.project_description?.substring(0, 300) || "Project description not provided",
+          items: (contract.estimate?.items || []).map(item => ({
+            code: item.code || item.name || "Item",
+            description: item.description || "",
+            qty: item.qty || item.quantity || 1,
+            unit_price: item.unit_price || `$${Number(item.price || 0).toFixed(2)}`,
+            total: item.total || `$${Number(item.total || item.quantity * item.price || 0).toFixed(2)}`
+          })),
+          subtotal: contract.estimate?.subtotal || "$0.00",
+          discounts: contract.estimate?.discounts || "$0.00",
+          tax_rate: contract.estimate?.tax_rate || 0,
+          tax_amount: contract.estimate?.tax_amount || "$0.00",
+          total: contract.estimate?.total || "$0.00"
+        },
+        client: {
+          name: contract.client?.name || "Client Name",
+          email: contract.client?.email || "",
+          phone: contract.client?.phone || "",
+          address: contract.client?.address || ""
+        }
+      };
+
+      console.log("📋 Mapped data for template:", JSON.stringify(mappedData, null, 2));
+      console.log("📋 Items count:", mappedData.estimate.items.length);
 
       const payload = {
         document: {
           document_template_id: TEMPLATE_ID,
-          payload: contract,
+          payload: mappedData,
           status: "pending",
         },
         meta: {
-          clientId: contract.estimate?.number || "estimate",
-          _filename: (contract.estimate?.number || "estimate") + ".pdf",
+          clientId: mappedData.estimate.number,
+          _filename: mappedData.estimate.number + ".pdf",
         },
       };
 
