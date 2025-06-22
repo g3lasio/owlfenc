@@ -307,7 +307,7 @@ Changelog:
   * FINAL LOGO FIX: When no contractor logo exists, logo section is completely hidden - no placeholder text or broken images
   * FONT SIZE OPTIMIZATION: Increased all fonts to proper readable sizes - body text 12pt, headers 18pt, subtitles 14pt for professional readability
   * CONTRACTOR LOGO ONLY: System only shows real contractor logos from profile uploads - no fallback logos or placeholders
-  * ENHANCED FONT SIZES: Dramatically increased ALL fonts throughout template - body 14pt, descriptions 13pt, tables 14pt, headers 20pt, titles 28pt, terms 13-14pt for maximum readability
+  * PROFESSIONAL FONT CONSISTENCY: Standardized all fonts to professional sizes - body text 12pt, headers 14pt, totals 14pt, footer 11pt for consistent professional appearance without mixing large and small fonts
 ```
 
 ## User Preferences
