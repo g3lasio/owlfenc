@@ -206,9 +206,9 @@ export class PuppeteerPdfService {
       html = html.replace(/\{\{company\.logo\}\}/g, data.company.logo || '');
       
       // Replace estimate data
-      html = html.replace(/\{\{estimate\.number\}\}/g, data.estimate.number || '');
-      html = html.replace(/\{\{estimate\.date\}\}/g, data.estimate.date || '');
-      html = html.replace(/\{\{estimate\.valid_until\}\}/g, data.estimate.valid_until || '');
+      html = html.replace(/\{\{estimate\.number\}\}/g, data.estimate.number || `EST-${Date.now().toString().slice(-6)}`);
+      html = html.replace(/\{\{estimate\.date\}\}/g, data.estimate.date || new Date().toLocaleDateString('en-US'));
+      html = html.replace(/\{\{estimate\.valid_until\}\}/g, data.estimate.valid_until || this.getValidUntilDate());
       html = html.replace(/\{\{estimate\.project_description\}\}/g, data.estimate.project_description || '');
       html = html.replace(/\{\{estimate\.subtotal\}\}/g, data.estimate.subtotal || '');
       html = html.replace(/\{\{estimate\.discounts\}\}/g, data.estimate.discounts || '');
