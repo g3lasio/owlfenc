@@ -2949,6 +2949,36 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         type: pdfBlob.type
       });
       
+      // Auto-save to Firebase if document metadata is available in headers
+      try {
+        const documentData = response.headers['x-document-data'];
+        if (documentData) {
+          const docPayload = JSON.parse(documentData);
+          console.log('📄 Auto-saving estimate document to Firebase...');
+          
+          // Import Firebase document service
+          const { saveProjectDocument } = await import('@/lib/projectDocuments');
+          
+          await saveProjectDocument({
+            projectId: docPayload.projectId,
+            userId: currentUser?.uid || 'unknown',
+            documentType: 'estimate',
+            documentName: docPayload.documentName,
+            fileName: docPayload.fileName,
+            fileSize: pdfBlob.size,
+            mimeType: 'application/pdf',
+            documentData: docPayload.pdfData,
+            documentNumber: docPayload.documentNumber,
+            status: 'generated',
+            metadata: docPayload.metadata
+          });
+          
+          console.log('✅ Estimate document saved to Firebase');
+        }
+      } catch (docError) {
+        console.warn('⚠️ Failed to auto-save document to Firebase:', docError);
+      }
+      
       const downloadUrl = window.URL.createObjectURL(pdfBlob);
       const link = document.createElement('a');
       link.href = downloadUrl;
@@ -2962,7 +2992,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       
       toast({
         title: "✅ PDF Generated",
-        description: "Professional estimate PDF downloaded successfully",
+        description: "Professional estimate PDF downloaded and saved successfully",
       });
     } catch (error) {
       console.error(error);
@@ -5259,6 +5289,36 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                     responseType: 'blob'
                   });
 
+                  // Auto-save to Firebase if document metadata is available in headers
+                  try {
+                    const documentData = response.headers['x-document-data'];
+                    if (documentData) {
+                      const docPayload = JSON.parse(documentData);
+                      console.log('📄 Auto-saving invoice document to Firebase...');
+                      
+                      // Import Firebase document service
+                      const { saveProjectDocument } = await import('@/lib/projectDocuments');
+                      
+                      await saveProjectDocument({
+                        projectId: docPayload.projectId,
+                        userId: currentUser?.uid || 'unknown',
+                        documentType: 'invoice',
+                        documentName: docPayload.documentName,
+                        fileName: docPayload.fileName,
+                        fileSize: response.data.size,
+                        mimeType: 'application/pdf',
+                        documentData: docPayload.pdfData,
+                        documentNumber: docPayload.documentNumber,
+                        status: 'generated',
+                        metadata: docPayload.metadata
+                      });
+                      
+                      console.log('✅ Invoice document saved to Firebase');
+                    }
+                  } catch (docError) {
+                    console.warn('⚠️ Failed to auto-save invoice document to Firebase:', docError);
+                  }
+
                   // Create download link
                   const blob = new Blob([response.data], { type: 'application/pdf' });
                   const url = window.URL.createObjectURL(blob);
@@ -5280,7 +5340,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
                   toast({
                     title: "Invoice Generated",
-                    description: "Your professional invoice has been generated and downloaded successfully.",
+                    description: "Your professional invoice has been generated, downloaded and saved successfully.",
                   });
 
                 } catch (error) {
