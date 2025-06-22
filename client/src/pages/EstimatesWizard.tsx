@@ -209,6 +209,14 @@ export default function EstimatesWizardFixed() {
   const [isLoadingEstimates, setIsLoadingEstimates] = useState(false);
   const [showCompanyEditDialog, setShowCompanyEditDialog] = useState(false);
 
+  // Invoice configuration states
+  const [showInvoiceDialog, setShowInvoiceDialog] = useState(false);
+  const [invoiceConfig, setInvoiceConfig] = useState({
+    projectCompleted: null as boolean | null,
+    downPaymentAmount: "",
+    totalAmountPaid: null as boolean | null,
+  });
+
   // Check for edit mode on component mount
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -4279,8 +4287,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       <Button
                         onClick={() => {
-                          // Navigate to invoice generation with current estimate data
-                          window.location.href = `/invoices?fromEstimate=${btoa(JSON.stringify(estimate))}`;
+                          setShowInvoiceDialog(true);
                         }}
                         disabled={!estimate.client || estimate.items.length === 0}
                         size="sm"
@@ -4771,6 +4778,141 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
               }}
             >
               Guardar Cambios
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Invoice Configuration Dialog */}
+      <Dialog open={showInvoiceDialog} onOpenChange={setShowInvoiceDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-orange-500" />
+              Invoice Configuration
+            </DialogTitle>
+            <DialogDescription>
+              Configure invoice settings before generation
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 py-4">
+            {/* Project Completion Status */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">
+                Has the project been completed?
+              </Label>
+              <div className="flex gap-3">
+                <Button
+                  variant={invoiceConfig.projectCompleted === true ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setInvoiceConfig(prev => ({ ...prev, projectCompleted: true }))}
+                  className="flex-1"
+                >
+                  Yes
+                </Button>
+                <Button
+                  variant={invoiceConfig.projectCompleted === false ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setInvoiceConfig(prev => ({ ...prev, projectCompleted: false }))}
+                  className="flex-1"
+                >
+                  No
+                </Button>
+              </div>
+            </div>
+
+            {/* Down Payment Amount - Only show if project is not completed */}
+            {invoiceConfig.projectCompleted === false && (
+              <div className="space-y-3">
+                <Label htmlFor="downPayment" className="text-sm font-medium">
+                  How much down payment has been paid?
+                </Label>
+                <Input
+                  id="downPayment"
+                  type="number"
+                  placeholder="Enter amount (e.g., 500.00)"
+                  value={invoiceConfig.downPaymentAmount}
+                  onChange={(e) => setInvoiceConfig(prev => ({ ...prev, downPaymentAmount: e.target.value }))}
+                  className="w-full"
+                />
+              </div>
+            )}
+
+            {/* Total Amount Payment Status */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">
+                Has the total amount been paid by client?
+              </Label>
+              <div className="flex gap-3">
+                <Button
+                  variant={invoiceConfig.totalAmountPaid === true ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setInvoiceConfig(prev => ({ ...prev, totalAmountPaid: true }))}
+                  className="flex-1"
+                >
+                  Yes
+                </Button>
+                <Button
+                  variant={invoiceConfig.totalAmountPaid === false ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setInvoiceConfig(prev => ({ ...prev, totalAmountPaid: false }))}
+                  className="flex-1"
+                >
+                  No
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowInvoiceDialog(false);
+                setInvoiceConfig({
+                  projectCompleted: null,
+                  downPaymentAmount: "",
+                  totalAmountPaid: null,
+                });
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                // Validate required fields
+                if (invoiceConfig.projectCompleted === null || invoiceConfig.totalAmountPaid === null) {
+                  toast({
+                    title: "Configuration Required",
+                    description: "Please answer all questions before proceeding",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+
+                if (invoiceConfig.projectCompleted === false && !invoiceConfig.downPaymentAmount) {
+                  toast({
+                    title: "Down Payment Required",
+                    description: "Please enter the down payment amount",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+
+                // Generate invoice with configuration
+                const invoiceData = {
+                  ...estimate,
+                  invoiceConfig,
+                  type: "invoice"
+                };
+
+                // Navigate to invoice generation
+                window.location.href = `/invoices?fromEstimate=${btoa(JSON.stringify(invoiceData))}`;
+              }}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              Generate Invoice
             </Button>
           </DialogFooter>
         </DialogContent>
