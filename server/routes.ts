@@ -1845,10 +1845,9 @@ Output in English regardless of input language. Make it suitable for contracts a
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="estimate-${Date.now()}.pdf"`);
       res.setHeader('Content-Length', pdfBuffer.length);
-      res.setHeader('Cache-Control', 'no-cache');
       
-      // Send PDF buffer directly (same as working invoices)
-      res.send(pdfBuffer);
+      // Send PDF buffer as binary data
+      res.end(pdfBuffer);
       
       console.log('✅ Professional Estimate PDF generated and sent successfully');
       
