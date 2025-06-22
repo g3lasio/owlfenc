@@ -2926,24 +2926,21 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       
       console.log('📤 Sending payload to PDF service:', payload);
       // Use new Puppeteer PDF service (local, no external dependency)
-      const response = await axios.post("/api/estimate-puppeteer-pdf", payload, {
-        responseType: 'blob' // Important for PDF download
+      const response = await fetch("/api/estimate-puppeteer-pdf", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
       });
       
-      console.log('📨 Response received:', {
-        status: response.status,
-        headers: response.headers,
-        dataType: typeof response.data,
-        dataSize: response.data?.size || 'unknown'
-      });
-      
-      // Validate the blob
-      if (!response.data || response.data.size === 0) {
-        throw new Error('Received empty PDF data from server');
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Server error: ${response.status} - ${errorText}`);
       }
-      
-      // Create blob URL and trigger download
-      const pdfBlob = new Blob([response.data], { type: 'application/pdf' });
+
+      // Get the PDF blob from response
+      const pdfBlob = await response.blob();
       console.log('📄 Created PDF blob:', {
         size: pdfBlob.size,
         type: pdfBlob.type
@@ -2951,7 +2948,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       
       // Auto-save to Firebase if document metadata is available in headers
       try {
-        const documentData = response.headers['x-document-data'];
+        const documentData = response.headers.get('x-document-data');
         if (documentData) {
           const docPayload = JSON.parse(documentData);
           console.log('📄 Auto-saving estimate document to Firebase...');
@@ -5285,13 +5282,25 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   console.log('Generating invoice PDF with payload:', invoicePayload);
 
                   // Call invoice PDF service
-                  const response = await axios.post("/api/invoice-pdf", invoicePayload, {
-                    responseType: 'blob'
+                  const response = await fetch("/api/invoice-pdf", {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(invoicePayload)
                   });
+
+                  if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Server error: ${response.status} - ${errorText}`);
+                  }
+
+                  // Get the PDF blob from response
+                  const blob = await response.blob();
 
                   // Auto-save to Firebase if document metadata is available in headers
                   try {
-                    const documentData = response.headers['x-document-data'];
+                    const documentData = response.headers.get('x-document-data');
                     if (documentData) {
                       const docPayload = JSON.parse(documentData);
                       console.log('📄 Auto-saving invoice document to Firebase...');
@@ -5305,7 +5314,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         documentType: 'invoice',
                         documentName: docPayload.documentName,
                         fileName: docPayload.fileName,
-                        fileSize: response.data.size,
+                        fileSize: blob.size,
                         mimeType: 'application/pdf',
                         documentData: docPayload.pdfData,
                         documentNumber: docPayload.documentNumber,
@@ -5318,9 +5327,6 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   } catch (docError) {
                     console.warn('⚠️ Failed to auto-save invoice document to Firebase:', docError);
                   }
-
-                  // Create download link
-                  const blob = new Blob([response.data], { type: 'application/pdf' });
                   const url = window.URL.createObjectURL(blob);
                   const link = document.createElement('a');
                   link.href = url;

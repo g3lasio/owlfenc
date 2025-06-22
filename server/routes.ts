@@ -1538,12 +1538,6 @@ Output in English regardless of input language. Make it suitable for contracts a
         isPDF: pdfBuffer.subarray(0, 4).toString() === '%PDF'
       });
       
-      // Set response headers for PDF download
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="invoice-${invoiceData.invoice.number}.pdf"`);
-      res.setHeader('Content-Length', pdfBuffer.length);
-      res.setHeader('Cache-Control', 'no-cache');
-      
       // Auto-save invoice document to Firebase
       try {
         const base64Data = pdfBuffer.toString('base64');
@@ -1569,8 +1563,14 @@ Output in English regardless of input language. Make it suitable for contracts a
         console.warn('⚠️ Failed to prepare invoice document for storage:', docError);
       }
 
-      // Send PDF buffer correctly for frontend blob handling
-      res.send(pdfBuffer);
+      // Set response headers for PDF download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="invoice-${invoiceData.invoice.number}.pdf"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      res.setHeader('Cache-Control', 'no-cache');
+      
+      // Send PDF buffer as binary response
+      res.end(pdfBuffer);
       
       console.log('✅ Professional Invoice PDF generated and sent successfully');
       
@@ -1754,8 +1754,8 @@ Output in English regardless of input language. Make it suitable for contracts a
       res.setHeader('Content-Length', pdfBuffer.length);
       res.setHeader('Cache-Control', 'no-cache');
       
-      // Send PDF buffer correctly for frontend blob handling
-      res.send(pdfBuffer);
+      // Send PDF buffer as binary response
+      res.end(pdfBuffer);
       
       console.log('✅ Professional PDF generated and sent successfully');
       
