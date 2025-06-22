@@ -345,10 +345,10 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
                     </div>
                     <div className="sticky bottom-0 bg-background flex justify-end space-x-2 p-4 md:p-6 border-t flex-shrink-0">
                       <Button 
-                        onClick={handleNotesUpdate} 
+                        onClick={() => handleUpdate('clientNotes')} 
                         disabled={isSaving}
                       >
-                        {isSaving ? 'Guardando...' : 'Guardar Notas'}
+                        {isSaving ? 'Saving...' : 'Save Notes'}
                       </Button>
                     </div>
                   </DialogContent>
@@ -599,10 +599,10 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
                     </div>
                     <div className="sticky bottom-0 bg-background flex justify-end space-x-2 p-4 md:p-6 border-t flex-shrink-0">
                       <Button 
-                        onClick={handleNotesUpdate} 
+                        onClick={() => handleUpdate('internalNotes')} 
                         disabled={isSaving}
                       >
-                        {isSaving ? 'Guardando...' : 'Guardar Notas'}
+                        {isSaving ? 'Saving...' : 'Save Notes'}
                       </Button>
                     </div>
                   </DialogContent>
