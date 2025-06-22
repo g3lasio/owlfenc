@@ -1453,6 +1453,10 @@ Output in English regardless of input language. Make it suitable for contracts a
 
       if (!API_KEY) throw new Error("PDFMONKEY_API_KEY is not defined");
 
+      // Debug: Log the incoming data structure
+      console.log("📋 PDF Data received:", JSON.stringify(contract, null, 2));
+      console.log("📋 Items array:", contract.estimate?.items);
+
       const payload = {
         document: {
           document_template_id: TEMPLATE_ID,
@@ -1460,8 +1464,8 @@ Output in English regardless of input language. Make it suitable for contracts a
           status: "pending",
         },
         meta: {
-          clientId: contract.estimate_number,
-          _filename: contract.estimate_number + ".pdf",
+          clientId: contract.estimate?.number || "estimate",
+          _filename: (contract.estimate?.number || "estimate") + ".pdf",
         },
       };
 
