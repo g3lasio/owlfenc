@@ -350,6 +350,15 @@ Changelog:
   * CLIENT INFORMATION LAYOUT: Fixed "Client Information" header positioning to appear centered above client details rather than to the side for better visual hierarchy
   * LOGO CONDITIONAL RENDERING: Fixed template processing to properly handle logo conditionals - logo appears centered when available, section is completely hidden when not available, no template artifacts
   * ENHANCED LOGO DEBUGGING: Added comprehensive logging to track logo data flow from database profile through PDF generation - validates Base64 format and proper template processing
+- June 22, 2025. Fixed estimate PDF generation network errors and binary response handling:
+  * Identified root cause: frontend not properly handling binary PDF responses from server
+  * Replaced axios with fetch API for better network compatibility and error handling
+  * Fixed binary data processing by using response.arrayBuffer() instead of response.blob()
+  * Added comprehensive logging throughout PDF generation pipeline for debugging
+  * Enhanced server endpoint to use res.end(pdfBuffer, 'binary') matching working invoice system
+  * Added buffer validation to detect empty or corrupted PDF responses
+  * Server logs confirm successful PDF generation (200 status, valid buffers), frontend now processes correctly
+  * System generates estimate PDFs without network errors or compatibility issues
 ```
 
 ## User Preferences
