@@ -2857,41 +2857,24 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         return;
       }
 
+      // Create payload in the exact format expected by Puppeteer service
       const payload = {
-        company: {
-          name: profile.company,
-          address: profile.address ? `${profile.address}${profile.city ? ', ' + profile.city : ''}${profile.state ? ', ' + profile.state : ''}${profile.zipCode ? ' ' + profile.zipCode : ''}` : "",
-          phone: profile.phone || "",
-          email: profile.email || currentUser?.email || "",
-          website: profile.website || "",
-          logo: profile.logo || ""
+        user: currentUser ? [{ uid: currentUser.uid, email: currentUser.email, displayName: currentUser.displayName }] : [],
+        client: estimate.client || {},
+        items: estimate.items || [],
+        projectTotalCosts: {
+          subtotal: estimate.subtotal || 0,
+          discount: estimate.discountAmount || 0,
+          taxRate: estimate.taxRate || 10,
+          tax: estimate.tax || 0,
+          total: estimate.total || 0
         },
-        estimate: {
-          number: "EST-" + Date.now(),
-          date: new Date().toLocaleDateString(),
-          valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-          project_description: (estimate.projectDetails || "").substring(0, 500),
-          items: estimate.items.map((item) => ({
-            code: item.name,
-            description: item.description,
-            qty: item.quantity,
-            unit_price: `$${Number(item.price).toFixed(2)}`,
-            total: `$${Number(item.total).toFixed(2)}`,
-          })),
-          subtotal: `$${Number(estimate.subtotal).toFixed(2)}`,
-          discounts: estimate.discountAmount > 0 ? `-$${Number(estimate.discountAmount).toFixed(2)}` : "$0.00",
-          tax_rate: estimate.taxRate || 0,
-          tax_amount: estimate.tax > 0 ? `$${Number(estimate.tax).toFixed(2)}` : "$0.00",
-          total: `$${Number(estimate.total).toFixed(2)}`
-        },
-        client: {
-          name: estimate.client?.name || "",
-          email: estimate.client?.email || "",
-          phone: estimate.client?.phone || "",
-          address: estimate.client?.address ? `${estimate.client.address}${estimate.client.city ? ', ' + estimate.client.city : ''}${estimate.client.state ? ', ' + estimate.client.state : ''}${estimate.client.zipCode ? ' ' + estimate.client.zipCode : ''}` : ""
-        },
-        firebaseUid: currentUser?.uid,
+        originalData: {
+          projectDescription: estimate.projectDetails || ""
+        }
       };
+      
+      console.log('📤 Sending payload to PDF service:', payload);
       // Use new Puppeteer PDF service (local, no external dependency)
       const response = await axios.post("/api/estimate-puppeteer-pdf", payload, {
         responseType: 'blob' // Important for PDF download

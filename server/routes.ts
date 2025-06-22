@@ -1454,13 +1454,29 @@ Output in English regardless of input language. Make it suitable for contracts a
       await puppeteerPdfService.initialize();
       
       // Extract and validate data from request
-      const { user, client, items, projectTotalCosts, originalData } = req.body;
+      const requestData = req.body;
+      console.log('🔍 Raw request data:', JSON.stringify(requestData, null, 2));
       
-      console.log('📊 Data received:', {
+      // Handle different data structures from frontend
+      const user = requestData.user || [];
+      const client = requestData.client || requestData.estimate?.client || {};
+      const items = requestData.items || requestData.estimate?.items || [];
+      const projectTotalCosts = requestData.projectTotalCosts || {};
+      const originalData = requestData.originalData || {};
+      
+      // Also check for direct estimate data structure
+      if (requestData.estimate) {
+        items.push(...(requestData.estimate.items || []));
+      }
+      
+      console.log('📊 Processed data:', {
         hasUser: !!user,
         hasClient: !!client,
+        clientName: client?.name,
         itemsCount: items?.length || 0,
-        hasCosts: !!projectTotalCosts
+        hasCosts: !!projectTotalCosts,
+        subtotal: projectTotalCosts?.subtotal,
+        total: projectTotalCosts?.total
       });
 
       // Get contractor profile data
