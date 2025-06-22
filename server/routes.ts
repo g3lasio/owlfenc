@@ -1847,8 +1847,8 @@ Output in English regardless of input language. Make it suitable for contracts a
       res.setHeader('Content-Length', pdfBuffer.length);
       res.setHeader('Cache-Control', 'no-cache');
       
-      // Send PDF buffer using binary method (same as working invoices)
-      res.end(pdfBuffer, 'binary');
+      // Send PDF buffer directly (same as working invoices)
+      res.send(pdfBuffer);
       
       console.log('✅ Professional Estimate PDF generated and sent successfully');
       
