@@ -2880,8 +2880,25 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         responseType: 'blob' // Important for PDF download
       });
       
+      console.log('📨 Response received:', {
+        status: response.status,
+        headers: response.headers,
+        dataType: typeof response.data,
+        dataSize: response.data?.size || 'unknown'
+      });
+      
+      // Validate the blob
+      if (!response.data || response.data.size === 0) {
+        throw new Error('Received empty PDF data from server');
+      }
+      
       // Create blob URL and trigger download
       const pdfBlob = new Blob([response.data], { type: 'application/pdf' });
+      console.log('📄 Created PDF blob:', {
+        size: pdfBlob.size,
+        type: pdfBlob.type
+      });
+      
       const downloadUrl = window.URL.createObjectURL(pdfBlob);
       const link = document.createElement('a');
       link.href = downloadUrl;
@@ -2890,6 +2907,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(downloadUrl);
+      
+      console.log('📥 PDF download triggered successfully');
       
       toast({
         title: "✅ PDF Generated",

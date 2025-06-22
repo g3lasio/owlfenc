@@ -1555,13 +1555,39 @@ Output in English regardless of input language. Make it suitable for contracts a
 
       console.log('🎨 Generating PDF with professional template...');
       
+      // Log the final data structure being sent to PDF service
+      console.log('📊 Final estimate data for PDF:', JSON.stringify({
+        company: estimateData.company,
+        client: estimateData.client,
+        itemsCount: estimateData.estimate.items.length,
+        estimate: {
+          ...estimateData.estimate,
+          items: estimateData.estimate.items.map(item => ({
+            code: item.code,
+            description: item.description?.substring(0, 50) + '...',
+            qty: item.qty,
+            unit_price: item.unit_price,
+            total: item.total
+          }))
+        }
+      }, null, 2));
+
       // Generate PDF using Puppeteer service
       const pdfBuffer = await puppeteerPdfService.generatePdf(estimateData);
+      
+      // Validate PDF buffer
+      console.log('🔍 PDF Buffer validation:', {
+        isBuffer: Buffer.isBuffer(pdfBuffer),
+        length: pdfBuffer.length,
+        firstBytes: pdfBuffer.subarray(0, 8).toString('hex'),
+        isPDF: pdfBuffer.subarray(0, 4).toString() === '%PDF'
+      });
       
       // Set response headers for PDF download
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="estimate-${Date.now()}.pdf"`);
       res.setHeader('Content-Length', pdfBuffer.length);
+      res.setHeader('Cache-Control', 'no-cache');
       
       // Send PDF buffer
       res.send(pdfBuffer);

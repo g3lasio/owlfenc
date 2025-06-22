@@ -106,12 +106,22 @@ export class PuppeteerPdfService {
 
       // Generate HTML from template
       const html = await this.renderTemplate(data);
+      console.log('📝 Generated HTML length:', html.length);
+      console.log('📋 Template data being used:', {
+        companyName: data.company?.name || 'NO_COMPANY',
+        clientName: data.client?.name || 'NO_CLIENT', 
+        itemsCount: data.estimate?.items?.length || 0,
+        subtotal: data.estimate?.subtotal || 'NO_SUBTOTAL',
+        total: data.estimate?.total || 'NO_TOTAL'
+      });
       
       // Set content and wait for fonts/images to load
       await page.setContent(html, {
         waitUntil: ['networkidle0', 'domcontentloaded'],
         timeout: 30000
       });
+      
+      console.log('🌐 Page content set successfully');
 
       // Add custom CSS for better PDF rendering
       await page.addStyleTag({
@@ -158,7 +168,13 @@ export class PuppeteerPdfService {
         displayHeaderFooter: false
       });
 
-      console.log('✅ PDF generated successfully');
+      console.log(`✅ PDF generated successfully - Size: ${pdfBuffer.length} bytes`);
+      
+      // Additional validation
+      if (pdfBuffer.length < 1000) {
+        console.warn('⚠️ PDF seems too small, might be corrupted');
+      }
+      
       return pdfBuffer;
 
     } catch (error) {
