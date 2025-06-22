@@ -232,6 +232,9 @@ export default function EstimatesWizardFixed() {
   // Email dialog states
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [showEmailPreview, setShowEmailPreview] = useState(false);
+  
+  // Client editing state for preview step
+  const [isEditingClient, setIsEditingClient] = useState(false);
 
   // Función para evaluar la calidad de la descripción
   const evaluateProjectDescription = (description: string) => {
