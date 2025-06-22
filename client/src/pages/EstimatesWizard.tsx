@@ -2929,32 +2929,19 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       // Use XMLHttpRequest for reliable binary data handling
       console.log('🔄 Starting PDF generation request...');
       
-      const pdfBlob = await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', '/api/estimate-puppeteer-pdf', true);
-        xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.responseType = 'blob';
-        
-        xhr.onload = function() {
-          console.log('📡 Response received:', {
-            status: xhr.status,
-            statusText: xhr.statusText,
-            responseSize: xhr.response?.size || 0
-          });
-          
-          if (xhr.status === 200) {
-            resolve(xhr.response);
-          } else {
-            reject(new Error(`PDF generation failed: ${xhr.status}`));
-          }
-        };
-        
-        xhr.onerror = function() {
-          reject(new Error('Network error during PDF generation'));
-        };
-        
-        xhr.send(JSON.stringify(payload));
+      const response = await fetch('/api/estimate-puppeteer-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
       });
+
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+      }
+
+      const pdfBlob = await response.blob();
 
       console.log('📦 PDF blob received:', {
         size: pdfBlob.size,
