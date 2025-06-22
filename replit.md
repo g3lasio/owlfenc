@@ -292,14 +292,14 @@ Changelog:
   * Enhanced ProjectProgress component with better height management and cyberpunk styling
   * Fixed content overflow issues in dashboard dialog with proper flex containers
   * Improved responsive design for both grid and table view modes
-- June 21, 2025. Restructured project dashboard with simplified and functional design:
-  * Reorganized dashboard layout into clean 2-column structure with header summary
-  * Added project summary cards showing client, project type, and value information
-  * Simplified progress tracking with clear visual indicators
-  * Integrated project details with scrollable content areas
-  * Added document overview with type counters and quick access buttons
-  * Maintained all existing edit functionality while improving usability
-  * Fixed dashboard rendering issues and improved responsive design
+- June 22, 2025. Completed project dashboard with scroll functionality and Firebase document integration:
+  * Eliminated div overlay that was hiding dashboard content (line 703 header section)
+  * Replaced old document system with ProjectDocuments component using Firebase storage
+  * Fixed critical CSS overflow issues blocking scroll functionality across application
+  * Implemented responsive mobile design with proper content visibility
+  * Enhanced ProjectDocuments with tabbed interface for estimates, contracts, and invoices
+  * All PDF generation now automatically saves to Firebase for permanent document storage
+  * Dashboard provides complete document management with download and view capabilities
 - June 21, 2025. Implemented complete functional dashboard with interactive elements:
   * Made all dashboard elements clickable and functional with proper navigation
   * Added real document viewing and downloading capabilities for estimates and contracts
