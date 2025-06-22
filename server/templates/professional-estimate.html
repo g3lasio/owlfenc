@@ -157,7 +157,7 @@
         }
         
         .section-header {
-            font-size: 18pt;
+            font-size: 20pt;
             font-weight: 600;
             color: #2d3748;
             margin-bottom: 15px;
@@ -178,7 +178,7 @@
         }
         
         .client-name {
-            font-size: 14pt;
+            font-size: 16pt;
             font-weight: 600;
             color: #1a202c;
             margin-bottom: 10px;
@@ -186,7 +186,7 @@
         
         .client-info-item {
             margin-bottom: 6px;
-            font-size: 12pt;
+            font-size: 14pt;
             color: #4a5568;
         }
         
@@ -535,7 +535,9 @@
                 </div>
                 
                 <div class="logo-section">
+                    {{#if company.logo}}
                     <img src="{{company.logo}}" alt="Company Logo" class="company-logo" style="max-width: 120px; max-height: 80px; object-fit: contain;">
+                    {{/if}}
                 </div>
                 
                 <div class="estimate-section">

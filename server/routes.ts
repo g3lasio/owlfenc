@@ -1491,7 +1491,7 @@ Output in English regardless of input language. Make it suitable for contracts a
               phone: profile.phone || '(555) 123-4567',
               email: profile.email || 'truthbackpack@gmail.com',
               website: profile.website || 'https://owlfenc.com/',
-              logo: profile.logoBase64 || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjYwIiB2aWV3Qm94PSIwIDAgMTAwIDYwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjYwIiBmaWxsPSIjMDBGRkI4IiByeD0iOCIvPgo8dGV4dCB4PSI1MCIgeT0iMzUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNiIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiMxYTIwMmMiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkxPR088L3RleHQ+Cjwvc3ZnPgo='
+              logo: profile.logoBase64 || ''
             };
           }
         }
@@ -1504,7 +1504,7 @@ Output in English regardless of input language. Make it suitable for contracts a
           phone: '(555) 123-4567',
           email: 'truthbackpack@gmail.com',
           website: 'https://owlfenc.com/',
-          logo: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjYwIiB2aWV3Qm94PSIwIDAgMTAwIDYwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjYwIiBmaWxsPSIjMDBGRkI4IiByeD0iOCIvPgo8dGV4dCB4PSI1MCIgeT0iMzUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNiIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiMxYTIwMmMiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkxPR088L3RleHQ+Cjwvc3ZnPgo='
+          logo: ''
         };
       }
 
