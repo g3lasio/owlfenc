@@ -4278,14 +4278,17 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   <CardContent className="pt-6">
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       <Button
-                        variant="outline"
-                        onClick={() => setCurrentStep(1)}
+                        onClick={() => {
+                          // Navigate to invoice generation with current estimate data
+                          window.location.href = `/invoices?fromEstimate=${btoa(JSON.stringify(estimate))}`;
+                        }}
+                        disabled={!estimate.client || estimate.items.length === 0}
                         size="sm"
-                        className="border-cyan-500/50 text-cyan-300 hover:bg-cyan-500/10 text-xs"
+                        className="border-orange-500/50 text-orange-300 hover:bg-orange-500/10 text-xs"
                       >
-                        <Edit className="h-3 w-3 mr-1" />
-                        <span className="hidden sm:inline">Editar</span>
-                        <span className="sm:hidden">Edit</span>
+                        <FileText className="h-3 w-3 mr-1" />
+                        <span className="hidden sm:inline">Generate as Invoice</span>
+                        <span className="sm:hidden">Invoice</span>
                       </Button>
 
                       <Button
@@ -4329,34 +4332,6 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         <span className="sm:hidden">PDF</span>
                       </Button>
                     </div>
-
-                    {/* Info de email del cliente */}
-                    {estimate.client && (
-                      <div className="mt-3 pt-3 border-t border-gray-700">
-                        <div className="text-xs text-gray-400">
-                          {estimate.client.email ? (
-                            emailVerified ? (
-                              <span className="text-green-400">
-                                ✓ Email: {estimate.client.email}
-                              </span>
-                            ) : (
-                              <div className="mt-2">
-                                <EmailVerification
-                                  showAsDialog={false}
-                                  onVerificationComplete={() =>
-                                    setEmailVerified(true)
-                                  }
-                                />
-                              </div>
-                            )
-                          ) : (
-                            <span className="text-amber-400">
-                              ⚠ Cliente sin email registrado
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
               </div>
