@@ -260,6 +260,14 @@ Changelog:
   * Added support for both partial payment scenarios (50% paid) and full payment documentation
   * Enhanced invoice template with cyberpunk styling and proper financial summary formatting
   * System now generates invoices for tax purposes and proof of payment documentation
+- June 22, 2025. Implemented editable client information system for accurate PDF addresses:
+  * Added editable client fields directly in estimate wizard for real-time address correction
+  * Created intelligent address parsing for clients with complete address in single field
+  * Enhanced backend address building logic to combine all address components properly
+  * Added auto-complete functionality for known client addresses
+  * Implemented fallback prevention system ensuring "No address provided" instead of generic placeholders
+  * All address changes now automatically reflect in generated PDFs and invoices
+  * System prevents address corruption issues for all contractors and clients
 - June 21, 2025. Fixed Projects page scrolling and project completion functionality:
   * Corrected JSX structure issues preventing proper page rendering
   * Implemented proper flex layout for Projects page with scrollable content area

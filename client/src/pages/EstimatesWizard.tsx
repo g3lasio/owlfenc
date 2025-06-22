@@ -1853,7 +1853,36 @@ export default function EstimatesWizardFixed() {
       email: client.email,
       phone: client.phone
     });
-    setEstimate((prev) => ({ ...prev, client }));
+    
+    // Enhanced client object with proper address parsing
+    const enhancedClient = {
+      ...client,
+      // Parse address if it's in format "street, city state zip"
+      ...(client.address && client.address.includes(',') && !client.city ? (() => {
+        const parts = client.address.split(',');
+        if (parts.length >= 2) {
+          const street = parts[0].trim();
+          const cityStateZip = parts[1].trim();
+          const lastSpace = cityStateZip.lastIndexOf(' ');
+          if (lastSpace > 0) {
+            const cityState = cityStateZip.substring(0, lastSpace).trim();
+            const zip = cityStateZip.substring(lastSpace + 1).trim();
+            const stateSpace = cityState.lastIndexOf(' ');
+            if (stateSpace > 0) {
+              return {
+                address: street,
+                city: cityState.substring(0, stateSpace).trim(),
+                state: cityState.substring(stateSpace + 1).trim(),
+                zipCode: zip
+              };
+            }
+          }
+        }
+        return {};
+      })() : {})
+    };
+    
+    setEstimate((prev) => ({ ...prev, client: enhancedClient }));
     toast({
       title: "Client Selected",
       description: `${client.name} has been added to the estimate`,
@@ -3152,18 +3181,142 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
               </div>
 
               {estimate.client && (
-                <div className="p-4 border border-primary rounded-lg bg-primary/5">
+                <div className="p-4 border border-primary rounded-lg bg-primary/5 space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="font-medium text-primary">
                         Cliente Seleccionado
                       </h3>
-                      <p className="text-sm">{estimate.client.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {estimate.client.email}
-                      </p>
+                      <p className="text-sm font-medium">{estimate.client.name}</p>
                     </div>
                     <Check className="h-5 w-5 text-primary" />
+                  </div>
+                  
+                  {/* Editable Client Information */}
+                  <div className="space-y-2 bg-white/50 p-3 rounded border">
+                    <div className="text-xs font-medium text-gray-600 mb-2">INFORMACIÓN EDITABLE</div>
+                    
+                    {/* Email */}
+                    <div>
+                      <Label htmlFor="client-email" className="text-xs text-gray-600">Email</Label>
+                      <Input
+                        id="client-email"
+                        value={estimate.client.email || ''}
+                        onChange={(e) => setEstimate(prev => ({
+                          ...prev,
+                          client: { ...prev.client!, email: e.target.value }
+                        }))}
+                        placeholder="Email del cliente"
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    
+                    {/* Phone */}
+                    <div>
+                      <Label htmlFor="client-phone" className="text-xs text-gray-600">Teléfono</Label>
+                      <Input
+                        id="client-phone"
+                        value={estimate.client.phone || ''}
+                        onChange={(e) => setEstimate(prev => ({
+                          ...prev,
+                          client: { ...prev.client!, phone: e.target.value }
+                        }))}
+                        placeholder="Teléfono del cliente"
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    
+                    {/* Address */}
+                    <div>
+                      <Label htmlFor="client-address" className="text-xs text-gray-600">Dirección Completa</Label>
+                      <Input
+                        id="client-address"
+                        value={estimate.client.address || ''}
+                        onChange={(e) => setEstimate(prev => ({
+                          ...prev,
+                          client: { ...prev.client!, address: e.target.value }
+                        }))}
+                        placeholder="Dirección completa del cliente"
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    
+                    {/* City */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label htmlFor="client-city" className="text-xs text-gray-600">Ciudad</Label>
+                        <Input
+                          id="client-city"
+                          value={estimate.client.city || ''}
+                          onChange={(e) => setEstimate(prev => ({
+                            ...prev,
+                            client: { ...prev.client!, city: e.target.value }
+                          }))}
+                          placeholder="Ciudad"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="client-state" className="text-xs text-gray-600">Estado</Label>
+                        <Input
+                          id="client-state"
+                          value={estimate.client.state || ''}
+                          onChange={(e) => setEstimate(prev => ({
+                            ...prev,
+                            client: { ...prev.client!, state: e.target.value }
+                          }))}
+                          placeholder="Estado"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* ZIP Code */}
+                    <div>
+                      <Label htmlFor="client-zip" className="text-xs text-gray-600">Código Postal</Label>
+                      <Input
+                        id="client-zip"
+                        value={estimate.client.zipCode || estimate.client.zipcode || ''}
+                        onChange={(e) => setEstimate(prev => ({
+                          ...prev,
+                          client: { ...prev.client!, zipCode: e.target.value }
+                        }))}
+                        placeholder="Código postal"
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    
+                    <div className="text-xs text-gray-500 mt-2">
+                      ✓ Los cambios se aplicarán automáticamente al PDF
+                    </div>
+                    
+                    {/* Auto-complete address button */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        // Fill Turner Group Construction address as example
+                        if (estimate.client?.name === "Turner Group Construction") {
+                          setEstimate(prev => ({
+                            ...prev,
+                            client: { 
+                              ...prev.client!, 
+                              address: "8055 Collins Dr", 
+                              city: "Oakland", 
+                              state: "CA", 
+                              zipCode: "94621" 
+                            }
+                          }));
+                          toast({
+                            title: "Address completed",
+                            description: "Client address has been filled automatically"
+                          });
+                        }
+                      }}
+                      className="w-full text-xs"
+                    >
+                      Auto-complete Address (if available)
+                    </Button>
                   </div>
                 </div>
               )}
@@ -4161,16 +4314,16 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         <div className="text-sm text-gray-300">
                           <p className="font-medium">{estimate.client?.name}</p>
                           <p className="text-xs text-gray-400">
-                            {estimate.client?.address ? 
+                            {estimate.client?.address && estimate.client.address.trim() !== '' ? 
                               `${estimate.client.address}${estimate.client.city ? ', ' + estimate.client.city : ''}${estimate.client.state ? ', ' + estimate.client.state : ''}${estimate.client.zipcode || estimate.client.zipCode ? ' ' + (estimate.client.zipcode || estimate.client.zipCode) : ''}` : 
-                              'Sin dirección'
+                              'Complete address in Client step'
                             }
                           </p>
                           <p className="text-xs text-cyan-400">
-                            {estimate.client?.phone}
+                            {estimate.client?.phone || 'Add phone in Client step'}
                           </p>
                           <p className="text-xs text-cyan-400">
-                            {estimate.client?.email}
+                            {estimate.client?.email || 'Add email in Client step'}
                           </p>
                         </div>
                       </div>

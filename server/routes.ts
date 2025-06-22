@@ -1498,12 +1498,29 @@ Output in English regardless of input language. Make it suitable for contracts a
         },
         client: {
           name: estimate.client?.name || 'Client Name',
-          email: estimate.client?.email || '',
-          phone: estimate.client?.phone || '',
-          address: estimate.client?.address && estimate.client.address.trim() !== '' ? 
-            `${estimate.client.address}${estimate.client.city ? ', ' + estimate.client.city : ''}${estimate.client.state ? ', ' + estimate.client.state : ''}${estimate.client.zipcode || estimate.client.zipCode ? ' ' + (estimate.client.zipcode || estimate.client.zipCode) : ''}` : 
-            'No address provided',
-          contact: `${estimate.client?.phone || 'Phone'}\n${estimate.client?.email || 'Email'}`
+          email: estimate.client?.email || 'No email provided',
+          phone: estimate.client?.phone || 'No phone provided',
+          address: (() => {
+            // Build complete address from available fields
+            const addressParts = [];
+            if (estimate.client?.address && estimate.client.address.trim() !== '') {
+              addressParts.push(estimate.client.address.trim());
+            }
+            if (estimate.client?.city && estimate.client.city.trim() !== '') {
+              addressParts.push(estimate.client.city.trim());
+            }
+            if (estimate.client?.state && estimate.client.state.trim() !== '') {
+              addressParts.push(estimate.client.state.trim());
+            }
+            if (estimate.client?.zipCode && estimate.client.zipCode.trim() !== '') {
+              addressParts.push(estimate.client.zipCode.trim());
+            } else if (estimate.client?.zipcode && estimate.client.zipcode.trim() !== '') {
+              addressParts.push(estimate.client.zipcode.trim());
+            }
+            
+            return addressParts.length > 0 ? addressParts.join(', ') : 'No address provided';
+          })(),
+          contact: `${estimate.client?.phone || 'No phone provided'}\n${estimate.client?.email || 'No email provided'}`
         },
         invoiceConfig
       };
