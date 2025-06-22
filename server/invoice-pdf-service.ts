@@ -192,6 +192,68 @@ export class InvoicePdfService {
       // Replace items placeholder
       html = html.replace(/\{\{#each invoice\.items\}\}[\s\S]*?\{\{\/each\}\}/g, itemsHtml);
 
+      // Calculate payment details based on invoice configuration
+      const subtotalAmount = parseFloat(data.invoice.subtotal?.replace('$', '') || '0');
+      const discountAmount = data.invoice.discountAmount || parseFloat(data.invoice.discounts?.replace(/[$-]/g, '') || '0');
+      const taxAmount = parseFloat(data.invoice.tax_amount?.replace('$', '') || '0');
+      const totalAmount = parseFloat(data.invoice.total?.replace('$', '') || '0');
+      
+      let amountPaid = 0;
+      let balance = totalAmount;
+      
+      if (data.invoiceConfig) {
+        if (data.invoiceConfig.totalAmountPaid) {
+          // Client has paid everything
+          amountPaid = totalAmount;
+          balance = 0;
+        } else if (data.invoiceConfig.projectCompleted === false && data.invoiceConfig.downPaymentAmount) {
+          // Project not completed, but down payment made
+          amountPaid = parseFloat(data.invoiceConfig.downPaymentAmount.replace(/[$,]/g, '') || '0');
+          balance = totalAmount - amountPaid;
+        }
+      }
+
+      // Generate totals summary section
+      const totalsSummaryHtml = `
+        <div class="section totals-summary">
+          <h2>Resumen de Totales</h2>
+          <table class="summary-table">
+            <tr>
+              <td><strong>Subtotal:</strong></td>
+              <td><strong>$${subtotalAmount.toFixed(2)}</strong></td>
+            </tr>
+            ${discountAmount > 0 ? `
+            <tr>
+              <td style="color: #10b981;"><strong>Descuento:</strong></td>
+              <td style="color: #10b981;"><strong>-$${discountAmount.toFixed(2)}</strong></td>
+            </tr>
+            ` : ''}
+            <tr>
+              <td><strong>Impuesto (${data.invoice.tax_rate || 0}%):</strong></td>
+              <td><strong>$${taxAmount.toFixed(2)}</strong></td>
+            </tr>
+            <tr style="border-top: 2px solid #333; font-size: 1.2em;">
+              <td><strong>Total:</strong></td>
+              <td style="color: #2563eb;"><strong>$${totalAmount.toFixed(2)}</strong></td>
+            </tr>
+            <tr>
+              <td><strong>Cantidad Pagada:</strong></td>
+              <td style="color: #10b981;"><strong>$${amountPaid.toFixed(2)}</strong></td>
+            </tr>
+            <tr style="border-top: 1px solid #ccc; font-size: 1.1em;">
+              <td><strong>Balance Restante:</strong></td>
+              <td style="color: ${balance > 0 ? '#dc2626' : '#10b981'};"><strong>$${balance.toFixed(2)}</strong></td>
+            </tr>
+          </table>
+        </div>
+      `;
+
+      // Insert totals summary before the thank you section
+      html = html.replace(
+        '<div class="thank-you">',
+        totalsSummaryHtml + '\n    <div class="thank-you">'
+      );
+
       console.log('✅ HTML content processed successfully');
       return html;
       
@@ -338,15 +400,36 @@ export class InvoicePdfService {
     }
     .summary-table, .summary-table th, .summary-table td {
       border: none;
-      padding: 6px 8px;
+      padding: 8px 12px;
       text-align: right;
       color: #333;
       position: relative;
       z-index: 1;
+      font-size: 1em;
+    }
+    .summary-table {
+      width: 100%;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: 0;
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 15px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     .summary-table tr:last-child td {
       font-weight: bold;
-      font-size: 1.1em;
+      font-size: 1.2em;
+    }
+    .totals-summary {
+      margin: 30px 0;
+      page-break-inside: avoid;
+    }
+    .totals-summary h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #2563eb;
+      font-size: 1.3em;
     }
     .payment-options ul, .notes ul, .terms ul {
       padding-left: 20px;

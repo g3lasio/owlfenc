@@ -252,6 +252,14 @@ Changelog:
   * Created complete frontend interface with project selection, configuration, and management
   * Integrated with existing PDF generation and email services for seamless workflow
   * Added invoice navigation menu item and proper routing for /invoices page
+- June 22, 2025. Enhanced Invoice System with comprehensive totals summary:
+  * Added complete totals breakdown section including subtotal, discount, taxes, amount paid, and balance
+  * Implemented intelligent payment calculation based on project completion status and payment configuration
+  * Created professional totals summary table with proper styling and color coding for payment status
+  * Fixed discount amount handling to properly display discounts in invoice PDFs
+  * Added support for both partial payment scenarios (50% paid) and full payment documentation
+  * Enhanced invoice template with cyberpunk styling and proper financial summary formatting
+  * System now generates invoices for tax purposes and proof of payment documentation
 - June 21, 2025. Fixed Projects page scrolling and project completion functionality:
   * Corrected JSX structure issues preventing proper page rendering
   * Implemented proper flex layout for Projects page with scrollable content area

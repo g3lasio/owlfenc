@@ -1490,10 +1490,11 @@ Output in English regardless of input language. Make it suitable for contracts a
             total: `$${Number(item.total || 0).toFixed(2)}`
           })) || [],
           subtotal: `$${Number(estimate.subtotal || 0).toFixed(2)}`,
-          discounts: estimate.discountAmount > 0 ? `-$${Number(estimate.discountAmount || 0).toFixed(2)}` : '$0.00',
+          discounts: Number(estimate.discountAmount || 0) > 0 ? `-$${Number(estimate.discountAmount || 0).toFixed(2)}` : '$0.00',
           tax_rate: estimate.taxRate || 0,
           tax_amount: `$${Number(estimate.tax || 0).toFixed(2)}`,
-          total: `$${Number(estimate.total || 0).toFixed(2)}`
+          total: `$${Number(estimate.total || 0).toFixed(2)}`,
+          discountAmount: Number(estimate.discountAmount || 0)
         },
         client: {
           name: estimate.client?.name || 'Client Name',
