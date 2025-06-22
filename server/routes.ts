@@ -1569,8 +1569,8 @@ Output in English regardless of input language. Make it suitable for contracts a
         console.warn('⚠️ Failed to prepare invoice document for storage:', docError);
       }
 
-      // Send PDF buffer as binary data
-      res.end(pdfBuffer, 'binary');
+      // Send PDF buffer correctly for frontend blob handling
+      res.send(pdfBuffer);
       
       console.log('✅ Professional Invoice PDF generated and sent successfully');
       
@@ -1754,8 +1754,8 @@ Output in English regardless of input language. Make it suitable for contracts a
       res.setHeader('Content-Length', pdfBuffer.length);
       res.setHeader('Cache-Control', 'no-cache');
       
-      // Send PDF buffer as binary data
-      res.end(pdfBuffer, 'binary');
+      // Send PDF buffer correctly for frontend blob handling
+      res.send(pdfBuffer);
       
       console.log('✅ Professional PDF generated and sent successfully');
       
