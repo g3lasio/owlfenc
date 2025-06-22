@@ -575,20 +575,17 @@
         </section>
 
         <!-- Project Details -->
-        {{#if estimate.project_description}}
         <section class="project-container">
             <h3 class="section-header">Project Details</h3>
             <div class="project-description">
                 {{estimate.project_description}}
             </div>
         </section>
-        {{/if}}
 
         <!-- Items and Services -->
         <section class="items-container">
             <h3 class="section-header">Items & Services</h3>
             
-            {{#if estimate.items}}
             <table class="items-table">
                 <thead>
                     <tr>
@@ -611,42 +608,29 @@
                     {{/each}}
                 </tbody>
             </table>
-            {{else}}
-            <div class="empty-items">
-                No items have been added to this estimate
-            </div>
-            {{/if}}
 
             <!-- Summary Totals -->
             <div class="summary-container">
                 <div class="summary-table">
-                    {{#if estimate.subtotal}}
                     <div class="summary-row">
                         <span class="summary-label">Subtotal:</span>
                         <span class="summary-value">{{estimate.subtotal}}</span>
                     </div>
-                    {{/if}}
                     
-                    {{#if estimate.discounts}}
                     <div class="summary-row">
                         <span class="summary-label">Discounts:</span>
                         <span class="summary-value">{{estimate.discounts}}</span>
                     </div>
-                    {{/if}}
                     
-                    {{#if estimate.tax_amount}}
                     <div class="summary-row">
-                        <span class="summary-label">Tax{{#if estimate.tax_rate}} ({{estimate.tax_rate}}%){{/if}}:</span>
+                        <span class="summary-label">Tax ({{estimate.tax_rate}}%):</span>
                         <span class="summary-value">{{estimate.tax_amount}}</span>
                     </div>
-                    {{/if}}
                     
-                    {{#if estimate.total}}
                     <div class="summary-row total-row">
                         <span class="summary-label">TOTAL ESTIMATE:</span>
                         <span class="summary-value">{{estimate.total}}</span>
                     </div>
-                    {{/if}}
                 </div>
             </div>
         </section>
