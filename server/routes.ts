@@ -1664,21 +1664,23 @@ Output in English regardless of input language. Make it suitable for contracts a
   });
 
   app.post("/api/estimate-puppeteer-pdf", async (req: Request, res: Response) => {
-    let estimateData;
-    if (req.body.data) {
-      estimateData = JSON.parse(req.body.data);
-    } else {
-      estimateData = req.body;
-    }
     console.log('🎯 Professional PDF generation with Puppeteer started');
     
     try {
-      // Initialize Puppeteer service if not already done
-      await puppeteerPdfService.initialize();
+      // Handle form submission data (like invoices that work correctly)
+      let requestData;
+      if (req.body.data) {
+        // Form submission format
+        requestData = JSON.parse(req.body.data);
+      } else {
+        // Direct JSON format
+        requestData = req.body;
+      }
       
-      // Extract and validate data from request
-      const requestData = req.body;
       console.log('🔍 Raw request data:', JSON.stringify(requestData, null, 2));
+      
+      // Initialize Puppeteer service
+      await puppeteerPdfService.initialize();
       
       // Handle different data structures from frontend
       const user = requestData.user || [];
@@ -1838,10 +1840,10 @@ Output in English regardless of input language. Make it suitable for contracts a
       res.setHeader('Content-Length', pdfBuffer.length);
       res.setHeader('Cache-Control', 'no-cache');
       
-      // Send PDF buffer compatible with axios arraybuffer
-      res.send(pdfBuffer);
+      // Send PDF buffer using binary method (same as working invoices)
+      res.end(pdfBuffer, 'binary');
       
-      console.log('✅ Professional PDF generated and sent successfully');
+      console.log('✅ Professional Estimate PDF generated and sent successfully');
       
     } catch (error) {
       console.error('❌ Error generating PDF with Puppeteer:', error);

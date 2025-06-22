@@ -2926,29 +2926,23 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       
       console.log('📤 Sending payload to PDF service:', payload);
       
-      // Use XMLHttpRequest for robust binary PDF download
-      const pdfBlob = await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', '/api/estimate-puppeteer-pdf', true);
-        xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.responseType = 'blob';
-        
-        xhr.onload = function() {
-          if (xhr.status === 200) {
-            resolve(xhr.response);
-          } else {
-            reject(new Error(`PDF generation failed: ${xhr.status}`));
-          }
-        };
-        
-        xhr.onerror = function() {
-          reject(new Error('Network error during PDF generation'));
-        };
-        
-        xhr.send(JSON.stringify(payload));
+      // Use fetch instead of axios for better compatibility
+      const response = await fetch('/api/estimate-puppeteer-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
       });
+
+      if (!response.ok) {
+        throw new Error(`PDF generation failed: ${response.status}`);
+      }
+
+      // Convert response to blob for download
+      const pdfBlob = await response.blob();
       
-      // Automatic download like before
+      // Create download link
       const url = window.URL.createObjectURL(pdfBlob);
       const a = document.createElement("a");
       a.style.display = "none";
@@ -2959,17 +2953,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
       
-      // Auto-save to Firebase Documents like before
+      // Auto-save to Firebase Documents
       try {
         const { saveProjectDocument } = await import('@/lib/projectDocuments');
-        
-        // Convert blob to base64 for Firebase storage
-        const reader = new FileReader();
-        const base64Promise = new Promise((resolve) => {
-          reader.onload = () => resolve(reader.result);
-          reader.readAsDataURL(pdfBlob);
-        });
-        const base64Data = await base64Promise;
         
         await saveProjectDocument({
           projectId: estimate.client?.id || `temp-${Date.now()}`,
@@ -2977,9 +2963,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           documentType: 'estimate',
           documentName: `Estimate for ${estimate.client?.name || 'Client'}`,
           fileName: `estimate-${Date.now()}.pdf`,
-          fileSize: pdfBlob.size,
+          fileSize: 0, // Will be updated when PDF is generated
           mimeType: 'application/pdf',
-          documentData: base64Data as string,
+          documentData: '', // Will be populated by server
           documentNumber: `EST-${Date.now()}`,
           status: 'generated',
           metadata: {
@@ -2994,14 +2980,19 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         console.warn('⚠️ Failed to auto-save to Firebase:', docError);
       }
       
-      console.log('✅ PDF downloaded automatically');
+      console.log('✅ PDF generation initiated');
       
       toast({
         title: "✅ PDF Generated",
-        description: "Professional estimate PDF downloaded and saved successfully",
+        description: "Professional estimate PDF download started",
       });
     } catch (error) {
       console.error(error);
+      toast({
+        title: "❌ Error",
+        description: "Failed to generate PDF",
+        variant: "destructive",
+      });
     }
   };
 
