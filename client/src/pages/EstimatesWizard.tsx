@@ -4152,7 +4152,10 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         <div className="text-sm text-gray-300">
                           <p className="font-medium">{estimate.client?.name}</p>
                           <p className="text-xs text-gray-400">
-                            {estimate.client?.address}
+                            {estimate.client?.address ? 
+                              `${estimate.client.address}${estimate.client.city ? ', ' + estimate.client.city : ''}${estimate.client.state ? ', ' + estimate.client.state : ''}${estimate.client.zipcode || estimate.client.zipCode ? ' ' + (estimate.client.zipcode || estimate.client.zipCode) : ''}` : 
+                              'Sin dirección'
+                            }
                           </p>
                           <p className="text-xs text-cyan-400">
                             {estimate.client?.phone}
@@ -4203,7 +4206,10 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       <div className="text-xs text-gray-400">
                         <p>
                           Ubicación:{" "}
-                          {estimate.client?.address || "No especificada"}
+                          {estimate.client?.address ? 
+                            `${estimate.client.address}${estimate.client.city ? ', ' + estimate.client.city : ''}${estimate.client.state ? ', ' + estimate.client.state : ''}${estimate.client.zipcode || estimate.client.zipCode ? ' ' + (estimate.client.zipcode || estimate.client.zipCode) : ''}` : 
+                            "No especificada"
+                          }
                         </p>
                         <p>
                           Materiales: {estimate.items.length} items

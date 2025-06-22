@@ -1500,7 +1500,9 @@ Output in English regardless of input language. Make it suitable for contracts a
           name: estimate.client?.name || 'Client Name',
           email: estimate.client?.email || '',
           phone: estimate.client?.phone || '',
-          address: estimate.client?.address || 'Client Address',
+          address: estimate.client?.address && estimate.client.address.trim() !== '' ? 
+            `${estimate.client.address}${estimate.client.city ? ', ' + estimate.client.city : ''}${estimate.client.state ? ', ' + estimate.client.state : ''}${estimate.client.zipcode || estimate.client.zipCode ? ' ' + (estimate.client.zipcode || estimate.client.zipCode) : ''}` : 
+            'No address provided',
           contact: `${estimate.client?.phone || 'Phone'}\n${estimate.client?.email || 'Email'}`
         },
         invoiceConfig
