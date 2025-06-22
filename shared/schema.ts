@@ -315,29 +315,6 @@ export const notifications = pgTable('notifications', {
   readAt: timestamp('read_at'),
 });
 
-// Project Documents table - Para almacenar documentos generados por proyecto
-export const projectDocuments = pgTable('project_documents', {
-  id: text('id').primaryKey(),
-  projectId: text('project_id').notNull(), // Reference to Firebase project ID
-  userId: integer('user_id').notNull(),
-  documentType: varchar('document_type', { length: 50 }).notNull(), // 'estimate', 'invoice', 'contract'
-  documentName: varchar('document_name', { length: 255 }).notNull(),
-  fileName: varchar('file_name', { length: 255 }).notNull(),
-  fileSize: integer('file_size'), // Size in bytes
-  mimeType: varchar('mime_type', { length: 100 }).default('application/pdf'),
-  documentData: text('document_data'), // Base64 encoded PDF data or file path
-  documentUrl: text('document_url'), // URL if stored externally
-  documentNumber: varchar('document_number', { length: 100 }), // Estimate number, invoice number, etc.
-  status: varchar('status', { length: 50 }).default('generated'), // 'generated', 'sent', 'viewed', 'approved', 'signed'
-  metadata: jsonb('metadata'), // Additional document metadata
-  generatedAt: timestamp('generated_at').defaultNow().notNull(),
-  sentAt: timestamp('sent_at'),
-  viewedAt: timestamp('viewed_at'),
-  approvedAt: timestamp('approved_at'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
-
 // Insert schemas for all tables
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -419,13 +396,6 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
   sentAt: true,
 });
 
-export const insertProjectDocumentSchema = createInsertSchema(projectDocuments).omit({
-  id: true,
-  generatedAt: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
 // Types for all tables
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -467,8 +437,6 @@ export type EstimateAdjustment = typeof estimateAdjustments.$inferSelect;
 export type InsertEstimateAdjustment = z.infer<typeof insertEstimateAdjustmentSchema>;
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
-export type ProjectDocument = typeof projectDocuments.$inferSelect;
-export type InsertProjectDocument = z.infer<typeof insertProjectDocumentSchema>;
 
 // Legacy aliases for backward compatibility
 export type EstimateItem = Estimate;

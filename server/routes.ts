@@ -1544,31 +1544,6 @@ Output in English regardless of input language. Make it suitable for contracts a
       res.setHeader('Content-Length', pdfBuffer.length);
       res.setHeader('Cache-Control', 'no-cache');
       
-      // Auto-save invoice document to Firebase
-      try {
-        const base64Data = pdfBuffer.toString('base64');
-        const documentPayload = {
-          projectId: invoiceData.projectId || 'manual-invoice',
-          documentType: 'invoice' as const,
-          documentName: `Factura para ${invoiceData.client.name}`,
-          fileName: `invoice_${invoiceData.client.name.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.pdf`,
-          pdfData: base64Data,
-          documentNumber: invoiceData.invoice.number,
-          metadata: {
-            clientName: invoiceData.client.name,
-            totalAmount: parseFloat(invoiceData.invoice.total?.replace(/[$,]/g, '') || '0'),
-            invoiceNumber: invoiceData.invoice.number,
-            dueDate: invoiceData.invoice.due_date,
-            address: invoiceData.client.address
-          }
-        };
-
-        res.setHeader('X-Document-Data', JSON.stringify(documentPayload));
-        console.log('💰 Invoice document metadata prepared for Firebase storage');
-      } catch (docError) {
-        console.warn('⚠️ Failed to prepare invoice document for storage:', docError);
-      }
-
       // Send PDF buffer as binary data
       res.end(pdfBuffer, 'binary');
       
@@ -1721,32 +1696,6 @@ Output in English regardless of input language. Make it suitable for contracts a
         firstBytes: pdfBuffer.subarray(0, 8).toString('hex'),
         isPDF: pdfBuffer.subarray(0, 4).toString() === '%PDF'
       });
-
-      // Auto-save document to Firebase for project management
-      try {
-        const base64Data = pdfBuffer.toString('base64');
-        const documentPayload = {
-          projectId: estimateData.projectId || 'manual-estimate',
-          documentType: 'estimate' as const,
-          documentName: `Estimado para ${estimateData.client.name}`,
-          fileName: `estimate_${estimateData.client.name.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.pdf`,
-          pdfData: base64Data,
-          documentNumber: estimateData.estimate.number,
-          metadata: {
-            clientName: estimateData.client.name,
-            totalAmount: parseFloat(estimateData.estimate.total?.replace(/[$,]/g, '') || '0'),
-            estimateNumber: estimateData.estimate.number,
-            projectType: estimateData.estimate.project_description,
-            address: estimateData.client.address
-          }
-        };
-
-        // Send document data to frontend for Firebase storage
-        res.setHeader('X-Document-Data', JSON.stringify(documentPayload));
-        console.log('📄 Document metadata prepared for Firebase storage');
-      } catch (docError) {
-        console.warn('⚠️ Failed to prepare document for storage:', docError);
-      }
       
       // Set response headers for PDF download
       res.setHeader('Content-Type', 'application/pdf');
@@ -3004,33 +2953,6 @@ Output in English regardless of input language. Make it suitable for contracts a
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
         res.setHeader('Content-Length', pdfBuffer.length);
         
-        // Auto-save contract document to Firebase
-        try {
-          const base64Data = pdfBuffer.toString('base64');
-          const documentPayload = {
-            projectId: contractData.projectId || 'manual-contract',
-            documentType: 'contract' as const,
-            documentName: `Contrato para ${contractData.client.name}`,
-            fileName: `contract_${contractData.client.name.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.pdf`,
-            pdfData: base64Data,
-            documentNumber: `CONTRACT-${Date.now()}`,
-            metadata: {
-              clientName: contractData.client.name,
-              totalAmount: contractData.financials?.total || 0,
-              contractNumber: `CONTRACT-${Date.now()}`,
-              projectType: contractData.project?.type,
-              address: contractData.project?.location,
-              startDate: contractData.dates?.startDate,
-              completionDate: contractData.dates?.completionDate
-            }
-          };
-
-          res.setHeader('X-Document-Data', JSON.stringify(documentPayload));
-          console.log('📄 Contract document metadata prepared for Firebase storage');
-        } catch (docError) {
-          console.warn('⚠️ Failed to prepare contract document for storage:', docError);
-        }
-
         console.log(`✅ [API] Enhanced contract generated: ${pdfBuffer.length} bytes`);
         return res.send(pdfBuffer);
         

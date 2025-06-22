@@ -16,9 +16,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import InteractiveProgressLine from "@/components/projects/InteractiveProgressLine";
+import ProjectProgress from "@/components/projects/ProjectProgress";
 import ProjectDetails from "@/components/projects/ProjectDetails";
-import ProjectDocuments from "@/components/projects/ProjectDocuments";
 
 interface Project {
   id: string;
@@ -666,8 +665,8 @@ function Projects() {
       {/* Project Details Dialog */}
       {isDialogOpen && selectedProject && (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="p-0 max-w-7xl w-[98vw] h-[98vh] max-h-[98vh] bg-gray-900 border-cyan-400/30 shadow-[0_0_50px_rgba(6,182,212,0.3)] dialog-content-scrollable">
-            <div className="flex flex-col h-full relative">
+          <DialogContent className="p-0 max-w-7xl w-[98vw] h-[98vh] max-h-[98vh] overflow-hidden bg-gray-900 border-cyan-400/30 shadow-[0_0_50px_rgba(6,182,212,0.3)]">
+            <div className="flex flex-col h-full relative overflow-hidden">
               <DialogHeader className="flex-shrink-0 p-4 md:p-6 border-b border-cyan-400/30 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 relative">
                 <div className="absolute top-0 left-0 w-6 h-6 border-l-2 border-t-2 border-cyan-400"></div>
                 <div className="absolute top-0 right-0 w-6 h-6 border-r-2 border-t-2 border-cyan-400"></div>
@@ -698,22 +697,88 @@ function Projects() {
                 </DialogTitle>
               </DialogHeader>
               
-              <div className="flex-1 flex flex-col bg-gray-900 relative">
-                {/* Contenido principal del dashboard con scroll */}
-                <div className="flex-1 project-dashboard-content p-4 sm:p-6">
-                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
+              <div className="flex-1 overflow-auto bg-gray-900 relative">
+                {/* Header con información básica del proyecto */}
+                <div className="p-6 border-b border-cyan-400/20 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div 
+                      className="bg-gray-800/40 border border-cyan-400/20 rounded-lg p-4 cursor-pointer hover:bg-cyan-400/10 transition-colors"
+                      onClick={() => {
+                        toast({
+                          title: "Información del Cliente",
+                          description: `${selectedProject.clientName} - ${selectedProject.address}`
+                        });
+                      }}
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <i className="ri-user-line text-cyan-400"></i>
+                        <span className="text-cyan-300 font-medium">Cliente</span>
+                      </div>
+                      <p className="text-white">{selectedProject.clientName}</p>
+                      <p className="text-gray-400 text-sm">{selectedProject.address}</p>
+                    </div>
+                    
+                    <div 
+                      className="bg-gray-800/40 border border-cyan-400/20 rounded-lg p-4 cursor-pointer hover:bg-cyan-400/10 transition-colors"
+                      onClick={() => {
+                        const projectInfo = `Tipo: ${selectedProject.projectType || 'General'}\nSubtipo: ${selectedProject.projectSubtype || selectedProject.fenceType || 'No especificado'}`;
+                        toast({
+                          title: "Detalles del Proyecto",
+                          description: projectInfo
+                        });
+                      }}
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <i className="ri-hammer-line text-cyan-400"></i>
+                        <span className="text-cyan-300 font-medium">Proyecto</span>
+                      </div>
+                      <p className="text-white">{selectedProject.projectType || 'General'}</p>
+                      <p className="text-gray-400 text-sm">{selectedProject.projectSubtype || selectedProject.fenceType || 'No especificado'}</p>
+                    </div>
+                    
+                    <div 
+                      className="bg-gray-800/40 border border-cyan-400/20 rounded-lg p-4 cursor-pointer hover:bg-cyan-400/10 transition-colors"
+                      onClick={() => {
+                        const priceInfo = selectedProject.totalPrice 
+                          ? `Valor total: $${(selectedProject.totalPrice / 100).toLocaleString()}\nEstado: ${selectedProject.status === 'completed' ? 'Completado' : 'En proceso'}`
+                          : 'Valor no definido - Generar estimado para establecer precio';
+                        toast({
+                          title: "Información Financiera",
+                          description: priceInfo
+                        });
+                      }}
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <i className="ri-money-dollar-circle-line text-cyan-400"></i>
+                        <span className="text-cyan-300 font-medium">Valor</span>
+                      </div>
+                      <p className="text-white">
+                        {selectedProject.totalPrice 
+                          ? `$${(selectedProject.totalPrice / 100).toLocaleString()}` 
+                          : 'No definido'}
+                      </p>
+                      <p className="text-gray-400 text-sm">
+                        Estado: {selectedProject.status === 'completed' ? 'Completado' : 'En proceso'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contenido principal del dashboard */}
+                <div className="p-6">
+                  <div className="grid lg:grid-cols-2 gap-6">
                     {/* Columna izquierda: Progreso y Detalles */}
-                    <div className="space-y-4 sm:space-y-6">
+                    <div className="space-y-6">
                       {/* Progreso del Proyecto */}
                       <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg">
-                        <div className="p-3 sm:p-4 border-b border-cyan-400/20">
-                          <h3 className="text-cyan-300 font-semibold flex items-center text-sm sm:text-base">
+                        <div className="p-4 border-b border-cyan-400/20">
+                          <h3 className="text-cyan-300 font-semibold flex items-center">
                             <i className="ri-route-line mr-2"></i>
                             Progreso del Proyecto
                           </h3>
                         </div>
-                        <div className="p-3 sm:p-4">
-                          <InteractiveProgressLine 
+                        <div className="p-4">
+                          <ProjectProgress 
                             projectId={selectedProject.id} 
                             currentProgress={selectedProject.projectProgress || "estimate_created"} 
                             onProgressUpdate={handleProgressUpdate} 
@@ -723,13 +788,13 @@ function Projects() {
 
                       {/* Información del Proyecto */}
                       <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg">
-                        <div className="p-3 sm:p-4 border-b border-cyan-400/20">
-                          <h3 className="text-cyan-300 font-semibold flex items-center text-sm sm:text-base">
+                        <div className="p-4 border-b border-cyan-400/20">
+                          <h3 className="text-cyan-300 font-semibold flex items-center">
                             <i className="ri-information-line mr-2"></i>
                             Detalles del Proyecto
                           </h3>
                         </div>
-                        <div className="p-3 sm:p-4 max-h-64 sm:max-h-96 overflow-y-auto">
+                        <div className="p-4 max-h-96 overflow-y-auto">
                           <ProjectDetails 
                             project={selectedProject} 
                             onUpdate={handleProjectUpdate} 
@@ -738,8 +803,8 @@ function Projects() {
                       </div>
                     </div>
 
-                    {/* Columna derecha: Documentos del Proyecto */}
-                    <div className="space-y-4 sm:space-y-6">
+                    {/* Columna derecha: Descripción y Documentos */}
+                    <div className="space-y-6">
                       {/* Descripción del Proyecto */}
                       <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg">
                         <div className="p-4 border-b border-cyan-400/20">
@@ -834,61 +899,270 @@ function Projects() {
                         </div>
                       </div>
 
-                      {/* Sistema de Gestión de Documentos con Firebase */}
+                      {/* Documentos del Proyecto */}
                       <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg">
-                        <div className="p-3 sm:p-4 border-b border-cyan-400/20">
-                          <h3 className="text-cyan-300 font-semibold flex items-center text-sm sm:text-base">
-                            <i className="ri-folder-open-line mr-2"></i>
-                            Gestión de Documentos
+                        <div className="p-4 border-b border-cyan-400/20">
+                          <h3 className="text-cyan-300 font-semibold flex items-center">
+                            <i className="ri-folder-line mr-2"></i>
+                            Documentos
                           </h3>
                         </div>
-                        <div className="p-3 sm:p-4">
-                          <ProjectDocuments 
-                            projectId={selectedProject.id} 
-                            projectName={selectedProject.clientName}
-                          />
-                        </div>
-                      </div>
+                        <div className="p-4">
+                          <div className="grid grid-cols-2 gap-3 mb-4">
+                            <div 
+                              className="bg-gray-700/50 p-3 rounded text-center cursor-pointer hover:bg-blue-600/20 transition-colors border border-transparent hover:border-blue-400/50"
+                              onClick={() => {
+                                if (selectedProject.estimateHtml) {
+                                  const newWindow = window.open();
+                                  if (newWindow) {
+                                    newWindow.document.write(selectedProject.estimateHtml);
+                                    newWindow.document.close();
+                                  }
+                                } else {
+                                  toast({
+                                    title: "No disponible",
+                                    description: "No hay estimado disponible. Genera uno nuevo."
+                                  });
+                                }
+                              }}
+                            >
+                              <i className="ri-calculator-line text-blue-400 text-xl mb-1"></i>
+                              <p className="text-xs text-gray-300">Estimados</p>
+                              <p className="text-lg font-bold text-blue-400">{selectedProject.estimateHtml ? '1' : '0'}</p>
+                            </div>
+                            <div 
+                              className="bg-gray-700/50 p-3 rounded text-center cursor-pointer hover:bg-green-600/20 transition-colors border border-transparent hover:border-green-400/50"
+                              onClick={() => {
+                                if (selectedProject.contractHtml) {
+                                  const newWindow = window.open();
+                                  if (newWindow) {
+                                    newWindow.document.write(selectedProject.contractHtml);
+                                    newWindow.document.close();
+                                  }
+                                } else {
+                                  toast({
+                                    title: "No disponible",
+                                    description: "No hay contrato disponible. Crea uno nuevo."
+                                  });
+                                }
+                              }}
+                            >
+                              <i className="ri-file-text-line text-green-400 text-xl mb-1"></i>
+                              <p className="text-xs text-gray-300">Contratos</p>
+                              <p className="text-lg font-bold text-green-400">{selectedProject.contractHtml ? '1' : '0'}</p>
+                            </div>
+                            <div 
+                              className="bg-gray-700/50 p-3 rounded text-center cursor-pointer hover:bg-yellow-600/20 transition-colors border border-transparent hover:border-yellow-400/50"
+                              onClick={() => {
+                                toast({
+                                  title: "Función en desarrollo",
+                                  description: "La gestión de permisos estará disponible pronto."
+                                });
+                              }}
+                            >
+                              <i className="ri-shield-check-line text-yellow-400 text-xl mb-1"></i>
+                              <p className="text-xs text-gray-300">Permisos</p>
+                              <p className="text-lg font-bold text-yellow-400">{selectedProject.permitStatus ? '1' : '0'}</p>
+                            </div>
+                            <div 
+                              className="bg-gray-700/50 p-3 rounded text-center cursor-pointer hover:bg-purple-600/20 transition-colors border border-transparent hover:border-purple-400/50"
+                              onClick={() => {
+                                window.location.href = `/invoices?projectId=${selectedProject.id}`;
+                              }}
+                            >
+                              <i className="ri-bill-line text-purple-400 text-xl mb-1"></i>
+                              <p className="text-xs text-gray-300">Facturas</p>
+                              <p className="text-lg font-bold text-purple-400">0</p>
+                            </div>
+                          </div>
 
-                      {/* Accesos Rápidos */}
-                      <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg">
-                        <div className="p-3 sm:p-4 border-b border-cyan-400/20">
-                          <h3 className="text-cyan-300 font-semibold flex items-center text-sm sm:text-base">
-                            <i className="ri-add-circle-line mr-2"></i>
-                            Acciones Rápidas
-                          </h3>
-                        </div>
-                        <div className="p-3 sm:p-4 space-y-2">
-                          <Button 
-                            variant="outline" 
-                            className="w-full justify-start bg-gray-900/30 border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/10 text-xs sm:text-sm"
-                            onClick={() => {
-                              window.location.href = `/estimates?edit=${selectedProject.id}`;
-                            }}
-                          >
-                            <i className="ri-calculator-line mr-2"></i>
-                            {selectedProject.estimateHtml ? 'Editar Estimado' : 'Crear Estimado'}
-                          </Button>
+                          {/* Lista de documentos */}
+                          <div className="space-y-2 max-h-48 overflow-y-auto">
+                            <div className="bg-gray-700/50 p-3 rounded flex items-center justify-between hover:bg-gray-600/50 transition-colors">
+                              <div className="flex items-center gap-2">
+                                <i className="ri-calculator-line text-blue-400"></i>
+                                <div>
+                                  <p className="text-sm text-white">Estimado Inicial</p>
+                                  <p className="text-xs text-gray-400">Creado: {formatDate(selectedProject.createdAt)}</p>
+                                </div>
+                              </div>
+                              <div className="flex gap-1">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="text-xs px-2 py-1 hover:bg-blue-600 hover:text-white"
+                                  onClick={() => {
+                                    if (selectedProject.estimateHtml) {
+                                      const newWindow = window.open();
+                                      if (newWindow) {
+                                        newWindow.document.write(selectedProject.estimateHtml);
+                                        newWindow.document.close();
+                                      }
+                                    } else {
+                                      toast({
+                                        title: "No disponible",
+                                        description: "No hay estimado HTML disponible para este proyecto."
+                                      });
+                                    }
+                                  }}
+                                >
+                                  <i className="ri-eye-line"></i>
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="text-xs px-2 py-1 hover:bg-green-600 hover:text-white"
+                                  onClick={async () => {
+                                    try {
+                                      const response = await fetch(`/api/pdfmonkey-estimates/generate`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                          clientName: selectedProject.clientName,
+                                          address: selectedProject.address,
+                                          items: selectedProject.materialsList || [],
+                                          projectDetails: selectedProject.projectDescription || ''
+                                        })
+                                      });
+                                      
+                                      if (response.ok) {
+                                        const blob = await response.blob();
+                                        const url = window.URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = `estimado-${selectedProject.clientName.replace(/\s+/g, '-')}.pdf`;
+                                        document.body.appendChild(a);
+                                        a.click();
+                                        window.URL.revokeObjectURL(url);
+                                        document.body.removeChild(a);
+                                        
+                                        toast({
+                                          title: "Descarga exitosa",
+                                          description: "El estimado PDF se ha descargado correctamente."
+                                        });
+                                      } else {
+                                        throw new Error('Error al generar PDF');
+                                      }
+                                    } catch (error) {
+                                      console.error('Error downloading estimate:', error);
+                                      toast({
+                                        variant: "destructive",
+                                        title: "Error",
+                                        description: "No se pudo descargar el estimado PDF."
+                                      });
+                                    }
+                                  }}
+                                >
+                                  <i className="ri-download-line"></i>
+                                </Button>
+                              </div>
+                            </div>
+
+                            {selectedProject.contractHtml && (
+                              <div className="bg-gray-700/50 p-3 rounded flex items-center justify-between hover:bg-gray-600/50 transition-colors">
+                                <div className="flex items-center gap-2">
+                                  <i className="ri-file-text-line text-green-400"></i>
+                                  <div>
+                                    <p className="text-sm text-white">Contrato de Servicio</p>
+                                    <p className="text-xs text-gray-400">Estado: Activo</p>
+                                  </div>
+                                </div>
+                                <div className="flex gap-1">
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="text-xs px-2 py-1 hover:bg-blue-600 hover:text-white"
+                                    onClick={() => {
+                                      const newWindow = window.open();
+                                      if (newWindow) {
+                                        newWindow.document.write(selectedProject.contractHtml);
+                                        newWindow.document.close();
+                                      }
+                                    }}
+                                  >
+                                    <i className="ri-eye-line"></i>
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="text-xs px-2 py-1 hover:bg-green-600 hover:text-white"
+                                    onClick={async () => {
+                                      try {
+                                        const response = await fetch('/api/generate-pdf', {
+                                          method: 'POST',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({
+                                            html: selectedProject.contractHtml,
+                                            filename: `contrato-${selectedProject.clientName.replace(/\s+/g, '-')}.pdf`
+                                          })
+                                        });
+                                        
+                                        if (response.ok) {
+                                          const blob = await response.blob();
+                                          const url = window.URL.createObjectURL(blob);
+                                          const a = document.createElement('a');
+                                          a.href = url;
+                                          a.download = `contrato-${selectedProject.clientName.replace(/\s+/g, '-')}.pdf`;
+                                          document.body.appendChild(a);
+                                          a.click();
+                                          window.URL.revokeObjectURL(url);
+                                          document.body.removeChild(a);
+                                          
+                                          toast({
+                                            title: "Descarga exitosa",
+                                            description: "El contrato PDF se ha descargado correctamente."
+                                          });
+                                        } else {
+                                          throw new Error('Error al generar PDF');
+                                        }
+                                      } catch (error) {
+                                        console.error('Error downloading contract:', error);
+                                        toast({
+                                          variant: "destructive",
+                                          title: "Error",
+                                          description: "No se pudo descargar el contrato PDF."
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    <i className="ri-download-line"></i>
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex gap-2 mt-4">
+                            <Button 
+                              className="flex-1 bg-blue-600 hover:bg-blue-700" 
+                              size="sm"
+                              onClick={() => {
+                                window.location.href = `/estimates?edit=${selectedProject.id}`;
+                              }}
+                            >
+                              <i className="ri-calculator-line mr-1"></i>
+                              Generar Estimado
+                            </Button>
+                            <Button 
+                              className="flex-1 bg-green-600 hover:bg-green-700" 
+                              size="sm"
+                              onClick={() => {
+                                window.location.href = `/cyberpunk-contract-generator?projectId=${selectedProject.id}`;
+                              }}
+                            >
+                              <i className="ri-file-text-line mr-1"></i>
+                              Crear Contrato
+                            </Button>
+                          </div>
                           
                           <Button 
-                            variant="outline" 
-                            className="w-full justify-start bg-gray-900/30 border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/10 text-xs sm:text-sm"
-                            onClick={() => {
-                              window.location.href = `/cyberpunk-contract-generator?projectId=${selectedProject.id}`;
-                            }}
-                          >
-                            <i className="ri-file-text-line mr-2"></i>
-                            {selectedProject.contractHtml ? 'Ver Contrato' : 'Generar Contrato'}
-                          </Button>
-                          
-                          <Button 
-                            variant="outline" 
-                            className="w-full justify-start bg-gray-900/30 border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/10 text-xs sm:text-sm"
+                            className="w-full mt-2 bg-purple-600 hover:bg-purple-700" 
+                            size="sm"
                             onClick={() => {
                               window.location.href = `/invoices?projectId=${selectedProject.id}`;
                             }}
                           >
-                            <i className="ri-bill-line mr-2"></i>
+                            <i className="ri-bill-line mr-1"></i>
                             Generar Factura
                           </Button>
                         </div>
