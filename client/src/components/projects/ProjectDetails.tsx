@@ -7,6 +7,7 @@ import { updateProject } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ProjectDocuments from "./ProjectDocuments";
 
 interface ProjectDetailsProps {
   project: any;
@@ -123,6 +124,7 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
         <TabsList className="mb-4 w-full flex flex-wrap sticky top-0 z-10 bg-background">
           <TabsTrigger value="client" className="flex-1">Client</TabsTrigger>
           <TabsTrigger value="project" className="flex-1">Project</TabsTrigger>
+          <TabsTrigger value="documents" className="flex-1">Documents</TabsTrigger>
           <TabsTrigger value="payment" className="flex-1">Payment</TabsTrigger>
         </TabsList>
 
@@ -134,7 +136,7 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <h3 className="font-medium">Nombre</h3>
+                <h3 className="font-medium">Name</h3>
                 <p>{project.clientName}</p>
               </div>
 
@@ -147,18 +149,18 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
 
               {project.clientPhone && (
                 <div>
-                  <h3 className="font-medium">Teléfono</h3>
+                  <h3 className="font-medium">Phone</h3>
                   <p>{project.clientPhone}</p>
                 </div>
               )}
 
               <div>
-                <h3 className="font-medium">Dirección del Proyecto</h3>
+                <h3 className="font-medium">Project Address</h3>
                 <p>{project.address}</p>
               </div>
 
               <div>
-                <h3 className="font-medium">Notas del Cliente</h3>
+                <h3 className="font-medium">Client Notes</h3>
                 <Dialog>
                   <DialogTrigger asChild>
                     <div className="relative">
@@ -213,25 +215,25 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-3">
-                  {/* Categoría del Proyecto */}
+                  {/* Project Category */}
                   <div>
-                    <label className="text-xs text-cyan-400 mb-1 block font-mono">CATEGORÍA DEL PROYECTO</label>
+                    <label className="text-xs text-cyan-400 mb-1 block font-mono">PROJECT CATEGORY</label>
                     <div className="bg-gray-800/50 border border-cyan-400/20 rounded px-3 py-2">
                       <div className="flex items-center gap-2">
                         {(() => {
                           const projectType = project.projectType || project.projectCategory || 'general';
                           const projectCategories = {
-                            fencing: { name: "Cercas y Portones", icon: "fence" },
-                            roofing: { name: "Techos", icon: "home" },
-                            plumbing: { name: "Plomería", icon: "droplet" },
-                            electrical: { name: "Electricidad", icon: "zap" },
-                            carpentry: { name: "Carpintería", icon: "hammer" },
-                            concrete: { name: "Concreto", icon: "square" },
-                            landscaping: { name: "Paisajismo", icon: "tree" },
-                            painting: { name: "Pintura", icon: "paint-bucket" },
-                            flooring: { name: "Pisos", icon: "grid" },
+                            fencing: { name: "Fencing & Gates", icon: "fence" },
+                            roofing: { name: "Roofing", icon: "home" },
+                            plumbing: { name: "Plumbing", icon: "droplet" },
+                            electrical: { name: "Electrical", icon: "zap" },
+                            carpentry: { name: "Carpentry", icon: "hammer" },
+                            concrete: { name: "Concrete", icon: "square" },
+                            landscaping: { name: "Landscaping", icon: "tree" },
+                            painting: { name: "Painting", icon: "paint-bucket" },
+                            flooring: { name: "Flooring", icon: "grid" },
                             hvac: { name: "HVAC", icon: "thermometer" },
-                            general: { name: "Contratista General", icon: "tool" }
+                            general: { name: "General Contractor", icon: "tool" }
                           };
                           const category = projectCategories[projectType as keyof typeof projectCategories] || projectCategories.general;
                           return (
@@ -245,12 +247,12 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
                     </div>
                   </div>
 
-                  {/* Tipo Específico */}
+                  {/* Specific Type */}
                   <div>
-                    <label className="text-xs text-cyan-400 mb-1 block font-mono">TIPO ESPECÍFICO</label>
+                    <label className="text-xs text-cyan-400 mb-1 block font-mono">SPECIFIC TYPE</label>
                     <div className="bg-gray-800/50 border border-cyan-400/20 rounded px-3 py-2">
                       <span className="text-white text-sm">
-                        {project.projectSubtype || project.fenceType || 'No especificado'}
+                        {project.projectSubtype || project.fenceType || 'Not specified'}
                       </span>
                     </div>
                   </div>
