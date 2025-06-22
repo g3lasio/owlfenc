@@ -72,9 +72,15 @@ export class PuppeteerPdfService {
     
     let browser;
     try {
+      // Use the confirmed Chromium executable path
+      const executablePath = '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium';
+      
+      console.log('🔍 Using Chromium executable:', executablePath);
+
       // Launch browser
       browser = await puppeteer.launch({
         headless: true,
+        executablePath,
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
@@ -83,7 +89,9 @@ export class PuppeteerPdfService {
           '--no-first-run',
           '--no-zygote',
           '--single-process',
-          '--disable-gpu'
+          '--disable-gpu',
+          '--disable-extensions',
+          '--disable-plugins'
         ]
       });
 
