@@ -2926,14 +2926,22 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       
       console.log('📤 Sending payload to PDF service:', payload);
       
-      // Robust PDF download using fetch API
-      const response = await fetch("/api/estimate-puppeteer-pdf", {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload)
-      });
+      // Create form submission for robust PDF download - eliminates network errors
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/api/estimate-puppeteer-pdf';
+      form.target = '_blank';
+      form.style.display = 'none';
+      
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'data';
+      input.value = JSON.stringify(payload);
+      form.appendChild(input);
+      
+      document.body.appendChild(form);
+      form.submit();
+      document.body.removeChild(form);
       
       console.log('📨 Response received:', {
         status: response.status,
@@ -5293,71 +5301,24 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
                   console.log('Generating invoice PDF with payload:', invoicePayload);
 
-                  // Call invoice PDF service using robust fetch API
-                  const response = await fetch("/api/invoice-pdf", {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(invoicePayload)
-                  });
-
-                  console.log('📨 Invoice response received:', {
-                    status: response.status,
-                    statusText: response.statusText,
-                    contentType: response.headers.get('content-type'),
-                    contentLength: response.headers.get('content-length')
-                  });
+                  // Create form submission for robust invoice PDF download
+                  const form = document.createElement('form');
+                  form.method = 'POST';
+                  form.action = '/api/invoice-pdf';
+                  form.target = '_blank';
+                  form.style.display = 'none';
                   
-                  if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`Invoice PDF generation failed: ${response.status} ${response.statusText} - ${errorText}`);
-                  }
-
-                  // Get PDF as blob
-                  const blob = await response.blob();
+                  const input = document.createElement('input');
+                  input.type = 'hidden';
+                  input.name = 'data';
+                  input.value = JSON.stringify(invoicePayload);
+                  form.appendChild(input);
                   
-                  if (blob.size === 0) {
-                    throw new Error('Received empty invoice PDF from server');
-                  }
+                  document.body.appendChild(form);
+                  form.submit();
+                  document.body.removeChild(form);
 
-                  // Auto-save to Firebase if document metadata is available in headers
-                  try {
-                    const documentData = response.headers.get('x-document-data');
-                    if (documentData) {
-                      const docPayload = JSON.parse(documentData);
-                      console.log('📄 Auto-saving invoice document to Firebase...');
-                      
-                      // Import Firebase document service
-                      const { saveProjectDocument } = await import('@/lib/projectDocuments');
-                      
-                      await saveProjectDocument({
-                        projectId: docPayload.projectId,
-                        userId: currentUser?.uid || 'unknown',
-                        documentType: 'invoice',
-                        documentName: docPayload.documentName,
-                        fileName: docPayload.fileName,
-                        fileSize: blob.size,
-                        mimeType: 'application/pdf',
-                        documentData: docPayload.pdfData,
-                        documentNumber: docPayload.documentNumber,
-                        status: 'generated',
-                        metadata: docPayload.metadata
-                      });
-                      
-                      console.log('✅ Invoice document saved to Firebase');
-                    }
-                  } catch (docError) {
-                    console.warn('⚠️ Failed to auto-save invoice document to Firebase:', docError);
-                  }
-                  const url = window.URL.createObjectURL(blob);
-                  const link = document.createElement('a');
-                  link.href = url;
-                  link.download = `invoice-${Date.now()}.pdf`;
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                  window.URL.revokeObjectURL(url);
+                  console.log('✅ Invoice PDF download initiated successfully');
 
                   // Close dialog and show success message
                   setShowInvoiceDialog(false);
