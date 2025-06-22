@@ -1844,6 +1844,15 @@ export default function EstimatesWizardFixed() {
 
   // Client selection
   const selectClient = (client: Client) => {
+    console.log('📋 Client selected with full data:', {
+      name: client.name,
+      address: client.address,
+      city: client.city,
+      state: client.state,
+      zipCode: client.zipCode || client.zipcode,
+      email: client.email,
+      phone: client.phone
+    });
     setEstimate((prev) => ({ ...prev, client }));
     toast({
       title: "Client Selected",
