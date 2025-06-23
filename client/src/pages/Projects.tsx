@@ -667,39 +667,28 @@ function Projects() {
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="p-0 max-w-7xl w-[98vw] h-[98vh] max-h-[98vh] overflow-hidden bg-gray-900 border-cyan-400/30 shadow-[0_0_50px_rgba(6,182,212,0.3)]">
             <div className="flex flex-col h-full relative overflow-hidden">
-              <DialogHeader className="flex-shrink-0 p-4 md:p-6 border-b border-cyan-400/30 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 relative">
-                <div className="absolute top-0 left-0 w-6 h-6 border-l-2 border-t-2 border-cyan-400"></div>
-                <div className="absolute top-0 right-0 w-6 h-6 border-r-2 border-t-2 border-cyan-400"></div>
-                <div className="absolute bottom-0 left-0 w-6 h-6 border-l-2 border-b-2 border-cyan-400"></div>
-                <div className="absolute bottom-0 right-0 w-6 h-6 border-r-2 border-b-2 border-cyan-400"></div>
+              <DialogHeader className="flex-shrink-0 p-2 border-b border-cyan-400/30 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 relative">
+                <div className="absolute top-0 left-0 w-3 h-3 border-l border-t border-cyan-400"></div>
+                <div className="absolute top-0 right-0 w-3 h-3 border-r border-t border-cyan-400"></div>
+                <div className="absolute bottom-0 left-0 w-3 h-3 border-l border-b border-cyan-400"></div>
+                <div className="absolute bottom-0 right-0 w-3 h-3 border-r border-b border-cyan-400"></div>
                 
-                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-pulse"></div>
-                
-                <DialogTitle className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-3 relative z-10">
-                  <div className="flex items-center gap-3">
-                    <div className="relative w-4 h-4">
-                      <div className="absolute inset-0 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_20px_rgba(6,182,212,0.8)]"></div>
-                      <div className="absolute inset-1 bg-white rounded-full"></div>
-                    </div>
-                    <span className="text-xl font-bold text-cyan-300 tracking-wider font-mono">
+                <DialogTitle className="flex justify-between items-center relative z-10">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
+                    <span className="text-sm font-bold text-cyan-300 tracking-wide font-mono">
                       DASHBOARD: {selectedProject.clientName.toUpperCase()}
                     </span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-16 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent relative overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent w-4 animate-[scan_2s_ease-in-out_infinite]"></div>
-                    </div>
-                    <Badge className={`${getProgressBadgeColor(selectedProject.projectProgress || "estimate_created")} px-3 py-1 font-mono text-xs bg-cyan-400/20 text-cyan-300 border-cyan-400/30`}>
-                      <i className="ri-cpu-line mr-1"></i>
-                      {getProgressLabel(selectedProject.projectProgress || "estimate_created")}
-                    </Badge>
-                  </div>
+                  <Badge className={`${getProgressBadgeColor(selectedProject.projectProgress || "estimate_created")} px-2 py-0.5 font-mono text-xs bg-cyan-400/20 text-cyan-300 border-cyan-400/30`}>
+                    {getProgressLabel(selectedProject.projectProgress || "estimate_created")}
+                  </Badge>
                 </DialogTitle>
               </DialogHeader>
               
               <div className="flex-1 flex flex-col bg-gray-900 relative min-h-0">
                 {/* Futuristic Timeline - Fixed at top */}
-                <div className="flex-shrink-0 p-6 pb-4">
+                <div className="flex-shrink-0 p-4 pb-3">
                   <FuturisticTimeline 
                     projectId={selectedProject.id} 
                     currentProgress={selectedProject.projectProgress || "estimate_created"} 
@@ -708,47 +697,47 @@ function Projects() {
                 </div>
 
                 {/* Dashboard Sections - Wizard-style Tabs */}
-                <div className="flex-1 px-6 pb-6 overflow-y-auto min-h-0">
-                  <div className="mb-4">
+                <div className="flex-1 px-4 pb-4 overflow-y-auto min-h-0">
+                  <div className="mb-3">
                     <div className="flex space-x-1 bg-gray-800/30 p-1 rounded-lg border border-cyan-400/20">
                       <button
                         onClick={() => setDashboardTab('details')}
-                        className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                        className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${
                           dashboardTab === 'details'
                             ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/30'
                             : 'text-gray-400 hover:text-cyan-300 hover:bg-gray-700/30'
                         }`}
                       >
-                        <i className="ri-settings-4-line mr-2"></i>
-                        Project Details
+                        <i className="ri-settings-4-line mr-1"></i>
+                        Details
                       </button>
                       <button
                         onClick={() => setDashboardTab('client')}
-                        className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                        className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${
                           dashboardTab === 'client'
                             ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/30'
                             : 'text-gray-400 hover:text-cyan-300 hover:bg-gray-700/30'
                         }`}
                       >
-                        <i className="ri-user-3-line mr-2"></i>
-                        Client Info
+                        <i className="ri-user-3-line mr-1"></i>
+                        Client
                       </button>
                       <button
                         onClick={() => setDashboardTab('documents')}
-                        className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                        className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${
                           dashboardTab === 'documents'
                             ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/30'
                             : 'text-gray-400 hover:text-cyan-300 hover:bg-gray-700/30'
                         }`}
                       >
-                        <i className="ri-folder-3-line mr-2"></i>
-                        Documents
+                        <i className="ri-folder-3-line mr-1"></i>
+                        Docs
                       </button>
                     </div>
                   </div>
 
                   {/* Tab Content */}
-                  <div className="bg-gray-800/40 border border-cyan-400/20 rounded-lg backdrop-blur-sm flex flex-col" style={{ height: '400px' }}>
+                  <div className="bg-gray-800/40 border border-cyan-400/20 rounded-lg backdrop-blur-sm flex flex-col" style={{ height: '450px' }}>
                     <div className="flex-1 p-4 custom-scroll" style={{ overflowY: 'auto', maxHeight: '100%' }}>
                       {dashboardTab === 'details' && (
                         <div className="space-y-4">
