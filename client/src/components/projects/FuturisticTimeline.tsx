@@ -98,54 +98,61 @@ export default function FuturisticTimeline({ projectId, currentProgress, onProgr
   }, [isDragging, dragPosition, currentProgress]);
 
   return (
-    <div className="w-full max-w-4xl mx-auto p-6">
-      {/* Header */}
-      <div className="mb-8">
-        <h3 className="text-2xl font-bold text-transparent bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text mb-2">
+    <div className="w-full max-w-5xl mx-auto px-4 py-3">
+      {/* Header - Centered */}
+      <div className="text-center mb-6">
+        <h3 className="text-xl font-bold text-transparent bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text mb-1">
           Project Timeline
         </h3>
-        <div className="h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent"></div>
+        <div className="w-24 h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent mx-auto"></div>
       </div>
 
-      {/* Timeline Container */}
-      <div className="relative">
-        {/* Main Timeline Track */}
+      {/* Compact Timeline Container */}
+      <div className="relative bg-gray-900/50 rounded-xl border border-cyan-400/20 p-4 backdrop-blur-sm">
+        {/* Sleek Main Timeline Track */}
         <div 
           ref={timelineRef}
-          className="relative h-4 bg-gray-800/60 rounded-full border border-cyan-400/30 overflow-hidden cursor-pointer"
+          className="relative h-2 bg-gray-700/50 rounded-full border border-cyan-400/20 overflow-hidden cursor-pointer shadow-inner"
           style={{ userSelect: 'none' }}
         >
-          {/* Progress Fill */}
+          {/* Futuristic Progress Fill */}
           <div 
-            className="absolute left-0 top-0 h-full bg-gradient-to-r from-cyan-400 to-blue-500 transition-all duration-300 ease-out"
-            style={{ width: `${isDragging ? dragPosition : progressPercentage}%` }}
+            className="absolute left-0 top-0 h-full rounded-full transition-all duration-500 ease-out"
+            style={{ 
+              width: `${isDragging ? dragPosition : progressPercentage}%`,
+              background: 'linear-gradient(90deg, #06b6d4 0%, #3b82f6 50%, #8b5cf6 100%)',
+              boxShadow: '0 0 10px rgba(6, 182, 212, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+            }}
           >
-            {/* Glow Effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-cyan-300/30 to-blue-400/30 animate-pulse"></div>
+            {/* Animated Glow Effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-cyan-300/40 to-blue-400/40 rounded-full animate-pulse"></div>
+            {/* Scanning Light Effect */}
+            <div className="absolute top-0 right-0 w-2 h-full bg-white/60 rounded-full animate-pulse"></div>
           </div>
 
-          {/* Draggable Handle */}
+          {/* Compact Draggable Handle */}
           <div 
-            className={`absolute top-1/2 transform -translate-y-1/2 w-8 h-8 rounded-full cursor-grab transition-all duration-200 ${
-              isDragging ? 'cursor-grabbing scale-110' : 'hover:scale-105'
+            className={`absolute top-1/2 transform -translate-y-1/2 w-6 h-6 rounded-full cursor-grab transition-all duration-200 ${
+              isDragging ? 'cursor-grabbing scale-125' : 'hover:scale-110'
             } ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
             style={{ 
-              left: `calc(${isDragging ? dragPosition : progressPercentage}% - 16px)`,
-              background: 'linear-gradient(135deg, #22d3ee 0%, #3b82f6 100%)',
+              left: `calc(${isDragging ? dragPosition : progressPercentage}% - 12px)`,
+              background: 'radial-gradient(circle, #22d3ee 0%, #0891b2 70%, #164e63 100%)',
               boxShadow: isDragging 
-                ? '0 0 20px rgba(34, 211, 238, 0.6), 0 0 40px rgba(34, 211, 238, 0.3)' 
-                : '0 4px 12px rgba(34, 211, 238, 0.4)',
+                ? '0 0 15px rgba(34, 211, 238, 0.8), 0 0 25px rgba(34, 211, 238, 0.4)' 
+                : '0 2px 8px rgba(34, 211, 238, 0.6)',
+              border: '2px solid rgba(255, 255, 255, 0.3)'
             }}
             onMouseDown={handleMouseDown}
           >
-            <div className="w-full h-full rounded-full border-2 border-white/20 flex items-center justify-center">
-              <div className="w-3 h-3 rounded-full bg-white/80"></div>
+            <div className="w-full h-full rounded-full border border-white/10 flex items-center justify-center">
+              <div className="w-2 h-2 rounded-full bg-white shadow-sm"></div>
             </div>
           </div>
         </div>
 
-        {/* Stage Flags */}
-        <div className="relative mt-8">
+        {/* Compact Stage Flags */}
+        <div className="relative mt-4">
           {timelineStages.map((stage, index) => {
             const position = (index / (timelineStages.length - 1)) * 100;
             const isActive = index <= validCurrentIndex;
@@ -157,32 +164,33 @@ export default function FuturisticTimeline({ projectId, currentProgress, onProgr
                 className="absolute transform -translate-x-1/2"
                 style={{ left: `${position}%` }}
               >
-                {/* Flag Pole */}
-                <div className={`w-px h-12 mx-auto transition-all duration-300 ${
-                  isActive ? 'bg-gradient-to-b from-cyan-400 to-cyan-600' : 'bg-gray-600'
+                {/* Minimal Flag Pole */}
+                <div className={`w-px h-6 mx-auto transition-all duration-300 ${
+                  isActive ? 'bg-gradient-to-b from-cyan-400/80 to-cyan-600/40' : 'bg-gray-500/30'
                 }`}></div>
                 
-                {/* Flag */}
-                <div className={`relative mt-2 transition-all duration-300 ${
-                  isCurrent ? 'scale-110' : isActive ? 'scale-100' : 'scale-90'
+                {/* Sleek Compact Flag */}
+                <div className={`relative mt-1 transition-all duration-300 ${
+                  isCurrent ? 'scale-105' : 'scale-100'
                 }`}>
                   <div 
-                    className={`px-3 py-2 rounded-lg border backdrop-blur-sm transition-all duration-300 ${
+                    className={`px-2 py-1 rounded-md text-center transition-all duration-300 border backdrop-blur-sm ${
                       isActive 
-                        ? 'bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border-cyan-400/50 text-cyan-100' 
-                        : 'bg-gray-800/40 border-gray-600/30 text-gray-400'
-                    } ${isCurrent ? 'shadow-lg shadow-cyan-400/20' : ''}`}
+                        ? 'bg-gradient-to-t from-cyan-500/15 to-blue-600/10 border-cyan-400/40 text-cyan-200 shadow-sm' 
+                        : 'bg-gray-800/30 border-gray-600/20 text-gray-500'
+                    } ${isCurrent ? 'shadow-md shadow-cyan-400/25 ring-1 ring-cyan-400/30' : ''}`}
                     style={{
+                      minWidth: '60px',
                       background: isActive 
-                        ? `linear-gradient(135deg, ${stage.color}20, ${stage.color}10)` 
+                        ? `linear-gradient(135deg, ${stage.color}15, ${stage.color}05)` 
                         : undefined
                     }}
                   >
-                    <div className="flex flex-col items-center space-y-1">
-                      <i className={`${stage.icon} text-lg ${
+                    <div className="flex flex-col items-center">
+                      <i className={`${stage.icon} text-sm mb-0.5 ${
                         isActive ? 'text-cyan-300' : 'text-gray-500'
                       }`}></i>
-                      <span className={`text-xs font-medium whitespace-nowrap ${
+                      <span className={`text-xs font-medium leading-tight ${
                         isActive ? 'text-cyan-100' : 'text-gray-400'
                       }`}>
                         {stage.label}
@@ -190,20 +198,16 @@ export default function FuturisticTimeline({ projectId, currentProgress, onProgr
                     </div>
                   </div>
                   
-                  {/* Flag Triangle */}
-                  <div className={`absolute top-0 -right-2 w-0 h-0 border-l-[8px] border-t-[16px] border-b-[16px] transition-all duration-300 ${
-                    isActive 
-                      ? 'border-l-cyan-500/30 border-t-transparent border-b-transparent' 
-                      : 'border-l-gray-700/30 border-t-transparent border-b-transparent'
-                  }`}></div>
+                  {/* Subtle Flag Arrow */}
+                  {isActive && (
+                    <div className="absolute top-0 -right-1 w-0 h-0 border-l-[4px] border-t-[8px] border-b-[8px] border-l-cyan-500/20 border-t-transparent border-b-transparent"></div>
+                  )}
                 </div>
               </div>
             );
           })}
         </div>
       </div>
-
-
     </div>
   );
 }
