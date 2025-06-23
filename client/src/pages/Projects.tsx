@@ -683,7 +683,7 @@ function Projects() {
               
               <div className="flex-1 flex flex-col bg-gray-900 relative min-h-0">
                 {/* Futuristic Timeline - Fixed at top */}
-                <div className="flex-shrink-0 p-4 pb-2 bg-gray-900/90 border-b border-cyan-400/10">
+                <div className="flex-shrink-0 p-4 pb-4 bg-gray-900 border-b-2 border-cyan-400/20 shadow-lg">
                   <FuturisticTimeline 
                     projectId={selectedProject.id} 
                     currentProgress={selectedProject.projectProgress || "estimate_created"} 
@@ -691,13 +691,13 @@ function Projects() {
                   />
                 </div>
 
-                {/* Separation Line */}
-                <div className="flex-shrink-0 h-4 bg-gradient-to-b from-gray-900/90 to-gray-900"></div>
+                {/* Large Separation Space */}
+                <div className="flex-shrink-0 h-8 bg-gray-900 border-b border-gray-700/30"></div>
 
                 {/* Dashboard Sections - Wizard-style Tabs */}
-                <div className="flex-1 px-4 pb-4 overflow-y-auto min-h-0 bg-gray-900">
-                  <div className="mb-4">
-                    <div className="flex space-x-1 bg-gray-800/30 p-1 rounded-lg border border-cyan-400/20 shadow-lg">
+                <div className="flex-1 px-4 pb-4 overflow-y-auto min-h-0 bg-gray-900 pt-4">
+                  <div className="mb-6">
+                    <div className="flex space-x-1 bg-gray-800/50 p-1 rounded-lg border border-cyan-400/30 shadow-xl backdrop-blur-sm">
                       <button
                         onClick={() => setDashboardTab('details')}
                         className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${
@@ -735,7 +735,7 @@ function Projects() {
                   </div>
 
                   {/* Tab Content */}
-                  <div className="bg-gray-800/40 border border-cyan-400/20 rounded-lg backdrop-blur-sm flex flex-col shadow-xl" style={{ height: '450px' }}>
+                  <div className="bg-gray-800/50 border-2 border-cyan-400/30 rounded-lg backdrop-blur-sm flex flex-col shadow-2xl mt-2" style={{ height: '420px' }}>
                     <div className="flex-1 p-4 custom-scroll" style={{ overflowY: 'auto', maxHeight: '100%' }}>
                       {dashboardTab === 'details' && (
                         <div className="space-y-4">
