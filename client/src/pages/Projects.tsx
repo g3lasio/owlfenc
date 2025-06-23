@@ -673,22 +673,17 @@ function Projects() {
                 <div className="absolute bottom-0 left-0 w-3 h-3 border-l border-b border-cyan-400"></div>
                 <div className="absolute bottom-0 right-0 w-3 h-3 border-r border-b border-cyan-400"></div>
                 
-                <DialogTitle className="flex justify-between items-center relative z-10">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
-                    <span className="text-sm font-bold text-cyan-300 tracking-wide font-mono">
-                      DASHBOARD: {selectedProject.clientName.toUpperCase()}
-                    </span>
-                  </div>
-                  <Badge className={`${getProgressBadgeColor(selectedProject.projectProgress || "estimate_created")} px-2 py-0.5 font-mono text-xs bg-cyan-400/20 text-cyan-300 border-cyan-400/30`}>
-                    {getProgressLabel(selectedProject.projectProgress || "estimate_created")}
-                  </Badge>
+                <DialogTitle className="flex items-center gap-2 relative z-10">
+                  <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
+                  <span className="text-sm font-bold text-cyan-300 tracking-wide font-mono">
+                    DASHBOARD: {selectedProject.clientName.toUpperCase()}
+                  </span>
                 </DialogTitle>
               </DialogHeader>
               
               <div className="flex-1 flex flex-col bg-gray-900 relative min-h-0">
                 {/* Futuristic Timeline - Fixed at top */}
-                <div className="flex-shrink-0 p-4 pb-3">
+                <div className="flex-shrink-0 p-4 pb-2 bg-gray-900/90 border-b border-cyan-400/10">
                   <FuturisticTimeline 
                     projectId={selectedProject.id} 
                     currentProgress={selectedProject.projectProgress || "estimate_created"} 
@@ -696,10 +691,13 @@ function Projects() {
                   />
                 </div>
 
+                {/* Separation Line */}
+                <div className="flex-shrink-0 h-4 bg-gradient-to-b from-gray-900/90 to-gray-900"></div>
+
                 {/* Dashboard Sections - Wizard-style Tabs */}
-                <div className="flex-1 px-4 pb-4 overflow-y-auto min-h-0">
-                  <div className="mb-3">
-                    <div className="flex space-x-1 bg-gray-800/30 p-1 rounded-lg border border-cyan-400/20">
+                <div className="flex-1 px-4 pb-4 overflow-y-auto min-h-0 bg-gray-900">
+                  <div className="mb-4">
+                    <div className="flex space-x-1 bg-gray-800/30 p-1 rounded-lg border border-cyan-400/20 shadow-lg">
                       <button
                         onClick={() => setDashboardTab('details')}
                         className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${
@@ -737,7 +735,7 @@ function Projects() {
                   </div>
 
                   {/* Tab Content */}
-                  <div className="bg-gray-800/40 border border-cyan-400/20 rounded-lg backdrop-blur-sm flex flex-col" style={{ height: '450px' }}>
+                  <div className="bg-gray-800/40 border border-cyan-400/20 rounded-lg backdrop-blur-sm flex flex-col shadow-xl" style={{ height: '450px' }}>
                     <div className="flex-1 p-4 custom-scroll" style={{ overflowY: 'auto', maxHeight: '100%' }}>
                       {dashboardTab === 'details' && (
                         <div className="space-y-4">
