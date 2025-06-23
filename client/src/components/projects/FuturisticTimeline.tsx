@@ -203,15 +203,7 @@ export default function FuturisticTimeline({ projectId, currentProgress, onProgr
         </div>
       </div>
 
-      {/* Current Status Display */}
-      <div className="mt-12 text-center">
-        <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-cyan-500/10 to-blue-600/10 border border-cyan-400/30">
-          <i className={`${timelineStages[validCurrentIndex]?.icon} text-cyan-400 mr-2`}></i>
-          <span className="text-cyan-100 font-medium">
-            Current Status: {timelineStages[validCurrentIndex]?.label}
-          </span>
-        </div>
-      </div>
+
     </div>
   );
 }
