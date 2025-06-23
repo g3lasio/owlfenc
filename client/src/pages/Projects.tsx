@@ -698,12 +698,271 @@ function Projects() {
               
               <div className="flex-1 overflow-auto bg-gray-900 relative">
                 {/* Futuristic Timeline */}
-                <div className="p-6">
+                <div className="p-6 pb-2">
                   <FuturisticTimeline 
                     projectId={selectedProject.id} 
                     currentProgress={selectedProject.projectProgress || "estimate_created"} 
                     onProgressUpdate={handleProgressUpdate} 
                   />
+                </div>
+
+                {/* Dashboard Sections */}
+                <div className="px-6 pb-6">
+                  <div className="grid lg:grid-cols-3 gap-4">
+                    {/* Project Details Section */}
+                    <div className="bg-gray-800/40 border border-cyan-400/20 rounded-lg backdrop-blur-sm">
+                      <div className="p-3 border-b border-cyan-400/20 bg-gradient-to-r from-gray-800/60 to-gray-900/60">
+                        <h4 className="text-cyan-300 font-semibold text-sm flex items-center">
+                          <i className="ri-settings-4-line mr-2"></i>
+                          Project Details
+                        </h4>
+                      </div>
+                      <div className="p-3 space-y-3 max-h-64 overflow-y-auto">
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div>
+                            <span className="text-gray-400 block">Type:</span>
+                            <span className="text-cyan-200 font-medium">{selectedProject.projectType || 'General'}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-400 block">Subtype:</span>
+                            <span className="text-cyan-200 font-medium">{selectedProject.projectSubtype || selectedProject.fenceType || 'N/A'}</span>
+                          </div>
+                        </div>
+                        
+                        {selectedProject.projectDescription && (
+                          <div>
+                            <span className="text-gray-400 text-xs block mb-1">Description:</span>
+                            <p className="text-gray-200 text-xs bg-gray-700/30 p-2 rounded border border-gray-600/20">
+                              {selectedProject.projectDescription}
+                            </p>
+                          </div>
+                        )}
+
+                        {selectedProject.projectScope && (
+                          <div>
+                            <span className="text-gray-400 text-xs block mb-1">Scope:</span>
+                            <p className="text-gray-200 text-xs bg-gray-700/30 p-2 rounded border border-gray-600/20">
+                              {selectedProject.projectScope}
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div>
+                            <span className="text-gray-400 block">Status:</span>
+                            <Badge className={`${getStatusBadgeColor(selectedProject.status)} text-xs px-2 py-0.5`}>
+                              {getStatusLabel(selectedProject.status)}
+                            </Badge>
+                          </div>
+                          <div>
+                            <span className="text-gray-400 block">Value:</span>
+                            <span className="text-green-400 font-medium">
+                              {selectedProject.totalPrice ? `$${(selectedProject.totalPrice / 100).toLocaleString()}` : 'TBD'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-gray-700/30">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="w-full text-xs h-7 border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/10"
+                            onClick={() => {
+                              window.location.href = `/estimates?edit=${selectedProject.id}`;
+                            }}
+                          >
+                            <i className="ri-edit-line mr-1"></i>
+                            Edit Project
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Client Information Section */}
+                    <div className="bg-gray-800/40 border border-cyan-400/20 rounded-lg backdrop-blur-sm">
+                      <div className="p-3 border-b border-cyan-400/20 bg-gradient-to-r from-gray-800/60 to-gray-900/60">
+                        <h4 className="text-cyan-300 font-semibold text-sm flex items-center">
+                          <i className="ri-user-3-line mr-2"></i>
+                          Client Information
+                        </h4>
+                      </div>
+                      <div className="p-3 space-y-3 max-h-64 overflow-y-auto">
+                        <div>
+                          <span className="text-gray-400 text-xs block mb-1">Name:</span>
+                          <p className="text-cyan-200 font-medium text-sm">{selectedProject.clientName}</p>
+                        </div>
+
+                        <div>
+                          <span className="text-gray-400 text-xs block mb-1">Project Address:</span>
+                          <p className="text-gray-200 text-xs bg-gray-700/30 p-2 rounded border border-gray-600/20">
+                            {selectedProject.address}
+                          </p>
+                        </div>
+
+                        {selectedProject.clientEmail && (
+                          <div>
+                            <span className="text-gray-400 text-xs block mb-1">Email:</span>
+                            <p className="text-gray-200 text-xs font-mono">{selectedProject.clientEmail}</p>
+                          </div>
+                        )}
+
+                        {selectedProject.clientPhone && (
+                          <div>
+                            <span className="text-gray-400 text-xs block mb-1">Phone:</span>
+                            <p className="text-gray-200 text-xs font-mono">{selectedProject.clientPhone}</p>
+                          </div>
+                        )}
+
+                        {selectedProject.clientNotes && (
+                          <div>
+                            <span className="text-gray-400 text-xs block mb-1">Client Notes:</span>
+                            <p className="text-gray-200 text-xs bg-gray-700/30 p-2 rounded border border-gray-600/20">
+                              {selectedProject.clientNotes}
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="pt-2 border-t border-gray-700/30">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="w-full text-xs h-7 border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/10"
+                            onClick={() => {
+                              toast({
+                                title: "Contact Client",
+                                description: `${selectedProject.clientName} - ${selectedProject.clientEmail || selectedProject.clientPhone || 'No contact info'}`
+                              });
+                            }}
+                          >
+                            <i className="ri-message-3-line mr-1"></i>
+                            Contact Client
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Documents Section */}
+                    <div className="bg-gray-800/40 border border-cyan-400/20 rounded-lg backdrop-blur-sm">
+                      <div className="p-3 border-b border-cyan-400/20 bg-gradient-to-r from-gray-800/60 to-gray-900/60">
+                        <h4 className="text-cyan-300 font-semibold text-sm flex items-center">
+                          <i className="ri-folder-3-line mr-2"></i>
+                          Documents
+                        </h4>
+                      </div>
+                      <div className="p-3 space-y-3 max-h-64 overflow-y-auto">
+                        {/* Document Count Grid */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="bg-gray-700/30 p-2 rounded border border-gray-600/20 text-center">
+                            <div className="text-cyan-400 text-lg">
+                              <i className="ri-file-list-3-line"></i>
+                            </div>
+                            <div className="text-xs text-gray-400">Estimates</div>
+                            <div className="text-cyan-300 font-semibold text-sm">
+                              {selectedProject.estimateHtml ? '1' : '0'}
+                            </div>
+                          </div>
+                          <div className="bg-gray-700/30 p-2 rounded border border-gray-600/20 text-center">
+                            <div className="text-purple-400 text-lg">
+                              <i className="ri-file-text-line"></i>
+                            </div>
+                            <div className="text-xs text-gray-400">Contracts</div>
+                            <div className="text-purple-300 font-semibold text-sm">
+                              {selectedProject.contractHtml ? '1' : '0'}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Document Actions */}
+                        <div className="space-y-1">
+                          {selectedProject.estimateHtml && (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="w-full text-xs h-7 border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/10 justify-start"
+                              onClick={() => {
+                                const blob = new Blob([selectedProject.estimateHtml], { type: 'text/html' });
+                                const url = URL.createObjectURL(blob);
+                                window.open(url, '_blank');
+                              }}
+                            >
+                              <i className="ri-eye-line mr-2"></i>
+                              View Estimate
+                            </Button>
+                          )}
+                          
+                          {selectedProject.contractHtml && (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="w-full text-xs h-7 border-purple-400/30 text-purple-300 hover:bg-purple-400/10 justify-start"
+                              onClick={() => {
+                                const blob = new Blob([selectedProject.contractHtml], { type: 'text/html' });
+                                const url = URL.createObjectURL(blob);
+                                window.open(url, '_blank');
+                              }}
+                            >
+                              <i className="ri-eye-line mr-2"></i>
+                              View Contract
+                            </Button>
+                          )}
+                          
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="w-full text-xs h-7 border-green-400/30 text-green-300 hover:bg-green-400/10 justify-start"
+                            onClick={() => {
+                              window.location.href = `/cyberpunk-contract-generator?projectId=${selectedProject.id}`;
+                            }}
+                          >
+                            <i className="ri-file-add-line mr-2"></i>
+                            Create Contract
+                          </Button>
+
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="w-full text-xs h-7 border-yellow-400/30 text-yellow-300 hover:bg-yellow-400/10 justify-start"
+                            onClick={() => {
+                              window.location.href = `/invoices?projectId=${selectedProject.id}`;
+                            }}
+                          >
+                            <i className="ri-bill-line mr-2"></i>
+                            Generate Invoice
+                          </Button>
+                        </div>
+
+                        {/* Upload Section */}
+                        <div className="pt-2 border-t border-gray-700/30">
+                          <div className="relative">
+                            <input 
+                              type="file" 
+                              id={`file-upload-${selectedProject.id}`}
+                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                              multiple
+                              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                              onChange={(e) => {
+                                const files = e.target.files;
+                                if (files && files.length > 0) {
+                                  toast({
+                                    title: "Files Selected",
+                                    description: `${files.length} file(s) ready for upload`
+                                  });
+                                }
+                              }}
+                            />
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="w-full text-xs h-7 border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/10"
+                            >
+                              <i className="ri-upload-2-line mr-1"></i>
+                              Upload Files
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
