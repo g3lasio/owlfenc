@@ -54,8 +54,12 @@ main {
   max-height: 100% !important;
 }
 
-/* Allow scrolling in flex containers when needed */
-.flex, .flex-1, .flex-col {
+/* Allow scrolling in flex containers when needed - but be more specific */
+.flex-1[style*="overflow-y: auto"] {
+  overflow-y: auto !important;
+}
+
+.flex, .flex-col {
   overflow: visible !important;
 }
 

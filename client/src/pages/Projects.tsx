@@ -84,6 +84,7 @@ function Projects() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [dashboardTab, setDashboardTab] = useState<'details' | 'client' | 'documents'>('details');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -706,127 +707,142 @@ function Projects() {
                   />
                 </div>
 
-                {/* Dashboard Sections - Scrollable area */}
+                {/* Dashboard Sections - Wizard-style Tabs */}
                 <div className="flex-1 px-6 pb-6 overflow-y-auto min-h-0">
-                  <div className="grid lg:grid-cols-3 gap-4">
-                    {/* Project Details Section */}
-                    <div className="bg-gray-800/40 border border-cyan-400/20 rounded-lg backdrop-blur-sm flex flex-col">
-                      <div className="flex-shrink-0 p-3 border-b border-cyan-400/20 bg-gradient-to-r from-gray-800/60 to-gray-900/60">
-                        <h4 className="text-cyan-300 font-semibold text-sm flex items-center">
-                          <i className="ri-settings-4-line mr-2"></i>
-                          Project Details
-                        </h4>
-                      </div>
-                      <div className="flex-1 p-3 space-y-3 overflow-y-auto min-h-0" style={{ maxHeight: '300px' }}>
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div>
-                            <span className="text-gray-400 block">Type:</span>
-                            <span className="text-cyan-200 font-medium">{selectedProject.projectType || 'General'}</span>
-                          </div>
-                          <div>
-                            <span className="text-gray-400 block">Subtype:</span>
-                            <span className="text-cyan-200 font-medium">{selectedProject.projectSubtype || selectedProject.fenceType || 'N/A'}</span>
-                          </div>
-                        </div>
-                        
-                        {selectedProject.projectDescription && (
-                          <div>
-                            <span className="text-gray-400 text-xs block mb-1">Description:</span>
-                            <p className="text-gray-200 text-xs bg-gray-700/30 p-2 rounded border border-gray-600/20">
-                              {selectedProject.projectDescription}
-                            </p>
-                          </div>
-                        )}
+                  <div className="mb-4">
+                    <div className="flex space-x-1 bg-gray-800/30 p-1 rounded-lg border border-cyan-400/20">
+                      <button
+                        onClick={() => setDashboardTab('details')}
+                        className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                          dashboardTab === 'details'
+                            ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/30'
+                            : 'text-gray-400 hover:text-cyan-300 hover:bg-gray-700/30'
+                        }`}
+                      >
+                        <i className="ri-settings-4-line mr-2"></i>
+                        Project Details
+                      </button>
+                      <button
+                        onClick={() => setDashboardTab('client')}
+                        className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                          dashboardTab === 'client'
+                            ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/30'
+                            : 'text-gray-400 hover:text-cyan-300 hover:bg-gray-700/30'
+                        }`}
+                      >
+                        <i className="ri-user-3-line mr-2"></i>
+                        Client Info
+                      </button>
+                      <button
+                        onClick={() => setDashboardTab('documents')}
+                        className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                          dashboardTab === 'documents'
+                            ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/30'
+                            : 'text-gray-400 hover:text-cyan-300 hover:bg-gray-700/30'
+                        }`}
+                      >
+                        <i className="ri-folder-3-line mr-2"></i>
+                        Documents
+                      </button>
+                    </div>
+                  </div>
 
-                        {selectedProject.projectScope && (
-                          <div>
-                            <span className="text-gray-400 text-xs block mb-1">Scope:</span>
-                            <p className="text-gray-200 text-xs bg-gray-700/30 p-2 rounded border border-gray-600/20">
-                              {selectedProject.projectScope}
-                            </p>
+                  {/* Tab Content */}
+                  <div className="bg-gray-800/40 border border-cyan-400/20 rounded-lg backdrop-blur-sm flex flex-col" style={{ height: '400px' }}>
+                    <div className="flex-1 p-4 custom-scroll" style={{ overflowY: 'auto', maxHeight: '100%' }}>
+                      {dashboardTab === 'details' && (
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
+                              <span className="text-gray-400 block mb-1">Type:</span>
+                              <span className="text-cyan-200 font-medium">{selectedProject.projectType || 'General'}</span>
+                            </div>
+                            <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
+                              <span className="text-gray-400 block mb-1">Subtype:</span>
+                              <span className="text-cyan-200 font-medium">{selectedProject.projectSubtype || selectedProject.fenceType || 'N/A'}</span>
+                            </div>
                           </div>
-                        )}
+                          
+                          {selectedProject.projectDescription && (
+                            <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
+                              <span className="text-gray-400 text-sm block mb-2">Description:</span>
+                              <p className="text-gray-200 text-sm">{selectedProject.projectDescription}</p>
+                            </div>
+                          )}
 
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div>
-                            <span className="text-gray-400 block">Status:</span>
-                            <Badge className={`${getStatusBadgeColor(selectedProject.status)} text-xs px-2 py-0.5`}>
-                              {getStatusLabel(selectedProject.status)}
-                            </Badge>
-                          </div>
-                          <div>
-                            <span className="text-gray-400 block">Value:</span>
-                            <span className="text-green-400 font-medium">
-                              {selectedProject.totalPrice ? `$${(selectedProject.totalPrice / 100).toLocaleString()}` : 'TBD'}
-                            </span>
-                          </div>
-                        </div>
+                          {selectedProject.projectScope && (
+                            <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
+                              <span className="text-gray-400 text-sm block mb-2">Scope:</span>
+                              <p className="text-gray-200 text-sm">{selectedProject.projectScope}</p>
+                            </div>
+                          )}
 
-                        <div className="pt-2 border-t border-gray-700/30">
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
+                              <span className="text-gray-400 block mb-1">Status:</span>
+                              <Badge className={`${getStatusBadgeColor(selectedProject.status)} text-xs px-2 py-1 mt-1`}>
+                                {getStatusLabel(selectedProject.status)}
+                              </Badge>
+                            </div>
+                            <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
+                              <span className="text-gray-400 block mb-1">Value:</span>
+                              <span className="text-green-400 font-medium text-lg">
+                                {selectedProject.totalPrice ? `$${(selectedProject.totalPrice / 100).toLocaleString()}` : 'TBD'}
+                              </span>
+                            </div>
+                          </div>
+
                           <Button 
                             size="sm" 
                             variant="outline" 
-                            className="w-full text-xs h-7 border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/10"
+                            className="w-full border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/10"
                             onClick={() => {
                               window.location.href = `/estimates?edit=${selectedProject.id}`;
                             }}
                           >
-                            <i className="ri-edit-line mr-1"></i>
+                            <i className="ri-edit-line mr-2"></i>
                             Edit Project
                           </Button>
                         </div>
-                      </div>
-                    </div>
+                      )}
 
-                    {/* Client Information Section */}
-                    <div className="bg-gray-800/40 border border-cyan-400/20 rounded-lg backdrop-blur-sm flex flex-col">
-                      <div className="flex-shrink-0 p-3 border-b border-cyan-400/20 bg-gradient-to-r from-gray-800/60 to-gray-900/60">
-                        <h4 className="text-cyan-300 font-semibold text-sm flex items-center">
-                          <i className="ri-user-3-line mr-2"></i>
-                          Client Information
-                        </h4>
-                      </div>
-                      <div className="flex-1 p-3 space-y-3 overflow-y-auto min-h-0" style={{ maxHeight: '300px' }}>
-                        <div>
-                          <span className="text-gray-400 text-xs block mb-1">Name:</span>
-                          <p className="text-cyan-200 font-medium text-sm">{selectedProject.clientName}</p>
-                        </div>
-
-                        <div>
-                          <span className="text-gray-400 text-xs block mb-1">Project Address:</span>
-                          <p className="text-gray-200 text-xs bg-gray-700/30 p-2 rounded border border-gray-600/20">
-                            {selectedProject.address}
-                          </p>
-                        </div>
-
-                        {selectedProject.clientEmail && (
-                          <div>
-                            <span className="text-gray-400 text-xs block mb-1">Email:</span>
-                            <p className="text-gray-200 text-xs font-mono">{selectedProject.clientEmail}</p>
+                      {dashboardTab === 'client' && (
+                        <div className="space-y-4">
+                          <div className="bg-gray-700/30 p-4 rounded border border-gray-600/20">
+                            <span className="text-gray-400 text-sm block mb-2">Client Name:</span>
+                            <p className="text-cyan-200 font-medium text-lg">{selectedProject.clientName}</p>
                           </div>
-                        )}
 
-                        {selectedProject.clientPhone && (
-                          <div>
-                            <span className="text-gray-400 text-xs block mb-1">Phone:</span>
-                            <p className="text-gray-200 text-xs font-mono">{selectedProject.clientPhone}</p>
+                          <div className="bg-gray-700/30 p-4 rounded border border-gray-600/20">
+                            <span className="text-gray-400 text-sm block mb-2">Project Address:</span>
+                            <p className="text-gray-200">{selectedProject.address}</p>
                           </div>
-                        )}
 
-                        {selectedProject.clientNotes && (
-                          <div>
-                            <span className="text-gray-400 text-xs block mb-1">Client Notes:</span>
-                            <p className="text-gray-200 text-xs bg-gray-700/30 p-2 rounded border border-gray-600/20">
-                              {selectedProject.clientNotes}
-                            </p>
-                          </div>
-                        )}
+                          {selectedProject.clientEmail && (
+                            <div className="bg-gray-700/30 p-4 rounded border border-gray-600/20">
+                              <span className="text-gray-400 text-sm block mb-2">Email:</span>
+                              <p className="text-gray-200 font-mono">{selectedProject.clientEmail}</p>
+                            </div>
+                          )}
 
-                        <div className="pt-2 border-t border-gray-700/30">
+                          {selectedProject.clientPhone && (
+                            <div className="bg-gray-700/30 p-4 rounded border border-gray-600/20">
+                              <span className="text-gray-400 text-sm block mb-2">Phone:</span>
+                              <p className="text-gray-200 font-mono">{selectedProject.clientPhone}</p>
+                            </div>
+                          )}
+
+                          {selectedProject.clientNotes && (
+                            <div className="bg-gray-700/30 p-4 rounded border border-gray-600/20">
+                              <span className="text-gray-400 text-sm block mb-2">Client Notes:</span>
+                              <p className="text-gray-200">{selectedProject.clientNotes}</p>
+                            </div>
+                          )}
+
                           <Button 
                             size="sm" 
                             variant="outline" 
-                            className="w-full text-xs h-7 border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/10"
+                            className="w-full border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/10"
                             onClick={() => {
                               toast({
                                 title: "Contact Client",
@@ -834,133 +850,126 @@ function Projects() {
                               });
                             }}
                           >
-                            <i className="ri-message-3-line mr-1"></i>
+                            <i className="ri-message-3-line mr-2"></i>
                             Contact Client
                           </Button>
                         </div>
-                      </div>
-                    </div>
+                      )}
 
-                    {/* Documents Section */}
-                    <div className="bg-gray-800/40 border border-cyan-400/20 rounded-lg backdrop-blur-sm flex flex-col">
-                      <div className="flex-shrink-0 p-3 border-b border-cyan-400/20 bg-gradient-to-r from-gray-800/60 to-gray-900/60">
-                        <h4 className="text-cyan-300 font-semibold text-sm flex items-center">
-                          <i className="ri-folder-3-line mr-2"></i>
-                          Documents
-                        </h4>
-                      </div>
-                      <div className="flex-1 p-3 space-y-3 overflow-y-auto min-h-0" style={{ maxHeight: '300px' }}>
-                        {/* Document Count Grid */}
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="bg-gray-700/30 p-2 rounded border border-gray-600/20 text-center">
-                            <div className="text-cyan-400 text-lg">
-                              <i className="ri-file-list-3-line"></i>
+                      {dashboardTab === 'documents' && (
+                        <div className="space-y-4">
+                          {/* Document Count Cards */}
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-gray-700/30 p-4 rounded border border-gray-600/20 text-center">
+                              <div className="text-cyan-400 text-2xl mb-2">
+                                <i className="ri-file-list-3-line"></i>
+                              </div>
+                              <div className="text-sm text-gray-400 mb-1">Estimates</div>
+                              <div className="text-cyan-300 font-semibold text-xl">
+                                {selectedProject.estimateHtml ? '1' : '0'}
+                              </div>
                             </div>
-                            <div className="text-xs text-gray-400">Estimates</div>
-                            <div className="text-cyan-300 font-semibold text-sm">
-                              {selectedProject.estimateHtml ? '1' : '0'}
+                            <div className="bg-gray-700/30 p-4 rounded border border-gray-600/20 text-center">
+                              <div className="text-purple-400 text-2xl mb-2">
+                                <i className="ri-file-text-line"></i>
+                              </div>
+                              <div className="text-sm text-gray-400 mb-1">Contracts</div>
+                              <div className="text-purple-300 font-semibold text-xl">
+                                {selectedProject.contractHtml ? '1' : '0'}
+                              </div>
                             </div>
                           </div>
-                          <div className="bg-gray-700/30 p-2 rounded border border-gray-600/20 text-center">
-                            <div className="text-purple-400 text-lg">
-                              <i className="ri-file-text-line"></i>
-                            </div>
-                            <div className="text-xs text-gray-400">Contracts</div>
-                            <div className="text-purple-300 font-semibold text-sm">
-                              {selectedProject.contractHtml ? '1' : '0'}
-                            </div>
-                          </div>
-                        </div>
 
-                        {/* Document Actions */}
-                        <div className="space-y-1">
-                          {selectedProject.estimateHtml && (
+                          {/* Document Actions */}
+                          <div className="space-y-3">
+                            {selectedProject.estimateHtml && (
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="w-full border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/10 justify-start"
+                                onClick={() => {
+                                  const blob = new Blob([selectedProject.estimateHtml], { type: 'text/html' });
+                                  const url = URL.createObjectURL(blob);
+                                  window.open(url, '_blank');
+                                }}
+                              >
+                                <i className="ri-eye-line mr-2"></i>
+                                View Estimate
+                              </Button>
+                            )}
+                            
+                            {selectedProject.contractHtml && (
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="w-full border-purple-400/30 text-purple-300 hover:bg-purple-400/10 justify-start"
+                                onClick={() => {
+                                  const blob = new Blob([selectedProject.contractHtml], { type: 'text/html' });
+                                  const url = URL.createObjectURL(blob);
+                                  window.open(url, '_blank');
+                                }}
+                              >
+                                <i className="ri-eye-line mr-2"></i>
+                                View Contract
+                              </Button>
+                            )}
+                            
                             <Button 
                               size="sm" 
                               variant="outline" 
-                              className="w-full text-xs h-7 border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/10 justify-start"
+                              className="w-full border-green-400/30 text-green-300 hover:bg-green-400/10 justify-start"
                               onClick={() => {
-                                const blob = new Blob([selectedProject.estimateHtml], { type: 'text/html' });
-                                const url = URL.createObjectURL(blob);
-                                window.open(url, '_blank');
+                                window.location.href = `/cyberpunk-contract-generator?projectId=${selectedProject.id}`;
                               }}
                             >
-                              <i className="ri-eye-line mr-2"></i>
-                              View Estimate
+                              <i className="ri-file-add-line mr-2"></i>
+                              Create Contract
                             </Button>
-                          )}
-                          
-                          {selectedProject.contractHtml && (
+
                             <Button 
                               size="sm" 
                               variant="outline" 
-                              className="w-full text-xs h-7 border-purple-400/30 text-purple-300 hover:bg-purple-400/10 justify-start"
+                              className="w-full border-yellow-400/30 text-yellow-300 hover:bg-yellow-400/10 justify-start"
                               onClick={() => {
-                                const blob = new Blob([selectedProject.contractHtml], { type: 'text/html' });
-                                const url = URL.createObjectURL(blob);
-                                window.open(url, '_blank');
+                                window.location.href = `/invoices?projectId=${selectedProject.id}`;
                               }}
                             >
-                              <i className="ri-eye-line mr-2"></i>
-                              View Contract
+                              <i className="ri-bill-line mr-2"></i>
+                              Generate Invoice
                             </Button>
-                          )}
-                          
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="w-full text-xs h-7 border-green-400/30 text-green-300 hover:bg-green-400/10 justify-start"
-                            onClick={() => {
-                              window.location.href = `/cyberpunk-contract-generator?projectId=${selectedProject.id}`;
-                            }}
-                          >
-                            <i className="ri-file-add-line mr-2"></i>
-                            Create Contract
-                          </Button>
 
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="w-full text-xs h-7 border-yellow-400/30 text-yellow-300 hover:bg-yellow-400/10 justify-start"
-                            onClick={() => {
-                              window.location.href = `/invoices?projectId=${selectedProject.id}`;
-                            }}
-                          >
-                            <i className="ri-bill-line mr-2"></i>
-                            Generate Invoice
-                          </Button>
-                        </div>
-
-                        {/* Upload Section */}
-                        <div className="pt-2 border-t border-gray-700/30">
-                          <div className="relative">
-                            <input 
-                              type="file" 
-                              id={`file-upload-${selectedProject.id}`}
-                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                              multiple
-                              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                              onChange={(e) => {
-                                const files = e.target.files;
-                                if (files && files.length > 0) {
-                                  toast({
-                                    title: "Files Selected",
-                                    description: `${files.length} file(s) ready for upload`
-                                  });
-                                }
-                              }}
-                            />
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="w-full text-xs h-7 border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/10"
-                            >
-                              <i className="ri-upload-2-line mr-1"></i>
-                              Upload Files
-                            </Button>
+                            {/* Upload Section */}
+                            <div className="pt-2 border-t border-gray-700/30">
+                              <div className="relative">
+                                <input 
+                                  type="file" 
+                                  id={`file-upload-${selectedProject.id}`}
+                                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                  multiple
+                                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                                  onChange={(e) => {
+                                    const files = e.target.files;
+                                    if (files && files.length > 0) {
+                                      toast({
+                                        title: "Files Selected",
+                                        description: `${files.length} file(s) ready for upload`
+                                      });
+                                    }
+                                  }}
+                                />
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="w-full border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/10"
+                                >
+                                  <i className="ri-upload-2-line mr-2"></i>
+                                  Upload Files
+                                </Button>
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                 </div>
