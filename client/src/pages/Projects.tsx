@@ -696,9 +696,9 @@ function Projects() {
                 </DialogTitle>
               </DialogHeader>
               
-              <div className="flex-1 overflow-auto bg-gray-900 relative">
-                {/* Futuristic Timeline */}
-                <div className="p-6 pb-2">
+              <div className="flex-1 flex flex-col bg-gray-900 relative min-h-0">
+                {/* Futuristic Timeline - Fixed at top */}
+                <div className="flex-shrink-0 p-6 pb-4">
                   <FuturisticTimeline 
                     projectId={selectedProject.id} 
                     currentProgress={selectedProject.projectProgress || "estimate_created"} 
@@ -706,18 +706,18 @@ function Projects() {
                   />
                 </div>
 
-                {/* Dashboard Sections */}
-                <div className="px-6 pb-6">
+                {/* Dashboard Sections - Scrollable area */}
+                <div className="flex-1 px-6 pb-6 overflow-y-auto min-h-0">
                   <div className="grid lg:grid-cols-3 gap-4">
                     {/* Project Details Section */}
-                    <div className="bg-gray-800/40 border border-cyan-400/20 rounded-lg backdrop-blur-sm">
-                      <div className="p-3 border-b border-cyan-400/20 bg-gradient-to-r from-gray-800/60 to-gray-900/60">
+                    <div className="bg-gray-800/40 border border-cyan-400/20 rounded-lg backdrop-blur-sm flex flex-col">
+                      <div className="flex-shrink-0 p-3 border-b border-cyan-400/20 bg-gradient-to-r from-gray-800/60 to-gray-900/60">
                         <h4 className="text-cyan-300 font-semibold text-sm flex items-center">
                           <i className="ri-settings-4-line mr-2"></i>
                           Project Details
                         </h4>
                       </div>
-                      <div className="p-3 space-y-3 max-h-64 overflow-y-auto">
+                      <div className="flex-1 p-3 space-y-3 overflow-y-auto min-h-0" style={{ maxHeight: '300px' }}>
                         <div className="grid grid-cols-2 gap-2 text-xs">
                           <div>
                             <span className="text-gray-400 block">Type:</span>
@@ -779,14 +779,14 @@ function Projects() {
                     </div>
 
                     {/* Client Information Section */}
-                    <div className="bg-gray-800/40 border border-cyan-400/20 rounded-lg backdrop-blur-sm">
-                      <div className="p-3 border-b border-cyan-400/20 bg-gradient-to-r from-gray-800/60 to-gray-900/60">
+                    <div className="bg-gray-800/40 border border-cyan-400/20 rounded-lg backdrop-blur-sm flex flex-col">
+                      <div className="flex-shrink-0 p-3 border-b border-cyan-400/20 bg-gradient-to-r from-gray-800/60 to-gray-900/60">
                         <h4 className="text-cyan-300 font-semibold text-sm flex items-center">
                           <i className="ri-user-3-line mr-2"></i>
                           Client Information
                         </h4>
                       </div>
-                      <div className="p-3 space-y-3 max-h-64 overflow-y-auto">
+                      <div className="flex-1 p-3 space-y-3 overflow-y-auto min-h-0" style={{ maxHeight: '300px' }}>
                         <div>
                           <span className="text-gray-400 text-xs block mb-1">Name:</span>
                           <p className="text-cyan-200 font-medium text-sm">{selectedProject.clientName}</p>
@@ -842,14 +842,14 @@ function Projects() {
                     </div>
 
                     {/* Documents Section */}
-                    <div className="bg-gray-800/40 border border-cyan-400/20 rounded-lg backdrop-blur-sm">
-                      <div className="p-3 border-b border-cyan-400/20 bg-gradient-to-r from-gray-800/60 to-gray-900/60">
+                    <div className="bg-gray-800/40 border border-cyan-400/20 rounded-lg backdrop-blur-sm flex flex-col">
+                      <div className="flex-shrink-0 p-3 border-b border-cyan-400/20 bg-gradient-to-r from-gray-800/60 to-gray-900/60">
                         <h4 className="text-cyan-300 font-semibold text-sm flex items-center">
                           <i className="ri-folder-3-line mr-2"></i>
                           Documents
                         </h4>
                       </div>
-                      <div className="p-3 space-y-3 max-h-64 overflow-y-auto">
+                      <div className="flex-1 p-3 space-y-3 overflow-y-auto min-h-0" style={{ maxHeight: '300px' }}>
                         {/* Document Count Grid */}
                         <div className="grid grid-cols-2 gap-2">
                           <div className="bg-gray-700/30 p-2 rounded border border-gray-600/20 text-center">
