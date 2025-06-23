@@ -15,11 +15,11 @@ html, body {
   max-height: 100vh !important;
   margin: 0 !important;
   padding: 0 !important;
-  overflow: hidden !important; /* Solo bloquear en html/body para el layout principal */
+  overflow: auto !important; /* Allow scrolling */
 }
 
 #root {
-  overflow: hidden !important;
+  overflow: auto !important; /* Allow scrolling */
   height: 100vh !important;
   max-height: 100vh !important;
 }
@@ -27,15 +27,15 @@ html, body {
 aside {
   height: 100vh !important;
   max-height: 100vh !important;
-  overflow: hidden !important;
+  overflow-y: auto !important; /* Allow vertical scrolling in sidebar */
   box-sizing: border-box !important;
 }
 
-/* Main permite scroll interno, pero no en el contenedor principal */
+/* Main allows internal scrolling */
 main {
   height: 100vh !important;
   max-height: 100vh !important;
-  overflow: hidden !important;
+  overflow: auto !important; /* Allow scrolling */
 }
 
 /* Permitir scroll en páginas específicas */
@@ -54,9 +54,9 @@ main {
   max-height: 100% !important;
 }
 
-/* Eliminar cualquier scroll de elementos flex */
+/* Allow scrolling in flex containers when needed */
 .flex, .flex-1, .flex-col {
-  overflow: hidden !important;
+  overflow: visible !important;
 }
 
 /* Animaciones para el reactor de Iron Man */
@@ -1709,12 +1709,9 @@ body {
   width: 0%;
 }
 
-/* Ocultar scrollbar pero mantener funcionalidad - Aplicado a TODOS los elementos */
-*, *:before, *:after,
+/* Hide scrollbar but maintain functionality - Only for specific elements */
 .hide-scrollbar,
-html, body, 
-div, main, section, article, aside, nav, header, footer,
-/* Custom scrolling styles for better mobile compatibility */
+.custom-scroll,
 .overflow-auto, .overflow-y-auto, .overflow-x-auto,
 .overflow-scroll, .overflow-y-scroll, .overflow-x-scroll {
   -ms-overflow-style: none !important;  /* IE and Edge */
@@ -1723,14 +1720,8 @@ div, main, section, article, aside, nav, header, footer,
   scrollbar-width: none !important;     /* Firefox */
 }
 
-*::-webkit-scrollbar,
 .hide-scrollbar::-webkit-scrollbar,
-html::-webkit-scrollbar, 
-body::-webkit-scrollbar,
-div::-webkit-scrollbar, main::-webkit-scrollbar, 
-section::-webkit-scrollbar, article::-webkit-scrollbar, 
-aside::-webkit-scrollbar, nav::-webkit-scrollbar,
-header::-webkit-scrollbar, footer::-webkit-scrollbar,
+.custom-scroll::-webkit-scrollbar,
 .overflow-auto::-webkit-scrollbar, .overflow-y-auto::-webkit-scrollbar, .overflow-x-auto::-webkit-scrollbar,
 .overflow-scroll::-webkit-scrollbar, .overflow-y-scroll::-webkit-scrollbar, .overflow-x-scroll::-webkit-scrollbar {
   display: none !important;             /* Chrome, Safari, Opera */

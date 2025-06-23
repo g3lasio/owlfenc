@@ -99,10 +99,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       display: 'flex', 
       height: '100vh', 
       width: '100vw', 
-      overflow: 'hidden',
-      position: 'fixed',
-      top: 0,
-      left: 0
+      overflow: 'auto'
     }}>
       {/* Sidebar siempre visible en todas las pantallas */}
       <Sidebar onWidthChange={setSidebarWidth} />
@@ -113,7 +110,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         display: 'flex', 
         flexDirection: 'column',
         height: '100vh', 
-        overflow: 'hidden',
+        overflow: 'auto',
         marginLeft: `${sidebarWidth}px`
       }}>
         <Header toggleMobileMenu={toggleMobileMenu} isMobileMenuOpen={isMobileMenuOpen} />
