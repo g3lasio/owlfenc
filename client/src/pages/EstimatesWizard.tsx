@@ -48,6 +48,7 @@ import {
   FileText,
   Eye,
   Save,
+
   Trash2,
   Users,
   ChevronRight,
@@ -64,6 +65,8 @@ import {
   AlertCircle,
   Edit,
   Mail,
+  Phone,
+  MapPin,
   X,
   Wrench,
   Combine,
@@ -3196,136 +3199,34 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                     <Check className="h-5 w-5 text-primary" />
                   </div>
                   
-                  {/* Editable Client Information */}
-                  <div className="space-y-2 bg-white/50 p-3 rounded border">
-                    <div className="text-xs font-medium text-gray-600 mb-2">INFORMACIÓN EDITABLE</div>
-                    
-                    {/* Email */}
-                    <div>
-                      <Label htmlFor="client-email" className="text-xs text-gray-600">Email</Label>
-                      <Input
-                        id="client-email"
-                        value={estimate.client.email || ''}
-                        onChange={(e) => setEstimate(prev => ({
-                          ...prev,
-                          client: { ...prev.client!, email: e.target.value }
-                        }))}
-                        placeholder="Email del cliente"
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                    
-                    {/* Phone */}
-                    <div>
-                      <Label htmlFor="client-phone" className="text-xs text-gray-600">Teléfono</Label>
-                      <Input
-                        id="client-phone"
-                        value={estimate.client.phone || ''}
-                        onChange={(e) => setEstimate(prev => ({
-                          ...prev,
-                          client: { ...prev.client!, phone: e.target.value }
-                        }))}
-                        placeholder="Teléfono del cliente"
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                    
-                    {/* Address */}
-                    <div>
-                      <Label htmlFor="client-address" className="text-xs text-gray-600">Dirección Completa</Label>
-                      <Input
-                        id="client-address"
-                        value={estimate.client.address || ''}
-                        onChange={(e) => setEstimate(prev => ({
-                          ...prev,
-                          client: { ...prev.client!, address: e.target.value }
-                        }))}
-                        placeholder="Dirección completa del cliente"
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                    
-                    {/* City */}
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <Label htmlFor="client-city" className="text-xs text-gray-600">Ciudad</Label>
-                        <Input
-                          id="client-city"
-                          value={estimate.client.city || ''}
-                          onChange={(e) => setEstimate(prev => ({
-                            ...prev,
-                            client: { ...prev.client!, city: e.target.value }
-                          }))}
-                          placeholder="Ciudad"
-                          className="h-8 text-sm"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="client-state" className="text-xs text-gray-600">Estado</Label>
-                        <Input
-                          id="client-state"
-                          value={estimate.client.state || ''}
-                          onChange={(e) => setEstimate(prev => ({
-                            ...prev,
-                            client: { ...prev.client!, state: e.target.value }
-                          }))}
-                          placeholder="Estado"
-                          className="h-8 text-sm"
-                        />
-                      </div>
-                    </div>
-                    
-                    {/* ZIP Code */}
-                    <div>
-                      <Label htmlFor="client-zip" className="text-xs text-gray-600">Código Postal</Label>
-                      <Input
-                        id="client-zip"
-                        value={estimate.client.zipCode || estimate.client.zipcode || ''}
-                        onChange={(e) => setEstimate(prev => ({
-                          ...prev,
-                          client: { ...prev.client!, zipCode: e.target.value }
-                        }))}
-                        placeholder="Código postal"
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                    
-                    <div className="text-xs text-gray-500 mt-2">
-                      ✓ Los cambios se aplicarán automáticamente al PDF
-                    </div>
-                    
-                    {/* Auto-complete address button */}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        // Fill Turner Group Construction address as example
-                        if (estimate.client?.name === "Turner Group Construction") {
-                          setEstimate(prev => ({
-                            ...prev,
-                            client: { 
-                              ...prev.client!, 
-                              address: "8055 Collins Dr", 
-                              city: "Oakland", 
-                              state: "CA", 
-                              zipCode: "94621" 
-                            }
-                          }));
-                          toast({
-                            title: "Address completed",
-                            description: "Client address has been filled automatically"
-                          });
-                        }
-                      }}
-                      className="w-full text-xs"
-                    >
-                      Auto-complete Address (if available)
-                    </Button>
+                  {/* Client Information Display Only */}
+                  <div className="space-y-1 text-sm text-gray-600">
+                    {estimate.client.email && (
+                      <p className="flex items-center gap-2">
+                        <Mail className="h-3 w-3" />
+                        {estimate.client.email}
+                      </p>
+                    )}
+                    {estimate.client.phone && (
+                      <p className="flex items-center gap-2">
+                        <Phone className="h-3 w-3" />
+                        {estimate.client.phone}
+                      </p>
+                    )}
+                    {estimate.client.address && (
+                      <p className="flex items-center gap-2">
+                        <MapPin className="h-3 w-3" />
+                        {estimate.client.address}
+                        {estimate.client.city && `, ${estimate.client.city}`}
+                        {estimate.client.state && `, ${estimate.client.state}`}
+                        {estimate.client.zipCode && ` ${estimate.client.zipCode}`}
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
 
-              <div className="max-h-48 ">
+              <div className="max-h-32 overflow-y-auto">
                 {isLoadingClients ? (
                   <p className="text-center py-4 text-muted-foreground">
                     Cargando clientes...
@@ -3338,10 +3239,10 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   </p>
                 ) : (
                   <div className="space-y-1">
-                    {filteredClients.map((client) => (
+                    {filteredClients.slice(0, 3).map((client) => (
                       <div
                         key={client.id}
-                        className={`p-2 border rounded cursor-pointer transition-colors ${
+                        className={`p-1.5 border rounded cursor-pointer transition-colors ${
                           estimate.client?.id === client.id
                             ? "border-primary bg-primary/5"
                             : "hover:bg-muted"
@@ -3350,24 +3251,24 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       >
                         <div className="flex items-start justify-between">
                           <div className="min-w-0 flex-1">
-                            <h4 className="font-medium text-sm truncate">
+                            <h4 className="font-medium text-xs truncate">
                               {client.name}
                             </h4>
-                            <div className="flex flex-col sm:flex-row sm:gap-3 text-xs text-muted-foreground">
-                              <span className="truncate">
-                                {client.email || "Sin email"}
-                              </span>
-                              <span className="flex-shrink-0">
-                                {client.phone || "Sin teléfono"}
-                              </span>
+                            <div className="text-xs text-muted-foreground truncate">
+                              {client.email || client.phone || "Sin contacto"}
                             </div>
                           </div>
                           {estimate.client?.id === client.id && (
-                            <Check className="h-4 w-4 text-primary flex-shrink-0 ml-2 mt-1" />
+                            <Check className="h-3 w-3 text-primary flex-shrink-0 ml-1 mt-0.5" />
                           )}
                         </div>
                       </div>
                     ))}
+                    {filteredClients.length > 3 && (
+                      <div className="text-xs text-center text-muted-foreground py-1">
+                        +{filteredClients.length - 3} más clientes disponibles
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
