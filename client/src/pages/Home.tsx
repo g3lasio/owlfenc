@@ -3,16 +3,6 @@ import { Link } from "wouter";
 import { useEffect, useState } from "react";
 
 export default function Home() {
-  // Aplicar clase específica al body para home
-  useEffect(() => {
-    document.body.classList.add('home-page');
-    document.documentElement.classList.add('home-page');
-    
-    return () => {
-      document.body.classList.remove('home-page');
-      document.documentElement.classList.remove('home-page');
-    };
-  }, []);
   // Estado para manejar la animación de partículas
   const [particles, setParticles] = useState<Array<{id: number, x: number, y: number, size: number, speed: number, opacity: number, delay: number}>>([]);
   

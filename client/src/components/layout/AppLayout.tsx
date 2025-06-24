@@ -105,25 +105,20 @@ export default function AppLayout({ children }: AppLayoutProps) {
       <Sidebar onWidthChange={setSidebarWidth} />
 
       {/* Contenido principal con margen dinámico para el sidebar */}
-      <main 
-        className={location === '/' ? 'home-main' : ''} 
-        style={{ 
-          flex: 1, 
-          display: 'flex', 
-          flexDirection: 'column',
-          height: '100vh', 
-          overflow: location === '/' ? 'hidden' : 'auto',
-          marginLeft: '0px', // Sin margen porque el botón flota
-          position: location === '/' ? 'fixed' : 'relative',
-          width: location === '/' ? '100vw' : 'auto' // Ocupa toda la pantalla
-        }}>
+      <main style={{ 
+        flex: 1, 
+        display: 'flex', 
+        flexDirection: 'column',
+        height: '100vh', 
+        overflow: 'auto',
+        marginLeft: `${sidebarWidth}px`
+      }}>
         <Header toggleMobileMenu={toggleMobileMenu} isMobileMenuOpen={isMobileMenuOpen} />
         <div style={{ 
           flex: 1, 
-          overflow: location === '/' ? 'hidden' : 'auto',
-          height: location === '/' ? '100vh' : 'calc(100vh - 104px)', // Sin restricción en home
-          paddingBottom: location === '/' ? '0' : '20px',
-          position: location === '/' ? 'relative' : 'static'
+          overflow: 'auto',
+          height: 'calc(100vh - 104px)', // Altura ajustada para header (64px) + footer (40px)
+          paddingBottom: '20px'
         }}>
           <Switch>
             <Route path="/settings/profile" component={Profile} />
