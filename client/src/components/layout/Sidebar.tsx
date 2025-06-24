@@ -95,13 +95,12 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
           ${isSidebarExpanded ? 'w-72 border-r border-border' : 'w-16'}
         `}
         style={{ 
-          height: 'calc(100vh - 40px)', // Resta la altura del footer
-          maxHeight: 'calc(100vh - 40px)', 
+          height: '100vh',
+          maxHeight: '100vh', 
           overflow: 'hidden',
-          position: 'fixed',
-          left: 0,
-          top: 0,
-          zIndex: 40
+          position: 'relative',
+          zIndex: 40,
+          flexShrink: 0
         }}
       >
         

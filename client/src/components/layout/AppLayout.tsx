@@ -95,32 +95,27 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
   // Para el resto de las páginas (protegidas), mostrar el layout completo
   return (
-    <div className="app-container" style={{ height: '100vh', overflow: 'hidden', position: 'fixed', width: '100%' }}>
-      {/* Sidebar siempre visible en todas las pantallas */}
-      <div className="sidebar-container">
-        <Sidebar onWidthChange={setSidebarWidth} />
-      </div>
+    <div className="flex h-screen bg-background">
+      {/* Sidebar fijo a la izquierda */}
+      <Sidebar onWidthChange={setSidebarWidth} />
 
       {/* Contenido principal */}
-      <div className="main-content-area" style={{ marginLeft: `${sidebarWidth}px`, height: '100vh', overflow: 'hidden' }}>
+      <div 
+        className="flex-1 flex flex-col"
+        style={{ marginLeft: 0, width: `calc(100% - ${sidebarWidth}px)` }}
+      >
         <Header toggleMobileMenu={toggleMobileMenu} isMobileMenuOpen={isMobileMenuOpen} />
-        <Switch>
-          <Route path="/settings/profile" component={Profile} />
-          <Route path="*">{children}</Route>
-        </Switch>
         
-        {/* Footer fijo en la parte inferior del contenido principal */}
-        <div 
-          className="py-2 px-4 bg-gray-900 border-t border-cyan-900/30 text-xs text-center text-cyan-500/50"
-          style={{
-            position: 'fixed',
-            bottom: 0,
-            left: `${sidebarWidth}px`,
-            right: 0,
-            zIndex: 10,
-            flexShrink: 0
-          }}
-        >
+        {/* Área de contenido principal con scroll controlado */}
+        <main className="flex-1 overflow-y-auto scrollable-content">
+          <Switch>
+            <Route path="/settings/profile" component={Profile} />
+            <Route path="*">{children}</Route>
+          </Switch>
+        </main>
+        
+        {/* Footer fijo */}
+        <footer className="py-2 px-4 bg-gray-900 border-t border-cyan-900/30 text-xs text-center text-cyan-500/50 flex-shrink-0">
           <div className="flex justify-center items-center space-x-4">
             <Link to="/privacy-policy" className="hover:text-cyan-400 cursor-pointer transition-colors">
               Privacy Policy
@@ -132,8 +127,16 @@ export default function AppLayout({ children }: AppLayoutProps) {
             <span>|</span>
             <span className="font-medium">© {new Date().getFullYear()} Owl Fence</span>
           </div>
-        </div>
+        </footer>
       </div>
+
+      {/* Menu móvil overlay */}
+      {isMobileMenuOpen && (
+        <MobileMenu 
+          isOpen={isMobileMenuOpen} 
+          onClose={() => setIsMobileMenuOpen(false)} 
+        />
+      )}
     </div>
   );
 }
