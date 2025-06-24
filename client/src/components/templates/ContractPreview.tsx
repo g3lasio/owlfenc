@@ -13,7 +13,7 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ html }) => {
           <span className="text-xs text-muted-foreground">Contrato oficial</span>
         </div>
         <div 
-          className="contract-content p-4 max-h-[500px] overflow-y-auto" 
+          className="contract-content p-4 max-h-[500px] " 
           dangerouslySetInnerHTML={{ __html: html }}
         ></div>
       </div>

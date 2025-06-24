@@ -60,7 +60,7 @@ export const ScrollableContent: React.FC<ScrollableContentProps> = ({
   return (
     <div 
       className={cn(
-        "flex-1 overflow-y-auto overflow-x-hidden custom-scroll",
+        "flex-1  overflow-x-hidden custom-scroll",
         padding && "p-4",
         className
       )}
@@ -178,7 +178,7 @@ export const TabContent: React.FC<TabContentProps> = ({
   return (
     <div 
       className={cn(
-        "flex-1 overflow-y-auto overflow-x-hidden custom-scroll p-4",
+        "flex-1  overflow-x-hidden custom-scroll p-4",
         className
       )}
       style={{ minHeight: 0 }}

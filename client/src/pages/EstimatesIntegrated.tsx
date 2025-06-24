@@ -459,7 +459,7 @@ export default function EstimatesIntegrated() {
                           className="pl-10"
                         />
                       </div>
-                      <div className="max-h-96 overflow-y-auto">
+                      <div className="max-h-96 ">
                         {filteredClients.map((client) => (
                           <div
                             key={client.id}
@@ -551,7 +551,7 @@ export default function EstimatesIntegrated() {
                           className="pl-10"
                         />
                       </div>
-                      <div className="max-h-96 overflow-y-auto">
+                      <div className="max-h-96 ">
                         {filteredMaterials.map((material) => (
                           <div
                             key={material.id}

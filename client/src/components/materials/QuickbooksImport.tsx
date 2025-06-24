@@ -411,7 +411,7 @@ export const QuickbooksImport = ({
             <div className="col-span-2">Stock</div>
           </div>
           
-          <div className="max-h-[300px] overflow-y-auto">
+          <div className="max-h-[300px] ">
             {isLoading ? (
               <div className="flex justify-center items-center p-4">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />

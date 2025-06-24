@@ -773,7 +773,7 @@ export default function EstimatesWizardFixed() {
                 </div>
               )}
 
-              <div className="max-h-48 overflow-y-auto">
+              <div className="max-h-48 ">
                 {isLoadingClients ? (
                   <p className="text-center py-4 text-muted-foreground">Cargando clientes...</p>
                 ) : filteredClients.length === 0 ? (
@@ -896,7 +896,7 @@ export default function EstimatesWizardFixed() {
                           className="pl-10"
                         />
                       </div>
-                      <div className="max-h-96 overflow-y-auto">
+                      <div className="max-h-96 ">
                         {isLoadingMaterials ? (
                           <p className="text-center py-4 text-muted-foreground">Cargando materiales...</p>
                         ) : filteredMaterials.length === 0 ? (

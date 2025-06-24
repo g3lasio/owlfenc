@@ -202,7 +202,7 @@ export default function Sidebar() {
         <div className="flex-1 overflow-hidden">
           {isSidebarExpanded ? (
             // Vista expandida - Scroll solo si es necesario
-            <div className="h-full overflow-y-auto">
+            <div className="h-full ">
               <div className="p-3 space-y-3">
                 {navigationGroups.map((group, index) => (
                   <div key={`group-${index}`} className="space-y-1">

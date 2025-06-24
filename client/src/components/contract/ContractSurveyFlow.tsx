@@ -727,14 +727,14 @@ const ContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Descripción Original</Label>
-                  <div className="border rounded-md p-3 bg-muted/30 text-sm min-h-[200px] overflow-y-auto">
+                  <div className="border rounded-md p-3 bg-muted/30 text-sm min-h-[200px] ">
                     {originalDescription || "Sin descripción"}
                   </div>
                 </div>
                 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Descripción Mejorada</Label>
-                  <div className="border rounded-md p-3 bg-primary/5 text-sm min-h-[200px] overflow-y-auto">
+                  <div className="border rounded-md p-3 bg-primary/5 text-sm min-h-[200px] ">
                     {enhancedDescription || "No hay mejoras disponibles"}
                   </div>
                 </div>
@@ -768,13 +768,13 @@ const ContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
             </div>
           ) : (
             <>
-              <div className="space-y-4 overflow-y-auto flex-1 p-1">
+              <div className="space-y-4  flex-1 p-1">
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">
                     Estas son cláusulas adicionales sugeridas para tu contrato, basadas en el tipo de proyecto y los detalles proporcionados.
                   </p>
                   
-                  <div className="border rounded-md p-4 bg-primary/5 text-sm overflow-y-auto whitespace-pre-wrap">
+                  <div className="border rounded-md p-4 bg-primary/5 text-sm  whitespace-pre-wrap">
                     {aiGeneratedClauses || "No hay cláusulas disponibles"}
                   </div>
                 </div>
@@ -889,14 +889,14 @@ const ContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Descripción Original</Label>
-                  <div className="border rounded-md p-3 bg-muted/30 text-sm min-h-[200px] overflow-y-auto">
+                  <div className="border rounded-md p-3 bg-muted/30 text-sm min-h-[200px] ">
                     {originalDescription || "Sin descripción"}
                   </div>
                 </div>
                 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Descripción Mejorada</Label>
-                  <div className="border rounded-md p-3 bg-primary/5 text-sm min-h-[200px] overflow-y-auto">
+                  <div className="border rounded-md p-3 bg-primary/5 text-sm min-h-[200px] ">
                     {enhancedDescription || "No hay mejoras disponibles"}
                   </div>
                 </div>

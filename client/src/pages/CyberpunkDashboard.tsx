@@ -190,7 +190,7 @@ const CyberpunkDashboard: React.FC<CyberpunkDashboardProps> = ({
             {/* Desktop Layout: Two Columns */}
             <div className="hidden lg:grid lg:grid-cols-2 gap-6 p-6 h-full">
               {/* Left Column - Progress & System Status */}
-              <div className="space-y-6 overflow-auto">
+              <div className="space-y-6 ">
                 {/* System Status */}
                 <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg relative overflow-hidden shadow-[0_0_20px_rgba(6,182,212,0.1)]">
                   {/* Corner Brackets */}

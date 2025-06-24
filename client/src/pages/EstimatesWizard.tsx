@@ -3325,7 +3325,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                 </div>
               )}
 
-              <div className="max-h-48 overflow-y-auto">
+              <div className="max-h-48 ">
                 {isLoadingClients ? (
                   <p className="text-center py-4 text-muted-foreground">
                     Cargando clientes...
@@ -3428,7 +3428,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         projectDetails: e.target.value,
                       }))
                     }
-                    className="min-h-[120px] max-h-[300px] text-sm resize-none overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100"
+                    className="min-h-[120px] max-h-[300px] text-sm resize-none  scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100"
                   />
                 </div>
                 
@@ -3915,7 +3915,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                           className="pl-10"
                         />
                       </div>
-                      <div className="max-h-96 overflow-y-auto">
+                      <div className="max-h-96 ">
                         {isLoadingMaterials ? (
                           <p className="text-center py-4 text-muted-foreground">
                             Loading materials...
@@ -4832,7 +4832,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         open={showCompanyEditDialog}
         onOpenChange={setShowCompanyEditDialog}
       >
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[80vh] ">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5" />
@@ -5305,7 +5305,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                 </p>
               </div>
             ) : (
-              <div className="max-h-80 overflow-y-auto px-2">
+              <div className="max-h-80  px-2">
                 <div className="space-y-2">
                   {savedEstimates.map((estimate) => (
                     <div
@@ -5545,7 +5545,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
       {/* Complete PDF Preview Dialog */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[95vh] ">
           <DialogHeader className="border-b border-gray-200 pb-4">
             <DialogTitle className="flex items-center gap-3 text-xl">
               <div className="p-2 bg-blue-100 rounded-lg">
@@ -5845,7 +5845,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-gray-50 min-h-0 max-h-[calc(90vh-200px)]">
+          <div className="flex-1  px-4 py-4 space-y-4 bg-gray-50 min-h-0 max-h-[calc(90vh-200px)]">
             {/* Client Information */}
             {estimate.client && (
               <div className="bg-white rounded-lg border p-3">
@@ -5965,7 +5965,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                 <Eye className="h-4 w-4 text-blue-600" />
                 Email Preview
               </h4>
-              <div className="bg-gray-50 rounded p-3 text-xs space-y-2 max-h-40 overflow-y-auto">
+              <div className="bg-gray-50 rounded p-3 text-xs space-y-2 max-h-40 ">
                 <div>
                   <strong>To:</strong> {emailData.toEmail || "client@email.com"}
                 </div>
@@ -6040,7 +6040,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
             </div>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto space-y-4 py-4 min-h-0 pr-2">
+          <div className="flex-1  space-y-4 py-4 min-h-0 pr-2">
             {/* Email Headers Preview */}
             <div className="bg-gray-800/50 rounded-lg p-3 sm:p-4 border border-cyan-500/20">
               <div className="space-y-2 text-xs sm:text-sm">
@@ -6066,7 +6066,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
             </div>
 
             {/* Email Content Preview */}
-            <div className="bg-white rounded-lg p-4 text-black max-h-[60vh] overflow-y-auto">
+            <div className="bg-white rounded-lg p-4 text-black max-h-[60vh] ">
               <div className="space-y-4">
                 {/* Message Preview */}
                 <div className="whitespace-pre-wrap text-gray-800 text-sm leading-relaxed">

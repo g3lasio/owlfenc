@@ -627,7 +627,7 @@ export default function Estimates() {
                           className="pl-10"
                         />
                       </div>
-                      <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
+                      <div className="flex-1  space-y-2 min-h-0">
                         {isLoadingClients ? (
                           <p className="text-center py-8 text-muted-foreground">
                             Cargando clientes...
@@ -838,7 +838,7 @@ export default function Estimates() {
                             </DialogContent>
                           </Dialog>
                         </div>
-                        <div className="max-h-96 overflow-y-auto">
+                        <div className="max-h-96 ">
                           {isLoadingMaterials ? (
                             <p className="text-center py-4 text-muted-foreground">
                               Cargando materiales...
@@ -1048,7 +1048,7 @@ export default function Estimates() {
 
       {/* Preview Dialog */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[90vh] ">
           <DialogHeader>
             <DialogTitle>Vista Previa del Estimado</DialogTitle>
           </DialogHeader>

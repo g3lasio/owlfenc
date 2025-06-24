@@ -369,7 +369,7 @@ export default function DeepSearchDemo() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3 max-h-80 overflow-y-auto">
+              <div className="space-y-3 max-h-80 ">
                 {analysisResult.materials.map((material, index) => (
                   <div key={material.id} className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
                     <div className="flex-1">

@@ -82,7 +82,7 @@ export function Navigation({ variant, type = "main" }: NavigationProps) {
   };
 
   return (
-    <nav className={`flex-1 ${variant === "sidebar" ? "p-4" : "p-4"} space-y-5 overflow-y-auto`}>
+    <nav className={`flex-1 ${variant === "sidebar" ? "p-4" : "p-4"} space-y-5 `}>
       {navigationConfig.map((section: NavigationSection, index: number) => (
         <div key={section.title} className="space-y-1">
           <div className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">

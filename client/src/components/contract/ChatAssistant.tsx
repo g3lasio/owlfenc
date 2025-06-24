@@ -262,7 +262,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({
       </div>
 
       {/* Área de mensajes */}
-      <div className="flex-1 p-4 overflow-y-auto">
+      <div className="flex-1 p-4 ">
         {messages.map((msg, idx) => (
           <div 
             key={idx} 

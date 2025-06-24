@@ -5,7 +5,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* SOLUCIÓN DEFINITIVA ANTI-SCROLL INFINITO */
+/* ELIMINACIÓN TOTAL DE SCROLL INFINITO */
 html, body {
   height: 100vh !important;
   max-height: 100vh !important;
@@ -22,6 +22,15 @@ html, body {
   flex-direction: column !important;
   margin: 0 !important;
   padding: 0 !important;
+}
+
+/* ELIMINACIÓN GLOBAL DE OVERFLOW PROBLEMÁTICO */
+* {
+  overflow-x: hidden !important;
+}
+
+.overflow-auto, .overflow-y-auto, .overflow-scroll {
+  overflow: hidden !important;
 }
 
 /* Contenedor principal de la app */
@@ -51,10 +60,10 @@ html, body {
   flex-direction: column !important;
 }
 
-/* Páginas individuales */
+/* Páginas individuales - SIN SCROLL */
 .page-container {
-  height: calc(100vh - 144px) !important;
-  max-height: calc(100vh - 144px) !important;
+  height: calc(100vh - 104px) !important;
+  max-height: calc(100vh - 104px) !important;
   overflow: hidden !important;
   display: flex !important;
   flex-direction: column !important;
@@ -69,12 +78,13 @@ html, body {
   max-height: calc(100vh - var(--header-height, 120px)) !important;
 }
 
-/* Para páginas con contenido que requiera scroll interno */
+/* Contenido controlado - SOLO SCROLL DONDE NECESARIO */
 .scrollable-content {
   overflow-y: auto !important;
-  max-height: calc(100vh - 160px) !important;
+  max-height: calc(100vh - 144px) !important;
   padding: 1.5rem !important;
   flex: 1 !important;
+  scrollbar-width: thin !important;
 }
 
 /* Estructuras específicas para diferentes tipos de contenido */

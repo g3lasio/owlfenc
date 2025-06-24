@@ -599,7 +599,7 @@ function Projects() {
                   </div>
 
                   <div className="flex-1 bg-gray-800/50 border-2 border-cyan-400/30 rounded-lg backdrop-blur-sm shadow-2xl overflow-hidden">
-                    <div className="h-full overflow-y-auto p-4">
+                    <div className="h-full  p-4">
                       {dashboardTab === 'details' && (
                         <div className="space-y-4">
                           <div className="grid grid-cols-2 gap-4 text-sm">

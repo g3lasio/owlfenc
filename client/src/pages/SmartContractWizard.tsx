@@ -1225,7 +1225,7 @@ const FinalStep: React.FC<{
         </Alert>
 
         {/* Preview del Contrato */}
-        <div className="border rounded-lg p-4 max-h-96 overflow-y-auto bg-gray-50">
+        <div className="border rounded-lg p-4 max-h-96  bg-gray-50">
           <div dangerouslySetInnerHTML={{ __html: contract }} />
         </div>
 

@@ -189,7 +189,7 @@ export function AddressAutocomplete({
 
       {/* Lista de sugerencias */}
       {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 ">
           {suggestions.map((suggestion, index) => (
             <button
               key={index}

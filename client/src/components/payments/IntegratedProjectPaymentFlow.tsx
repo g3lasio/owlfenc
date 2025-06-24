@@ -243,7 +243,7 @@ export default function IntegratedProjectPaymentFlow({
               Select Project
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4 max-h-96 overflow-y-auto">
+          <CardContent className="space-y-4 max-h-96 ">
             {projects.map((project) => {
               const amounts = calculateAmounts(project);
               const statusInfo = getProjectStatus(project.status || '');
@@ -409,7 +409,7 @@ export default function IntegratedProjectPaymentFlow({
                   return amounts.projectPayments.length > 0 && (
                     <div className="space-y-3">
                       <h5 className="font-medium">Recent Payments</h5>
-                      <div className="space-y-2 max-h-32 overflow-y-auto">
+                      <div className="space-y-2 max-h-32 ">
                         {amounts.projectPayments.slice(0, 3).map((payment) => (
                           <div key={payment.id} className="flex items-center justify-between p-3 bg-muted/30 rounded">
                             <div className="flex items-center gap-3">

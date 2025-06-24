@@ -245,7 +245,7 @@ export const UnifiedContractPreview: React.FC<UnifiedContractPreviewProps> = ({
                 </div>
               ) : generatedContract ? (
                 <div 
-                  className="border rounded-lg p-6 bg-white max-h-96 overflow-y-auto"
+                  className="border rounded-lg p-6 bg-white max-h-96 "
                   dangerouslySetInnerHTML={{ __html: generatedContract.html }}
                 />
               ) : (

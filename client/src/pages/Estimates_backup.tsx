@@ -977,7 +977,7 @@ export default function Estimates() {
                 </Button>
               </div>
             ) : (
-              <div className="overflow-y-auto max-h-96">
+              <div className=" max-h-96">
                 <div className="grid gap-2">
                   {filteredClients.map((client) => (
                     <div
@@ -1115,7 +1115,7 @@ export default function Estimates() {
                 </Button>
               </div>
             ) : (
-              <div className="overflow-y-auto max-h-96">
+              <div className=" max-h-96">
                 <div className="grid gap-2">
                   {filteredMaterials.map((material) => (
                     <div
@@ -1259,7 +1259,7 @@ export default function Estimates() {
       
       {/* Preview Dialog */}
       <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
-        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[800px] max-h-[90vh] ">
           <DialogHeader>
             <DialogTitle>Vista Previa del Estimado</DialogTitle>
           </DialogHeader>

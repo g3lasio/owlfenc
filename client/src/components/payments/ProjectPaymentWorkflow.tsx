@@ -147,7 +147,7 @@ export default function ProjectPaymentWorkflow({
         ) : (
           <div className="space-y-4">
             {/* Compact Project List - Show max 3 at a time */}
-            <div className="max-h-80 overflow-y-auto space-y-3 border rounded-lg p-4">
+            <div className="max-h-80  space-y-3 border rounded-lg p-4">
               {projects.map((project) => {
                 const amounts = calculatePayments(project);
                 

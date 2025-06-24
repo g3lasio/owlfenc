@@ -731,14 +731,14 @@ const NewContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Original Description</Label>
-                  <div className="border rounded-md p-3 bg-muted/30 text-sm min-h-[200px] overflow-y-auto">
+                  <div className="border rounded-md p-3 bg-muted/30 text-sm min-h-[200px] ">
                     {originalDescription || "No description"}
                   </div>
                 </div>
                 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Enhanced Description</Label>
-                  <div className="border rounded-md p-3 bg-primary/5 text-sm min-h-[200px] overflow-y-auto">
+                  <div className="border rounded-md p-3 bg-primary/5 text-sm min-h-[200px] ">
                     {enhancedDescription || "No enhancements available"}
                   </div>
                 </div>
@@ -779,7 +779,7 @@ const NewContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
             </div>
           ) : (
             <>
-              <div className="space-y-4 overflow-y-auto flex-1 p-1">
+              <div className="space-y-4  flex-1 p-1">
                 {/* AI Analysis Summary */}
                 <div className="p-4 bg-cyan-500/10 border border-cyan-500/30 rounded-lg">
                   <h4 className="font-semibold text-cyan-400 mb-2 flex items-center">
@@ -803,7 +803,7 @@ const NewContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
                     These clauses have been specifically tailored to your {selectedCategory} project to provide legal protection.
                   </p>
                   
-                  <div className="border rounded-md p-4 bg-black/50 border-cyan-500/30 text-sm overflow-y-auto whitespace-pre-wrap max-h-64">
+                  <div className="border rounded-md p-4 bg-black/50 border-cyan-500/30 text-sm  whitespace-pre-wrap max-h-64">
                     {aiGeneratedClauses || "No clauses available"}
                   </div>
                   
@@ -842,7 +842,7 @@ const NewContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
             <DialogTitle>Vista Previa del Contrato</DialogTitle>
           </DialogHeader>
           
-          <div className="overflow-y-auto flex-1 p-4 bg-white rounded-md border">
+          <div className=" flex-1 p-4 bg-white rounded-md border">
             <h2 className="text-2xl font-bold mb-6 text-center">CONTRATO DE SERVICIOS PROFESIONALES</h2>
             
             <div className="space-y-6">

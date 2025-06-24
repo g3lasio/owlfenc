@@ -2564,7 +2564,7 @@ export default function CyberpunkLegalDefense() {
                           </div>
                         ) : contractPreviewHtml ? (
                           <div 
-                            className="h-64 md:h-80 xl:h-96 overflow-y-auto p-3 md:p-4 contract-content"
+                            className="h-64 md:h-80 xl:h-96  p-3 md:p-4 contract-content"
                             dangerouslySetInnerHTML={{ __html: contractPreviewHtml }}
                             style={{
                               fontSize: '9px',

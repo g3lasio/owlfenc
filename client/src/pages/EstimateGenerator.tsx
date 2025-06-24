@@ -857,7 +857,7 @@ export default function EstimateGenerator() {
             )}
           </div>
           
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 ">
             {loadingClients ? (
               <div className="flex items-center justify-center py-8">
                 <div className="text-muted-foreground">Loading clients...</div>
@@ -904,7 +904,7 @@ export default function EstimateGenerator() {
                         variant="outline" 
                         size="sm"
                         onClick={() => {
-                          const dialog = document.querySelector('.overflow-y-auto');
+                          const dialog = document.querySelector('.');
                           if (dialog) dialog.scrollTop = 0;
                         }}
                       >
@@ -914,7 +914,7 @@ export default function EstimateGenerator() {
                         variant="outline" 
                         size="sm"
                         onClick={() => {
-                          const dialog = document.querySelector('.overflow-y-auto');
+                          const dialog = document.querySelector('.');
                           if (dialog) dialog.scrollTop = dialog.scrollHeight;
                         }}
                       >

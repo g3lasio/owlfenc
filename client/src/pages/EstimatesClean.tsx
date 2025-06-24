@@ -844,7 +844,7 @@ export default function EstimatesClean() {
 
       {/* Preview Dialog */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[90vh] ">
           <DialogHeader>
             <DialogTitle className="text-primary">Vista Previa del Estimado</DialogTitle>
           </DialogHeader>

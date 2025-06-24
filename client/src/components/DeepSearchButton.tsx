@@ -233,7 +233,7 @@ export function DeepSearchButton({
       )}
 
       <Dialog open={showResults} onOpenChange={setShowResults}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[80vh] ">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Brain className="h-5 w-5 text-blue-500" />
@@ -335,7 +335,7 @@ export function DeepSearchButton({
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                  <div className="space-y-2 max-h-60 ">
                     {analysisResult.materials.map((material, index) => (
                       <div key={material.id} className="flex justify-between items-center p-2 bg-muted/50 rounded">
                         <div className="flex-1">

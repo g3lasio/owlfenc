@@ -856,7 +856,7 @@ export default function NuevoClientes() {
         {/* Pestañas para filtrar por fuente */}
         {allSources.length > 0 && (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="mb-4 overflow-auto flex w-full">
+            <TabsList className="mb-4  flex w-full">
               <TabsTrigger value="all">Todos</TabsTrigger>
               <TabsTrigger value="no_source">Sin fuente</TabsTrigger>
               {allSources.map(source => (
@@ -1304,7 +1304,7 @@ export default function NuevoClientes() {
 
       {/* Diálogo para editar cliente */}
       <Dialog open={showEditClientDialog} onOpenChange={setShowEditClientDialog}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-md max-h-[90vh] ">
           <DialogHeader className="sticky top-0 bg-background z-10 pb-4">
             <DialogTitle>Editar cliente</DialogTitle>
             <DialogDescription>

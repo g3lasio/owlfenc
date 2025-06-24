@@ -219,7 +219,7 @@ export default function AppleAuthTest() {
                       <summary className="cursor-pointer text-sm text-blue-600 hover:text-blue-800">
                         Ver detalles técnicos
                       </summary>
-                      <pre className="mt-2 text-xs bg-gray-50 p-2 rounded overflow-auto">
+                      <pre className="mt-2 text-xs bg-gray-50 p-2 rounded ">
                         {JSON.stringify(result.details, null, 2)}
                       </pre>
                     </details>

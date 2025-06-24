@@ -143,7 +143,7 @@ const ContractPreviewDisplay: React.FC<ContractPreviewDisplayProps> = ({
             </TabsList>
 
             <TabsContent value="content" className="mt-6">
-              <div className="bg-gray-900 border border-cyan-500 p-6 rounded-lg cyberpunk-corner-frame max-h-96 overflow-y-auto">
+              <div className="bg-gray-900 border border-cyan-500 p-6 rounded-lg cyberpunk-corner-frame max-h-96 ">
                 <div className="prose prose-sm max-w-none text-gray-100 prose-headings:text-cyan-300 prose-strong:text-white prose-p:text-gray-200">
                   {/* Classic Legal Document Structure */}
                   <div className="legal-contract-structure">

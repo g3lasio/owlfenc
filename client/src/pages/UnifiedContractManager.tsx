@@ -362,7 +362,7 @@ const UnifiedContractManager: React.FC = () => {
                   </p>
                   
                   {availableProjects.length > 0 ? (
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                    <div className="space-y-2 max-h-48 ">
                       {availableProjects.map((project: any) => (
                         <div
                           key={project.id}

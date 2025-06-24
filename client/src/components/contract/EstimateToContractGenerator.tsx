@@ -304,7 +304,7 @@ const EstimateToContractGenerator: React.FC<EstimateToContractGeneratorProps> = 
             </DialogTitle>
           </DialogHeader>
           
-          <div className="flex-1 overflow-y-auto border rounded p-4 bg-white text-black">
+          <div className="flex-1  border rounded p-4 bg-white text-black">
             <div dangerouslySetInnerHTML={{ __html: generatedContract }} />
           </div>
           
@@ -333,7 +333,7 @@ const EstimateToContractGenerator: React.FC<EstimateToContractGeneratorProps> = 
             </DialogDescription>
           </DialogHeader>
           
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 ">
             <div className="p-4 bg-orange-500/10 border border-orange-500/30 rounded whitespace-pre-wrap">
               {riskAnalysis || 'Analizando riesgos del proyecto...'}
             </div>

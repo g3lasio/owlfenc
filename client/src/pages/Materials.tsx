@@ -845,7 +845,7 @@ export default function Materials() {
 
       {/* Dialog para agregar material */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] ">
           <DialogHeader>
             <DialogTitle className="text-lg sm:text-xl">Agregar Nuevo Material</DialogTitle>
             <DialogDescription className="text-sm sm:text-base">
@@ -976,7 +976,7 @@ export default function Materials() {
 
       {/* Dialog para editar material */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] ">
           <DialogHeader>
             <DialogTitle>Editar Material</DialogTitle>
             <DialogDescription>
@@ -1155,7 +1155,7 @@ export default function Materials() {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="max-h-60 overflow-y-auto border rounded-md p-3 bg-muted/50">
+          <div className="max-h-60  border rounded-md p-3 bg-muted/50">
             <p className="text-sm font-medium mb-2">Materiales a eliminar:</p>
             <ul className="text-sm space-y-1">
               {materials

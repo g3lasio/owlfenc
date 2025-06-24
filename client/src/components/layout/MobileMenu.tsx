@@ -193,7 +193,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
         </motion.div>
 
         {/* Contenedor con scroll para toda la navegación */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 ">
           {/* Navegación Principal - Generada desde la configuración centralizada */}
           <div className="p-3">
             {navigationGroups.map((group, groupIndex) => {

@@ -507,7 +507,7 @@ export default function PermitAdvisor() {
                       <SelectTrigger className="w-full bg-slate-900/50 border-cyan-500/30 text-white focus:border-cyan-400 min-h-[44px]">
                         <SelectValue placeholder="Select project type" />
                       </SelectTrigger>
-                      <SelectContent className="bg-slate-900 border-cyan-500/30 max-h-[200px] overflow-y-auto">
+                      <SelectContent className="bg-slate-900 border-cyan-500/30 max-h-[200px] ">
                         <SelectItem value="fence">Fence Installation</SelectItem>
                         <SelectItem value="deck">Deck Construction</SelectItem>
                         <SelectItem value="addition">Home Addition</SelectItem>

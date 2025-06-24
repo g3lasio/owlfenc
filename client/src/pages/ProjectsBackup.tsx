@@ -705,7 +705,7 @@ function Projects() {
       </div>
       
       {/* Scrollable Content Area */}
-      <div className="flex-1 overflow-y-auto px-6 pb-6">
+      <div className="flex-1  px-6 pb-6">
         {filteredProjects.length === 0 ? (
           <div className="text-center py-12 bg-muted/20 rounded-lg">
             <i className="ri-search-line text-3xl mb-2 text-muted-foreground"></i>
@@ -993,7 +993,7 @@ function Projects() {
                 {/* Desktop Layout: Two Columns */}
                 <div className="hidden lg:grid lg:grid-cols-2 gap-6 p-6 h-full">
                   {/* Left Column - Progress & System Status */}
-                  <div className="space-y-6 overflow-auto">
+                  <div className="space-y-6 ">
                     {/* System Status */}
                     <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg relative overflow-hidden shadow-[0_0_20px_rgba(6,182,212,0.1)]">
                       <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-cyan-400"></div>
@@ -1082,7 +1082,7 @@ function Projects() {
                       </h3>
                     </div>
                     
-                    <div className="p-4 overflow-auto">
+                    <div className="p-4 ">
                       <ProjectDetails 
                         project={selectedProject} 
                         onUpdate={handleProjectUpdate} 

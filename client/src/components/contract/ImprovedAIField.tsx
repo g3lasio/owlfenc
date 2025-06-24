@@ -180,7 +180,7 @@ export function ImprovedAIField({
             <TabsContent value="preview" className="mt-4">
               {generatedContent ? (
                 <div className="space-y-4">
-                  <div className="border rounded-md p-4 min-h-[200px] max-h-[300px] overflow-y-auto bg-muted/30">
+                  <div className="border rounded-md p-4 min-h-[200px] max-h-[300px]  bg-muted/30">
                     <div className="whitespace-pre-wrap">
                       {generatedContent}
                     </div>
