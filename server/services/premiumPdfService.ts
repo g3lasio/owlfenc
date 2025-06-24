@@ -239,7 +239,6 @@ class PremiumPdfService {
                         <p><strong>Business Address:</strong><br>${data.contractor.address}</p>
                         <p><strong>Telephone:</strong> ${data.contractor.phone}</p>
                         <p><strong>Email:</strong> ${data.contractor.email}</p>
-                        ${data.contractor.license ? `<p><strong>License Number:</strong> ${data.contractor.license}</p>` : ''}
                     </div>
                 </div>
                 <div class="party-box">

@@ -289,6 +289,13 @@ Changelog:
   * Corrected JSX structure errors preventing compilation
   * System now has clean, controlled scrolling without infinite scroll issues
   * All pages maintain proper scroll behavior with futuristic UI design intact
+- June 24, 2025. Enhanced contract generator with comprehensive checkbox functionality:
+  * Connected all checkboxes (license, insurance, permits) to state management for PDF inclusion/exclusion
+  * Captured all additional contract fields including warranties, timeline, and permit details
+  * Fixed contractor name data mapping issue - now uses profile.company/ownerName instead of profile.companyName
+  * Enhanced PDF generation with complete form data structure including licenseInfo, insuranceInfo, permitInfo, timeline
+  * All checkbox selections and form fields now properly flow to generated contract PDFs
+  * Removed license number from contractor contact information section as requested - now only in contract content
 - June 24, 2025. Fixed client address data flow in contract generator:
   * Enhanced backend /api/projects/contract-data endpoint to properly map client address fields
   * Added multiple address fallback options: project.address, project.clientAddress, project.projectAddress, project.location
