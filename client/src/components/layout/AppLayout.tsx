@@ -113,9 +113,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
           flexDirection: 'column',
           height: '100vh', 
           overflow: location === '/' ? 'hidden' : 'auto',
-          marginLeft: `${sidebarWidth}px`,
+          marginLeft: '0px', // Sin margen porque el botón flota
           position: location === '/' ? 'fixed' : 'relative',
-          width: location === '/' ? `calc(100vw - ${sidebarWidth}px)` : 'auto'
+          width: location === '/' ? '100vw' : 'auto' // Ocupa toda la pantalla
         }}>
         <Header toggleMobileMenu={toggleMobileMenu} isMobileMenuOpen={isMobileMenuOpen} />
         <div style={{ 

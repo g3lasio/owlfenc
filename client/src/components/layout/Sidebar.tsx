@@ -65,18 +65,42 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
     enabled: !!currentUser
   });
 
+  // Función para obtener el nombre del plan actual
+  const getCurrentPlanName = () => {
+    if (subscriptionLoading || plansLoading || !subscription || !plans) {
+      return 'Cargando...';
+    }
+    const currentPlan = plans.find(plan => plan.id === subscription.planId);
+    return currentPlan ? currentPlan.name : 'Plan no encontrado';
+  };
+
+  // Función para toggle del sidebar
+  const toggleSidebar = () => {
+    const newExpanded = !isSidebarExpanded;
+    setSidebarExpanded(newExpanded);
+    
+    // Notificar cambio de ancho al componente padre
+    if (onWidthChange) {
+      onWidthChange(newExpanded ? 288 : 0);
+    }
+    
+    console.log('Menu state updated:', newExpanded);
+  };
+
+  // Función para manejar logout
   const handleLogout = async () => {
-    setLoading(true);
     try {
+      setLoading(true);
       await logout();
       toast({
-        title: t('general.success'),
-        description: t('auth.logoutSuccess'),
+        title: t('auth.logoutSuccess'),
+        description: t('auth.logoutSuccessDescription'),
       });
     } catch (error) {
+      console.error('Error during logout:', error);
       toast({
-        title: t('general.error'),
-        description: t('auth.logoutError'),
+        title: t('auth.logoutError'),
+        description: t('auth.logoutErrorDescription'),
         variant: "destructive",
       });
     } finally {
@@ -84,83 +108,72 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
     }
   };
 
-  const toggleSidebar = () => {
-    setSidebarExpanded(!isSidebarExpanded);
-  };
-
-  // Comunicar cambios de ancho al componente padre
-  useEffect(() => {
-    const width = isSidebarExpanded ? 288 : 64;
-    onWidthChange?.(width);
-  }, [isSidebarExpanded, onWidthChange]);
-
   return (
     <TooltipProvider>
-      <aside 
-        className={`
-          flex flex-col bg-card transition-all duration-300
-          ${isSidebarExpanded ? 'w-72 border-r border-border' : 'w-16'}
-        `}
-        style={{ 
-          height: 'calc(100vh - 40px)', // Resta la altura del footer
-          maxHeight: 'calc(100vh - 40px)', 
-          overflow: 'hidden',
-          position: 'fixed',
-          left: 0,
-          top: 0,
-          zIndex: 40
+      {/* Botón flotante único */}
+      <div 
+        className="fixed left-4 top-4 z-50"
+        style={{
+          transition: 'all 0.3s ease-in-out'
         }}
       >
-        
-        {/* Header con toggle */}
-        <div className={`flex-shrink-0 ${isSidebarExpanded ? 'p-3 border-b border-border' : 'p-2'}`}>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={toggleSidebar}
-            className="w-full flex items-center justify-center hover:bg-accent/70 hover:scale-110 transition-all duration-300 group"
-            style={{
-              background: 'linear-gradient(135deg, rgba(0,255,255,0.1), rgba(0,200,255,0.05))',
-              borderRadius: '12px',
-              border: '1px solid rgba(0,255,255,0.2)'
-            }}
-          >
-            <div 
-              className="transition-all duration-500 ease-in-out group-hover:text-cyan-400"
-              style={{
-                transform: isSidebarExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                filter: 'drop-shadow(0 0 4px rgba(0,255,255,0.3))'
-              }}
-            >
-              <ChevronsRight className="h-5 w-5" />
-            </div>
-          </Button>
-        </div>
-
-        {/* Área de navegación con scroll interno */}
-        <div 
-          className="flex-1" 
-          style={{ 
-            minHeight: 0, 
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column'
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={toggleSidebar}
+          className="flex items-center justify-center hover:bg-accent/70 hover:scale-110 transition-all duration-300 group shadow-lg"
+          style={{
+            background: 'linear-gradient(135deg, rgba(0,255,255,0.1), rgba(0,200,255,0.05))',
+            borderRadius: '12px',
+            border: '1px solid rgba(0,255,255,0.2)',
+            backdropFilter: 'blur(10px)',
+            width: '48px',
+            height: '48px'
           }}
         >
-          {/* En móvil colapsado, mostrar solo mensaje de expansión */}
-          {isMobile && !isSidebarExpanded && (
-            <div className="flex-1 flex items-center justify-center p-4">
-              <div className="text-center text-xs text-muted-foreground">
-                <div className="mb-2">
-                  <ChevronsRight className="h-6 w-6 mx-auto opacity-50" />
-                </div>
-                <p>Toca para expandir</p>
-              </div>
+          <div 
+            className="transition-all duration-500 ease-in-out group-hover:text-cyan-400"
+            style={{
+              transform: isSidebarExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+              filter: 'drop-shadow(0 0 4px rgba(0,255,255,0.3))'
+            }}
+          >
+            <ChevronsRight className="h-5 w-5" />
+          </div>
+        </Button>
+      </div>
+
+      {/* Sidebar expandido solo cuando se necesita */}
+      {isSidebarExpanded && (
+        <aside 
+          className="fixed left-0 top-0 z-40 h-screen transition-all duration-300 ease-in-out border-r border-border bg-card/95 backdrop-blur-sm"
+          style={{ 
+            width: '288px',
+            display: 'flex',
+            flexDirection: 'column',
+            backdropFilter: 'blur(10px)',
+            background: 'linear-gradient(180deg, rgba(0,0,0,0.95), rgba(20,20,30,0.95))',
+            borderRight: '1px solid rgba(255,255,255,0.1)'
+          }}
+        >
+          {/* Header con espaciado para el botón flotante */}
+          <div className="flex-shrink-0 pt-16 px-3 border-b border-border">
+            <div className="text-center mb-4">
+              <h2 className="text-lg font-semibold text-primary">Menú</h2>
             </div>
-          )}
-          {/* Solo mostrar navegación si no es móvil colapsado */}
-          {(!isMobile || isSidebarExpanded) && (isSidebarExpanded ? (
-            // Vista expandida con scroll
+          </div>
+
+          {/* Área de navegación con scroll interno */}
+          <div 
+            className="flex-1" 
+            style={{ 
+              minHeight: 0, 
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+          >
+            {/* Vista expandida con scroll */}
             <div 
               className="custom-scroll"
               style={{ 
@@ -181,10 +194,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                   
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     {group.items
-                      .filter(item => {
-                        // En móvil expandido, mostrar todos los items normalmente
-                        return item.path !== "/mervin" && item.id !== "mervin";
-                      })
+                      .filter(item => item.path !== "/mervin" && item.id !== "mervin")
                       .map((item) => (
                         <Link key={item.id} href={item.path}>
                           <Button 
@@ -212,90 +222,9 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                 </div>
               ))}
             </div>
-          ) : (
-            // Vista colapsada con scroll y espaciado profesional
-            <div 
-              className="custom-scroll"
-              style={{ 
-                height: '100%',
-                overflowY: 'auto', 
-                overflowX: 'hidden',
-                paddingTop: '12px',
-                paddingLeft: '8px',
-                paddingRight: '8px',
-                paddingBottom: '20px' // Espacio reducido
-              }}
-            >
-              {/* Agrupar iconos por sección con separadores visuales */}
-              {navigationGroups.map((group, groupIndex) => (
-                <div key={`group-${groupIndex}`} style={{ marginBottom: '16px' }}>
-                  {/* Separador visual sutil entre grupos */}
-                  {groupIndex > 0 && (
-                    <div style={{ 
-                      height: '1px', 
-                      background: 'rgba(255,255,255,0.08)', 
-                      margin: '12px 6px',
-                      borderRadius: '1px'
-                    }}></div>
-                  )}
-                  
-                  <div style={{ 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    gap: '8px' // Espaciado reducido entre iconos
-                  }}>
-                    {group.items
-                      .filter(item => {
-                        // En móvil, ocultar todos los iconos de features excepto la flecha
-                        if (isMobile) {
-                          return false; // Ocultar todos los iconos en móvil
-                        }
-                        return item.path !== "/mervin" && item.id !== "mervin";
-                      })
-                      .map((item: NavigationItem) => (
-                        <Tooltip key={item.id}>
-                          <TooltipTrigger asChild>
-                            <Link
-                              href={item.path}
-                              className={`
-                                flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-200 mx-auto
-                                hover:bg-accent/50 hover:scale-105 hover:shadow-md
-                                ${location === item.path 
-                                  ? 'bg-primary/20 text-primary border border-primary/30 shadow-sm' 
-                                  : 'text-muted-foreground hover:text-primary'
-                                }
-                              `}
-                              style={{
-                                minHeight: '40px',
-                                minWidth: '40px'
-                              }}
-                            >
-                              {item.icon.startsWith('lucide-') ? (
-                                <>
-                                  {item.icon === 'lucide-building' && <Building className="h-4 w-4" />}
-                                  {item.icon === 'lucide-settings' && <Settings className="h-4 w-4" />}
-                                  {item.icon === 'lucide-credit-card' && <CreditCard className="h-4 w-4" />}
-                                  {item.icon === 'lucide-brain' && <BrainIcon className="h-4 w-4" />}
-                                </>
-                              ) : (
-                                <i className={`${item.icon} text-base`} />
-                              )}
-                            </Link>
-                          </TooltipTrigger>
-                          <TooltipContent side="right" className="bg-background border border-border text-foreground shadow-xl">
-                            <p className="font-medium">{t(item.label)}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
+          </div>
 
-        {/* Footer fijo - posicionado absolutamente */}
-        {isSidebarExpanded && (
+          {/* Footer fijo - posicionado absolutamente */}
           <div 
             className="absolute bottom-0 left-0 right-0 p-2 border-t border-border bg-card"
             style={{ zIndex: 50 }}
@@ -320,9 +249,8 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
               </div>
             </div>
           </div>
-        )}
-        
-      </aside>
+        </aside>
+      )}
     </TooltipProvider>
   );
 }
