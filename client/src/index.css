@@ -87,6 +87,15 @@ main {
   -ms-overflow-style: none !important;
 }
 
+/* Asegurar que el botón flotante del sidebar sea visible en home */
+.home-page [data-sidebar-button] {
+  z-index: 99999 !important;
+  position: fixed !important;
+  pointer-events: auto !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
 /* Allow scrolling in flex containers when needed - but be more specific */
 .flex-1[style*="overflow-y: auto"] {
   overflow-y: auto !important;

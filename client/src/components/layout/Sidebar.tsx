@@ -119,12 +119,18 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
 
   return (
     <TooltipProvider>
-      {/* Botón flotante único - solo visible cuando sidebar está cerrado */}
+      {/* Botón flotante único - siempre visible cuando sidebar está cerrado */}
       {!isSidebarExpanded && (
         <div 
-          className="fixed left-4 top-4 z-60"
+          className="fixed left-4 top-4"
+          data-sidebar-button="true"
           style={{
-            transition: 'all 0.3s ease-in-out'
+            transition: 'all 0.3s ease-in-out',
+            zIndex: 99999, // Z-index muy alto para estar por encima de todo
+            pointerEvents: 'auto',
+            position: 'fixed',
+            visibility: 'visible',
+            opacity: 1
           }}
         >
           <Button
