@@ -472,7 +472,8 @@ export default function Profile() {
 
 
   return (
-    <div className="flex-1 p-4 md:p-6 space-y-6">
+    <div className="page-container">
+      <div className="scrollable-content">
       {/* User Profile Banner */}
       <div className="bg-card border border-border rounded-lg p-4 mb-6">
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">

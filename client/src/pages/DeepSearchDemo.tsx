@@ -174,7 +174,7 @@ export default function DeepSearchDemo() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="page-container">
       {/* Header */}
       <div className="text-center space-y-4">
         <div className="flex items-center justify-center gap-3">

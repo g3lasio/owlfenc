@@ -771,7 +771,7 @@ export default function EstimateGenerator() {
       
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex-1 p-4 md:p-6 overflow-y-auto">
+        <div className="page-container">
           <div className="container mx-auto max-w-4xl">
             <div className="mb-4 md:mb-6 hidden md:block">
               <h1 className="text-xl md:text-2xl font-bold">Create New Estimate</h1>

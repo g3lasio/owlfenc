@@ -525,7 +525,7 @@ export default function Clients() {
   }
 
   return (
-    <div className="flex-1 p-6 overflow-y-auto h-[calc(100vh-4rem)]">
+    <div className="page-container">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
         <h1 className="text-2xl font-bold">Clientes</h1>
         <div className="flex gap-2 mt-4 md:mt-0">

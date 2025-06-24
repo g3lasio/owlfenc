@@ -294,6 +294,7 @@ const Invoices: React.FC = () => {
           <InvoiceSettings />
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   );
 };

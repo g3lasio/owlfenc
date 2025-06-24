@@ -344,7 +344,7 @@ export default function EstimatesDashboard() {
   );
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="page-container">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard de Estimados</h1>

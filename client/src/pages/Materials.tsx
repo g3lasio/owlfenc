@@ -724,7 +724,7 @@ export default function Materials() {
   };
 
   return (
-    <div className="page-container">>
+    <div className="page-container">
       <div className="scrollable-content">
         {/* Header de navegación mejorado */}
         <div className="mb-6">
