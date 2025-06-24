@@ -61,210 +61,168 @@ interface Project {
   difficulty?: string;
 }
 
-// Project categories and configurations
 const projectCategories = {
-  fencing: {
-    name: "Cercas y Portones",
+  fences: {
+    name: "Cercas",
     icon: "fence",
-    types: ["Wood Fence", "Metal Fence", "Iron Fence", "Chain Link Fence", "Mesh Fence", "Vinyl Fence", "Composite Fence", "Bamboo Fence", "Aluminum Fence", "Privacy Fence", "Picket Fence"]
+    types: ["Madera", "Vinilo", "Metal", "Chain Link", "Compuesta"]
+  },
+  decks: {
+    name: "Terrazas",
+    icon: "building",
+    types: ["Madera", "Compuesta", "Vinilo", "Metal"]
   },
   roofing: {
-    name: "Techos",
+    name: "Techos", 
     icon: "home",
-    types: ["Asphalt Shingles", "Metal Roofing", "Tile Roofing", "Slate Roofing", "Flat Roofing", "Roof Repair", "Gutter Installation", "Skylight Installation"]
+    types: ["Asfalto", "Metal", "Teja", "Slate"]
   },
   general: {
-    name: "Contratista General",
-    icon: "tool",
-    types: ["Home Renovation", "Kitchen Remodel", "Bathroom Remodel", "Addition", "Basement Finishing", "Garage Conversion", "Whole House", "Commercial Build"]
+    name: "General",
+    icon: "tools",
+    types: ["Reparación", "Instalación", "Mantenimiento"]
   }
 };
 
-const projectStatuses = ["draft", "sent", "approved", "completed"];
-const projectProgressStages = ["estimate_created", "estimate_sent", "client_approved", "contract_sent", "contract_signed", "scheduled", "in_progress", "completed", "cancelled"];
-
 function Projects() {
   const [projects, setProjects] = useState<Project[]>([]);
-  const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("all");
-  const [selectedProjectCategory, setSelectedProjectCategory] = useState("");
-  const [selectedProjectType, setSelectedProjectType] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedProjectCategory, setSelectedProjectCategory] = useState("all");
+  const [selectedProjectType, setSelectedProjectType] = useState("all");
+  const [progressFilter, setProgressFilter] = useState("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [dashboardTab, setDashboardTab] = useState<'details' | 'client' | 'documents'>('details');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [dashboardTab, setDashboardTab] = useState('details');
   const { toast } = useToast();
 
   useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        setIsLoading(true);
-        const data = await getProjects();
-        const projectsWithStatus = (data as Project[]).map(project => ({
-          ...project,
-          status: project.status || "draft",
-          projectProgress: project.projectProgress || "estimate_created"
-        }));
-        setProjects(projectsWithStatus);
-        setFilteredProjects(projectsWithStatus);
-      } catch (error) {
-        console.error("Error fetching projects:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "No se pudieron cargar los proyectos."
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchProjects();
-  }, [toast]);
+    loadProjects();
+  }, []);
 
-  // Filter projects when any filter changes
-  useEffect(() => {
-    let result = [...projects];
-    
-    if (activeTab !== "all") {
-      result = result.filter(project => project.status === activeTab);
-    }
-    
-    if (selectedProjectCategory && selectedProjectCategory !== 'all') {
-      result = result.filter(project => {
-        const projectCategory = project.projectType || project.projectCategory || 'general';
-        return projectCategory === selectedProjectCategory;
-      });
-    }
-    
-    if (selectedProjectType && selectedProjectType !== 'all') {
-      result = result.filter(project => {
-        const projectSubtype = project.projectSubtype || project.fenceType;
-        return projectSubtype === selectedProjectType;
-      });
-    }
-    
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      result = result.filter(
-        project => 
-          project.clientName.toLowerCase().includes(term) || 
-          project.address.toLowerCase().includes(term) ||
-          (project.projectType && project.projectType.toLowerCase().includes(term)) ||
-          (project.projectSubtype && project.projectSubtype.toLowerCase().includes(term)) ||
-          (project.fenceType && project.fenceType.toLowerCase().includes(term)) ||
-          (project.projectDescription && project.projectDescription.toLowerCase().includes(term))
-      );
-    }
-    
-    setFilteredProjects(result);
-  }, [activeTab, selectedProjectCategory, selectedProjectType, searchTerm, projects]);
-
-  const formatDate = (date: any) => {
+  const loadProjects = async () => {
     try {
-      if (date && typeof date.toDate === 'function') {
-        return new Intl.DateTimeFormat('es-ES', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric'
-        }).format(date.toDate());
-      }
-      
-      const dateObj = date instanceof Date ? date : new Date(date);
-      return new Intl.DateTimeFormat('es-ES', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      }).format(dateObj);
-    } catch (e) {
-      return "Fecha no disponible";
+      setIsLoading(true);
+      const projectsData = await getProjects();
+      setProjects(projectsData);
+    } catch (error) {
+      console.error("Error loading projects:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudieron cargar los proyectos."
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const getStatusBadgeColor = (status: string) => {
+  const filteredProjects = projects.filter(project => {
+    const matchesSearch = project.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         project.address.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesCategory = selectedProjectCategory === "all" || 
+                           project.projectCategory === selectedProjectCategory ||
+                           (selectedProjectCategory === "fences" && project.projectType === "fence") ||
+                           (selectedProjectCategory === "decks" && project.projectType === "deck") ||
+                           (selectedProjectCategory === "roofing" && project.projectType === "roofing");
+    
+    const matchesType = selectedProjectType === "all" || 
+                       project.projectSubtype === selectedProjectType ||
+                       project.fenceType === selectedProjectType;
+    
+    const matchesProgress = progressFilter === "all" || 
+                           project.projectProgress === progressFilter;
+    
+    return matchesSearch && matchesCategory && matchesType && matchesProgress;
+  });
+
+  const getProjectCategoryInfo = (project: Project) => {
+    if (project.projectType === "fence" || project.projectCategory === "fences") {
+      return { name: "Cercas", icon: "fence" };
+    } else if (project.projectType === "deck" || project.projectCategory === "decks") {
+      return { name: "Terrazas", icon: "building" };
+    } else if (project.projectType === "roofing" || project.projectCategory === "roofing") {
+      return { name: "Techos", icon: "home" };
+    } else {
+      return { name: "General", icon: "tools" };
+    }
+  };
+
+  const getProjectDisplayInfo = (project: Project) => {
+    const categoryInfo = getProjectCategoryInfo(project);
+    return {
+      categoryName: categoryInfo.name,
+      categoryIcon: categoryInfo.icon,
+      subtype: project.projectSubtype || project.fenceType || 'N/A'
+    };
+  };
+
+  const getStatusColor = (status: string) => {
     switch (status) {
-      case "draft": return "bg-slate-500";
-      case "sent": return "bg-blue-500";
       case "approved": return "bg-green-500";
+      case "rejected": return "bg-red-500";
+      case "pending": return "bg-yellow-500";
+      case "in_progress": return "bg-blue-500";
       case "completed": return "bg-purple-500";
-      default: return "bg-slate-500";
+      default: return "bg-gray-500";
     }
   };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case "draft": return "Borrador";
-      case "sent": return "Enviado";
       case "approved": return "Aprobado";
-      case "completed": return "Completado";
-      default: return status;
-    }
-  };
-
-  const getProjectCategoryInfo = (project: Project) => {
-    const projectType = project.projectType || project.projectCategory || 'general';
-    const category = projectCategories[projectType as keyof typeof projectCategories] || projectCategories.general;
-    
-    return {
-      categoryName: category.name,
-      categoryIcon: category.icon,
-      subtype: project.projectSubtype || project.fenceType || 'No especificado'
-    };
-  };
-
-  const getProjectDisplayInfo = (project: Project) => {
-    const categoryInfo = getProjectCategoryInfo(project);
-    
-    return {
-      ...categoryInfo,
-      height: project.fenceHeight || project.height,
-      description: project.projectDescription || `${categoryInfo.subtype} en ${project.address}`
-    };
-  };
-
-  const getProgressBadgeColor = (progress: string) => {
-    switch (progress) {
-      case "estimate_created": return "bg-slate-500";
-      case "estimate_sent": return "bg-blue-500";
-      case "client_approved": return "bg-green-500";
-      case "contract_sent": return "bg-yellow-500";
-      case "contract_signed": return "bg-purple-500";
-      case "scheduled": return "bg-orange-500";
-      case "in_progress": return "bg-amber-500";
-      case "completed": return "bg-emerald-500";
-      case "cancelled": return "bg-red-500";
-      default: return "bg-slate-500";
-    }
-  };
-  
-  const getProgressLabel = (progress: string) => {
-    switch (progress) {
-      case "estimate_created": return "Presupuesto Creado";
-      case "estimate_sent": return "Presupuesto Enviado";
-      case "client_approved": return "Cliente Aprobó";
-      case "contract_sent": return "Contrato Enviado";
-      case "contract_signed": return "Contrato Firmado";
-      case "scheduled": return "Instalación Programada";
+      case "rejected": return "Rechazado";
+      case "pending": return "Pendiente";
       case "in_progress": return "En Progreso";
       case "completed": return "Completado";
-      case "cancelled": return "Cancelado";
-      default: return progress;
+      default: return "Desconocido";
     }
+  };
+
+  const getProgressColor = (progress: string) => {
+    switch (progress) {
+      case "estimate_created": return "border-blue-400 text-blue-400";
+      case "rejected": return "border-red-400 text-red-400";
+      case "in_contract": return "border-yellow-400 text-yellow-400";
+      case "scheduled": return "border-purple-400 text-purple-400";
+      case "in_progress": return "border-orange-400 text-orange-400";
+      case "paid": return "border-green-400 text-green-400";
+      case "completed": return "border-gray-400 text-gray-400";
+      default: return "border-gray-400 text-gray-400";
+    }
+  };
+
+  const getProgressLabel = (progress: string) => {
+    switch (progress) {
+      case "estimate_created": return "Estimado";
+      case "rejected": return "Rechazado";
+      case "in_contract": return "Contrato";
+      case "scheduled": return "Programado";
+      case "in_progress": return "En Progreso";
+      case "paid": return "Pagado";
+      case "completed": return "Completado";
+      default: return "Desconocido";
+    }
+  };
+
+  const formatDate = (timestamp: any) => {
+    if (!timestamp || !timestamp.toDate) return 'N/A';
+    return timestamp.toDate().toLocaleDateString();
   };
 
   const handleEditEstimate = (projectId: string) => {
     window.location.href = `/estimates?edit=${projectId}`;
   };
 
-  const handleViewProject = async (id: string) => {
+  const handleViewProject = async (projectId: string) => {
     try {
-      const projectData = await getProjectById(id);
-      setSelectedProject(projectData as Project);
+      const project = await getProjectById(projectId);
+      setSelectedProject(project);
       setIsDialogOpen(true);
     } catch (error) {
-      console.error("Error fetching project details:", error);
+      console.error("Error loading project details:", error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -273,128 +231,54 @@ function Projects() {
     }
   };
 
-  const handleProjectUpdate = (updatedProject: Project) => {
-    setSelectedProject(updatedProject);
-    
-    const updatedProjects = projects.map(p => 
-      p.id === updatedProject.id ? updatedProject : p
-    );
-    
-    setProjects(updatedProjects);
-    setFilteredProjects(
-      filteredProjects.map(p => p.id === updatedProject.id ? updatedProject : p)
-    );
-  };
-
-  const handleProgressUpdate = (newProgress: string) => {
-    if (!selectedProject) return;
-    
-    const updatedProject = {
-      ...selectedProject,
-      projectProgress: newProgress
-    };
-    
-    setSelectedProject(updatedProject);
-    handleProjectUpdate(updatedProject);
-  };
-
-  const handleMarkAsCompleted = async (projectId: string) => {
+  const handleProgressUpdate = async (projectId: string, newProgress: string) => {
     try {
-      const project = projects.find(p => p.id === projectId);
-      if (!project) return;
-
-      const updatedProject = {
-        ...project,
-        status: 'completed',
-        projectProgress: 'completed',
-        completedDate: new Date()
-      };
-
-      await updateProject(projectId, {
-        status: 'completed',
-        projectProgress: 'completed',
-        completedDate: new Date()
-      });
-
-      const updatedProjects = projects.map(p => 
-        p.id === projectId ? updatedProject : p
-      );
-      
-      setProjects(updatedProjects);
-      setFilteredProjects(
-        filteredProjects.map(p => p.id === projectId ? updatedProject : p)
-      );
-
+      await updateProject(projectId, { projectProgress: newProgress });
+      setSelectedProject(prev => prev ? { ...prev, projectProgress: newProgress } : null);
       toast({
-        title: "Proyecto completado",
-        description: `El proyecto de ${project.clientName} ha sido marcado como completado.`,
+        title: "Progreso actualizado",
+        description: "El progreso del proyecto ha sido actualizado exitosamente."
       });
+      loadProjects();
     } catch (error) {
-      console.error("Error marking project as completed:", error);
+      console.error("Error updating progress:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se pudo marcar el proyecto como completado."
+        description: "No se pudo actualizar el progreso del proyecto."
       });
     }
   };
-  
+
   if (isLoading) {
     return (
-      <div className="flex-1 p-6 overflow-auto">
-        <h1 className="text-2xl font-bold mb-6">Proyectos</h1>
-        <div className="mb-6 space-y-4">
-          <Skeleton className="h-10 w-full md:w-3/4" />
-          <div className="flex flex-wrap gap-2">
-            {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} className="h-10 w-28" />
-            ))}
+      <FullHeightContainer className="bg-background">
+        <FixedHeader className="p-6">
+          <div className="mb-6">
+            <Skeleton className="h-8 w-48 mb-2" />
+            <Skeleton className="h-4 w-96" />
           </div>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {[...Array(6)].map((_, i) => (
-            <Card key={i}>
-              <CardHeader className="pb-2">
-                <Skeleton className="h-4 w-3/4 mb-2" />
-                <Skeleton className="h-3 w-1/2" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-3 w-full mb-2" />
-                <Skeleton className="h-3 w-3/4 mb-2" />
-                <Skeleton className="h-3 w-2/3" />
-                <div className="flex justify-end mt-4">
-                  <Skeleton className="h-8 w-20" />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
+        </FixedHeader>
+        <ScrollableContent>
+          <CardGrid cols={{ default: 1, md: 2, lg: 3 }} className="gap-6">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i}>
+                <CardContent className="p-6">
+                  <Skeleton className="h-6 w-32 mb-2" />
+                  <Skeleton className="h-4 w-full mb-4" />
+                  <Skeleton className="h-20 w-full" />
+                </CardContent>
+              </Card>
+            ))}
+          </CardGrid>
+        </ScrollableContent>
+      </FullHeightContainer>
     );
   }
-  
-  if (projects.length === 0) {
-    return (
-      <div className="flex-1 p-6 flex flex-col items-center justify-center text-center">
-        <div className="rounded-full bg-muted p-6 mb-4">
-          <i className="ri-file-list-3-line text-4xl text-muted-foreground"></i>
-        </div>
-        <h2 className="text-xl font-semibold mb-2">No hay proyectos</h2>
-        <p className="text-muted-foreground mb-6 max-w-md">
-          Aún no has creado ningún estimado o contrato.
-        </p>
-        <Link href="/">
-          <Button>
-            <i className="ri-add-line mr-2"></i> Crear Nuevo Estimado
-          </Button>
-        </Link>
-      </div>
-    );
-  }
-  
+
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
-      <div className="flex-shrink-0 p-6 pb-2">
+    <FullHeightContainer className="bg-background">
+      <FixedHeader className="p-6 border-b">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Proyectos</h1>
           <div className="flex space-x-2">
@@ -407,7 +291,6 @@ function Projects() {
           </div>
         </div>
         
-        {/* Search and Filter Controls */}
         <div className="mb-4 space-y-4">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
@@ -439,46 +322,27 @@ function Projects() {
                 </SelectContent>
               </Select>
             </div>
-            
-            {selectedProjectCategory && selectedProjectCategory !== 'all' && (
-              <div className="w-full md:w-64">
-                <Select value={selectedProjectType} onValueChange={setSelectedProjectType}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Tipo específico" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos los tipos</SelectItem>
-                    {projectCategories[selectedProjectCategory as keyof typeof projectCategories]?.types.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
           </div>
           
-          {/* Status Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="w-full md:w-auto flex flex-wrap">
-              <TabsTrigger value="all">Todos</TabsTrigger>
-              {projectStatuses.map(status => (
-                <TabsTrigger key={status} value={status}>
-                  {getStatusLabel(status)}
-                </TabsTrigger>
-              ))}
+          <Tabs value={progressFilter} onValueChange={setProgressFilter} className="w-full">
+            <TabsList className="grid w-full grid-cols-8">
+              <TabsTrigger value="all" className="text-xs">Todos</TabsTrigger>
+              <TabsTrigger value="estimate_created" className="text-xs">Estimado</TabsTrigger>
+              <TabsTrigger value="rejected" className="text-xs">Rechazado</TabsTrigger>
+              <TabsTrigger value="in_contract" className="text-xs">Contrato</TabsTrigger>
+              <TabsTrigger value="scheduled" className="text-xs">Programado</TabsTrigger>
+              <TabsTrigger value="in_progress" className="text-xs">Proyecto</TabsTrigger>
+              <TabsTrigger value="paid" className="text-xs">Pagado</TabsTrigger>
+              <TabsTrigger value="completed" className="text-xs">Completado</TabsTrigger>
             </TabsList>
           </Tabs>
           
-          {/* Results Count */}
           <div className="text-sm text-muted-foreground">
             {filteredProjects.length} {filteredProjects.length === 1 ? 'proyecto encontrado' : 'proyectos encontrados'}
           </div>
         </div>
       </FixedHeader>
-      
-      {/* Projects Content */}
+
       <ScrollableContent>
         {filteredProjects.length === 0 ? (
           <div className="text-center py-12 bg-muted/20 rounded-lg">
@@ -486,173 +350,187 @@ function Projects() {
             <p className="text-muted-foreground">No se encontraron proyectos con los filtros actuales</p>
           </div>
         ) : viewMode === "grid" ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <CardGrid cols={{ default: 1, md: 2, lg: 3 }} className="gap-6">
             {filteredProjects.map((project) => {
               const displayInfo = getProjectDisplayInfo(project);
               return (
-                <Card key={project.id} className="overflow-hidden">
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between items-start">
-                      <CardTitle className="text-lg">{project.clientName}</CardTitle>
-                      <Badge className={`${getStatusBadgeColor(project.status)} text-white`}>
+                <Card key={project.id} className="hover:shadow-lg transition-shadow cursor-pointer group">
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-lg truncate group-hover:text-primary transition-colors">
+                          {project.clientName}
+                        </h3>
+                        <p className="text-sm text-muted-foreground truncate" title={project.address}>
+                          {project.address}
+                        </p>
+                      </div>
+                      <Badge 
+                        variant="secondary" 
+                        className={`ml-2 ${getStatusColor(project.status)} text-xs shrink-0`}
+                      >
                         {getStatusLabel(project.status)}
                       </Badge>
                     </div>
-                    <CardDescription className="flex items-center">
-                      <i className="ri-calendar-line mr-1"></i>
-                      {formatDate(project.createdAt)}
-                      {project.projectType && (
-                        <span className="ml-2 bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full">
-                          {project.projectType}
-                        </span>
-                      )}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm mb-1">
-                      <span className="font-medium">Dirección:</span> {project.address}
-                    </p>
-                    <div className="flex items-center gap-2 text-sm mb-1">
-                      <span className="font-medium">Categoría:</span>
-                      <div className="flex items-center gap-1">
+                    
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-sm">
                         <i className={`ri-${displayInfo.categoryIcon}-line text-primary`}></i>
-                        <span>{displayInfo.categoryName}</span>
+                        <span className="font-medium">{displayInfo.categoryName}</span>
+                        {project.projectSubtype && (
+                          <>
+                            <span className="text-muted-foreground">•</span>
+                            <span className="text-muted-foreground">{displayInfo.subtype}</span>
+                          </>
+                        )}
                       </div>
-                    </div>
-                    <p className="text-sm mb-1">
-                      <span className="font-medium">Tipo:</span> {displayInfo.subtype}
-                      {displayInfo.height && (
-                        <span className="ml-1">{displayInfo.height} ft</span>
+                      
+                      <div className="flex items-center gap-2">
+                        <Badge 
+                          variant="outline" 
+                          className={`${getProgressColor(project.projectProgress || "estimate_created")} text-xs`}
+                        >
+                          {getProgressLabel(project.projectProgress || "estimate_created")}
+                        </Badge>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <i className="ri-calendar-line"></i>
+                        <span>{formatDate(project.createdAt)}</span>
+                      </div>
+                      
+                      {project.projectDescription && (
+                        <div className="text-xs text-muted-foreground line-clamp-2 bg-muted/30 p-2 rounded">
+                          {project.projectDescription}
+                        </div>
                       )}
-                    </p>
-                    {project.projectDescription && (
-                      <p className="text-sm mb-1 text-muted-foreground">
-                        {project.projectDescription.length > 80 
-                          ? `${project.projectDescription.substring(0, 80)}...` 
-                          : project.projectDescription}
-                      </p>
-                    )}
-                    {project.totalPrice && (
-                      <p className="text-sm mb-1">
-                        <span className="font-medium">Precio:</span> 
-                        <span className="text-green-600 font-semibold ml-1">
-                          ${(project.totalPrice / 100).toLocaleString()}
-                        </span>
-                      </p>
-                    )}
-                    
-                    {/* Progress Badge */}
-                    <div className="mt-3 mb-2">
-                      <Badge variant="outline" className={`${getProgressBadgeColor(project.projectProgress || "estimate_created")} bg-opacity-10 border-opacity-50 text-sm`}>
-                        <i className={`ri-${project.projectProgress === "completed" ? "checkbox-circle" : "time"}-line mr-1`}></i>
-                        {getProgressLabel(project.projectProgress || "estimate_created")}
-                      </Badge>
+                      
+                      {project.totalPrice && (
+                        <div className="flex items-center gap-2 text-sm font-medium text-green-600">
+                          <i className="ri-money-dollar-circle-line"></i>
+                          <span>${project.totalPrice.toLocaleString()}</span>
+                        </div>
+                      )}
                     </div>
                     
-                    <div className="flex justify-between mt-4">
-                      <div className="flex space-x-2">
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => handleEditEstimate(project.id)}
-                          className="text-blue-600 border-blue-600 hover:bg-blue-50"
-                        >
-                          <i className="ri-edit-line mr-1"></i> Editar
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => handleViewProject(project.id)}
-                        >
-                          <i className="ri-dashboard-line mr-1"></i> Dashboard
-                        </Button>
-                      </div>
-
+                    <div className="flex gap-2 mt-4 pt-3 border-t">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleEditEstimate(project.id)}
+                        className="flex-1 text-xs"
+                      >
+                        <i className="ri-edit-line mr-1"></i>
+                        Editar
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleViewProject(project.id)}
+                        className="flex-1 text-xs"
+                      >
+                        <i className="ri-dashboard-line mr-1"></i>
+                        Ver
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
               );
             })}
-          </div>
+          </CardGrid>
         ) : (
-          <div className="overflow-x-auto border rounded-lg">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-muted">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Dirección</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Categoría</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Tipo</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Fecha</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Progreso</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredProjects.map((project) => {
-                  const displayInfo = getProjectDisplayInfo(project);
-                  return (
-                    <tr key={project.id} className="hover:bg-muted/30">
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <div className="font-medium">{project.clientName}</div>
-                      </td>
-                      <td className="px-4 py-3 truncate max-w-[200px] hidden md:table-cell">
-                        {project.address}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap hidden sm:table-cell">
-                        <div className="flex items-center gap-1">
-                          <i className={`ri-${displayInfo.categoryIcon}-line text-primary`}></i>
-                          <span className="text-xs">{displayInfo.categoryName}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap hidden lg:table-cell text-sm">
-                        {displayInfo.subtype}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap hidden sm:table-cell">
-                        {formatDate(project.createdAt)}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap hidden md:table-cell">
-                        <Badge variant="outline" className={`${getProgressBadgeColor(project.projectProgress || "estimate_created")} bg-opacity-10 border-opacity-50 text-xs`}>
-                          {getProgressLabel(project.projectProgress || "estimate_created")}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <Badge className={`${getStatusBadgeColor(project.status)} text-white text-xs`}>
-                          {getStatusLabel(project.status)}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-right">
-                        <div className="flex justify-end space-x-2">
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => handleEditEstimate(project.id)}
-                            className="text-xs px-2 py-1 h-auto text-blue-600 border-blue-600 hover:bg-blue-50"
+          <div className="border rounded-lg overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-muted/50">
+                  <tr className="border-b">
+                    <th className="text-left p-3 font-medium">Cliente</th>
+                    <th className="text-left p-3 font-medium hidden md:table-cell">Dirección</th>
+                    <th className="text-left p-3 font-medium hidden sm:table-cell">Categoría</th>
+                    <th className="text-left p-3 font-medium hidden lg:table-cell">Progreso</th>
+                    <th className="text-left p-3 font-medium">Estado</th>
+                    <th className="text-left p-3 font-medium hidden sm:table-cell">Fecha</th>
+                    <th className="text-left p-3 font-medium">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredProjects.map((project) => {
+                    const displayInfo = getProjectDisplayInfo(project);
+                    return (
+                      <tr key={project.id} className="border-b hover:bg-muted/30 transition-colors">
+                        <td className="p-3">
+                          <div className="font-medium">{project.clientName}</div>
+                          <div className="text-sm text-muted-foreground md:hidden">{project.address}</div>
+                        </td>
+                        <td className="p-3 hidden md:table-cell">
+                          <div className="text-sm max-w-xs truncate" title={project.address}>
+                            {project.address}
+                          </div>
+                        </td>
+                        <td className="p-3 hidden sm:table-cell">
+                          <div className="flex items-center gap-2">
+                            <i className={`ri-${displayInfo.categoryIcon}-line text-primary text-sm`}></i>
+                            <span className="text-sm">{displayInfo.categoryName}</span>
+                          </div>
+                          {project.projectSubtype && (
+                            <div className="text-xs text-muted-foreground mt-1">
+                              {displayInfo.subtype}
+                            </div>
+                          )}
+                        </td>
+                        <td className="p-3 hidden lg:table-cell">
+                          <Badge 
+                            variant="outline" 
+                            className={`${getProgressColor(project.projectProgress || "estimate_created")} text-xs`}
                           >
-                            <i className="ri-edit-line mr-1"></i> Editar
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => handleViewProject(project.id)}
-                            className="text-xs px-2 py-1 h-auto"
+                            {getProgressLabel(project.projectProgress || "estimate_created")}
+                          </Badge>
+                        </td>
+                        <td className="p-3">
+                          <Badge 
+                            variant="secondary" 
+                            className={`${getStatusColor(project.status)} text-xs`}
                           >
-                            <i className="ri-dashboard-line mr-1"></i> Dashboard
-                          </Button>
-
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                            {getStatusLabel(project.status)}
+                          </Badge>
+                        </td>
+                        <td className="p-3 hidden sm:table-cell">
+                          <div className="text-sm text-muted-foreground">
+                            {formatDate(project.createdAt)}
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex gap-2">
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleEditEstimate(project.id)}
+                              className="text-xs"
+                            >
+                              <i className="ri-edit-line mr-1"></i>
+                              Editar
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleViewProject(project.id)}
+                              className="text-xs"
+                            >
+                              <i className="ri-dashboard-line mr-1"></i>
+                              Ver
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </ScrollableContent>
-      
-      {/* Project Details Dialog */}
+
       {isDialogOpen && selectedProject && (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="p-0 max-w-7xl w-[98vw] h-[98vh] max-h-[98vh]">
@@ -672,7 +550,6 @@ function Projects() {
               </FixedHeader>
               
               <FullHeightContainer className="bg-gray-900">
-                {/* Futuristic Timeline - Fixed at top */}
                 <FixedHeader className="p-4 pb-4 bg-gray-900 border-b-2 border-cyan-400/20 shadow-lg">
                   <FuturisticTimeline 
                     projectId={selectedProject.id} 
@@ -681,10 +558,8 @@ function Projects() {
                   />
                 </FixedHeader>
 
-                {/* Large Separation Space */}
                 <FixedHeader className="h-8 bg-gray-900 border-b border-gray-700/30" />
 
-                {/* Dashboard Sections - Wizard-style Tabs */}
                 <TabContainer className="px-4 pb-4 bg-gray-900 pt-4">
                   <TabNavigation>
                     <div className="flex space-x-1 bg-gray-800/50 p-1 rounded-lg border border-cyan-400/30 shadow-xl backdrop-blur-sm">
@@ -724,7 +599,6 @@ function Projects() {
                     </div>
                   </TabNavigation>
 
-                  {/* Tab Content */}
                   <div className="flex-1 bg-gray-800/50 border-2 border-cyan-400/30 rounded-lg backdrop-blur-sm shadow-2xl overflow-hidden">
                     <TabContent>
                       {dashboardTab === 'details' && (
@@ -753,196 +627,38 @@ function Projects() {
                               <p className="text-gray-200 text-sm">{selectedProject.projectScope}</p>
                             </div>
                           )}
-
-                          <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
-                              <span className="text-gray-400 block mb-1">Status:</span>
-                              <Badge className={`${getStatusBadgeColor(selectedProject.status)} text-xs px-2 py-1 mt-1`}>
-                                {getStatusLabel(selectedProject.status)}
-                              </Badge>
-                            </div>
-                            <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
-                              <span className="text-gray-400 block mb-1">Value:</span>
-                              <span className="text-green-400 font-medium text-lg">
-                                {selectedProject.totalPrice ? `$${(selectedProject.totalPrice / 100).toLocaleString()}` : 'TBD'}
-                              </span>
-                            </div>
-                          </div>
-
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="w-full border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/10"
-                            onClick={() => {
-                              window.location.href = `/estimates?edit=${selectedProject.id}`;
-                            }}
-                          >
-                            <i className="ri-edit-line mr-2"></i>
-                            Edit Project
-                          </Button>
                         </div>
                       )}
 
                       {dashboardTab === 'client' && (
                         <div className="space-y-4">
-                          <div className="bg-gray-700/30 p-4 rounded border border-gray-600/20">
+                          <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
                             <span className="text-gray-400 text-sm block mb-2">Client Name:</span>
-                            <p className="text-cyan-200 font-medium text-lg">{selectedProject.clientName}</p>
+                            <p className="text-cyan-200 font-medium">{selectedProject.clientName}</p>
                           </div>
-
-                          <div className="bg-gray-700/30 p-4 rounded border border-gray-600/20">
-                            <span className="text-gray-400 text-sm block mb-2">Project Address:</span>
-                            <p className="text-gray-200">{selectedProject.address}</p>
+                          <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
+                            <span className="text-gray-400 text-sm block mb-2">Address:</span>
+                            <p className="text-gray-200 text-sm">{selectedProject.address}</p>
                           </div>
-
-                          {selectedProject.clientEmail && (
-                            <div className="bg-gray-700/30 p-4 rounded border border-gray-600/20">
-                              <span className="text-gray-400 text-sm block mb-2">Email:</span>
-                              <p className="text-gray-200 font-mono">{selectedProject.clientEmail}</p>
-                            </div>
-                          )}
-
-                          {selectedProject.clientPhone && (
-                            <div className="bg-gray-700/30 p-4 rounded border border-gray-600/20">
-                              <span className="text-gray-400 text-sm block mb-2">Phone:</span>
-                              <p className="text-gray-200 font-mono">{selectedProject.clientPhone}</p>
-                            </div>
-                          )}
-
-                          {selectedProject.clientNotes && (
-                            <div className="bg-gray-700/30 p-4 rounded border border-gray-600/20">
-                              <span className="text-gray-400 text-sm block mb-2">Client Notes:</span>
-                              <p className="text-gray-200">{selectedProject.clientNotes}</p>
-                            </div>
-                          )}
-
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="w-full border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/10"
-                            onClick={() => {
-                              toast({
-                                title: "Contact Client",
-                                description: `${selectedProject.clientName} - ${selectedProject.clientEmail || selectedProject.clientPhone || 'No contact info'}`
-                              });
-                            }}
-                          >
-                            <i className="ri-message-3-line mr-2"></i>
-                            Contact Client
-                          </Button>
                         </div>
                       )}
 
                       {dashboardTab === 'documents' && (
                         <div className="space-y-4">
-                          {/* Document Count Cards */}
                           <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-gray-700/30 p-4 rounded border border-gray-600/20 text-center">
-                              <div className="text-cyan-400 text-2xl mb-2">
-                                <i className="ri-file-list-3-line"></i>
-                              </div>
-                              <div className="text-sm text-gray-400 mb-1">Estimates</div>
-                              <div className="text-cyan-300 font-semibold text-xl">
-                                {selectedProject.estimateHtml ? '1' : '0'}
-                              </div>
-                            </div>
-                            <div className="bg-gray-700/30 p-4 rounded border border-gray-600/20 text-center">
-                              <div className="text-purple-400 text-2xl mb-2">
-                                <i className="ri-file-text-line"></i>
-                              </div>
-                              <div className="text-sm text-gray-400 mb-1">Contracts</div>
-                              <div className="text-purple-300 font-semibold text-xl">
-                                {selectedProject.contractHtml ? '1' : '0'}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Document Actions */}
-                          <div className="space-y-3">
-                            {selectedProject.estimateHtml && (
-                              <Button 
-                                size="sm" 
-                                variant="outline" 
-                                className="w-full border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/10 justify-start"
-                                onClick={() => {
-                                  const blob = new Blob([selectedProject.estimateHtml], { type: 'text/html' });
-                                  const url = URL.createObjectURL(blob);
-                                  window.open(url, '_blank');
-                                }}
-                              >
-                                <i className="ri-eye-line mr-2"></i>
-                                View Estimate
+                            <div className="text-center p-4 bg-gray-700/20 rounded border border-cyan-400/20">
+                              <i className="ri-file-text-line text-2xl text-cyan-400 mb-2 block"></i>
+                              <p className="text-sm text-gray-300 mb-2">Estimate</p>
+                              <Button size="sm" className="w-full bg-cyan-500/20 text-cyan-300 border-cyan-400/30">
+                                {selectedProject.estimateHtml ? 'View' : 'Generate'}
                               </Button>
-                            )}
-                            
-                            {selectedProject.contractHtml && (
-                              <Button 
-                                size="sm" 
-                                variant="outline" 
-                                className="w-full border-purple-400/30 text-purple-300 hover:bg-purple-400/10 justify-start"
-                                onClick={() => {
-                                  const blob = new Blob([selectedProject.contractHtml], { type: 'text/html' });
-                                  const url = URL.createObjectURL(blob);
-                                  window.open(url, '_blank');
-                                }}
-                              >
-                                <i className="ri-eye-line mr-2"></i>
-                                View Contract
+                            </div>
+                            <div className="text-center p-4 bg-gray-700/20 rounded border border-cyan-400/20">
+                              <i className="ri-file-shield-line text-2xl text-cyan-400 mb-2 block"></i>
+                              <p className="text-sm text-gray-300 mb-2">Contract</p>
+                              <Button size="sm" className="w-full bg-cyan-500/20 text-cyan-300 border-cyan-400/30">
+                                {selectedProject.contractHtml ? 'View' : 'Generate'}
                               </Button>
-                            )}
-                            
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="w-full border-green-400/30 text-green-300 hover:bg-green-400/10 justify-start"
-                              onClick={() => {
-                                window.location.href = `/cyberpunk-contract-generator?projectId=${selectedProject.id}`;
-                              }}
-                            >
-                              <i className="ri-file-add-line mr-2"></i>
-                              Create Contract
-                            </Button>
-
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="w-full border-yellow-400/30 text-yellow-300 hover:bg-yellow-400/10 justify-start"
-                              onClick={() => {
-                                window.location.href = `/invoices?projectId=${selectedProject.id}`;
-                              }}
-                            >
-                              <i className="ri-bill-line mr-2"></i>
-                              Generate Invoice
-                            </Button>
-
-                            {/* Upload Section */}
-                            <div className="pt-2 border-t border-gray-700/30">
-                              <div className="relative">
-                                <input 
-                                  type="file" 
-                                  id={`file-upload-${selectedProject.id}`}
-                                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                  multiple
-                                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                                  onChange={(e) => {
-                                    const files = e.target.files;
-                                    if (files && files.length > 0) {
-                                      toast({
-                                        title: "Files Selected",
-                                        description: `${files.length} file(s) ready for upload`
-                                      });
-                                    }
-                                  }}
-                                />
-                                <Button 
-                                  size="sm" 
-                                  variant="outline" 
-                                  className="w-full border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/10"
-                                >
-                                  <i className="ri-upload-2-line mr-2"></i>
-                                  Upload Files
-                                </Button>
-                              </div>
                             </div>
                           </div>
                         </div>
