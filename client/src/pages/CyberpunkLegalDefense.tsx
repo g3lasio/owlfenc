@@ -190,6 +190,23 @@ export default function CyberpunkLegalDefense() {
   // Estado para el costo total editable
   const [totalCost, setTotalCost] = useState<number>(0);
   
+  // Estados para checkboxes y campos adicionales
+  const [hasLicense, setHasLicense] = useState<boolean>(false);
+  const [hasInsurance, setHasInsurance] = useState<boolean>(false);
+  const [permitsRequired, setPermitsRequired] = useState<boolean>(false);
+  const [licenseClassification, setLicenseClassification] = useState<string>('');
+  const [insuranceCompany, setInsuranceCompany] = useState<string>('');
+  const [policyNumber, setPolicyNumber] = useState<string>('');
+  const [coverageAmount, setCoverageAmount] = useState<string>('');
+  const [expirationDate, setExpirationDate] = useState<string>('');
+  const [permitResponsibility, setPermitResponsibility] = useState<string>('Contractor obtains permits');
+  const [permitNumbers, setPermitNumbers] = useState<string>('');
+  const [workmanshipWarranty, setWorkmanshipWarranty] = useState<string>('1 Year');
+  const [materialsWarranty, setMaterialsWarranty] = useState<string>('Manufacturer warranty only');
+  const [startDate, setStartDate] = useState<string>('');
+  const [completionDate, setCompletionDate] = useState<string>('');
+  const [estimatedDuration, setEstimatedDuration] = useState<string>('');
+  
   // Profile data for contractor information
   const { profile } = useProfile();
   const { user } = useAuth();
@@ -1956,7 +1973,14 @@ export default function CyberpunkLegalDefense() {
                     </h3>
                     <div className="space-y-4">
                       <div className="flex items-center space-x-3">
-                        <input type="checkbox" id="hasLicense" name="hasLicense" className="text-yellow-400" />
+                        <input 
+                          type="checkbox" 
+                          id="hasLicense" 
+                          name="hasLicense" 
+                          checked={hasLicense}
+                          onChange={(e) => setHasLicense(e.target.checked)}
+                          className="text-yellow-400" 
+                        />
                         <label htmlFor="hasLicense" className="text-gray-300">Contractor has valid California license</label>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1976,6 +2000,8 @@ export default function CyberpunkLegalDefense() {
                           <input
                             type="text"
                             name="licenseClassification"
+                            value={licenseClassification}
+                            onChange={(e) => setLicenseClassification(e.target.value)}
                             placeholder="e.g., C-13 Fencing"
                             className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-400 focus:outline-none"
                           />
@@ -1998,7 +2024,13 @@ export default function CyberpunkLegalDefense() {
                     </h3>
                     <div className="space-y-4">
                       <div className="flex items-center space-x-3">
-                        <input type="checkbox" id="hasInsurance" className="text-purple-400" />
+                        <input 
+                          type="checkbox" 
+                          id="hasInsurance" 
+                          checked={hasInsurance}
+                          onChange={(e) => setHasInsurance(e.target.checked)}
+                          className="text-purple-400" 
+                        />
                         <label htmlFor="hasInsurance" className="text-gray-300">Contractor carries liability insurance</label>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2006,6 +2038,8 @@ export default function CyberpunkLegalDefense() {
                           <label className="text-gray-400 text-sm">Insurance Company</label>
                           <input
                             type="text"
+                            value={insuranceCompany}
+                            onChange={(e) => setInsuranceCompany(e.target.value)}
                             placeholder="Enter insurance provider"
                             className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-purple-400 focus:outline-none"
                           />
@@ -2014,6 +2048,8 @@ export default function CyberpunkLegalDefense() {
                           <label className="text-gray-400 text-sm">Policy Number</label>
                           <input
                             type="text"
+                            value={policyNumber}
+                            onChange={(e) => setPolicyNumber(e.target.value)}
                             placeholder="Enter policy number"
                             className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-purple-400 focus:outline-none"
                           />
@@ -2022,6 +2058,8 @@ export default function CyberpunkLegalDefense() {
                           <label className="text-gray-400 text-sm">Coverage Amount</label>
                           <input
                             type="text"
+                            value={coverageAmount}
+                            onChange={(e) => setCoverageAmount(e.target.value)}
                             placeholder="e.g., $1,000,000"
                             className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-purple-400 focus:outline-none"
                           />
@@ -2030,6 +2068,8 @@ export default function CyberpunkLegalDefense() {
                           <label className="text-gray-400 text-sm">Expiration Date</label>
                           <input
                             type="date"
+                            value={expirationDate}
+                            onChange={(e) => setExpirationDate(e.target.value)}
                             className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-purple-400 focus:outline-none"
                           />
                         </div>
@@ -2245,13 +2285,23 @@ export default function CyberpunkLegalDefense() {
                     </h3>
                     <div className="space-y-4">
                       <div className="flex items-center space-x-3">
-                        <input type="checkbox" id="permitsRequired" className="text-orange-400" />
+                        <input 
+                          type="checkbox" 
+                          id="permitsRequired" 
+                          checked={permitsRequired}
+                          onChange={(e) => setPermitsRequired(e.target.checked)}
+                          className="text-orange-400" 
+                        />
                         <label htmlFor="permitsRequired" className="text-gray-300">Building permits required for this project</label>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="text-gray-400 text-sm">Permit Responsibility</label>
-                          <select className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-orange-400 focus:outline-none">
+                          <select 
+                            value={permitResponsibility}
+                            onChange={(e) => setPermitResponsibility(e.target.value)}
+                            className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-orange-400 focus:outline-none"
+                          >
                             <option>Contractor obtains permits</option>
                             <option>Owner obtains permits</option>
                             <option>No permits required</option>
@@ -2261,6 +2311,8 @@ export default function CyberpunkLegalDefense() {
                           <label className="text-gray-400 text-sm">Permit Numbers</label>
                           <input
                             type="text"
+                            value={permitNumbers}
+                            onChange={(e) => setPermitNumbers(e.target.value)}
                             placeholder="Enter permit numbers if available"
                             className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-orange-400 focus:outline-none"
                           />
@@ -2279,7 +2331,11 @@ export default function CyberpunkLegalDefense() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="text-gray-400 text-sm">Workmanship Warranty</label>
-                          <select className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-purple-400 focus:outline-none">
+                          <select 
+                            value={workmanshipWarranty}
+                            onChange={(e) => setWorkmanshipWarranty(e.target.value)}
+                            className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-purple-400 focus:outline-none"
+                          >
                             <option>1 Year</option>
                             <option>2 Years</option>
                             <option>3 Years</option>
@@ -2288,7 +2344,11 @@ export default function CyberpunkLegalDefense() {
                         </div>
                         <div>
                           <label className="text-gray-400 text-sm">Materials Warranty</label>
-                          <select className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-purple-400 focus:outline-none">
+                          <select 
+                            value={materialsWarranty}
+                            onChange={(e) => setMaterialsWarranty(e.target.value)}
+                            className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-purple-400 focus:outline-none"
+                          >
                             <option>Manufacturer warranty only</option>
                             <option>1 Year contractor warranty</option>
                             <option>2 Years contractor warranty</option>
