@@ -4686,36 +4686,6 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
             </p>
           </div>
           <div className="flex gap-2">
-            {isEditMode && (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  // Exit edit mode and reset
-                  setIsEditMode(false);
-                  setEditingEstimateId(null);
-                  setCurrentStep(0);
-                  setEstimate({
-                    client: null,
-                    items: [],
-                    projectDetails: "",
-                    subtotal: 0,
-                    tax: 0,
-                    total: 0,
-                    taxRate: 10,
-                    discountType: "percentage",
-                    discountValue: 0,
-                    discountAmount: 0,
-                    discountName: "",
-                  });
-                  // Clear URL parameters
-                  window.history.replaceState({}, document.title, window.location.pathname);
-                }}
-                className="border-gray-300 text-gray-600 hover:bg-gray-50"
-              >
-                <X className="h-4 w-4 mr-2" />
-                Cancelar Edición
-              </Button>
-            )}
             <Button
               variant="outline"
               onClick={() => {
