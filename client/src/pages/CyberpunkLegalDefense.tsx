@@ -194,6 +194,26 @@ export default function CyberpunkLegalDefense() {
   const { profile } = useProfile();
   const { user } = useAuth();
   
+  // Auto-populate contractor data when profile is loaded and we reach step 3
+  useEffect(() => {
+    if (profile && currentStep === 3 && extractedData) {
+      console.log('Auto-populating contractor data from profile:', profile);
+      setExtractedData(prev => ({
+        ...prev,
+        contractorName: prev.contractorName || profile.company || profile.ownerName || '',
+        contractorCompany: prev.contractorCompany || profile.company || '',
+        contractorAddress: prev.contractorAddress || `${profile.address || ''} ${profile.city || ''} ${profile.state || ''} ${profile.zipCode || ''}`.trim(),
+        contractorPhone: prev.contractorPhone || profile.phone || profile.mobilePhone || '',
+        contractorEmail: prev.contractorEmail || profile.email || '',
+        contractorLicense: prev.contractorLicense || profile.license || '',
+        contractorEin: prev.contractorEin || profile.ein || '',
+        contractorBusinessType: prev.contractorBusinessType || profile.businessType || '',
+        contractorInsurance: prev.contractorInsurance || profile.insurancePolicy || '',
+        contractorWebsite: prev.contractorWebsite || profile.website || ''
+      }));
+    }
+  }, [profile, currentStep, extractedData]);
+  
   // Estados del toggle de método de entrada
   const [dataInputMethod, setDataInputMethod] = useState<'upload' | 'select'>('upload');
   const [selectedProject, setSelectedProject] = useState<any>(null);
@@ -1888,8 +1908,8 @@ export default function CyberpunkLegalDefense() {
                         <input
                           type="text"
                           name="contractorCompany"
-                          value={extractedData?.contractorName || profile?.companyName || ''}
-                          onChange={(e) => setExtractedData(prev => ({...prev, contractorName: e.target.value}))}
+                          value={extractedData?.contractorCompany || extractedData?.contractorName || profile?.company || ''}
+                          onChange={(e) => setExtractedData(prev => ({...prev, contractorCompany: e.target.value, contractorName: e.target.value}))}
                           placeholder="Enter contractor company name"
                           className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-blue-400 focus:outline-none"
                         />
@@ -1899,7 +1919,7 @@ export default function CyberpunkLegalDefense() {
                         <input
                           type="text"
                           name="contractorName"
-                          value={extractedData?.contractorName || profile?.companyName || ''}
+                          value={extractedData?.contractorName || profile?.ownerName || profile?.company || ''}
                           onChange={(e) => setExtractedData(prev => ({...prev, contractorName: e.target.value}))}
                           placeholder="Enter contractor full name"
                           className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-blue-400 focus:outline-none"
@@ -1921,9 +1941,31 @@ export default function CyberpunkLegalDefense() {
                         <input
                           type="tel"
                           name="contractorPhone"
-                          value={extractedData?.contractorPhone || profile?.phone || ''}
+                          value={extractedData?.contractorPhone || profile?.phone || profile?.mobilePhone || ''}
                           onChange={(e) => setExtractedData(prev => ({...prev, contractorPhone: e.target.value}))}
                           placeholder="(555) 123-4567"
+                          className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-blue-400 focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-gray-400 text-sm">Email Address *</label>
+                        <input
+                          type="email"
+                          name="contractorEmail"
+                          value={extractedData?.contractorEmail || profile?.email || ''}
+                          onChange={(e) => setExtractedData(prev => ({...prev, contractorEmail: e.target.value}))}
+                          placeholder="contractor@company.com"
+                          className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-blue-400 focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-gray-400 text-sm">EIN / Tax ID</label>
+                        <input
+                          type="text"
+                          name="contractorEin"
+                          value={extractedData?.contractorEin || profile?.ein || ''}
+                          onChange={(e) => setExtractedData(prev => ({...prev, contractorEin: e.target.value}))}
+                          placeholder="XX-XXXXXXX"
                           className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-blue-400 focus:outline-none"
                         />
                       </div>
@@ -1947,6 +1989,8 @@ export default function CyberpunkLegalDefense() {
                           <input
                             type="text"
                             name="licenseNumber"
+                            value={extractedData?.contractorLicense || profile?.license || ''}
+                            onChange={(e) => setExtractedData(prev => ({...prev, contractorLicense: e.target.value}))}
                             placeholder="Enter CA license number"
                             className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-400 focus:outline-none"
                           />
@@ -1986,6 +2030,9 @@ export default function CyberpunkLegalDefense() {
                           <label className="text-gray-400 text-sm">Insurance Company</label>
                           <input
                             type="text"
+                            name="insuranceCompany"
+                            value={extractedData?.insuranceCompany || profile?.insurancePolicy || ''}
+                            onChange={(e) => setExtractedData(prev => ({...prev, insuranceCompany: e.target.value}))}
                             placeholder="Enter insurance provider"
                             className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-purple-400 focus:outline-none"
                           />
