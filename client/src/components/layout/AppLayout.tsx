@@ -105,20 +105,22 @@ export default function AppLayout({ children }: AppLayoutProps) {
       <Sidebar onWidthChange={setSidebarWidth} />
 
       {/* Contenido principal con margen dinámico para el sidebar */}
-      <main style={{ 
-        flex: 1, 
-        display: 'flex', 
-        flexDirection: 'column',
-        height: '100vh', 
-        overflow: 'auto',
-        marginLeft: `${sidebarWidth}px`
-      }}>
-        <Header toggleMobileMenu={toggleMobileMenu} isMobileMenuOpen={isMobileMenuOpen} />
+      <main 
+        className={location === '/' ? 'home-main' : ''} 
+        style={{ 
+          flex: 1, 
+          display: 'flex', 
+          flexDirection: 'column',
+          height: '100vh', 
+          overflow: location === '/' ? 'hidden' : 'auto',
+          marginLeft: `${sidebarWidth}px`
+        }}>
+        {location !== '/' && <Header toggleMobileMenu={toggleMobileMenu} isMobileMenuOpen={isMobileMenuOpen} />}
         <div style={{ 
           flex: 1, 
-          overflow: 'auto',
-          height: 'calc(100vh - 104px)', // Altura ajustada para header (64px) + footer (40px)
-          paddingBottom: '20px'
+          overflow: location === '/' ? 'hidden' : 'auto',
+          height: location === '/' ? '100vh' : 'calc(100vh - 104px)', // Sin header/footer en home
+          paddingBottom: location === '/' ? '0' : '20px'
         }}>
           <Switch>
             <Route path="/settings/profile" component={Profile} />
@@ -126,17 +128,18 @@ export default function AppLayout({ children }: AppLayoutProps) {
           </Switch>
         </div>
         
-        {/* Footer fijo en la parte inferior del contenido principal */}
-        <div 
-          className="py-2 px-4 bg-gray-900 border-t border-cyan-900/30 text-xs text-center text-cyan-500/50"
-          style={{
-            position: 'fixed',
-            bottom: 0,
-            left: `${sidebarWidth}px`,
-            right: 0,
-            zIndex: 10
-          }}
-        >
+        {/* Footer fijo en la parte inferior del contenido principal - oculto en home */}
+        {location !== '/' && (
+          <div 
+            className="py-2 px-4 bg-gray-900 border-t border-cyan-900/30 text-xs text-center text-cyan-500/50"
+            style={{
+              position: 'fixed',
+              bottom: 0,
+              left: `${sidebarWidth}px`,
+              right: 0,
+              zIndex: 10
+            }}
+          >
           <div className="flex justify-center items-center space-x-4">
             <Link to="/privacy-policy" className="hover:text-cyan-400 cursor-pointer transition-colors">
               Privacy Policy
@@ -149,6 +152,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             <span className="font-medium">© 2025 Owl Fence</span>
           </div>
         </div>
+        )}
       </main>
     </div>
   );

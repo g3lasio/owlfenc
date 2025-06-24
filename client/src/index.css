@@ -48,10 +48,31 @@ main {
   overflow: visible !important;
 }
 
-.home-container {
+/* Estilos específicos para página HOME - sin scroll */
+.home-page {
   overflow: hidden !important;
-  height: 100% !important;
-  max-height: 100% !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+}
+
+.home-page main {
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+}
+
+.home-page div {
+  overflow: visible !important;
+}
+
+/* Ocultar scrollbars en página home */
+.home-page::-webkit-scrollbar {
+  display: none !important;
+}
+
+.home-page * {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
 }
 
 /* Allow scrolling in flex containers when needed - but be more specific */

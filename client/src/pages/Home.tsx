@@ -3,6 +3,16 @@ import { Link } from "wouter";
 import { useEffect, useState } from "react";
 
 export default function Home() {
+  // Aplicar clase específica al body para home
+  useEffect(() => {
+    document.body.classList.add('home-page');
+    document.documentElement.classList.add('home-page');
+    
+    return () => {
+      document.body.classList.remove('home-page');
+      document.documentElement.classList.remove('home-page');
+    };
+  }, []);
   // Estado para manejar la animación de partículas
   const [particles, setParticles] = useState<Array<{id: number, x: number, y: number, size: number, speed: number, opacity: number, delay: number}>>([]);
   
@@ -25,13 +35,16 @@ export default function Home() {
 
   return (
     <div style={{ 
-      width: '100%', 
-      height: '100%', 
+      width: '100vw', 
+      height: '100vh', 
       display: 'flex', 
       alignItems: 'center', 
       justifyContent: 'center',
       overflow: 'hidden',
-      position: 'relative'
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      zIndex: 1
     }}>
       <Link href="/mervin">
         <button style={{ 
