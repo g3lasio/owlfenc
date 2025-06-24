@@ -12,7 +12,6 @@ export interface ContractPdfData {
     address: string;
     phone: string;
     email: string;
-    license?: string;
   };
   project: {
     type: string;

@@ -635,8 +635,7 @@ export default function CyberpunkLegalDefense() {
           name: profile?.company || profile?.ownerName || '',
           address: profile?.address || '',
           email: profile?.email || '',
-          phone: profile?.phone || profile?.mobilePhone || '',
-          license: profile?.license || ''
+          phone: profile?.phone || profile?.mobilePhone || ''
         },
         project: {
           type: extractedData.projectDetails?.type || extractedData.projectType || '',
@@ -704,8 +703,7 @@ export default function CyberpunkLegalDefense() {
           name: profile?.company || profile?.ownerName || 'Contractor Name',
           address: profile?.address || 'Contractor Address',
           email: profile?.email || '',
-          phone: profile?.phone || profile?.mobilePhone || '',
-          license: profile?.license || ''
+          phone: profile?.phone || profile?.mobilePhone || ''
         },
         project: {
           type: extractedData.projectDetails?.type || 'Construction Services',
