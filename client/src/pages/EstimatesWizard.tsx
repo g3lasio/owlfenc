@@ -3226,7 +3226,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                 </div>
               )}
 
-              <div className="max-h-32 overflow-y-auto">
+              <div className="max-h-24 overflow-y-auto border rounded-md bg-muted/20">
                 {isLoadingClients ? (
                   <p className="text-center py-4 text-muted-foreground">
                     Cargando clientes...
