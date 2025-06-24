@@ -70,6 +70,25 @@ html, body {
   padding: 1.5rem !important;
 }
 
+/* Estructuras específicas para diferentes tipos de contenido */
+.content-with-header {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100vh !important;
+}
+
+.content-with-header .header-section {
+  flex-shrink: 0 !important;
+  padding: 1.5rem !important;
+  border-bottom: 1px solid hsl(var(--border)) !important;
+}
+
+.content-with-header .main-section {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  padding: 1.5rem !important;
+}
+
 /* Headers fijos */
 .fixed-header {
   flex-shrink: 0 !important;
