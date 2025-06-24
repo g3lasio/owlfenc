@@ -104,27 +104,13 @@ export default function AppLayout({ children }: AppLayoutProps) {
       {/* Sidebar siempre visible en todas las pantallas */}
       <Sidebar onWidthChange={setSidebarWidth} />
 
-      {/* Contenido principal con margen dinámico para el sidebar */}
-      <main style={{ 
-        flex: 1, 
-        display: 'flex', 
-        flexDirection: 'column',
-        height: '100vh', 
-        overflow: 'auto',
-        marginLeft: `${sidebarWidth}px`
-      }}>
+      {/* Contenido principal */}
+      <div className="main-content-area" style={{ marginLeft: `${sidebarWidth}px` }}>
         <Header toggleMobileMenu={toggleMobileMenu} isMobileMenuOpen={isMobileMenuOpen} />
-        <div style={{ 
-          flex: 1, 
-          overflow: 'auto',
-          height: 'calc(100vh - 104px)', // Altura ajustada para header (64px) + footer (40px)
-          paddingBottom: '20px'
-        }}>
-          <Switch>
-            <Route path="/settings/profile" component={Profile} />
-            <Route path="*">{children}</Route>
-          </Switch>
-        </div>
+        <Switch>
+          <Route path="/settings/profile" component={Profile} />
+          <Route path="*">{children}</Route>
+        </Switch>
         
         {/* Footer fijo en la parte inferior del contenido principal */}
         <div 

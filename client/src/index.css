@@ -53,11 +53,12 @@ html, body {
 
 /* Páginas individuales */
 .page-container {
-  height: 100vh !important;
-  max-height: 100vh !important;
+  height: calc(100vh - 104px) !important;
+  max-height: calc(100vh - 104px) !important;
   overflow: hidden !important;
   display: flex !important;
   flex-direction: column !important;
+  flex: 1 !important;
 }
 
 /* Contenido scrollable controlado */
