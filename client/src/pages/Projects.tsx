@@ -476,10 +476,10 @@ function Projects() {
             {filteredProjects.length} {filteredProjects.length === 1 ? 'proyecto encontrado' : 'proyectos encontrados'}
           </div>
         </div>
-      </div>
+      </FixedHeader>
       
-      {/* Scrollable Content Area */}
-      <div className="flex-1 overflow-y-auto px-6 pb-6">
+      {/* Projects Content */}
+      <ScrollableContent>
         {filteredProjects.length === 0 ? (
           <div className="text-center py-12 bg-muted/20 rounded-lg">
             <i className="ri-search-line text-3xl mb-2 text-muted-foreground"></i>
@@ -650,7 +650,7 @@ function Projects() {
             </table>
           </div>
         )}
-      </div>
+      </ScrollableContent>
       
       {/* Project Details Dialog */}
       {isDialogOpen && selectedProject && (
