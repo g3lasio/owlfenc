@@ -113,14 +113,17 @@ export default function AppLayout({ children }: AppLayoutProps) {
           flexDirection: 'column',
           height: '100vh', 
           overflow: location === '/' ? 'hidden' : 'auto',
-          marginLeft: `${sidebarWidth}px`
+          marginLeft: `${sidebarWidth}px`,
+          position: location === '/' ? 'fixed' : 'relative',
+          width: location === '/' ? `calc(100vw - ${sidebarWidth}px)` : 'auto'
         }}>
         <Header toggleMobileMenu={toggleMobileMenu} isMobileMenuOpen={isMobileMenuOpen} />
         <div style={{ 
           flex: 1, 
           overflow: location === '/' ? 'hidden' : 'auto',
-          height: 'calc(100vh - 104px)', // Altura ajustada para header (64px) + footer (40px)
-          paddingBottom: '20px'
+          height: location === '/' ? '100vh' : 'calc(100vh - 104px)', // Sin restricción en home
+          paddingBottom: location === '/' ? '0' : '20px',
+          position: location === '/' ? 'relative' : 'static'
         }}>
           <Switch>
             <Route path="/settings/profile" component={Profile} />
