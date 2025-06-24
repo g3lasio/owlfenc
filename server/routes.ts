@@ -1505,7 +1505,7 @@ Output must be between 200-900 characters in English.`;
           phone: profile.phone || 'Phone Number',
           email: profile.email || 'Email Address',
           website: profile.website || 'Website',
-          logo: profile.logoBase64 || ''
+          logo: profile.logo || ''
         },
         invoice: {
           number: `INV-${Date.now()}`,
@@ -1622,34 +1622,39 @@ Output must be between 200-900 characters in English.`;
         total: projectTotalCosts?.total
       });
 
-      // Get contractor profile data - using exact logic from working Invoice PDF service
+      // Get contractor profile data - direct SQL query to avoid schema issues
       let contractorData = {};
       try {
         const firebaseUid = originalData?.firebaseUid;
         if (firebaseUid) {
           console.log('🔍 Fetching contractor profile for UID:', firebaseUid);
-          const profile = await storage.getUserByFirebaseUid(firebaseUid);
+          
+          // Direct SQL query to get user data with logo
+          const result = await storage.executeRawQuery(
+            'SELECT id, firebase_uid, company, email, phone, address, website, logo FROM users WHERE firebase_uid = $1',
+            [firebaseUid]
+          );
+          
+          const profile = result.rows[0];
           console.log('👤 Profile found:', profile ? 'Yes' : 'No');
-          console.log('🏷️ Profile data keys:', profile ? Object.keys(profile) : 'None');
-          console.log('🏷️ Profile logo data:', profile?.logoBase64 ? 'Present' : 'Missing');
+          console.log('🏷️ Profile logo data:', profile?.logo ? 'Present' : 'Missing');
+          
           if (profile) {
             console.log('📝 Profile details:', {
               id: profile.id,
               company: profile.company,
               email: profile.email,
-              hasLogo: !!profile.logoBase64,
-              logoLength: profile.logoBase64?.length || 0
+              hasLogo: !!profile.logo,
+              logoLength: profile.logo?.length || 0
             });
-          }
-          
-          if (profile) {
+            
             contractorData = {
-              name: profile.company || profile.displayName || 'Company Name',
+              name: profile.company || 'Company Name',
               address: profile.address || 'Company Address',
               phone: profile.phone || 'Company Phone',
               email: profile.email || 'company@email.com',
               website: profile.website || 'https://company.com/',
-              logo: profile.logoBase64 || ''
+              logo: profile.logo || ''
             };
             
             console.log('✅ Contractor data prepared with logo:', contractorData.logo ? 'Yes' : 'No');
