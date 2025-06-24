@@ -63,6 +63,13 @@ html, body {
   max-height: calc(100vh - var(--header-height, 120px)) !important;
 }
 
+/* Para páginas con contenido que requiera scroll interno */
+.scrollable-content {
+  overflow-y: auto !important;
+  max-height: calc(100vh - 140px) !important;
+  padding: 1.5rem !important;
+}
+
 /* Headers fijos */
 .fixed-header {
   flex-shrink: 0 !important;
