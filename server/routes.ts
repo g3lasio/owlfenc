@@ -760,7 +760,7 @@ ${extractedText}`,
         clientName: project.clientName || project.customerName || 'Unknown Client',
         clientEmail: project.clientEmail || project.customerEmail || '',
         clientPhone: project.clientPhone || project.customerPhone || '',
-        address: project.address || '',
+        address: project.address || project.clientAddress || project.projectAddress || project.location || project.workAddress || project.propertyAddress || '',
         projectType: project.projectType || project.projectCategory || 'General Project',
         projectSubtype: project.projectSubtype || project.fenceType || '',
         projectDescription: project.projectDescription || project.description || '',
@@ -794,6 +794,22 @@ ${extractedText}`,
       }));
 
       console.log(`✅ Proyectos sincronizados: ${projectsForContract.length}`);
+      
+      // Debug address fields for first project if any
+      if (projectsForContract.length > 0) {
+        const firstProject = projectsForContract[0];
+        console.log("First project address debug:", {
+          finalAddress: firstProject.address,
+          originalFields: {
+            address: projects[0]?.address,
+            clientAddress: projects[0]?.clientAddress,
+            projectAddress: projects[0]?.projectAddress,
+            location: projects[0]?.location,
+            workAddress: projects[0]?.workAddress,
+            propertyAddress: projects[0]?.propertyAddress
+          }
+        });
+      }
 
       res.json({
         success: true,
@@ -819,6 +835,14 @@ ${extractedText}`,
       }
 
       console.log("Processing Firebase project for contract:", project.clientName);
+      console.log("Address field debugging:", {
+        address: project.address,
+        clientAddress: project.clientAddress,
+        projectAddress: project.projectAddress,
+        location: project.location,
+        workAddress: project.workAddress,
+        propertyAddress: project.propertyAddress
+      });
 
       // Convertir precio desde centavos si es necesario
       const rawAmount = project.totalPrice || project.totalAmount || project.grandTotal || project.total || project.estimateAmount || project.amount || project.cost || 0;
@@ -833,14 +857,14 @@ ${extractedText}`,
             name: project.clientName || project.customerName || 'Unknown Client',
             email: project.clientEmail || project.customerEmail || '',
             phone: project.clientPhone || project.customerPhone || '',
-            address: project.address || project.clientAddress || project.projectAddress || project.location || ''
+            address: project.address || project.clientAddress || project.projectAddress || project.location || project.workAddress || project.propertyAddress || ''
           },
           projectDetails: {
             type: project.projectType || project.projectCategory || 'General Project',
             subtype: project.projectSubtype || project.fenceType || '',
             description: project.projectDescription || project.description || '',
             scope: project.projectScope || project.scope || '',
-            location: project.address || project.clientAddress || project.projectAddress || project.location || '',
+            location: project.address || project.clientAddress || project.projectAddress || project.location || project.workAddress || project.propertyAddress || '',
             specifications: project.projectDescription || project.description || ''
           },
           financials: {
