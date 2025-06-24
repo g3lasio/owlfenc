@@ -1622,68 +1622,32 @@ Output must be between 200-900 characters in English.`;
         total: projectTotalCosts?.total
       });
 
-      // Get contractor profile data - using working Invoice PDF approach with manual data mapping
+      // Get contractor profile data
       let contractorData = {};
       try {
-        const firebaseUid = originalData?.firebaseUid;
-        if (firebaseUid) {
-          console.log('🔍 Fetching contractor profile for UID:', firebaseUid);
-          
-          // Use the direct database storage implementation
-          const { DatabaseStorage } = await import('./DatabaseStorage');
-          const dbStorage = new DatabaseStorage();
-          
-          // Get user data directly from database
-          const result = await dbStorage.db.select({
-            id: dbStorage.users.id,
-            company: dbStorage.users.company,
-            email: dbStorage.users.email,
-            phone: dbStorage.users.phone,
-            address: dbStorage.users.address,
-            website: dbStorage.users.website,
-            logo: dbStorage.users.logo
-          }).from(dbStorage.users).where(dbStorage.eq(dbStorage.users.firebaseUid, firebaseUid));
-          
-          const profile = result[0];
-          console.log('👤 Profile found:', profile ? 'Yes' : 'No');
-          console.log('🏷️ Profile logo data:', profile?.logo ? 'Present' : 'Missing');
-          
+        if (user?.[0]?.uid) {
+          const profile = await storage.getUserByFirebaseUid(user[0].uid);
           if (profile) {
-            console.log('📝 Profile details:', {
-              id: profile.id,
-              company: profile.company,
-              email: profile.email,
-              hasLogo: !!profile.logo,
-              logoLength: profile.logo?.length || 0
-            });
-            
             contractorData = {
-              name: profile.company || 'Owl Fence Company',
-              address: profile.address || '2901 Owens Court',
+              name: profile.company || profile.displayName || 'OWL FENC',
+              address: profile.address || '2901 Owens Court, Fairfield, California 94534',
               phone: profile.phone || '(555) 123-4567',
               email: profile.email || 'truthbackpack@gmail.com',
               website: profile.website || 'https://owlfenc.com/',
-              logo: profile.logo || ''
+              logo: profile.logoBase64 || ''
             };
-            
-            console.log('✅ Contractor data prepared with logo:', contractorData.logo ? 'Yes' : 'No');
-          } else {
-            console.warn('❌ No profile found for Firebase UID:', firebaseUid);
           }
-        } else {
-          console.warn('❌ No Firebase UID provided in request data');
         }
       } catch (profileError) {
-        console.warn('❌ Error fetching contractor profile:', profileError);
-        
-        // Fallback to known contractor data from database query results
+        console.warn('Warning: Could not fetch contractor profile:', profileError);
+        // Use fallback contractor data
         contractorData = {
-          name: 'Owl Fence Company',
-          address: '2901 Owens Court',
+          name: 'OWL FENC',
+          address: '2901 Owens Court, Fairfield, California 94534',
           phone: '(555) 123-4567',
           email: 'truthbackpack@gmail.com',
           website: 'https://owlfenc.com/',
-          logo: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
+          logo: ''
         };
       }
 
@@ -1707,7 +1671,6 @@ Output must be between 200-900 characters in English.`;
       const total = projectTotalCosts?.total || subtotal;
 
       // Structure data for Puppeteer service
-      console.log('🔍 About to create estimateData with contractorData:', contractorData);
       const estimateData = {
         company: contractorData,
         estimate: {
