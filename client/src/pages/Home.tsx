@@ -28,7 +28,10 @@ export default function Home() {
       display: 'flex', 
       alignItems: 'center', 
       justifyContent: 'center',
-      position: 'relative'
+      position: 'relative',
+      overflow: 'hidden',
+      height: '100vh',
+      width: '100%'
     }}>
       <Link href="/mervin">
         <button style={{ 
@@ -42,7 +45,8 @@ export default function Home() {
           height: '200px',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center'
+          justifyContent: 'center',
+          overflow: 'hidden'
         }}>
           
           {/* Resplandor circular futurista */}

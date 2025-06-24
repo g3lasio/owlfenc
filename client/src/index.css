@@ -62,6 +62,14 @@ html, body {
   left: 0 !important;
 }
 
+/* LOGO DE MERVIN AI SIN SCROLL */
+.page-container button,
+.page-container div,
+.page-container img {
+  overflow: hidden !important;
+  max-height: 100vh !important;
+}
+
 /* Contenedor principal de la app */
 .app-container {
   height: 100vh !important;
