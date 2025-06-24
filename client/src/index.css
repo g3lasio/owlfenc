@@ -40,6 +40,31 @@ html, body {
   overflow: hidden !important;
 }
 
+/* ELIMINACIÓN TOTAL DE SCROLLBARS Y FLECHAS */
+*::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+*::-webkit-scrollbar-track {
+  display: none !important;
+}
+
+*::-webkit-scrollbar-thumb {
+  display: none !important;
+}
+
+*::-webkit-scrollbar-corner {
+  display: none !important;
+}
+
+/* PARA FIREFOX */
+* {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
 /* FORZAR ALTURA FIJA PARA EVITAR SCROLL INFINITO */
 .min-h-screen {
   min-height: auto !important;

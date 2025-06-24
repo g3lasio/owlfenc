@@ -815,7 +815,7 @@ function Projects() {
             ))}
           </div>
         ) : (
-          <div className="overflow-x-auto border rounded-lg">
+          <div className=" border rounded-lg">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-muted">
                 <tr>

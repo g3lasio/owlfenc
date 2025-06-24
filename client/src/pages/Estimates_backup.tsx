@@ -834,7 +834,7 @@ export default function Estimates() {
                     </Button>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
+                  <div className="">
                     <Table>
                       <TableHeader>
                         <TableRow>

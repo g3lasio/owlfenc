@@ -1862,7 +1862,7 @@ export default function NuevoClientes() {
                   <h4 className="font-medium text-foreground mb-1">Formato esperado:</h4>
                   <p>La primera línea debe contener encabezados: Nombre,Email,Teléfono,Dirección</p>
                   <p className="mt-2">Ejemplo:</p>
-                  <pre className="bg-muted p-2 rounded-md mt-1 overflow-x-auto">
+                  <pre className="bg-muted p-2 rounded-md mt-1 ">
                     <code>
                       Nombre,Email,Teléfono,Dirección<br/>
                       Juan Pérez,juan@ejemplo.com,555-123-4567,Calle 123

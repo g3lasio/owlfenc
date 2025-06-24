@@ -1398,7 +1398,7 @@ export default function CyberpunkLegalDefense() {
         {/* Cyberpunk Horizontal Stepper */}
         <div className="mb-8 px-4">
           {/* Mobile: Horizontal Scroll Stepper */}
-          <div className="md:hidden overflow-x-auto pb-4">
+          <div className="md:hidden  pb-4">
             <div className="flex items-center space-x-4 min-w-max px-2">
               {workflowSteps.map((step, index) => (
                 <div key={step.id} className="flex items-center">

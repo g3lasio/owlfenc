@@ -764,7 +764,7 @@ export default function PermitAdvisor() {
               <CardContent className="relative z-10 px-2 sm:px-4 lg:px-6">
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
                   {/* Responsive tabs */}
-                  <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-cyan-500/30">
+                  <div className="w-full   /30">
                     <TabsList className="flex w-max min-w-full sm:grid sm:grid-cols-5 sm:w-full bg-slate-900/80 border border-cyan-400/30 relative p-2 gap-2">
                       <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-transparent to-blue-500/10 animate-pulse"></div>
                     <TabsTrigger value="permits" className="relative text-cyan-300 data-[state=active]:bg-cyan-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/50 transition-all duration-300 whitespace-nowrap min-w-[90px] flex-shrink-0 text-sm font-medium px-4 py-2">

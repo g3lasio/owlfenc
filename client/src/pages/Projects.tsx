@@ -440,7 +440,7 @@ function Projects() {
           </CardGrid>
         ) : (
           <div className="border rounded-lg ">
-            <div className="overflow-x-auto">
+            <div className="">
               <table className="w-full">
                 <thead className="bg-muted/50">
                   <tr className="border-b">

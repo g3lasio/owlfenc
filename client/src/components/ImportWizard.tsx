@@ -470,7 +470,7 @@ export function ImportWizard({ isOpen, onClose, onImportComplete }: ImportWizard
           </AlertDescription>
         </Alert>
         
-        <div className="overflow-x-auto">
+        <div className="">
           <Table>
             <TableCaption>Previsualización de datos a importar (editable)</TableCaption>
             <TableHeader>

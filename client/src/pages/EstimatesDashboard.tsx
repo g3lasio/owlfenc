@@ -387,7 +387,7 @@ export default function EstimatesDashboard() {
               <p className="text-gray-500">No se encontraron estimados</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="">
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
