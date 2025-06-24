@@ -1505,7 +1505,7 @@ Output must be between 200-900 characters in English.`;
           phone: profile.phone || 'Phone Number',
           email: profile.email || 'Email Address',
           website: profile.website || 'Website',
-          logo: profile.logo || ''
+          logo: profile.logoBase64 || ''
         },
         invoice: {
           number: `INV-${Date.now()}`,

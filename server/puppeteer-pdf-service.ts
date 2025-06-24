@@ -203,7 +203,14 @@ export class PuppeteerPdfService {
       html = html.replace(/\{\{company\.phone\}\}/g, data.company.phone || '');
       html = html.replace(/\{\{company\.email\}\}/g, data.company.email || '');
       html = html.replace(/\{\{company\.website\}\}/g, data.company.website || '');
-      html = html.replace(/\{\{company\.logo\}\}/g, data.company.logo || '');
+      
+      // Handle logo - exact logic from working Invoice PDF service
+      if (data.company.logo && data.company.logo.startsWith('data:image')) {
+        html = html.replace(/\{\{company\.logo\}\}/g, data.company.logo);
+      } else {
+        // Remove logo section if no logo
+        html = html.replace(/<img src="\{\{company\.logo\}\}"[^>]*>/g, '');
+      }
       
       // Replace estimate data
       html = html.replace(/\{\{estimate\.number\}\}/g, data.estimate.number || `EST-${Date.now().toString().slice(-6)}`);
@@ -244,7 +251,7 @@ export class PuppeteerPdfService {
     html = this.processConditional(html, 'company.phone', !!data.company?.phone);
     html = this.processConditional(html, 'company.email', !!data.company?.email);
     html = this.processConditional(html, 'company.website', !!data.company?.website);
-    html = this.processConditional(html, 'company.logo', !!(data.company?.logo && data.company.logo.trim() !== ''));
+    html = this.processConditional(html, 'company.logo', !!(data.company?.logo && data.company.logo.startsWith('data:image')));
     
     // Estimate conditionals
     html = this.processConditional(html, 'estimate.number', !!data.estimate.number);
