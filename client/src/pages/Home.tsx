@@ -35,16 +35,13 @@ export default function Home() {
 
   return (
     <div style={{ 
-      width: '100vw', 
-      height: '100vh', 
+      width: '100%', 
+      height: '100%', 
       display: 'flex', 
       alignItems: 'center', 
       justifyContent: 'center',
       overflow: 'hidden',
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      zIndex: 1
+      position: 'relative'
     }}>
       <Link href="/mervin">
         <button style={{ 
