@@ -31,7 +31,8 @@ export default function Home() {
       position: 'relative',
       overflow: 'hidden',
       height: '100vh',
-      width: '100%'
+      width: '100%',
+      backgroundColor: '#0F172A'
     }}>
       <Link href="/mervin">
         <button style={{ 
@@ -46,7 +47,10 @@ export default function Home() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          margin: '0 auto',
+          left: '50%',
+          transform: 'translateX(-50%)'
         }}>
           
           {/* Resplandor circular futurista */}
@@ -73,17 +77,64 @@ export default function Home() {
             }}
           />
           
-          {/* Texto de Mervin AI con efecto de aparición */}
-          <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 text-lg md:text-xl font-quantico whitespace-nowrap tracking-wider z-10">
-            <div className="relative ">
-              <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent drop-shadow-md animate-text-reveal inline-block">
+          {/* Texto de Mervin AI con efecto de aparición - CORREGIDO Y VISIBLE */}
+          <div style={{
+            position: 'absolute',
+            bottom: '-60px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            fontSize: '20px',
+            fontWeight: 'bold',
+            whiteSpace: 'nowrap',
+            letterSpacing: '0.1em',
+            zIndex: 10,
+            textAlign: 'center'
+          }}>
+            <div style={{ position: 'relative' }}>
+              <span style={{
+                background: 'linear-gradient(to right, #22d3ee, #3b82f6)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                display: 'inline-block',
+                animation: 'fadeIn 2s ease-in-out'
+              }}>
                 Mervin AI
               </span>
-              <span className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 animate-line-reveal"></span>
+              <span style={{
+                position: 'absolute',
+                bottom: '0',
+                left: '0',
+                width: '100%',
+                height: '2px',
+                background: 'linear-gradient(to right, #22d3ee, #3b82f6)',
+                animation: 'expandWidth 2s ease-in-out'
+              }}></span>
             </div>
             {/* Marcadores de tecnología futurista */}
-            <span className="absolute -left-4 -bottom-1 h-2 w-2 bg-cyan-400 rounded-full opacity-70 animate-pulse"></span>
-            <span className="absolute -right-4 -bottom-1 h-2 w-2 bg-cyan-400 rounded-full opacity-70 animate-pulse" style={{ animationDelay: '0.5s' }}></span>
+            <span style={{
+              position: 'absolute',
+              left: '-16px',
+              bottom: '-4px',
+              height: '8px',
+              width: '8px',
+              backgroundColor: '#22d3ee',
+              borderRadius: '50%',
+              opacity: 0.7,
+              animation: 'pulse 2s infinite'
+            }}></span>
+            <span style={{
+              position: 'absolute',
+              right: '-16px',
+              bottom: '-4px',
+              height: '8px',
+              width: '8px',
+              backgroundColor: '#22d3ee',
+              borderRadius: '50%',
+              opacity: 0.7,
+              animation: 'pulse 2s infinite',
+              animationDelay: '0.5s'
+            }}></span>
           </div>
         </button>
       </Link>
