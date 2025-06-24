@@ -632,10 +632,10 @@ export default function CyberpunkLegalDefense() {
           phone: extractedData.clientInfo?.phone || extractedData.clientPhone || ''
         },
         contractor: {
-          name: profile?.companyName || '',
+          name: profile?.company || profile?.ownerName || '',
           address: profile?.address || '',
           email: profile?.email || '',
-          phone: profile?.phone || '',
+          phone: profile?.phone || profile?.mobilePhone || '',
           license: profile?.license || ''
         },
         project: {
@@ -701,11 +701,11 @@ export default function CyberpunkLegalDefense() {
           phone: extractedData.clientInfo?.phone || ''
         },
         contractor: {
-          name: profile?.companyName || 'Contractor Name',
+          name: profile?.company || profile?.ownerName || 'Contractor Name',
           address: profile?.address || 'Contractor Address',
           email: profile?.email || '',
-          phone: profile?.phone || '',
-          license: profile?.licenseNumber || ''
+          phone: profile?.phone || profile?.mobilePhone || '',
+          license: profile?.license || ''
         },
         project: {
           type: extractedData.projectDetails?.type || 'Construction Services',
@@ -750,16 +750,6 @@ export default function CyberpunkLegalDefense() {
           policyNumber,
           coverageAmount,
           expirationDate
-        },
-        permitInfo: {
-          permitsRequired,
-          responsibility: permitResponsibility,
-          numbers: permitNumbers
-        },
-        timeline: {
-          startDate,
-          completionDate,
-          estimatedDuration
         },
         permitInfo: {
           permitsRequired,
