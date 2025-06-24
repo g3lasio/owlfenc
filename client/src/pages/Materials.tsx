@@ -724,8 +724,8 @@ export default function Materials() {
   };
 
   return (
-    <AppLayout>
-      <div className="container mx-auto px-4 py-6 max-w-7xl">
+    <div className="page-container">
+      <div className="scrollable-content">
         {/* Header de navegación mejorado */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
