@@ -87,6 +87,15 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
     console.log('Menu state updated:', newExpanded);
   };
 
+  // Función para cerrar sidebar automáticamente al seleccionar una opción
+  const handleMenuItemClick = () => {
+    setSidebarExpanded(false);
+    if (onWidthChange) {
+      onWidthChange(0);
+    }
+    console.log('Menu auto-closed after selection');
+  };
+
   // Función para manejar logout
   const handleLogout = async () => {
     try {
@@ -113,7 +122,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
       {/* Botón flotante único - solo visible cuando sidebar está cerrado */}
       {!isSidebarExpanded && (
         <div 
-          className="fixed left-4 top-4 z-50"
+          className="fixed left-4 top-4 z-60"
           style={{
             transition: 'all 0.3s ease-in-out'
           }}
@@ -148,7 +157,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
       {/* Sidebar expandido solo cuando se necesita */}
       {isSidebarExpanded && (
         <aside 
-          className="fixed left-0 top-0 z-40 h-screen transition-all duration-300 ease-in-out border-r border-border bg-card/95 backdrop-blur-sm"
+          className="fixed left-0 top-0 z-50 h-screen transition-all duration-300 ease-in-out border-r border-border bg-card/95 backdrop-blur-sm"
           style={{ 
             width: '288px',
             display: 'flex',
@@ -226,6 +235,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                             className={`w-full justify-start px-2 py-1.5 h-auto hover:bg-accent text-sm font-normal ${
                               location === item.path ? 'bg-primary/20 text-primary' : ''
                             }`}
+                            onClick={handleMenuItemClick}
                           >
                             {item.icon.startsWith('lucide-') ? (
                               <>
