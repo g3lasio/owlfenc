@@ -730,9 +730,47 @@ export default function CyberpunkLegalDefense() {
         
         // Additional contract customizations that the working API expects
         paymentTerms: allFormData.paymentTerms || {},
-        warranties: allFormData.warranties || {},
+        warranties: {
+          workmanship: workmanshipWarranty,
+          materials: materialsWarranty,
+          ...allFormData.warranties
+        },
         extraClauses: allFormData.extraClauses || [],
-        customTerms: allFormData.customTerms || {}
+        customTerms: allFormData.customTerms || {},
+        
+        // NEW: Complete additional contract data
+        licenseInfo: {
+          hasLicense,
+          licenseNumber: extractedData?.contractorLicense || '',
+          licenseClassification
+        },
+        insuranceInfo: {
+          hasInsurance,
+          company: insuranceCompany,
+          policyNumber,
+          coverageAmount,
+          expirationDate
+        },
+        permitInfo: {
+          permitsRequired,
+          responsibility: permitResponsibility,
+          numbers: permitNumbers
+        },
+        timeline: {
+          startDate,
+          completionDate,
+          estimatedDuration
+        },
+        permitInfo: {
+          permitsRequired,
+          responsibility: permitResponsibility,
+          numbers: permitNumbers
+        },
+        timeline: {
+          startDate,
+          completionDate,
+          estimatedDuration
+        }
       };
       
       console.log('📋 [FRONTEND] Connecting to working PDF endpoint with data:', {
@@ -2256,6 +2294,8 @@ export default function CyberpunkLegalDefense() {
                         <label className="text-gray-400 text-sm">Start Date</label>
                         <input
                           type="date"
+                          value={startDate}
+                          onChange={(e) => setStartDate(e.target.value)}
                           className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-cyan-400 focus:outline-none"
                         />
                       </div>
@@ -2263,6 +2303,8 @@ export default function CyberpunkLegalDefense() {
                         <label className="text-gray-400 text-sm">Completion Date</label>
                         <input
                           type="date"
+                          value={completionDate}
+                          onChange={(e) => setCompletionDate(e.target.value)}
                           className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-cyan-400 focus:outline-none"
                         />
                       </div>
@@ -2270,6 +2312,8 @@ export default function CyberpunkLegalDefense() {
                         <label className="text-gray-400 text-sm">Estimated Duration</label>
                         <input
                           type="text"
+                          value={estimatedDuration}
+                          onChange={(e) => setEstimatedDuration(e.target.value)}
                           placeholder="e.g., 5-7 business days"
                           className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-cyan-400 focus:outline-none"
                         />
