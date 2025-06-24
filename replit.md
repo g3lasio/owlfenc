@@ -301,6 +301,15 @@ Changelog:
   * Removed Extraction Analysis Confidence Level card showing extraction statistics
   * Simplified interface focuses on essential contract configuration elements
   * Enhanced user experience with cleaner, more focused workflow
+- June 24, 2025. Fixed contractor information auto-population from Company Profile:
+  * Added useEffect to automatically fill contractor data when reaching step 3
+  * Enhanced all existing contractor fields to pull from profile data automatically
+  * Company Name auto-fills from profile.company
+  * Contractor Name auto-fills from profile.ownerName or profile.company
+  * Business Address auto-fills combining profile.address, city, state, zipCode
+  * Phone Number auto-fills from profile.phone or profile.mobilePhone
+  * License Number auto-fills from profile.license
+  * No manual data entry required - all contractor information loads from saved profile
 - June 21, 2025. Fixed Projects page scrolling and project completion functionality:
   * Corrected JSX structure issues preventing proper page rendering
   * Implemented proper flex layout for Projects page with scrollable content area
