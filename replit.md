@@ -289,6 +289,13 @@ Changelog:
   * Corrected JSX structure errors preventing compilation
   * System now has clean, controlled scrolling without infinite scroll issues
   * All pages maintain proper scroll behavior with futuristic UI design intact
+- June 24, 2025. Fixed client address data flow in contract generator:
+  * Enhanced backend /api/projects/contract-data endpoint to properly map client address fields
+  * Added multiple address fallback options: project.address, project.clientAddress, project.projectAddress, project.location
+  * Fixed frontend client information inputs to use controlled state management instead of defaultValue
+  * Implemented proper onChange handlers for client address, email, and phone fields
+  * Client address now properly flows from selected project through to generated contracts
+  * All client information fields now maintain synchronization between form and extracted data
 - June 21, 2025. Fixed Projects page scrolling and project completion functionality:
   * Corrected JSX structure issues preventing proper page rendering
   * Implemented proper flex layout for Projects page with scrollable content area

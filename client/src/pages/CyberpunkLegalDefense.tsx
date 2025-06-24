@@ -2068,7 +2068,18 @@ export default function CyberpunkLegalDefense() {
                         <input
                           type="text"
                           name="clientAddress"
-                          defaultValue={extractedData.clientInfo?.address || extractedData.projectDetails?.location || ''}
+                          value={extractedData.clientInfo?.address || extractedData.projectDetails?.location || ''}
+                          onChange={(e) => setExtractedData(prev => ({
+                            ...prev,
+                            clientInfo: {
+                              ...prev.clientInfo,
+                              address: e.target.value
+                            },
+                            projectDetails: {
+                              ...prev.projectDetails,
+                              location: e.target.value
+                            }
+                          }))}
                           className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-green-400 focus:outline-none"
                         />
                       </div>
@@ -2077,7 +2088,14 @@ export default function CyberpunkLegalDefense() {
                         <input
                           type="email"
                           name="clientEmail"
-                          defaultValue={extractedData.clientInfo?.email || ''}
+                          value={extractedData.clientInfo?.email || ''}
+                          onChange={(e) => setExtractedData(prev => ({
+                            ...prev,
+                            clientInfo: {
+                              ...prev.clientInfo,
+                              email: e.target.value
+                            }
+                          }))}
                           placeholder="client@email.com"
                           className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-green-400 focus:outline-none"
                         />
@@ -2087,7 +2105,14 @@ export default function CyberpunkLegalDefense() {
                         <input
                           type="tel"
                           name="clientPhone"
-                          defaultValue={extractedData.clientInfo?.phone || ''}
+                          value={extractedData.clientInfo?.phone || ''}
+                          onChange={(e) => setExtractedData(prev => ({
+                            ...prev,
+                            clientInfo: {
+                              ...prev.clientInfo,
+                              phone: e.target.value
+                            }
+                          }))}
                           placeholder="(555) 123-4567"
                           className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-green-400 focus:outline-none"
                         />

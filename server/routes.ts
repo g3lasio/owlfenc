@@ -833,14 +833,14 @@ ${extractedText}`,
             name: project.clientName || project.customerName || 'Unknown Client',
             email: project.clientEmail || project.customerEmail || '',
             phone: project.clientPhone || project.customerPhone || '',
-            address: project.address || project.projectAddress || ''
+            address: project.address || project.clientAddress || project.projectAddress || project.location || ''
           },
           projectDetails: {
             type: project.projectType || project.projectCategory || 'General Project',
             subtype: project.projectSubtype || project.fenceType || '',
             description: project.projectDescription || project.description || '',
             scope: project.projectScope || project.scope || '',
-            location: project.address || project.projectAddress || '',
+            location: project.address || project.clientAddress || project.projectAddress || project.location || '',
             specifications: project.projectDescription || project.description || ''
           },
           financials: {
