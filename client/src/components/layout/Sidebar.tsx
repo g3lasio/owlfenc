@@ -36,6 +36,20 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [isSidebarExpanded, setSidebarExpanded] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detectar si es dispositivo móvil
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  
   const { t } = useTranslation();
   const { language } = useLanguage();
 
@@ -133,7 +147,19 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
             flexDirection: 'column'
           }}
         >
-          {isSidebarExpanded ? (
+          {/* En móvil colapsado, mostrar solo mensaje de expansión */}
+          {isMobile && !isSidebarExpanded && (
+            <div className="flex-1 flex items-center justify-center p-4">
+              <div className="text-center text-xs text-muted-foreground">
+                <div className="mb-2">
+                  <ChevronsRight className="h-6 w-6 mx-auto opacity-50" />
+                </div>
+                <p>Toca para expandir</p>
+              </div>
+            </div>
+          )}
+          {/* Solo mostrar navegación si no es móvil colapsado */}
+          {(!isMobile || isSidebarExpanded) && (isSidebarExpanded ? (
             // Vista expandida con scroll
             <div 
               className="custom-scroll"
@@ -155,7 +181,10 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                   
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     {group.items
-                      .filter(item => item.path !== "/mervin" && item.id !== "mervin")
+                      .filter(item => {
+                        // En móvil expandido, mostrar todos los items normalmente
+                        return item.path !== "/mervin" && item.id !== "mervin";
+                      })
                       .map((item) => (
                         <Link key={item.id} href={item.path}>
                           <Button 
@@ -216,7 +245,13 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                     gap: '8px' // Espaciado reducido entre iconos
                   }}>
                     {group.items
-                      .filter(item => item.path !== "/mervin" && item.id !== "mervin")
+                      .filter(item => {
+                        // En móvil, ocultar todos los iconos de features excepto la flecha
+                        if (isMobile) {
+                          return false; // Ocultar todos los iconos en móvil
+                        }
+                        return item.path !== "/mervin" && item.id !== "mervin";
+                      })
                       .map((item: NavigationItem) => (
                         <Tooltip key={item.id}>
                           <TooltipTrigger asChild>
@@ -256,7 +291,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                 </div>
               ))}
             </div>
-          )}
+          ))}
         </div>
 
         {/* Footer fijo - posicionado absolutamente */}
