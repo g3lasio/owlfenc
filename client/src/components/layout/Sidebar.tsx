@@ -119,14 +119,14 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
 
   return (
     <TooltipProvider>
-      {/* Botón flotante único - siempre visible cuando sidebar está cerrado */}
+      {/* Botón flotante compacto y discreto */}
       {!isSidebarExpanded && (
         <div 
-          className="fixed left-4 top-4"
+          className="fixed left-3 top-20"
           data-sidebar-button="true"
           style={{
             transition: 'all 0.3s ease-in-out',
-            zIndex: 99999, // Z-index muy alto para estar por encima de todo
+            zIndex: 99999,
             pointerEvents: 'auto',
             position: 'fixed',
             visibility: 'visible',
@@ -137,24 +137,25 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
             variant="ghost"
             size="sm"
             onClick={toggleSidebar}
-            className="flex items-center justify-center hover:bg-accent/70 hover:scale-110 transition-all duration-300 group shadow-lg"
+            className="flex items-center justify-center hover:bg-accent/70 hover:scale-105 transition-all duration-300 group shadow-md"
             style={{
-              background: 'linear-gradient(135deg, rgba(0,255,255,0.1), rgba(0,200,255,0.05))',
-              borderRadius: '12px',
-              border: '1px solid rgba(0,255,255,0.2)',
-              backdropFilter: 'blur(10px)',
-              width: '48px',
-              height: '48px'
+              background: 'linear-gradient(135deg, rgba(0,255,255,0.08), rgba(0,200,255,0.03))',
+              borderRadius: '8px',
+              border: '1px solid rgba(0,255,255,0.15)',
+              backdropFilter: 'blur(8px)',
+              width: '32px',
+              height: '32px',
+              padding: '4px'
             }}
           >
             <div 
               className="transition-all duration-500 ease-in-out group-hover:text-cyan-400"
               style={{
                 transform: isSidebarExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                filter: 'drop-shadow(0 0 4px rgba(0,255,255,0.3))'
+                filter: 'drop-shadow(0 0 2px rgba(0,255,255,0.2))'
               }}
             >
-              <ChevronsRight className="h-5 w-5" />
+              <ChevronsRight className="h-3.5 w-3.5" />
             </div>
           </Button>
         </div>
