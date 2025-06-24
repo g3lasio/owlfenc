@@ -268,6 +268,12 @@ Changelog:
   * Implemented fallback prevention system ensuring "No address provided" instead of generic placeholders
   * All address changes now automatically reflect in generated PDFs and invoices
   * System prevents address corruption issues for all contractors and clients
+- June 24, 2025. Enhanced sidebar with auto-close functionality:
+  * Implemented automatic sidebar closing when clicking on navigation menu items
+  * Added handleMenuItemClick function to close expanded sidebar after menu selection
+  * Applied auto-close behavior to both expanded and collapsed sidebar views
+  * Improved user experience by eliminating manual sidebar closing requirement
+  * Enhanced mobile usability with streamlined navigation workflow
 - June 21, 2025. Fixed Projects page scrolling and project completion functionality:
   * Corrected JSX structure issues preventing proper page rendering
   * Implemented proper flex layout for Projects page with scrollable content area
