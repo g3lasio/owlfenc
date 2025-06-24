@@ -1289,6 +1289,7 @@ export default function Profile() {
           </Card>
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   );
 }
