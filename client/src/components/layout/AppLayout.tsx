@@ -109,17 +109,30 @@ export default function AppLayout({ children }: AppLayoutProps) {
           <Route path="*">{children}</Route>
         </Switch>
         
-        {/* Footer */}
-        <footer style={{ 
-          padding: '10px', 
-          textAlign: 'center', 
-          fontSize: '12px', 
-          color: 'hsl(var(--muted-foreground))',
-          borderTop: '1px solid hsl(var(--border))',
-          flexShrink: 0
-        }}>
-          © {new Date().getFullYear()} Owl Fence - Todos los derechos reservados
-        </footer>
+        {/* Footer fijo en la parte inferior del contenido principal */}
+        <div 
+          className="py-2 px-4 bg-gray-900 border-t border-cyan-900/30 text-xs text-center text-cyan-500/50"
+          style={{
+            position: 'fixed',
+            bottom: 0,
+            left: `${sidebarWidth}px`,
+            right: 0,
+            zIndex: 10,
+            flexShrink: 0
+          }}
+        >
+          <div className="flex justify-center items-center space-x-4">
+            <Link to="/privacy-policy" className="hover:text-cyan-400 cursor-pointer transition-colors">
+              Privacy Policy
+            </Link>
+            <span>|</span>
+            <Link to="/legal-policy" className="hover:text-cyan-400 cursor-pointer transition-colors">
+              Terms of Service
+            </Link>
+            <span>|</span>
+            <span className="font-medium">© {new Date().getFullYear()} Owl Fence</span>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -53,12 +53,13 @@ html, body {
 
 /* Páginas individuales */
 .page-container {
-  height: calc(100vh - 104px) !important;
-  max-height: calc(100vh - 104px) !important;
+  height: calc(100vh - 144px) !important;
+  max-height: calc(100vh - 144px) !important;
   overflow: hidden !important;
   display: flex !important;
   flex-direction: column !important;
   flex: 1 !important;
+  margin-bottom: 40px !important;
 }
 
 /* Contenido scrollable controlado */
@@ -71,7 +72,7 @@ html, body {
 /* Para páginas con contenido que requiera scroll interno */
 .scrollable-content {
   overflow-y: auto !important;
-  max-height: calc(100vh - 120px) !important;
+  max-height: calc(100vh - 160px) !important;
   padding: 1.5rem !important;
   flex: 1 !important;
 }
