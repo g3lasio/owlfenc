@@ -296,6 +296,11 @@ Changelog:
   * Implemented proper onChange handlers for client address, email, and phone fields
   * Client address now properly flows from selected project through to generated contracts
   * All client information fields now maintain synchronization between form and extracted data
+- June 24, 2025. Streamlined contract generator UI by removing unnecessary components:
+  * Removed Materials Inventory card that displayed material count (not needed for contract generation)
+  * Removed Extraction Analysis Confidence Level card showing extraction statistics
+  * Simplified interface focuses on essential contract configuration elements
+  * Enhanced user experience with cleaner, more focused workflow
 - June 21, 2025. Fixed Projects page scrolling and project completion functionality:
   * Corrected JSX structure issues preventing proper page rendering
   * Implemented proper flex layout for Projects page with scrollable content area

@@ -1765,36 +1765,7 @@ export default function CyberpunkLegalDefense() {
                     </div>
                   </div>
 
-                  {/* Materials Count */}
-                  <div className="bg-gray-900/50 border border-purple-400/30 rounded-lg p-4">
-                    <h3 className="text-purple-400 font-bold mb-3 flex items-center">
-                      <Package className="h-4 w-4 mr-2" />
-                      MATERIALS INVENTORY
-                    </h3>
-                    <div className="text-sm">
-                      <span className="text-gray-400">Items detected:</span>
-                      <span className="text-white ml-2">{extractedData.materials?.length || 0} material entries</span>
-                    </div>
-                  </div>
 
-                  {/* Extraction Quality */}
-                  <div className="bg-gray-900/50 border border-cyan-400/30 rounded-lg p-4">
-                    <h3 className="text-cyan-400 font-bold mb-3 flex items-center">
-                      <Zap className="h-4 w-4 mr-2" />
-                      EXTRACTION ANALYSIS
-                    </h3>
-                    <div className="space-y-2 text-sm">
-                      <div>
-                        <span className="text-gray-400">Confidence Level:</span>
-                        <span className="text-cyan-400 ml-2 font-bold">{extractedData.extractionQuality?.confidence || 85}%</span>
-                      </div>
-                      {extractedData.extractionQuality?.warnings?.length > 0 && (
-                        <div>
-                          <span className="text-yellow-400 text-xs">⚠ Warnings detected in source document</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
 
                   {/* AI Analysis & Clause Generation */}
                   <div className="bg-gray-900/50 border border-cyan-400/30 rounded-lg p-4">
