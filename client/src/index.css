@@ -81,7 +81,6 @@ html, body {
   flex: 1 !important;
   overflow-y: auto !important;
 }
-@import './styles/scroll.css';
 
 /* Layout principal sin bloqueo de scroll */
 * {
