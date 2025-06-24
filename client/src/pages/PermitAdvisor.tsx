@@ -367,7 +367,7 @@ export default function PermitAdvisor() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-800">
+    <div className=" bg-gradient-to-br from-slate-950 via-gray-900 to-slate-800">
       {/* Header with cyberpunk styling */}
       <div className="relative overflow-hidden bg-gradient-to-r from-slate-900/50 to-gray-900/50 backdrop-blur-sm">
         <div className="absolute inset-0 bg-gray-800/10 opacity-30"></div>

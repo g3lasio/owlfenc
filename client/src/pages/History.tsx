@@ -51,7 +51,7 @@ export default function History() {
   
   if (isLoading) {
     return (
-      <div className="flex-1 p-6 overflow-auto">
+      <div className="page-container">
         <h1 className="text-2xl font-bold mb-6">Project History</h1>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {[...Array(6)].map((_, i) => (
@@ -95,7 +95,7 @@ export default function History() {
   }
   
   return (
-    <div className="flex-1 p-6 overflow-auto">
+    <div className="page-container">
       <h1 className="text-2xl font-bold mb-6">Project History</h1>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {projects.map((project) => (

@@ -266,7 +266,7 @@ const UnifiedContractManager: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className=" bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Header */}
       <div className="border-b bg-white/80 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-6">

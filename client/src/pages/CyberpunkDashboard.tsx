@@ -112,7 +112,7 @@ const CyberpunkDashboard: React.FC<CyberpunkDashboardProps> = ({
           </DialogHeader>
           
           {/* Responsive Dashboard Content */}
-          <div className="flex-1 overflow-auto bg-gray-900 relative">
+          <div className="page-container bg-gray-900 relative">
             {/* Mobile Layout */}
             <div className="lg:hidden p-4 space-y-4">
               {/* Mobile Stats Grid */}

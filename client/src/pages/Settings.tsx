@@ -379,7 +379,7 @@ export default function Settings() {
   };
   
   return (
-    <div className="flex-1 p-3 md:p-6 overflow-auto bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 min-h-screen">
+    <div className="page-container bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 ">
       {/* Cyberpunk Background Effects */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 left-0 w-32 h-32 border-t-2 border-l-2 border-cyan-400/30"></div>

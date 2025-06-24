@@ -266,7 +266,7 @@ const SmartContractWizard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
+    <div className=" bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
       <div className="max-w-4xl mx-auto space-y-6">
         
         {/* Header with Status */}

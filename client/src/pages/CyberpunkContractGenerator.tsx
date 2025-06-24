@@ -208,7 +208,7 @@ const CyberpunkContractGenerator = () => {
   const contracts = contractsQuery.data || [];
 
   return (
-    <div className="min-h-screen bg-black text-cyan-400 relative overflow-hidden">
+    <div className=" bg-black text-cyan-400 relative overflow-hidden">
       {/* Fondo cyberpunk animado */}
       <div className="absolute inset-0 bg-gradient-to-br from-black via-gray-900 to-black">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDA3N2ZmIiBzdHJva2Utd2lkdGg9IjAuNSIgb3BhY2l0eT0iMC4xIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-20"></div>
@@ -447,7 +447,7 @@ const CyberpunkContractGenerator = () => {
             </DialogTitle>
           </DialogHeader>
           {selectedContract && (
-            <div className="flex-1 overflow-auto">
+            <div className="page-container">
               <iframe
                 srcDoc={selectedContract.html}
                 className="w-full h-full border border-cyan-400/20 rounded"

@@ -759,7 +759,7 @@ export default function EstimateGenerator() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-background">
+    <div className=" flex flex-col md:flex-row bg-background">
       {/* Mobile Header */}
       {renderMobileHeader()}
       

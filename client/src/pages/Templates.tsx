@@ -46,7 +46,7 @@ export default function Templates() {
   };
   
   return (
-    <div className="flex-1 p-6 overflow-auto">
+    <div className="page-container">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Templates</h1>
         <Button>

@@ -1375,7 +1375,7 @@ export default function CyberpunkLegalDefense() {
   );
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 relative overflow-hidden" style={{ fontFamily: 'ui-monospace, monospace' }}>
+    <div className=" bg-black text-white p-6 relative overflow-hidden" style={{ fontFamily: 'ui-monospace, monospace' }}>
       {/* Fondo limpio */}
       <div className="absolute inset-0 bg-gradient-to-b from-gray-900 to-black"></div>
       

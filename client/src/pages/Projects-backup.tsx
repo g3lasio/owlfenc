@@ -341,7 +341,7 @@ function Projects() {
   
   if (isLoading) {
     return (
-      <div className="flex-1 p-6 overflow-auto">
+      <div className="page-container">
         <h1 className="text-2xl font-bold mb-6">Proyectos</h1>
         <div className="mb-6 space-y-4">
           <Skeleton className="h-10 w-full md:w-3/4" />
