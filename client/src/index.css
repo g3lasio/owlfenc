@@ -4,6 +4,83 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* SOLUCIÓN DEFINITIVA ANTI-SCROLL INFINITO */
+html, body {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+}
+
+#root {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Contenedor principal de la app */
+.app-container {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: row !important;
+}
+
+/* Sidebar fijo */
+.sidebar-container {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow-y: auto !important;
+  flex-shrink: 0 !important;
+}
+
+/* Área de contenido principal */
+.main-content-area {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Páginas individuales */
+.page-container {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Contenido scrollable controlado */
+.controlled-scroll {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  max-height: calc(100vh - var(--header-height, 120px)) !important;
+}
+
+/* Headers fijos */
+.fixed-header {
+  flex-shrink: 0 !important;
+  overflow: visible !important;
+}
+
+/* Prevenir scroll en diálogos */
+.dialog-content {
+  max-height: 95vh !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.dialog-body {
+  flex: 1 !important;
+  overflow-y: auto !important;
+}
 @import './styles/scroll.css';
 
 /* Layout principal sin bloqueo de scroll */

@@ -277,8 +277,8 @@ function Projects() {
   }
 
   return (
-    <FullHeightContainer className="bg-background">
-      <FixedHeader className="p-6 border-b">
+    <div className="page-container bg-background">
+      <div className="fixed-header p-6 border-b">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Proyectos</h1>
           <div className="flex space-x-2">
@@ -341,9 +341,9 @@ function Projects() {
             {filteredProjects.length} {filteredProjects.length === 1 ? 'proyecto encontrado' : 'proyectos encontrados'}
           </div>
         </div>
-      </FixedHeader>
+      </div>
 
-      <ScrollableContent>
+      <div className="controlled-scroll p-6">
         {filteredProjects.length === 0 ? (
           <div className="text-center py-12 bg-muted/20 rounded-lg">
             <i className="ri-search-line text-3xl mb-2 text-muted-foreground"></i>
@@ -529,39 +529,38 @@ function Projects() {
             </div>
           </div>
         )}
-      </ScrollableContent>
+      </div>
 
       {isDialogOpen && selectedProject && (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="p-0 max-w-7xl w-[98vw] h-[98vh] max-h-[98vh]">
-            <DialogContainer>
-              <FixedHeader className="p-2 border-b border-cyan-400/30 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 relative">
-                <div className="absolute top-0 left-0 w-3 h-3 border-l border-t border-cyan-400"></div>
-                <div className="absolute top-0 right-0 w-3 h-3 border-r border-t border-cyan-400"></div>
-                <div className="absolute bottom-0 left-0 w-3 h-3 border-l border-b border-cyan-400"></div>
-                <div className="absolute bottom-0 right-0 w-3 h-3 border-r border-b border-cyan-400"></div>
-                
-                <DialogTitle className="flex items-center gap-2 relative z-10">
-                  <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
-                  <span className="text-sm font-bold text-cyan-300 tracking-wide font-mono">
-                    DASHBOARD: {selectedProject.clientName.toUpperCase()}
-                  </span>
-                </DialogTitle>
-              </FixedHeader>
+          <DialogContent className="dialog-content p-0 max-w-7xl w-[98vw] h-[95vh]">
+            <div className="fixed-header p-2 border-b border-cyan-400/30 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 relative">
+              <div className="absolute top-0 left-0 w-3 h-3 border-l border-t border-cyan-400"></div>
+              <div className="absolute top-0 right-0 w-3 h-3 border-r border-t border-cyan-400"></div>
+              <div className="absolute bottom-0 left-0 w-3 h-3 border-l border-b border-cyan-400"></div>
+              <div className="absolute bottom-0 right-0 w-3 h-3 border-r border-b border-cyan-400"></div>
               
-              <FullHeightContainer className="bg-gray-900">
-                <FixedHeader className="p-4 pb-4 bg-gray-900 border-b-2 border-cyan-400/20 shadow-lg">
+              <DialogTitle className="flex items-center gap-2 relative z-10">
+                <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
+                <span className="text-sm font-bold text-cyan-300 tracking-wide font-mono">
+                  DASHBOARD: {selectedProject.clientName.toUpperCase()}
+                </span>
+              </DialogTitle>
+            </div>
+              
+              <div className="dialog-body bg-gray-900">
+                <div className="fixed-header p-4 pb-4 bg-gray-900 border-b-2 border-cyan-400/20 shadow-lg">
                   <FuturisticTimeline 
                     projectId={selectedProject.id} 
                     currentProgress={selectedProject.projectProgress || "estimate_created"} 
                     onProgressUpdate={handleProgressUpdate} 
                   />
-                </FixedHeader>
+                </div>
 
-                <FixedHeader className="h-8 bg-gray-900 border-b border-gray-700/30" />
+                <div className="h-8 bg-gray-900 border-b border-gray-700/30"></div>
 
-                <TabContainer className="px-4 pb-4 bg-gray-900 pt-4">
-                  <TabNavigation>
+                <div className="flex-1 px-4 pb-4 bg-gray-900 pt-4 overflow-hidden flex flex-col">
+                  <div className="flex-shrink-0">
                     <div className="flex space-x-1 bg-gray-800/50 p-1 rounded-lg border border-cyan-400/30 shadow-xl backdrop-blur-sm">
                       <button
                         onClick={() => setDashboardTab('details')}
@@ -597,10 +596,10 @@ function Projects() {
                         Docs
                       </button>
                     </div>
-                  </TabNavigation>
+                  </div>
 
                   <div className="flex-1 bg-gray-800/50 border-2 border-cyan-400/30 rounded-lg backdrop-blur-sm shadow-2xl overflow-hidden">
-                    <TabContent>
+                    <div className="h-full overflow-y-auto p-4">
                       {dashboardTab === 'details' && (
                         <div className="space-y-4">
                           <div className="grid grid-cols-2 gap-4 text-sm">
@@ -663,15 +662,14 @@ function Projects() {
                           </div>
                         </div>
                       )}
-                    </TabContent>
+                    </div>
                   </div>
-                </TabContainer>
-              </FullHeightContainer>
-            </DialogContainer>
+                </div>
+              </div>
           </DialogContent>
         </Dialog>
       )}
-    </FullHeightContainer>
+    </div>
   );
 }
 
