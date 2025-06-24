@@ -110,38 +110,40 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
 
   return (
     <TooltipProvider>
-      {/* Botón flotante único */}
-      <div 
-        className="fixed left-4 top-4 z-50"
-        style={{
-          transition: 'all 0.3s ease-in-out'
-        }}
-      >
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={toggleSidebar}
-          className="flex items-center justify-center hover:bg-accent/70 hover:scale-110 transition-all duration-300 group shadow-lg"
+      {/* Botón flotante único - solo visible cuando sidebar está cerrado */}
+      {!isSidebarExpanded && (
+        <div 
+          className="fixed left-4 top-4 z-50"
           style={{
-            background: 'linear-gradient(135deg, rgba(0,255,255,0.1), rgba(0,200,255,0.05))',
-            borderRadius: '12px',
-            border: '1px solid rgba(0,255,255,0.2)',
-            backdropFilter: 'blur(10px)',
-            width: '48px',
-            height: '48px'
+            transition: 'all 0.3s ease-in-out'
           }}
         >
-          <div 
-            className="transition-all duration-500 ease-in-out group-hover:text-cyan-400"
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleSidebar}
+            className="flex items-center justify-center hover:bg-accent/70 hover:scale-110 transition-all duration-300 group shadow-lg"
             style={{
-              transform: isSidebarExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-              filter: 'drop-shadow(0 0 4px rgba(0,255,255,0.3))'
+              background: 'linear-gradient(135deg, rgba(0,255,255,0.1), rgba(0,200,255,0.05))',
+              borderRadius: '12px',
+              border: '1px solid rgba(0,255,255,0.2)',
+              backdropFilter: 'blur(10px)',
+              width: '48px',
+              height: '48px'
             }}
           >
-            <ChevronsRight className="h-5 w-5" />
-          </div>
-        </Button>
-      </div>
+            <div 
+              className="transition-all duration-500 ease-in-out group-hover:text-cyan-400"
+              style={{
+                transform: isSidebarExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                filter: 'drop-shadow(0 0 4px rgba(0,255,255,0.3))'
+              }}
+            >
+              <ChevronsRight className="h-5 w-5" />
+            </div>
+          </Button>
+        </div>
+      )}
 
       {/* Sidebar expandido solo cuando se necesita */}
       {isSidebarExpanded && (
@@ -156,10 +158,32 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
             borderRight: '1px solid rgba(255,255,255,0.1)'
           }}
         >
-          {/* Header con espaciado para el botón flotante */}
-          <div className="flex-shrink-0 pt-16 px-3 border-b border-border">
-            <div className="text-center mb-4">
+          {/* Header con botón de cerrar */}
+          <div className="flex-shrink-0 p-3 border-b border-border">
+            <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-primary">Menú</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleSidebar}
+                className="flex items-center justify-center hover:bg-accent/70 hover:scale-110 transition-all duration-300 group"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(0,255,255,0.1), rgba(0,200,255,0.05))',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(0,255,255,0.2)',
+                  width: '32px',
+                  height: '32px'
+                }}
+              >
+                <div 
+                  className="transition-all duration-500 ease-in-out group-hover:text-cyan-400"
+                  style={{
+                    filter: 'drop-shadow(0 0 4px rgba(0,255,255,0.3))'
+                  }}
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                </div>
+              </Button>
             </div>
           </div>
 
