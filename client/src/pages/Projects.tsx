@@ -557,17 +557,7 @@ function Projects() {
                           <i className="ri-dashboard-line mr-1"></i> Dashboard
                         </Button>
                       </div>
-                      {project.status !== 'completed' && (
-                        <Button 
-                          size="sm"
-                          variant="default"
-                          onClick={() => handleMarkAsCompleted(project.id)}
-                          className="bg-green-600 hover:bg-green-700 text-white"
-                        >
-                          <i className="ri-checkbox-circle-line mr-1"></i>
-                          Completar
-                        </Button>
-                      )}
+
                     </div>
                   </CardContent>
                 </Card>
@@ -640,17 +630,7 @@ function Projects() {
                           >
                             <i className="ri-dashboard-line mr-1"></i> Dashboard
                           </Button>
-                          {project.status !== 'completed' && (
-                            <Button 
-                              size="sm"
-                              variant="default"
-                              onClick={() => handleMarkAsCompleted(project.id)}
-                              className="text-xs px-2 py-1 h-auto bg-green-600 hover:bg-green-700 text-white"
-                            >
-                              <i className="ri-checkbox-circle-line mr-1"></i>
-                              Completar
-                            </Button>
-                          )}
+
                         </div>
                       </td>
                     </tr>
