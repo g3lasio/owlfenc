@@ -95,14 +95,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
   // Para el resto de las páginas (protegidas), mostrar el layout completo
   return (
-    <div className="app-container">
+    <div className="app-container" style={{ height: '100vh', overflow: 'hidden', position: 'fixed', width: '100%' }}>
       {/* Sidebar siempre visible en todas las pantallas */}
       <div className="sidebar-container">
         <Sidebar onWidthChange={setSidebarWidth} />
       </div>
 
       {/* Contenido principal */}
-      <div className="main-content-area" style={{ marginLeft: `${sidebarWidth}px` }}>
+      <div className="main-content-area" style={{ marginLeft: `${sidebarWidth}px`, height: '100vh', overflow: 'hidden' }}>
         <Header toggleMobileMenu={toggleMobileMenu} isMobileMenuOpen={isMobileMenuOpen} />
         <Switch>
           <Route path="/settings/profile" component={Profile} />
