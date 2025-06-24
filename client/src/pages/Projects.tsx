@@ -17,6 +17,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import FuturisticTimeline from "@/components/projects/FuturisticTimeline";
+import { 
+  FullHeightContainer, 
+  FixedHeader, 
+  ScrollableContent, 
+  DialogContainer,
+  TabContainer,
+  TabNavigation,
+  TabContent,
+  CardGrid
+} from "@/components/layout/StandardLayoutContainers";
 
 interface Project {
   id: string;
@@ -645,9 +655,9 @@ function Projects() {
       {/* Project Details Dialog */}
       {isDialogOpen && selectedProject && (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="p-0 max-w-7xl w-[98vw] h-[98vh] max-h-[98vh] overflow-hidden bg-gray-900 border-cyan-400/30 shadow-[0_0_50px_rgba(6,182,212,0.3)]">
-            <div className="flex flex-col h-full relative overflow-hidden">
-              <DialogHeader className="flex-shrink-0 p-2 border-b border-cyan-400/30 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 relative">
+          <DialogContent className="p-0 max-w-7xl w-[98vw] h-[98vh] max-h-[98vh]">
+            <DialogContainer>
+              <FixedHeader className="p-2 border-b border-cyan-400/30 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 relative">
                 <div className="absolute top-0 left-0 w-3 h-3 border-l border-t border-cyan-400"></div>
                 <div className="absolute top-0 right-0 w-3 h-3 border-r border-t border-cyan-400"></div>
                 <div className="absolute bottom-0 left-0 w-3 h-3 border-l border-b border-cyan-400"></div>
@@ -659,24 +669,24 @@ function Projects() {
                     DASHBOARD: {selectedProject.clientName.toUpperCase()}
                   </span>
                 </DialogTitle>
-              </DialogHeader>
+              </FixedHeader>
               
-              <div className="flex-1 flex flex-col bg-gray-900 relative overflow-hidden">
+              <FullHeightContainer className="bg-gray-900">
                 {/* Futuristic Timeline - Fixed at top */}
-                <div className="flex-shrink-0 p-4 pb-4 bg-gray-900 border-b-2 border-cyan-400/20 shadow-lg">
+                <FixedHeader className="p-4 pb-4 bg-gray-900 border-b-2 border-cyan-400/20 shadow-lg">
                   <FuturisticTimeline 
                     projectId={selectedProject.id} 
                     currentProgress={selectedProject.projectProgress || "estimate_created"} 
                     onProgressUpdate={handleProgressUpdate} 
                   />
-                </div>
+                </FixedHeader>
 
                 {/* Large Separation Space */}
-                <div className="flex-shrink-0 h-8 bg-gray-900 border-b border-gray-700/30"></div>
+                <FixedHeader className="h-8 bg-gray-900 border-b border-gray-700/30" />
 
                 {/* Dashboard Sections - Wizard-style Tabs */}
-                <div className="flex-1 flex flex-col px-4 pb-4 bg-gray-900 pt-4 overflow-hidden">
-                  <div className="flex-shrink-0 mb-6">
+                <TabContainer className="px-4 pb-4 bg-gray-900 pt-4">
+                  <TabNavigation>
                     <div className="flex space-x-1 bg-gray-800/50 p-1 rounded-lg border border-cyan-400/30 shadow-xl backdrop-blur-sm">
                       <button
                         onClick={() => setDashboardTab('details')}
@@ -712,11 +722,11 @@ function Projects() {
                         Docs
                       </button>
                     </div>
-                  </div>
+                  </TabNavigation>
 
                   {/* Tab Content */}
-                  <div className="flex-1 bg-gray-800/50 border-2 border-cyan-400/30 rounded-lg backdrop-blur-sm flex flex-col shadow-2xl overflow-hidden">
-                    <div className="flex-1 p-4 overflow-y-auto custom-scroll">
+                  <div className="flex-1 bg-gray-800/50 border-2 border-cyan-400/30 rounded-lg backdrop-blur-sm shadow-2xl overflow-hidden">
+                    <TabContent>
                       {dashboardTab === 'details' && (
                         <div className="space-y-4">
                           <div className="grid grid-cols-2 gap-4 text-sm">
@@ -937,15 +947,15 @@ function Projects() {
                           </div>
                         </div>
                       )}
-                    </div>
+                    </TabContent>
                   </div>
-                </div>
-              </div>
-            </div>
+                </TabContainer>
+              </FullHeightContainer>
+            </DialogContainer>
           </DialogContent>
         </Dialog>
       )}
-    </div>
+    </FullHeightContainer>
   );
 }
 

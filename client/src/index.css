@@ -4,6 +4,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@import './styles/scroll.css';
 
 /* Layout principal sin bloqueo de scroll */
 * {
