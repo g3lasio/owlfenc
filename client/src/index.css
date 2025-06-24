@@ -59,10 +59,30 @@ html, body {
   display: none !important;
 }
 
-/* PARA FIREFOX */
+/* PARA FIREFOX Y EDGE */
 * {
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
+}
+
+/* ELIMINACIÓN ADICIONAL DE CLASES SCROLL */
+.scrollbar-hide,
+.scrollbar-thin,
+.scrollbar-track-gray-800,
+.scrollbar-track-slate-100,
+.scrollbar-thumb-cyan-500,
+.scrollbar-thumb-slate-300 {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.scrollbar-hide::-webkit-scrollbar,
+.scrollbar-thin::-webkit-scrollbar,
+.scrollbar-track-gray-800::-webkit-scrollbar,
+.scrollbar-track-slate-100::-webkit-scrollbar,
+.scrollbar-thumb-cyan-500::-webkit-scrollbar,
+.scrollbar-thumb-slate-300::-webkit-scrollbar {
+  display: none !important;
 }
 
 /* FORZAR ALTURA FIJA PARA EVITAR SCROLL INFINITO */

@@ -62,7 +62,7 @@ export default function ChatInput({
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             rows={1}
-            className="w-full bg-transparent resize-none focus:outline-none py-1 px-2 text-foreground scrollbar-hide"
+            className="w-full bg-transparent resize-none focus:outline-none py-1 px-2 text-foreground"
             placeholder="Type your message here..."
             disabled={isDisabled || isProcessing}
           ></textarea>
