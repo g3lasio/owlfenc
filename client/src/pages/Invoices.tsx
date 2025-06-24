@@ -202,8 +202,8 @@ const Invoices: React.FC = () => {
   return (
     <div className="page-container">
       <div className="scrollable-content space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
+        {/* Header */}
+        <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Sistema de Facturación</h1>
           <p className="text-muted-foreground">

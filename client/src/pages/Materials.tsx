@@ -1180,6 +1180,7 @@ export default function Materials() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </AppLayout>
+      </div>
+    </div>
   );
 }
