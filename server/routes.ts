@@ -1112,19 +1112,21 @@ ${extractedText}`,
         return res.status(500).json({ error: "OpenAI configuration error" });
       }
 
-      // Create a professional prompt for project description enhancement
-      const prompt = `Transform this construction project description into a highly professional, detailed specification in English:
+      // Create a professional prompt for project description enhancement with character limits
+      const prompt = `Transform this construction project description into a professional, concise specification in English:
 
 INPUT: "${text}"
 PROJECT TYPE: "${body?.projectType || "general construction"}"
 
-Create a comprehensive professional description with:
-- Technical specifications
-- Materials and installation methods  
-- Quality standards
-- Professional terminology
+CRITICAL REQUIREMENTS:
+- Response must be exactly 200-900 characters total
+- Use professional construction terminology
+- Include key technical details and materials
+- Mention methodology and quality standards
+- Write in flowing sentences, not bullet points
+- Be concise but comprehensive
 
-Output in English regardless of input language. Make it suitable for contracts and estimates.`;
+Output must be between 200-900 characters in English.`;
 
       // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
       let enhancedDescription: string;
@@ -1153,8 +1155,19 @@ Output in English regardless of input language. Make it suitable for contracts a
             response.choices[0].message &&
             response.choices[0].message.content
           ) {
-            enhancedDescription = response.choices[0].message.content;
-            console.log("✅ OpenAI enhancement completed successfully");
+            let content = response.choices[0].message.content.trim();
+            
+            // Validate and adjust character length (200-900 characters)
+            if (content.length < 200) {
+              // If too short, enhance with more details
+              content += ` This project includes professional grade materials, expert installation services, comprehensive quality assurance, and complete cleanup. All work performed to industry standards with warranty coverage and compliance to local building codes.`;
+            } else if (content.length > 900) {
+              // If too long, trim to 900 characters while keeping it professional
+              content = content.substring(0, 897) + "...";
+            }
+            
+            enhancedDescription = content;
+            console.log(`✅ OpenAI enhancement completed successfully (${content.length} characters)`);
           } else {
             throw new Error("Invalid OpenAI response format");
           }
@@ -1192,8 +1205,17 @@ Output in English regardless of input language. Make it suitable for contracts a
                 anthropicData.content[0] &&
                 anthropicData.content[0].text
               ) {
-                enhancedDescription = anthropicData.content[0].text;
-                console.log("✅ Anthropic enhancement completed successfully");
+                let content = anthropicData.content[0].text.trim();
+                
+                // Validate and adjust character length (200-900 characters)
+                if (content.length < 200) {
+                  content += ` This project includes professional grade materials, expert installation services, comprehensive quality assurance, and complete cleanup. All work performed to industry standards with warranty coverage.`;
+                } else if (content.length > 900) {
+                  content = content.substring(0, 897) + "...";
+                }
+                
+                enhancedDescription = content;
+                console.log(`✅ Anthropic enhancement completed successfully (${content.length} characters)`);
               } else {
                 throw new Error("Invalid Anthropic response");
               }
@@ -1232,8 +1254,15 @@ Output in English regardless of input language. Make it suitable for contracts a
       } catch (openAiError) {
         console.error("❌ Error during AI processing:", openAiError);
 
-        // Ultimate fallback - always return something useful
-        const enhancedFallback = `Professional ${projectType || "Construction"} Specification:\n\n${text}\n\nProject Details:\n- Professional grade materials\n- Expert installation services\n- Quality assurance included\n- Complete cleanup provided\n\nAll work performed to industry standards with warranty coverage.`;
+        // Ultimate fallback - always return something useful with proper length
+        let enhancedFallback = `Professional ${projectType || "Construction"} Specification: ${text} This project includes professional grade materials, expert installation services, comprehensive quality assurance, and complete cleanup. All work performed to industry standards with warranty coverage and compliance to local building codes.`;
+        
+        // Ensure fallback is within 200-900 character limits
+        if (enhancedFallback.length < 200) {
+          enhancedFallback += ` Additional professional services include project management, safety protocols, environmental compliance, and customer satisfaction guarantee.`;
+        } else if (enhancedFallback.length > 900) {
+          enhancedFallback = enhancedFallback.substring(0, 897) + "...";
+        }
 
         res.json({
           enhancedDescription: enhancedFallback,
