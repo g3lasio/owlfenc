@@ -274,6 +274,12 @@ Changelog:
   * Applied auto-close behavior to both expanded and collapsed sidebar views
   * Improved user experience by eliminating manual sidebar closing requirement
   * Enhanced mobile usability with streamlined navigation workflow
+- June 24, 2025. Fixed dashboard scrolling issues in Projects page:
+  * Removed "Completar" button from both card and table views as requested
+  * Corrected dashboard dialog container overflow and height constraints
+  * Implemented proper flexbox layout with overflow-hidden for scroll containers
+  * Fixed tab content area to use flex-1 with proper scrolling behavior
+  * Enhanced content visibility and scrolling functionality in project dashboard modal
 - June 21, 2025. Fixed Projects page scrolling and project completion functionality:
   * Corrected JSX structure issues preventing proper page rendering
   * Implemented proper flex layout for Projects page with scrollable content area

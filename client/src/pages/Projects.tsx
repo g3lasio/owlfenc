@@ -661,7 +661,7 @@ function Projects() {
                 </DialogTitle>
               </DialogHeader>
               
-              <div className="flex-1 flex flex-col bg-gray-900 relative min-h-0">
+              <div className="flex-1 flex flex-col bg-gray-900 relative overflow-hidden">
                 {/* Futuristic Timeline - Fixed at top */}
                 <div className="flex-shrink-0 p-4 pb-4 bg-gray-900 border-b-2 border-cyan-400/20 shadow-lg">
                   <FuturisticTimeline 
@@ -675,8 +675,8 @@ function Projects() {
                 <div className="flex-shrink-0 h-8 bg-gray-900 border-b border-gray-700/30"></div>
 
                 {/* Dashboard Sections - Wizard-style Tabs */}
-                <div className="flex-1 px-4 pb-4 overflow-y-auto min-h-0 bg-gray-900 pt-4">
-                  <div className="mb-6">
+                <div className="flex-1 flex flex-col px-4 pb-4 bg-gray-900 pt-4 overflow-hidden">
+                  <div className="flex-shrink-0 mb-6">
                     <div className="flex space-x-1 bg-gray-800/50 p-1 rounded-lg border border-cyan-400/30 shadow-xl backdrop-blur-sm">
                       <button
                         onClick={() => setDashboardTab('details')}
@@ -715,8 +715,8 @@ function Projects() {
                   </div>
 
                   {/* Tab Content */}
-                  <div className="bg-gray-800/50 border-2 border-cyan-400/30 rounded-lg backdrop-blur-sm flex flex-col shadow-2xl mt-2" style={{ height: '420px' }}>
-                    <div className="flex-1 p-4 custom-scroll" style={{ overflowY: 'auto', maxHeight: '100%' }}>
+                  <div className="flex-1 bg-gray-800/50 border-2 border-cyan-400/30 rounded-lg backdrop-blur-sm flex flex-col shadow-2xl overflow-hidden">
+                    <div className="flex-1 p-4 overflow-y-auto custom-scroll">
                       {dashboardTab === 'details' && (
                         <div className="space-y-4">
                           <div className="grid grid-cols-2 gap-4 text-sm">
