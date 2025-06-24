@@ -74,6 +74,13 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
     setSidebarExpanded(!isSidebarExpanded);
   };
 
+  // Función para cerrar el sidebar automáticamente al hacer clic en elementos del menú
+  const handleMenuItemClick = () => {
+    if (isSidebarExpanded) {
+      setSidebarExpanded(false);
+    }
+  };
+
   // Comunicar cambios de ancho al componente padre
   useEffect(() => {
     const width = isSidebarExpanded ? 288 : 64;
@@ -163,6 +170,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                             className={`w-full justify-start px-2 py-1.5 h-auto hover:bg-accent text-sm font-normal ${
                               location === item.path ? 'bg-primary/20 text-primary' : ''
                             }`}
+                            onClick={handleMenuItemClick}
                           >
                             {item.icon.startsWith('lucide-') ? (
                               <>
@@ -234,6 +242,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                                 minHeight: '40px',
                                 minWidth: '40px'
                               }}
+                              onClick={handleMenuItemClick}
                             >
                               {item.icon.startsWith('lucide-') ? (
                                 <>
