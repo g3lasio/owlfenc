@@ -516,7 +516,7 @@ export default function EstimatesDashboard() {
               Lo que ves aquí es exactamente lo que obtendrás en el PDF.
             </DialogDescription>
           </DialogHeader>
-          <div className="page-container">
+          <div className="page-container">>
             {previewHtml ? (
               <iframe
                 srcDoc={previewHtml}
