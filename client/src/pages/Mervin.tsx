@@ -155,7 +155,7 @@ export default function Mervin() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-black text-white overflow-hidden">
+    <div className="flex flex-col  bg-black text-white ">
       {/* Contenedor de mensajes (scrollable) */}
       <div className="flex-1  pb-24">
         <div className="p-4 space-y-4">

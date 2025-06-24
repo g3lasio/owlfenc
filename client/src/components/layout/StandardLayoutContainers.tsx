@@ -14,7 +14,7 @@ export const FullHeightContainer: React.FC<FullHeightContainerProps> = ({
   return (
     <div 
       className={cn(
-        "flex flex-col h-full w-full overflow-hidden",
+        "flex flex-col h-full w-full ",
         className
       )}
     >
@@ -108,7 +108,7 @@ export const DialogContainer: React.FC<DialogContainerProps> = ({
   return (
     <div 
       className={cn(
-        "flex flex-col overflow-hidden bg-gray-900 border-cyan-400/30 shadow-[0_0_50px_rgba(6,182,212,0.3)]",
+        "flex flex-col  bg-gray-900 border-cyan-400/30 shadow-[0_0_50px_rgba(6,182,212,0.3)]",
         className
       )}
       style={{ 
@@ -134,7 +134,7 @@ export const TabContainer: React.FC<TabContainerProps> = ({
   return (
     <div 
       className={cn(
-        "flex-1 flex flex-col overflow-hidden",
+        "flex-1 flex flex-col ",
         className
       )}
     >

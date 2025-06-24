@@ -290,7 +290,7 @@ const Contracts = () => {
             {contractsQuery.isLoading ? (
               // Esqueletos de carga
               Array.from({ length: 6 }).map((_, i) => (
-                <Card key={i} className="overflow-hidden">
+                <Card key={i} className="">
                   <CardHeader className="p-4">
                     <Skeleton className="h-6 w-2/3" />
                     <Skeleton className="h-4 w-1/3 mt-2" />
@@ -337,7 +337,7 @@ const Contracts = () => {
             ) : (
               // Lista de contratos
               filteredContracts.map((contract: Contract) => (
-                <Card key={contract.id} className="overflow-hidden">
+                <Card key={contract.id} className="">
                   <CardHeader className="p-4">
                     <div className="flex justify-between items-start">
                       <CardTitle className="text-lg">{contract.title}</CardTitle>
@@ -463,7 +463,7 @@ const Contracts = () => {
           <DialogHeader>
             <DialogTitle>Flujo Guiado de Creación de Contrato</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 ">
             <QuestionFlowChat 
               onComplete={(data) => {
                 handleQuestionFlowComplete(data);

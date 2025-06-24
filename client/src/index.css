@@ -33,6 +33,17 @@ html, body {
   overflow: hidden !important;
 }
 
+/* FORZAR ALTURA FIJA PARA EVITAR SCROLL INFINITO */
+.min-h-screen {
+  min-height: auto !important;
+  height: auto !important;
+}
+
+/* ELIMINAR TODOS LOS SCROLLS PROBLEMÁTICOS */
+.flex-1 {
+  max-height: calc(100vh - 144px) !important;
+}
+
 /* Contenedor principal de la app */
 .app-container {
   height: 100vh !important;

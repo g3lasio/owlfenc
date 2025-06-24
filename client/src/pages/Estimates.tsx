@@ -613,11 +613,11 @@ export default function Estimates() {
                       Seleccionar Cliente
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+                  <DialogContent className="max-w-2xl max-h-[90vh]  flex flex-col">
                     <DialogHeader className="shrink-0">
                       <DialogTitle>Seleccionar Cliente</DialogTitle>
                     </DialogHeader>
-                    <div className="flex-1 flex flex-col space-y-4 overflow-hidden">
+                    <div className="flex-1 flex flex-col space-y-4 ">
                       <div className="relative shrink-0">
                         <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                         <Input

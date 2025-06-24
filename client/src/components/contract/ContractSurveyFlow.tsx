@@ -756,7 +756,7 @@ const ContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
       
       {/* Diálogo para cláusulas generadas con IA */}
       <Dialog open={isClausesDialogOpen} onOpenChange={setIsClausesDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-3xl max-h-[80vh]  flex flex-col">
           <DialogHeader>
             <DialogTitle>Cláusulas Adicionales Generadas con IA</DialogTitle>
           </DialogHeader>

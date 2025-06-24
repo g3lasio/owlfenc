@@ -601,7 +601,7 @@ const NewContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
           
           <div className="relative">
             {/* Progress Bar Background */}
-            <div className="w-full h-4 bg-black border border-cyan-500/30 rounded-lg overflow-hidden relative">
+            <div className="w-full h-4 bg-black border border-cyan-500/30 rounded-lg  relative">
               {/* Animated Progress Fill */}
               <div 
                 className="h-full bg-gradient-to-r from-cyan-500 via-cyan-400 to-cyan-300 transition-all duration-700 ease-out relative"
@@ -760,7 +760,7 @@ const NewContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
       
       {/* Dialog for AI-generated clauses */}
       <Dialog open={isClausesDialogOpen} onOpenChange={setIsClausesDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col border-cyan-500/30 bg-background">
+        <DialogContent className="max-w-4xl max-h-[80vh]  flex flex-col border-cyan-500/30 bg-background">
           <DialogHeader>
             <DialogTitle className="flex items-center text-cyan-400">
               <Shield className="mr-2 h-5 w-5 text-cyan-400" />
@@ -837,7 +837,7 @@ const NewContractSurveyFlow: React.FC<ContractSurveyFlowProps> = ({
       
       {/* Dialog for Contract Preview */}
       <Dialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-4xl max-h-[90vh]  flex flex-col">
           <DialogHeader>
             <DialogTitle>Vista Previa del Contrato</DialogTitle>
           </DialogHeader>

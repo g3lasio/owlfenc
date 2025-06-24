@@ -36,7 +36,7 @@ export function LanguageSwitch({ className }: LanguageSwitchProps) {
         className={cn(
           "relative flex items-center justify-between w-16 h-8 px-1.5 rounded-full transition-all duration-300",
           "bg-gradient-to-r from-slate-950 to-zinc-950 shadow-lg",
-          "overflow-hidden",
+          "",
           "border border-yellow-600/40",
           "animate-transformer-glow", // Aplicamos la nueva animación de brillo
           "hover:scale-110 hover:border-yellow-500/70" // Efecto al pasar el mouse
@@ -51,7 +51,7 @@ export function LanguageSwitch({ className }: LanguageSwitchProps) {
         <div className="absolute inset-0 rounded-full opacity-30 blur-sm bg-gradient-to-r from-yellow-500 to-orange-600"></div>
         
         {/* Partículas brillantes para efecto Transformers */}
-        <div className="absolute inset-0 overflow-hidden rounded-full">
+        <div className="absolute inset-0  rounded-full">
           <div className="absolute top-1/2 left-1/4 w-1 h-1 bg-yellow-300 rounded-full opacity-70"></div>
           <div className="absolute top-1/3 right-1/4 w-0.5 h-0.5 bg-orange-400 rounded-full opacity-90"></div>
           <div className="absolute bottom-1/4 left-1/3 w-0.5 h-0.5 bg-yellow-400 rounded-full opacity-80"></div>

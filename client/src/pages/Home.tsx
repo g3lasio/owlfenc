@@ -71,7 +71,7 @@ export default function Home() {
           
           {/* Texto de Mervin AI con efecto de aparición */}
           <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 text-lg md:text-xl font-quantico whitespace-nowrap tracking-wider z-10">
-            <div className="relative overflow-hidden">
+            <div className="relative ">
               <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent drop-shadow-md animate-text-reveal inline-block">
                 Mervin AI
               </span>

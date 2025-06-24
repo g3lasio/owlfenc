@@ -55,7 +55,7 @@ export default function FuturisticPaymentDashboard({
 
   if (isLoading) {
     return (
-      <div className="relative w-full h-80 bg-gradient-to-br from-slate-900 via-indigo-900 to-black rounded-2xl border border-cyan-400/30 overflow-hidden">
+      <div className="relative w-full h-80 bg-gradient-to-br from-slate-900 via-indigo-900 to-black rounded-2xl border border-cyan-400/30 ">
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-500/10 to-transparent animate-pulse"></div>
         <div className="flex items-center justify-center h-full">
           <div className="w-32 h-32 border-4 border-cyan-400/30 rounded-full animate-spin border-t-cyan-400"></div>
@@ -65,7 +65,7 @@ export default function FuturisticPaymentDashboard({
   }
 
   return (
-    <div className="relative w-full bg-gradient-to-br from-slate-900 via-indigo-900 to-black rounded-2xl border border-cyan-400/30 overflow-hidden">
+    <div className="relative w-full bg-gradient-to-br from-slate-900 via-indigo-900 to-black rounded-2xl border border-cyan-400/30 ">
       {/* Animated background grid */}
       <div className="absolute inset-0 opacity-20">
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(6,182,212,0.1)_1px,transparent_1px),linear-gradient(rgba(6,182,212,0.1)_1px,transparent_1px)] bg-[size:20px_20px] animate-pulse"></div>
@@ -183,7 +183,7 @@ export default function FuturisticPaymentDashboard({
         {/* Stats panels */}
         <div className="grid grid-cols-3 gap-4">
           {/* Paid Stats */}
-          <div className="bg-gradient-to-br from-green-500/10 to-emerald-600/5 border border-green-400/30 rounded-xl p-4 relative overflow-hidden group">
+          <div className="bg-gradient-to-br from-green-500/10 to-emerald-600/5 border border-green-400/30 rounded-xl p-4 relative  group">
             <div className="absolute inset-0 bg-gradient-to-r from-green-400/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-2">
@@ -201,7 +201,7 @@ export default function FuturisticPaymentDashboard({
           </div>
 
           {/* Pending Stats */}
-          <div className="bg-gradient-to-br from-orange-500/10 to-amber-600/5 border border-orange-400/30 rounded-xl p-4 relative overflow-hidden group">
+          <div className="bg-gradient-to-br from-orange-500/10 to-amber-600/5 border border-orange-400/30 rounded-xl p-4 relative  group">
             <div className="absolute inset-0 bg-gradient-to-r from-orange-400/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-2">
@@ -219,7 +219,7 @@ export default function FuturisticPaymentDashboard({
           </div>
 
           {/* Overdue Stats */}
-          <div className="bg-gradient-to-br from-red-500/10 to-rose-600/5 border border-red-400/30 rounded-xl p-4 relative overflow-hidden group">
+          <div className="bg-gradient-to-br from-red-500/10 to-rose-600/5 border border-red-400/30 rounded-xl p-4 relative  group">
             <div className="absolute inset-0 bg-gradient-to-r from-red-400/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-2">

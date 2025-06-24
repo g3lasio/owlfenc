@@ -369,7 +369,7 @@ export default function PermitAdvisor() {
   return (
     <div className=" bg-gradient-to-br from-slate-950 via-gray-900 to-slate-800">
       {/* Header with cyberpunk styling */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-slate-900/50 to-gray-900/50 backdrop-blur-sm">
+      <div className="relative  bg-gradient-to-r from-slate-900/50 to-gray-900/50 backdrop-blur-sm">
         <div className="absolute inset-0 bg-gray-800/10 opacity-30"></div>
         <div className="relative max-w-6xl mx-auto px-6 py-12">
           <div className="text-center">
@@ -554,7 +554,7 @@ export default function PermitAdvisor() {
               <Button
                 onClick={handleSearch}
                 disabled={isLoading || !selectedAddress || !projectType}
-                className="w-full sm:flex-1 relative overflow-hidden bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 border border-cyan-400/30 shadow-lg shadow-cyan-400/20 transition-all duration-300 h-12 text-sm sm:text-base"
+                className="w-full sm:flex-1 relative  bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 border border-cyan-400/30 shadow-lg shadow-cyan-400/20 transition-all duration-300 h-12 text-sm sm:text-base"
               >
                 <span className="relative z-10 flex items-center justify-center gap-2">
                   {isLoading ? (

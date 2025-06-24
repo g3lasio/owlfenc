@@ -620,7 +620,7 @@ function Projects() {
   }
   
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex-1 flex flex-col ">
       <div className="flex-shrink-0 p-6 pb-2">
         <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Proyectos</h1>
@@ -714,7 +714,7 @@ function Projects() {
         ) : viewMode === "grid" ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filteredProjects.map((project) => (
-            <Card key={project.id} className="overflow-hidden">
+            <Card key={project.id} className="">
               <CardHeader className="pb-2">
                 <div className="flex justify-between items-start">
                   <CardTitle className="text-lg">{project.clientName}</CardTitle>
@@ -910,8 +910,8 @@ function Projects() {
       {/* Project Details Dialog */}
       {isDialogOpen && selectedProject && (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="p-0 max-w-7xl w-[98vw] h-[98vh] max-h-[98vh] overflow-hidden bg-gray-900 border-cyan-400/30 shadow-[0_0_50px_rgba(6,182,212,0.3)]">
-            <div className="flex flex-col h-full relative overflow-hidden">
+          <DialogContent className="p-0 max-w-7xl w-[98vw] h-[98vh] max-h-[98vh]  bg-gray-900 border-cyan-400/30 shadow-[0_0_50px_rgba(6,182,212,0.3)]">
+            <div className="flex flex-col h-full relative ">
               {/* Cyberpunk Header */}
               <DialogHeader className="flex-shrink-0 p-4 md:p-6 border-b border-cyan-400/30 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 relative">
                 {/* Corner Brackets */}
@@ -936,7 +936,7 @@ function Projects() {
                   </div>
                   <div className="flex items-center gap-3">
                     {/* Scanning Effect */}
-                    <div className="w-16 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent relative overflow-hidden">
+                    <div className="w-16 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent relative ">
                       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent w-4 animate-[scan_2s_ease-in-out_infinite]"></div>
                     </div>
                     <Badge className={`${getProgressBadgeColor(selectedProject.projectProgress || "estimate_created")} px-3 py-1 font-mono text-xs bg-cyan-400/20 text-cyan-300 border-cyan-400/30`}>
@@ -977,7 +977,7 @@ function Projects() {
                   </div>
                   
                   {/* Mobile Details Section */}
-                  <div className="bg-gray-800/40 border border-cyan-400/20 rounded-lg p-4 relative overflow-hidden">
+                  <div className="bg-gray-800/40 border border-cyan-400/20 rounded-lg p-4 relative ">
                     <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent"></div>
                     <h3 className="text-cyan-300 font-semibold mb-4 flex items-center font-mono">
                       <i className="ri-file-list-3-line mr-2"></i>
@@ -995,7 +995,7 @@ function Projects() {
                   {/* Left Column - Progress & System Status */}
                   <div className="space-y-6 ">
                     {/* System Status */}
-                    <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg relative overflow-hidden shadow-[0_0_20px_rgba(6,182,212,0.1)]">
+                    <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg relative  shadow-[0_0_20px_rgba(6,182,212,0.1)]">
                       <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-cyan-400"></div>
                       <div className="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-cyan-400"></div>
                       
@@ -1008,7 +1008,7 @@ function Projects() {
                       </div>
                       
                       <div className="p-4 space-y-3">
-                        <div className="bg-gray-700/50 border border-cyan-400/20 rounded-md p-3 relative overflow-hidden hover:border-cyan-400/40 transition-colors">
+                        <div className="bg-gray-700/50 border border-cyan-400/20 rounded-md p-3 relative  hover:border-cyan-400/40 transition-colors">
                           <div className="flex items-center justify-between">
                             <div>
                               <div className="text-cyan-400 text-xs mb-1 font-mono">PROYECTO ID</div>
@@ -1018,7 +1018,7 @@ function Projects() {
                           </div>
                         </div>
                         
-                        <div className="bg-gray-700/50 border border-cyan-400/20 rounded-md p-3 relative overflow-hidden hover:border-cyan-400/40 transition-colors">
+                        <div className="bg-gray-700/50 border border-cyan-400/20 rounded-md p-3 relative  hover:border-cyan-400/40 transition-colors">
                           <div className="flex items-center justify-between">
                             <div>
                               <div className="text-cyan-400 text-xs mb-1 font-mono">ESTADO ACTUAL</div>
@@ -1028,7 +1028,7 @@ function Projects() {
                           </div>
                         </div>
                         
-                        <div className="bg-gray-700/50 border border-cyan-400/20 rounded-md p-3 relative overflow-hidden hover:border-cyan-400/40 transition-colors">
+                        <div className="bg-gray-700/50 border border-cyan-400/20 rounded-md p-3 relative  hover:border-cyan-400/40 transition-colors">
                           <div className="flex items-center justify-between">
                             <div>
                               <div className="text-cyan-400 text-xs mb-1 font-mono">PRECIO TOTAL</div>
@@ -1045,7 +1045,7 @@ function Projects() {
                     </div>
 
                     {/* Progress Section */}
-                    <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg relative overflow-hidden shadow-[0_0_20px_rgba(6,182,212,0.1)]">
+                    <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg relative  shadow-[0_0_20px_rgba(6,182,212,0.1)]">
                       <div className="absolute bottom-0 left-0 w-4 h-4 border-l-2 border-b-2 border-cyan-400"></div>
                       <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-cyan-400"></div>
                       
@@ -1068,7 +1068,7 @@ function Projects() {
                   </div>
 
                   {/* Right Column - Project Details */}
-                  <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg relative overflow-hidden shadow-[0_0_20px_rgba(6,182,212,0.1)]">
+                  <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg relative  shadow-[0_0_20px_rgba(6,182,212,0.1)]">
                     <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-cyan-400"></div>
                     <div className="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-cyan-400"></div>
                     <div className="absolute bottom-0 left-0 w-4 h-4 border-l-2 border-b-2 border-cyan-400"></div>

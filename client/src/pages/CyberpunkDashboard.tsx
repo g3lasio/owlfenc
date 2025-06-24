@@ -74,8 +74,8 @@ const CyberpunkDashboard: React.FC<CyberpunkDashboardProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="p-0 max-w-7xl w-[98vw] h-[98vh] max-h-[98vh] overflow-hidden bg-gray-900 border-cyan-400/30 shadow-[0_0_50px_rgba(6,182,212,0.3)]">
-        <div className="flex flex-col h-full relative overflow-hidden">
+      <DialogContent className="p-0 max-w-7xl w-[98vw] h-[98vh] max-h-[98vh]  bg-gray-900 border-cyan-400/30 shadow-[0_0_50px_rgba(6,182,212,0.3)]">
+        <div className="flex flex-col h-full relative ">
           {/* Cyberpunk Header */}
           <DialogHeader className="flex-shrink-0 p-4 md:p-6 border-b border-cyan-400/30 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 relative">
             {/* Corner Brackets */}
@@ -100,7 +100,7 @@ const CyberpunkDashboard: React.FC<CyberpunkDashboardProps> = ({
               </div>
               <div className="flex items-center gap-3">
                 {/* Scanning Effect */}
-                <div className="w-16 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent relative overflow-hidden">
+                <div className="w-16 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent relative ">
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent w-4 animate-[scan_2s_ease-in-out_infinite]"></div>
                 </div>
                 <Badge className={`${getProgressBadgeColor(project.projectProgress || "estimate_created")} px-3 py-1 font-mono text-xs`}>
@@ -117,17 +117,17 @@ const CyberpunkDashboard: React.FC<CyberpunkDashboardProps> = ({
             <div className="lg:hidden p-4 space-y-4">
               {/* Mobile Stats Grid */}
               <div className="grid grid-cols-2 gap-3 mb-6">
-                <div className="bg-gray-800/60 border border-cyan-400/20 rounded-lg p-3 relative overflow-hidden">
+                <div className="bg-gray-800/60 border border-cyan-400/20 rounded-lg p-3 relative ">
                   <div className="absolute top-0 left-0 w-3 h-3 border-l border-t border-cyan-400"></div>
                   <div className="text-cyan-400 text-xs mb-1 font-mono">ID PROYECTO</div>
                   <div className="text-white text-sm font-mono">{project.id.slice(-8)}</div>
                 </div>
-                <div className="bg-gray-800/60 border border-cyan-400/20 rounded-lg p-3 relative overflow-hidden">
+                <div className="bg-gray-800/60 border border-cyan-400/20 rounded-lg p-3 relative ">
                   <div className="absolute top-0 right-0 w-3 h-3 border-r border-t border-cyan-400"></div>
                   <div className="text-cyan-400 text-xs mb-1 font-mono">ESTADO</div>
                   <div className="text-green-400 text-sm font-semibold">{getStatusLabel(project.status)}</div>
                 </div>
-                <div className="bg-gray-800/60 border border-cyan-400/20 rounded-lg p-3 relative overflow-hidden">
+                <div className="bg-gray-800/60 border border-cyan-400/20 rounded-lg p-3 relative ">
                   <div className="absolute bottom-0 left-0 w-3 h-3 border-l border-b border-cyan-400"></div>
                   <div className="text-cyan-400 text-xs mb-1 font-mono">PRECIO TOTAL</div>
                   <div className="text-white text-sm font-bold">
@@ -136,7 +136,7 @@ const CyberpunkDashboard: React.FC<CyberpunkDashboardProps> = ({
                       : 'N/A'}
                   </div>
                 </div>
-                <div className="bg-gray-800/60 border border-cyan-400/20 rounded-lg p-3 relative overflow-hidden">
+                <div className="bg-gray-800/60 border border-cyan-400/20 rounded-lg p-3 relative ">
                   <div className="absolute bottom-0 right-0 w-3 h-3 border-r border-b border-cyan-400"></div>
                   <div className="text-cyan-400 text-xs mb-1 font-mono">PAGO</div>
                   <div className={`text-sm font-semibold ${project.paymentStatus === 'paid' ? 'text-green-400' : project.paymentStatus === 'partial' ? 'text-blue-400' : 'text-yellow-400'}`}>
@@ -157,7 +157,7 @@ const CyberpunkDashboard: React.FC<CyberpunkDashboardProps> = ({
                 </TabsList>
                 
                 <TabsContent value="progress" className="mt-4">
-                  <div className="bg-gray-800/40 border border-cyan-400/20 rounded-lg p-4 relative overflow-hidden">
+                  <div className="bg-gray-800/40 border border-cyan-400/20 rounded-lg p-4 relative ">
                     <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent"></div>
                     <h3 className="text-cyan-300 font-semibold mb-4 flex items-center font-mono">
                       <i className="ri-route-line mr-2"></i>
@@ -172,7 +172,7 @@ const CyberpunkDashboard: React.FC<CyberpunkDashboardProps> = ({
                 </TabsContent>
                 
                 <TabsContent value="details" className="mt-4">
-                  <div className="bg-gray-800/40 border border-cyan-400/20 rounded-lg p-4 relative overflow-hidden">
+                  <div className="bg-gray-800/40 border border-cyan-400/20 rounded-lg p-4 relative ">
                     <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent"></div>
                     <h3 className="text-cyan-300 font-semibold mb-4 flex items-center font-mono">
                       <i className="ri-file-list-3-line mr-2"></i>
@@ -192,7 +192,7 @@ const CyberpunkDashboard: React.FC<CyberpunkDashboardProps> = ({
               {/* Left Column - Progress & System Status */}
               <div className="space-y-6 ">
                 {/* System Status */}
-                <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg relative overflow-hidden shadow-[0_0_20px_rgba(6,182,212,0.1)]">
+                <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg relative  shadow-[0_0_20px_rgba(6,182,212,0.1)]">
                   {/* Corner Brackets */}
                   <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-cyan-400"></div>
                   <div className="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-cyan-400"></div>
@@ -208,7 +208,7 @@ const CyberpunkDashboard: React.FC<CyberpunkDashboardProps> = ({
                   
                   {/* Stats Grid */}
                   <div className="p-4 space-y-3">
-                    <div className="bg-gray-700/50 border border-cyan-400/20 rounded-md p-3 relative overflow-hidden hover:border-cyan-400/40 transition-colors">
+                    <div className="bg-gray-700/50 border border-cyan-400/20 rounded-md p-3 relative  hover:border-cyan-400/40 transition-colors">
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="text-cyan-400 text-xs mb-1 font-mono">PROYECTO ID</div>
@@ -218,7 +218,7 @@ const CyberpunkDashboard: React.FC<CyberpunkDashboardProps> = ({
                       </div>
                     </div>
                     
-                    <div className="bg-gray-700/50 border border-cyan-400/20 rounded-md p-3 relative overflow-hidden hover:border-cyan-400/40 transition-colors">
+                    <div className="bg-gray-700/50 border border-cyan-400/20 rounded-md p-3 relative  hover:border-cyan-400/40 transition-colors">
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="text-cyan-400 text-xs mb-1 font-mono">ESTADO ACTUAL</div>
@@ -228,7 +228,7 @@ const CyberpunkDashboard: React.FC<CyberpunkDashboardProps> = ({
                       </div>
                     </div>
                     
-                    <div className="bg-gray-700/50 border border-cyan-400/20 rounded-md p-3 relative overflow-hidden hover:border-cyan-400/40 transition-colors">
+                    <div className="bg-gray-700/50 border border-cyan-400/20 rounded-md p-3 relative  hover:border-cyan-400/40 transition-colors">
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="text-cyan-400 text-xs mb-1 font-mono">PRECIO TOTAL</div>
@@ -242,7 +242,7 @@ const CyberpunkDashboard: React.FC<CyberpunkDashboardProps> = ({
                       </div>
                     </div>
                     
-                    <div className="bg-gray-700/50 border border-cyan-400/20 rounded-md p-3 relative overflow-hidden hover:border-cyan-400/40 transition-colors">
+                    <div className="bg-gray-700/50 border border-cyan-400/20 rounded-md p-3 relative  hover:border-cyan-400/40 transition-colors">
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="text-cyan-400 text-xs mb-1 font-mono">ESTADO DE PAGO</div>
@@ -257,7 +257,7 @@ const CyberpunkDashboard: React.FC<CyberpunkDashboardProps> = ({
                 </div>
 
                 {/* Timeline */}
-                <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg relative overflow-hidden shadow-[0_0_20px_rgba(6,182,212,0.1)]">
+                <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg relative  shadow-[0_0_20px_rgba(6,182,212,0.1)]">
                   <div className="absolute bottom-0 left-0 w-4 h-4 border-l-2 border-b-2 border-cyan-400"></div>
                   <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-cyan-400"></div>
                   
@@ -307,7 +307,7 @@ const CyberpunkDashboard: React.FC<CyberpunkDashboardProps> = ({
                 </div>
 
                 {/* Progress Section */}
-                <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg relative overflow-hidden shadow-[0_0_20px_rgba(6,182,212,0.1)]">
+                <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg relative  shadow-[0_0_20px_rgba(6,182,212,0.1)]">
                   <div className="p-4 border-b border-cyan-400/20 bg-gradient-to-r from-gray-800/50 to-gray-900/50 relative">
                     <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
                     <h3 className="text-cyan-300 font-semibold flex items-center font-mono">
@@ -326,7 +326,7 @@ const CyberpunkDashboard: React.FC<CyberpunkDashboardProps> = ({
               </div>
 
               {/* Right Column - Project Details */}
-              <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg relative overflow-hidden shadow-[0_0_20px_rgba(6,182,212,0.1)] h-fit">
+              <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg relative  shadow-[0_0_20px_rgba(6,182,212,0.1)] h-fit">
                 <div className="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-cyan-400"></div>
                 <div className="absolute bottom-0 left-0 w-4 h-4 border-l-2 border-b-2 border-cyan-400"></div>
                 

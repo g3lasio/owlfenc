@@ -297,7 +297,7 @@ const EstimateToContractGenerator: React.FC<EstimateToContractGeneratorProps> = 
 
       {/* Diálogo de Preview del Contrato */}
       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-6xl max-h-[90vh]  flex flex-col">
           <DialogHeader>
             <DialogTitle className="text-cyan-400">
               📄 Vista Previa del Contrato Legal
@@ -322,7 +322,7 @@ const EstimateToContractGenerator: React.FC<EstimateToContractGeneratorProps> = 
 
       {/* Diálogo de Análisis de Riesgo */}
       <Dialog open={isRiskDialogOpen} onOpenChange={setIsRiskDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-3xl max-h-[80vh]  flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center text-orange-400">
               <AlertTriangle className="mr-2 h-5 w-5" />

@@ -339,9 +339,9 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="flex min-h-[100dvh] h-full items-center justify-center bg-background py-2 px-4 overflow-hidden">
+    <div className="flex min-h-[100dvh] h-full items-center justify-center bg-background py-2 px-4 ">
       {/* Fondo con efecto de gradiente */}
-      <div className="fixed inset-0 overflow-hidden">
+      <div className="fixed inset-0 ">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,hsl(180,100%,10%)_0%,hsl(0,0%,7%)_70%)]"></div>
       </div>
 
@@ -412,7 +412,7 @@ export default function AuthPage() {
         {/* Tarjeta principal con estilo Stark Industries/Iron Man */}
         <Card 
           ref={cardRef}
-          className={`relative border border-primary/20 shadow-xl overflow-hidden rounded-xl backdrop-blur-sm bg-card/80 transition-all duration-500 ${
+          className={`relative border border-primary/20 shadow-xl  rounded-xl backdrop-blur-sm bg-card/80 transition-all duration-500 ${
             isTransitioning ? 'stark-card-transitioning' : ''
           }`}
         >

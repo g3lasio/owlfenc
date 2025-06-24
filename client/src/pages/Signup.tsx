@@ -115,7 +115,7 @@ export default function Signup() {
 
   return (
     <div className="flex  items-center justify-center bg-background p-4">
-      <div className="absolute inset-0 overflow-hidden">
+      <div className="absolute inset-0 ">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,hsl(180,100%,10%)_0%,hsl(0,0%,7%)_70%)]"></div>
         <div className="absolute inset-0 opacity-20">
           {Array.from({ length: 30 }).map((_, i) => (
@@ -141,7 +141,7 @@ export default function Signup() {
           <p className="text-sm text-muted-foreground mt-1">The AI Force Crafting the Future Skyline</p>
         </div>
         
-        <Card className="border border-primary/20 shadow-xl overflow-hidden rounded-xl backdrop-blur-sm bg-card/80">
+        <Card className="border border-primary/20 shadow-xl  rounded-xl backdrop-blur-sm bg-card/80">
           <CardHeader className="bg-gradient-to-r from-primary/20 to-accent/20 px-6 py-6 border-b border-primary/20">
             <CardTitle className="text-2xl font-semibold text-center">Crear Cuenta</CardTitle>
             <CardDescription className="text-center text-muted-foreground">

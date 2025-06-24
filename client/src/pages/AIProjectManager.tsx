@@ -17,7 +17,7 @@ export default function AIProjectManager() {
         </div>
       </div>
 
-      <Card className="w-full overflow-hidden">
+      <Card className="w-full ">
         <CardHeader className="bg-primary/10">
           <CardTitle className="text-center text-xl">🚧 Coming Soon 🚧</CardTitle>
           <CardDescription className="text-center">

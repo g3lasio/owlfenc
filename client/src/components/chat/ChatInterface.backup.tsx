@@ -109,7 +109,7 @@ export default function ChatInterface() {
     <div className="fixed top-16 left-0 right-0 z-50 px-4 py-2 bg-background/80 backdrop-blur-sm border-b">
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center gap-2">
-          <div className="flex-1 bg-muted rounded-full h-3 overflow-hidden">
+          <div className="flex-1 bg-muted rounded-full h-3 ">
             <div
               className="bg-primary h-full rounded-full transition-all duration-300 ease-out"
               style={{ width: `${progress}%` }}

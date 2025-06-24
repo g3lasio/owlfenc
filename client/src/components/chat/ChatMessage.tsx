@@ -44,7 +44,7 @@ export default function ChatMessage({ message, onOptionClick, onActionClick }: C
                   key={index}
                   variant="outline"
                   size="lg"
-                  className="h-auto py-3 px-4 justify-start font-medium relative overflow-hidden group bg-gradient-to-r from-primary/10 to-accent/15 hover:from-primary/30 hover:to-accent/30 transition-all duration-300 border-primary/40 hover:border-primary hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] cursor-pointer text-left"
+                  className="h-auto py-3 px-4 justify-start font-medium relative  group bg-gradient-to-r from-primary/10 to-accent/15 hover:from-primary/30 hover:to-accent/30 transition-all duration-300 border-primary/40 hover:border-primary hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] cursor-pointer text-left"
                   onClick={() => onOptionClick && onOptionClick(optionText)}
                 >
                   <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent group-hover:translate-x-full duration-700 transition-transform"></span>

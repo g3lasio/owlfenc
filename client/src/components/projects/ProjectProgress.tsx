@@ -56,7 +56,7 @@ export default function ProjectProgress({ projectId, currentProgress, onProgress
   };
 
   return (
-    <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg overflow-hidden">
+    <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg ">
       <div className="p-4">
         <h3 className="font-medium text-lg mb-4 text-white">Progreso del Proyecto</h3>
         

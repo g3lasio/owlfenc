@@ -770,7 +770,7 @@ export default function EstimateGenerator() {
       {renderDesktopSidebar()}
       
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col ">
         <div className="page-container">
           <div className="container mx-auto max-w-4xl">
             <div className="mb-4 md:mb-6 hidden md:block">

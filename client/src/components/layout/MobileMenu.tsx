@@ -155,7 +155,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           stiffness: 150,
           duration: 0.5
         }}
-        className="bg-card w-[300px] h-full flex flex-col shadow-lg relative overflow-hidden"
+        className="bg-card w-[300px] h-full flex flex-col shadow-lg relative "
         style={{
           boxShadow: isOpen ? "0 0 25px rgba(0, 200, 255, 0.3), 0 0 5px rgba(0, 200, 255, 0.1)" : "none",
           borderRight: isOpen ? "1px solid rgba(0, 200, 255, 0.3)" : "none"
@@ -238,7 +238,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                           animate={{ opacity: 1, height: "auto" }}
                           exit={{ opacity: 0, height: 0 }}
                           transition={{ duration: 0.6, ease: "easeInOut" }}
-                          className="space-y-1.5 mt-3 overflow-hidden"
+                          className="space-y-1.5 mt-3 "
                         >
                           {group.items.map((item, itemIndex) => 
                             item.id !== "mervin" ? (

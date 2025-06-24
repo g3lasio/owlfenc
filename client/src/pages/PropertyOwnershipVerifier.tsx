@@ -211,7 +211,7 @@ export default function PropertyOwnershipVerifier() {
                 <Button
                   onClick={handleSearch}
                   disabled={loading}
-                  className="relative overflow-hidden bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 border border-cyan-400/30 shadow-lg shadow-cyan-400/20 transition-all duration-300 min-w-[120px]"
+                  className="relative  bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 border border-cyan-400/30 shadow-lg shadow-cyan-400/20 transition-all duration-300 min-w-[120px]"
                 >
                   <span className="relative z-10 flex items-center gap-2">
                     {loading ? (

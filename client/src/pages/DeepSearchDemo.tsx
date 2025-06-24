@@ -234,7 +234,7 @@ export default function DeepSearchDemo() {
           <Button
             onClick={runDeepSearch}
             disabled={!projectDescription.trim() || projectDescription.length < 10 || isAnalyzing}
-            className="w-full relative overflow-hidden"
+            className="w-full relative "
             size="lg"
           >
             {isAnalyzing ? (

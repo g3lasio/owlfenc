@@ -1368,14 +1368,14 @@ export default function CyberpunkLegalDefense() {
 
   // Componente de líneas de escaneo
   const ScanLines = ({ active = false }) => (
-    <div className={`absolute inset-0 pointer-events-none overflow-hidden ${active ? 'opacity-100' : 'opacity-0'}`}>
+    <div className={`absolute inset-0 pointer-events-none  ${active ? 'opacity-100' : 'opacity-0'}`}>
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-400/20 to-transparent animate-pulse"></div>
       <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-ping"></div>
     </div>
   );
 
   return (
-    <div className=" bg-black text-white p-6 relative overflow-hidden" style={{ fontFamily: 'ui-monospace, monospace' }}>
+    <div className=" bg-black text-white p-6 relative " style={{ fontFamily: 'ui-monospace, monospace' }}>
       {/* Fondo limpio */}
       <div className="absolute inset-0 bg-gradient-to-b from-gray-900 to-black"></div>
       
@@ -1514,7 +1514,7 @@ export default function CyberpunkLegalDefense() {
         {/* Current Step Card */}
         <div className="max-w-2xl mx-auto px-4">
           {currentPhase === 'data-command' && (
-            <Card className="border-2 border-cyan-400 bg-black/80 relative overflow-hidden">
+            <Card className="border-2 border-cyan-400 bg-black/80 relative ">
               <HUDCorners />
               {isProcessing && <ScanLines active={true} />}
               
@@ -1576,7 +1576,7 @@ export default function CyberpunkLegalDefense() {
                 </div>
 
                 {/* Dynamic Content Area */}
-                <div className="relative overflow-hidden">
+                <div className="relative ">
                   {/* Upload PDF Content */}
                   {dataInputMethod === 'upload' && (
                     <div className="animate-in fade-in-0 slide-in-from-left-5 duration-300">
@@ -1691,7 +1691,7 @@ export default function CyberpunkLegalDefense() {
 
           {/* OCR Data Review Step */}
           {extractedData && currentStep === 2 && (
-            <Card className="border-2 border-purple-400 bg-black/80 relative overflow-hidden mt-6">
+            <Card className="border-2 border-purple-400 bg-black/80 relative  mt-6">
               <HUDCorners />
               
               <CardHeader className="text-center px-4 md:px-6">
@@ -1859,7 +1859,7 @@ export default function CyberpunkLegalDefense() {
 
           {/* Step 3: Defense Review & Correction with Live Preview */}
           {extractedData && currentStep === 3 && currentPhase === 'defense-review' && (
-            <Card className="border-2 border-green-400 bg-black/80 relative overflow-hidden mt-6">
+            <Card className="border-2 border-green-400 bg-black/80 relative  mt-6">
               <HUDCorners />
               
               <CardHeader className="text-center px-4 md:px-6">
@@ -2123,7 +2123,7 @@ export default function CyberpunkLegalDefense() {
                   </div>
 
                   {/* Payment Terms */}
-                  <div className="bg-gray-900/50 border border-green-400/30 rounded-lg p-3 sm:p-4 w-full max-w-full overflow-hidden">
+                  <div className="bg-gray-900/50 border border-green-400/30 rounded-lg p-3 sm:p-4 w-full max-w-full ">
                     <h3 className="text-green-400 font-bold mb-4 flex items-center text-sm sm:text-base">
                       <DollarSign className="h-4 w-4 mr-2 flex-shrink-0" />
                       PAYMENT TERMS
@@ -2475,7 +2475,7 @@ export default function CyberpunkLegalDefense() {
                       </h3>
                       
                       {/* Real Contract Preview Container */}
-                      <div className="bg-white text-black rounded overflow-hidden border shadow-lg">
+                      <div className="bg-white text-black rounded  border shadow-lg">
                         <style dangerouslySetInnerHTML={{ __html: `
                           .contract-content h1 {
                             font-size: 14px !important;
@@ -2639,7 +2639,7 @@ export default function CyberpunkLegalDefense() {
 
           {/* Contract Generation & PDF Creation - Final Step */}
           {extractedData && currentPhase === 'digital-execution' && (
-            <Card className="border-2 border-purple-400 bg-black/80 relative overflow-hidden mt-6">
+            <Card className="border-2 border-purple-400 bg-black/80 relative  mt-6">
               <CardHeader className="text-center px-4 md:px-6">
                 <div className="flex items-center justify-center mb-4">
                   <div className="p-3 md:p-4 rounded-full border-2 border-purple-400">

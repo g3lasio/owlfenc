@@ -471,7 +471,7 @@ const ContactImportWizard = () => {
                 )}
               </div>
 
-              <div className="border rounded-md overflow-hidden">
+              <div className="border rounded-md ">
                 <Table>
                   <TableHeader>
                     <TableRow>

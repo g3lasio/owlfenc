@@ -136,7 +136,7 @@ export function DeepSearchEffect({ isVisible, onComplete }: DeepSearchEffectProp
         </div>
 
         {/* Efecto de partículas */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute inset-0  pointer-events-none">
           {[...Array(30)].map((_, i) => (
             <div
               key={i}
@@ -152,7 +152,7 @@ export function DeepSearchEffect({ isVisible, onComplete }: DeepSearchEffectProp
         </div>
         
         {/* Líneas de escaneo */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute inset-0  pointer-events-none">
           <div className="absolute w-full h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-pulse" 
                style={{ top: '20%', animationDuration: '2s' }}></div>
           <div className="absolute w-full h-0.5 bg-gradient-to-r from-transparent via-blue-400 to-transparent animate-pulse" 

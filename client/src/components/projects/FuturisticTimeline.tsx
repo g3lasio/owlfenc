@@ -112,7 +112,7 @@ export default function FuturisticTimeline({ projectId, currentProgress, onProgr
         {/* Sleek Main Timeline Track */}
         <div 
           ref={timelineRef}
-          className="relative h-2 bg-gray-700/50 rounded-full border border-cyan-400/20 overflow-hidden cursor-pointer shadow-inner"
+          className="relative h-2 bg-gray-700/50 rounded-full border border-cyan-400/20  cursor-pointer shadow-inner"
           style={{ userSelect: 'none' }}
         >
           {/* Futuristic Progress Fill */}

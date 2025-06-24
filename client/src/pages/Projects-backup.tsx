@@ -393,7 +393,7 @@ function Projects() {
   }
   
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex-1 flex flex-col ">
       <div className="flex-shrink-0 p-6 pb-2">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Proyectos</h1>
@@ -490,7 +490,7 @@ function Projects() {
             {filteredProjects.map((project) => {
               const displayInfo = getProjectDisplayInfo(project);
               return (
-                <Card key={project.id} className="overflow-hidden">
+                <Card key={project.id} className="">
                   <CardHeader className="pb-2">
                     <div className="flex justify-between items-start">
                       <CardTitle className="text-lg">{project.clientName}</CardTitle>
@@ -725,7 +725,7 @@ function Projects() {
                   </TabNavigation>
 
                   {/* Tab Content */}
-                  <div className="flex-1 bg-gray-800/50 border-2 border-cyan-400/30 rounded-lg backdrop-blur-sm shadow-2xl overflow-hidden">
+                  <div className="flex-1 bg-gray-800/50 border-2 border-cyan-400/30 rounded-lg backdrop-blur-sm shadow-2xl ">
                     <TabContent>
                       {dashboardTab === 'details' && (
                         <div className="space-y-4">

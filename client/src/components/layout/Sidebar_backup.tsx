@@ -199,7 +199,7 @@ export default function Sidebar() {
         </div>
 
         {/* Navegación principal - Ocupa espacio disponible */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 ">
           {isSidebarExpanded ? (
             // Vista expandida - Scroll solo si es necesario
             <div className="h-full ">

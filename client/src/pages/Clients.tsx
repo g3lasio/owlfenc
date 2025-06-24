@@ -622,7 +622,7 @@ export default function Clients() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredClients.map((client) => (
-            <Card key={client.id} className="overflow-hidden">
+            <Card key={client.id} className="">
               <CardHeader className="pb-2">
                 <div className="flex justify-between items-start">
                   <CardTitle className="text-lg">{client.name}</CardTitle>

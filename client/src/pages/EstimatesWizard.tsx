@@ -2993,7 +2993,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   </DialogTrigger>
                   <DialogContent className="max-w-md sm:max-w-lg border-0 bg-transparent p-0 shadow-none">
                     {/* Futuristic Sci-Fi Container */}
-                    <div className="relative bg-gradient-to-b from-slate-900/95 via-slate-800/98 to-slate-900/95 backdrop-blur-xl overflow-hidden">
+                    <div className="relative bg-gradient-to-b from-slate-900/95 via-slate-800/98 to-slate-900/95 backdrop-blur-xl ">
                       {/* Corner Brackets */}
                       <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-cyan-400/60"></div>
                       <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-cyan-400/60"></div>
@@ -3507,7 +3507,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         isAIProcessing
                       }
                       className={`
-                        relative overflow-hidden px-4 py-2 text-sm font-mono transition-all duration-300
+                        relative  px-4 py-2 text-sm font-mono transition-all duration-300
                         bg-black/40 backdrop-blur-sm
                         border border-cyan-400/20
                         disabled:opacity-50 disabled:cursor-not-allowed
@@ -3540,7 +3540,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       <div className="absolute bottom-0 right-0 w-2 h-2 border-r border-b border-cyan-400/60"></div>
                       
                       {/* Scanning Lines */}
-                      <div className="absolute inset-0 overflow-hidden">
+                      <div className="absolute inset-0 ">
                         <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent animate-pulse"></div>
                         <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent animate-pulse" style={{animationDelay: "0.5s"}}></div>
                       </div>
@@ -3577,7 +3577,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         onClick={() => setShowNewDeepsearchDialog(false)}
                       >
                         <div
-                          className="bg-black/80 backdrop-blur-xl border border-cyan-400/30 overflow-hidden max-w-sm w-full mx-4 relative"
+                          className="bg-black/80 backdrop-blur-xl border border-cyan-400/30  max-w-sm w-full mx-4 relative"
                           style={{
                             clipPath: "polygon(12px 0%, 100% 0%, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0% 100%, 0% 12px)"
                           }}
@@ -3705,7 +3705,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         isAIProcessing
                       }
                       className={`
-                        relative overflow-hidden px-3 sm:px-4 py-2 w-full sm:min-w-[200px] text-sm font-medium transition-all duration-300
+                        relative  px-3 sm:px-4 py-2 w-full sm:min-w-[200px] text-sm font-medium transition-all duration-300
                         bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-900
                         border border-emerald-400/30 rounded-lg
                         hover:border-emerald-400/60 hover:shadow-lg hover:shadow-emerald-400/20
@@ -3741,7 +3741,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                     {/* Dropdown del nuevo Deepsearch Materials */}
                     {showDeepsearchDialog && !isAIProcessing && (
                       <div className="absolute top-full mt-2 left-0 right-0 sm:left-0 sm:right-auto z-[60] sm:min-w-[300px]">
-                        <div className="bg-gradient-to-b from-emerald-900/95 via-emerald-800/98 to-emerald-900/95 backdrop-blur-xl border border-emerald-400/30 rounded-xl shadow-2xl shadow-emerald-400/10 overflow-hidden">
+                        <div className="bg-gradient-to-b from-emerald-900/95 via-emerald-800/98 to-emerald-900/95 backdrop-blur-xl border border-emerald-400/30 rounded-xl shadow-2xl shadow-emerald-400/10 ">
                           {/* Header */}
                           <div className="border-b border-emerald-400/20 p-4">
                             <div className="text-xs font-mono text-emerald-400 mb-1 tracking-wider">
@@ -3858,7 +3858,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   {isAIProcessing && (
                     <div className="flex items-center gap-3">
                       <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-slate-900 to-slate-800 border border-cyan-400/30 rounded-lg">
-                        <div className="w-20 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                        <div className="w-20 h-1.5 bg-slate-700 rounded-full ">
                           <div
                             className="h-full bg-gradient-to-r from-cyan-400 to-blue-400 rounded-full transition-all duration-300"
                             style={{ width: `${aiProgress}%` }}
@@ -3885,7 +3885,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   <DialogTrigger asChild>
                     <button
                       className={`
-                        relative overflow-hidden px-4 py-2 text-sm font-medium transition-all duration-300
+                        relative  px-4 py-2 text-sm font-medium transition-all duration-300
                         bg-gradient-to-r from-teal-900 via-teal-800 to-teal-900
                         border border-teal-400/30 rounded-lg
                         hover:border-teal-400/60 hover:shadow-lg hover:shadow-teal-400/20
@@ -5561,7 +5561,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
           <div className="space-y-6 py-4">
             {/* Complete PDF Preview */}
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <div className="bg-white border border-gray-200 rounded-xl ">
               <div
                 className="p-8 bg-white"
                 style={{
@@ -5834,7 +5834,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
       {/* Enhanced Email Dialog */}
       <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
-        <DialogContent className="w-[95vw] max-w-2xl mx-auto max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogContent className="w-[95vw] max-w-2xl mx-auto max-h-[90vh] flex flex-col p-0 gap-0 ">
           <DialogHeader className="px-4 py-3 border-b bg-white flex-shrink-0">
             <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
               <Mail className="h-5 w-5 text-blue-600" />
@@ -6029,7 +6029,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
       {/* Email Preview Dialog */}
       <Dialog open={showEmailPreview} onOpenChange={setShowEmailPreview}>
-        <DialogContent className="w-[95vw] max-w-4xl h-[90vh] flex flex-col bg-gradient-to-br from-gray-900 via-black to-gray-900 border border-cyan-500/30 p-4 overflow-hidden">
+        <DialogContent className="w-[95vw] max-w-4xl h-[90vh] flex flex-col bg-gradient-to-br from-gray-900 via-black to-gray-900 border border-cyan-500/30 p-4 ">
           <DialogHeader className="space-y-2 sm:space-y-3 flex-shrink-0 pb-2 sm:pb-4">
             <DialogTitle className="text-lg sm:text-xl font-bold text-cyan-300 flex items-center gap-2">
               <Eye className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -6081,7 +6081,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   </h3>
                   
                   {previewHtml ? (
-                    <div className="border-2 border-blue-200 rounded-lg overflow-hidden">
+                    <div className="border-2 border-blue-200 rounded-lg ">
                       <div className="bg-blue-50 p-2 text-xs text-blue-700 font-medium flex items-center gap-2">
                         <Eye className="h-3 w-3" />
                         Attached Estimate Document - HTML Preview

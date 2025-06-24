@@ -244,7 +244,7 @@ export default function BankAccountConnect() {
                 <h3 className="text-lg font-semibold mb-2">Cuentas bancarias conectadas</h3>
                 <div className="space-y-3">
                   {bankAccounts.map((account) => (
-                    <Card key={account.id} className={`overflow-hidden ${account.isDefault ? 'border-primary' : ''}`}>
+                    <Card key={account.id} className={` ${account.isDefault ? 'border-primary' : ''}`}>
                       <CardContent className="p-4">
                         <div className="flex justify-between items-center">
                           <div>

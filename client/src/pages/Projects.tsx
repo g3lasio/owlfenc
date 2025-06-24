@@ -439,7 +439,7 @@ function Projects() {
             })}
           </CardGrid>
         ) : (
-          <div className="border rounded-lg overflow-hidden">
+          <div className="border rounded-lg ">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-muted/50">
@@ -559,7 +559,7 @@ function Projects() {
 
                 <div className="h-8 bg-gray-900 border-b border-gray-700/30"></div>
 
-                <div className="flex-1 px-4 pb-4 bg-gray-900 pt-4 overflow-hidden flex flex-col">
+                <div className="flex-1 px-4 pb-4 bg-gray-900 pt-4  flex flex-col">
                   <div className="flex-shrink-0">
                     <div className="flex space-x-1 bg-gray-800/50 p-1 rounded-lg border border-cyan-400/30 shadow-xl backdrop-blur-sm">
                       <button
@@ -598,7 +598,7 @@ function Projects() {
                     </div>
                   </div>
 
-                  <div className="flex-1 bg-gray-800/50 border-2 border-cyan-400/30 rounded-lg backdrop-blur-sm shadow-2xl overflow-hidden">
+                  <div className="flex-1 bg-gray-800/50 border-2 border-cyan-400/30 rounded-lg backdrop-blur-sm shadow-2xl ">
                     <div className="h-full  p-4">
                       {dashboardTab === 'details' && (
                         <div className="space-y-4">

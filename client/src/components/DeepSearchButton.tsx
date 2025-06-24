@@ -199,7 +199,7 @@ export function DeepSearchButton({
       <Button
         onClick={runDeepSearch}
         disabled={disabled || !canAnalyze || isAnalyzing}
-        className={`relative overflow-hidden ${className}`}
+        className={`relative  ${className}`}
         variant="outline"
         size="sm"
       >

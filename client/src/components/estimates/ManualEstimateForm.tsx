@@ -1050,7 +1050,7 @@ export default function ManualEstimateForm({ onEstimateGenerated, onGenerate }: 
             {/* Previsualización del estimado usando la plantilla seleccionada */}
             <div className="mt-8">
               <h3 className="text-lg font-medium mb-4">Vista Previa</h3>
-              <div className="border rounded-lg shadow-sm overflow-hidden">
+              <div className="border rounded-lg shadow-sm ">
                 <EstimatePreview 
                   estimateData={{
                     client: validatedClient,

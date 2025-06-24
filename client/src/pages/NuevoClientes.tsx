@@ -888,7 +888,7 @@ export default function NuevoClientes() {
       ) : viewMode === "grid" ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredClients.map(client => (
-            <Card key={client.id} className="overflow-hidden">
+            <Card key={client.id} className="">
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg flex justify-between items-start">
                   <span className="truncate">{client.name}</span>
@@ -961,7 +961,7 @@ export default function NuevoClientes() {
           ))}
         </div>
       ) : (
-        <div className="border rounded-md overflow-hidden">
+        <div className="border rounded-md ">
           <table className="w-full">
             <thead className="bg-muted/50">
               <tr>

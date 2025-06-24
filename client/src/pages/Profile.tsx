@@ -498,7 +498,7 @@ export default function Profile() {
             />
             <label 
               htmlFor="profile-photo-input" 
-              className="cursor-pointer group relative block w-24 h-24 rounded-full overflow-hidden"
+              className="cursor-pointer group relative block w-24 h-24 rounded-full "
             >
               {companyInfo.profilePhoto ? (
                 <img 
@@ -652,7 +652,7 @@ export default function Profile() {
               <div className="border-t pt-4">
                 <h3 className="text-lg font-medium mb-4">Company Logo</h3>
                 <div className="flex flex-col md:flex-row items-center gap-6">
-                  <div className="w-40 h-40 border rounded-lg flex items-center justify-center bg-muted overflow-hidden">
+                  <div className="w-40 h-40 border rounded-lg flex items-center justify-center bg-muted ">
                     {companyInfo.logo ? (
                       <img src={companyInfo.logo} alt="Logo" className="max-w-full max-h-full object-contain" />
                     ) : (
