@@ -447,7 +447,7 @@ const CyberpunkContractGenerator = () => {
             </DialogTitle>
           </DialogHeader>
           {selectedContract && (
-            <div className="page-container">>
+            <div className="page-container">
               <iframe
                 srcDoc={selectedContract.html}
                 className="w-full h-full border border-cyan-400/20 rounded"
