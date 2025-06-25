@@ -320,6 +320,13 @@ Changelog:
   * Updated performAutoSave callback dependencies to capture all timeline and project cost changes
   * Removed unnecessary "Estimated Duration" div component as requested (dates are sufficient)
   * Auto-save now preserves all project timeline, cost modifications, and form field changes
+- June 25, 2025. CRITICAL FIX: Resolved contract history duplication issue:
+  * Identified problem where auto-save created multiple contracts instead of updating same project
+  * Fixed contractHistoryService.saveContract to search for existing contracts by client name and project type
+  * Implemented intelligent contract ID generation using client/project names instead of random IDs
+  * Added findExistingContract method to locate contracts for same client and project combination
+  * System now updates existing contracts rather than creating duplicates for same client/project
+  * Contract history now shows single entry per client-project instead of 7+ duplicate contracts
 - June 24, 2025. Enhanced sidebar with auto-close functionality:
   * Implemented automatic sidebar closing when clicking on navigation menu items
   * Added handleMenuItemClick function to close expanded sidebar after menu selection

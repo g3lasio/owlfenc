@@ -80,19 +80,68 @@ class ContractHistoryService {
   private collectionName = 'contractHistory';
 
   /**
-   * Guarda un nuevo contrato en el historial
+   * Busca un contrato existente del mismo cliente y proyecto
+   */
+  async findExistingContract(userId: string, clientName: string, projectType: string): Promise<ContractHistoryEntry | null> {
+    try {
+      const q = query(
+        collection(db, this.collectionName),
+        where('userId', '==', userId),
+        where('clientName', '==', clientName),
+        where('projectType', '==', projectType)
+      );
+
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        const doc = querySnapshot.docs[0]; // Tomar el primer contrato encontrado
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date()
+        } as ContractHistoryEntry;
+      }
+      return null;
+    } catch (error) {
+      console.error('❌ Error finding existing contract:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Guarda o actualiza un contrato en el historial
    */
   async saveContract(entry: Omit<ContractHistoryEntry, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
     try {
-      const contractEntry = {
-        ...entry,
-        createdAt: Timestamp.fromDate(new Date()),
-        updatedAt: Timestamp.fromDate(new Date())
-      };
+      // Buscar contrato existente del mismo cliente y proyecto
+      const existingContract = await this.findExistingContract(
+        entry.userId, 
+        entry.clientName, 
+        entry.projectType
+      );
 
-      const docRef = await addDoc(collection(db, this.collectionName), contractEntry);
-      console.log('🔥 Contract saved to Firebase:', docRef.id);
-      return docRef.id;
+      if (existingContract) {
+        // Actualizar contrato existente
+        const contractRef = doc(db, this.collectionName, existingContract.id!);
+        await updateDoc(contractRef, {
+          ...entry,
+          updatedAt: Timestamp.fromDate(new Date())
+        });
+        console.log('🔄 Contract updated (same client/project):', existingContract.id);
+        return existingContract.id!;
+      } else {
+        // Crear nuevo contrato
+        const contractEntry = {
+          ...entry,
+          createdAt: Timestamp.fromDate(new Date()),
+          updatedAt: Timestamp.fromDate(new Date())
+        };
+
+        const docRef = await addDoc(collection(db, this.collectionName), contractEntry);
+        console.log('🔥 New contract saved to Firebase:', docRef.id);
+        return docRef.id;
+      }
     } catch (error) {
       console.error('❌ Error saving contract to Firebase:', error);
       throw new Error('Failed to save contract to history');

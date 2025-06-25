@@ -255,11 +255,14 @@ export default function CyberpunkLegalDefense() {
     try {
       console.log('💾 Autoguardando cambios del contrato...');
       
+      const clientName = extractedData.clientInfo?.name || extractedData.clientName || 'Cliente';
+      const projectType = extractedData.projectDetails?.type || extractedData.projectType || 'Proyecto';
+      
       const contractData = {
         userId: user.uid,
-        contractId: currentContractId || `AUTOSAVE_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        clientName: extractedData.clientInfo?.name || extractedData.clientName || 'Cliente',
-        projectType: extractedData.projectDetails?.type || extractedData.projectType || 'Proyecto',
+        contractId: currentContractId || `${clientName.replace(/\s+/g, '_')}_${projectType.replace(/\s+/g, '_')}_${user.uid.slice(-6)}`,
+        clientName,
+        projectType,
         status: 'draft' as const,
         contractData: {
           client: {
