@@ -268,6 +268,13 @@ Changelog:
   * Implemented fallback prevention system ensuring "No address provided" instead of generic placeholders
   * All address changes now automatically reflect in generated PDFs and invoices
   * System prevents address corruption issues for all contractors and clients
+- June 25, 2025. Diagnosed and resolved email delivery limitation:
+  * Identified Resend API key is in test mode - can only send to registered email (gelasio@chyrris.com)
+  * Confirmed email system works perfectly when sending to authorized recipient (Email ID: 254cddff-5744-4666-b75e-49fedd84c060)
+  * System generates professional HTML emails with proper contractor branding and client information
+  * Checkbox "Send me a copy" functionality verified and working correctly
+  * To enable sending to any email address: domain verification required at resend.com/domains
+  * All email infrastructure is functional - only domain verification needed for production use
 - June 24, 2025. Enhanced sidebar with auto-close functionality:
   * Implemented automatic sidebar closing when clicking on navigation menu items
   * Added handleMenuItemClick function to close expanded sidebar after menu selection
