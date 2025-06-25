@@ -5809,8 +5809,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
             </div>
 
             {/* Send Copy Option */}
-            <div className="bg-white rounded-lg border p-3">
-              <div className="flex items-start space-x-3">
+            <div className="bg-white rounded-lg border p-3 sm:p-4">
+              <div className="flex items-start space-x-3 sm:space-x-4">
                 <input
                   type="checkbox"
                   id="sendCopy"
@@ -5821,16 +5821,16 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       sendCopy: e.target.checked,
                     }))
                   }
-                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5"
+                  className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5 flex-shrink-0"
                 />
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <Label
                     htmlFor="sendCopy"
-                    className="text-sm font-medium text-gray-700 cursor-pointer block"
+                    className="text-sm sm:text-base font-medium text-gray-700 cursor-pointer block leading-tight"
                   >
                     Send me a copy
                   </Label>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs sm:text-sm text-gray-500 mt-1 break-words">
                     Copy will be sent to: {profile?.email || "your email"}
                   </p>
                 </div>
