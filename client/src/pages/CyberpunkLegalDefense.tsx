@@ -2423,27 +2423,7 @@ export default function CyberpunkLegalDefense() {
                           </div>
                         )}
 
-                        {/* Legal Analysis Summary */}
-                        <div className="bg-blue-900/20 border border-blue-400/30 rounded p-4">
-                          <div className="text-blue-400 text-sm font-bold mb-2 flex items-center">
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            ANÁLISIS LEGAL INTELIGENTE
-                          </div>
-                          <div className="text-gray-300 text-xs leading-relaxed">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div>
-                                <strong>Proyecto:</strong> {extractedData.projectDetails?.type || 'N/A'}<br/>
-                                <strong>Ubicación:</strong> {extractedData.projectDetails?.location || 'N/A'}<br/>
-                                <strong>Valor:</strong> ${extractedData.financials?.total?.toLocaleString() || '0'}
-                              </div>
-                              <div>
-                                <strong>Cláusulas Generadas:</strong> {intelligentClauses.length}<br/>
-                                <strong>Obligatorias:</strong> {intelligentClauses.filter(c => c.category === 'MANDATORY').length}<br/>
-                                <strong>Recomendadas:</strong> {intelligentClauses.filter(c => c.category === 'RECOMMENDED').length}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+
                       </div>
                     )}
                   </div>
