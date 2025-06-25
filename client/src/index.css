@@ -78,17 +78,6 @@ html, body {
   display: none !important;
 }
 
-/* FORZAR ALTURA FIJA PARA EVITAR SCROLL INFINITO */
-.min-h-screen {
-  min-height: auto !important;
-  height: auto !important;
-}
-
-/* ELIMINAR TODOS LOS SCROLLS PROBLEMÁTICOS */
-.flex-1 {
-  max-height: calc(100vh - 144px) !important;
-}
-
 /* PÁGINA PRINCIPAL CON SCROLL CONTROLADO */
 .page-container {
   min-height: 100vh;

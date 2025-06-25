@@ -24,52 +24,57 @@ export default function Home() {
   const mervinBlue = "#29ABE2"; // Color cyan del logo de Mervin
 
   return (
-    <Link href="/mervin">
-      <button style={{ 
-        position: 'fixed',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        borderRadius: '50%',
-        border: 'none',
-        background: 'transparent',
-        cursor: 'pointer',
-        padding: 0,
-        width: '200px',
-        height: '200px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000
-      }}>
-        
-        {/* Imagen del logo con pulsaciones */}
-        <img 
-          src="https://i.postimg.cc/FK6hvMbf/logo-mervin.png" 
-          alt="Mervin AI" 
-          style={{
-            position: 'relative',
-            width: '120px',
-            height: '120px',
-            objectFit: 'contain',
-            zIndex: 100,
-            animation: 'logoGlow 2.5s ease-in-out infinite'
-          }}
-        />
-        
-        {/* Texto de Mervin AI con efecto de aparición */}
-        <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 text-lg md:text-xl font-quantico whitespace-nowrap tracking-wider z-100">
-          <div className="relative ">
-            <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent drop-shadow-md animate-text-reveal inline-block">
-              Mervin AI
-            </span>
-            <span className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 animate-line-reveal"></span>
+    <div className="h-full w-full bg-slate-900 relative">
+      <Link href="/mervin">
+        <button style={{ 
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          borderRadius: '50%',
+          border: 'none',
+          background: 'transparent',
+          cursor: 'pointer',
+          padding: 0,
+          width: '200px',
+          height: '200px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10
+        }}>
+          
+          {/* Imagen del logo con pulsaciones */}
+          <img 
+            src="https://i.postimg.cc/FK6hvMbf/logo-mervin.png" 
+            alt="Mervin AI" 
+            style={{
+              position: 'relative',
+              width: '120px',
+              height: '120px',
+              objectFit: 'contain',
+              zIndex: 20,
+              animation: 'logoGlow 2.5s ease-in-out infinite'
+            }}
+          />
+          
+          {/* Texto de Mervin AI con efecto de aparición */}
+          <div 
+            className="absolute -bottom-12 left-1/2 -translate-x-1/2 text-lg md:text-xl font-quantico whitespace-nowrap tracking-wider"
+            style={{ zIndex: 20, color: '#06B6D4' }}
+          >
+            <div className="relative">
+              <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent drop-shadow-md animate-text-reveal inline-block">
+                Mervin AI
+              </span>
+              <span className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 animate-line-reveal"></span>
+            </div>
+            {/* Marcadores de tecnología futurista */}
+            <span className="absolute -left-4 -bottom-1 h-2 w-2 bg-cyan-400 rounded-full opacity-70 animate-pulse"></span>
+            <span className="absolute -right-4 -bottom-1 h-2 w-2 bg-cyan-400 rounded-full opacity-70 animate-pulse" style={{ animationDelay: '0.5s' }}></span>
           </div>
-          {/* Marcadores de tecnología futurista */}
-          <span className="absolute -left-4 -bottom-1 h-2 w-2 bg-cyan-400 rounded-full opacity-70 animate-pulse"></span>
-          <span className="absolute -right-4 -bottom-1 h-2 w-2 bg-cyan-400 rounded-full opacity-70 animate-pulse" style={{ animationDelay: '0.5s' }}></span>
-        </div>
-      </button>
-    </Link>
+        </button>
+      </Link>
+    </div>
   );
 }

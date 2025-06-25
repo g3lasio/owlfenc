@@ -106,7 +106,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       >
         <Header toggleMobileMenu={toggleMobileMenu} isMobileMenuOpen={isMobileMenuOpen} />
         
-        <div className="flex-1">
+        <div className="flex-1 overflow-hidden">
           <Switch>
             <Route path="/settings/profile" component={Profile} />
             <Route path="*">{children}</Route>
