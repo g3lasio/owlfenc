@@ -106,13 +106,10 @@ export default function AppLayout({ children }: AppLayoutProps) {
       >
         <Header toggleMobileMenu={toggleMobileMenu} isMobileMenuOpen={isMobileMenuOpen} />
         
-        {/* Área de contenido principal con scroll controlado */}
-        <main className="flex-1 overflow-y-auto scrollable-content">
-          <Switch>
-            <Route path="/settings/profile" component={Profile} />
-            <Route path="*">{children}</Route>
-          </Switch>
-        </main>
+        <Switch>
+          <Route path="/settings/profile" component={Profile} />
+          <Route path="*">{children}</Route>
+        </Switch>
         
         {/* Footer fijo */}
         <footer className="py-2 px-4 bg-gray-900 border-t border-cyan-900/30 text-xs text-center text-cyan-500/50 flex-shrink-0">
