@@ -828,10 +828,20 @@ ${extractedText}`,
   // Endpoint para recibir datos completos de proyecto desde Firebase para contrato
   app.post("/api/projects/contract-data", async (req, res) => {
     try {
-      const { project } = req.body;
+      const { project, userId } = req.body;
 
       if (!project) {
         return res.status(400).json({ error: "Project data is required" });
+      }
+
+      if (!userId) {
+        return res.status(401).json({ error: "User authentication required" });
+      }
+
+      // CRITICAL SECURITY CHECK: Verify project belongs to authenticated user
+      if (project.userId && project.userId !== userId) {
+        console.warn("🚨 SECURITY VIOLATION: User", userId, "attempted to access project owned by", project.userId);
+        return res.status(403).json({ error: "Access denied: Project does not belong to user" });
       }
 
       console.log("Processing Firebase project for contract:", project.clientName);

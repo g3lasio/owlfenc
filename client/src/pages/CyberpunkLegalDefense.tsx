@@ -655,18 +655,24 @@ export default function CyberpunkLegalDefense() {
     setIsProcessing(true);
     
     try {
-      const userId = 1; // This should be dynamically obtained from auth context
+      // SECURITY FIX: Use authenticated user's ID
+      if (!user?.uid) {
+        throw new Error('User authentication required');
+      }
       
       toast({
         title: "🔥 PROJECT DATA EXTRACTION",
         description: `Loading complete data for ${project.clientName}'s project...`,
       });
 
-      // Send complete project data to backend for contract processing
+      // Send complete project data to backend for contract processing with user verification
       const response = await fetch('/api/projects/contract-data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ project })
+        body: JSON.stringify({ 
+          project,
+          userId: user.uid // CRITICAL: Include authenticated user ID for security verification
+        })
       });
       const result = await response.json();
 

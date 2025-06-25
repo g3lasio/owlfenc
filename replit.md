@@ -300,6 +300,14 @@ Changelog:
   * Added auto-save state management with isDirty tracking and cleanup on component unmount
   * Users can now make any adjustments (labor dates, client address corrections, percentage changes) with automatic preservation
   * System ensures no data loss during contract editing sessions with seamless background saving
+- June 25, 2025. CRITICAL SECURITY FIX: Implemented proper user isolation for contract database:
+  * Identified and resolved critical vulnerability in /api/projects/contract-data endpoint that allowed cross-user data access
+  * Added mandatory userId validation in backend endpoint to verify project ownership before processing
+  * Enhanced frontend to include authenticated user's Firebase UID in all contract data requests
+  * Implemented security violation logging to detect and prevent unauthorized access attempts
+  * Added proper authentication checks that return 401/403 errors for invalid access attempts
+  * System now ensures complete data isolation - users can only access their own contracts and projects
+  * Multi-tenant security verified - no risk of contractors viewing other contractors' sensitive data
 - June 24, 2025. Enhanced sidebar with auto-close functionality:
   * Implemented automatic sidebar closing when clicking on navigation menu items
   * Added handleMenuItemClick function to close expanded sidebar after menu selection
