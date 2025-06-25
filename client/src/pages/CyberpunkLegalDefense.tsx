@@ -267,61 +267,112 @@ export default function CyberpunkLegalDefense() {
   const handleEditContract = useCallback((contract: any) => {
     console.log('🔧 Editing contract:', contract);
     
-    // Map the contract history data to the expected format for the editor
+    // Enhanced mapping to preserve ALL contract data during editing
     const mappedData = {
-      // Client information
-      clientName: contract.contractData?.client?.name || contract.clientName || '',
-      clientAddress: contract.contractData?.client?.address || '',
-      clientEmail: contract.contractData?.client?.email || '',
-      clientPhone: contract.contractData?.client?.phone || '',
+      // Client information - with comprehensive fallbacks
+      clientInfo: {
+        name: contract.contractData?.client?.name || contract.clientName || '',
+        address: contract.contractData?.client?.address || contract.contractData?.project?.location || '',
+        email: contract.contractData?.client?.email || '',
+        phone: contract.contractData?.client?.phone || ''
+      },
       
-      // Project information
-      projectType: contract.contractData?.project?.type || contract.projectType || '',
-      projectDescription: contract.contractData?.project?.description || '',
-      projectLocation: contract.contractData?.project?.location || '',
+      // Project information - preserve all details
+      projectDetails: {
+        type: contract.contractData?.project?.type || contract.projectType || '',
+        description: contract.contractData?.project?.description || '',
+        location: contract.contractData?.project?.location || contract.contractData?.client?.address || '',
+        scope: contract.contractData?.project?.scope || '',
+        specifications: contract.contractData?.project?.specifications || contract.contractData?.project?.description || ''
+      },
       
-      // Financial information
-      totalAmount: contract.contractData?.financials?.total || 0,
-      subtotal: contract.contractData?.financials?.subtotal || 0,
-      tax: contract.contractData?.financials?.tax || 0,
+      // Financial information - ensure all costs are preserved
+      financials: {
+        total: contract.contractData?.financials?.total || 0,
+        subtotal: contract.contractData?.financials?.subtotal || 0,
+        tax: contract.contractData?.financials?.tax || 0,
+        materials: contract.contractData?.financials?.materials || 0,
+        labor: contract.contractData?.financials?.labor || 0,
+        permits: contract.contractData?.financials?.permits || 0,
+        other: contract.contractData?.financials?.other || 0
+      },
       
-      // Contractor information (from user profile will be used as fallback)
-      contractorName: contract.contractData?.contractor?.name || profile?.companyName || '',
-      contractorAddress: contract.contractData?.contractor?.address || profile?.address || '',
-      contractorEmail: contract.contractData?.contractor?.email || profile?.email || '',
-      contractorPhone: contract.contractData?.contractor?.phone || profile?.phone || '',
-      contractorLicense: contract.contractData?.contractor?.license || profile?.licenseNumber || '',
+      // Contractor information - use profile as fallback only
+      contractorInfo: {
+        name: contract.contractData?.contractor?.name || profile?.ownerName || profile?.company || '',
+        company: contract.contractData?.contractor?.company || profile?.company || '',
+        address: contract.contractData?.contractor?.address || (profile?.address ? `${profile.address} ${profile.city || ''} ${profile.state || ''} ${profile.zipCode || ''}`.trim() : ''),
+        email: contract.contractData?.contractor?.email || profile?.email || '',
+        phone: contract.contractData?.contractor?.phone || profile?.phone || profile?.mobilePhone || '',
+        license: contract.contractData?.contractor?.license || profile?.license || ''
+      },
       
-      // Additional data that might be present
+      // Additional data preservation
       materials: contract.contractData?.materials || [],
       timeline: contract.contractData?.timeline || {},
       terms: contract.contractData?.terms || {},
+      protections: contract.contractData?.protections || [],
+      
+      // Legacy format fields for backward compatibility
+      clientName: contract.contractData?.client?.name || contract.clientName || '',
+      clientAddress: contract.contractData?.client?.address || contract.contractData?.project?.location || '',
+      clientEmail: contract.contractData?.client?.email || '',
+      clientPhone: contract.contractData?.client?.phone || '',
+      projectType: contract.contractData?.project?.type || contract.projectType || '',
+      projectDescription: contract.contractData?.project?.description || '',
+      projectLocation: contract.contractData?.project?.location || '',
+      totalAmount: contract.contractData?.financials?.total || 0,
+      contractorName: contract.contractData?.contractor?.name || profile?.ownerName || profile?.company || '',
+      contractorAddress: contract.contractData?.contractor?.address || '',
+      contractorEmail: contract.contractData?.contractor?.email || '',
+      contractorPhone: contract.contractData?.contractor?.phone || '',
+      contractorLicense: contract.contractData?.contractor?.license || '',
       
       // Preserve original contract data structure
       originalContractData: contract.contractData
     };
     
-    console.log('🔧 Mapped data for editing:', mappedData);
+    console.log('🔧 Enhanced mapped data for editing:', mappedData);
     
-    // Load contract data into the form for editing
+    // Load complete contract data into the form for editing
     setExtractedData(mappedData);
     setCurrentPhase('arsenal-builder');
     setCurrentStep(2);
     
-    // Set approved clauses if they exist
+    // Restore all form states if they exist
     if (contract.approvedClauses) {
       setApprovedClauses(contract.approvedClauses);
     }
     
-    // Set customizations if they exist
     if (contract.clauseCustomizations) {
       setClauseCustomizations(contract.clauseCustomizations);
+    }
+    
+    // Restore payment terms if they exist
+    if (contract.contractData?.paymentTerms) {
+      setPaymentTerms(contract.contractData.paymentTerms);
+    }
+    
+    // Restore form field states
+    if (contract.contractData?.formFields) {
+      const fields = contract.contractData.formFields;
+      if (fields.licenseNumber) setLicenseNumber(fields.licenseNumber);
+      if (fields.insurancePolicy) setInsurancePolicy(fields.insurancePolicy);
+      if (fields.coverageAmount) setCoverageAmount(fields.coverageAmount);
+      if (fields.expirationDate) setExpirationDate(fields.expirationDate);
+      if (fields.permitResponsibility) setPermitResponsibility(fields.permitResponsibility);
+      if (fields.permitNumbers) setPermitNumbers(fields.permitNumbers);
+      if (fields.workmanshipWarranty) setWorkmanshipWarranty(fields.workmanshipWarranty);
+      if (fields.materialsWarranty) setMaterialsWarranty(fields.materialsWarranty);
+      if (fields.startDate) setStartDate(fields.startDate);
+      if (fields.completionDate) setCompletionDate(fields.completionDate);
+      if (fields.estimatedDuration) setEstimatedDuration(fields.estimatedDuration);
     }
     
     // Store the contract ID for updating
     setCurrentContractId(contract.id);
     
-    console.log('🔧 Contract editing state prepared');
+    console.log('🔧 Complete contract editing state prepared with full data preservation');
   }, [profile]);
 
   // Definir pasos del workflow cyberpunk
@@ -795,6 +846,7 @@ export default function CyberpunkLegalDefense() {
         // Save contract to Firebase history
         if (user?.uid) {
           try {
+            // Enhanced contract data preservation for complete Firebase storage
             const contractHistoryEntry = {
               userId: user.uid,
               contractId: `CONTRACT_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -802,15 +854,59 @@ export default function CyberpunkLegalDefense() {
               projectType: contractData.project.type,
               status: 'completed' as const,
               contractData: {
-                client: contractData.client,
-                contractor: contractData.contractor,
-                project: contractData.project,
-                financials: contractData.financials,
-                protections: contractData.protections.map(p => ({
+                client: {
+                  name: contractData.client.name,
+                  address: contractData.client.address || extractedData.clientInfo?.address || extractedData.clientAddress || '',
+                  email: contractData.client.email || extractedData.clientInfo?.email || extractedData.clientEmail || '',
+                  phone: contractData.client.phone || extractedData.clientInfo?.phone || extractedData.clientPhone || ''
+                },
+                contractor: {
+                  name: contractData.contractor.name,
+                  company: contractData.contractor.company || profile?.company || '',
+                  address: contractData.contractor.address,
+                  email: contractData.contractor.email,
+                  phone: contractData.contractor.phone,
+                  license: contractData.contractor.license || profile?.license || ''
+                },
+                project: {
+                  type: contractData.project.type,
+                  description: contractData.project.description || extractedData.projectDescription || '',
+                  location: contractData.project.location || extractedData.projectLocation || extractedData.clientAddress || '',
+                  scope: extractedData.projectDetails?.scope || '',
+                  specifications: extractedData.projectDetails?.specifications || contractData.project.description || ''
+                },
+                financials: {
+                  total: contractData.financials.total || extractedData.totalAmount || extractedData.financials?.total || 0,
+                  subtotal: contractData.financials.subtotal || extractedData.financials?.subtotal || 0,
+                  tax: contractData.financials.tax || extractedData.financials?.tax || 0,
+                  materials: extractedData.financials?.materials || 0,
+                  labor: extractedData.financials?.labor || 0,
+                  permits: extractedData.financials?.permits || 0,
+                  other: extractedData.financials?.other || 0
+                },
+                protections: contractData.protections.map((p: any) => ({
                   id: p.id,
                   category: p.category,
-                  clause: p.content
-                }))
+                  clause: p.content || p.clause || ''
+                })),
+                // Preserve all form field states for editing restoration
+                formFields: {
+                  licenseNumber,
+                  insurancePolicy,
+                  coverageAmount,
+                  expirationDate,
+                  permitResponsibility,
+                  permitNumbers,
+                  workmanshipWarranty,
+                  materialsWarranty,
+                  startDate,
+                  completionDate,
+                  estimatedDuration
+                },
+                paymentTerms: paymentTerms,
+                materials: extractedData.materials || [],
+                timeline: extractedData.timeline || {},
+                terms: extractedData.terms || {}
               },
               pdfUrl: pdfUrl,
               pageCount: 6, // Standard professional contract pages

@@ -23,22 +23,52 @@ export interface ContractHistoryEntry {
       email?: string;
       phone?: string;
       license?: string;
+      company?: string;
     };
     project: {
       type: string;
       description: string;
       location: string;
+      scope?: string;
+      specifications?: string;
     };
     financials: {
       total: number;
       subtotal?: number;
       tax?: number;
+      materials?: number;
+      labor?: number;
+      permits?: number;
+      other?: number;
     };
     protections: Array<{
       id: string;
       category: string;
       clause: string;
     }>;
+    // Enhanced data preservation fields
+    formFields?: {
+      licenseNumber?: string;
+      insurancePolicy?: string;
+      coverageAmount?: string;
+      expirationDate?: string;
+      permitResponsibility?: string;
+      permitNumbers?: string;
+      workmanshipWarranty?: string;
+      materialsWarranty?: string;
+      startDate?: string;
+      completionDate?: string;
+      estimatedDuration?: string;
+    };
+    paymentTerms?: Array<{
+      id: string;
+      label: string;
+      percentage: number;
+      description: string;
+    }>;
+    materials?: any[];
+    timeline?: any;
+    terms?: any;
   };
   pdfUrl?: string;
   pageCount?: number;
