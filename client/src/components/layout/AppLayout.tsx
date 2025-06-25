@@ -106,10 +106,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
       >
         <Header toggleMobileMenu={toggleMobileMenu} isMobileMenuOpen={isMobileMenuOpen} />
         
-        <Switch>
-          <Route path="/settings/profile" component={Profile} />
-          <Route path="*">{children}</Route>
-        </Switch>
+        <div className="flex-1">
+          <Switch>
+            <Route path="/settings/profile" component={Profile} />
+            <Route path="*">{children}</Route>
+          </Switch>
+        </div>
         
         {/* Footer fijo */}
         <footer className="py-2 px-4 bg-gray-900 border-t border-cyan-900/30 text-xs text-center text-cyan-500/50 flex-shrink-0">
