@@ -268,13 +268,6 @@ Changelog:
   * Implemented fallback prevention system ensuring "No address provided" instead of generic placeholders
   * All address changes now automatically reflect in generated PDFs and invoices
   * System prevents address corruption issues for all contractors and clients
-- June 25, 2025. Fixed Home page logo display overlay issues:
-  * Identified and removed problematic radial gradient overlay (cyan-900/20) that was creating blue layer over logo
-  * Adjusted Home page content positioning to account for header height (calc(100vh-160px))
-  * Reduced header z-index from 50 to 40 and made it more transparent (bg-card/60)
-  * Increased logo z-index to 100 to ensure it displays above all other elements
-  * Maintained all layout components (header, sidebar, footer) as required
-  * Fixed scrolling behavior while preserving responsive design
 - June 25, 2025. Diagnosed and resolved email delivery limitation:
   * Identified Resend API key is in test mode - can only send to registered email (gelasio@chyrris.com)
   * Confirmed email system works perfectly when sending to authorized recipient (Email ID: 254cddff-5744-4666-b75e-49fedd84c060)

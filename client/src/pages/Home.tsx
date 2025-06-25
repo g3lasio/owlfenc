@@ -3,81 +3,86 @@ import { Link } from "wouter";
 import { useEffect, useState } from "react";
 
 export default function Home() {
-  // Estado para manejar la animación de partículas de fondo
-  const [particles, setParticles] = useState<Array<{
-    id: number, 
-    x: number, 
-    y: number, 
-    size: number, 
-    speed: number, 
-    opacity: number, 
-    delay: number
-  }>>([]);
+  // Estado para manejar la animación de partículas
+  const [particles, setParticles] = useState<Array<{id: number, x: number, y: number, size: number, speed: number, opacity: number, delay: number}>>([]);
   
-  // Generar partículas de fondo tecnológicas
+  // Generar partículas aleatorias alrededor del logo
   useEffect(() => {
-    const newParticles = Array.from({ length: 25 }, (_, i) => ({
+    const newParticles = Array.from({ length: 30 }, (_, i) => ({
       id: i,
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      size: Math.random() * 2 + 1,
-      speed: Math.random() * 2 + 0.5,
-      opacity: Math.random() * 0.3 + 0.1,
-      delay: Math.random() * 3
+      x: Math.random() * 200 - 100, // Posición x relativa al centro
+      y: Math.random() * 200 - 100, // Posición y relativa al centro
+      size: Math.random() * 3 + 1,  // Tamaño aleatorio entre 1 y 4px
+      speed: Math.random() * 2 + 0.5, // Velocidad aleatoria
+      opacity: Math.random() * 0.7 + 0.3, // Opacidad aleatoria
+      delay: Math.random() * 3  // Delay aleatorio para la animación
     }));
     setParticles(newParticles);
   }, []);
 
-  return (
-    <div className="logo-container">
-      {/* Partículas de fondo sutiles */}
-      {particles.map((particle) => (
-        <div
-          key={particle.id}
-          className="absolute w-1 h-1 bg-cyan-400 rounded-full animate-pulse"
-          style={{
-            left: `${particle.x}%`,
-            top: `${particle.y}%`,
-            opacity: particle.opacity,
-            animationDelay: `${particle.delay}s`,
-            animationDuration: `${2 + particle.speed}s`
-          }}
-        />
-      ))}
+  // El color principal del logo de Mervin
+  const mervinBlue = "#29ABE2"; // Color cyan del logo de Mervin
 
-      {/* Logo central con máxima calidad */}
+  return (
+    <div className="min-h-screen bg-slate-900 text-white overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-cyan-900/20 via-slate-900/50 to-slate-900"></div>
+      </div>
+      
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-8">
       <Link href="/mervin">
-        <button className="logo-button">
-          {/* Imagen del logo con efectos profesionales */}
+        <button style={{ 
+          position: 'relative',
+          borderRadius: '50%',
+          border: 'none',
+          background: 'transparent',
+          cursor: 'pointer',
+          padding: 0,
+          width: '200px',
+          height: '200px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          
+          {/* Resplandor circular futurista */}
+          <div style={{
+            position: 'absolute',
+            width: '100%',
+            height: '100%',
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, transparent 40%, rgba(0,255,255,0.1) 60%, rgba(0,255,255,0.3) 80%, rgba(0,255,255,0.1) 100%)',
+            animation: 'borderGlow 3s ease-in-out infinite'
+          }}></div>
+          
+          {/* Imagen del logo con pulsaciones */}
           <img 
             src="https://i.postimg.cc/FK6hvMbf/logo-mervin.png" 
             alt="Mervin AI" 
-            className="logo-image"
+            style={{
+              position: 'relative',
+              width: '120px',
+              height: '120px',
+              objectFit: 'contain',
+              zIndex: 10,
+              animation: 'logoGlow 2.5s ease-in-out infinite'
+            }}
           />
           
-          {/* Texto con tipografía profesional */}
-          <div className="logo-text font-quantico">
-            <div className="relative">
-              <span className="bg-gradient-to-r from-cyan-400 via-cyan-300 to-blue-400 bg-clip-text text-transparent animate-text-reveal">
+          {/* Texto de Mervin AI con efecto de aparición */}
+          <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 text-lg md:text-xl font-quantico whitespace-nowrap tracking-wider z-10">
+            <div className="relative ">
+              <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent drop-shadow-md animate-text-reveal inline-block">
                 Mervin AI
               </span>
-              <span className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-cyan-400 to-blue-400 animate-line-reveal"></span>
+              <span className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 animate-line-reveal"></span>
             </div>
-            
-            {/* Indicadores tecnológicos */}
-            <span className="absolute -left-6 -bottom-1 w-2 h-2 bg-cyan-400 rounded-full opacity-80 animate-pulse"></span>
-            <span 
-              className="absolute -right-6 -bottom-1 w-2 h-2 bg-cyan-400 rounded-full opacity-80 animate-pulse"
-              style={{ animationDelay: '0.5s' }}
-            ></span>
+            {/* Marcadores de tecnología futurista */}
+            <span className="absolute -left-4 -bottom-1 h-2 w-2 bg-cyan-400 rounded-full opacity-70 animate-pulse"></span>
+            <span className="absolute -right-4 -bottom-1 h-2 w-2 bg-cyan-400 rounded-full opacity-70 animate-pulse" style={{ animationDelay: '0.5s' }}></span>
           </div>
         </button>
       </Link>
-
-      {/* Efecto de resplandor ambiental */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-blue-500/10 rounded-full blur-2xl"></div>
       </div>
     </div>
   );

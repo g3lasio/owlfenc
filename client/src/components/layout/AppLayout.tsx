@@ -93,47 +93,44 @@ export default function AppLayout({ children }: AppLayoutProps) {
     );
   }
 
-  // Layout principal con arquitectura profesional
+  // Para el resto de las páginas (protegidas), mostrar el layout completo
   return (
-    <div className="app-layout">
-      {/* Sidebar con ancho dinámico */}
+    <div className="flex h-screen bg-background">
+      {/* Sidebar fijo a la izquierda */}
       <Sidebar onWidthChange={setSidebarWidth} />
 
-      {/* Área de contenido principal */}
+      {/* Contenido principal */}
       <div 
-        className="main-content-area"
-        style={{ width: `calc(100% - ${sidebarWidth}px)` }}
+        className="flex-1 flex flex-col"
+        style={{ marginLeft: 0, width: `calc(100% - ${sidebarWidth}px)` }}
       >
-        {/* Header estático con altura fija */}
         <Header toggleMobileMenu={toggleMobileMenu} isMobileMenuOpen={isMobileMenuOpen} />
         
-        {/* Viewport de contenido sin scroll innecesario */}
-        <div className="content-viewport">
+        {/* Área de contenido principal con scroll controlado */}
+        <main className="flex-1 overflow-y-auto scrollable-content">
           <Switch>
             <Route path="/settings/profile" component={Profile} />
             <Route path="*">{children}</Route>
           </Switch>
-        </div>
+        </main>
         
-        {/* Footer profesional siempre visible */}
-        <footer className="professional-footer">
-          <div className="footer-content">
-            <Link to="/privacy-policy" className="footer-link">
+        {/* Footer fijo */}
+        <footer className="py-2 px-4 bg-gray-900 border-t border-cyan-900/30 text-xs text-center text-cyan-500/50 flex-shrink-0">
+          <div className="flex justify-center items-center space-x-4">
+            <Link to="/privacy-policy" className="hover:text-cyan-400 cursor-pointer transition-colors">
               Privacy Policy
             </Link>
-            <span className="footer-separator">|</span>
-            <Link to="/legal-policy" className="footer-link">
+            <span>|</span>
+            <Link to="/legal-policy" className="hover:text-cyan-400 cursor-pointer transition-colors">
               Terms of Service
             </Link>
-            <span className="footer-separator">|</span>
-            <span className="font-medium text-cyan-400">
-              © {new Date().getFullYear()} Owl Fence
-            </span>
+            <span>|</span>
+            <span className="font-medium">© {new Date().getFullYear()} Owl Fence</span>
           </div>
         </footer>
       </div>
 
-      {/* Overlay de menú móvil */}
+      {/* Menu móvil overlay */}
       {isMobileMenuOpen && (
         <MobileMenu 
           isOpen={isMobileMenuOpen} 

@@ -5,255 +5,2131 @@
 @tailwind components;
 @tailwind utilities;
 
-/* =================================
-   SISTEMA DE LAYOUT PROFESIONAL
-   ================================= */
-
-/* Reset fundamental */
-html, body, #root {
+/* CONTROL DE SCROLL - VERSIÓN MEJORADA */
+html, body {
   height: 100vh;
   margin: 0;
   padding: 0;
-  overflow: hidden;
-  font-family: 'Rubik', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow-x: hidden;
 }
 
-/* Layout principal sin scroll innecesario */
-.app-layout {
-  display: flex;
+#root {
   height: 100vh;
-  width: 100vw;
   overflow: hidden;
-}
-
-.main-content-area {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  flex: 1;
-  overflow: hidden;
+  margin: 0;
+  padding: 0;
 }
 
-.content-viewport {
-  flex: 1;
-  overflow: hidden;
-  background: #0f172a;
+/* PREVENIR SCROLL HORIZONTAL GLOBAL */
+* {
+  overflow-x: hidden;
+}
+
+/* PERMITIR SCROLL VERTICAL CONTROLADO DONDE SEA NECESARIO */
+.scrollable-content {
+  overflow-y: auto;
+  max-height: 100%;
+}
+
+/* ELIMINACIÓN TOTAL DE SCROLLBARS Y FLECHAS */
+*::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+*::-webkit-scrollbar-track {
+  display: none !important;
+}
+
+*::-webkit-scrollbar-thumb {
+  display: none !important;
+}
+
+*::-webkit-scrollbar-corner {
+  display: none !important;
+}
+
+/* PARA FIREFOX Y EDGE */
+* {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+/* ELIMINACIÓN ADICIONAL DE CLASES SCROLL */
+.scrollbar-hide,
+.scrollbar-thin,
+.scrollbar-track-gray-800,
+.scrollbar-track-slate-100,
+.scrollbar-thumb-cyan-500,
+.scrollbar-thumb-slate-300 {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.scrollbar-hide::-webkit-scrollbar,
+.scrollbar-thin::-webkit-scrollbar,
+.scrollbar-track-gray-800::-webkit-scrollbar,
+.scrollbar-track-slate-100::-webkit-scrollbar,
+.scrollbar-thumb-cyan-500::-webkit-scrollbar,
+.scrollbar-thumb-slate-300::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* FORZAR ALTURA FIJA PARA EVITAR SCROLL INFINITO */
+.min-h-screen {
+  min-height: auto !important;
+  height: auto !important;
+}
+
+/* ELIMINAR TODOS LOS SCROLLS PROBLEMÁTICOS */
+.flex-1 {
+  max-height: calc(100vh - 144px) !important;
+}
+
+/* PÁGINA PRINCIPAL CON SCROLL CONTROLADO */
+.page-container {
+  min-height: 100vh;
+  width: 100%;
   position: relative;
 }
 
-/* =================================
-   ANIMACIONES PROFESIONALES
-   ================================= */
+.scrollable-content {
+  height: auto;
+  overflow-y: auto;
+  max-height: calc(100vh - 100px);
+  padding: 1rem;
+}
+
+
+
+/* Contenedor principal de la app */
+.app-container {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: row !important;
+}
+
+/* Sidebar fijo */
+.sidebar-container {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow-y: auto !important;
+  flex-shrink: 0 !important;
+}
+
+/* Área de contenido principal */
+.main-content-area {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Páginas individuales - SIN SCROLL */
+.page-container {
+  height: calc(100vh - 104px) !important;
+  max-height: calc(100vh - 104px) !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 !important;
+  margin-bottom: 40px !important;
+}
+
+/* Contenido scrollable controlado */
+.controlled-scroll {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  max-height: calc(100vh - var(--header-height, 120px)) !important;
+}
+
+/* Contenido controlado - SOLO SCROLL DONDE NECESARIO */
+.scrollable-content {
+  overflow-y: auto !important;
+  max-height: calc(100vh - 144px) !important;
+  padding: 1.5rem !important;
+  flex: 1 !important;
+  scrollbar-width: thin !important;
+}
+
+/* Estructuras específicas para diferentes tipos de contenido */
+.content-with-header {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100vh !important;
+}
+
+.content-with-header .header-section {
+  flex-shrink: 0 !important;
+  padding: 1.5rem !important;
+  border-bottom: 1px solid hsl(var(--border)) !important;
+}
+
+.content-with-header .main-section {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  padding: 1.5rem !important;
+}
+
+/* Eliminación global de scroll infinito problemático */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
+}
+
+/* Webkit browsers */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--foreground) / 0.3);
+}
+
+/* Headers fijos */
+.fixed-header {
+  flex-shrink: 0 !important;
+  overflow: visible !important;
+}
+
+/* Prevenir scroll en diálogos */
+.dialog-content {
+  max-height: 95vh !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.dialog-body {
+  flex: 1 !important;
+  overflow-y: auto !important;
+}
+
+/* Layout principal sin bloqueo de scroll */
+* {
+  box-sizing: border-box !important;
+}
+
+html, body {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: auto !important; /* Allow scrolling */
+}
+
+#root {
+  overflow: auto !important; /* Allow scrolling */
+  height: 100vh !important;
+  max-height: 100vh !important;
+}
+
+aside {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow-y: auto !important; /* Allow vertical scrolling in sidebar */
+  box-sizing: border-box !important;
+}
+
+/* Main allows internal scrolling */
+main {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: auto !important; /* Allow scrolling */
+}
+
+/* Permitir scroll en páginas específicas */
+.scrollable-page {
+  overflow-y: auto !important;
+  height: 100% !important;
+}
+
+.scrollable-page * {
+  overflow: visible !important;
+}
+
+.home-container {
+  overflow: hidden !important;
+  height: 100% !important;
+  max-height: 100% !important;
+}
+
+/* Allow scrolling in flex containers when needed - but be more specific */
+.flex-1[style*="overflow-y: auto"] {
+  overflow-y: auto !important;
+}
+
+.flex, .flex-col {
+  overflow: visible !important;
+}
+
+/* Animaciones para el reactor de Iron Man */
+@keyframes reactorPulse {
+  0%, 100% { 
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% { 
+    transform: scale(1.02);
+    opacity: 0.9;
+  }
+}
 
 @keyframes logoGlow {
   0%, 100% { 
-    filter: drop-shadow(0 0 20px rgba(6, 182, 212, 0.8)) drop-shadow(0 0 40px rgba(6, 182, 212, 0.4));
     transform: scale(1);
+    filter: drop-shadow(0 0 8px rgba(0,255,255,0.6));
   }
   50% { 
-    filter: drop-shadow(0 0 30px rgba(6, 182, 212, 1)) drop-shadow(0 0 60px rgba(6, 182, 212, 0.6));
+    transform: scale(1.02);
+    filter: drop-shadow(0 0 15px rgba(0,255,255,0.9)) drop-shadow(0 0 25px rgba(0,255,255,0.4));
+  }
+}
+
+@keyframes borderGlow {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+    box-shadow: 
+      0 0 30px rgba(0,255,255,0.4),
+      0 0 60px rgba(0,255,255,0.2),
+      0 0 90px rgba(0,255,255,0.1);
+  }
+  50% {
+    opacity: 1;
     transform: scale(1.05);
+    box-shadow: 
+      0 0 50px rgba(0,255,255,0.8),
+      0 0 100px rgba(0,255,255,0.4),
+      0 0 150px rgba(0,255,255,0.2);
   }
 }
 
-@keyframes text-reveal {
-  0% { 
-    opacity: 0; 
-    transform: translateY(20px); 
+/* Scroll personalizado para sidebar */
+.custom-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.05);
+}
+
+.custom-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+@layer utilities {
+
+  .animate-ping {
+    animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
   }
-  100% { 
-    opacity: 1; 
-    transform: translateY(0); 
+
+  .animate-pulse {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  .animate-flash {
+    animation: flash 1s ease-in-out;
+    animation-iteration-count: 1;
+  }
+  
+  .animate-transformer-glow {
+    animation: transformerGlow 1.5s ease-in-out infinite alternate;
+  }
+
+  /* Sci-Fi Navigation Accordion Styles */
+  .sci-fi-frame {
+    position: relative;
+    background: linear-gradient(135deg, rgba(0, 255, 255, 0.05) 0%, rgba(0, 100, 255, 0.02) 100%);
+    border: 1px solid rgba(0, 255, 255, 0.3);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .sci-fi-frame::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(0, 255, 255, 0.1) 50%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+
+  .sci-fi-frame:hover::before {
+    opacity: 1;
+  }
+
+  /* Cyberpunk Corner Frame Styles */
+  .cyberpunk-corner-frame {
+    position: relative;
+    background: rgba(17, 24, 39, 0.95);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  .cyberpunk-corner-frame::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, 
+      #00ffff 0%, 
+      #0080ff 25%, 
+      #8000ff 50%, 
+      #ff0080 75%, 
+      #00ffff 100%);
+    border-radius: inherit;
+    z-index: -1;
+    animation: holographicPulse 3s ease-in-out infinite;
+  }
+
+  .cyberpunk-corner-frame::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+      linear-gradient(90deg, transparent 0%, rgba(0, 255, 255, 0.1) 50%, transparent 100%),
+      linear-gradient(0deg, transparent 0%, rgba(0, 255, 255, 0.05) 50%, transparent 100%);
+    opacity: 0.3;
+    animation: scanningLines 2s linear infinite;
+    pointer-events: none;
+  }
+
+  /* Corner brackets */
+  .cyberpunk-corner-frame .corner-bracket {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #00ffff;
+  }
+
+  .cyberpunk-corner-frame .corner-bracket.top-left {
+    top: 5px;
+    left: 5px;
+    border-right: none;
+    border-bottom: none;
+  }
+
+  .cyberpunk-corner-frame .corner-bracket.top-right {
+    top: 5px;
+    right: 5px;
+    border-left: none;
+    border-bottom: none;
+  }
+
+  .cyberpunk-corner-frame .corner-bracket.bottom-left {
+    bottom: 5px;
+    left: 5px;
+    border-right: none;
+    border-top: none;
+  }
+
+  .cyberpunk-corner-frame .corner-bracket.bottom-right {
+    bottom: 5px;
+    right: 5px;
+    border-left: none;
+    border-top: none;
+  }
+
+  /* Cyberpunk animations */
+  @keyframes holographicPulse {
+    0% { opacity: 0.7; }
+    50% { opacity: 1; }
+    100% { opacity: 0.7; }
+  }
+
+  @keyframes scanningLines {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100%); }
+  }
+
+  .sci-fi-corner-brackets::before,
+  .sci-fi-corner-brackets::after {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #00ffff;
+    z-index: 10;
+  }
+
+  .sci-fi-corner-brackets::before {
+    top: -1px;
+    left: -1px;
+    border-right: none;
+    border-bottom: none;
+    box-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+  }
+
+  .sci-fi-corner-brackets::after {
+    bottom: -1px;
+    right: -1px;
+    border-left: none;
+    border-top: none;
+    box-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+  }
+
+  .holographic-border {
+    border: 1px solid transparent;
+    background: linear-gradient(45deg, rgba(0, 255, 255, 0.3), rgba(0, 100, 255, 0.2), rgba(0, 255, 255, 0.3));
+    background-size: 200% 200%;
+    animation: holographicShift 3s ease-in-out infinite;
+  }
+
+  .arc-reactor-bg {
+    background: radial-gradient(circle at center, rgba(0, 255, 255, 0.1) 0%, rgba(0, 100, 255, 0.05) 30%, transparent 70%);
+  }
+
+  .scanning-line {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .scanning-line::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #00ffff, transparent);
+    animation: scanLine 2s ease-in-out infinite;
+    opacity: 0;
+  }
+
+  .scanning-line:hover::after {
+    opacity: 1;
+  }
+
+  .futuristic-divider {
+    position: relative;
+    height: 2px;
+    background: linear-gradient(90deg, transparent 0%, #00ffff 20%, #0066ff 50%, #00ffff 80%, transparent 100%);
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+  }
+
+  .futuristic-divider::before,
+  .futuristic-divider::after {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: #00ffff;
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+    top: -3px;
+  }
+
+  .futuristic-divider::before {
+    left: 10px;
+  }
+
+  .futuristic-divider::after {
+    right: 10px;
+  }
+
+  /* Advanced Sidebar Border */
+  .sci-fi-sidebar-border {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      #00ffff 10%,
+      #0066ff 25%,
+      #00ffff 50%,
+      #0066ff 75%,
+      #00ffff 90%,
+      transparent 100%
+    );
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+    overflow: hidden;
+  }
+
+  .sci-fi-sidebar-border::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 20px;
+    background: linear-gradient(180deg, #00ffff 0%, transparent 100%);
+    animation: electricPulse 3s ease-in-out infinite;
+  }
+
+  .sci-fi-sidebar-border::after {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: #00ffff;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    box-shadow: 
+      0 0 12px rgba(0, 255, 255, 0.9),
+      inset 0 0 6px rgba(255, 255, 255, 0.5);
+    left: -2px;
+    top: 50%;
+    transform: translateY(-50%);
+    animation: powerNodePulse 2s ease-in-out infinite alternate;
+  }
+
+  /* Power Nodes at corners */
+  .power-node-top,
+  .power-node-bottom {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    right: -2px;
+    background: #00ffff;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    box-shadow: 
+      0 0 15px rgba(0, 255, 255, 0.9),
+      inset 0 0 8px rgba(255, 255, 255, 0.3);
+    animation: powerNodePulse 2.5s ease-in-out infinite alternate;
+  }
+
+  .power-node-top {
+    top: 20px;
+    animation-delay: 0.5s;
+  }
+
+  .power-node-bottom {
+    bottom: 20px;
+    animation-delay: 1s;
+  }
+
+  /* Bracket connectors */
+  .sci-fi-bracket-top,
+  .sci-fi-bracket-bottom {
+    position: absolute;
+    right: 0;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #00ffff;
+    box-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
+  }
+
+  .sci-fi-bracket-top {
+    top: 0;
+    border-bottom: none;
+    border-left: none;
+  }
+
+  .sci-fi-bracket-bottom {
+    bottom: 0;
+    border-top: none;
+    border-left: none;
+  }
+
+  /* Discontinuous line effect */
+  .dashed-sci-fi-line {
+    position: absolute;
+    top: 0;
+    right: 2px;
+    width: 2px;
+    height: 100%;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      #00ffff 0px,
+      #00ffff 10px,
+      transparent 10px,
+      transparent 15px
+    );
+    opacity: 0.7;
+    animation: dashAnimation 4s linear infinite;
+  }
+
+  .power-pulse {
+    animation: powerPulse 4s ease-in-out infinite;
   }
 }
 
-@keyframes line-reveal {
-  0% { 
-    width: 0; 
-    opacity: 0; 
+/* Keyframe animations for sci-fi effects */
+@keyframes holographicShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes scanLine {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+@keyframes powerPulse {
+  0%, 100% { 
+    box-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
+    opacity: 0.7;
   }
   50% { 
-    opacity: 1; 
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+    opacity: 1;
+  }
+}
+
+@keyframes electricPulse {
+  0% { transform: translateY(-100%); opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translateY(calc(100vh + 100%)); opacity: 0; }
+}
+
+@keyframes powerNodePulse {
+  0% { 
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.9), inset 0 0 8px rgba(255, 255, 255, 0.3);
+    transform: translateY(-50%) scale(1);
   }
   100% { 
-    width: 100%; 
-    opacity: 0.8; 
+    box-shadow: 0 0 25px rgba(0, 255, 255, 1), inset 0 0 12px rgba(255, 255, 255, 0.5);
+    transform: translateY(-50%) scale(1.1);
   }
 }
 
-@keyframes particle-float {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  33% { transform: translateY(-10px) rotate(120deg); }
-  66% { transform: translateY(5px) rotate(240deg); }
+@keyframes dashAnimation {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 25px; }
 }
 
-.animate-text-reveal {
-  animation: text-reveal 1.5s ease-out 0.5s both;
+/* Estilos para el efecto de escritura sin temblores */
+  .typewriter-text {
+    position: relative;
+    overflow: visible;
+    height: auto;
+    min-height: 20px;
+    word-break: break-word;
+    display: block;
+    white-space: pre-wrap;
+    visibility: visible;
+  }
+  
+  /* Contenedor de mensaje con altura estable */
+  .message-container {
+    position: relative;
+    width: 100%;
+    min-height: 1.5em;
+    transition: min-height 0.2s ease-out;
+  }
+  
+  /* Evitar cambios bruscos de altura durante la animación */
+  
+  /* ===== CYBERPUNK DASHBOARD STYLES ===== */
+  .cyber-container {
+    @apply bg-gray-900/95 border border-cyan-400/30 rounded-lg backdrop-blur-sm;
+    position: relative;
+    box-shadow: 
+      0 0 20px rgba(6, 182, 212, 0.1),
+      inset 0 1px 0 rgba(6, 182, 212, 0.2);
+  }
+  
+  .cyber-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #06b6d4, transparent);
+    animation: scanning-line 3s ease-in-out infinite;
+  }
+  
+  .cyber-container-mobile {
+    @apply bg-gray-900/90 border border-cyan-400/20 rounded-md p-4;
+    box-shadow: 0 0 15px rgba(6, 182, 212, 0.1);
+  }
+  
+  .cyber-header {
+    @apply p-4 border-b border-cyan-400/20 bg-gradient-to-r from-gray-800/50 to-gray-900/50;
+    position: relative;
+  }
+  
+  .cyber-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #06b6d4, transparent);
+  }
+  
+  .cyber-stat-card {
+    @apply bg-gray-800/80 border border-cyan-400/20 rounded-md p-3;
+    box-shadow: 
+      0 0 10px rgba(6, 182, 212, 0.1),
+      inset 0 1px 0 rgba(6, 182, 212, 0.1);
+    transition: all 0.3s ease;
+  }
+  
+  .cyber-stat-card:hover {
+    @apply border-cyan-400/40;
+    box-shadow: 
+      0 0 20px rgba(6, 182, 212, 0.2),
+      inset 0 1px 0 rgba(6, 182, 212, 0.2);
+  }
+  
+  .cyber-stat-card-mobile {
+    @apply bg-gray-800/60 border border-cyan-400/15 rounded p-2;
+    box-shadow: 0 0 8px rgba(6, 182, 212, 0.1);
+  }
+  
+  .cyber-corner-frame {
+    position: relative;
+  }
+  
+  .cyber-corner-frame::before,
+  .cyber-corner-frame::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #06b6d4;
+  }
+  
+  .cyber-corner-frame::before {
+    top: 0;
+    left: 0;
+    border-right: none;
+    border-bottom: none;
+  }
+  
+  .cyber-corner-frame::after {
+    bottom: 0;
+    right: 0;
+    border-left: none;
+    border-top: none;
+  }
+  
+  .scanning-line {
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #06b6d4, transparent);
+    animation: scanning-sweep 2s ease-in-out infinite;
+  }
+  
+  .holographic-border {
+    position: relative;
+    background: rgba(6, 182, 212, 0.1);
+    border: 1px solid rgba(6, 182, 212, 0.3);
+  }
+  
+  .holographic-border::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: -1px;
+    right: -1px;
+    bottom: -1px;
+    background: linear-gradient(45deg, transparent, rgba(6, 182, 212, 0.3), transparent);
+    border-radius: inherit;
+    z-index: -1;
+    animation: holographic-pulse 3s ease-in-out infinite;
+  }
+  
+  /* Arc Reactor Effect */
+  .arc-reactor {
+    position: relative;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #06b6d4;
+    border-radius: 50%;
+    background: radial-gradient(circle, #06b6d4 0%, transparent 70%);
+    box-shadow: 
+      0 0 10px #06b6d4,
+      inset 0 0 10px #06b6d4;
+    animation: arc-reactor-pulse 2s ease-in-out infinite;
+  }
+  
+  .arc-reactor::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 4px;
+    height: 4px;
+    background: #ffffff;
+    border-radius: 50%;
+    animation: arc-reactor-core 1.5s ease-in-out infinite alternate;
+  }
+
+@keyframes scanning-line {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
 }
 
-.animate-line-reveal {
-  animation: line-reveal 2s ease-out 1s both;
+@keyframes scanning-sweep {
+  0% { transform: translateX(-100%); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translateX(100%); opacity: 0; }
 }
 
-/* =================================
-   TIPOGRAFÍA PROFESIONAL
-   ================================= */
-
-.font-quantico {
-  font-family: 'Quantico', monospace;
-  font-weight: 700;
-  letter-spacing: 0.1em;
+@keyframes holographic-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.8; }
 }
 
-/* =================================
-   COMPONENTES ESPECÍFICOS
-   ================================= */
+@keyframes arc-reactor-pulse {
+  0%, 100% { 
+    box-shadow: 
+      0 0 10px #06b6d4,
+      inset 0 0 10px #06b6d4;
+  }
+  50% { 
+    box-shadow: 
+      0 0 25px #06b6d4,
+      inset 0 0 15px #06b6d4;
+  }
+}
 
-.logo-container {
-  position: relative;
+@keyframes arc-reactor-core {
+  0% { transform: translate(-50%, -50%) scale(1); }
+  100% { transform: translate(-50%, -50%) scale(1.3); }
+}
+
+  .chat-area {
+    scroll-behavior: smooth;
+    overflow-anchor: auto;
+  }
+  
+  /* Asegurar que los mensajes no causen saltos */
+  .message-card {
+    contain: content;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+  
+  .particle {
+    position: absolute;
+    border-radius: 50%;
+    animation: float 8s cubic-bezier(0.43, 0.13, 0.23, 0.96) infinite;
+    box-shadow: 0 0 10px rgb(40, 230, 230, 0.5);
+    opacity: 0.6;
+  }
+  
+  .bg-grid-white\/5 {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' width='32' height='32' fill='none' stroke='rgb(255 255 255 / 0.05)'%3e%3cpath d='M0 .5H31.5V32'/%3e%3c/svg%3e");
+  }
+  
+  .bg-grid-2 {
+    mask-image: linear-gradient(to bottom, transparent, black, transparent);
+  }
+  
+  @keyframes float {
+    0% {
+      transform: translateY(0px) translateX(0px);
+      opacity: 0.2;
+    }
+    25% {
+      transform: translateY(-10px) translateX(10px);
+      opacity: 0.8;
+    }
+    50% {
+      transform: translateY(-20px) translateX(-5px);
+      opacity: 0.4;
+    }
+    75% {
+      transform: translateY(-10px) translateX(-10px);
+      opacity: 0.6; 
+    }
+    100% {
+      transform: translateY(0px) translateX(0px);
+      opacity: 0.2;
+    }
+  }
+  
+  @keyframes flash {
+    0% {
+      opacity: 0;
+    }
+    50% {
+      opacity: 0.7;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+
+@keyframes ping {
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+@keyframes pulse {
+  50% {
+    opacity: .5;
+  }
+}
+
+/* Solución para el chat y scrolling */
+.chat-interface-container {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
+  flex-direction: column;
   height: 100%;
-  background: radial-gradient(ellipse at center, rgba(6, 182, 212, 0.1) 0%, transparent 50%);
+  position: relative;
 }
 
-.logo-button {
-  position: relative;
-  border: none;
-  background: transparent;
-  cursor: pointer;
+.messages-container {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 150px !important;
+  scroll-behavior: smooth;
+  max-height: calc(100vh - 190px);
+}
+
+.chat-input-container {
+  position: fixed;
+  bottom: 30px;
+  left: 240px; /* Ancho del sidebar */
+  right: 0;
+  background-color: hsl(var(--background));
   padding: 0;
-  width: 240px;
-  height: 240px;
+  border-top: 1px solid hsl(var(--border));
+  z-index: 50;
+  width: auto; /* Ancho automático entre left y right */
+  max-width: calc(100% - 240px); /* No exceder el ancho disponible */
+  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.05);
+}
+
+@media (max-width: 768px) {
+  .chat-input-container {
+    width: 100%;
+    max-width: 100%;
+    left: 0;
+    right: 0;
+    transform: none;
+  }
+}
+
+/* Footer styles */
+.chat-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    background-color: hsl(var(--background));
+    border-top: 1px solid hsla(var(--border), 0.2);
+    width: 100%;
+    height: 30px;
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+    opacity: 1;
+    visibility: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .chat-footer .footer-content {
+    width: 100%;
+    max-width: 1200px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 0 1rem;
+    gap: 1rem;
+    pointer-events: auto;
+  }
+
+  .chat-footer .footer-content > div {
+    pointer-events: auto;
+  }
+
+  .chat-footer a {
+    color: hsl(var(--primary));
+    font-size: 0.875rem;
+    text-decoration: none;
+    opacity: 0.8;
+    transition: all 0.2s ease;
+    pointer-events: auto;
+    cursor: pointer;
+    position: relative;
+    z-index: 10000;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+  }
+
+  .chat-footer a:hover {
+    opacity: 1;
+    text-shadow: 0 0 8px hsla(var(--primary), 0.3);
+    background-color: hsla(var(--primary), 0.1);
+  }
+
+  .chat-footer span {
+    color: hsl(var(--muted-foreground));
+    font-size: 0.7rem;
+    opacity: 0.8;
+  }
+
+/* Efectos futuristas para el análisis AI */
+.analysis-particles {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+}
+
+.particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background-color: rgb(59, 130, 246);
+  border-radius: 50%;
+  opacity: 0;
+  animation: particle-animation 3s infinite;
+}
+
+@keyframes particle-animation {
+  0% {
+    opacity: 0;
+    transform: translateY(0) translateX(0);
+  }
+  20% {
+    opacity: 0.8;
+  }
+  80% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(calc(100px - 200px * var(--random-y, 0.5))) 
+               translateX(calc(100px - 200px * var(--random-x, 0.5)));
+  }
+}
+
+.analysis-particles .particle {
+  --random-y: 0;
+  --random-x: 0;
+}
+
+.analysis-particles .particle:nth-child(1) { --random-y: 0.1; --random-x: 0.5; animation-delay: 0.1s; left: 10%; top: 30%; }
+.analysis-particles .particle:nth-child(2) { --random-y: 0.3; --random-x: 0.2; animation-delay: 0.2s; left: 20%; top: 50%; }
+.analysis-particles .particle:nth-child(3) { --random-y: 0.7; --random-x: 0.1; animation-delay: 0.3s; left: 30%; top: 70%; }
+.analysis-particles .particle:nth-child(4) { --random-y: 0.4; --random-x: 0.9; animation-delay: 0.4s; left: 40%; top: 20%; }
+.analysis-particles .particle:nth-child(5) { --random-y: 0.2; --random-x: 0.7; animation-delay: 0.5s; left: 50%; top: 40%; }
+.analysis-particles .particle:nth-child(6) { --random-y: 0.5; --random-x: 0.3; animation-delay: 0.6s; left: 60%; top: 60%; }
+.analysis-particles .particle:nth-child(7) { --random-y: 0.8; --random-x: 0.2; animation-delay: 0.7s; left: 70%; top: 80%; }
+.analysis-particles .particle:nth-child(8) { --random-y: 0.6; --random-x: 0.6; animation-delay: 0.8s; left: 80%; top: 30%; }
+.analysis-particles .particle:nth-child(9) { --random-y: 0.3; --random-x: 0.8; animation-delay: 0.9s; left: 90%; top: 50%; }
+.analysis-particles .particle:nth-child(10) { --random-y: 0.1; --random-x: 0.4; animation-delay: 1.0s; left: 15%; top: 25%; }
+.analysis-particles .particle:nth-child(11) { --random-y: 0.7; --random-x: 0.3; animation-delay: 1.1s; left: 25%; top: 55%; }
+.analysis-particles .particle:nth-child(12) { --random-y: 0.5; --random-x: 0.5; animation-delay: 1.2s; left: 35%; top: 75%; }
+.analysis-particles .particle:nth-child(13) { --random-y: 0.2; --random-x: 0.9; animation-delay: 1.3s; left: 45%; top: 15%; }
+.analysis-particles .particle:nth-child(14) { --random-y: 0.6; --random-x: 0.7; animation-delay: 1.4s; left: 55%; top: 35%; }
+.analysis-particles .particle:nth-child(15) { --random-y: 0.9; --random-x: 0.1; animation-delay: 1.5s; left: 65%; top: 65%; }
+.analysis-particles .particle:nth-child(16) { --random-y: 0.4; --random-x: 0.2; animation-delay: 1.6s; left: 75%; top: 85%; }
+.analysis-particles .particle:nth-child(17) { --random-y: 0.1; --random-x: 0.8; animation-delay: 1.7s; left: 85%; top: 25%; }
+.analysis-particles .particle:nth-child(18) { --random-y: 0.5; --random-x: 0.4; animation-delay: 1.8s; left: 95%; top: 45%; }
+.analysis-particles .particle:nth-child(19) { --random-y: 0.8; --random-x: 0.3; animation-delay: 1.9s; left: 12%; top: 15%; }
+.analysis-particles .particle:nth-child(20) { --random-y: 0.3; --random-x: 0.7; animation-delay: 2.0s; left: 22%; top: 35%; }
+.analysis-particles .particle:nth-child(21) { --random-y: 0.6; --random-x: 0.2; animation-delay: 2.1s; left: 32%; top: 55%; }
+.analysis-particles .particle:nth-child(22) { --random-y: 0.9; --random-x: 0.5; animation-delay: 2.2s; left: 42%; top: 75%; }
+.analysis-particles .particle:nth-child(23) { --random-y: 0.4; --random-x: 0.8; animation-delay: 2.3s; left: 52%; top: 25%; }
+.analysis-particles .particle:nth-child(24) { --random-y: 0.2; --random-x: 0.3; animation-delay: 2.4s; left: 62%; top: 45%; }
+.analysis-particles .particle:nth-child(25) { --random-y: 0.7; --random-x: 0.6; animation-delay: 2.5s; left: 72%; top: 65%; }
+.analysis-particles .particle:nth-child(26) { --random-y: 0.5; --random-x: 0.9; animation-delay: 2.6s; left: 82%; top: 85%; }
+.analysis-particles .particle:nth-child(27) { --random-y: 0.1; --random-x: 0.4; animation-delay: 2.7s; left: 92%; top: 15%; }
+.analysis-particles .particle:nth-child(28) { --random-y: 0.8; --random-x: 0.1; animation-delay: 2.8s; left: 18%; top: 35%; }
+.analysis-particles .particle:nth-child(29) { --random-y: 0.3; --random-x: 0.5; animation-delay: 2.9s; left: 28%; top: 55%; }
+.analysis-particles .particle:nth-child(30) { --random-y: 0.6; --random-x: 0.7; animation-delay: 3.0s; left: 38%; top: 75%; }
+
+.typewriter-text {
+  display: inline-block;
+  overflow: hidden;
+  border-right: .15em solid #3b82f6;
+  white-space: nowrap;
+  margin: 0 auto;
+  letter-spacing: .1em;
+  animation: typing 3.5s steps(40, end), blink-caret .75s step-end infinite;
+}
+
+@keyframes typing {
+  from { width: 0 }
+  to { width: 100% }
+}
+
+@keyframes blink-caret {
+  from, to { border-color: transparent }
+  50% { border-color: #3b82f6; }
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 7%;
+    --foreground: 210 40% 98%;
+
+    --card: 0 0% 10%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 0 0% 7%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 180 100% 50%;
+    --primary-foreground: 0 0% 0%;
+
+    --secondary: 173 84% 65%;
+    --secondary-foreground: 0 0% 7%;
+
+    --muted: 0 0% 15%;
+    --muted-foreground: 215 16% 65%;
+
+    --accent: 180 100% 50%;
+    --accent-foreground: 0 0% 0%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 180 100% 50%;
+    --input: 0 0% 15%;
+    --ring: 180 100% 50%;
+
+    --sidebar-background: 0 0% 10%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 180 100% 50%;
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: 180 100% 25%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 180 100% 50%;
+    --sidebar-ring: 180 100% 50%;
+
+    --radius: 0.5rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-dubai antialiased bg-background text-foreground;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-quantico;
+  }
+
+  input, textarea, select, .form-input {
+    @apply border-accent focus:ring-accent focus:border-accent font-dubai;
+  }
+
+  button, .btn {
+    @apply focus:ring-accent font-quantico;
+  }
+
+  p, span, div {
+    @apply font-dubai;
+  }
+}
+
+@layer components {
+  html, body {
+    overflow-x: hidden;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Fix scrolling issues in mobile devices */
+  .dialog-scroll-fix {
+    height: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  
+  /* Fix para diálogos con scrolling */
+  [role="dialog"] {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: manipulation;
+    position: fixed !important;
+    max-height: 95vh !important;
+    margin: auto !important;
+  }
+  
+  /* Asegura que los contenidos anidados dentro del diálogo puedan hacer scroll */
+  [role="dialog"] > div {
+    max-height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  
+  /* Scrollable areas inside dialogs */
+  .dialog-scroll-container {
+    flex: 1;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+    overscroll-behavior: contain !important;
+    position: relative;
+  }
+  
+  /* Forzar scrolling en toda la aplicación - Solución extrema */
+  html, body {
+    overflow-x: hidden;
+    position: relative;
+    width: 100%;
+    height: 100% !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior-y: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  body {
+    overflow-y: auto !important;
+  }
+  
+  /* Estilo para contenedores principales con scroll */
+  .page-scroll-container {
+    min-height: 100vh;
+    height: auto !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 80px;
+    position: relative;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+  }
+  
+  /* Aplicar scroll automáticamente a cada página */
+  main, [role="main"], .main-content, #root > div {
+    min-height: 100vh;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior: contain;
+    position: relative;
+  }
+  
+  /* Forzar scrolling en tablas */
+  .table-scroll-container {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    max-width: 100%;
+    touch-action: pan-x;
+  }
+  
+  /* Safe area para dispositivos móviles */
+  @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .dialog-content-mobile-safe {
+      padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
+    }
+  }
+
+  /* Google Places Autocomplete customization */
+  .react-select__control,
+  .react-select__menu {
+    @apply border-input bg-white text-slate-900 !important;
+  }
+
+  .react-select__input, 
+  .react-select__single-value,
+  .react-select__option {
+    @apply text-slate-900 font-medium !important;
+  }
+
+  .react-select__placeholder {
+    @apply text-slate-500 !important;
+  }
+
+  .react-select__option--is-focused,
+  .react-select__option:hover {
+    @apply bg-primary/10 !important;
+  }
+
+  /* Aumentar la especificidad para asegurar que los estilos sean aplicados */
+  div.react-select__control div.react-select__value-container div.react-select__input-container,
+  div.react-select__control div.react-select__value-container div.react-select__single-value {
+    @apply text-slate-900 !important;
+    color: rgb(15, 23, 42) !important;
+  }
+
+  /* Chat message styles */
+  .chat-message {
+    @apply max-w-[85%] rounded-2xl mb-3 py-3 px-4 break-words border border-accent;
+  }
+
+  .user-message {
+    @apply bg-primary text-primary-foreground rounded-tr-sm ml-auto;
+  }
+
+  .bot-message {
+    @apply bg-card text-foreground rounded-tl-sm;
+  }
+
+  .scrollbar-hide {
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .flex-col-reverse {
+    display: flex;
+    flex-direction: column-reverse;
+    height: 100%;
+  }
+
+  .chat-outer-container {
+    position: relative;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .chat-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    padding-bottom: 100px; /* Ajustado para dar espacio al footer y chat input */
+  }
+
+  .mervin-logo-container {
+  position: relative;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  transition: all 0.3s ease;
+  overflow: hidden;
+  background: rgba(6, 182, 212, 0.1);
 }
 
-.logo-button:hover {
-  transform: scale(1.02);
-}
-
-.logo-image {
-  position: relative;
-  width: 140px;
-  height: 140px;
+.mervin-logo {
+  width: 100%;
+  height: 100%;
   object-fit: contain;
-  z-index: 20;
-  animation: logoGlow 2.5s ease-in-out infinite;
+  z-index: 2;
+  position: relative;
+  filter: drop-shadow(0 0 2px rgba(6, 182, 212, 0.7));
+  transform-origin: center;
+  animation: pulse-subtle 3s infinite ease-in-out;
 }
 
-.logo-text {
+.glow-effect {
   position: absolute;
-  bottom: -60px;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #06b6d4;
-  text-shadow: 0 0 20px rgba(6, 182, 212, 0.8);
-  white-space: nowrap;
-  letter-spacing: 0.1em;
-  z-index: 20;
+  transform: translate(-50%, -50%);
+  width: 130%;
+  height: 130%;
+  background: radial-gradient(
+    circle,
+    rgba(6, 182, 212, 0.3) 0%,
+    rgba(6, 182, 212, 0.2) 35%,
+    rgba(6, 182, 212, 0.1) 60%,
+    transparent 80%
+  );
+  border-radius: 50%;
+  animation: pulse-glow 3s infinite;
+  z-index: 1;
 }
 
-/* =================================
-   FOOTER PROFESIONAL
-   ================================= */
+@keyframes pulse-glow {
+  0% {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 0.4;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0.7;
+  }
+}
 
-.professional-footer {
-  height: 48px;
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-  border-top: 1px solid rgba(6, 182, 212, 0.2);
+@keyframes pulse-subtle {
+  0% {
+    transform: scale(0.95);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(0.95);
+  }
+}
+
+/* Animaciones para los mensajes de Mervin */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(20px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.6s ease-in-out forwards;
+}
+
+.animate-slideInRight {
+  animation: slideInRight 0.4s ease-out forwards;
+}
+
+/* Animaciones adicionales para Mervin */
+@keyframes scan-x {
+  0% { transform: scaleX(0.1); left: 0; opacity: 0.8; }
+  50% { transform: scaleX(1); left: 0; opacity: 0.6; }
+  100% { transform: scaleX(0.1); left: 100%; opacity: 0.8; }
+}
+
+@keyframes scan-y {
+  0% { transform: scaleY(0.1); top: 0; opacity: 0.8; }
+  50% { transform: scaleY(1); top: 0; opacity: 0.6; }
+  100% { transform: scaleY(0.1); top: 100%; opacity: 0.8; }
+}
+
+.animate-scan-x {
+  position: absolute;
+  animation: scan-x 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-scan-y {
+  position: absolute;
+  animation: scan-y 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-spin-slow {
+  animation: spin 3s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Efecto de escritura */
+.typewriter-text {
+  display: inline-block;
+  overflow: hidden;
+  border-right: .15em solid #06b6d4;
+  white-space: pre-wrap;
+  margin: 0;
+  letter-spacing: normal;
+  animation: blink-caret .75s step-end infinite;
+}
+
+@keyframes blink-caret {
+  from, to { border-color: transparent }
+  50% { border-color: #06b6d4; }
+}
+
+@keyframes pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 0.4;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0.8;
+  }
+}
+
+  .messages-container {
+    flex: 1;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    padding-bottom: 16px;
+  }
+
+  .chat-input {
+    position: fixed;
+    bottom: 30px; /* Ajustado para posicionarse justo encima del footer */
+    left: 240px; /* Ancho del sidebar */
+    right: 0;
+    background-color: hsl(var(--background));
+    border-top: 1px solid hsl(var(--border));
+    z-index: 50;
+    padding: 8px;
+    margin: 0;
+    width: auto;
+    max-width: calc(100% - 240px);
+  }
+  
+  @media (max-width: 768px) {
+    .chat-input {
+      left: 0;
+      width: 100%;
+      max-width: 100%;
+    }
+  }
+
+  .template-preview {
+    @apply font-dubai p-8 bg-white text-slate-800 max-h-[400px] overflow-y-auto rounded-lg;
+  }
+
+  .template-preview h1,
+  .template-preview h2 {
+    @apply font-quantico text-slate-900;
+  }
+
+  .template-preview table {
+    @apply border-collapse w-full;
+  }
+
+  .template-preview th,
+  .template-preview td {
+    @apply border border-slate-300 p-2;
+  }
+
+  .template-preview th {
+    @apply bg-slate-100;
+  }
+
+  /* Footer styles */
+  .chat-footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: hsl(var(--background));
+    border-top: 1px solid hsl(var(--border));
+    z-index: 40;
+    padding: 4px 0;
+  }
+
+  .footer-content {
+    max-width: 100%;
+    margin: 0 auto;
+  }
+
+  .footer-gradient {
+    background: linear-gradient(90deg, 
+      rgba(0, 150, 255, 0.12) 0%, 
+      rgba(0, 220, 255, 0.18) 25%, 
+      rgba(0, 255, 255, 0.2) 50%, 
+      rgba(0, 220, 255, 0.18) 75%, 
+      rgba(0, 150, 255, 0.12) 100%);
+    padding: 5px 0;
+    border-top: 1px solid hsla(var(--border), 0.15);
+    width: 100%;
+    backdrop-filter: blur(5px);
+  }
+
+  .footer-content {
+    padding: 0 0.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    font-family: 'Quantico', sans-serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .footer-link {
+    color: hsl(var(--primary));
+    opacity: 0.75;
+    text-decoration: none;
+    transition: all 0.2s ease-in-out;
+    text-shadow: 0 0 8px hsla(var(--primary), 0.3);
+    font-weight: 400;
+  }
+
+  .footer-link:hover {
+    opacity: 1;
+    text-decoration: underline;
+    text-shadow: 0 0 12px hsla(var(--primary), 0.5);
+  }
+
+  .footer-copyright {
+    color: hsl(var(--muted-foreground));
+    font-size: 0.7rem;
+    text-align: center;
+    opacity: 0.85;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 640px) {
+    .footer-content {
+      padding: 0 0.75rem;
+      font-size: 0.7rem;
+    }
+
+    .footer-copyright {
+      font-size: 0.65rem;
+      max-width: 150px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  /* Make sure the chat input is repositioned to accommodate the footer */
+  .chat-input.with-footer {
+    position: fixed;
+    bottom: 28px; /* Adjusted to make room for the footer */
+    left: 240px; /* Ancho del sidebar */
+    right: 0;
+    background-color: hsl(var(--background));
+    border-top: 1px solid hsl(var(--border));
+    z-index: 50;
+    width: auto;
+    max-width: calc(100% - 240px);
+  }
+  
+  @media (max-width: 768px) {
+    .chat-input.with-footer {
+      left: 0;
+      width: 100%;
+      max-width: 100%;
+    }
+  }
+
+  /* Adjust the container padding for the repositioned chat input and footer */
+  .chat-container {
+    height: 100%;
+    overflow-y: auto;
+    padding-bottom: 150px; /* Increased to make room for both input and footer */
+  }
+}
+/* Estilos específicos para Mervin Chat */
+.mervin-chat-input {
+  position: fixed;
+  bottom: 0;
+  left: 224px;
+  right: 0;
+  padding: 1rem;
+  background-color: black;
+  border-top: 1px solid rgba(21, 94, 117, 0.3);
+  box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
+  z-index: 20;
+  max-width: calc(100% - 224px);
+}
+
+@media (max-width: 768px) {
+  .mervin-chat-input {
+    left: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+}
+
+/* Added a button with arc reactor effect */
+/* Estilos para el cuerpo general */
+body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+/* Estilos específicos para la página Home */
+.home-container {
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  z-index: 100;
 }
 
-.footer-content {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  font-size: 0.75rem;
-  color: rgba(6, 182, 212, 0.7);
-}
-
-.footer-link {
-  color: rgba(6, 182, 212, 0.7);
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-.footer-link:hover {
-  color: #06b6d4;
-}
-
-.footer-separator {
-  color: rgba(6, 182, 212, 0.4);
-  font-weight: 300;
-}
-
-/* =================================
-   SCROLLBAR PERSONALIZADA
-   ================================= */
-
-::-webkit-scrollbar {
-  width: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.5);
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(6, 182, 212, 0.3);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(6, 182, 212, 0.5);
-}
-
-/* =================================
-   RESPONSIVE DESIGN
-   ================================= */
-
-@media (max-width: 768px) {
-  .logo-button {
-    width: 200px;
-    height: 200px;
+/* Animación para las partículas flotantes */
+@keyframes floatParticle {
+  0% {
+    transform: translate(0, 0) scale(1);
   }
-  
-  .logo-image {
-    width: 120px;
-    height: 120px;
+  50% {
+    transform: translate(calc(var(--random, 0.5) * 20px - 10px), 
+                          calc(var(--random, 0.5) * 20px - 10px)) 
+                          scale(1.2);
   }
-  
-  .logo-text {
-    font-size: 1.25rem;
-    bottom: -50px;
+  100% {
+    transform: translate(calc(var(--random, 0.5) * -20px + 10px), 
+                          calc(var(--random, 0.5) * -20px + 10px)) 
+                          scale(0.8);
   }
 }
 
-@media (max-width: 480px) {
-  .logo-button {
-    width: 180px;
-    height: 180px;
+/* Animación de rotación lenta */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
   }
-  
-  .logo-image {
-    width: 100px;
-    height: 100px;
+  to {
+    transform: rotate(360deg);
   }
-  
-  .logo-text {
-    font-size: 1.1rem;
-    bottom: -45px;
+}
+
+/* Animación de escaneo vertical */
+@keyframes scan-y {
+  0% {
+    transform: translateY(-150%) translateX(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(150%) translateX(0);
+    opacity: 0;
+  }
+}
+
+/* Animación de escaneo horizontal */
+@keyframes scan-x {
+  0% {
+    transform: translateX(-150%) translateY(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(150%) translateY(0);
+    opacity: 0;
+  }
+}
+
+/* Clases de utilidad para animaciones */
+.animate-spin-slow {
+  animation: spin-slow 12s linear infinite;
+}
+
+.animate-scan-y {
+  animation: scan-y 4s ease-in-out infinite;
+}
+
+.animate-scan-x {
+  animation: scan-x 4.5s ease-in-out infinite;
+  animation-delay: 0.5s;
+}
+
+/* Animación para revelar texto */
+@keyframes text-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Animación para línea debajo del texto */
+@keyframes line-reveal {
+  0% {
+    width: 0;
+    left: 0;
+  }
+  50% {
+    width: 100%;
+    left: 0;
+  }
+  100% {
+    width: 0;
+    left: 100%;
+  }
+}
+
+.animate-text-reveal {
+  animation: text-reveal 1.5s ease-out forwards;
+}
+
+.animate-line-reveal {
+  animation: line-reveal 3s ease-in-out infinite;
+  animation-delay: 0.5s;
+}
+
+/* Animaciones para los puntos del estado "procesando" */
+@keyframes bounce-dot {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-4px); }
+}
+
+.animate-bounce-dot {
+  animation: bounce-dot 1.4s infinite ease-in-out;
+  display: inline-block;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.delay-0 { animation-delay: 0s; }
+.delay-1 { animation-delay: 0.2s; }
+.delay-2 { animation-delay: 0.4s; }
+
+/* Animación para la barra de progreso */
+@keyframes progress-bar {
+  0% { width: 0%; }
+  50% { width: 70%; }
+  70% { width: 77%; }
+  80% { width: 84%; }
+  90% { width: 89%; }
+  95% { width: 93%; }
+  100% { width: 100%; }
+}
+
+.animate-progress-bar {
+  animation: progress-bar 2.5s cubic-bezier(0.1, 0.7, 1.0, 0.1) infinite;
+  width: 0%;
+}
+
+/* Hide scrollbar but maintain functionality - Only for specific elements */
+.hide-scrollbar,
+.custom-scroll,
+.overflow-auto, .overflow-y-auto, .overflow-x-auto,
+.overflow-scroll, .overflow-y-scroll, .overflow-x-scroll {
+  -ms-overflow-style: none !important;  /* IE and Edge */
+  -webkit-overflow-scrolling: touch !important; /* iOS scroll */
+  overscroll-behavior: contain !important; /* Prevent scroll chain */
+  scrollbar-width: none !important;     /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar,
+.custom-scroll::-webkit-scrollbar,
+.overflow-auto::-webkit-scrollbar, .overflow-y-auto::-webkit-scrollbar, .overflow-x-auto::-webkit-scrollbar,
+.overflow-scroll::-webkit-scrollbar, .overflow-y-scroll::-webkit-scrollbar, .overflow-x-scroll::-webkit-scrollbar {
+  display: none !important;             /* Chrome, Safari, Opera */
+  width: 0 !important;                  /* Ancho */
+  height: 0 !important;                 /* Altura para scrollbars horizontales */
+  background-color: transparent !important;   /* Opcional: hace que el fondo sea transparente */
+}
+
+.arc-reactor-button {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background-color: #29abe2;
+  box-shadow: 0 0 20px rgba(0, 150, 255, 0.5);
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.2s ease-in-out;
+}
+
+.arc-reactor-button:hover {
+  transform: scale(1.05);
+}
+
+.arc-reactor-button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+  animation: pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+.arc-reactor-button i {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 3rem;
+  color: #ffffff;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+}
+
+.arc-reactor-button span {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-family: 'Quantico', sans-serif;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
+}
+
+/* Efectos de estilo Iron Man / Stark Industries */
+.stark-card-transitioning {
+  transform: scale(1.03);
+  box-shadow: 0 0 30px rgba(0, 255, 255, 0.4), 0 0 15px rgba(0, 255, 255, 0.2) inset;
+  border-color: rgba(0, 255, 255, 0.6) !important;
+}
+
+.stark-scan-effect::before,
+.stark-scan-effect::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 255, 255, 0.05) 40%,
+    rgba(0, 255, 255, 0.1) 50%,
+    rgba(0, 255, 255, 0.05) 60%,
+    transparent 100%
+  );
+  z-index: 10;
+  animation: stark-scan 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.stark-scan-effect::after {
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(0, 255, 255, 0.05) 40%,
+    rgba(0, 255, 255, 0.1) 50%,
+    rgba(0, 255, 255, 0.05) 60%,
+    transparent 100%
+  );
+  animation: stark-scan-horizontal 1.5s cubic-bezier(0.4, 0, 0.2, 1) 0.3s forwards;
+}
+
+@keyframes stark-scan {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes stark-scan-horizontal {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.stark-scan-line {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.8), transparent);
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
+.stark-scan-line.scanning {
+  animation: stark-line-scan 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes stark-line-scan {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(400%);
+    opacity: 0;
+  }
+}
+
+.stark-text-glow {
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+  position: relative;
+}
+
+.stark-icon-pulse {
+  animation: stark-icon-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes stark-icon-pulse {
+  0%, 100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 4px rgba(0, 255, 255, 0.8));
+  }
+  50% {
+    opacity: 0.7;
+    filter: drop-shadow(0 0 2px rgba(0, 255, 255, 0.4));
+  }
+}
+
+.stark-holo-circle {
+  animation: stark-circle-pulse 4s infinite;
+}
+
+@keyframes stark-circle-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.3;
+  }
+}
+
+@keyframes transformerGlow {
+  0% {
+    border-color: rgba(202, 138, 4, 0.3);
+    box-shadow: 0 0 5px rgba(234, 179, 8, 0.3);
+  }
+  50% {
+    border-color: rgba(234, 179, 8, 0.5);
+    box-shadow: 0 0 10px rgba(234, 179, 8, 0.5), 0 0 15px rgba(234, 88, 12, 0.3);
+  }
+  100% {
+    border-color: rgba(202, 138, 4, 0.3);
+    box-shadow: 0 0 5px rgba(234, 179, 8, 0.3);
   }
 }

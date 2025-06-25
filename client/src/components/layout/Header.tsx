@@ -38,7 +38,7 @@ export default function Header({
   }
 
   return (
-    <header className="h-20 w-full flex items-center bg-card/60 backdrop-blur-md border-b border-border/30 sticky top-0 z-40">
+    <header className="h-20 w-full flex items-center bg-card border-b border-border sticky top-0 z-50">
       {/* Logo centrado */}
       <div className="flex-1 flex flex-col items-center justify-center">
         <Link href="/" className="flex flex-col items-center">
