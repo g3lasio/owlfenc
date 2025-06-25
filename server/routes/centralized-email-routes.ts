@@ -24,11 +24,20 @@ router.post('/send-estimate', async (req, res) => {
       contractorCompany,
       estimateData,
       customMessage,
-      sendCopy = true
+      sendCopy = false
     } = req.body;
+
+    console.log('📧 [CENTRALIZED-EMAIL] Raw body:', JSON.stringify(req.body, null, 2));
 
     // Validar campos requeridos
     if (!clientEmail || !clientName || !contractorEmail || !contractorName || !estimateData) {
+      console.error('❌ [CENTRALIZED-EMAIL] Campos faltantes:', {
+        clientEmail: !!clientEmail,
+        clientName: !!clientName,
+        contractorEmail: !!contractorEmail,
+        contractorName: !!contractorName,
+        estimateData: !!estimateData
+      });
       return res.status(400).json({
         success: false,
         message: 'Faltan campos requeridos: clientEmail, clientName, contractorEmail, contractorName, estimateData'
@@ -36,7 +45,9 @@ router.post('/send-estimate', async (req, res) => {
     }
 
     // Usar el servicio completo de email de estimados con todos los datos
+    console.log('📧 [CENTRALIZED-EMAIL] Generando HTML del estimado...');
     const estimateHtml = EstimateEmailService.generateEstimateHTML(estimateData);
+    console.log('📧 [CENTRALIZED-EMAIL] HTML generado, longitud:', estimateHtml?.length || 0);
 
     // Registrar estimado en el sistema de seguimiento para que funcionen los botones de aprobación
     try {
