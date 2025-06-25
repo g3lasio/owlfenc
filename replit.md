@@ -291,6 +291,15 @@ Changelog:
   * Enhanced contract saving mechanism to preserve complete form states including payment terms, timelines, and materials
   * Fixed contract editing workflow to restore all data fields when users return to edit contracts
   * System now maintains data integrity across save/edit cycles ensuring no information is lost
+- June 25, 2025. Implemented comprehensive real-time auto-save system for contract generation:
+  * Added real-time auto-save functionality that triggers 2 seconds after any field modification
+  * Connected auto-save to all editable fields: dates, addresses, percentages, costs, payment terms, and timeline data
+  * Implemented visual status indicator showing "Saving changes..." and "Changes saved automatically" with timestamps
+  * Created markDirtyAndScheduleAutoSave function to intelligently manage save timing and prevent excessive requests
+  * Enhanced Firebase storage integration to preserve draft contracts with auto-save metadata
+  * Added auto-save state management with isDirty tracking and cleanup on component unmount
+  * Users can now make any adjustments (labor dates, client address corrections, percentage changes) with automatic preservation
+  * System ensures no data loss during contract editing sessions with seamless background saving
 - June 24, 2025. Enhanced sidebar with auto-close functionality:
   * Implemented automatic sidebar closing when clicking on navigation menu items
   * Added handleMenuItemClick function to close expanded sidebar after menu selection

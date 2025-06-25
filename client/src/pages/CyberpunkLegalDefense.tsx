@@ -2504,7 +2504,10 @@ export default function CyberpunkLegalDefense() {
                         <input
                           type="text"
                           value={estimatedDuration}
-                          onChange={(e) => setEstimatedDuration(e.target.value)}
+                          onChange={(e) => {
+                            setEstimatedDuration(e.target.value);
+                            markDirtyAndScheduleAutoSave();
+                          }}
                           placeholder="e.g., 5-7 business days"
                           className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-cyan-400 focus:outline-none"
                         />
