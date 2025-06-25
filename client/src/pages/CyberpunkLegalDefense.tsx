@@ -943,7 +943,7 @@ export default function CyberpunkLegalDefense() {
           location: extractedData.projectDetails?.location || extractedData.clientInfo?.address || 'Project Location'
         },
         financials: {
-          total: extractedData.financials?.total || 0,
+          total: totalCost || extractedData.financials?.total || 0,
           subtotal: extractedData.financials?.subtotal || 0,
           tax: extractedData.financials?.tax || 0
         },

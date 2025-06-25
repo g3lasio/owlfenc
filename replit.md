@@ -308,6 +308,12 @@ Changelog:
   * Added proper authentication checks that return 401/403 errors for invalid access attempts
   * System now ensures complete data isolation - users can only access their own contracts and projects
   * Multi-tenant security verified - no risk of contractors viewing other contractors' sensitive data
+- June 25, 2025. Fixed critical Payment Terms cost propagation issue:
+  * Identified that Payment Terms card showed updated $18,000 but PDF generation used old $4,744 amount
+  * Root cause: PDF generation was using extractedData.financials?.total instead of updated totalCost state
+  * Fixed financials.total mapping in contract generation to prioritize totalCost over extractedData values
+  * Payment Terms changes now correctly flow to PDF generation without breaking existing functionality
+  * Contract PDFs now display accurate costs matching user-modified Payment Terms card values
 - June 24, 2025. Enhanced sidebar with auto-close functionality:
   * Implemented automatic sidebar closing when clicking on navigation menu items
   * Added handleMenuItemClick function to close expanded sidebar after menu selection
