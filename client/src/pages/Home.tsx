@@ -45,8 +45,6 @@ export default function Home() {
           justifyContent: 'center'
         }}>
           
-
-          
           {/* Imagen del logo con pulsaciones */}
           <img 
             src="https://i.postimg.cc/FK6hvMbf/logo-mervin.png" 
