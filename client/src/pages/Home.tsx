@@ -25,10 +25,12 @@ export default function Home() {
 
   return (
     <div className="h-screen bg-slate-900 text-white overflow-hidden relative">
-      <div className="relative z-20 flex flex-col items-center justify-center h-[calc(100vh-160px)] px-4 py-8 mt-20">
       <Link href="/mervin">
         <button style={{ 
-          position: 'relative',
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
           borderRadius: '50%',
           border: 'none',
           background: 'transparent',
@@ -69,7 +71,6 @@ export default function Home() {
           </div>
         </button>
       </Link>
-      </div>
     </div>
   );
 }
