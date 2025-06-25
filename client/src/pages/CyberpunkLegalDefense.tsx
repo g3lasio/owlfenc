@@ -303,7 +303,15 @@ export default function CyberpunkLegalDefense() {
             licenseClassification,
             insuranceCompany,
             policyNumber,
-            coverageAmount
+            coverageAmount,
+            expirationDate,
+            startDate,
+            completionDate,
+            estimatedDuration,
+            permitResponsibility,
+            permitNumbers,
+            workmanshipWarranty,
+            materialsWarranty
           }
         },
         lastModified: Date.now(),
@@ -325,7 +333,7 @@ export default function CyberpunkLegalDefense() {
     } catch (error) {
       console.error('❌ Error en autoguardado:', error);
     }
-  }, [autoSaveEnabled, user?.uid, extractedData, totalCost, intelligentClauses, selectedClauses, paymentTerms, hasLicense, hasInsurance, permitsRequired, licenseClassification, insuranceCompany, policyNumber, coverageAmount, profile, currentContractId]);
+  }, [autoSaveEnabled, user?.uid, extractedData, totalCost, intelligentClauses, selectedClauses, paymentTerms, hasLicense, hasInsurance, permitsRequired, licenseClassification, insuranceCompany, policyNumber, coverageAmount, expirationDate, startDate, completionDate, estimatedDuration, permitResponsibility, permitNumbers, workmanshipWarranty, materialsWarranty, profile, currentContractId]);
 
   // Función para marcar como sucio y programar autoguardado
   const markDirtyAndScheduleAutoSave = useCallback(() => {
@@ -2505,19 +2513,7 @@ export default function CyberpunkLegalDefense() {
                           className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-cyan-400 focus:outline-none"
                         />
                       </div>
-                      <div>
-                        <label className="text-gray-400 text-sm">Estimated Duration</label>
-                        <input
-                          type="text"
-                          value={estimatedDuration}
-                          onChange={(e) => {
-                            setEstimatedDuration(e.target.value);
-                            markDirtyAndScheduleAutoSave();
-                          }}
-                          placeholder="e.g., 5-7 business days"
-                          className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-cyan-400 focus:outline-none"
-                        />
-                      </div>
+
                     </div>
                   </div>
 

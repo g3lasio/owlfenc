@@ -314,6 +314,12 @@ Changelog:
   * Fixed financials.total mapping in contract generation to prioritize totalCost over extractedData values
   * Payment Terms changes now correctly flow to PDF generation without breaking existing functionality
   * Contract PDFs now display accurate costs matching user-modified Payment Terms card values
+- June 25, 2025. Enhanced auto-save system with complete field coverage:
+  * Added missing fields to auto-save: expirationDate, startDate, completionDate, estimatedDuration
+  * Included permit and warranty fields: permitResponsibility, permitNumbers, workmanshipWarranty, materialsWarranty
+  * Updated performAutoSave callback dependencies to capture all timeline and project cost changes
+  * Removed unnecessary "Estimated Duration" div component as requested (dates are sufficient)
+  * Auto-save now preserves all project timeline, cost modifications, and form field changes
 - June 24, 2025. Enhanced sidebar with auto-close functionality:
   * Implemented automatic sidebar closing when clicking on navigation menu items
   * Added handleMenuItemClick function to close expanded sidebar after menu selection
