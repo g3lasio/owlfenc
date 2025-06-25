@@ -29,16 +29,17 @@ export default function Header({
     toggleMobileMenu();
   };
 
-  // Verificar si estamos en la página de Materials para evitar duplicación de header
+  // Verificar si estamos en páginas que no necesitan header
+  const isHomePage = path === '/';
   const isMaterialsPage = path === '/materials';
 
-  // Si estamos en la página de materiales, no mostrar el header duplicado
-  if (isMaterialsPage) {
+  // Si estamos en la página Home o de materiales, no mostrar el header
+  if (isHomePage || isMaterialsPage) {
     return null;
   }
 
   return (
-    <header className="h-20 w-full flex items-center bg-card border-b border-border sticky top-0 z-50">
+    <header className="h-20 w-full flex items-center bg-transparent border-b border-border/20 sticky top-0 z-50">
       {/* Logo centrado */}
       <div className="flex-1 flex flex-col items-center justify-center">
         <Link href="/" className="flex flex-col items-center">

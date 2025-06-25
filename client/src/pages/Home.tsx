@@ -24,11 +24,11 @@ export default function Home() {
   const mervinBlue = "#29ABE2"; // Color cyan del logo de Mervin
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white overflow-hidden">
+    <div className="fixed inset-0 bg-slate-900 text-white overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 z-0">
       </div>
       
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-8">
+      <div className="relative z-10 flex flex-col items-center justify-center h-full w-full px-4">
       <Link href="/mervin">
         <button style={{ 
           position: 'relative',
