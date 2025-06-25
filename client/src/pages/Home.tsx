@@ -26,7 +26,6 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-slate-900 text-white overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 z-0">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-cyan-900/20 via-slate-900/50 to-slate-900 z-0"></div>
       </div>
       
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-8">
@@ -42,8 +41,7 @@ export default function Home() {
           height: '200px',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 99998
+          justifyContent: 'center'
         }}>
           
           {/* Imagen del logo con pulsaciones */}
@@ -55,13 +53,13 @@ export default function Home() {
               width: '120px',
               height: '120px',
               objectFit: 'contain',
-              zIndex: 99999,
+              zIndex: 10,
               animation: 'logoGlow 2.5s ease-in-out infinite'
             }}
           />
           
           {/* Texto de Mervin AI con efecto de aparición */}
-          <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 text-lg md:text-xl font-quantico whitespace-nowrap tracking-wider z-[99997]">
+          <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 text-lg md:text-xl font-quantico whitespace-nowrap tracking-wider z-10">
             <div className="relative ">
               <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent drop-shadow-md animate-text-reveal inline-block">
                 Mervin AI
