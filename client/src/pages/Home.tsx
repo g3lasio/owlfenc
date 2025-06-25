@@ -24,11 +24,11 @@ export default function Home() {
   const mervinBlue = "#29ABE2"; // Color cyan del logo de Mervin
 
   return (
-    <div className="fixed inset-0 bg-slate-900 text-white overflow-hidden">
+    <div className="h-screen bg-slate-900 text-white overflow-hidden relative">
       <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 z-0">
       </div>
       
-      <div className="relative z-10 flex flex-col items-center justify-center h-full w-full px-4">
+      <div className="relative z-20 flex flex-col items-center justify-center h-[calc(100vh-160px)] px-4 py-8 mt-20">
       <Link href="/mervin">
         <button style={{ 
           position: 'relative',
@@ -53,13 +53,13 @@ export default function Home() {
               width: '120px',
               height: '120px',
               objectFit: 'contain',
-              zIndex: 10,
+              zIndex: 100,
               animation: 'logoGlow 2.5s ease-in-out infinite'
             }}
           />
           
           {/* Texto de Mervin AI con efecto de aparición */}
-          <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 text-lg md:text-xl font-quantico whitespace-nowrap tracking-wider z-10">
+          <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 text-lg md:text-xl font-quantico whitespace-nowrap tracking-wider z-100">
             <div className="relative ">
               <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent drop-shadow-md animate-text-reveal inline-block">
                 Mervin AI

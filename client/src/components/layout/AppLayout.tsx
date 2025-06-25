@@ -106,8 +106,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
       >
         <Header toggleMobileMenu={toggleMobileMenu} isMobileMenuOpen={isMobileMenuOpen} />
         
-        {/* Área de contenido principal sin scroll forzado */}
-        <main className="flex-1 overflow-hidden">
+        {/* Área de contenido principal con scroll controlado */}
+        <main className="flex-1 overflow-y-auto scrollable-content">
           <Switch>
             <Route path="/settings/profile" component={Profile} />
             <Route path="*">{children}</Route>
