@@ -2486,59 +2486,45 @@ export default function CyberpunkLegalDefense() {
                           </div>
                         )}
 
-                        {/* Recommended Clauses */}
+                        {/* Recommended Clauses - Simplified */}
                         {intelligentClauses.filter(clause => clause.category === 'RECOMMENDED').length > 0 && (
                           <div className="bg-cyan-900/20 border border-cyan-400/30 rounded p-4">
                             <h4 className="text-cyan-400 font-bold mb-3 flex items-center">
                               <Shield className="h-4 w-4 mr-2" />
                               RECOMENDADAS POR IA LEGAL
                             </h4>
-                            <div className="space-y-3">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               {intelligentClauses
                                 .filter(clause => clause.category === 'RECOMMENDED')
                                 .map((clause) => (
-                                  <div key={clause.id} className="bg-cyan-800/20 border border-cyan-400/20 rounded p-3">
-                                    <div className="flex items-start space-x-3">
-                                      <input 
-                                        type="checkbox" 
-                                        checked={selectedClauses.has(clause.id)}
-                                        onChange={(e) => {
-                                          const newSelected = new Set(selectedClauses);
-                                          if (e.target.checked) {
-                                            newSelected.add(clause.id);
-                                          } else {
-                                            newSelected.delete(clause.id);
-                                          }
-                                          setSelectedClauses(newSelected);
-                                        }}
-                                        className="text-cyan-400 mt-1" 
-                                      />
-                                      <div className="flex-1">
-                                        <div className="text-cyan-400 font-semibold text-sm mb-1">
-                                          {clause.title}
-                                        </div>
-                                        <div className="text-gray-300 text-xs mb-2 leading-relaxed">
-                                          {clause.clause.length > 200 
-                                            ? `${clause.clause.substring(0, 200)}...` 
-                                            : clause.clause
-                                          }
-                                        </div>
-                                        <div className="flex items-center space-x-4 text-xs">
-                                          <Badge 
-                                            variant={clause.riskLevel === 'HIGH' ? 'destructive' : 
-                                                   clause.riskLevel === 'MEDIUM' ? 'default' : 'secondary'} 
-                                            className="text-xs"
-                                          >
-                                            {clause.riskLevel} RISK
-                                          </Badge>
-                                          <span className="text-cyan-400">RECOMENDADA</span>
-                                        </div>
-                                        <div className="text-gray-400 text-xs mt-2">
-                                          <strong>Justificación:</strong> {clause.justification}
-                                        </div>
-                                        <div className="text-gray-500 text-xs mt-1">
-                                          <strong>Aplicabilidad:</strong> {clause.applicability}
-                                        </div>
+                                  <div key={clause.id} className="flex items-center space-x-3 p-2 bg-cyan-800/10 border border-cyan-400/20 rounded hover:bg-cyan-800/20 transition-colors">
+                                    <input 
+                                      type="checkbox" 
+                                      checked={selectedClauses.has(clause.id)}
+                                      onChange={(e) => {
+                                        const newSelected = new Set(selectedClauses);
+                                        if (e.target.checked) {
+                                          newSelected.add(clause.id);
+                                        } else {
+                                          newSelected.delete(clause.id);
+                                        }
+                                        setSelectedClauses(newSelected);
+                                      }}
+                                      className="w-4 h-4 text-cyan-400 bg-gray-800 border-cyan-400/50 rounded focus:ring-cyan-400 focus:ring-2" 
+                                    />
+                                    <div className="flex-1">
+                                      <div className="text-cyan-300 font-medium text-sm">
+                                        {clause.title}
+                                      </div>
+                                      <div className="flex items-center space-x-2 mt-1">
+                                        <Badge 
+                                          variant={clause.riskLevel === 'HIGH' ? 'destructive' : 
+                                                 clause.riskLevel === 'MEDIUM' ? 'default' : 'secondary'} 
+                                          className="text-xs px-2 py-0"
+                                        >
+                                          {clause.riskLevel}
+                                        </Badge>
+                                        <span className="text-cyan-400 text-xs">RECOMENDADA</span>
                                       </div>
                                     </div>
                                   </div>
