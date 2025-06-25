@@ -7,6 +7,7 @@ import express from 'express';
 import { resendService } from '../services/resendService';
 import { EstimateEmailService } from '../services/estimateEmailService';
 import { simpleTracker } from '../services/SimpleEstimateTracker';
+import { nodemailerService } from '../services/nodemailerService';
 
 const router = express.Router();
 
