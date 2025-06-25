@@ -57,6 +57,16 @@ router.post('/send-estimate', async (req, res) => {
       console.log('⚠️ [CENTRALIZED-EMAIL] Error registrando estimado para seguimiento, continuando...', trackingError);
     }
 
+    console.log('📧 [CENTRALIZED-EMAIL] Datos recibidos:', {
+      clientEmail,
+      clientName,
+      contractorEmail,
+      contractorName,
+      contractorCompany,
+      sendCopy,
+      estimateNumber: estimateData.estimateNumber
+    });
+
     // Enviar email usando sistema centralizado
     const result = await resendService.sendCentralizedEmail({
       toEmail: clientEmail,
@@ -69,6 +79,7 @@ router.post('/send-estimate', async (req, res) => {
       sendCopyToContractor: sendCopy
     });
 
+    console.log('📧 [CENTRALIZED-EMAIL] Resultado del envío:', result);
     res.json(result);
 
   } catch (error) {

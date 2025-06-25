@@ -2646,7 +2646,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           contractorCompany: profile.company,
           estimateData: estimateData,
           customMessage: emailData.message,
-          sendCopy: true,
+          sendCopy: emailData.sendCopy, // ← CORREGIDO: usar el valor real del checkbox
         }),
       });
 
