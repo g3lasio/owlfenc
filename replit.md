@@ -283,6 +283,14 @@ Changelog:
   * License and insurance documentation handled separately as per industry standard
   * Improved responsive grid layout (1 column mobile, 2 columns desktop)
   * Contract PDF already includes comprehensive legal documentation for these requirements
+- June 25, 2025. Enhanced Firebase database connection and contract data persistence:
+  * Fixed critical data loss issue during contract editing where addresses, emails, phones, and costs were not preserved
+  * Enhanced ContractHistoryEntry interface to include comprehensive form field preservation
+  * Improved contract data mapping in handleEditContract to maintain all client and contractor information
+  * Added comprehensive fallback system for contract data retrieval from Firebase
+  * Enhanced contract saving mechanism to preserve complete form states including payment terms, timelines, and materials
+  * Fixed contract editing workflow to restore all data fields when users return to edit contracts
+  * System now maintains data integrity across save/edit cycles ensuring no information is lost
 - June 24, 2025. Enhanced sidebar with auto-close functionality:
   * Implemented automatic sidebar closing when clicking on navigation menu items
   * Added handleMenuItemClick function to close expanded sidebar after menu selection

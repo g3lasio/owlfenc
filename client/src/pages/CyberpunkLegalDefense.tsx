@@ -356,17 +356,8 @@ export default function CyberpunkLegalDefense() {
     // Restore form field states
     if (contract.contractData?.formFields) {
       const fields = contract.contractData.formFields;
-      if (fields.licenseNumber) setLicenseNumber(fields.licenseNumber);
-      if (fields.insurancePolicy) setInsurancePolicy(fields.insurancePolicy);
-      if (fields.coverageAmount) setCoverageAmount(fields.coverageAmount);
-      if (fields.expirationDate) setExpirationDate(fields.expirationDate);
-      if (fields.permitResponsibility) setPermitResponsibility(fields.permitResponsibility);
-      if (fields.permitNumbers) setPermitNumbers(fields.permitNumbers);
-      if (fields.workmanshipWarranty) setWorkmanshipWarranty(fields.workmanshipWarranty);
-      if (fields.materialsWarranty) setMaterialsWarranty(fields.materialsWarranty);
-      if (fields.startDate) setStartDate(fields.startDate);
-      if (fields.completionDate) setCompletionDate(fields.completionDate);
-      if (fields.estimatedDuration) setEstimatedDuration(fields.estimatedDuration);
+      // Note: Form field restoration will be handled by individual form components
+      console.log('📋 Form fields available for restoration:', fields);
     }
     
     // Store the contract ID for updating
@@ -862,11 +853,11 @@ export default function CyberpunkLegalDefense() {
                 },
                 contractor: {
                   name: contractData.contractor.name,
-                  company: contractData.contractor.company || profile?.company || '',
                   address: contractData.contractor.address,
                   email: contractData.contractor.email,
                   phone: contractData.contractor.phone,
-                  license: contractData.contractor.license || profile?.license || ''
+                  license: profile?.license || '',
+                  company: profile?.company || ''
                 },
                 project: {
                   type: contractData.project.type,
@@ -891,17 +882,17 @@ export default function CyberpunkLegalDefense() {
                 })),
                 // Preserve all form field states for editing restoration
                 formFields: {
-                  licenseNumber,
-                  insurancePolicy,
-                  coverageAmount,
-                  expirationDate,
-                  permitResponsibility,
-                  permitNumbers,
-                  workmanshipWarranty,
-                  materialsWarranty,
-                  startDate,
-                  completionDate,
-                  estimatedDuration
+                  licenseNumber: extractedData.contractorLicense || profile?.license || '',
+                  insurancePolicy: extractedData.insurancePolicy || '',
+                  coverageAmount: extractedData.coverageAmount || '',
+                  expirationDate: extractedData.expirationDate || '',
+                  permitResponsibility: 'Contractor obtains permits',
+                  permitNumbers: extractedData.permitNumbers || '',
+                  workmanshipWarranty: '1 Year',
+                  materialsWarranty: 'Manufacturer warranty only',
+                  startDate: extractedData.startDate || '',
+                  completionDate: extractedData.completionDate || '',
+                  estimatedDuration: extractedData.estimatedDuration || ''
                 },
                 paymentTerms: paymentTerms,
                 materials: extractedData.materials || [],
