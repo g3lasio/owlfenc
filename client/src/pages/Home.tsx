@@ -41,7 +41,7 @@ export default function Home() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 10
+          zIndex: 9999
         }}>
           
           {/* Imagen del logo con pulsaciones */}
@@ -53,7 +53,7 @@ export default function Home() {
               width: '120px',
               height: '120px',
               objectFit: 'contain',
-              zIndex: 20,
+              zIndex: 10000,
               animation: 'logoGlow 2.5s ease-in-out infinite'
             }}
           />
@@ -61,7 +61,7 @@ export default function Home() {
           {/* Texto de Mervin AI con efecto de aparición */}
           <div 
             className="absolute -bottom-12 left-1/2 -translate-x-1/2 text-lg md:text-xl font-quantico whitespace-nowrap tracking-wider"
-            style={{ zIndex: 20, color: '#06B6D4' }}
+            style={{ zIndex: 10000, color: '#06B6D4', textShadow: '0 0 10px #06B6D4' }}
           >
             <div className="relative">
               <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent drop-shadow-md animate-text-reveal inline-block">
