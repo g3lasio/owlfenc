@@ -1843,6 +1843,42 @@ export default function CyberpunkLegalDefense() {
           </div>
         </div>
 
+        {/* Indicador de Autoguardado */}
+        {autoSaveEnabled && currentStep >= 2 && (
+          <div className="max-w-2xl mx-auto px-4 mb-4">
+            <div className={`border rounded-lg p-3 transition-all duration-300 ${
+              isDirty 
+                ? 'bg-yellow-900/20 border-yellow-400/30' 
+                : 'bg-green-900/20 border-green-400/30'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  {isDirty ? (
+                    <>
+                      <Clock className="h-4 w-4 mr-2 text-yellow-400 animate-pulse" />
+                      <span className="text-yellow-400 font-medium text-sm">
+                        Guardando cambios automáticamente...
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="h-4 w-4 mr-2 text-green-400" />
+                      <span className="text-green-400 font-medium text-sm">
+                        {lastSaved ? 'Cambios guardados automáticamente' : 'Autoguardado activado'}
+                      </span>
+                    </>
+                  )}
+                </div>
+                {lastSaved && (
+                  <span className="text-gray-400 text-xs">
+                    {lastSaved.toLocaleTimeString()}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Current Step Card */}
         <div className="max-w-2xl mx-auto px-4">
           {currentPhase === 'data-command' && (
@@ -2381,7 +2417,7 @@ export default function CyberpunkLegalDefense() {
                             <input
                               type="number"
                               value={totalCost || extractedData.financials?.total || 0}
-                              onChange={(e) => setTotalCost(parseFloat(e.target.value) || 0)}
+                              onChange={(e) => updateTotalCost(parseFloat(e.target.value) || 0)}
                               className="bg-transparent text-green-400 font-mono text-xl sm:text-2xl font-bold text-center border-none outline-none focus:ring-2 focus:ring-green-400/50 rounded px-2 w-32 sm:w-auto max-w-full"
                               placeholder="0.00"
                               step="0.01"
@@ -2444,7 +2480,10 @@ export default function CyberpunkLegalDefense() {
                         <input
                           type="date"
                           value={startDate}
-                          onChange={(e) => setStartDate(e.target.value)}
+                          onChange={(e) => {
+                            setStartDate(e.target.value);
+                            markDirtyAndScheduleAutoSave();
+                          }}
                           className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-cyan-400 focus:outline-none"
                         />
                       </div>
@@ -2453,7 +2492,10 @@ export default function CyberpunkLegalDefense() {
                         <input
                           type="date"
                           value={completionDate}
-                          onChange={(e) => setCompletionDate(e.target.value)}
+                          onChange={(e) => {
+                            setCompletionDate(e.target.value);
+                            markDirtyAndScheduleAutoSave();
+                          }}
                           className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-cyan-400 focus:outline-none"
                         />
                       </div>
