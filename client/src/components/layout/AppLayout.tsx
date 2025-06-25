@@ -49,18 +49,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
                     location === '/reset-password' || 
                     location === '/login/email-link-callback';
 
-  // Verificar si es la página Home - debe mostrarse sin Header ni Sidebar
-  const isHomePage = location === '/';
-
-  // Si es la página Home, mostrar solo el contenido sin layout
-  if (isHomePage) {
-    return (
-      <div className="min-h-screen">
-        {children}
-      </div>
-    );
-  }
-
   // Si es una página de autenticación, mostrar solo el contenido sin sidebar ni header
   if (isAuthPage) {
     return (

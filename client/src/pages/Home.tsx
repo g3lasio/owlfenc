@@ -25,8 +25,8 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-slate-900 text-white overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-cyan-900/20 via-slate-900/50 to-slate-900"></div>
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 z-0">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-cyan-900/20 via-slate-900/50 to-slate-900 z-0"></div>
       </div>
       
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-8">
@@ -54,7 +54,7 @@ export default function Home() {
               width: '120px',
               height: '120px',
               objectFit: 'contain',
-              zIndex: 10,
+              zIndex: 100,
               animation: 'logoGlow 2.5s ease-in-out infinite'
             }}
           />
