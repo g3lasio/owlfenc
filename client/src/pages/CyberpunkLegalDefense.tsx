@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -241,13 +241,123 @@ export default function CyberpunkLegalDefense() {
   // Contract history state
   const [currentContractId, setCurrentContractId] = useState<string | null>(null);
   const [pdfGenerationTime, setPdfGenerationTime] = useState<number>(0);
+  
+  // Estados para autoguardado en tiempo real
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState<boolean>(true);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [isDirty, setIsDirty] = useState<boolean>(false);
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Funciones para manejar términos de pago
+  // Sistema de autoguardado en tiempo real
+  const performAutoSave = useCallback(async () => {
+    if (!autoSaveEnabled || !user?.uid || !extractedData) return;
+    
+    try {
+      console.log('💾 Autoguardando cambios del contrato...');
+      
+      const contractData = {
+        userId: user.uid,
+        contractId: currentContractId || `AUTOSAVE_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        clientName: extractedData.clientInfo?.name || extractedData.clientName || 'Cliente',
+        projectType: extractedData.projectDetails?.type || extractedData.projectType || 'Proyecto',
+        status: 'draft' as const,
+        contractData: {
+          client: {
+            name: extractedData.clientInfo?.name || extractedData.clientName || '',
+            address: extractedData.clientInfo?.address || extractedData.clientAddress || '',
+            email: extractedData.clientInfo?.email || extractedData.clientEmail || '',
+            phone: extractedData.clientInfo?.phone || extractedData.clientPhone || ''
+          },
+          contractor: {
+            name: extractedData.contractorName || profile?.ownerName || '',
+            address: extractedData.contractorAddress || '',
+            email: extractedData.contractorEmail || profile?.email || '',
+            phone: extractedData.contractorPhone || profile?.phone || '',
+            license: extractedData.contractorLicense || profile?.license || '',
+            company: extractedData.contractorCompany || profile?.company || ''
+          },
+          project: {
+            type: extractedData.projectDetails?.type || extractedData.projectType || '',
+            description: extractedData.projectDetails?.description || extractedData.projectDescription || '',
+            location: extractedData.projectDetails?.location || extractedData.projectLocation || '',
+            scope: extractedData.projectDetails?.scope || '',
+            specifications: extractedData.projectDetails?.specifications || ''
+          },
+          financials: {
+            total: totalCost || extractedData.totalAmount || 0,
+            subtotal: extractedData.financials?.subtotal || 0,
+            tax: extractedData.financials?.tax || 0,
+            materials: extractedData.financials?.materials || 0,
+            labor: extractedData.financials?.labor || 0
+          },
+          protections: intelligentClauses.filter(clause => selectedClauses.has(clause.id)).map(clause => ({
+            id: clause.id,
+            category: clause.category,
+            clause: clause.title || ''
+          })),
+          paymentTerms: paymentTerms,
+          formFields: {
+            hasLicense,
+            hasInsurance,
+            permitsRequired,
+            licenseClassification,
+            insuranceCompany,
+            policyNumber,
+            coverageAmount
+          }
+        },
+        lastModified: Date.now(),
+        autoSaved: true
+      };
+
+      // Guardar en Firebase
+      await contractHistoryService.saveContract(contractData);
+      
+      if (!currentContractId) {
+        setCurrentContractId(contractData.contractId);
+      }
+      
+      setLastSaved(new Date());
+      setIsDirty(false);
+      
+      console.log('✅ Autoguardado completado exitosamente');
+      
+    } catch (error) {
+      console.error('❌ Error en autoguardado:', error);
+    }
+  }, [autoSaveEnabled, user?.uid, extractedData, totalCost, intelligentClauses, selectedClauses, paymentTerms, hasLicense, hasInsurance, permitsRequired, licenseClassification, insuranceCompany, policyNumber, coverageAmount, profile, currentContractId]);
+
+  // Función para marcar como sucio y programar autoguardado
+  const markDirtyAndScheduleAutoSave = useCallback(() => {
+    setIsDirty(true);
+    
+    // Cancelar timeout anterior si existe
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+    
+    // Programar autoguardado en 2 segundos
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      performAutoSave();
+    }, 2000);
+  }, [performAutoSave]);
+
+  // Cleanup del timeout al desmontar componente
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Funciones para manejar términos de pago con autoguardado
   const updatePaymentTerm = useCallback((id: string, field: keyof PaymentTerm, value: string | number) => {
     setPaymentTerms(prev => prev.map(term => 
       term.id === id ? { ...term, [field]: value } : term
     ));
-  }, []);
+    markDirtyAndScheduleAutoSave();
+  }, [markDirtyAndScheduleAutoSave]);
 
   const addPaymentTerm = useCallback(() => {
     const newTerm: PaymentTerm = {
@@ -257,11 +367,85 @@ export default function CyberpunkLegalDefense() {
       description: 'Payment milestone description'
     };
     setPaymentTerms(prev => [...prev, newTerm]);
-  }, []);
+    markDirtyAndScheduleAutoSave();
+  }, [markDirtyAndScheduleAutoSave]);
 
   const removePaymentTerm = useCallback((id: string) => {
     setPaymentTerms(prev => prev.filter(term => term.id !== id));
-  }, []);
+    markDirtyAndScheduleAutoSave();
+  }, [markDirtyAndScheduleAutoSave]);
+
+  // Funciones con autoguardado para campos editables
+  const updateTotalCost = useCallback((value: number) => {
+    setTotalCost(value);
+    markDirtyAndScheduleAutoSave();
+  }, [markDirtyAndScheduleAutoSave]);
+
+  const updateExtractedData = useCallback((updates: any) => {
+    setExtractedData((prev: any) => ({ ...prev, ...updates }));
+    markDirtyAndScheduleAutoSave();
+  }, [markDirtyAndScheduleAutoSave]);
+
+  const updateClientInfo = useCallback((field: string, value: string) => {
+    setExtractedData((prev: any) => ({
+      ...prev,
+      clientInfo: {
+        ...prev.clientInfo,
+        [field]: value
+      }
+    }));
+    markDirtyAndScheduleAutoSave();
+  }, [markDirtyAndScheduleAutoSave]);
+
+  const updateContractorInfo = useCallback((field: string, value: string) => {
+    setExtractedData((prev: any) => ({
+      ...prev,
+      [field]: value
+    }));
+    markDirtyAndScheduleAutoSave();
+  }, [markDirtyAndScheduleAutoSave]);
+
+  const toggleClause = useCallback((clauseId: string) => {
+    setSelectedClauses(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(clauseId)) {
+        newSet.delete(clauseId);
+      } else {
+        newSet.add(clauseId);
+      }
+      return newSet;
+    });
+    markDirtyAndScheduleAutoSave();
+  }, [markDirtyAndScheduleAutoSave]);
+
+  const updateFormField = useCallback((field: string, value: any) => {
+    switch (field) {
+      case 'hasLicense':
+        setHasLicense(value);
+        break;
+      case 'hasInsurance':
+        setHasInsurance(value);
+        break;
+      case 'permitsRequired':
+        setPermitsRequired(value);
+        break;
+      case 'licenseClassification':
+        setLicenseClassification(value);
+        break;
+      case 'insuranceCompany':
+        setInsuranceCompany(value);
+        break;
+      case 'policyNumber':
+        setPolicyNumber(value);
+        break;
+      case 'coverageAmount':
+        setCoverageAmount(value);
+        break;
+    }
+    markDirtyAndScheduleAutoSave();
+  }, [markDirtyAndScheduleAutoSave]);
+
+
   
   // Edit contract handler
   const handleEditContract = useCallback((contract: any) => {
