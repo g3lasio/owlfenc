@@ -809,7 +809,7 @@ export default function CyberpunkLegalDefense() {
                 protections: contractData.protections.map(p => ({
                   id: p.id,
                   category: p.category,
-                  clause: p.clause
+                  clause: p.content
                 }))
               },
               pdfUrl: pdfUrl,
@@ -1991,117 +1991,7 @@ export default function CyberpunkLegalDefense() {
                     </div>
                   </div>
 
-                  {/* License Information */}
-                  <div className="bg-gray-900/50 border border-yellow-400/30 rounded-lg p-4">
-                    <h3 className="text-yellow-400 font-bold mb-4 flex items-center">
-                      <Shield className="h-4 w-4 mr-2" />
-                      CONTRACTOR LICENSE
-                    </h3>
-                    <div className="space-y-4">
-                      <div className="flex items-center space-x-3">
-                        <input 
-                          type="checkbox" 
-                          id="hasLicense" 
-                          name="hasLicense" 
-                          checked={hasLicense}
-                          onChange={(e) => setHasLicense(e.target.checked)}
-                          className="text-yellow-400" 
-                        />
-                        <label htmlFor="hasLicense" className="text-gray-300">Contractor has valid California license</label>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-gray-400 text-sm">License Number</label>
-                          <input
-                            type="text"
-                            name="licenseNumber"
-                            value={extractedData?.contractorLicense || ''}
-                            onChange={(e) => setExtractedData(prev => ({...prev, contractorLicense: e.target.value}))}
-                            placeholder="Enter CA license number"
-                            className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-400 focus:outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-gray-400 text-sm">License Classification</label>
-                          <input
-                            type="text"
-                            name="licenseClassification"
-                            value={licenseClassification}
-                            onChange={(e) => setLicenseClassification(e.target.value)}
-                            placeholder="e.g., C-13 Fencing"
-                            className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-400 focus:outline-none"
-                          />
-                        </div>
-                      </div>
-                      <div className="bg-yellow-900/20 border border-yellow-400/30 rounded p-3">
-                        <div className="text-yellow-400 text-xs font-bold mb-1">CALIFORNIA COMPLIANCE NOTICE:</div>
-                        <div className="text-gray-300 text-xs">
-                          If no license: "This contractor is not licensed under the Contractors' State License Law (Chapter 9 (commencing with Section 7000) of Division 3 of the Business and Professions Code)."
-                        </div>
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* Insurance Information */}
-                  <div className="bg-gray-900/50 border border-purple-400/30 rounded-lg p-4">
-                    <h3 className="text-purple-400 font-bold mb-4 flex items-center">
-                      <Shield className="h-4 w-4 mr-2" />
-                      INSURANCE COVERAGE
-                    </h3>
-                    <div className="space-y-4">
-                      <div className="flex items-center space-x-3">
-                        <input 
-                          type="checkbox" 
-                          id="hasInsurance" 
-                          checked={hasInsurance}
-                          onChange={(e) => setHasInsurance(e.target.checked)}
-                          className="text-purple-400" 
-                        />
-                        <label htmlFor="hasInsurance" className="text-gray-300">Contractor carries liability insurance</label>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-gray-400 text-sm">Insurance Company</label>
-                          <input
-                            type="text"
-                            value={insuranceCompany}
-                            onChange={(e) => setInsuranceCompany(e.target.value)}
-                            placeholder="Enter insurance provider"
-                            className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-purple-400 focus:outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-gray-400 text-sm">Policy Number</label>
-                          <input
-                            type="text"
-                            value={policyNumber}
-                            onChange={(e) => setPolicyNumber(e.target.value)}
-                            placeholder="Enter policy number"
-                            className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-purple-400 focus:outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-gray-400 text-sm">Coverage Amount</label>
-                          <input
-                            type="text"
-                            value={coverageAmount}
-                            onChange={(e) => setCoverageAmount(e.target.value)}
-                            placeholder="e.g., $1,000,000"
-                            className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-purple-400 focus:outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-gray-400 text-sm">Expiration Date</label>
-                          <input
-                            type="date"
-                            value={expirationDate}
-                            onChange={(e) => setExpirationDate(e.target.value)}
-                            className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-purple-400 focus:outline-none"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
 
                   {/* Client Information */}
                   <div className="bg-gray-900/50 border border-green-400/30 rounded-lg p-3 sm:p-4 w-full max-w-full">
@@ -2464,9 +2354,9 @@ export default function CyberpunkLegalDefense() {
                                           {clause.title}
                                         </div>
                                         <div className="text-gray-300 text-xs mb-2 leading-relaxed">
-                                          {clause.clause.length > 200 
-                                            ? `${clause.clause.substring(0, 200)}...` 
-                                            : clause.clause
+                                          {clause.content && clause.content.length > 200 
+                                            ? `${clause.content.substring(0, 200)}...` 
+                                            : clause.content
                                           }
                                         </div>
                                         <div className="flex items-center space-x-4 text-xs">

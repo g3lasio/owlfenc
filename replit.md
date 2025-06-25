@@ -275,6 +275,13 @@ Changelog:
   * Checkbox "Send me a copy" functionality verified and working correctly
   * To enable sending to any email address: domain verification required at resend.com/domains
   * All email infrastructure is functional - only domain verification needed for production use
+- June 25, 2025. Streamlined contract generator interface for better user experience:
+  * Simplified AI recommended clauses section to clean checklist format with hover effects
+  * Removed verbose legal text in favor of clause titles and risk level badges
+  * Eliminated contractor license and insurance coverage cards from form
+  * License and insurance documentation handled separately as per industry standard
+  * Improved responsive grid layout (1 column mobile, 2 columns desktop)
+  * Contract PDF already includes comprehensive legal documentation for these requirements
 - June 24, 2025. Enhanced sidebar with auto-close functionality:
   * Implemented automatic sidebar closing when clicking on navigation menu items
   * Added handleMenuItemClick function to close expanded sidebar after menu selection
