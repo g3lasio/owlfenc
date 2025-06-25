@@ -45,15 +45,7 @@ export default function Home() {
           justifyContent: 'center'
         }}>
           
-          {/* Resplandor circular futurista */}
-          <div style={{
-            position: 'absolute',
-            width: '100%',
-            height: '100%',
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, transparent 40%, rgba(0,255,255,0.1) 60%, rgba(0,255,255,0.3) 80%, rgba(0,255,255,0.1) 100%)',
-            animation: 'borderGlow 3s ease-in-out infinite'
-          }}></div>
+
           
           {/* Imagen del logo con pulsaciones */}
           <img 
