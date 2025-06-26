@@ -687,7 +687,6 @@ export default function AuthPage() {
                               {...field}
                               placeholder="Tu nombre"
                               className="bg-card/50 border-muted-foreground/30 focus-visible:ring-primary"
-                              {/* disabled={isLoading} */}
                               onChange={(e) => field.onChange(e.target.value)}
                               value={field.value || ""}
                             />
@@ -708,7 +707,6 @@ export default function AuthPage() {
                               {...field}
                               placeholder="tu@email.com"
                               className="bg-card/50 border-muted-foreground/30 focus-visible:ring-primary"
-                              {/* disabled={isLoading} */}
                               onChange={(e) => field.onChange(e.target.value)}
                               value={field.value || ""}
                             />
