@@ -4,15 +4,38 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { FcGoogle } from "react-icons/fc";
 import { FaApple } from "react-icons/fa";
 import { HiMail } from "react-icons/hi";
-import { RiMailSendLine, RiEyeLine, RiEyeOffLine, RiArrowLeftLine, RiArrowRightLine, RiUserLine, RiShieldKeyholeLine, RiCheckboxCircleLine } from "react-icons/ri";
+import {
+  RiMailSendLine,
+  RiEyeLine,
+  RiEyeOffLine,
+  RiArrowLeftLine,
+  RiArrowRightLine,
+  RiUserLine,
+  RiShieldKeyholeLine,
+  RiCheckboxCircleLine,
+} from "react-icons/ri";
 import { useAuth } from "@/contexts/AuthContext";
 import EmailLinkAuth from "@/components/auth/EmailLinkAuth";
 import { useTranslation } from "react-i18next";
@@ -27,27 +50,39 @@ const loginSchema = z.object({
 });
 
 // Esquema de validación para el formulario de registro
-const signupSchema = z.object({
-  name: z.string().min(3, t("auth.nameRequirements")),
-  email: z.string().email(t("auth.validEmail")),
-  password: z.string().min(6, t("auth.passwordRequirements")),
-  confirmPassword: z.string().min(6, t("auth.passwordRequirements")),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: t("auth.passwordsMatch"),
-  path: ["confirmPassword"],
-});
+const signupSchema = z
+  .object({
+    name: z.string().min(3, t("auth.nameRequirements")),
+    email: z.string().email(t("auth.validEmail")),
+    password: z.string().min(6, t("auth.passwordRequirements")),
+    confirmPassword: z.string().min(6, t("auth.passwordRequirements")),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: t("auth.passwordsMatch"),
+    path: ["confirmPassword"],
+  });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 type SignupFormValues = z.infer<typeof signupSchema>;
 
 export default function AuthPage() {
   const [, navigate] = useLocation();
-  const { login, register: registerUser, loginWithGoogle, loginWithApple, sendEmailLoginLink, error, clearError } = useAuth();
+  const {
+    login,
+    register: registerUser,
+    loginWithGoogle,
+    loginWithApple,
+    sendEmailLoginLink,
+    error,
+    clearError,
+  } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
-  const [loginMethod, setLoginMethod] = useState<"email" | "emailLink">("email");
+  const [loginMethod, setLoginMethod] = useState<"email" | "emailLink">(
+    "email",
+  );
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -81,10 +116,11 @@ export default function AuthPage() {
     // Reproducir sonido de éxito con tono Iron Man/Stark Industries
     const audio = new Audio();
     audio.volume = 0.3;
-    audio.src = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tAwAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAFAAAKhQCFhYWFhYWFhYWFhYWFhYWFhYWFvb29vb29vb29vb29vb29vb29vb3Z2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2fT09PT09PT09PT09PT09PT09PT0//////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAZqAAAAAAAACoXOVK+FAAAAAAD/+xDEAAAKTEVv9BSAIrLHrj81gFBMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQD/+xDEGQANQJV3+aQAI1QpqP81hARMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQD/+xDEPgAUZfl//msAo3glLvnNMARMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQD/+xDEWAAUTHVH/awAo5Qirfz3gBFMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQD/+0DEggAAAZYFAAAIAAADSAAAAQAAANIAAAAAAAAA0gAAAAETEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQ==';
+    audio.src =
+      "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tAwAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAFAAAKhQCFhYWFhYWFhYWFhYWFhYWFhYWFvb29vb29vb29vb29vb29vb29vb3Z2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2fT09PT09PT09PT09PT09PT09PT0//////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAZqAAAAAAAACoXOVK+FAAAAAAD/+xDEAAAKTEVv9BSAIrLHrj81gFBMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQD/+xDEGQANQJV3+aQAI1QpqP81hARMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQD/+xDEPgAUZfl//msAo3glLvnNMARMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQD/+xDEWAAUTHVH/awAo5Qirfz3gBFMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQD/+0DEggAAAZYFAAAIAAADSAAAAQAAANIAAAAAAAAA0gAAAAETEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQ==";
 
     // Reproducir el audio
-    audio.play().catch(e => console.log("Audio play prevented: ", e));
+    audio.play().catch((e) => console.log("Audio play prevented: ", e));
 
     // Ocultar el efecto después de 3 segundos
     setTimeout(() => {
@@ -120,23 +156,31 @@ export default function AuthPage() {
         await sendEmailLoginLink(data.email);
         toast({
           title: "Enlace enviado",
-          description: "Hemos enviado un enlace de inicio de sesión a tu correo electrónico.",
+          description:
+            "Hemos enviado un enlace de inicio de sesión a tu correo electrónico.",
         });
       }
     } catch (err: any) {
       console.error("Error de inicio de sesión:", err);
 
       // Manejo específico de errores comunes
-      let errorMessage = err.message || "Ocurrió un error al iniciar sesión. Intenta de nuevo.";
+      let errorMessage =
+        err.message || "Ocurrió un error al iniciar sesión. Intenta de nuevo.";
 
       // Simplificar mensajes de error para mejor experiencia de usuario
-      if (errorMessage.includes("user-not-found") || errorMessage.includes("wrong-password") || 
-          errorMessage.includes("invalid-credential")) {
-        errorMessage = "Correo electrónico o contraseña incorrectos. Verifica tus datos e intenta de nuevo.";
+      if (
+        errorMessage.includes("user-not-found") ||
+        errorMessage.includes("wrong-password") ||
+        errorMessage.includes("invalid-credential")
+      ) {
+        errorMessage =
+          "Correo electrónico o contraseña incorrectos. Verifica tus datos e intenta de nuevo.";
       } else if (errorMessage.includes("too-many-requests")) {
-        errorMessage = "Demasiados intentos fallidos. Por favor espera unos minutos antes de intentar de nuevo.";
+        errorMessage =
+          "Demasiados intentos fallidos. Por favor espera unos minutos antes de intentar de nuevo.";
       } else if (errorMessage.includes("network")) {
-        errorMessage = "Problema de conexión. Verifica tu internet e intenta de nuevo.";
+        errorMessage =
+          "Problema de conexión. Verifica tu internet e intenta de nuevo.";
       }
 
       toast({
@@ -162,7 +206,9 @@ export default function AuthPage() {
       toast({
         variant: "destructive",
         title: "Error de registro",
-        description: err.message || "Ocurrió un error al registrar tu cuenta. Intenta de nuevo.",
+        description:
+          err.message ||
+          "Ocurrió un error al registrar tu cuenta. Intenta de nuevo.",
       });
     } finally {
       setIsLoading(false);
@@ -181,7 +227,9 @@ export default function AuthPage() {
       toast({
         variant: "destructive",
         title: "Error de autenticación",
-        description: err.message || "Ocurrió un error al autenticar con Google. Intenta de nuevo.",
+        description:
+          err.message ||
+          "Ocurrió un error al autenticar con Google. Intenta de nuevo.",
       });
     } finally {
       setIsLoading(false);
@@ -201,16 +249,21 @@ export default function AuthPage() {
       console.log("4. Window location:", window.location.href);
 
       // Limpiar cualquier dato anterior de diagnóstico
-      const oldKeys = Object.keys(sessionStorage).filter(key => key.startsWith('appleAuth_'));
+      const oldKeys = Object.keys(sessionStorage).filter((key) =>
+        key.startsWith("appleAuth_"),
+      );
       console.log("5. Limpiando datos anteriores:", oldKeys.length, "claves");
-      oldKeys.forEach(key => sessionStorage.removeItem(key));
+      oldKeys.forEach((key) => sessionStorage.removeItem(key));
 
       // Marcar inicio del proceso
-      sessionStorage.setItem('appleAuth_login_start', JSON.stringify({
-        timestamp: Date.now(),
-        authMode,
-        url: window.location.href
-      }));
+      sessionStorage.setItem(
+        "appleAuth_login_start",
+        JSON.stringify({
+          timestamp: Date.now(),
+          authMode,
+          url: window.location.href,
+        }),
+      );
 
       console.log("6. Llamando a loginWithApple()...");
       const result = await loginWithApple();
@@ -223,13 +276,18 @@ export default function AuthPage() {
         console.log("10. DisplayName:", result.displayName);
 
         // Limpiar datos de diagnóstico exitoso
-        sessionStorage.removeItem('appleAuth_login_start');
+        sessionStorage.removeItem("appleAuth_login_start");
 
         // Verificar si es Repl Auth o usuario de desarrollo
-        if (result.email?.includes('replit.dev') || result.uid?.includes('repl-user') || result.uid?.includes('dev-user')) {
+        if (
+          result.email?.includes("replit.dev") ||
+          result.uid?.includes("repl-user") ||
+          result.uid?.includes("dev-user")
+        ) {
           toast({
             title: "Autenticación exitosa",
-            description: "Has iniciado sesión correctamente usando el sistema de respaldo.",
+            description:
+              "Has iniciado sesión correctamente usando el sistema de respaldo.",
           });
         }
 
@@ -241,7 +299,8 @@ export default function AuthPage() {
 
         toast({
           title: "Redirigiendo a Apple",
-          description: "Se abrirá la página de autenticación de Apple. Por favor, completa el proceso.",
+          description:
+            "Se abrirá la página de autenticación de Apple. Por favor, completa el proceso.",
         });
       }
     } catch (err: any) {
@@ -251,30 +310,36 @@ export default function AuthPage() {
       console.error("Mensaje:", err.message || "NO_MESSAGE");
 
       let errorMessage = "Error al iniciar la autenticación con Apple";
-      let errorDescription = "Ha ocurrido un problema con la autenticación de Apple.";
+      let errorDescription =
+        "Ha ocurrido un problema con la autenticación de Apple.";
       let showDiagnosticButton = false;
 
       // Análisis específico de errores
-      if (err.code === 'auth/internal-error') {
+      if (err.code === "auth/internal-error") {
         errorMessage = "Problema de configuración detectado";
-        errorDescription = "Se ha detectado un problema en la configuración de Apple Auth. El sistema está intentando métodos alternativos de autenticación automáticamente.";
+        errorDescription =
+          "Se ha detectado un problema en la configuración de Apple Auth. El sistema está intentando métodos alternativos de autenticación automáticamente.";
         showDiagnosticButton = true;
-      } else if (err.message?.includes('No se pudo')) {
+      } else if (err.message?.includes("No se pudo")) {
         errorMessage = "Método alternativo en uso";
-        errorDescription = "Se está utilizando un método de autenticación alternativo. Esto es normal en el entorno de desarrollo.";
-      } else if (err.code === 'auth/popup-blocked') {
+        errorDescription =
+          "Se está utilizando un método de autenticación alternativo. Esto es normal en el entorno de desarrollo.";
+      } else if (err.code === "auth/popup-blocked") {
         // Para popup bloqueado, mostrar mensaje informativo
         toast({
           title: "Redirigiendo a Apple",
-          description: "Tu navegador bloqueó la ventana emergente. Se abrirá la página de Apple en la misma ventana.",
+          description:
+            "Tu navegador bloqueó la ventana emergente. Se abrirá la página de Apple en la misma ventana.",
         });
         return;
-      } else if (err.code === 'auth/unauthorized-domain') {
+      } else if (err.code === "auth/unauthorized-domain") {
         errorMessage = "Configuración de dominio pendiente";
-        errorDescription = "Este dominio necesita ser autorizado en la configuración. Se está usando un método alternativo.";
+        errorDescription =
+          "Este dominio necesita ser autorizado en la configuración. Se está usando un método alternativo.";
         showDiagnosticButton = true;
       } else {
-        errorDescription = "Intenta con otro método de inicio de sesión o contacta a soporte.";
+        errorDescription =
+          "Intenta con otro método de inicio de sesión o contacta a soporte.";
         showDiagnosticButton = true;
       }
 
@@ -283,10 +348,10 @@ export default function AuthPage() {
         title: errorMessage,
         description: errorDescription,
         action: showDiagnosticButton ? (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => navigate('/apple-auth-diagnostic')}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate("/apple-auth-diagnostic")}
             className="bg-background/80 backdrop-blur-sm"
           >
             Diagnosticar
@@ -305,16 +370,17 @@ export default function AuthPage() {
 
     // Efecto de escaneo holográfico estilo Jarvis/Friday
     if (cardRef.current) {
-      // Aplicar efecto de escaneo 
-      cardRef.current.classList.add('stark-scan-effect');
+      // Aplicar efecto de escaneo
+      cardRef.current.classList.add("stark-scan-effect");
 
       // Reproducir sonido de transición tipo UI de Iron Man (sutil)
       const audio = new Audio();
       audio.volume = 0.2;
-      audio.src = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tAwAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAAFDgCenp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6e//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAVBAAAAAAAABQ5+7pVfAAAA//tAxAAABIQTe3UQAAJ4QW/84YAkAEAQBAEAfB8H3/ggCAIB8EAQdwfggGCD4IBgg7g+D4Pg+D4IAgf///CLveKAgCAIZO4IAgCAIAgH///uCH///wnPggCAJleKAgCAIf/hAEAQ/8Jz4PwQBAMP/hAEAQBAEP////CLu4PggCAf/8IBggyvoIBggydzBB8HwfggCAf/+EAQBAEDnwQDCh4QZUuCX+DIEzSK1u4WPyuNIpNLqPQ5HBMZCcdhELhgkCpLig2CZFcUzBCt3DtAYRRJlgliYRFZ4qF2UJuJg5BoCpALShTAoO0fTdBxGwaNr5e8iFQEEGxTMjl8yrtvCJZQGPh0TyeQzcl9sbUMvcvVDTpYnCcvvgOFRsIhfE/DT3W1e+MvkNWOzHyrfOCKyxzEVWtjIm5lmYu/qpurKWaS6vIZw5LdfL53K7qqtbqVYysJV8L2pM1pLuXc3Fn8xbxE3nsZTN5qljUutm/17Ln6Rltq2/2b//tAxLEAE/YdW9mMAJOkPqz7N7ADU+26plSqVLc2qiuWwsz8rmsPSllbK6W+6mqJVy2XFspRKZvMzJXMg3i0aXy2P4vL622K8nBvFuvVktlJt9aQdI1P4rE/FVUPQVRHbEf/+lEITv9oCQIAUD/9/pv/AAD8UGACRbv6BRR//8gA//+h9//WTIIAEL0BkKFGaGdl7fxfLZvLZvLZvLZvLZvLZvLZvLZvLZvLZvLZvLZvLZvLZvLZvLaVJZm5fy/l7Y4EEBBCwQIz+X9jgQQEEDfxTLZvKkmQAAAAAAA4c8X///////xz///////////8c////////+DP6A';
+      audio.src =
+        "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tAwAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAAFDgCenp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6e//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAVBAAAAAAAABQ5+7pVfAAAA//tAxAAABIQTe3UQAAJ4QW/84YAkAEAQBAEAfB8H3/ggCAIB8EAQdwfggGCD4IBgg7g+D4Pg+D4IAgf///CLveKAgCAIZO4IAgCAIAgH///uCH///wnPggCAJleKAgCAIf/hAEAQ/8Jz4PwQBAMP/hAEAQBAEP////CLu4PggCAf/8IBggyvoIBggydzBB8HwfggCAf/+EAQBAEDnwQDCh4QZUuCX+DIEzSK1u4WPyuNIpNLqPQ5HBMZCcdhELhgkCpLig2CZFcUzBCt3DtAYRRJlgliYRFZ4qF2UJuJg5BoCpALShTAoO0fTdBxGwaNr5e8iFQEEGxTMjl8yrtvCJZQGPh0TyeQzcl9sbUMvcvVDTpYnCcvvgOFRsIhfE/DT3W1e+MvkNWOzHyrfOCKyxzEVWtjIm5lmYu/qpurKWaS6vIZw5LdfL53K7qqtbqVYysJV8L2pM1pLuXc3Fn8xbxE3nsZTN5qljUutm/17Ln6Rltq2/2b//tAxLEAE/YdW9mMAJOkPqz7N7ADU+26plSqVLc2qiuWwsz8rmsPSllbK6W+6mqJVy2XFspRKZvMzJXMg3i0aXy2P4vL622K8nBvFuvVktlJt9aQdI1P4rE/FVUPQVRHbEf/+lEITv9oCQIAUD/9/pv/AAD8UGACRbv6BRR//8gA//+h9//WTIIAEL0BkKFGaGdl7fxfLZvLZvLZvLZvLZvLZvLZvLZvLZvLZvLZvLZvLZvLZvLZvLaVJZm5fy/l7Y4EEBBCwQIz+X9jgQQEEDfxTLZvKkmQAAAAAAA4c8X///////xz///////////8c////////+DP6A";
 
       // Reproducir el audio
-      audio.play().catch(e => console.log("Audio play prevented: ", e));
+      audio.play().catch((e) => console.log("Audio play prevented: ", e));
     }
 
     // Retraso para cambiar de modo
@@ -332,7 +398,7 @@ export default function AuthPage() {
       setTimeout(() => {
         setIsTransitioning(false);
         if (cardRef.current) {
-          cardRef.current.classList.remove('stark-scan-effect');
+          cardRef.current.classList.remove("stark-scan-effect");
         }
       }, 600);
     }, 400);
@@ -347,21 +413,34 @@ export default function AuthPage() {
 
       {/* Efecto de congratulación cuando se completa login/signup */}
       {showSuccess && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
           ref={successRef}
         >
           <div className="success-container relative">
             {/* Círculos concéntricos con animación para efecto holográfico */}
-            <div className="success-circle absolute inset-0 rounded-full border-2 border-primary animate-ping" style={{opacity: 0.3}}></div>
-            <div className="success-circle absolute inset-0 rounded-full border border-primary animate-ping" style={{animationDelay: '0.5s', opacity: 0.4}}></div>
-            <div className="success-circle absolute inset-0 rounded-full border border-primary animate-ping" style={{animationDelay: '1s', opacity: 0.5}}></div>
+            <div
+              className="success-circle absolute inset-0 rounded-full border-2 border-primary animate-ping"
+              style={{ opacity: 0.3 }}
+            ></div>
+            <div
+              className="success-circle absolute inset-0 rounded-full border border-primary animate-ping"
+              style={{ animationDelay: "0.5s", opacity: 0.4 }}
+            ></div>
+            <div
+              className="success-circle absolute inset-0 rounded-full border border-primary animate-ping"
+              style={{ animationDelay: "1s", opacity: 0.5 }}
+            ></div>
 
             {/* Icono y mensaje de éxito */}
             <div className="success-content w-64 h-64 flex flex-col items-center justify-center bg-black/50 rounded-full border border-primary/20 backdrop-blur-md shadow-lg">
               <RiCheckboxCircleLine className="text-primary w-20 h-20" />
-              <h2 className="text-xl font-bold text-primary mt-4">{t("auth.login")} {t("auth.success")}</h2>
-              <p className="text-center text-muted-foreground text-sm mt-2">{t("auth.redirecting")}</p>
+              <h2 className="text-xl font-bold text-primary mt-4">
+                {t("auth.login")} {t("auth.success")}
+              </h2>
+              <p className="text-center text-muted-foreground text-sm mt-2">
+                {t("auth.redirecting")}
+              </p>
             </div>
           </div>
         </div>
@@ -371,26 +450,26 @@ export default function AuthPage() {
       <div className="w-full max-w-md relative z-10">
         <div className="mb-8 text-center">
           <h2 className="text-3xl font-bold text-primary">Owl Fenc</h2>
-          <p className="text-sm text-muted-foreground mt-1">The AI Force Crafting the Future Skyline</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            The AI Force Crafting the Future Skyline
+          </p>
         </div>
 
         {/* Toggle entre login y signup */}
         <div className="relative mx-auto w-28 h-11 mb-5 z-20">
-          <div 
-            className="absolute inset-0 rounded-full bg-primary/20 border border-primary/30 backdrop-blur-sm"
-          ></div>
+          <div className="absolute inset-0 rounded-full bg-primary/20 border border-primary/30 backdrop-blur-sm"></div>
 
-          <div 
+          <div
             className="absolute top-1 bottom-1 w-[48%] bg-primary rounded-full transition-all duration-500 ease-spring shadow-lg"
-            style={{ 
+            style={{
               left: authMode === "login" ? "2px" : "calc(52% - 2px)",
               boxShadow: "0 0 15px 2px rgba(0, 255, 255, 0.5)",
-              filter: "brightness(1.1)"
+              filter: "brightness(1.1)",
             }}
           ></div>
 
           <div className="absolute inset-0 flex items-stretch">
-            <button 
+            <button
               className={`flex-1 flex items-center justify-center text-xs font-semibold relative z-10 rounded-l-full transition-colors ${
                 authMode === "login" ? "text-white" : "text-muted-foreground"
               }`}
@@ -398,7 +477,7 @@ export default function AuthPage() {
             >
               {t("auth.login")}
             </button>
-            <button 
+            <button
               className={`flex-1 flex items-center justify-center text-xs font-semibold relative z-10 rounded-r-full transition-colors ${
                 authMode === "signup" ? "text-white" : "text-muted-foreground"
               }`}
@@ -410,22 +489,26 @@ export default function AuthPage() {
         </div>
 
         {/* Tarjeta principal con estilo Stark Industries/Iron Man */}
-        <Card 
+        <Card
           ref={cardRef}
           className={`relative border border-primary/20 shadow-xl  rounded-xl backdrop-blur-sm bg-card/80 transition-all duration-500 ${
-            isTransitioning ? 'stark-card-transitioning' : ''
+            isTransitioning ? "stark-card-transitioning" : ""
           }`}
         >
           {/* Cabecera con efecto futurista */}
           <CardHeader className="bg-gradient-to-r from-primary/20 to-accent/20 px-6 py-5 border-b border-primary/20 relative">
             {/* Línea de escaneo para efecto Jarvis */}
-            <div className={`absolute inset-0 stark-scan-line pointer-events-none ${isTransitioning ? 'scanning' : ''}`}></div>
+            <div
+              className={`absolute inset-0 stark-scan-line pointer-events-none ${isTransitioning ? "scanning" : ""}`}
+            ></div>
 
             <CardTitle className="text-2xl font-semibold text-center stark-text-glow">
               {authMode === "login" ? t("auth.login") : t("auth.createAccount")}
             </CardTitle>
             <CardDescription className="text-center text-muted-foreground">
-              {authMode === "login" ? t("auth.alreadyAccount") : t("auth.noAccount")}
+              {authMode === "login"
+                ? t("auth.alreadyAccount")
+                : t("auth.noAccount")}
             </CardDescription>
 
             {/* Icono de estado en la esquina */}
@@ -466,7 +549,9 @@ export default function AuthPage() {
 
               <div className="flex items-center gap-3">
                 <Separator className="flex-1 bg-muted-foreground/30" />
-                <span className="text-sm text-muted-foreground">{t("auth.orContinueWith")}</span>
+                <span className="text-sm text-muted-foreground">
+                  {t("auth.orContinueWith")}
+                </span>
                 <Separator className="flex-1 bg-muted-foreground/30" />
               </div>
 
@@ -474,7 +559,10 @@ export default function AuthPage() {
               {authMode === "login" ? (
                 loginMethod === "email" ? (
                   <Form {...loginForm}>
-                    <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+                    <form
+                      onSubmit={loginForm.handleSubmit(onLoginSubmit)}
+                      className="space-y-4"
+                    >
                       <FormField
                         control={loginForm.control}
                         name="email"
@@ -548,8 +636,11 @@ export default function AuthPage() {
                 )
               ) : (
                 <Form {...signupForm}>
-                  <form onSubmit={signupForm.handleSubmit(onSignupSubmit)} className="space-y-4">
-                    <FormField
+                  <form
+                    onSubmit={signupForm.handleSubmit(onSignupSubmit)}
+                    className="space-y-4"
+                  >
+                    {/* <FormField
                       control={signupForm.control}
                       name="name"
                       render={({ field }) => (
@@ -584,7 +675,49 @@ export default function AuthPage() {
                           <FormMessage />
                         </FormItem>
                       )}
+                    /> */}
+                    <FormField
+                      control={signupForm.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("auth.name")}</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              placeholder="Tu nombre"
+                              className="bg-card/50 border-muted-foreground/30 focus-visible:ring-primary"
+                              {/* disabled={isLoading} */}
+                              onChange={(e) => field.onChange(e.target.value)}
+                              value={field.value || ""}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
+
+                    <FormField
+                      control={signupForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("auth.email")}</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              placeholder="tu@email.com"
+                              className="bg-card/50 border-muted-foreground/30 focus-visible:ring-primary"
+                              {/* disabled={isLoading} */}
+                              onChange={(e) => field.onChange(e.target.value)}
+                              value={field.value || ""}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
                     <FormField
                       control={signupForm.control}
                       name="password"
@@ -604,19 +737,19 @@ export default function AuthPage() {
                                 type="button"
                                 className="absolute right-3 top-1/2 -translate-y-1/2"
                                 onClick={() => setShowPassword(!showPassword)}
-                                >
-                                  {showPassword ? (
-                                    <RiEyeOffLine className="h-5 w-5 text-muted-foreground" />
-                                  ) : (
-                                    <RiEyeLine className="h-5 w-5 text-muted-foreground" />
-                                  )}
-                                </button>
-                              </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                              >
+                                {showPassword ? (
+                                  <RiEyeOffLine className="h-5 w-5 text-muted-foreground" />
+                                ) : (
+                                  <RiEyeLine className="h-5 w-5 text-muted-foreground" />
+                                )}
+                              </button>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     <FormField
                       control={signupForm.control}
                       name="confirmPassword"
@@ -643,7 +776,9 @@ export default function AuthPage() {
                       className="w-full h-10 bg-primary hover:bg-primary/80 text-black font-semibold"
                       disabled={isLoading}
                     >
-                      {isLoading ? t("auth.signup") + "..." : t("auth.createAccount")}
+                      {isLoading
+                        ? t("auth.signup") + "..."
+                        : t("auth.createAccount")}
                     </Button>
                   </form>
                 </Form>
@@ -658,7 +793,11 @@ export default function AuthPage() {
                   <button
                     type="button"
                     className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary/80"
-                    onClick={() => setLoginMethod(loginMethod === "email" ? "emailLink" : "email")}
+                    onClick={() =>
+                      setLoginMethod(
+                        loginMethod === "email" ? "emailLink" : "email",
+                      )
+                    }
                   >
                     {loginMethod === "email" ? (
                       <>
@@ -674,8 +813,8 @@ export default function AuthPage() {
                   </button>
                 </div>
                 <div>
-                  <a 
-                    href="/auth-diagnostic" 
+                  <a
+                    href="/auth-diagnostic"
                     className="text-xs text-primary/70 hover:text-primary"
                   >
                     Diagnóstico Auth

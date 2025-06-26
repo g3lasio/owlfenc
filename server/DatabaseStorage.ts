@@ -48,9 +48,7 @@ import { eq, and, desc, asc, isNull, isNotNull, sql } from 'drizzle-orm';
 import { IStorage } from './storage';
 
 export class DatabaseStorage implements IStorage {
-  constructor() {
-    // Ninguna inicialización necesaria, usamos la conexión de db.ts
-  }
+  constructor() {}
   
   async healthCheck(): Promise<boolean> {
     try {
