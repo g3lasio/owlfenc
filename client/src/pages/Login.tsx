@@ -640,42 +640,7 @@ export default function AuthPage() {
                     onSubmit={signupForm.handleSubmit(onSignupSubmit)}
                     className="space-y-4"
                   >
-                    {/* <FormField
-                      control={signupForm.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t("auth.name")}</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="Tu nombre"
-                              className="bg-card/50 border-muted-foreground/30 focus-visible:ring-primary"
-                              {...field}
-                              disabled={isLoading}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={signupForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t("auth.email")}</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="tu@email.com"
-                              className="bg-card/50 border-muted-foreground/30 focus-visible:ring-primary"
-                              {...field}
-                              disabled={isLoading}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    /> */}
+                  
                     <FormField
                       control={signupForm.control}
                       name="name"
