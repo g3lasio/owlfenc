@@ -40,6 +40,7 @@ import { db } from "@/lib/firebase";
 import { MaterialInventoryService } from "../services/materialInventoryService";
 import { EmailService } from "../services/emailService";
 import { checkEmailVerification } from "@/lib/firebase";
+import { shareOrDownloadPdf, getSharingCapabilities } from "@/utils/mobileSharing";
 import {
   Search,
   Plus,
@@ -68,6 +69,8 @@ import {
   Phone,
   MapPin,
   X,
+  Share2,
+  Smartphone,
   Wrench,
   Combine,
   ArrowLeft,
@@ -145,6 +148,9 @@ export default function EstimatesWizardFixed() {
   const [currentStep, setCurrentStep] = useState(0);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingEstimateId, setEditingEstimateId] = useState<string | null>(null);
+  
+  // Mobile sharing capabilities
+  const [sharingCapabilities, setSharingCapabilities] = useState(() => getSharingCapabilities());
   const [estimate, setEstimate] = useState<EstimateData>({
     client: null,
     items: [],
@@ -2928,6 +2934,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       };
       
       console.log('📤 Sending payload to PDF service:', payload);
+      
       // Use new Puppeteer PDF service (local, no external dependency)
       const response = await axios.post("/api/estimate-puppeteer-pdf", payload, {
         responseType: 'blob' // Important for PDF download
@@ -2945,30 +2952,46 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         throw new Error('Received empty PDF data from server');
       }
       
-      // Create blob URL and trigger download
+      // Create blob for sharing/downloading
       const pdfBlob = new Blob([response.data], { type: 'application/pdf' });
       console.log('📄 Created PDF blob:', {
         size: pdfBlob.size,
         type: pdfBlob.type
       });
+
+      // Generate filename with client name and timestamp
+      const clientName = estimate.client?.name?.replace(/[^a-zA-Z0-9]/g, '_') || 'client';
+      const timestamp = new Date().toISOString().slice(0, 10); // YYYY-MM-DD format
+      const filename = `estimate-${clientName}-${timestamp}.pdf`;
+
+      // Use mobile sharing utility for smart download/share behavior
+      await shareOrDownloadPdf(pdfBlob, filename, {
+        title: `Estimate for ${estimate.client?.name || 'Client'}`,
+        text: `Professional estimate from ${profile?.company || 'your contractor'}`,
+        clientName: estimate.client?.name,
+        estimateNumber: `EST-${timestamp}`
+      });
       
-      const downloadUrl = window.URL.createObjectURL(pdfBlob);
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = `estimate-${Date.now()}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(downloadUrl);
+      console.log('📥 PDF download/share completed successfully');
       
-      console.log('📥 PDF download triggered successfully');
+      // Get sharing capabilities for toast message
+      const capabilities = getSharingCapabilities();
+      const actionText = capabilities.isMobile && capabilities.nativeShareSupported 
+        ? "PDF generated and ready to share" 
+        : "PDF downloaded successfully";
       
       toast({
         title: "✅ PDF Generated",
-        description: "Professional estimate PDF downloaded successfully",
+        description: actionText,
       });
+      
     } catch (error) {
-      console.error(error);
+      console.error('PDF generation error:', error);
+      toast({
+        title: "❌ Error",
+        description: "Could not generate PDF. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
