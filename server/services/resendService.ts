@@ -120,7 +120,7 @@ export class ResendEmailService {
       console.log('🔍 [RESEND] Destinatario:', emailData.to);
       console.log('🔍 [RESEND] Remitente solicitado:', emailData.from);
       console.log('🔍 [RESEND] Remitente por defecto:', this.defaultFromEmail);
-      console.log('🔍 [RESEND] Remitente final:', emailData.from || this.defaultFromEmail);
+      console.log('🔍 [RESEND] Remitente final:', this.defaultFromEmail);
       console.log('🔍 [RESEND] Asunto:', emailData.subject);
       console.log('🔍 [RESEND] Tamaño HTML:', emailData.html?.length || 0, 'caracteres');
 
@@ -138,8 +138,8 @@ export class ResendEmailService {
         return false;
       }
 
-      // Use the provided from email or default to verified domain
-      const fromEmail = emailData.from || this.defaultFromEmail;
+      // Always use verified domain for production emails
+      const fromEmail = this.defaultFromEmail;
       
       // Preparar datos del email con headers anti-spam
       const emailPayload = {

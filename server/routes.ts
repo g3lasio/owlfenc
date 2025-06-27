@@ -3230,7 +3230,7 @@ Output must be between 200-900 characters in English.`;
       console.log(`📧 [ESTIMATE-SEND] Enviando email a: ${to}`);
       const emailSent = await sendEmail({
         to: to,
-        from: 'no-reply@owlfence.com',
+        from: 'onboarding@resend.dev',
         subject: emailSubject,
         html: estimateHtml,
         text: emailMessage
