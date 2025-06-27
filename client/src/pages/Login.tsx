@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -30,8 +30,6 @@ import {
   RiMailSendLine,
   RiEyeLine,
   RiEyeOffLine,
-  RiArrowLeftLine,
-  RiArrowRightLine,
   RiUserLine,
   RiShieldKeyholeLine,
   RiCheckboxCircleLine,
@@ -52,10 +50,10 @@ const loginSchema = z.object({
 // Esquema de validación para el formulario de registro
 const signupSchema = z
   .object({
-    name: z.string().min(3, t("auth.nameRequirements")),
-    email: z.string().email(t("auth.validEmail")),
-    password: z.string().min(6, t("auth.passwordRequirements")),
-    confirmPassword: z.string().min(6, t("auth.passwordRequirements")),
+    name: z.string(),
+    email: z.string(),
+    password: z.string(),
+    confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: t("auth.passwordsMatch"),
@@ -108,6 +106,27 @@ export default function AuthPage() {
       confirmPassword: "",
     },
   });
+
+  const [signUpFields, setSignUpFields] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+
+  // Change handler
+  const handleNameChange = (e) => {
+    setSignUpFields({ ...signUpFields, name: e.target.value });
+  };
+  const handleEmailChange = (e) => {
+    setSignUpFields({ ...signUpFields, email: e.target.value });
+  };
+  const handlePasswordChange = (e) => {
+    setSignUpFields({ ...signUpFields, password: e.target.value });
+  };
+  const handleConfirmPasswordChange = (e) => {
+    setSignUpFields({ ...signUpFields, confirmPassword: e.target.value });
+  };
 
   // Mostrar efecto de congratulación después de login exitoso
   const showSuccessEffect = () => {
@@ -194,14 +213,24 @@ export default function AuthPage() {
   };
 
   // Manejar registro con email y contraseña
-  const onSignupSubmit = async (data: SignupFormValues) => {
+  const onSignupSubmit = async (e) => {
     setIsLoading(true);
     try {
+      e.preventDefault();
       clearError();
-      await registerUser(data.email, data.password, data.name);
+      console.log("Intentando registrar usuario con:", signUpFields);
+      if (signUpFields.password === signUpFields.confirmPassword) {
+        await registerUser(
+          signUpFields.email,
+          signUpFields.password,
+          signUpFields.name,
+        );
 
-      showSuccessEffect();
+        showSuccessEffect();
+      }
     } catch (err: any) {
+      console.log("Intentando registrar usuario con:", signUpFields);
+
       console.error("Error de registro:", err);
       toast({
         variant: "destructive",
@@ -636,11 +665,7 @@ export default function AuthPage() {
                 )
               ) : (
                 <Form {...signupForm}>
-                  <form
-                    onSubmit={signupForm.handleSubmit(onSignupSubmit)}
-                    className="space-y-4"
-                  >
-                  
+                  <form onSubmit={onSignupSubmit} className="space-y-4">
                     <FormField
                       control={signupForm.control}
                       name="name"
@@ -648,12 +673,11 @@ export default function AuthPage() {
                         <FormItem>
                           <FormLabel>{t("auth.name")}</FormLabel>
                           <FormControl>
-                            <Input
-                              {...field}
+                            <input
+                              onChange={handleNameChange}
+                              type="text"
                               placeholder="Tu nombre"
-                              className="bg-card/50 border-muted-foreground/30 focus-visible:ring-primary"
-                              onChange={(e) => field.onChange(e.target.value)}
-                              value={field.value || ""}
+                              className="border p-2 hover:border-primary rounded-md block w-full bg-card/50 border-muted-foreground/30 focus-visible:ring-primary"
                             />
                           </FormControl>
                           <FormMessage />
@@ -668,19 +692,18 @@ export default function AuthPage() {
                         <FormItem>
                           <FormLabel>{t("auth.email")}</FormLabel>
                           <FormControl>
-                            <Input
-                              {...field}
+                            <input
+                              type="email"
                               placeholder="tu@email.com"
-                              className="bg-card/50 border-muted-foreground/30 focus-visible:ring-primary"
-                              onChange={(e) => field.onChange(e.target.value)}
-                              value={field.value || ""}
+                              className="border p-2 hover:border-primary rounded-md block w-full bg-card/50 border-muted-foreground/30 focus-visible:ring-primary"
+                              onChange={handleEmailChange}
+                              disabled={isLoading}
                             />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-
                     <FormField
                       control={signupForm.control}
                       name="password"
@@ -689,11 +712,11 @@ export default function AuthPage() {
                           <FormLabel>{t("auth.password")}</FormLabel>
                           <FormControl>
                             <div className="relative">
-                              <Input
+                              <input
                                 type={showPassword ? "text" : "password"}
                                 placeholder="••••••••"
-                                className="bg-card/50 border-muted-foreground/30 focus-visible:ring-primary pr-10"
-                                {...field}
+                                className="border p-2 hover:border-primary rounded-md block w-full  bg-card/50 border-muted-foreground/30 focus-visible:ring-primary pr-10"
+                                onChange={handlePasswordChange}
                                 disabled={isLoading}
                               />
                               <button
@@ -721,11 +744,11 @@ export default function AuthPage() {
                           <FormLabel>{t("auth.confirmPassword")}</FormLabel>
                           <FormControl>
                             <div className="relative">
-                              <Input
+                              <input
                                 type={showPassword ? "text" : "password"}
                                 placeholder="••••••••"
-                                className="bg-card/50 border-muted-foreground/30 focus-visible:ring-primary pr-10"
-                                {...field}
+                                className="border p-2 hover:border-primary rounded-md block w-full  bg-card/50 border-muted-foreground/30 focus-visible:ring-primary pr-10"
+                                onChange={handleConfirmPasswordChange}
                                 disabled={isLoading}
                               />
                             </div>

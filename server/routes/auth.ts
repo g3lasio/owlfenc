@@ -1,8 +1,24 @@
 import { Router, Request, Response } from 'express';
 import { sendPasswordResetEmail, sendWelcomeEmail } from '../services/email';
-
+import jwt from 'jsonwebtoken';
 const router = Router();
 
+const JWT_SECRET = "b3e1cf944dc640cd8d33b1b8aee2f4302fc3fd8b30a84720b98e4dc8e5ae6720"
+const JWT_EXPIRES_IN ="1d"
+const generateToken = (payload:{
+  id: number,
+  username: string,
+  email: string,
+  role: string
+}) => {
+  return jwt.sign(payload, JWT_SECRET, {
+    expiresIn: JWT_EXPIRES_IN,
+  });
+};
+
+router.post("/generate-token", async (req: Request, res: Response) =>{
+  
+})
 // Ruta para solicitar restablecimiento de contraseña
 router.post('/password-reset', async (req: Request, res: Response) => {
   try {
