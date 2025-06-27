@@ -1403,214 +1403,28 @@ export class EstimatorService {
     return '1-3 días laborales';
   }
 }
-    } catch (error) {
-      console.error('Error generating estimate HTML:', error);
-      throw error;
-    }
-  }
 
-  /**
-   * Helper method to format addresses
-   */
-  private formatFullAddress(address: any): string {
-    if (!address) return '';
-
-    if (typeof address === 'string') return address;
-
-    const parts = [];
-    if (address.street) parts.push(address.street);
-    if (address.city) parts.push(address.city);
-    if (address.state) parts.push(address.state);
-    if (address.zip) parts.push(address.zip);
-
-    return parts.join(', ');
-  }
-
-  /**
-   * Helper method to format dates
-   */
-  private formatDate(dateValue: any): string {
-    if (!dateValue) return '';
-
-    try {
-      const date = new Date(dateValue);
-      return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-    } catch {
-      return '';
-    }
-  }
-
-  /**
-   * Helper method to calculate valid until date
-   */
-  private calculateValidUntil(): string {
-    const date = new Date();
-    date.setDate(date.getDate() + 30); // 30 days from now
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  }
-
-  /**
-   * Helper method to get completion time
-   */
-  private getCompletionTime(estimateData: any): string {
-    if (estimateData.rulesBasedEstimate?.estimatedDays) {
-      const days = estimateData.rulesBasedEstimate.estimatedDays;
-      return `${days} ${days === 1 ? 'day' : 'days'}`;
-    }
-    return '';
-  }
-
-  /**
-   * Helper method to get estimate total
-   */
-  private getEstimateTotal(estimateData: any): number {
-    if (!estimateData.rulesBasedEstimate) return 0;
-
-    const materialTotal = estimateData.rulesBasedEstimate.materialTotal || 0;
-    const laborTotal = estimateData.rulesBasedEstimate.labor?.totalCost || 0;
-    const additionalTotal = estimateData.rulesBasedEstimate.additionalTotal || 0;
-    const subtotal = materialTotal + laborTotal + additionalTotal;
-    const taxAmount = subtotal * 0.0875; // 8.75% tax rate
-
-    return subtotal + taxAmount;
-  }
-
-  /**
-   * Helper method to format currency
-   */
-  private formatCurrency(value: number): string {
-    return value.toLocaleString('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    });
-  }
-
-  /**
-   * Generate estimate table rows HTML
-   */
-  private generateEstimateTableRows(estimateData: any): string {
-    let html = '';
-
-    // Materials section
-    if (estimateData.rulesBasedEstimate?.materials) {
-      const materials = estimateData.rulesBasedEstimate.materials;
-
-      Object.entries(materials).forEach(([key, value]: [string, any]) => {
-        if (key === 'roofing') {
-          html += `
-          `;
-        } else if (key === 'posts') {
-          html += `
-          `;
-        } else if (key === 'rails') {
-          html += `
-          `;
-        } else if (key === 'pickets' || key === 'panels' || key === 'mesh') {
-          const itemName = key === 'pickets' ? 'Pickets' : key === 'panels' ? 'Panels' : 'Mesh';
-          const description = key === 'pickets' ? 'Vertical fence pickets' : 
-                            key === 'panels' ? 'Fence panels' : 'Wire mesh material';
-          html += `
-          `;
-        } else if (key === 'concrete') {
-          html += `
-          `;
-        } else if (key === 'underlayment' || key === 'flashing' || key === 'hardware') {
-          const itemName = key === 'underlayment' ? 'Underlayment' : 
-                          key === 'flashing' ? 'Flashing' : 'Hardware';
-          const description = key === 'underlayment' ? 'Protective underlayment material' :
-                            key === 'flashing' ? 'Weather protection flashing' : 'Installation hardware';
-          html += `
-          `;
-        }
-      });
-    }
-
-    // Labor section
-    if (estimateData.rulesBasedEstimate?.labor) {
-      const labor = estimateData.rulesBasedEstimate.labor;
-      html += `
-      `;
-    }
-
-    // Additional costs section
-    if (estimateData.rulesBasedEstimate?.additionalCosts) {
-      const additionalCosts = estimateData.rulesBasedEstimate.additionalCosts;
-
-      Object.entries(additionalCosts).forEach(([key, value]: [string, any]) => {
-        let itemName = key;
-        let description = 'Additional service';
-
-        if (key === 'demolition') {
-          itemName = 'Demolition/Removal';
-          description = 'Removal of existing structures';
-        } else if (key === 'painting') {
-          itemName = 'Painting/Finishing';
-          description = 'Paint and finishing work';
-        } else if (key === 'lattice') {
-          itemName = 'Lattice Work';
-          description = 'Decorative lattice installation';
-        } else if (key === 'gates') {
-          itemName = 'Gates';
-          description = 'Gate installation and hardware';
-        } else if (key === 'roofRemoval') {
-          itemName = 'Roof Removal';
-          description = 'Existing roof removal';
-        } else if (key === 'ventilation') {
-          itemName = 'Ventilation';
-          description = 'Ventilation system installation';
-        } else if (key === 'gutters') {
-          itemName = 'Gutters';
-          description = 'Gutter system installation';
-        }
-
-        html += `
-        `;
-      });
-    }
-
-    return html;
-  }
-}
-
-// Exportar una instancia del servicio
 export const estimatorService = new EstimatorService();
 
-// Función procesadora de mensajes para el chat (requerida por chatService)
 export async function estimateMessageProcessor(
   userId: number,
   sessionId: string,
   message: string,
-  history: any[],
-  req: any
-) {
+  history: any[]
+): Promise<any> {
   try {
-    console.log(`Procesando mensaje de estimado para usuario ${userId}`);
-
-    // Procesar el mensaje y extraer información relevante para el estimado
-    // Por ahora, devolver una respuesta básica
+    // Simple estimate processor for email functionality
     return {
-      text: `He recibido tu solicitud de estimado: "${message}". Te ayudo a crear un estimado detallado. ¿Podrías proporcionarme más detalles sobre el tipo de proyecto?`,
-      role: 'assistant',
-      sessionId,
-      userId
+      success: true,
+      estimate: {
+        items: [{ name: 'Service', quantity: 1, price: 1000, total: 1000 }],
+        subtotal: 1000,
+        tax: 87.5,
+        total: 1087.5
+      }
     };
   } catch (error) {
-    console.error('Error en estimateMessageProcessor:', error);
-    return {
-      text: 'Disculpa, hubo un error procesando tu solicitud de estimado. ¿Podrías intentar de nuevo?',
-      role: 'assistant',
-      sessionId,
-      userId
-    };
+    console.error('Error processing estimate message:', error);
+    throw error;
   }
 }

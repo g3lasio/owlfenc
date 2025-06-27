@@ -3190,14 +3190,30 @@ Output must be between 200-900 characters in English.`;
       console.log('📧 [ESTIMATE-SEND] Iniciando envío de estimado por email...');
       
       const schema = z.object({
-        to: z.string().email(),
-        estimateData: z.record(z.any()),
+        estimateData: z.object({
+          client: z.object({
+            name: z.string(),
+            email: z.string().email()
+          }),
+          contractor: z.object({
+            name: z.string().optional(),
+            email: z.string().email().optional()
+          }).optional(),
+          items: z.array(z.any()),
+          subtotal: z.number(),
+          tax: z.number(),
+          total: z.number()
+        }),
+        sendCopy: z.boolean().optional(),
         html: z.string().optional(),
         subject: z.string().optional(),
         message: z.string().optional()
       });
 
-      const { to, estimateData, html, subject, message } = schema.parse(req.body);
+      const { estimateData, sendCopy, html, subject, message } = schema.parse(req.body);
+      
+      // Extract email from nested structure
+      const to = estimateData.client.email;
       
       // Generar HTML del estimado si no se proporciona
       let estimateHtml = html;
