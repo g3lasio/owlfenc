@@ -3184,6 +3184,74 @@ Output must be between 200-900 characters in English.`;
     },
   );
 
+  // *** ESTIMATE EMAIL SENDING ROUTE ***
+  app.post("/api/estimates/send", async (req: Request, res: Response) => {
+    try {
+      console.log('📧 [ESTIMATE-SEND] Iniciando envío de estimado por email...');
+      
+      const schema = z.object({
+        to: z.string().email(),
+        estimateData: z.record(z.any()),
+        html: z.string().optional(),
+        subject: z.string().optional(),
+        message: z.string().optional()
+      });
+
+      const { to, estimateData, html, subject, message } = schema.parse(req.body);
+      
+      // Generar HTML del estimado si no se proporciona
+      let estimateHtml = html;
+      if (!estimateHtml) {
+        console.log('📄 [ESTIMATE-SEND] Generando HTML del estimado...');
+        estimateHtml = await estimatorService.generateEstimateHtml(estimateData);
+      }
+      
+      // Preparar datos del email
+      const emailSubject = subject || `Estimado Profesional - ${estimateData.client?.name || 'Su Proyecto'}`;
+      const emailMessage = message || 'Le enviamos su estimado profesional para revisión.';
+      
+      // Enviar email usando el servicio de email
+      console.log(`📧 [ESTIMATE-SEND] Enviando email a: ${to}`);
+      const emailSent = await sendEmail({
+        to: to,
+        from: 'no-reply@owlfence.com',
+        subject: emailSubject,
+        html: estimateHtml,
+        text: emailMessage
+      });
+      
+      if (emailSent) {
+        console.log('✅ [ESTIMATE-SEND] Email enviado exitosamente');
+        res.json({
+          success: true,
+          message: `Estimado enviado exitosamente a ${to}`
+        });
+      } else {
+        console.error('❌ [ESTIMATE-SEND] Error enviando email');
+        res.status(500).json({
+          success: false,
+          message: 'Error enviando email'
+        });
+      }
+      
+    } catch (error) {
+      console.error('❌ [ESTIMATE-SEND] Error en endpoint:', error);
+      
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          success: false,
+          message: 'Datos de entrada inválidos',
+          errors: error.errors
+        });
+      }
+      
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor'
+      });
+    }
+  });
+
   // *** SUBSCRIPTION ROUTES ***
   app.get("/api/subscription/plans", async (req: Request, res: Response) => {
     try {
