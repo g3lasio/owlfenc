@@ -76,9 +76,7 @@ app.use('/api/legal-defense-legacy', legalDefenseRoutes); // Keep legacy for com
 console.log('🛡️ [LEGAL-DEFENSE] Sistema unificado de contratos registrado en /api/legal-defense/generate-contract');
 console.log('🤖 [ANTHROPIC] Sistema inteligente de contratos registrado en /api/anthropic/generate-contract');
 
-// 🔧 Registrar rutas principales (incluye AI enhancement y DeepSearch)
-registerRoutes(app);
-
+// Add logging middleware first
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -110,12 +108,17 @@ app.use((req, res, next) => {
   next();
 });
 
+// 🔧 Registrar TODAS las rutas de API ANTES de iniciar el servidor
+// Add OCR simplified routes
+app.use('/api/ocr', ocrSimpleRoutes);
+
+// Add email contract routes
+app.use('/api/email', emailContractRoutes);
+
+// 🔧 Registrar rutas principales (incluye AI enhancement y DeepSearch)
+registerRoutes(app);
+
 (async () => {
-  // Add OCR simplified routes
-  app.use('/api/ocr', ocrSimpleRoutes);
-  
-  // Add email contract routes
-  app.use('/api/email', emailContractRoutes);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

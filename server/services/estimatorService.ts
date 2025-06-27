@@ -958,6 +958,453 @@ export class EstimatorService {
       return processedHtml;
     } catch (error) {
       console.error('Error generating estimate HTML:', error);
+      // Return fallback HTML template when main template fails
+      return this.generateFallbackEstimateHtml(estimateData);
+    }
+  }
+
+  /**
+   * Genera HTML de respaldo cuando falla la plantilla principal
+   */
+  private generateFallbackEstimateHtml(estimateData: any): string {
+    const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estimado Profesional</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; color: #333; }
+        .header { text-align: center; border-bottom: 2px solid #0079F2; padding-bottom: 20px; margin-bottom: 30px; }
+        .company-info { margin-bottom: 20px; }
+        .estimate-details { display: flex; justify-content: space-between; margin-bottom: 30px; }
+        .client-info, .estimate-meta { flex: 1; }
+        .estimate-meta { text-align: right; }
+        .items-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+        .items-table th, .items-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        .items-table th { background-color: #f8f9fa; }
+        .totals { text-align: right; margin-bottom: 30px; }
+        .total-line { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .total-final { font-weight: bold; font-size: 1.2em; border-top: 2px solid #333; padding-top: 10px; }
+        .terms { margin-top: 30px; font-size: 0.9em; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>ESTIMADO PROFESIONAL</h1>
+        <div class="company-info">
+            <h2>${estimateData.contractor?.companyName || estimateData.contractor?.name || 'Su Empresa'}</h2>
+            <p>${this.formatFullAddress(estimateData.contractor?.address) || 'Dirección de la empresa'}</p>
+            <p>Teléfono: ${estimateData.contractor?.phone || '(555) 123-4567'} | Email: ${estimateData.contractor?.email || 'contacto@empresa.com'}</p>
+        </div>
+    </div>
+
+    <div class="estimate-details">
+        <div class="client-info">
+            <h3>Cliente:</h3>
+            <p><strong>${estimateData.client?.name || 'Nombre del Cliente'}</strong></p>
+            <p>${estimateData.client?.email || 'email@cliente.com'}</p>
+            <p>${estimateData.client?.phone || '(555) 987-6543'}</p>
+            <p>${this.formatFullAddress(estimateData.client?.address) || 'Dirección del cliente'}</p>
+        </div>
+        <div class="estimate-meta">
+            <p><strong>Número de Estimado:</strong> ${estimateData.estimateNumber || `EST-${Date.now()}`}</p>
+            <p><strong>Fecha:</strong> ${this.formatDate(estimateData.estimateDate) || new Date().toLocaleDateString()}</p>
+            <p><strong>Válido hasta:</strong> ${this.formatDate(estimateData.validUntil) || this.calculateValidUntil()}</p>
+        </div>
+    </div>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th>Descripción</th>
+                <th>Cantidad</th>
+                <th>Precio Unitario</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${this.generateEstimateTableRows(estimateData)}
+        </tbody>
+    </table>
+
+    <div class="totals">
+        <div class="total-line">
+            <span>Subtotal:</span>
+            <span>${this.formatCurrency(this.getSubtotal(estimateData))}</span>
+        </div>
+        <div class="total-line">
+            <span>Impuestos:</span>
+            <span>${this.formatCurrency(this.getTaxAmount(estimateData))}</span>
+        </div>
+        <div class="total-line total-final">
+            <span>TOTAL:</span>
+            <span>${this.formatCurrency(this.getEstimateTotal(estimateData))}</span>
+        </div>
+    </div>
+
+    <div class="terms">
+        <h4>Términos y Condiciones:</h4>
+        <p>• Este estimado es válido por 30 días desde la fecha de emisión.</p>
+        <p>• Los precios están sujetos a cambios sin previo aviso.</p>
+        <p>• Se requiere un depósito del 50% para iniciar el trabajo.</p>
+        <p>• El trabajo será completado según las especificaciones acordadas.</p>
+    </div>
+</body>
+</html>`;
+
+    return html;
+  }
+
+  /**
+   * Formatea una dirección completa
+   */
+  private formatFullAddress(address: any): string {
+    if (typeof address === 'string') {
+      return address;
+    }
+    if (typeof address === 'object' && address !== null) {
+      const parts = [
+        address.street || address.address,
+        address.city,
+        address.state,
+        address.zipCode || address.zip
+      ].filter(Boolean);
+      return parts.join(', ');
+    }
+    return '';
+  }
+
+  /**
+   * Formatea una fecha
+   */
+  private formatDate(date: any): string {
+    if (!date) return '';
+    if (typeof date === 'string') {
+      return new Date(date).toLocaleDateString();
+    }
+    if (date instanceof Date) {
+      return date.toLocaleDateString();
+    }
+    return '';
+  }
+
+  /**
+   * Calcula fecha de validez del estimado (30 días)
+   */
+  private calculateValidUntil(): string {
+    const date = new Date();
+    date.setDate(date.getDate() + 30);
+    return date.toLocaleDateString();
+  }
+
+  /**
+   * Formatea cantidad como moneda
+   */
+  private formatCurrency(amount: number): string {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount || 0);
+  }
+
+  /**
+   * Genera las filas de la tabla de items
+   */
+  private generateEstimateTableRows(estimateData: any): string {
+    const items = estimateData.items || [];
+    if (items.length === 0) {
+      return '<tr><td colspan="4">No hay items especificados</td></tr>';
+    }
+
+    return items.map((item: any) => `
+      <tr>
+        <td>${item.name || item.description || 'Item'}</td>
+        <td>${item.quantity || 1}</td>
+        <td>${this.formatCurrency(item.price || item.unitPrice || 0)}</td>
+        <td>${this.formatCurrency(item.total || item.totalPrice || (item.quantity || 1) * (item.price || item.unitPrice || 0))}</td>
+      </tr>
+    `).join('');
+  }
+
+  /**
+   * Obtiene el subtotal del estimado
+   */
+  private getSubtotal(estimateData: any): number {
+    if (estimateData.subtotal) return estimateData.subtotal;
+    
+    const items = estimateData.items || [];
+    return items.reduce((sum: number, item: any) => {
+      return sum + (item.total || item.totalPrice || (item.quantity || 1) * (item.price || item.unitPrice || 0));
+    }, 0);
+  }
+
+  /**
+   * Obtiene el monto de impuestos
+   */
+  private getTaxAmount(estimateData: any): number {
+    if (estimateData.tax || estimateData.taxAmount) {
+      return estimateData.tax || estimateData.taxAmount;
+    }
+    
+    const subtotal = this.getSubtotal(estimateData);
+    const taxRate = estimateData.taxRate || 0.0875; // 8.75% por defecto
+    return subtotal * taxRate;
+  }
+
+  /**
+   * Obtiene el total del estimado
+   */
+  private getEstimateTotal(estimateData: any): number {
+    if (estimateData.total) return estimateData.total;
+    
+    const subtotal = this.getSubtotal(estimateData);
+    const tax = this.getTaxAmount(estimateData);
+    return subtotal + tax;
+  }
+
+  /**
+   * Obtiene tiempo de completación estimado
+   */
+  private getCompletionTime(estimateData: any): string {
+    if (estimateData.timeline) return estimateData.timeline;
+    if (estimateData.estimatedDays) return `${estimateData.estimatedDays} días`;
+    
+    // Estimación básica basada en el tipo de proyecto
+    const projectType = estimateData.projectType || estimateData.project?.type || '';
+    if (projectType.toLowerCase().includes('fence')) {
+      return '2-5 días laborales';
+    }
+    if (projectType.toLowerCase().includes('roof')) {
+      return '3-7 días laborales';
+    }
+    return '1-3 días laborales';
+  }
+
+  /**
+   * Genera el HTML para un estimado usando plantilla simplificada
+   */
+  async generateEstimateHtml(estimateData: any): Promise<string> {
+    console.log('Generando HTML del estimado...');
+
+    const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estimado Profesional</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; color: #333; }
+        .header { text-align: center; border-bottom: 2px solid #0079F2; padding-bottom: 20px; margin-bottom: 30px; }
+        .company-info { margin-bottom: 20px; }
+        .estimate-details { display: flex; justify-content: space-between; margin-bottom: 30px; }
+        .client-info, .estimate-meta { flex: 1; }
+        .estimate-meta { text-align: right; }
+        .items-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+        .items-table th, .items-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        .items-table th { background-color: #f8f9fa; }
+        .totals { text-align: right; margin-bottom: 30px; }
+        .total-line { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .total-final { font-weight: bold; font-size: 1.2em; border-top: 2px solid #333; padding-top: 10px; }
+        .terms { margin-top: 30px; font-size: 0.9em; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>ESTIMADO PROFESIONAL</h1>
+        <div class="company-info">
+            <h2>${estimateData.contractor?.companyName || estimateData.contractor?.name || 'Su Empresa'}</h2>
+            <p>${this.formatFullAddress(estimateData.contractor?.address) || 'Dirección de la empresa'}</p>
+            <p>Teléfono: ${estimateData.contractor?.phone || '(555) 123-4567'} | Email: ${estimateData.contractor?.email || 'contacto@empresa.com'}</p>
+        </div>
+    </div>
+
+    <div class="estimate-details">
+        <div class="client-info">
+            <h3>Cliente:</h3>
+            <p><strong>${estimateData.client?.name || 'Nombre del Cliente'}</strong></p>
+            <p>${estimateData.client?.email || 'email@cliente.com'}</p>
+            <p>${estimateData.client?.phone || '(555) 987-6543'}</p>
+            <p>${this.formatFullAddress(estimateData.client?.address) || 'Dirección del cliente'}</p>
+        </div>
+        <div class="estimate-meta">
+            <p><strong>Número de Estimado:</strong> ${estimateData.estimateNumber || `EST-${Date.now()}`}</p>
+            <p><strong>Fecha:</strong> ${this.formatDate(estimateData.estimateDate) || new Date().toLocaleDateString()}</p>
+            <p><strong>Válido hasta:</strong> ${this.formatDate(estimateData.validUntil) || this.calculateValidUntil()}</p>
+        </div>
+    </div>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th>Descripción</th>
+                <th>Cantidad</th>
+                <th>Precio Unitario</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${this.generateEstimateTableRows(estimateData)}
+        </tbody>
+    </table>
+
+    <div class="totals">
+        <div class="total-line">
+            <span>Subtotal:</span>
+            <span>${this.formatCurrency(this.getSubtotal(estimateData))}</span>
+        </div>
+        <div class="total-line">
+            <span>Impuestos:</span>
+            <span>${this.formatCurrency(this.getTaxAmount(estimateData))}</span>
+        </div>
+        <div class="total-line total-final">
+            <span>TOTAL:</span>
+            <span>${this.formatCurrency(this.getEstimateTotal(estimateData))}</span>
+        </div>
+    </div>
+
+    <div class="terms">
+        <h4>Términos y Condiciones:</h4>
+        <p>• Este estimado es válido por 30 días desde la fecha de emisión.</p>
+        <p>• Los precios están sujetos a cambios sin previo aviso.</p>
+        <p>• Se requiere un depósito del 50% para iniciar el trabajo.</p>
+        <p>• El trabajo será completado según las especificaciones acordadas.</p>
+    </div>
+</body>
+</html>`;
+
+    return html;
+  }
+
+  /**
+   * Formatea una dirección completa
+   */
+  private formatFullAddress(address: any): string {
+    if (typeof address === 'string') {
+      return address;
+    }
+    if (typeof address === 'object' && address !== null) {
+      const parts = [
+        address.street || address.address,
+        address.city,
+        address.state,
+        address.zipCode || address.zip
+      ].filter(Boolean);
+      return parts.join(', ');
+    }
+    return '';
+  }
+
+  /**
+   * Formatea una fecha
+   */
+  private formatDate(date: any): string {
+    if (!date) return '';
+    if (typeof date === 'string') {
+      return new Date(date).toLocaleDateString();
+    }
+    if (date instanceof Date) {
+      return date.toLocaleDateString();
+    }
+    return '';
+  }
+
+  /**
+   * Calcula fecha de validez del estimado (30 días)
+   */
+  private calculateValidUntil(): string {
+    const date = new Date();
+    date.setDate(date.getDate() + 30);
+    return date.toLocaleDateString();
+  }
+
+  /**
+   * Formatea cantidad como moneda
+   */
+  private formatCurrency(amount: number): string {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount || 0);
+  }
+
+  /**
+   * Genera las filas de la tabla de items
+   */
+  private generateEstimateTableRows(estimateData: any): string {
+    const items = estimateData.items || [];
+    if (items.length === 0) {
+      return '<tr><td colspan="4">No hay items especificados</td></tr>';
+    }
+
+    return items.map((item: any) => `
+      <tr>
+        <td>${item.name || item.description || 'Item'}</td>
+        <td>${item.quantity || 1}</td>
+        <td>${this.formatCurrency(item.price || item.unitPrice || 0)}</td>
+        <td>${this.formatCurrency(item.total || item.totalPrice || (item.quantity || 1) * (item.price || item.unitPrice || 0))}</td>
+      </tr>
+    `).join('');
+  }
+
+  /**
+   * Obtiene el subtotal del estimado
+   */
+  private getSubtotal(estimateData: any): number {
+    if (estimateData.subtotal) return estimateData.subtotal;
+    
+    const items = estimateData.items || [];
+    return items.reduce((sum: number, item: any) => {
+      return sum + (item.total || item.totalPrice || (item.quantity || 1) * (item.price || item.unitPrice || 0));
+    }, 0);
+  }
+
+  /**
+   * Obtiene el monto de impuestos
+   */
+  private getTaxAmount(estimateData: any): number {
+    if (estimateData.tax || estimateData.taxAmount) {
+      return estimateData.tax || estimateData.taxAmount;
+    }
+    
+    const subtotal = this.getSubtotal(estimateData);
+    const taxRate = estimateData.taxRate || 0.0875; // 8.75% por defecto
+    return subtotal * taxRate;
+  }
+
+  /**
+   * Obtiene el total del estimado
+   */
+  private getEstimateTotal(estimateData: any): number {
+    if (estimateData.total) return estimateData.total;
+    
+    const subtotal = this.getSubtotal(estimateData);
+    const tax = this.getTaxAmount(estimateData);
+    return subtotal + tax;
+  }
+
+  /**
+   * Obtiene tiempo de completación estimado
+   */
+  private getCompletionTime(estimateData: any): string {
+    if (estimateData.timeline) return estimateData.timeline;
+    if (estimateData.estimatedDays) return `${estimateData.estimatedDays} días`;
+    
+    // Estimación básica basada en el tipo de proyecto
+    const projectType = estimateData.projectType || estimateData.project?.type || '';
+    if (projectType.toLowerCase().includes('fence')) {
+      return '2-5 días laborales';
+    }
+    if (projectType.toLowerCase().includes('roof')) {
+      return '3-7 días laborales';
+    }
+    return '1-3 días laborales';
+  }
+}
+    } catch (error) {
+      console.error('Error generating estimate HTML:', error);
       throw error;
     }
   }
