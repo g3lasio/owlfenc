@@ -20,7 +20,7 @@ router.post("/generate-token", async (req: Request, res: Response) =>{
   try{
     const {id, username, email, role} = req.body;
     const token = generateToken({id, username, email, role});
-    res.status(200).json({token}, {message: "Token generated successfully"});
+    res.status(200).json({token, message: "Token generated successfully"});
   }catch(err){
     res.status(500).json({message: "Error generating token"});
   }
