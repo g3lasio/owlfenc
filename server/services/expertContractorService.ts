@@ -65,7 +65,7 @@ export class ExpertContractorService {
             supplier: 'Home Depot/Lowes',
             quantityFormula: 'Math.ceil(linearFeet / 8) + 1',
             wasteFactorPercent: 5,
-            unitPriceRange: { min: 8, max: 12, typical: 10 },
+            unitPriceRange: { min: 6, max: 9, typical: 7.5 },
             laborHoursPerUnit: 0.50,
             specialRequirements: ['Post hole digger', 'Concrete mix']
           },
@@ -88,7 +88,7 @@ export class ExpertContractorService {
             supplier: 'Specialty Lumber',
             quantityFormula: '(linearFeet * height) / 0.5', // 6" coverage
             wasteFactorPercent: 10,
-            unitPriceRange: { min: 2.50, max: 4.50, typical: 3.25 },
+            unitPriceRange: { min: 2.00, max: 2.75, typical: 2.25 },
             laborHoursPerUnit: 0.06
           },
           '1x8x8_pt': {
