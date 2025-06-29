@@ -41,6 +41,7 @@ interface ProjectDimensions {
   circuits?: number;
   pitch?: number; // para techos
   depth?: number; // para concreto
+  squares?: number; // para roofing (100 sqft = 1 square)
 }
 
 export class MultiIndustryExpertService {
@@ -86,7 +87,7 @@ export class MultiIndustryExpertService {
         description: 'Commercial grade laminate with attached underlayment',
         unit: 'sqft',
         category: 'flooring_material',
-        avgPriceRange: { min: 2.50, max: 6.00, typical: 3.99 },
+        avgPriceRange: { min: 5.50, max: 9.00, typical: 7.25 },
         wasteFactorPercent: 10,
         laborHoursPerUnit: 0.15,
         specifications: ['AC4 Rating', 'Water Resistant', '12mm Thick', 'Click Lock'],
@@ -126,7 +127,7 @@ export class MultiIndustryExpertService {
         description: 'Premium architectural asphalt shingles',
         unit: 'square', // 100 sqft
         category: 'roofing_material',
-        avgPriceRange: { min: 95, max: 150, typical: 120 },
+        avgPriceRange: { min: 180, max: 280, typical: 230 },
         wasteFactorPercent: 15,
         laborHoursPerUnit: 6,
         specifications: ['30-Year Warranty', 'Class A Fire Rating', 'Wind Resistant'],
@@ -388,9 +389,16 @@ export class MultiIndustryExpertService {
     {
       industry: 'roofing',
       projectType: 'shingle_installation',
-      formula: (dims: ProjectDimensions) => (dims.squareFeet || 0) / 100,
+      formula: (dims: ProjectDimensions) => dims.squares || (dims.squareFeet || 0) / 100,
       unit: 'squares',
       description: 'Roofing squares: total roof area ÷ 100'
+    },
+    {
+      industry: 'roofing',
+      projectType: 'roof_coverage',
+      formula: (dims: ProjectDimensions) => dims.squares || (dims.squareFeet || 0) / 100,
+      unit: 'squares',
+      description: 'Primary roofing material coverage'
     },
     {
       industry: 'roofing',
@@ -408,14 +416,36 @@ export class MultiIndustryExpertService {
       unit: 'gallons',
       description: 'Paint needed: wall area ÷ 350 sqft coverage per gallon'
     },
+    {
+      industry: 'painting',
+      projectType: 'interior_painting',
+      formula: (dims: ProjectDimensions) => Math.ceil((dims.squareFeet || 0) / 350),
+      unit: 'gallons',
+      description: 'Interior paint coverage calculation'
+    },
 
     // CONCRETE FORMULAS
     {
       industry: 'concrete',
       projectType: 'slab_pour',
-      formula: (dims: ProjectDimensions) => ((dims.length || 0) * (dims.width || 0) * (dims.depth || 4/12)) / 27,
+      formula: (dims: ProjectDimensions) => {
+        const area = dims.squareFeet || dims.area || 0;
+        const depth = dims.depth || 4; // inches
+        return Math.ceil((area * (depth / 12)) / 27); // convert to cubic yards
+      },
       unit: 'cubic_yards',
-      description: 'Concrete needed: length × width × depth ÷ 27'
+      description: 'Concrete needed: area × depth ÷ 27'
+    },
+    {
+      industry: 'concrete',
+      projectType: 'concrete_mixing',
+      formula: (dims: ProjectDimensions) => {
+        const area = dims.squareFeet || dims.area || 0;
+        const depth = dims.depth || 4;
+        return Math.ceil((area * (depth / 12)) / 27);
+      },
+      unit: 'cubic_yards',
+      description: 'Concrete volume calculation'
     },
 
     // RETAINING WALL FORMULAS
@@ -549,13 +579,26 @@ export class MultiIndustryExpertService {
     // Patrones específicos por industria
     switch (industry) {
       case 'concrete':
-        const depthMatch = description.match(/(\d+(?:\.\d+)?)\s*(?:inches?|in|deep|depth)/i);
+        const depthMatch = description.match(/(\d+(?:\.\d+)?)\s*(?:inches?|in|deep|depth|thick)/i);
         if (depthMatch) dimensions.depth = parseFloat(depthMatch[1]);
         break;
         
       case 'roofing':
+        const squaresMatch = description.match(/(\d+(?:\.\d+)?)\s*(?:squares?|sq)/i);
+        if (squaresMatch) dimensions.squares = parseFloat(squaresMatch[1]);
         const pitchMatch = description.match(/(\d+)\/(\d+)\s*pitch/i);
         if (pitchMatch) dimensions.pitch = parseFloat(pitchMatch[1]) / parseFloat(pitchMatch[2]);
+        break;
+        
+      case 'painting':
+        // For painting, if no area is specified, try to extract from "house" references
+        if (!dimensions.squareFeet && !dimensions.area) {
+          const houseMatch = description.match(/(\d+(?:\.\d+)?)\s*(?:square\s*foot|sqft|sq\s*ft)\s*house/i);
+          if (houseMatch) {
+            dimensions.squareFeet = parseFloat(houseMatch[1]);
+            dimensions.area = dimensions.squareFeet;
+          }
+        }
         break;
         
       case 'plumbing':
