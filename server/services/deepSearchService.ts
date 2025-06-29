@@ -14,6 +14,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { smartMaterialCacheService } from './smartMaterialCacheService';
 import { expertContractorService } from './expertContractorService';
+import { MultiIndustryExpertService } from './multiIndustryExpertService';
 
 // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
 const anthropic = new Anthropic({
@@ -66,6 +67,7 @@ export interface DeepSearchResult {
 
 export class DeepSearchService {
   private readonly MODEL = 'claude-3-7-sonnet-20250219';
+  private multiIndustryService = new MultiIndustryExpertService();
 
   /**
    * Analiza una descripción de proyecto y genera una lista completa de materiales
@@ -150,7 +152,47 @@ export class DeepSearchService {
 
     } catch (error: any) {
       console.error('❌ DeepSearch Error:', error);
-      throw new Error(`Error en análisis DeepSearch: ${error.message}`);
+      console.log('🔄 Activating Multi-Industry fallback system');
+      
+      // FALLBACK MEJORADO: Usar el servicio multi-industria
+      try {
+        const fallbackResult = this.multiIndustryService.generateMultiIndustryEstimate(
+          projectDescription, 
+          location || 'CA'
+        );
+        
+        // Convertir al formato esperado por DeepSearch
+        const compatibleResult: DeepSearchResult = {
+          projectType: fallbackResult.analysis.industriesDetected.join(', '),
+          projectScope: projectDescription,
+          materials: fallbackResult.materials,
+          laborCosts: [],
+          additionalCosts: [],
+          totalMaterialsCost: fallbackResult.costs.materials,
+          totalLaborCost: fallbackResult.costs.labor,
+          totalAdditionalCost: 0,
+          grandTotal: fallbackResult.costs.total,
+          confidence: 0.85,
+          recommendations: [
+            `✅ Multi-Industry Expert Analysis: ${fallbackResult.analysis.industriesDetected.join(', ')}`,
+            `🏗️ ${fallbackResult.analysis.precisionLevel}`,
+            '🔧 Generated using fallback expert contractor system'
+          ],
+          warnings: ['Used fallback system due to AI service unavailability']
+        };
+        
+        console.log('✅ Multi-Industry Fallback: Análisis completado', { 
+          materialCount: compatibleResult.materials.length,
+          totalCost: compatibleResult.grandTotal,
+          industries: fallbackResult.analysis.industriesDetected
+        });
+        
+        return compatibleResult;
+        
+      } catch (fallbackError: any) {
+        console.error('❌ Multi-Industry Fallback también falló:', fallbackError);
+        throw new Error(`Error en análisis DeepSearch: ${error.message}`);
+      }
     }
   }
 
