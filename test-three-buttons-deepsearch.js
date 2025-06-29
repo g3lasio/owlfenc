@@ -11,7 +11,7 @@ async function testOnlyMaterials() {
   console.log('='.repeat(50));
   
   try {
-    const response = await fetch('http://localhost:3000/api/deepsearch/materials', {
+    const response = await fetch('http://localhost:5000/api/deepsearch/materials', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -51,7 +51,7 @@ async function testLaborOnly() {
   console.log('='.repeat(50));
   
   try {
-    const response = await fetch('http://localhost:3000/api/labor-deepsearch/labor-only', {
+    const response = await fetch('http://localhost:5000/api/labor-deepsearch/labor-only', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -91,7 +91,7 @@ async function testFullCosts() {
   console.log('='.repeat(50));
   
   try {
-    const response = await fetch('http://localhost:3000/api/labor-deepsearch/combined', {
+    const response = await fetch('http://localhost:5000/api/labor-deepsearch/combined', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
