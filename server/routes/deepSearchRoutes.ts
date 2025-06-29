@@ -28,6 +28,50 @@ const MaterialsGenerationSchema = z.object({
 export function registerDeepSearchRoutes(app: Express): void {
   
   /**
+   * POST /api/deepsearch/materials
+   * ONLY MATERIALS: Genera únicamente materiales sin costos de labor
+   */
+  app.post('/api/deepsearch/materials', async (req: Request, res: Response) => {
+    try {
+      console.log('📦 MATERIALS ONLY DeepSearch: Recibiendo solicitud', req.body);
+
+      // Validar entrada
+      const validatedData = ProjectAnalysisSchema.parse(req.body);
+      
+      // Procesar con el servicio DeepSearch
+      const analysisResult = await deepSearchService.analyzeProject(
+        validatedData.projectDescription,
+        validatedData.location
+      );
+
+      // ONLY MATERIALS: Eliminar todos los costos de labor
+      analysisResult.laborCosts = [];
+      analysisResult.totalLaborCost = 0;
+      analysisResult.grandTotal = analysisResult.totalMaterialsCost + analysisResult.totalAdditionalCost;
+
+      console.log('✅ MATERIALS ONLY: Análisis completado', {
+        materialsCount: analysisResult.materials.length,
+        totalCost: analysisResult.grandTotal
+      });
+
+      res.json({
+        success: true,
+        data: analysisResult,
+        timestamp: new Date().toISOString(),
+        searchType: 'materials_only'
+      });
+
+    } catch (error: any) {
+      console.error('❌ Error en MATERIALS ONLY DeepSearch:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Error interno del servidor',
+        searchType: 'materials_only'
+      });
+    }
+  });
+
+  /**
    * POST /api/deepsearch/analyze
    * Analiza un proyecto y genera lista completa de materiales, labor y costos
    */
