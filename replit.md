@@ -392,6 +392,12 @@ Changelog:
   * Added personalized improvement suggestions based on missing information
   * Enhanced user experience with character count and detected elements display
   * Compact design that adapts seamlessly to mobile and desktop devices
+- June 29, 2025. Optimized Smart Search by removing redundant location detection:
+  * Eliminated "Ubicación" field since client selection provides comprehensive location context
+  * Updated quality breakdown from 4 categories to 3: Dimensiones, Materiales, Detalles
+  * Simplified improvement suggestions to focus on dimensions and materials only
+  * Optimized grid layout for better visual balance (3-column responsive design)
+  * Mervin AI now uses client data (address, city, state, zip) for location context automatically
 - June 24, 2025. Fixed client address data flow in contract generator:
   * Enhanced backend /api/projects/contract-data endpoint to properly map client address fields
   * Added multiple address fallback options: project.address, project.clientAddress, project.projectAddress, project.location

@@ -3471,7 +3471,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   {/* Detailed Quality Breakdown - Expandable on Mobile */}
                   {estimate.projectDetails.trim().length >= 10 && (
                     <div className="mt-2 pt-2 border-t border-slate-200">
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                      <div className="grid grid-cols-3 sm:grid-cols-3 gap-2 text-xs">
                         {(() => {
                           const evaluation = evaluateProjectDescription(estimate.projectDetails);
                           const checks = [
@@ -3484,11 +3484,6 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                               label: "Materiales",
                               detected: /(wood|cedar|vinyl|chain|fence|concrete|steel|aluminum|material)/i.test(estimate.projectDetails),
                               color: "text-purple-600"
-                            },
-                            {
-                              label: "Ubicación",
-                              detected: /(yard|backyard|front|side|property|pool|garden|patio)/i.test(estimate.projectDetails),
-                              color: "text-green-600"
                             },
                             {
                               label: "Detalles",
@@ -3521,7 +3516,6 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       <div className="text-xs text-slate-600">
                         <span className="font-medium">Sugerencia:</span> Añade{" "}
                         {!(/\d+\s*(ft|feet|linear|sq|square)/i.test(estimate.projectDetails)) && "medidas específicas, "}
-                        {!(/yard|backyard|front|side|property/i.test(estimate.projectDetails)) && "ubicación del trabajo, "}
                         {!(/(wood|cedar|vinyl|chain|concrete)/i.test(estimate.projectDetails)) && "tipos de materiales "}
                         para mejorar la precisión del DeepSearch.
                       </div>
