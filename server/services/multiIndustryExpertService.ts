@@ -138,8 +138,8 @@ export class MultiIndustryExpertService {
         name: 'Synthetic Roofing Underlayment',
         description: 'High-performance synthetic underlayment',
         unit: 'square',
-        category: 'preparation',
-        avgPriceRange: { min: 45, max: 75, typical: 60 },
+        category: 'roofing_material',
+        avgPriceRange: { min: 65, max: 95, typical: 80 },
         wasteFactorPercent: 10,
         laborHoursPerUnit: 1.5,
         specifications: ['Tear Resistant', 'UV Stable', 'Non-Slip Surface'],
@@ -223,7 +223,7 @@ export class MultiIndustryExpertService {
         description: 'High-quality interior latex paint',
         unit: 'gallon',
         category: 'coating',
-        avgPriceRange: { min: 45, max: 85, typical: 65 },
+        avgPriceRange: { min: 85, max: 125, typical: 105 },
         wasteFactorPercent: 5,
         laborHoursPerUnit: 0.008, // per sqft coverage
         specifications: ['Zero VOC', 'One Coat Coverage', 'Washable'],
@@ -235,11 +235,35 @@ export class MultiIndustryExpertService {
         description: 'Universal bonding primer for multiple surfaces',
         unit: 'gallon',
         category: 'preparation',
-        avgPriceRange: { min: 35, max: 65, typical: 50 },
+        avgPriceRange: { min: 65, max: 95, typical: 80 },
         wasteFactorPercent: 5,
         laborHoursPerUnit: 0.007, // per sqft coverage
         specifications: ['Multi-Surface', 'High Adhesion', 'Quick Dry'],
         suppliers: ['Sherwin Williams', 'Benjamin Moore', 'Zinsser']
+      },
+      {
+        id: 'rollers_premium_9in',
+        name: '9" Premium Paint Rollers',
+        description: 'High-quality paint rollers for smooth finish',
+        unit: 'each',
+        category: 'preparation',
+        avgPriceRange: { min: 8, max: 15, typical: 12 },
+        wasteFactorPercent: 0,
+        laborHoursPerUnit: 0.1,
+        specifications: ['Lint-Free', 'High Capacity', '9-inch Width'],
+        suppliers: ['Sherwin Williams', 'Home Depot', 'Lowe\'s']
+      },
+      {
+        id: 'brushes_premium_set',
+        name: 'Premium Paint Brush Set',
+        description: 'Professional paint brush set for detail work',
+        unit: 'set',
+        category: 'preparation',
+        avgPriceRange: { min: 25, max: 45, typical: 35 },
+        wasteFactorPercent: 0,
+        laborHoursPerUnit: 0.5,
+        specifications: ['Natural Bristles', 'Multiple Sizes', 'Professional Grade'],
+        suppliers: ['Sherwin Williams', 'Benjamin Moore', 'Home Depot']
       }
     ],
 
@@ -251,7 +275,7 @@ export class MultiIndustryExpertService {
         description: 'High-strength ready-mix concrete',
         unit: 'cubic_yard',
         category: 'structural',
-        avgPriceRange: { min: 110, max: 150, typical: 130 },
+        avgPriceRange: { min: 160, max: 220, typical: 190 },
         wasteFactorPercent: 10,
         laborHoursPerUnit: 1.5,
         specifications: ['4000 PSI', '6-inch Slump', 'Air Entrained'],
@@ -263,11 +287,35 @@ export class MultiIndustryExpertService {
         description: 'Grade 60 deformed steel reinforcement bar',
         unit: 'linear_ft',
         category: 'reinforcement',
-        avgPriceRange: { min: 0.45, max: 0.75, typical: 0.60 },
+        avgPriceRange: { min: 0.65, max: 0.95, typical: 0.80 },
         wasteFactorPercent: 10,
         laborHoursPerUnit: 0.05,
         specifications: ['Grade 60', 'ASTM A615', 'Deformed'],
         suppliers: ['Steel Supply', 'Home Depot', 'Lowe\'s']
+      },
+      {
+        id: 'wire_mesh_6x6',
+        name: '6"×6" Welded Wire Mesh',
+        description: 'Concrete reinforcement wire mesh',
+        unit: 'square_ft',
+        category: 'reinforcement',
+        avgPriceRange: { min: 0.85, max: 1.25, typical: 1.05 },
+        wasteFactorPercent: 15,
+        laborHoursPerUnit: 0.02,
+        specifications: ['6×6 Grid', 'Galvanized', 'W1.4×W1.4'],
+        suppliers: ['Steel Supply', 'Home Depot', 'Concrete Supply']
+      },
+      {
+        id: 'gravel_base_crushed',
+        name: 'Crushed Stone Base',
+        description: 'Graded aggregate base for concrete',
+        unit: 'cubic_yard',
+        category: 'base',
+        avgPriceRange: { min: 35, max: 55, typical: 45 },
+        wasteFactorPercent: 5,
+        laborHoursPerUnit: 0.5,
+        specifications: ['3/4" Minus', 'Compactable', 'Clean Stone'],
+        suppliers: ['Quarry Direct', 'Landscape Supply', 'Home Depot']
       }
     ],
 
