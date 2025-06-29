@@ -3368,30 +3368,165 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   />
                 </div>
                 
-                {/* Indicador inteligente para Smart Search - Fuera del área de escritura */}
-                <div className="flex items-center justify-between mt-2">
-                  <div
-                    className={`text-xs px-3 py-1.5 rounded-full transition-all duration-300 ${
-                      estimate.projectDetails.trim().length < 10
-                        ? "bg-orange-50 text-orange-700 border border-orange-200"
-                        : evaluateProjectDescription(estimate.projectDetails)
-                              .isDetailed
-                          ? "bg-green-50 text-green-700 border border-green-200"
-                          : "bg-yellow-50 text-yellow-700 border border-yellow-200"
-                    }`}
-                  >
-                    {estimate.projectDetails.trim().length < 10
-                      ? `${10 - estimate.projectDetails.trim().length} caracteres más para Smart Search`
-                      : evaluateProjectDescription(estimate.projectDetails)
-                            .isDetailed
-                        ? "✓ Smart Search disponible"
-                        : "⚠️ Añade más detalles para Smart Search"}
+                {/* Smart Search Dynamic Bar - Compact & Mobile-Friendly */}
+                <div className="mt-3 p-3 bg-gradient-to-r from-slate-50 via-white to-slate-50 border border-slate-200 rounded-lg shadow-sm">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                    {/* Quality Indicator & Status */}
+                    <div className="flex items-center gap-2 flex-1">
+                      <div
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-300 ${
+                          estimate.projectDetails.trim().length < 10
+                            ? "bg-orange-100 text-orange-700 border border-orange-200"
+                            : evaluateProjectDescription(estimate.projectDetails).isDetailed
+                              ? "bg-green-100 text-green-700 border border-green-200"
+                              : "bg-yellow-100 text-yellow-700 border border-yellow-200"
+                        }`}
+                      >
+                        {estimate.projectDetails.trim().length < 10 ? (
+                          <>
+                            <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></div>
+                            <span>Necesita más información</span>
+                          </>
+                        ) : evaluateProjectDescription(estimate.projectDetails).isDetailed ? (
+                          <>
+                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <span>Listo para DeepSearch</span>
+                          </>
+                        ) : (
+                          <>
+                            <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                            <span>Parcialmente completo</span>
+                          </>
+                        )}
+                      </div>
+                      
+                      {/* Progress Bar */}
+                      <div className="flex-1 min-w-0">
+                        <div className="w-full bg-slate-200 rounded-full h-1.5">
+                          <div
+                            className={`h-1.5 rounded-full transition-all duration-500 ${
+                              estimate.projectDetails.trim().length < 10
+                                ? "bg-orange-400"
+                                : evaluateProjectDescription(estimate.projectDetails).isDetailed
+                                  ? "bg-green-500"
+                                  : "bg-yellow-500"
+                            }`}
+                            style={{
+                              width: `${Math.min(
+                                100,
+                                Math.max(
+                                  10,
+                                  (estimate.projectDetails.trim().length / 100) * 100
+                                )
+                              )}%`
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Character Count & Details Detected */}
+                    <div className="flex items-center gap-3 text-xs">
+                      <div className="text-slate-500">
+                        {estimate.projectDetails.length} caracteres
+                      </div>
+                      {estimate.projectDetails.trim().length >= 10 && (
+                        <div className="flex items-center gap-1 text-slate-600">
+                          <span>•</span>
+                          <span>
+                            {(() => {
+                              const evaluation = evaluateProjectDescription(estimate.projectDetails);
+                              const detectedItems = [];
+                              
+                              // Check for dimensions
+                              if (/\d+\s*(ft|feet|linear|sq|square|yard|meter|inch)/i.test(estimate.projectDetails)) {
+                                detectedItems.push("medidas");
+                              }
+                              
+                              // Check for materials
+                              if (/(wood|cedar|vinyl|chain|fence|concrete|steel|aluminum|material)/i.test(estimate.projectDetails)) {
+                                detectedItems.push("materiales");
+                              }
+                              
+                              // Check for location
+                              if (/(yard|backyard|front|side|property|pool|garden|patio)/i.test(estimate.projectDetails)) {
+                                detectedItems.push("ubicación");
+                              }
+                              
+                              // Check for project type
+                              if (/(fence|fencing|gate|deck|roof|floor|paint|electrical|plumb)/i.test(estimate.projectDetails)) {
+                                detectedItems.push("tipo");
+                              }
+
+                              return detectedItems.length > 0 
+                                ? `${detectedItems.slice(0, 2).join(", ")}${detectedItems.length > 2 ? "..." : ""} detectado${detectedItems.length > 1 ? "s" : ""}`
+                                : "descripción básica";
+                            })()}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  
-                  {/* Contador de caracteres */}
-                  <div className="text-xs text-slate-400">
-                    {estimate.projectDetails.length} caracteres
-                  </div>
+
+                  {/* Detailed Quality Breakdown - Expandable on Mobile */}
+                  {estimate.projectDetails.trim().length >= 10 && (
+                    <div className="mt-2 pt-2 border-t border-slate-200">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                        {(() => {
+                          const evaluation = evaluateProjectDescription(estimate.projectDetails);
+                          const checks = [
+                            {
+                              label: "Dimensiones",
+                              detected: /\d+\s*(ft|feet|linear|sq|square|yard|meter|inch)/i.test(estimate.projectDetails),
+                              color: "text-blue-600"
+                            },
+                            {
+                              label: "Materiales",
+                              detected: /(wood|cedar|vinyl|chain|fence|concrete|steel|aluminum|material)/i.test(estimate.projectDetails),
+                              color: "text-purple-600"
+                            },
+                            {
+                              label: "Ubicación",
+                              detected: /(yard|backyard|front|side|property|pool|garden|patio)/i.test(estimate.projectDetails),
+                              color: "text-green-600"
+                            },
+                            {
+                              label: "Detalles",
+                              detected: estimate.projectDetails.trim().length > 50,
+                              color: "text-orange-600"
+                            }
+                          ];
+
+                          return checks.map((check, index) => (
+                            <div key={index} className="flex items-center gap-1">
+                              <div
+                                className={`w-1.5 h-1.5 rounded-full ${
+                                  check.detected ? "bg-green-500" : "bg-slate-300"
+                                }`}
+                              />
+                              <span className={check.detected ? check.color : "text-slate-400"}>
+                                {check.label}
+                              </span>
+                            </div>
+                          ));
+                        })()}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Improvement Suggestions */}
+                  {estimate.projectDetails.trim().length >= 10 && 
+                   !evaluateProjectDescription(estimate.projectDetails).isDetailed && (
+                    <div className="mt-2 pt-2 border-t border-slate-200">
+                      <div className="text-xs text-slate-600">
+                        <span className="font-medium">Sugerencia:</span> Añade{" "}
+                        {!(/\d+\s*(ft|feet|linear|sq|square)/i.test(estimate.projectDetails)) && "medidas específicas, "}
+                        {!(/yard|backyard|front|side|property/i.test(estimate.projectDetails)) && "ubicación del trabajo, "}
+                        {!(/(wood|cedar|vinyl|chain|concrete)/i.test(estimate.projectDetails)) && "tipos de materiales "}
+                        para mejorar la precisión del DeepSearch.
+                      </div>
+                    </div>
+                  )}
                 </div>
                 {/* Mensaje de ayuda dinámico */}
                 {estimate.projectDetails.trim().length >= 10 &&
