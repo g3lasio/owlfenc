@@ -65,7 +65,7 @@ export class ExpertContractorService {
             supplier: 'Home Depot/Lowes',
             quantityFormula: 'Math.ceil(linearFeet / 8) + 1',
             wasteFactorPercent: 5,
-            unitPriceRange: { min: 12, max: 18, typical: 15 },
+            unitPriceRange: { min: 12, max: 18, typical: 16.2 },
             laborHoursPerUnit: 0.75,
             specialRequirements: ['Post hole digger', 'Concrete mix']
           },
@@ -88,7 +88,7 @@ export class ExpertContractorService {
             supplier: 'Specialty Lumber',
             quantityFormula: '(linearFeet * height) / 0.5', // 6" coverage
             wasteFactorPercent: 10,
-            unitPriceRange: { min: 8, max: 14, typical: 11 },
+            unitPriceRange: { min: 4, max: 7, typical: 5.50 },
             laborHoursPerUnit: 0.1
           },
           '1x8x8_pt': {
@@ -98,7 +98,7 @@ export class ExpertContractorService {
             supplier: 'Home Depot/Lowes',
             quantityFormula: '(linearFeet * height) / 0.67', // 8" coverage
             wasteFactorPercent: 10,
-            unitPriceRange: { min: 6, max: 10, typical: 8 },
+            unitPriceRange: { min: 3.50, max: 5.50, typical: 4.25 },
             laborHoursPerUnit: 0.08
           }
         },
@@ -176,9 +176,9 @@ export class ExpertContractorService {
   extractPreciseDimensions(description: string): ProjectDimensions {
     const desc = description.toLowerCase();
     
-    // Patrones más precisos para capturar dimensiones
-    const linearFeetPattern = /(\d+(?:\.\d+)?)\s*(?:linear\s*)?(?:ft|feet|foot)/i;
-    const heightPattern = /(\d+(?:\.\d+)?)\s*[-]?(?:ft|feet|foot)\s*(?:tall|high|height)|(\d+(?:\.\d+)?)\s*(?:ft|feet|foot)?\s*(?:tall|high|height)/i;
+    // Patrones mejorados para capturar todas las dimensiones
+    const linearFeetPattern = /(\d+(?:\.\d+)?)\s*(?:linear\s*)?(?:ft|feet|foot)(?!\s*(?:tall|high|height|wide|width))/i;
+    const heightPattern = /(\d+(?:\.\d+)?)\s*[-]?(?:ft|feet|foot)\s*(?:tall|high|height)|(\d+(?:\.\d+)?)\s*(?:tall|high|height)/i;
     const widthPattern = /(\d+(?:\.\d+)?)\s*(?:ft|feet|foot)\s*(?:wide|width)/i;
     const squareFeetPattern = /(\d+(?:\.\d+)?)\s*(?:sq\s*ft|square\s*feet|sf)/i;
     

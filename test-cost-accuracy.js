@@ -1,135 +1,96 @@
 /**
- * Script para probar la precisión de costos de cercas
- * Objetivo: 125 pies lineales = $7,250-$8,750 (58-70 por pie lineal)
- * Actual: $13,019 (problema identificado)
+ * Script para verificar la detección de dimensiones en múltiples industrias
  */
 
-async function testCostAccuracy() {
+async function testDimensionDetection() {
   try {
-    console.log('🧮 TESTING COST ACCURACY FOR FENCING PROJECT');
+    console.log('🔍 TESTING DIMENSION DETECTION ACROSS INDUSTRIES');
     console.log('============================================================');
-    console.log('Target: 125 linear feet = $7,250-$8,750 ($58-70 per linear foot)');
-    console.log('');
 
-    // Import the services
+    // Import the service
     const { ExpertContractorService } = await import('./server/services/expertContractorService.js');
-    const { laborDeepSearchService } = await import('./server/services/laborDeepSearchService.js');
-    
     const expertService = new ExpertContractorService();
     
-    // Test project description
-    const projectDescription = 'Install 125 linear feet of 6-foot high wooden fence with posts every 8 feet in Richmond, CA';
-    const location = 'Richmond, CA';
-    
-    console.log('🎯 EXPERT CONTRACTOR SERVICE TEST');
-    console.log('==================================================');
-    
-    // Test Expert Contractor Service
-    const expertResult = expertService.generateExpertEstimate(
-      projectDescription,
-      location,
-      'fencing'
-    );
-    
-    console.log('📏 Project Analysis:');
-    console.log('- Linear feet:', expertResult.projectAnalysis.dimensions.linearFeet);
-    console.log('- Height:', expertResult.projectAnalysis.dimensions.height);
-    console.log('- Geographic factors:', expertResult.projectAnalysis.geographicFactors);
-    console.log('');
-    
-    console.log('💰 Cost Breakdown:');
-    console.log('- Materials cost:', expertResult.costs.materials);
-    console.log('- Labor cost:', expertResult.costs.labor);
-    console.log('- Total cost:', expertResult.costs.total);
-    console.log('- Cost per linear foot:', (expertResult.costs.total / 125).toFixed(2));
-    console.log('');
-    
-    console.log('📦 Materials Detail:');
-    expertResult.materials.forEach(material => {
-      console.log(`- ${material.name}: ${material.quantity} ${material.unit} × $${material.unitPrice} = $${material.totalPrice}`);
-    });
-    console.log('');
-    
-    console.log('🔧 Labor Detail:');
-    expertResult.labor.forEach(labor => {
-      console.log(`- ${labor.description}: ${labor.hours} hours × $${labor.rate.toFixed(2)} = $${labor.total}`);
-    });
-    console.log('');
-    
-    // Test combined service
-    console.log('⚡ COMBINED SERVICE TEST');
-    console.log('==================================================');
-    
-    const combinedResult = await laborDeepSearchService.generateCombinedEstimate(
-      projectDescription,
-      true, // includeMaterials
-      true, // includeLabor
-      location,
-      'fencing'
-    );
-    
-    console.log('💰 Combined Cost Breakdown:');
-    console.log('- Materials cost:', combinedResult.totalMaterialsCost);
-    console.log('- Labor cost:', combinedResult.totalLaborCost);
-    console.log('- Grand total:', combinedResult.grandTotal);
-    console.log('- Cost per linear foot:', (combinedResult.grandTotal / 125).toFixed(2));
-    console.log('');
-    
-    // Cost analysis
-    console.log('📊 COST ANALYSIS');
-    console.log('==================================================');
-    
-    const targetMin = 125 * 58; // $7,250
-    const targetMax = 125 * 70; // $8,750
-    const expertTotal = expertResult.costs.total;
-    const combinedTotal = combinedResult.grandTotal;
-    
-    console.log('Target range:', `$${targetMin} - $${targetMax}`);
-    console.log('Expert service total:', `$${expertTotal}`);
-    console.log('Combined service total:', `$${combinedTotal}`);
-    console.log('');
-    
-    console.log('Variance from target:');
-    console.log('- Expert service:', `${(expertTotal > targetMax ? '+' : '')}${((expertTotal - targetMax) / targetMax * 100).toFixed(1)}%`);
-    console.log('- Combined service:', `${(combinedTotal > targetMax ? '+' : '')}${((combinedTotal - targetMax) / targetMax * 100).toFixed(1)}%`);
-    console.log('');
-    
-    // Recommendations
-    console.log('🎯 RECOMMENDATIONS');
-    console.log('==================================================');
-    
-    if (expertTotal > targetMax) {
-      console.log('❌ Expert service cost is too high');
-      const reduction = expertTotal - targetMax;
-      console.log(`Need to reduce by $${reduction.toFixed(2)} (${(reduction/expertTotal*100).toFixed(1)}%)`);
-      
-      // Analyze where to reduce
-      const materialPercent = (expertResult.costs.materials / expertTotal * 100).toFixed(1);
-      const laborPercent = (expertResult.costs.labor / expertTotal * 100).toFixed(1);
-      
-      console.log(`Current split: ${materialPercent}% materials, ${laborPercent}% labor`);
-      
-      if (expertResult.costs.labor > expertResult.costs.materials) {
-        console.log('🔧 Focus on reducing labor costs (largest component)');
-      } else {
-        console.log('📦 Focus on reducing material costs (largest component)');
+    // Test cases for different industries
+    const testCases = [
+      {
+        description: 'Install 125 linear feet of 6-foot high wooden fence with posts every 8 feet in Richmond, CA',
+        industry: 'fencing',
+        expectedDimensions: { linearFeet: 125, height: 6 }
+      },
+      {
+        description: 'Install 800 square feet of hardwood flooring in a 20x40 living room',
+        industry: 'flooring', 
+        expectedDimensions: { squareFeet: 800, width: 20, length: 40 }
+      },
+      {
+        description: 'Replace 30 square roof with asphalt shingles on a 2-story house',
+        industry: 'roofing',
+        expectedDimensions: { squares: 30 }
+      },
+      {
+        description: 'Paint 2000 square feet interior walls with 10 foot high ceilings',
+        industry: 'painting',
+        expectedDimensions: { squareFeet: 2000, height: 10 }
       }
-    } else {
-      console.log('✅ Expert service cost is within target range');
-    }
+    ];
+
+    testCases.forEach((testCase, index) => {
+      console.log(`\n🧪 TEST CASE ${index + 1}: ${testCase.industry.toUpperCase()}`);
+      console.log('Description:', testCase.description);
+      
+      // Test dimension extraction
+      const dimensions = expertService.extractPreciseDimensions(testCase.description);
+      console.log('Extracted dimensions:', dimensions);
+      console.log('Expected dimensions:', testCase.expectedDimensions);
+      
+      // Check if extraction worked
+      let success = true;
+      Object.keys(testCase.expectedDimensions).forEach(key => {
+        if (dimensions[key] !== testCase.expectedDimensions[key]) {
+          success = false;
+          console.log(`❌ Mismatch: ${key} = ${dimensions[key]} (expected ${testCase.expectedDimensions[key]})`);
+        }
+      });
+      
+      if (success) {
+        console.log('✅ Dimension extraction successful');
+      } else {
+        console.log('❌ Dimension extraction failed');
+      }
+    });
+
+    console.log('\n🎯 FOCUS: Fixing fence height detection');
+    console.log('==================================================');
     
-    if (combinedTotal > targetMax) {
-      console.log('❌ Combined service cost is too high');
-      const reduction = combinedTotal - targetMax;
-      console.log(`Need to reduce by $${reduction.toFixed(2)} (${(reduction/combinedTotal*100).toFixed(1)}%)`);
-    } else {
-      console.log('✅ Combined service cost is within target range');
-    }
+    const fenceDescription = 'Install 125 linear feet of 6-foot high wooden fence with posts every 8 feet in Richmond, CA';
+    const dimensions = expertService.extractPreciseDimensions(fenceDescription);
     
+    console.log('Input text:', fenceDescription);
+    console.log('Extracted dimensions:', dimensions);
+    
+    if (dimensions.height === 6) {
+      console.log('✅ Height detection working correctly');
+    } else {
+      console.log('❌ Height detection failed');
+      console.log('Debug: Testing regex patterns...');
+      
+      const desc = fenceDescription.toLowerCase();
+      const heightPattern1 = /(\d+(?:\.\d+)?)\s*[-]?(?:ft|feet|foot)\s*(?:tall|high|height)/i;
+      const heightPattern2 = /(\d+(?:\.\d+)?)\s*(?:tall|high|height)/i;
+      
+      console.log('Pattern 1 match:', desc.match(heightPattern1));
+      console.log('Pattern 2 match:', desc.match(heightPattern2));
+      
+      // Try manual extraction
+      const manualMatch = desc.match(/6-foot high/i);
+      console.log('Manual "6-foot high" match:', manualMatch);
+    }
+
   } catch (error) {
-    console.error('❌ Error testing cost accuracy:', error);
+    console.error('❌ Error in dimension testing:', error);
   }
 }
 
 // Run the test
-testCostAccuracy();
+testDimensionDetection();
