@@ -268,6 +268,82 @@ export class MultiIndustryExpertService {
         specifications: ['Grade 60', 'ASTM A615', 'Deformed'],
         suppliers: ['Steel Supply', 'Home Depot', 'Lowe\'s']
       }
+    ],
+
+    // RETAINING WALLS - Nueva especialidad
+    retaining_walls: [
+      {
+        id: 'concrete_block_8x8x16',
+        name: '8"×8"×16" Concrete Masonry Block',
+        description: 'Standard concrete masonry unit for retaining walls',
+        unit: 'each',
+        category: 'structural',
+        avgPriceRange: { min: 1.85, max: 2.75, typical: 2.30 },
+        wasteFactorPercent: 5,
+        laborHoursPerUnit: 0.15,
+        specifications: ['Medium Weight', '2000 PSI', 'Standard CMU'],
+        suppliers: ['Masonry Supply', 'Home Depot', 'Local Block Plant']
+      },
+      {
+        id: 'rebar_5_grade60',
+        name: '#5 Rebar (5/8") Grade 60',
+        description: 'Heavy duty reinforcement for retaining walls',
+        unit: 'linear_ft',
+        category: 'reinforcement',
+        avgPriceRange: { min: 0.65, max: 1.10, typical: 0.85 },
+        wasteFactorPercent: 10,
+        laborHoursPerUnit: 0.08,
+        specifications: ['Grade 60', '5/8" Diameter', 'ASTM A615'],
+        suppliers: ['Steel Supply', 'Construction Materials', 'Rebar Depot']
+      },
+      {
+        id: 'gravel_base_3_4',
+        name: '3/4" Crushed Gravel Base',
+        description: 'Drainage gravel for retaining wall foundation',
+        unit: 'cubic_yard',
+        category: 'foundation',
+        avgPriceRange: { min: 28, max: 45, typical: 35 },
+        wasteFactorPercent: 15,
+        laborHoursPerUnit: 0.5,
+        specifications: ['3/4" Clean Stone', 'ASTM C33', 'Drainage Grade'],
+        suppliers: ['Aggregate Supply', 'Local Quarry', 'Landscape Supply']
+      },
+      {
+        id: 'drain_pipe_4in',
+        name: '4" Perforated Drain Pipe',
+        description: 'French drain system for retaining wall',
+        unit: 'linear_ft',
+        category: 'drainage',
+        avgPriceRange: { min: 1.25, max: 2.10, typical: 1.65 },
+        wasteFactorPercent: 5,
+        laborHoursPerUnit: 0.1,
+        specifications: ['4" Diameter', 'Perforated', 'HDPE Material'],
+        suppliers: ['Plumbing Supply', 'Home Depot', 'Drainage Solutions']
+      },
+      {
+        id: 'geotextile_fabric',
+        name: 'Geotextile Filter Fabric',
+        description: 'Separation fabric for drainage system',
+        unit: 'square_yard',
+        category: 'drainage',
+        avgPriceRange: { min: 0.85, max: 1.45, typical: 1.15 },
+        wasteFactorPercent: 10,
+        laborHoursPerUnit: 0.02,
+        specifications: ['Non-Woven', 'Permeable', '4 oz/sq yd'],
+        suppliers: ['Geotechnical Supply', 'Landscape Supply', 'Construction Materials']
+      },
+      {
+        id: 'mortar_type_s',
+        name: 'Type S Mortar Mix',
+        description: 'High-strength mortar for block laying',
+        unit: 'bag_80lb',
+        category: 'bonding',
+        avgPriceRange: { min: 4.25, max: 6.50, typical: 5.35 },
+        wasteFactorPercent: 10,
+        laborHoursPerUnit: 0.25,
+        specifications: ['Type S', '2500 PSI', '80 lb bag'],
+        suppliers: ['Masonry Supply', 'Home Depot', 'Lowe\'s']
+      }
     ]
   };
 
@@ -340,6 +416,78 @@ export class MultiIndustryExpertService {
       formula: (dims: ProjectDimensions) => ((dims.length || 0) * (dims.width || 0) * (dims.depth || 4/12)) / 27,
       unit: 'cubic_yards',
       description: 'Concrete needed: length × width × depth ÷ 27'
+    },
+
+    // RETAINING WALL FORMULAS
+    {
+      industry: 'retaining_walls',
+      projectType: 'concrete_blocks',
+      formula: (dims: ProjectDimensions) => {
+        const linearFeet = dims.linearFeet || dims.length || 0;
+        const height = dims.height || 3;
+        // CMU blocks are 16" long x 8" high, so blocks per row = linear feet ÷ 1.33
+        const blocksPerRow = Math.ceil(linearFeet / 1.33);
+        const rows = Math.ceil(height / 0.67); // 8" = 0.67 feet
+        return blocksPerRow * rows;
+      },
+      unit: 'blocks',
+      description: 'Concrete blocks: (linear feet ÷ 1.33) × (height ÷ 0.67 feet per row)'
+    },
+    {
+      industry: 'retaining_walls',
+      projectType: 'rebar_horizontal',
+      formula: (dims: ProjectDimensions) => {
+        const linearFeet = dims.linearFeet || dims.length || 0;
+        const height = dims.height || 3;
+        const rows = Math.ceil(height / 0.67); // Every 8 inches
+        return linearFeet * rows * 2; // Two horizontal runs per row
+      },
+      unit: 'linear_ft',
+      description: 'Horizontal rebar: linear feet × rows × 2 runs per row'
+    },
+    {
+      industry: 'retaining_walls',
+      projectType: 'foundation_gravel',
+      formula: (dims: ProjectDimensions) => {
+        const linearFeet = dims.linearFeet || dims.length || 0;
+        const width = 2; // 2 feet wide foundation
+        const depth = 0.5; // 6 inches deep
+        return (linearFeet * width * depth) / 27;
+      },
+      unit: 'cubic_yards',
+      description: 'Foundation gravel: linear feet × 2 ft width × 0.5 ft depth ÷ 27'
+    },
+    {
+      industry: 'retaining_walls',
+      projectType: 'drain_pipe',
+      formula: (dims: ProjectDimensions) => dims.linearFeet || dims.length || 0,
+      unit: 'linear_ft',
+      description: 'Drain pipe: equals linear feet of retaining wall'
+    },
+    {
+      industry: 'retaining_walls',
+      projectType: 'geotextile',
+      formula: (dims: ProjectDimensions) => {
+        const linearFeet = dims.linearFeet || dims.length || 0;
+        const height = dims.height || 3;
+        return (linearFeet * height) / 9; // Convert to square yards
+      },
+      unit: 'square_yards',
+      description: 'Geotextile fabric: linear feet × height ÷ 9 (sq yards)'
+    },
+    {
+      industry: 'retaining_walls',
+      projectType: 'mortar_bags',
+      formula: (dims: ProjectDimensions) => {
+        const linearFeet = dims.linearFeet || dims.length || 0;
+        const height = dims.height || 3;
+        const blocksPerRow = Math.ceil(linearFeet / 1.33);
+        const rows = Math.ceil(height / 0.67);
+        const totalBlocks = blocksPerRow * rows;
+        return Math.ceil(totalBlocks / 40); // 40 blocks per 80lb bag
+      },
+      unit: 'bags',
+      description: 'Mortar bags: total blocks ÷ 40 blocks per 80lb bag'
     }
   ];
 
@@ -355,7 +503,8 @@ export class MultiIndustryExpertService {
       plumbing: /plumbing|pipes|toilet|sink|shower|faucet|water|drain/i,
       electrical: /electrical|electric|wiring|outlets|switches|breaker|circuit/i,
       painting: /paint|painting|primer|stain|wall|ceiling|color/i,
-      concrete: /concrete|foundation|slab|driveway|patio|pour|cement/i
+      concrete: /concrete|foundation|slab|driveway|patio|pour|cement/i,
+      retaining_walls: /retaining wall|muro contenedor|retaining|wall retainer|container wall|block wall|masonry wall|retention wall/i
     };
 
     for (const [industry, pattern] of Object.entries(patterns)) {
@@ -548,6 +697,15 @@ export class MultiIndustryExpertService {
     
     if (formula.industry === 'concrete') {
       if (material.category === 'structural' && formula.projectType === 'slab_pour') return true;
+    }
+    
+    if (formula.industry === 'retaining_walls') {
+      if (material.category === 'structural' && formula.projectType === 'concrete_blocks') return true;
+      if (material.category === 'reinforcement' && formula.projectType === 'rebar_horizontal') return true;
+      if (material.category === 'foundation' && formula.projectType === 'foundation_gravel') return true;
+      if (material.category === 'drainage' && material.id.includes('pipe') && formula.projectType === 'drain_pipe') return true;
+      if (material.category === 'drainage' && material.id.includes('fabric') && formula.projectType === 'geotextile') return true;
+      if (material.category === 'bonding' && formula.projectType === 'mortar_bags') return true;
     }
     
     return false;
