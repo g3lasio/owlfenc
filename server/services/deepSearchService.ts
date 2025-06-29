@@ -86,14 +86,15 @@ export class DeepSearchService {
       });
 
       if (cacheResult.found && cacheResult.data) {
-        console.log(`✅ DeepSearch: Reutilizando datos existentes (${cacheResult.source})`);
+        console.log(`✅ DeepSearch: Encontrados materiales existentes (${cacheResult.source}) - recalculando cantidades`);
         
-        // Aplicar adaptaciones si es necesario
-        if (cacheResult.adaptationNeeded) {
-          return await this.adaptExistingMaterials(cacheResult.data, projectDescription, location);
-        }
-        
-        return cacheResult.data;
+        // CRITICAL FIX: Always recalculate quantities for new project specifications
+        // This restores the intelligent calculation logic that was bypassed
+        return await this.recalculateMaterialQuantities(
+          cacheResult.data, 
+          projectDescription, 
+          location
+        );
       }
 
       // 2. GENERAR NUEVA LISTA - Solo si no existe previamente
@@ -437,7 +438,96 @@ ALL TEXT MUST BE IN ENGLISH ONLY.
   }
 
   /**
-   * Adapta materiales existentes para un nuevo proyecto similar
+   * CRITICAL FIX: Recalcula cantidades de materiales usando IA para el proyecto específico
+   * Esto restaura la lógica inteligente de cálculo que se perdió con el sistema de cache
+   */
+  private async recalculateMaterialQuantities(
+    existingResult: DeepSearchResult,
+    newDescription: string,
+    location?: string
+  ): Promise<DeepSearchResult> {
+    try {
+      console.log('🔢 DeepSearch: Recalculando cantidades con IA para proyecto específico...');
+
+      // Extraer información específica del proyecto nuevo
+      const projectSpecs = this.extractProjectSpecifications(newDescription);
+      
+      // Generar prompt específico para recálculo de cantidades
+      const recalculationPrompt = this.buildQuantityRecalculationPrompt(
+        existingResult.materials,
+        newDescription,
+        projectSpecs,
+        location
+      );
+
+      // Procesar con Claude para recálculo inteligente
+      const response = await anthropic.messages.create({
+        model: this.MODEL,
+        max_tokens: 3000,
+        temperature: 0.1, // Baja temperatura para cálculos precisos
+        system: this.getQuantityRecalculationSystemPrompt(),
+        messages: [
+          {
+            role: 'user',
+            content: recalculationPrompt
+          }
+        ]
+      });
+
+      const responseContent = response.content[0];
+      if (responseContent.type !== 'text') {
+        throw new Error('Respuesta de Claude no es de tipo texto');
+      }
+
+      // Procesar respuesta y actualizar cantidades
+      const recalculatedMaterials = this.parseQuantityRecalculationResponse(
+        responseContent.text,
+        existingResult.materials
+      );
+
+      // Filtrar materiales irrelevantes basado en especificaciones del proyecto
+      const filteredMaterials = this.filterIrrelevantMaterials(
+        recalculatedMaterials,
+        projectSpecs
+      );
+
+      // Actualizar resultado con cantidades recalculadas
+      const updatedResult: DeepSearchResult = {
+        ...existingResult,
+        projectScope: newDescription,
+        materials: filteredMaterials,
+        totalMaterialsCost: filteredMaterials.reduce((sum, item) => sum + item.totalPrice, 0),
+        confidence: Math.max(0.85, existingResult.confidence), // Alta confianza por recálculo
+        recommendations: [
+          ...existingResult.recommendations,
+          '🔢 Cantidades recalculadas específicamente para este proyecto',
+          '🎯 Materiales filtrados por relevancia al proyecto'
+        ],
+        warnings: []
+      };
+
+      // Recalcular totales
+      updatedResult.grandTotal = updatedResult.totalMaterialsCost + 
+                                 updatedResult.totalLaborCost + 
+                                 updatedResult.totalAdditionalCost;
+
+      console.log('✅ DeepSearch: Cantidades recalculadas correctamente', {
+        originalMaterials: existingResult.materials.length,
+        filteredMaterials: filteredMaterials.length,
+        newTotalCost: updatedResult.totalMaterialsCost
+      });
+
+      return updatedResult;
+
+    } catch (error) {
+      console.error('❌ Error en recálculo de cantidades:', error);
+      // Fallback: usar adaptación básica si falla el recálculo
+      return await this.adaptExistingMaterials(existingResult, newDescription, location);
+    }
+  }
+
+  /**
+   * Adapta materiales existentes para un nuevo proyecto similar (método de respaldo)
    */
   private async adaptExistingMaterials(
     existingResult: DeepSearchResult, 
@@ -475,6 +565,178 @@ ALL TEXT MUST BE IN ENGLISH ONLY.
       // Si falla la adaptación, usar datos originales
       return existingResult;
     }
+  }
+
+  /**
+   * Extrae especificaciones exactas del proyecto para cálculos precisos
+   */
+  private extractProjectSpecifications(description: string): any {
+    const desc = description.toLowerCase();
+    
+    // Extraer dimensiones exactas
+    const linearFeetMatch = desc.match(/(\d+)\s*(linear\s*)?(ft|feet|foot)/i);
+    const heightMatch = desc.match(/(\d+)\s*(ft|feet|foot)\s*tall/i);
+    const widthMatch = desc.match(/(\d+)\s*(ft|feet|foot)\s*wide/i);
+    
+    // Extraer exclusiones específicas
+    const excludesGates = desc.includes('no gate') || desc.includes('without gate');
+    const excludesPainting = desc.includes('no paint') || desc.includes('without paint');
+    const excludesDemolition = desc.includes('no demolition') || desc.includes('without demolition');
+    
+    return {
+      linearFeet: linearFeetMatch ? parseInt(linearFeetMatch[1]) : null,
+      height: heightMatch ? parseInt(heightMatch[1]) : null,
+      width: widthMatch ? parseInt(widthMatch[1]) : null,
+      excludesGates,
+      excludesPainting, 
+      excludesDemolition,
+      projectType: this.extractProjectType(description)
+    };
+  }
+
+  /**
+   * Construye prompt para recálculo inteligente de cantidades
+   */
+  private buildQuantityRecalculationPrompt(
+    existingMaterials: MaterialItem[],
+    newDescription: string,
+    projectSpecs: any,
+    location?: string
+  ): string {
+    const materialsContext = existingMaterials.map(m => 
+      `- ${m.name}: ${m.quantity} ${m.unit} ($${m.unitPrice})`
+    ).join('\n');
+
+    return `
+You are a construction estimator recalculating material quantities for a specific project.
+
+EXISTING MATERIALS LIST:
+${materialsContext}
+
+NEW PROJECT DESCRIPTION:
+${newDescription}
+
+PROJECT SPECIFICATIONS:
+- Linear Feet: ${projectSpecs.linearFeet || 'Not specified'}
+- Height: ${projectSpecs.height || 'Not specified'} feet
+- Location: ${location || 'United States'}
+- Excludes Gates: ${projectSpecs.excludesGates}
+- Excludes Painting: ${projectSpecs.excludesPainting}
+- Excludes Demolition: ${projectSpecs.excludesDemolition}
+
+CRITICAL INSTRUCTIONS:
+1. Recalculate EXACT quantities based on the NEW project specifications
+2. If linear feet is specified, calculate ALL materials for EXACTLY that length
+3. Remove materials that are excluded (gates, paint, demolition items)
+4. Keep unit prices the same but adjust quantities precisely
+5. Maintain realistic waste factors (5-10%)
+
+Respond with JSON array of materials with updated quantities:
+[
+  {
+    "id": "material_id",
+    "name": "material_name", 
+    "quantity": recalculated_quantity,
+    "unit": "unit",
+    "unitPrice": same_price,
+    "totalPrice": quantity * unitPrice,
+    "include": true/false
+  }
+]
+
+Focus on PRECISION and RELEVANCE. Exclude irrelevant materials completely.`;
+  }
+
+  /**
+   * Sistema prompt para recálculo de cantidades
+   */
+  private getQuantityRecalculationSystemPrompt(): string {
+    return `You are an expert construction estimator specializing in precise material quantity calculations. 
+    Your job is to recalculate exact material quantities based on specific project dimensions and requirements.
+    Always provide accurate calculations and exclude irrelevant materials completely.
+    Respond only with valid JSON format.`;
+  }
+
+  /**
+   * Procesa respuesta de recálculo de cantidades
+   */
+  private parseQuantityRecalculationResponse(
+    responseText: string,
+    originalMaterials: MaterialItem[]
+  ): MaterialItem[] {
+    try {
+      const jsonMatch = responseText.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) {
+        throw new Error('No valid JSON array found in response');
+      }
+
+      const updatedMaterials = JSON.parse(jsonMatch[0]);
+      
+      return updatedMaterials
+        .filter((item: any) => item.include !== false)
+        .map((item: any) => {
+          const original = originalMaterials.find(m => m.id === item.id || m.name === item.name);
+          return {
+            id: item.id || original?.id || `mat_${Date.now()}`,
+            name: item.name,
+            description: original?.description || item.description || '',
+            category: original?.category || 'materials',
+            quantity: Math.max(0, item.quantity || 0),
+            unit: item.unit || original?.unit || 'pieces',
+            unitPrice: item.unitPrice || original?.unitPrice || 0,
+            totalPrice: Math.round((item.quantity || 0) * (item.unitPrice || 0) * 100) / 100,
+            supplier: original?.supplier,
+            specifications: original?.specifications
+          };
+        });
+
+    } catch (error) {
+      console.error('Error parsing quantity recalculation response:', error);
+      // Fallback: return original materials
+      return originalMaterials;
+    }
+  }
+
+  /**
+   * Filtra materiales irrelevantes basado en especificaciones del proyecto
+   */
+  private filterIrrelevantMaterials(
+    materials: MaterialItem[],
+    projectSpecs: any
+  ): MaterialItem[] {
+    return materials.filter(material => {
+      const name = material.name.toLowerCase();
+      
+      // Filtrar materiales excluidos específicamente
+      if (projectSpecs.excludesGates && (
+        name.includes('gate') || 
+        name.includes('latch') || 
+        name.includes('hinge')
+      )) {
+        console.log(`❌ Filtered gate material: ${material.name}`);
+        return false;
+      }
+
+      if (projectSpecs.excludesPainting && (
+        name.includes('paint') || 
+        name.includes('primer') || 
+        name.includes('stain')
+      )) {
+        console.log(`❌ Filtered paint material: ${material.name}`);
+        return false;
+      }
+
+      if (projectSpecs.excludesDemolition && (
+        name.includes('removal') || 
+        name.includes('demolition') || 
+        name.includes('disposal')
+      )) {
+        console.log(`❌ Filtered demolition material: ${material.name}`);
+        return false;
+      }
+
+      return true;
+    });
   }
 }
 

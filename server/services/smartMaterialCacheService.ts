@@ -559,8 +559,8 @@ export class SmartMaterialCacheService {
     const keywords1 = new Set(this.extractKeywords(desc1));
     const keywords2 = new Set(this.extractKeywords(desc2));
     
-    const intersection = new Set([...keywords1].filter(x => keywords2.has(x)));
-    const union = new Set([...keywords1, ...keywords2]);
+    const intersection = new Set(Array.from(keywords1).filter(x => keywords2.has(x)));
+    const union = new Set([...Array.from(keywords1), ...Array.from(keywords2)]);
     
     return union.size > 0 ? intersection.size / union.size : 0;
   }
