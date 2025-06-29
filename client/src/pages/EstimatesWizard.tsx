@@ -687,14 +687,19 @@ export default function EstimatesWizardFixed() {
         items = data.items;
       } else if (searchType === "full") {
         console.log("🔍 NEW DEEPSEARCH - FULL COSTS - Processing combined response");
-        // For combined endpoint, handle both materials and labor separately
-        const materialItems = [];
-        const laborItems = [];
+        console.log("🔍 NEW DEEPSEARCH - FULL COSTS - Data structure:", data);
         
-        // Process materials
-        if (data.materials && Array.isArray(data.materials)) {
-          console.log("🔍 Found materials:", data.materials.length);
-          data.materials.forEach((material: any) => {
+        // For combined endpoint, the data is nested in data.data
+        const combinedData = data.data || data;
+        console.log("🔍 NEW DEEPSEARCH - FULL COSTS - Combined data:", combinedData);
+        
+        const materialItems: any[] = [];
+        const laborItems: any[] = [];
+        
+        // Process materials from combinedData.materials
+        if (combinedData.materials && Array.isArray(combinedData.materials)) {
+          console.log("🔍 Found materials:", combinedData.materials.length);
+          combinedData.materials.forEach((material: any) => {
             materialItems.push({
               id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
               materialId: material.id || Date.now().toString(),
@@ -708,10 +713,10 @@ export default function EstimatesWizardFixed() {
           });
         }
         
-        // Process labor services
-        if (data.labor && Array.isArray(data.labor)) {
-          console.log("🔍 Found labor services:", data.labor.length);
-          data.labor.forEach((service: any) => {
+        // Process labor services from combinedData.laborCosts
+        if (combinedData.laborCosts && Array.isArray(combinedData.laborCosts)) {
+          console.log("🔍 Found labor services:", combinedData.laborCosts.length);
+          combinedData.laborCosts.forEach((service: any) => {
             laborItems.push({
               id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
               materialId: service.id || Date.now().toString(),
