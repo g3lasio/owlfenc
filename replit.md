@@ -377,6 +377,13 @@ Changelog:
   * Expanded from 12.5% industry coverage (fencing only) to 100% coverage (all major construction trades)
   * Enhanced DeepSearch to automatically detect and process multiple industries in single project descriptions
   * Verified functionality across all construction specialties with comprehensive test suite
+- June 29, 2025. Enhanced client selection with expandable scrollable interface:
+  * Made "+97 más clientes disponibles" div clickable to expand full client list within same container
+  * Added smooth height transition from max-h-24 to max-h-64 when showing all clients
+  * Implemented "Mostrar menos clientes" collapse button for returning to 3-client view
+  * Added responsive scrolling functionality that works on mobile and desktop devices
+  * Enhanced user experience with hover effects and proper touch interaction support
+  * No additional screens or layout breaking - all functionality within existing container
 - June 24, 2025. Fixed client address data flow in contract generator:
   * Enhanced backend /api/projects/contract-data endpoint to properly map client address fields
   * Added multiple address fallback options: project.address, project.clientAddress, project.projectAddress, project.location

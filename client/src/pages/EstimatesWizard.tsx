@@ -175,6 +175,7 @@ export default function EstimatesWizardFixed() {
   const [materialSearch, setMaterialSearch] = useState("");
   const [showMaterialDialog, setShowMaterialDialog] = useState(false);
   const [showAddClientDialog, setShowAddClientDialog] = useState(false);
+  const [showAllClients, setShowAllClients] = useState(false);
 
   // Loading states
   const [isLoadingClients, setIsLoadingClients] = useState(true);
@@ -3249,7 +3250,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                 </div>
               )}
 
-              <div className="max-h-24 overflow-y-auto border rounded-md bg-muted/20">
+              <div className={`${showAllClients ? 'max-h-64' : 'max-h-24'} overflow-y-auto border rounded-md bg-muted/20 transition-all duration-300`}>
                 {isLoadingClients ? (
                   <p className="text-center py-4 text-muted-foreground">
                     Cargando clientes...
@@ -3262,7 +3263,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   </p>
                 ) : (
                   <div className="space-y-1">
-                    {filteredClients.slice(0, 3).map((client) => (
+                    {(showAllClients ? filteredClients : filteredClients.slice(0, 3)).map((client) => (
                       <div
                         key={client.id}
                         className={`p-1.5 border rounded cursor-pointer transition-colors ${
@@ -3287,9 +3288,20 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         </div>
                       </div>
                     ))}
-                    {filteredClients.length > 3 && (
-                      <div className="text-xs text-center text-muted-foreground py-1">
+                    {filteredClients.length > 3 && !showAllClients && (
+                      <div 
+                        className="text-xs text-center text-muted-foreground py-2 cursor-pointer hover:text-primary hover:bg-muted/50 rounded transition-colors"
+                        onClick={() => setShowAllClients(true)}
+                      >
                         +{filteredClients.length - 3} más clientes disponibles
+                      </div>
+                    )}
+                    {showAllClients && filteredClients.length > 3 && (
+                      <div 
+                        className="text-xs text-center text-muted-foreground py-2 cursor-pointer hover:text-primary hover:bg-muted/50 rounded transition-colors border-t"
+                        onClick={() => setShowAllClients(false)}
+                      >
+                        Mostrar menos clientes
                       </div>
                     )}
                   </div>
