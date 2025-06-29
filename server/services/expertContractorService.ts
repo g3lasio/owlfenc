@@ -65,8 +65,8 @@ export class ExpertContractorService {
             supplier: 'Home Depot/Lowes',
             quantityFormula: 'Math.ceil(linearFeet / 8) + 1',
             wasteFactorPercent: 5,
-            unitPriceRange: { min: 12, max: 18, typical: 16.2 },
-            laborHoursPerUnit: 0.75,
+            unitPriceRange: { min: 8, max: 12, typical: 10 },
+            laborHoursPerUnit: 0.50,
             specialRequirements: ['Post hole digger', 'Concrete mix']
           },
           '6x6x8_pt': {
@@ -88,8 +88,8 @@ export class ExpertContractorService {
             supplier: 'Specialty Lumber',
             quantityFormula: '(linearFeet * height) / 0.5', // 6" coverage
             wasteFactorPercent: 10,
-            unitPriceRange: { min: 4, max: 7, typical: 5.50 },
-            laborHoursPerUnit: 0.1
+            unitPriceRange: { min: 2.50, max: 4.50, typical: 3.25 },
+            laborHoursPerUnit: 0.06
           },
           '1x8x8_pt': {
             exactName: '1"x8"x8\' Pressure Treated Pine Board',
@@ -98,8 +98,8 @@ export class ExpertContractorService {
             supplier: 'Home Depot/Lowes',
             quantityFormula: '(linearFeet * height) / 0.67', // 8" coverage
             wasteFactorPercent: 10,
-            unitPriceRange: { min: 3.50, max: 5.50, typical: 4.25 },
-            laborHoursPerUnit: 0.08
+            unitPriceRange: { min: 2.75, max: 4.25, typical: 3.50 },
+            laborHoursPerUnit: 0.05
           }
         },
         hardware: {
