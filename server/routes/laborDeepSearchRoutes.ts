@@ -30,6 +30,62 @@ const CombinedAnalysisSchema = z.object({
 export function registerLaborDeepSearchRoutes(app: Express): void {
   
   /**
+   * POST /api/labor-deepsearch/labor-only
+   * LABOR COSTS ONLY: Genera únicamente costos de labor sin materiales
+   */
+  app.post('/api/labor-deepsearch/labor-only', async (req: Request, res: Response) => {
+    try {
+      console.log('🔧 LABOR ONLY DeepSearch: Recibiendo solicitud', req.body);
+
+      // Validar entrada
+      const validatedData = LaborAnalysisSchema.parse(req.body);
+      
+      // Procesar únicamente labor
+      const laborResult = await laborDeepSearchService.analyzeLaborRequirements(
+        validatedData.projectDescription,
+        validatedData.location,
+        validatedData.projectType
+      );
+
+      // Estructura de respuesta compatible con DeepSearchResult
+      const laborOnlyResult = {
+        projectType: laborResult.projectType || 'Labor Analysis',
+        projectScope: `Labor cost analysis for: ${validatedData.projectDescription.substring(0, 100)}...`,
+        materials: [], // LABOR ONLY: Sin materiales
+        laborCosts: laborResult.laborItems || [],
+        additionalCosts: [],
+        totalMaterialsCost: 0, // LABOR ONLY: $0 en materiales
+        totalLaborCost: laborResult.totalCost || 0,
+        totalAdditionalCost: 0,
+        grandTotal: laborResult.totalCost || 0,
+        confidence: 0.85,
+        recommendations: ['Análisis enfocado únicamente en costos de labor'],
+        warnings: laborResult.laborItems?.length === 0 ? ['No se encontraron tareas de labor específicas'] : []
+      };
+
+      console.log('✅ LABOR ONLY: Análisis completado', {
+        laborItemsCount: laborResult.laborItems?.length || 0,
+        totalCost: laborResult.totalCost || 0
+      });
+
+      res.json({
+        success: true,
+        data: laborOnlyResult,
+        timestamp: new Date().toISOString(),
+        searchType: 'labor_only'
+      });
+
+    } catch (error: any) {
+      console.error('❌ Error en LABOR ONLY DeepSearch:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Error interno del servidor',
+        searchType: 'labor_only'
+      });
+    }
+  });
+
+  /**
    * POST /api/labor-deepsearch/analyze
    * Analiza un proyecto y genera únicamente lista de tareas de labor/servicios
    */
@@ -137,30 +193,35 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
         validatedData.projectType
       );
 
-      console.log('✅ Combined DeepSearch API: Análisis combinado completado', {
-        materialsCount: combinedResult.materials.length,
-        laborCount: combinedResult.labor.length,
-        totalMaterialsCost: combinedResult.totalMaterialsCost,
-        totalLaborCost: combinedResult.totalLaborCost,
-        grandTotal: combinedResult.grandTotal
+      // Formatear respuesta compatible con DeepSearchResult para FULL COSTS
+      const fullCostsResult = {
+        projectType: combinedResult.projectType || 'Combined Analysis',
+        projectScope: `Complete analysis: ${validatedData.projectDescription.substring(0, 100)}...`,
+        materials: combinedResult.materials || [],
+        laborCosts: combinedResult.labor || [],
+        additionalCosts: [],
+        totalMaterialsCost: combinedResult.totalMaterialsCost || 0,
+        totalLaborCost: combinedResult.totalLaborCost || 0,
+        totalAdditionalCost: 0,
+        grandTotal: combinedResult.grandTotal || 0,
+        confidence: 0.90,
+        recommendations: ['Análisis completo con materiales y labor'],
+        warnings: []
+      };
+
+      console.log('✅ OPTIMIZED Combined estimate generated:', {
+        materialsCount: fullCostsResult.materials.length,
+        laborCount: fullCostsResult.laborCosts.length,
+        totalMaterialsCost: fullCostsResult.totalMaterialsCost,
+        totalLaborCost: fullCostsResult.totalLaborCost,
+        grandTotal: fullCostsResult.grandTotal
       });
 
       res.json({
         success: true,
-        materials: combinedResult.materials,
-        labor: combinedResult.labor,
-        costs: {
-          materials: combinedResult.totalMaterialsCost,
-          labor: combinedResult.totalLaborCost,
-          total: combinedResult.grandTotal
-        },
-        metadata: {
-          timestamp: new Date().toISOString(),
-          model: 'claude-3-7-sonnet-20250219',
-          type: 'combined-analysis',
-          includedMaterials: validatedData.includeMaterials,
-          includedLabor: validatedData.includeLabor
-        }
+        data: fullCostsResult,
+        timestamp: new Date().toISOString(),
+        searchType: 'full_costs'
       });
 
     } catch (error: any) {
