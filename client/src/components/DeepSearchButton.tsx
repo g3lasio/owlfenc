@@ -102,7 +102,7 @@ export function DeepSearchButton({
     try {
       console.log('🧠 Iniciando DeepSearch IA para:', projectDescription);
 
-      const response = await fetch('/api/deepsearch/analyze', {
+      const response = await fetch('/api/labor-deepsearch/combined', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -110,9 +110,9 @@ export function DeepSearchButton({
         body: JSON.stringify({
           projectDescription,
           location,
+          includeMaterials: true,
           includeLabor: true,
-          includeAdditionalCosts: true,
-          startTime: Date.now()
+          projectType: 'general_construction'
         })
       });
 

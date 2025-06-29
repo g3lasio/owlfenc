@@ -253,13 +253,17 @@ ALL TEXT MUST BE IN ENGLISH ONLY.
    */
   private parseClaudeResponse(responseText: string): DeepSearchResult {
     try {
-      // Extraer el JSON de la respuesta
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
+      console.log('🔍 Parsing Claude response, length:', responseText.length);
+      
+      // Limpiar y extraer JSON de la respuesta
+      let jsonString = this.extractAndCleanJSON(responseText);
+      
+      if (!jsonString) {
         throw new Error('No valid JSON found in response');
       }
 
-      const jsonData = JSON.parse(jsonMatch[0]);
+      console.log('🔍 Extracted JSON preview:', jsonString.substring(0, 200) + '...');
+      const jsonData = JSON.parse(jsonString);
 
       // Validar la estructura
       this.validateResponseStructure(jsonData);
@@ -291,8 +295,123 @@ ALL TEXT MUST BE IN ENGLISH ONLY.
 
     } catch (error: any) {
       console.error('Error parsing Claude response:', error);
-      throw new Error(`Error procesando respuesta de IA: ${error.message}`);
+      console.error('Raw response:', responseText.substring(0, 500));
+      
+      // Fallback: Generate structured response using expert contractor service
+      console.log('🔄 Activating fallback - using Expert Contractor Service');
+      return this.generateFallbackResponse(responseText);
     }
+  }
+
+  /**
+   * Genera respuesta de fallback cuando Claude falla
+   */
+  private generateFallbackResponse(originalResponse: string): DeepSearchResult {
+    try {
+      // Extraer información básica del texto de respuesta
+      const projectType = this.extractProjectTypeFromText(originalResponse);
+      
+      // Usar Expert Contractor Service como fallback
+      const expertResult = expertContractorService.generateExpertEstimate(
+        `${projectType} project requiring materials analysis`,
+        'United States'
+      );
+
+      return {
+        projectType: projectType,
+        projectScope: 'Material analysis with expert fallback',
+        materials: expertResult.materials,
+        laborCosts: expertResult.labor,
+        additionalCosts: [],
+        totalMaterialsCost: expertResult.costs.materials,
+        totalLaborCost: expertResult.costs.labor,
+        totalAdditionalCost: 0,
+        grandTotal: expertResult.costs.total,
+        confidence: 0.75, // Lower confidence for fallback
+        recommendations: ['Generated using expert fallback system'],
+        warnings: ['Original AI response had formatting issues - using expert calculations']
+      };
+    } catch (fallbackError) {
+      console.error('Fallback generation failed:', fallbackError);
+      throw new Error('Both primary and fallback analysis failed');
+    }
+  }
+
+  /**
+   * Extrae tipo de proyecto del texto de respuesta
+   */
+  private extractProjectTypeFromText(text: string): string {
+    const lowText = text.toLowerCase();
+    
+    if (lowText.includes('flooring') || lowText.includes('laminate') || lowText.includes('hardwood')) {
+      return 'flooring';
+    }
+    if (lowText.includes('fence') || lowText.includes('fencing')) {
+      return 'fencing';
+    }
+    if (lowText.includes('roofing') || lowText.includes('roof')) {
+      return 'roofing';
+    }
+    if (lowText.includes('concrete') || lowText.includes('foundation')) {
+      return 'concrete';
+    }
+    
+    return 'general_construction';
+  }
+
+  /**
+   * Extrae y limpia JSON de la respuesta de Claude
+   */
+  private extractAndCleanJSON(responseText: string): string | null {
+    try {
+      // 1. Buscar JSON más específicamente
+      let jsonMatch = responseText.match(/\{[\s\S]*?\}/);
+      
+      if (!jsonMatch) {
+        // Buscar patrones alternativos
+        jsonMatch = responseText.match(/```json\s*(\{[\s\S]*?\})\s*```/);
+        if (jsonMatch) {
+          return this.cleanJSONString(jsonMatch[1]);
+        }
+        
+        // Buscar entre triple backticks sin json
+        jsonMatch = responseText.match(/```\s*(\{[\s\S]*?\})\s*```/);
+        if (jsonMatch) {
+          return this.cleanJSONString(jsonMatch[1]);
+        }
+        
+        return null;
+      }
+      
+      return this.cleanJSONString(jsonMatch[0]);
+      
+    } catch (error) {
+      console.error('Error extracting JSON:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Limpia string JSON de problemas comunes
+   */
+  private cleanJSONString(jsonStr: string): string {
+    // Remover comentarios de JavaScript
+    jsonStr = jsonStr.replace(/\/\*[\s\S]*?\*\//g, '');
+    jsonStr = jsonStr.replace(/\/\/.*$/gm, '');
+    
+    // Corregir comillas simples a dobles
+    jsonStr = jsonStr.replace(/(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '"$2":');
+    
+    // Corregir valores con comillas simples
+    jsonStr = jsonStr.replace(/:[\s]*'([^']*?)'/g, ': "$1"');
+    
+    // Remover trailing commas
+    jsonStr = jsonStr.replace(/,(\s*[}\]])/g, '$1');
+    
+    // Corregir espacios en nombres de propiedades
+    jsonStr = jsonStr.replace(/(\w+)(\s+)(\w+):/g, '"$1$3":');
+    
+    return jsonStr.trim();
   }
 
   /**
