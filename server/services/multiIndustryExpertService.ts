@@ -471,6 +471,20 @@ export class MultiIndustryExpertService {
       unit: 'gallons',
       description: 'Interior paint coverage calculation'
     },
+    {
+      industry: 'painting',
+      projectType: 'primer_application',
+      formula: (dims: ProjectDimensions) => Math.ceil((dims.squareFeet || 0) / 400), // Primer covers more
+      unit: 'gallons',
+      description: 'Primer needed: wall area ÷ 400 sqft coverage per gallon'
+    },
+    {
+      industry: 'painting',
+      projectType: 'surface_prep',
+      formula: (dims: ProjectDimensions) => Math.ceil((dims.squareFeet || 0) / 2000), // Tools per area
+      unit: 'sets',
+      description: 'Paint tools needed for surface preparation'
+    },
 
     // CONCRETE FORMULAS
     {
@@ -494,6 +508,36 @@ export class MultiIndustryExpertService {
       },
       unit: 'cubic_yards',
       description: 'Concrete volume calculation'
+    },
+    {
+      industry: 'concrete',
+      projectType: 'reinforcement',
+      formula: (dims: ProjectDimensions) => {
+        const area = dims.squareFeet || dims.area || 0;
+        return Math.ceil(area * 1.1); // Wire mesh coverage with 10% overlap
+      },
+      unit: 'square_ft',
+      description: 'Wire mesh needed: area × 1.1 for overlap'
+    },
+    {
+      industry: 'concrete',
+      projectType: 'rebar_installation',
+      formula: (dims: ProjectDimensions) => {
+        const area = dims.squareFeet || dims.area || 0;
+        return Math.ceil(area * 0.75); // Rebar grid spacing
+      },
+      unit: 'linear_ft',
+      description: 'Rebar needed: area × 0.75 for grid pattern'
+    },
+    {
+      industry: 'concrete',
+      projectType: 'base_preparation',
+      formula: (dims: ProjectDimensions) => {
+        const area = dims.squareFeet || dims.area || 0;
+        return Math.ceil((area * (2 / 12)) / 27); // 2-inch base layer
+      },
+      unit: 'cubic_yards',
+      description: 'Gravel base needed: area × 2" depth ÷ 27'
     },
 
     // RETAINING WALL FORMULAS
@@ -696,12 +740,17 @@ export class MultiIndustryExpertService {
     
     console.log(`✅ Multi-Industry: ${allMaterials.length} materiales generados, costo total: $${totalCost.toFixed(2)}`);
     
+    // Determinar el multiplicador de labor basado en las industrias detectadas
+    const hasPainting = industries.includes('painting');
+    const laborMultiplier = hasPainting ? 2.5 : 0.6;
+    const totalMultiplier = hasPainting ? 3.5 : 1.6;
+    
     return {
       materials: allMaterials,
       costs: {
         materials: Math.round(totalCost * 100) / 100,
-        labor: Math.round(totalCost * 0.6 * 100) / 100, // Estimado de labor
-        total: Math.round(totalCost * 1.6 * 100) / 100
+        labor: Math.round(totalCost * laborMultiplier * 100) / 100,
+        total: Math.round(totalCost * totalMultiplier * 100) / 100
       },
       analysis: {
         industriesDetected: industries,
