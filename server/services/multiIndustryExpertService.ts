@@ -675,39 +675,52 @@ export class MultiIndustryExpertService {
    * Determina si una fórmula es aplicable al material y descripción
    */
   private isFormulaApplicable(formula: CalculationFormula, material: IndustryMaterial, description: string): boolean {
-    // Lógica simplificada - en producción sería más sofisticada
-    if (formula.industry === 'fencing') {
-      if (material.category === 'structural' && formula.projectType === 'privacy_fence') return true;
-      if (material.category === 'covering' && formula.projectType === 'fence_boards') return true;
-    }
+    // Matching simplificado pero efectivo para todas las industrias
+    const industryMatch = formula.industry === material.category.split('_')[0] || 
+                         formula.industry === this.getIndustryFromMaterial(material);
     
-    if (formula.industry === 'flooring') {
-      if (material.category === 'flooring_material' && formula.projectType === 'laminate_installation') return true;
-      if (material.category === 'trim' && formula.projectType === 'transition_strips') return true;
+    // Mapeo específico por industria y categoría de material
+    const mappings = {
+      fencing: {
+        structural: ['privacy_fence', 'fence_posts'],
+        covering: ['fence_boards', 'privacy_fence']
+      },
+      flooring: {
+        flooring_material: ['laminate_installation', 'flooring_coverage'],
+        trim: ['transition_strips', 'baseboard_installation']
+      },
+      roofing: {
+        roofing_material: ['shingle_installation', 'roof_coverage'],
+        finishing: ['ridge_cap', 'roof_accessories']
+      },
+      painting: {
+        coating: ['wall_coverage', 'interior_painting'],
+        preparation: ['surface_prep', 'primer_application']
+      },
+      concrete: {
+        structural: ['slab_pour', 'concrete_mixing'],
+        reinforcement: ['rebar_installation', 'reinforcement']
+      }
+    };
+
+    const categoryMappings = mappings[formula.industry];
+    if (categoryMappings && categoryMappings[material.category]) {
+      return categoryMappings[material.category].includes(formula.projectType);
     }
-    
-    if (formula.industry === 'roofing') {
-      if (material.category === 'roofing_material' && formula.projectType === 'shingle_installation') return true;
-      if (material.category === 'finishing' && formula.projectType === 'ridge_cap') return true;
-    }
-    
-    if (formula.industry === 'painting') {
-      if (material.category === 'coating' && formula.projectType === 'wall_coverage') return true;
-    }
-    
-    if (formula.industry === 'concrete') {
-      if (material.category === 'structural' && formula.projectType === 'slab_pour') return true;
-    }
-    
-    if (formula.industry === 'retaining_walls') {
-      if (material.category === 'structural' && formula.projectType === 'concrete_blocks') return true;
-      if (material.category === 'reinforcement' && formula.projectType === 'rebar_horizontal') return true;
-      if (material.category === 'foundation' && formula.projectType === 'foundation_gravel') return true;
-      if (material.category === 'drainage' && material.id.includes('pipe') && formula.projectType === 'drain_pipe') return true;
-      if (material.category === 'drainage' && material.id.includes('fabric') && formula.projectType === 'geotextile') return true;
-      if (material.category === 'bonding' && formula.projectType === 'mortar_bags') return true;
-    }
-    
-    return false;
+
+    // Fallback: si la industria coincide, asumir aplicable
+    return formula.industry === this.getIndustryFromMaterial(material);
+  }
+
+  /**
+   * Extrae la industria del material basado en su categoría
+   */
+  private getIndustryFromMaterial(material: IndustryMaterial): string {
+    if (material.category.includes('flooring')) return 'flooring';
+    if (material.category.includes('roofing')) return 'roofing';
+    if (material.category.includes('coating') || material.category.includes('paint')) return 'painting';
+    if (material.category.includes('structural') && material.id.includes('concrete')) return 'concrete';
+    if (material.category.includes('structural') && (material.id.includes('post') || material.id.includes('fence'))) return 'fencing';
+    return 'general';
   }
 }
