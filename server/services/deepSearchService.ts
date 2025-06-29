@@ -13,6 +13,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { smartMaterialCacheService } from './smartMaterialCacheService';
+import { expertContractorService } from './expertContractorService';
 
 // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
 const anthropic = new Anthropic({
@@ -695,6 +696,34 @@ Focus on PRECISION and RELEVANCE. Exclude irrelevant materials completely.`;
       // Fallback: return original materials
       return originalMaterials;
     }
+  }
+
+  /**
+   * Determina si debe usar modo experto con precisión quirúrgica
+   */
+  private shouldUseExpertMode(projectDescription: string): boolean {
+    const desc = projectDescription.toLowerCase();
+    
+    // Activar modo experto si hay dimensiones específicas
+    const hasSpecificDimensions = /(\d+)\s*(linear\s*)?(ft|feet|foot)/.test(desc) || 
+                                  /(\d+)\s*(sq\s*ft|square\s*feet)/.test(desc);
+    
+    // Activar para proyectos con exclusiones específicas
+    const hasSpecificExclusions = desc.includes('no gate') || 
+                                  desc.includes('no paint') || 
+                                  desc.includes('no demolition');
+    
+    // Activar para materiales premium o específicos
+    const hasPremiumMaterials = desc.includes('luxury') || 
+                               desc.includes('cedar') || 
+                               desc.includes('premium');
+    
+    // Activar para proyectos complejos
+    const isComplexProject = desc.includes('multi-level') || 
+                             desc.includes('custom') || 
+                             desc.includes('commercial');
+    
+    return hasSpecificDimensions || hasSpecificExclusions || hasPremiumMaterials || isComplexProject;
   }
 
   /**

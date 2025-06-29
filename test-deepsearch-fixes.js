@@ -1,8 +1,10 @@
 /**
  * Test script to verify DeepSearch Material fixes for:
  * 1. Precise quantity calculations for specific project dimensions
- * 2. Filtering irrelevant materials (no gates when project excludes gates)
+ * 2. Filtering irrelevant materials (no gates when project excludes gates) 
  * 3. Restored intelligent calculation logic
+ * 4. Expert Contractor Mode with surgical precision
+ * 5. Geographic adaptability and material specifications
  */
 
 async function testDeepSearchFixes() {
