@@ -30,31 +30,39 @@ export class SmartMaterialCacheService {
   /**
    * Busca listas de materiales existentes antes de generar nuevas
    * SISTEMA GLOBAL: Busca en todas las regiones para máxima reutilización
+   * FIXED: Now requires AI recalculation for quantities and relevance filtering
    */
   async searchExistingMaterials(criteria: CacheSearchCriteria): Promise<CacheSearchResult> {
     try {
       console.log('🔍 SmartCache GLOBAL: Buscando materiales existentes...', criteria);
 
+      // Extract project requirements for filtering
+      const projectRequirements = this.extractProjectRequirements(criteria.description || '');
+
       // 1. BÚSQUEDA REGIONAL EXACTA (prioridad alta)
       const regionalMatch = await this.findRegionalMatch(criteria);
-      if (regionalMatch.found) {
-        console.log('✅ SmartCache: Coincidencia regional encontrada');
-        await this.updateUsageStats(regionalMatch.data!.id);
+      if (regionalMatch.found && this.validateMaterialRelevance(regionalMatch.data!, projectRequirements)) {
+        console.log('✅ SmartCache: Coincidencia regional encontrada - requiere recálculo de cantidades');
+        // CRITICAL FIX: Always require AI recalculation for quantities
+        regionalMatch.adaptationNeeded = true;
         return regionalMatch;
       }
 
-      // 2. BÚSQUEDA GLOBAL POR SIMILITUD (cualquier región)
+      // 2. BÚSQUEDA GLOBAL POR SIMILITUD (cualquier región) - Higher threshold
       const globalMatch = await this.findGlobalSimilarProject(criteria);
-      if (globalMatch.found) {
-        console.log('✅ SmartCache: Proyecto global similar encontrado');
-        await this.updateUsageStats(globalMatch.data!.id);
+      if (globalMatch.found && this.validateMaterialRelevance(globalMatch.data!, projectRequirements)) {
+        console.log('✅ SmartCache: Proyecto global similar encontrado - requiere recálculo de cantidades');
+        // CRITICAL FIX: Always require AI recalculation for quantities
+        globalMatch.adaptationNeeded = true;
         return globalMatch;
       }
 
       // 3. BÚSQUEDA EN TEMPLATES UNIVERSALES
       const templateMatch = await this.findProjectTemplate(criteria);
-      if (templateMatch.found) {
-        console.log('✅ SmartCache: Template universal encontrado');
+      if (templateMatch.found && this.validateMaterialRelevance(templateMatch.data!, projectRequirements)) {
+        console.log('✅ SmartCache: Template universal encontrado - requiere recálculo de cantidades');
+        // CRITICAL FIX: Always require AI recalculation for quantities
+        templateMatch.adaptationNeeded = true;
         return templateMatch;
       }
 
@@ -212,10 +220,97 @@ export class SmartMaterialCacheService {
   }
 
   /**
+   * Extrae requerimientos específicos del proyecto para filtrado de materiales
+   */
+  private extractProjectRequirements(description: string): any {
+    const desc = description.toLowerCase();
+    
+    return {
+      includesGates: desc.includes('gate') && !desc.includes('no gate'),
+      includesPainting: desc.includes('paint') && !desc.includes('no paint'),
+      includesDemolition: desc.includes('demolition') || desc.includes('removal') || desc.includes('tear down'),
+      projectType: this.extractProjectTypeFromDescription(desc),
+      excludedItems: this.extractExcludedItems(desc),
+      dimensions: this.extractDimensions(desc)
+    };
+  }
+
+  /**
+   * Extrae elementos específicamente excluidos del proyecto
+   */
+  private extractExcludedItems(description: string): string[] {
+    const excluded = [];
+    if (description.includes('no gate')) excluded.push('gate');
+    if (description.includes('no paint')) excluded.push('paint');
+    if (description.includes('no demolition')) excluded.push('demolition');
+    if (description.includes('no removal')) excluded.push('removal');
+    return excluded;
+  }
+
+  /**
+   * Extrae dimensiones del proyecto de la descripción
+   */
+  private extractDimensions(description: string): any {
+    const linearFeetMatch = description.match(/(\d+)\s*(linear\s*)?(ft|feet|foot)/i);
+    const heightMatch = description.match(/(\d+)\s*(ft|feet|foot)\s*tall/i);
+    
+    return {
+      linearFeet: linearFeetMatch ? parseInt(linearFeetMatch[1]) : null,
+      height: heightMatch ? parseInt(heightMatch[1]) : null
+    };
+  }
+
+  /**
+   * Extrae tipo de proyecto de la descripción
+   */
+  private extractProjectTypeFromDescription(description: string): string {
+    if (description.includes('fence') || description.includes('fencing')) return 'fencing';
+    if (description.includes('roof') || description.includes('roofing')) return 'roofing';
+    if (description.includes('deck') || description.includes('decking')) return 'decking';
+    return 'general';
+  }
+
+  /**
+   * Valida que los materiales cached sean relevantes para el proyecto actual
+   */
+  private validateMaterialRelevance(cachedData: any, projectRequirements: any): boolean {
+    if (!cachedData || !cachedData.materials) return false;
+
+    // Verificar que no se incluyan materiales excluidos
+    for (const material of cachedData.materials) {
+      const materialName = material.name.toLowerCase();
+      
+      // Filtrar materiales específicamente excluidos
+      for (const excluded of projectRequirements.excludedItems) {
+        if (materialName.includes(excluded)) {
+          console.log(`❌ Material filtrado por exclusión: ${material.name} (excluido: ${excluded})`);
+          return false;
+        }
+      }
+
+      // Verificar compatibilidad de tipo de proyecto
+      if (projectRequirements.projectType === 'fencing') {
+        // Para proyectos de fence sin gates, excluir materiales de gate
+        if (!projectRequirements.includesGates && (
+          materialName.includes('gate') || 
+          materialName.includes('latch') || 
+          materialName.includes('hinge')
+        )) {
+          console.log(`❌ Material de gate filtrado para proyecto sin gates: ${material.name}`);
+          return false;
+        }
+      }
+    }
+
+    console.log('✅ Materiales cached son relevantes para el proyecto');
+    return true;
+  }
+
+  /**
    * Búsqueda GLOBAL: Encuentra proyectos similares en CUALQUIER región
    * Esta es la clave del sistema colaborativo
    */
-  private async findGlobalSimilarProject(criteria: CacheSearchCriteria): Promise<CacheSearchResult> {
+  private async findGlobalSimilarProject(criteria: CacheSearchCriteria, threshold: number = 0.65): Promise<CacheSearchResult> {
     try {
       if (!criteria.description) {
         return { found: false, source: 'none' };
