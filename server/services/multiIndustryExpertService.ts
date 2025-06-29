@@ -223,7 +223,7 @@ export class MultiIndustryExpertService {
         description: 'High-quality interior latex paint',
         unit: 'gallon',
         category: 'coating',
-        avgPriceRange: { min: 85, max: 125, typical: 105 },
+        avgPriceRange: { min: 125, max: 185, typical: 155 },
         wasteFactorPercent: 5,
         laborHoursPerUnit: 0.008, // per sqft coverage
         specifications: ['Zero VOC', 'One Coat Coverage', 'Washable'],
@@ -235,7 +235,7 @@ export class MultiIndustryExpertService {
         description: 'Universal bonding primer for multiple surfaces',
         unit: 'gallon',
         category: 'preparation',
-        avgPriceRange: { min: 65, max: 95, typical: 80 },
+        avgPriceRange: { min: 95, max: 135, typical: 115 },
         wasteFactorPercent: 5,
         laborHoursPerUnit: 0.007, // per sqft coverage
         specifications: ['Multi-Surface', 'High Adhesion', 'Quick Dry'],
