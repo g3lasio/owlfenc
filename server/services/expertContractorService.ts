@@ -178,7 +178,7 @@ export class ExpertContractorService {
     
     // Patrones más precisos para capturar dimensiones
     const linearFeetPattern = /(\d+(?:\.\d+)?)\s*(?:linear\s*)?(?:ft|feet|foot)/i;
-    const heightPattern = /(\d+(?:\.\d+)?)\s*(?:ft|feet|foot)\s*(?:tall|high|height)/i;
+    const heightPattern = /(\d+(?:\.\d+)?)\s*[-]?(?:ft|feet|foot)\s*(?:tall|high|height)|(\d+(?:\.\d+)?)\s*(?:ft|feet|foot)?\s*(?:tall|high|height)/i;
     const widthPattern = /(\d+(?:\.\d+)?)\s*(?:ft|feet|foot)\s*(?:wide|width)/i;
     const squareFeetPattern = /(\d+(?:\.\d+)?)\s*(?:sq\s*ft|square\s*feet|sf)/i;
     
@@ -189,7 +189,7 @@ export class ExpertContractorService {
 
     return {
       linearFeet: linearMatch ? parseFloat(linearMatch[1]) : undefined,
-      height: heightMatch ? parseFloat(heightMatch[1]) : undefined,
+      height: heightMatch ? parseFloat(heightMatch[1] || heightMatch[2]) : undefined,
       width: widthMatch ? parseFloat(widthMatch[1]) : undefined,
       squareFeet: sqFtMatch ? parseFloat(sqFtMatch[1]) : undefined
     };
@@ -219,13 +219,13 @@ export class ExpertContractorService {
       };
     }
 
-    // Defaults basados en estado
+    // Defaults basados en estado - Corregidos para precios de mercado realistas
     const stateDefaults = {
       'CA': {
         climate: 'temperate' as const,
         soilType: 'mixed' as const,
-        laborCostMultiplier: 1.30,
-        materialCostMultiplier: 1.15,
+        laborCostMultiplier: 1.05, // Reducido de 1.30 a 1.05 (5% premium)
+        materialCostMultiplier: 1.08, // Reducido de 1.15 a 1.08 (8% premium)
         permitRequirements: ['City Building Permit']
       },
       'TX': {
@@ -279,7 +279,7 @@ export class ExpertContractorService {
         justification: `Standard 8ft spacing for ${dimensions.linearFeet}ft fence requires ${numPosts} posts including end posts`
       };
       postCalc.totalPrice = Math.round(postCalc.finalQuantity * postCalc.unitPrice * 100) / 100;
-      postCalc.laborCost = Math.round(postCalc.laborHours * 45 * geoFactors.laborCostMultiplier * 100) / 100;
+      postCalc.laborCost = Math.round(postCalc.laborHours * 32 * geoFactors.laborCostMultiplier * 100) / 100;
       
       calculations.push(postCalc);
 
@@ -302,7 +302,7 @@ export class ExpertContractorService {
         justification: `${dimensions.height}ft height requires ${numBoards} boards with ${boardSpec.wasteFactorPercent}% waste factor`
       };
       boardCalc.totalPrice = Math.round(boardCalc.finalQuantity * boardCalc.unitPrice * 100) / 100;
-      boardCalc.laborCost = Math.round(boardCalc.laborHours * 35 * geoFactors.laborCostMultiplier * 100) / 100;
+      boardCalc.laborCost = Math.round(boardCalc.laborHours * 28 * geoFactors.laborCostMultiplier * 100) / 100;
       
       calculations.push(boardCalc);
 
@@ -344,7 +344,7 @@ export class ExpertContractorService {
           justification: `Post setting concrete for ${numPosts} posts in ${geoFactors.soilType} soil conditions`
         };
         concreteCalc.totalPrice = Math.round(concreteCalc.finalQuantity * concreteCalc.unitPrice * 100) / 100;
-        concreteCalc.laborCost = Math.round(concreteCalc.laborHours * 50 * geoFactors.laborCostMultiplier * 100) / 100;
+        concreteCalc.laborCost = Math.round(concreteCalc.laborHours * 35 * geoFactors.laborCostMultiplier * 100) / 100;
         
         calculations.push(concreteCalc);
       }
