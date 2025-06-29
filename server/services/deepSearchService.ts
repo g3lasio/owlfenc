@@ -364,26 +364,29 @@ ALL TEXT MUST BE IN ENGLISH ONLY.
    */
   private extractAndCleanJSON(responseText: string): string | null {
     try {
-      // 1. Buscar JSON más específicamente
-      let jsonMatch = responseText.match(/\{[\s\S]*?\}/);
-      
-      if (!jsonMatch) {
-        // Buscar patrones alternativos
-        jsonMatch = responseText.match(/```json\s*(\{[\s\S]*?\})\s*```/);
-        if (jsonMatch) {
-          return this.cleanJSONString(jsonMatch[1]);
-        }
-        
-        // Buscar entre triple backticks sin json
-        jsonMatch = responseText.match(/```\s*(\{[\s\S]*?\})\s*```/);
-        if (jsonMatch) {
-          return this.cleanJSONString(jsonMatch[1]);
-        }
-        
-        return null;
+      // 1. Buscar JSON en markdown code blocks primero
+      let jsonMatch = responseText.match(/```json\s*(\{[\s\S]*?\})\s*```/);
+      if (jsonMatch) {
+        console.log('🔍 Found JSON in markdown code block');
+        return this.cleanJSONString(jsonMatch[1]);
       }
       
-      return this.cleanJSONString(jsonMatch[0]);
+      // 2. Buscar entre triple backticks sin json
+      jsonMatch = responseText.match(/```\s*(\{[\s\S]*?\})\s*```/);
+      if (jsonMatch) {
+        console.log('🔍 Found JSON in plain code block');
+        return this.cleanJSONString(jsonMatch[1]);
+      }
+      
+      // 3. Buscar JSON directamente (último recurso)
+      jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        console.log('🔍 Found JSON directly in text');
+        return this.cleanJSONString(jsonMatch[0]);
+      }
+      
+      console.log('❌ No JSON found in response');
+      return null;
       
     } catch (error) {
       console.error('Error extracting JSON:', error);
@@ -399,6 +402,13 @@ ALL TEXT MUST BE IN ENGLISH ONLY.
     jsonStr = jsonStr.replace(/\/\*[\s\S]*?\*\//g, '');
     jsonStr = jsonStr.replace(/\/\/.*$/gm, '');
     
+    // Corregir strings cortados (problema específico de Claude)
+    jsonStr = jsonStr.replace(/"\s*$/g, '""');
+    jsonStr = jsonStr.replace(/,\s*$/, '');
+    
+    // Encontrar strings incompletos en el JSON y completarlos
+    jsonStr = jsonStr.replace(/"([^"]*?)$/gm, '"$1"');
+    
     // Corregir comillas simples a dobles
     jsonStr = jsonStr.replace(/(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '"$2":');
     
@@ -410,6 +420,16 @@ ALL TEXT MUST BE IN ENGLISH ONLY.
     
     // Corregir espacios en nombres de propiedades
     jsonStr = jsonStr.replace(/(\w+)(\s+)(\w+):/g, '"$1$3":');
+    
+    // Asegurar que el JSON esté completo
+    if (!jsonStr.endsWith('}')) {
+      const openBraces = (jsonStr.match(/\{/g) || []).length;
+      const closeBraces = (jsonStr.match(/\}/g) || []).length;
+      const missing = openBraces - closeBraces;
+      for (let i = 0; i < missing; i++) {
+        jsonStr += '}';
+      }
+    }
     
     return jsonStr.trim();
   }

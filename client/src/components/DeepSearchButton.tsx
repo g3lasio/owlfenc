@@ -130,9 +130,12 @@ export function DeepSearchButton({
         setAnalysisResult(result.data);
         setShowResults(true);
         
+        const materialCount = result.data.materials?.length || 0;
+        const confidence = result.data.confidence ? Math.round(result.data.confidence * 100) : 90;
+        
         toast({
           title: "🎉 DeepSearch Completado",
-          description: `Se generaron ${result.data.materials.length} materiales automáticamente con ${Math.round(result.data.confidence * 100)}% de confianza`
+          description: `Se generaron ${materialCount} materiales automáticamente con ${confidence}% de confianza`
         });
 
         console.log('✅ DeepSearch completado:', result.data);
