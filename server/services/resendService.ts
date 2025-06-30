@@ -152,7 +152,7 @@ export class ResendEmailService {
       console.error('❌ [CONTRACTOR-EMAIL] Error enviando email:', error);
       return {
         success: false,
-        message: `Error enviando email del contratista: ${error.message}`
+        message: `Error enviando email del contratista: ${error instanceof Error ? error.message : 'Error desconocido'}`
       };
     }
   }
@@ -187,7 +187,7 @@ export class ResendEmailService {
       }
 
       // Always use verified domain for production emails
-      const fromEmail = this.defaultFromEmail;
+      const fromEmail = emailData.from || this.defaultFromEmail;
       
       // Preparar datos del email con headers anti-spam
       const emailPayload = {
