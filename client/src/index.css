@@ -48,6 +48,35 @@ html, body {
   display: none !important;
 }
 
+/* SCROLLBARS PARA EMAIL PREVIEW DIALOG */
+.email-preview-scroll::-webkit-scrollbar {
+  display: block !important;
+  width: 6px !important;
+  height: 6px !important;
+}
+
+.email-preview-scroll::-webkit-scrollbar-track {
+  display: block !important;
+  background: rgba(75, 85, 99, 0.3) !important;
+  border-radius: 3px !important;
+}
+
+.email-preview-scroll::-webkit-scrollbar-thumb {
+  display: block !important;
+  background: rgba(34, 211, 238, 0.5) !important;
+  border-radius: 3px !important;
+}
+
+.email-preview-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(34, 211, 238, 0.7) !important;
+}
+
+/* FALLBACK PARA FIREFOX */
+.email-preview-scroll {
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(34, 211, 238, 0.5) rgba(75, 85, 99, 0.3) !important;
+}
+
 *::-webkit-scrollbar-corner {
   display: none !important;
 }
