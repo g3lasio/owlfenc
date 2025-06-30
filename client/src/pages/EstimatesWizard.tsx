@@ -241,6 +241,48 @@ export default function EstimatesWizardFixed() {
     }
   }, []);
 
+  // Recovery function para errores críticos
+  const recoverEstimateData = useCallback(() => {
+    try {
+      const backup = localStorage.getItem('currentEstimate');
+      if (backup) {
+        const { estimate: backupEstimate, currentStep: backupStep } = JSON.parse(backup);
+        if (backupEstimate.client || backupEstimate.items.length > 0) {
+          setEstimate(backupEstimate);
+          setCurrentStep(backupStep || 0);
+          toast({
+            title: "Datos Recuperados",
+            description: "Se han restaurado los datos de tu estimado",
+          });
+          return true;
+        }
+      }
+      return false;
+    } catch (error) {
+      console.warn('Error en recovery:', error);
+      return false;
+    }
+  }, []);
+
+  // Función para resetear estimado limpiamente
+  const resetEstimate = useCallback(() => {
+    setEstimate({
+      client: null,
+      items: [],
+      projectDetails: "",
+      subtotal: 0,
+      tax: 0,
+      total: 0,
+      taxRate: 10,
+      discountType: "percentage",
+      discountValue: 0,
+      discountAmount: 0,
+      discountName: "",
+    });
+    setCurrentStep(0);
+    localStorage.removeItem('currentEstimate');
+  }, []);
+
   // Email dialog states
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [showEmailPreview, setShowEmailPreview] = useState(false);
@@ -568,6 +610,35 @@ export default function EstimatesWizardFixed() {
     insurancePolicy: "",
     logo: "",
   });
+
+  // Auto-save estimate data to localStorage
+  useEffect(() => {
+    if (estimate.client || estimate.items.length > 0) {
+      const estimateBackup = {
+        estimate,
+        currentStep,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('currentEstimate', JSON.stringify(estimateBackup));
+    }
+  }, [estimate, currentStep]);
+
+  // Load saved estimate data on mount
+  useEffect(() => {
+    const savedEstimate = localStorage.getItem('currentEstimate');
+    if (savedEstimate && !isEditMode) {
+      try {
+        const { estimate: backupEstimate, currentStep: backupStep } = JSON.parse(savedEstimate);
+        // Solo cargar si tiene datos válidos
+        if (backupEstimate.client || backupEstimate.items.length > 0) {
+          setEstimate(backupEstimate);
+          setCurrentStep(backupStep || 0);
+        }
+      } catch (error) {
+        console.warn('Error loading estimate backup:', error);
+      }
+    }
+  }, [isEditMode]);
 
   // Load data on mount
   useEffect(() => {
@@ -2929,6 +3000,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         title: "✅ PDF Descargado",
         description: "El estimado se ha descargado correctamente como PDF",
       });
+
+      // Limpiar backup después de descarga exitosa
+      localStorage.removeItem('currentEstimate');
     } catch (error) {
       console.error("Error downloading PDF:", error);
       toast({
@@ -4318,7 +4392,18 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
               </CardHeader>
             </Card>
 
-            {!estimate.client || estimate.items.length === 0 ? (
+            {/* Solo mostrar mensaje incompleto si ya terminaron de cargar todos los datos */}
+            {(isLoadingClients || isLoadingMaterials || !currentUser) ? (
+              <Card className="border-cyan-500/30">
+                <CardContent className="text-center py-8">
+                  <RefreshCw className="h-12 w-12 mx-auto mb-4 text-cyan-400 animate-spin" />
+                  <p className="text-lg font-medium">Cargando datos...</p>
+                  <p className="text-muted-foreground">
+                    Preparando información del estimado
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (!estimate.client || estimate.items.length === 0) ? (
               <Card className="border-amber-500/30">
                 <CardContent className="text-center py-8">
                   <AlertCircle className="h-12 w-12 mx-auto mb-4 text-amber-500" />
