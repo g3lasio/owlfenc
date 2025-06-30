@@ -77,9 +77,6 @@ app.use('/api/legal-defense-legacy', legalDefenseRoutes); // Keep legacy for com
 console.log('🛡️ [LEGAL-DEFENSE] Sistema unificado de contratos registrado en /api/legal-defense/generate-contract');
 console.log('🤖 [ANTHROPIC] Sistema inteligente de contratos registrado en /api/anthropic/generate-contract');
 
-// 🔧 Registrar rutas centralizadas ANTES del middleware de logging
-app.use("/api/centralized-email", centralizedEmailRoutes);
-
 // Add logging middleware first
 app.use((req, res, next) => {
   const start = Date.now();
@@ -121,6 +118,10 @@ app.use('/api/email', emailContractRoutes);
 
 // 🔧 Registrar rutas principales (incluye AI enhancement y DeepSearch)
 registerRoutes(app);
+
+// 🔧 Registrar rutas centralizadas DESPUÉS del middleware de body-parser
+app.use("/api/centralized-email", centralizedEmailRoutes);
+console.log('📧 [CENTRALIZED-EMAIL] Rutas registradas en /api/centralized-email');
 
 (async () => {
 

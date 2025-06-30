@@ -12,18 +12,82 @@ router.get('/test', (req, res) => {
 });
 
 /**
- * Simple POST endpoint for testing
+ * Enviar estimado usando sistema centralizado
  * POST /api/centralized-email/send-estimate
  */
-router.post('/send-estimate', (req, res) => {
-  console.log('📧 [CENTRALIZED-EMAIL] POST endpoint reached!');
-  console.log('📧 [CENTRALIZED-EMAIL] Request body:', req.body);
+router.post('/send-estimate', async (req, res) => {
+  console.log('📧 [CENTRALIZED-EMAIL] Iniciando proceso de envío de estimado');
   
-  res.json({
-    success: true,
-    message: 'POST endpoint is working',
-    receivedData: req.body
-  });
+  try {
+    const {
+      clientEmail,
+      clientName,
+      contractorEmail,
+      contractorName,
+      contractorCompany,
+      estimateData,
+      customMessage,
+      sendCopy = false
+    } = req.body;
+
+    console.log('📧 [CENTRALIZED-EMAIL] Datos recibidos:', {
+      clientEmail,
+      clientName,
+      contractorEmail,
+      contractorName,
+      contractorCompany,
+      sendCopy,
+      estimateNumber: estimateData?.estimateNumber
+    });
+
+    // Validar campos requeridos
+    if (!clientEmail || !clientName || !contractorEmail || !contractorName || !estimateData) {
+      console.error('❌ [CENTRALIZED-EMAIL] Campos faltantes:', {
+        clientEmail: !!clientEmail,
+        clientName: !!clientName,
+        contractorEmail: !!contractorEmail,
+        contractorName: !!contractorName,
+        estimateData: !!estimateData
+      });
+      return res.status(400).json({
+        success: false,
+        message: 'Faltan campos requeridos: clientEmail, clientName, contractorEmail, contractorName, estimateData'
+      });
+    }
+
+    // Importar el servicio de emails de forma dinámica para evitar problemas de dependencias
+    const { default: EstimateEmailService } = await import('../services/estimateEmailService');
+    
+    console.log('📧 [CENTRALIZED-EMAIL] Servicio de email cargado, generando HTML...');
+    const estimateHtml = EstimateEmailService.generateEstimateHTML(estimateData);
+    console.log('📧 [CENTRALIZED-EMAIL] HTML generado, longitud:', estimateHtml?.length || 0);
+
+    // Importar servicio Resend
+    const { default: ResendService } = await import('../services/resendService');
+
+    console.log('📧 [CENTRALIZED-EMAIL] Enviando email usando Resend...');
+    const result = await ResendService.sendCentralizedEmail({
+      toEmail: clientEmail,
+      toName: clientName,
+      contractorEmail,
+      contractorName,
+      contractorCompany: contractorCompany || contractorName,
+      subject: `Estimado Profesional - ${estimateData.estimateNumber} - ${contractorCompany || contractorName}`,
+      htmlContent: estimateHtml,
+      sendCopyToContractor: sendCopy
+    });
+
+    console.log('📧 [CENTRALIZED-EMAIL] Resultado del envío:', result);
+    res.json(result);
+
+  } catch (error) {
+    console.error('Error enviando estimado centralizado:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno enviando estimado',
+      error: error.message
+    });
+  }
 });
 
 export default router;
