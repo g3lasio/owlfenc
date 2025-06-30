@@ -26,6 +26,26 @@ export class ResendEmailService {
   private noReplyPrefix = 'noreply'; // Prefijo para emails no-reply
   private defaultFromEmail = `onboarding@${this.platformDomain}`;
   private supportEmail = `support@${this.platformDomain}`;
+  private testModeEmail = 'gelasio@chyrris.com'; // Email autorizado en modo test
+
+  /**
+   * Detectar si estamos en modo de prueba de Resend
+   */
+  private isTestMode(): boolean {
+    // En modo test, Resend solo permite enviar a gelasio@chyrris.com
+    return true; // Asumimos modo test hasta verificar dominio
+  }
+
+  /**
+   * Obtener destinatario apropiado según el modo
+   */
+  private getAppropriateRecipient(originalEmail: string): string {
+    if (this.isTestMode() && originalEmail !== this.testModeEmail) {
+      console.log(`🧪 [TEST-MODE] Redirigiendo ${originalEmail} a ${this.testModeEmail} (modo prueba)`);
+      return this.testModeEmail;
+    }
+    return originalEmail;
+  }
 
   /**
    * Generar email no-reply específico para cada contratista
@@ -74,12 +94,31 @@ export class ResendEmailService {
       const contractorNoReplyEmail = this.generateContractorNoReplyEmail(params.contractorEmail, params.contractorCompany);
       console.log('📧 [CONTRACTOR-EMAIL] Email no-reply generado:', contractorNoReplyEmail);
 
+      // Aplicar detección de modo de prueba
+      const finalRecipient = this.getAppropriateRecipient(params.toEmail);
+      
+      // Agregar nota de modo de prueba al HTML si es necesario
+      let finalHtmlContent = params.htmlContent;
+      if (this.isTestMode() && finalRecipient !== params.toEmail) {
+        const testModeNote = `
+          <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 8px; color: #856404;">
+            <h4 style="margin: 0 0 10px 0; color: #856404;">🧪 Modo de Prueba Activo</h4>
+            <p style="margin: 0; font-size: 14px;">
+              Este estimado fue originalmente dirigido a <strong>${params.toEmail}</strong> (${params.toName}), 
+              pero se está enviando a ${this.testModeEmail} debido al modo de prueba de Resend. 
+              Para enviar a cualquier dirección, verifique un dominio en resend.com/domains.
+            </p>
+          </div>
+        `;
+        finalHtmlContent = finalHtmlContent.replace('<body', testModeNote + '<body');
+      }
+      
       // Intentar enviar email desde dominio del contratista
       let clientEmailResult = await this.sendEmail({
-        to: params.toEmail,
+        to: finalRecipient,
         from: contractorNoReplyEmail,
         subject: params.subject,
-        html: params.htmlContent,
+        html: finalHtmlContent,
         replyTo: params.contractorEmail, // Respuestas van directamente al contratista
         attachments: params.attachments
       });
@@ -93,10 +132,10 @@ export class ResendEmailService {
         // Estrategia 1: Intentar con email directo del contratista
         console.log('📧 [CONTRACTOR-DIRECT] Intentando con email directo del contratista...');
         const directEmailResult = await this.sendEmail({
-          to: params.toEmail,
+          to: finalRecipient, // Usar mismo destinatario procesado
           from: params.contractorEmail, // Email directo del contratista
           subject: params.subject,
-          html: params.htmlContent,
+          html: finalHtmlContent,
           attachments: params.attachments
         });
 
