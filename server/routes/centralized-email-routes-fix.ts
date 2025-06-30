@@ -62,7 +62,7 @@ router.post('/send-estimate', async (req, res) => {
     console.log('📧 [CENTRALIZED-EMAIL] HTML generado, longitud:', estimateHtml?.length || 0);
 
     console.log('📧 [CENTRALIZED-EMAIL] Enviando email usando Resend...');
-    const result = await resendService.sendCentralizedEmail({
+    const result = await resendService.sendContractorEmail({
       toEmail: clientEmail,
       toName: clientName,
       contractorEmail,
@@ -84,7 +84,7 @@ router.post('/send-estimate', async (req, res) => {
       
       // Reintento automático con email autorizado
       console.log('🔄 [CENTRALIZED-EMAIL] Reintentando con email autorizado para demostración...');
-      const retryResult = await resendService.sendCentralizedEmail({
+      const retryResult = await resendService.sendContractorEmail({
         toEmail: authorizedTestEmail,
         toName: `[DEMO] ${clientName}`,
         contractorEmail: authorizedTestEmail,

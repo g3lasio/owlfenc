@@ -24,6 +24,8 @@ export interface EmailData {
 export class ResendEmailService {
   private platformDomain = 'resend.dev'; // Dominio de la plataforma
   private noReplyPrefix = 'noreply'; // Prefijo para emails no-reply
+  private defaultFromEmail = `onboarding@${this.platformDomain}`;
+  private supportEmail = `support@${this.platformDomain}`;
 
   /**
    * Generar email no-reply específico para cada contratista
@@ -142,15 +144,15 @@ export class ResendEmailService {
 
       return {
         success: true,
-        message: 'Email enviado exitosamente',
-        emailId: 'centralized-email'
+        message: `Email enviado exitosamente desde ${contractorNoReplyEmail} a ${params.toEmail}`,
+        emailId: 'contractor-success'
       };
 
     } catch (error) {
-      console.error('❌ [RESEND-CENTRALIZED] Error enviando email:', error);
+      console.error('❌ [CONTRACTOR-EMAIL] Error enviando email:', error);
       return {
         success: false,
-        message: 'Error interno enviando email'
+        message: `Error enviando email del contratista: ${error.message}`
       };
     }
   }
@@ -165,8 +167,8 @@ export class ResendEmailService {
       console.log('🔍 [RESEND] API Key configurada:', !!process.env.RESEND_API_KEY);
       console.log('🔍 [RESEND] Destinatario:', emailData.to);
       console.log('🔍 [RESEND] Remitente solicitado:', emailData.from);
-      console.log('🔍 [RESEND] Remitente por defecto:', this.defaultFromEmail);
-      console.log('🔍 [RESEND] Remitente final:', this.defaultFromEmail);
+      console.log('🔍 [RESEND] Remitente por defecto:', emailData.from);
+      console.log('🔍 [RESEND] Remitente final:', emailData.from);
       console.log('🔍 [RESEND] Asunto:', emailData.subject);
       console.log('🔍 [RESEND] Tamaño HTML:', emailData.html?.length || 0, 'caracteres');
 
